@@ -1,0 +1,111 @@
+from fastapi import APIRouter, Query
+
+from app.api.deps import CurrentUser, DBDep
+from app.core.errors import raise_problem
+from app.crud.booking import booking as crud_booking
+from app.crud.duty_slot import duty_slot as crud_duty_slot
+from app.models.booking import Booking
+from app.schemas.booking import (
+    BookingBase,
+    BookingCreate,
+    BookingListResponse,
+    BookingRead,
+    BookingUpdate,
+)
+
+router = APIRouter(prefix="/bookings", tags=["bookings"])
+
+
+@router.get("/me", response_model=BookingListResponse)
+async def list_my_bookings(
+    session: DBDep,
+    current_user: CurrentUser,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=200),
+    status: str | None = None,
+) -> BookingListResponse:
+    """List the current user's bookings."""
+    items = await crud_booking.get_multi_by_user(
+        session, user_id=current_user.id, skip=skip, limit=limit, status=status
+    )
+    total = await crud_booking.count_by_user(
+        session, user_id=current_user.id, status=status
+    )
+    return BookingListResponse(
+        items=[BookingRead.model_validate(i) for i in items],
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@router.post("/", response_model=BookingRead, status_code=201)
+async def create_booking(
+    booking_in: BookingCreate,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> Booking:
+    """Book a duty slot for the current user."""
+    slot = await crud_duty_slot.get(session, str(booking_in.duty_slot_id), raise_404_error=True)
+
+    existing = await crud_booking.get_by_slot_and_user(
+        session, duty_slot_id=slot.id, user_id=current_user.id
+    )
+    if existing and existing.status == "confirmed":
+        raise_problem(409, code="booking.already_exists", detail="You already have a confirmed booking for this slot")
+
+    confirmed_count = await crud_booking.get_confirmed_count(session, duty_slot_id=slot.id)
+    if confirmed_count >= slot.max_bookings:
+        raise_problem(409, code="booking.slot_full", detail="This duty slot is fully booked")
+
+    # If previously cancelled, reactivate
+    if existing and existing.status == "cancelled":
+        return await crud_booking.update(
+            session, db_obj=existing, obj_in=BookingUpdate(status="confirmed", notes=booking_in.notes),
+        )
+
+    full_booking = BookingBase(
+        duty_slot_id=booking_in.duty_slot_id, user_id=current_user.id, notes=booking_in.notes,
+    )
+    return await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
+
+
+@router.get("/{booking_id}", response_model=BookingRead)
+async def get_booking(
+    booking_id: str,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> Booking:
+    db_booking = await crud_booking.get(session, booking_id, raise_404_error=True)
+    if not current_user.is_admin and db_booking.user_id != current_user.id:
+        raise_problem(403, code="booking.forbidden", detail="You can only view your own bookings")
+    return db_booking
+
+
+@router.patch("/{booking_id}", response_model=BookingRead)
+async def update_booking(
+    booking_id: str,
+    booking_in: BookingUpdate,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> Booking:
+    """Update a booking. Only the owner or admin can modify."""
+    db_booking = await crud_booking.get(session, booking_id, raise_404_error=True)
+    if not current_user.is_admin and db_booking.user_id != current_user.id:
+        raise_problem(403, code="booking.forbidden", detail="You can only modify your own bookings")
+    return await crud_booking.update(session, db_obj=db_booking, obj_in=booking_in)
+
+
+@router.delete("/{booking_id}", response_model=BookingRead)
+async def cancel_booking(
+    booking_id: str,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> Booking:
+    """Cancel a booking (soft-cancel by setting status to 'cancelled')."""
+    db_booking = await crud_booking.get(session, booking_id, raise_404_error=True)
+    if not current_user.is_admin and db_booking.user_id != current_user.id:
+        raise_problem(403, code="booking.forbidden", detail="You can only cancel your own bookings")
+    return await crud_booking.update(
+        session, db_obj=db_booking, obj_in=BookingUpdate(status="cancelled")
+    )

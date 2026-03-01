@@ -1,7 +1,5 @@
-from __future__ import annotations
-
+import datetime as dt
 import uuid
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -31,8 +29,8 @@ class BookingUpdate(BaseModel):
 class BookingRead(BookingBase):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
+    created_at: dt.datetime
+    updated_at: dt.datetime
 
 
 class BookingListResponse(BaseModel):
