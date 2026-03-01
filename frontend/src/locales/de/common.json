@@ -4,12 +4,15 @@
         "cancel": "Abbrechen",
         "close": "Schließen",
         "confirm": "Bestätigen",
+        "create": "Erstellen",
         "delete": "Löschen",
         "edit": "Bearbeiten",
         "next": "Weiter",
         "previous": "Vorherige",
+        "publish": "Veröffentlichen",
         "reset": "Zurücksetzen",
         "save": "Speichern",
+        "search": "Suchen...",
         "submit": "Absenden"
     },
     "dialog": {

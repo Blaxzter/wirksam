@@ -4,12 +4,15 @@
         "cancel": "Cancel",
         "close": "Close",
         "confirm": "Confirm",
+        "create": "Create",
         "delete": "Delete",
         "edit": "Edit",
         "next": "Next",
         "previous": "Previous",
+        "publish": "Publish",
         "reset": "Reset",
         "save": "Save",
+        "search": "Search...",
         "submit": "Submit"
     },
     "dialog": {

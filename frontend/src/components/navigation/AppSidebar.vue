@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { BookCheck, CalendarDays } from 'lucide-vue-next'
+
 import AppLogo from '@/components/icons/AppLogo.vue'
 
 import type { SidebarProps } from '@/components/ui/sidebar'
@@ -32,6 +34,19 @@ const data = {
     },
   ],
   navMain: [
+    {
+      title: 'Events',
+      titleKey: 'navigation.sidebar.items.events.label',
+      icon: CalendarDays,
+      routeName: 'events',
+      isActive: true,
+    },
+    {
+      title: 'My Bookings',
+      titleKey: 'navigation.sidebar.items.myBookings.label',
+      icon: BookCheck,
+      routeName: 'my-bookings',
+    },
   ],
 }
 </script>

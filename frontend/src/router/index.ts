@@ -50,6 +50,33 @@ const router = createRouter({
           },
         },
         {
+          path: 'events',
+          name: 'events',
+          component: () => import('@/views/events/EventsView.vue'),
+          meta: {
+            breadcrumbs: [{ title: 'Events', titleKey: 'duties.events.title' }],
+          },
+        },
+        {
+          path: 'events/:eventId',
+          name: 'event-detail',
+          component: () => import('@/views/events/EventDetailView.vue'),
+          meta: {
+            breadcrumbs: [
+              { title: 'Events', titleKey: 'duties.events.title', to: { name: 'events' } },
+              { title: 'Event Details', titleKey: 'duties.events.detail.title' },
+            ],
+          },
+        },
+        {
+          path: 'bookings',
+          name: 'my-bookings',
+          component: () => import('@/views/bookings/MyBookingsView.vue'),
+          meta: {
+            breadcrumbs: [{ title: 'My Bookings', titleKey: 'duties.bookings.title' }],
+          },
+        },
+        {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/UserSettingsView.vue'),
