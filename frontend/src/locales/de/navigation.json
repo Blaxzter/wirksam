@@ -5,6 +5,14 @@
     },
     "sidebar": {
         "items": {
+            "events": {
+                "description": "Dienst-Veranstaltungen durchsuchen",
+                "label": "Veranstaltungen"
+            },
+            "myBookings": {
+                "description": "Ihre Reservierungen",
+                "label": "Meine Buchungen"
+            },
             "settings": "Einstellungen"
         },
         "platform": "Plattform",

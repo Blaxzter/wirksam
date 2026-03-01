@@ -1,0 +1,63 @@
+{
+    "bookings": {
+        "bookSuccess": "Dienstschicht erfolgreich gebucht!",
+        "cancel": "Buchung stornieren",
+        "cancelConfirm": "Sind Sie sicher, dass Sie diese Buchung stornieren möchten?",
+        "cancelSuccess": "Buchung storniert.",
+        "empty": "Sie haben noch keine Buchungen.",
+        "statuses": {
+            "cancelled": "Storniert",
+            "confirmed": "Bestätigt"
+        },
+        "subtitle": "Ihre Dienstschicht-Reservierungen",
+        "title": "Meine Buchungen"
+    },
+    "dutySlots": {
+        "availability": "{current} / {max} gebucht",
+        "available": "Verfügbar",
+        "book": "Dienstschicht buchen",
+        "create": "Dienstschicht erstellen",
+        "delete": "Dienstschicht löschen",
+        "deleteConfirm": "Sind Sie sicher, dass Sie diese Dienstschicht löschen möchten?",
+        "edit": "Dienstschicht bearbeiten",
+        "empty": "Noch keine Dienstschichten für diese Veranstaltung.",
+        "fields": {
+            "category": "Kategorie",
+            "date": "Datum",
+            "description": "Beschreibung",
+            "endTime": "Endzeit",
+            "location": "Ort",
+            "maxBookings": "Max. Buchungen",
+            "startTime": "Startzeit",
+            "title": "Titel"
+        },
+        "full": "Ausgebucht",
+        "title": "Dienstschicht"
+    },
+    "events": {
+        "create": "Veranstaltung erstellen",
+        "delete": "Veranstaltung löschen",
+        "deleteConfirm": "Sind Sie sicher, dass Sie diese Veranstaltung löschen möchten? Alle Dienstschichten und Buchungen gehen verloren.",
+        "detail": {
+            "addSlot": "Dienstschicht hinzufügen",
+            "slots": "Dienstschichten",
+            "title": "Veranstaltungsdetails"
+        },
+        "edit": "Veranstaltung bearbeiten",
+        "empty": "Keine Veranstaltungen gefunden.",
+        "fields": {
+            "description": "Beschreibung",
+            "endDate": "Enddatum",
+            "name": "Name",
+            "startDate": "Startdatum",
+            "status": "Status"
+        },
+        "statuses": {
+            "archived": "Archiviert",
+            "draft": "Entwurf",
+            "published": "Veröffentlicht"
+        },
+        "subtitle": "Anstehende Dienst-Veranstaltungen durchsuchen",
+        "title": "Veranstaltungen"
+    }
+}

@@ -5,6 +5,14 @@
     },
     "sidebar": {
         "items": {
+            "events": {
+                "description": "Browse duty events",
+                "label": "Events"
+            },
+            "myBookings": {
+                "description": "Your reservations",
+                "label": "My Bookings"
+            },
             "settings": "Settings"
         },
         "platform": "Platform",
