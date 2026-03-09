@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Query
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
 from app.core.errors import raise_problem
@@ -6,8 +8,10 @@ from app.crud.duty_slot import duty_slot as crud_duty_slot
 from app.crud.event import event as crud_event
 from app.crud.event_group import event_group as crud_event_group
 from app.logic.slot_generator import generate_duty_slots
+from app.models.duty_slot import DutySlot
 from app.models.event import Event
 from app.schemas.event import (
+    AffectedBookingInfo,
     EventCreate,
     EventCreateWithSlots,
     EventCreateWithSlotsResponse,
@@ -15,6 +19,8 @@ from app.schemas.event import (
     EventRead,
     EventStatus,
     EventUpdate,
+    EventUpdateWithSlots,
+    SlotRegenerationResult,
 )
 from app.schemas.event_group import EventGroupRead
 
@@ -120,9 +126,11 @@ async def create_event_with_slots(
         default_end_time=payload.schedule.default_end_time,
         slot_duration_minutes=payload.schedule.slot_duration_minutes,
         people_per_slot=payload.schedule.people_per_slot,
+        remainder_mode=payload.schedule.remainder_mode,
         location=payload.location,
         category=payload.category,
         overrides=payload.schedule.overrides,
+        excluded_slots=payload.schedule.excluded_slots,
     )
 
     for slot_in in slot_creates:
@@ -135,6 +143,143 @@ async def create_event_with_slots(
         event=EventRead.model_validate(db_event),
         duty_slots_created=len(slot_creates),
         event_group=event_group_read,
+    )
+
+
+@router.post(
+    "/{event_id}/regenerate-slots",
+    response_model=SlotRegenerationResult,
+)
+async def regenerate_event_slots(
+    event_id: str,
+    payload: EventUpdateWithSlots,
+    session: DBDep,
+    current_user: CurrentSuperuser,
+    dry_run: bool = Query(default=False),
+) -> SlotRegenerationResult:
+    """Regenerate duty slots for an event, preserving bookings where slots match.
+
+    When dry_run=True, returns a preview without making changes.
+    Slots are matched by (date, start_time, end_time) — matched slots keep their bookings.
+    """
+    db_event = await crud_event.get(session, event_id, raise_404_error=True)
+
+    # Determine effective event fields (use payload overrides or existing values)
+    effective_name = payload.name or db_event.name
+    effective_start_date = payload.start_date or db_event.start_date
+    effective_end_date = payload.end_date or db_event.end_date
+    effective_location = payload.location if payload.location is not None else db_event.location
+    effective_category = payload.category if payload.category is not None else db_event.category
+
+    # 1. Generate new slot definitions
+    new_slot_defs = generate_duty_slots(
+        event_id=db_event.id,
+        event_name=effective_name,
+        start_date=effective_start_date,
+        end_date=effective_end_date,
+        default_start_time=payload.schedule.default_start_time,
+        default_end_time=payload.schedule.default_end_time,
+        slot_duration_minutes=payload.schedule.slot_duration_minutes,
+        people_per_slot=payload.schedule.people_per_slot,
+        remainder_mode=payload.schedule.remainder_mode,
+        location=effective_location,
+        category=effective_category,
+        overrides=payload.schedule.overrides,
+        excluded_slots=payload.schedule.excluded_slots,
+    )
+
+    # 2. Load existing slots with their bookings
+    stmt = (
+        select(DutySlot)
+        .where(DutySlot.event_id == db_event.id)
+        .options(selectinload(DutySlot.bookings))
+    )
+    result = await session.execute(stmt)
+    existing_slots = list(result.scalars().all())
+
+    # 3. Build lookup of existing slots by (date, start_time, end_time)
+    existing_lookup: dict[tuple, DutySlot] = {}
+    for slot in existing_slots:
+        key = (slot.date, slot.start_time, slot.end_time)
+        existing_lookup[key] = slot
+
+    # 4. Match new slots to existing
+    matched_keys: set[tuple] = set()
+    slots_to_create = []
+    for new_slot in new_slot_defs:
+        key = (new_slot.date, new_slot.start_time, new_slot.end_time)
+        if key in existing_lookup:
+            matched_keys.add(key)
+            # Update title and max_bookings on matched slots
+            existing = existing_lookup[key]
+            existing.title = new_slot.title
+            existing.max_bookings = new_slot.max_bookings
+            existing.location = new_slot.location
+            existing.category = new_slot.category
+        else:
+            slots_to_create.append(new_slot)
+
+    # 5. Find unmatched existing slots (to be deleted) and their confirmed bookings
+    affected_bookings: list[AffectedBookingInfo] = []
+    slots_to_delete = []
+    for key, slot in existing_lookup.items():
+        if key not in matched_keys:
+            slots_to_delete.append(slot)
+            for booking in slot.bookings:
+                if booking.status == "confirmed":
+                    affected_bookings.append(
+                        AffectedBookingInfo(
+                            booking_id=booking.id,
+                            user_id=booking.user_id,
+                            slot_title=slot.title,
+                            slot_date=slot.date,
+                            slot_start_time=slot.start_time,
+                            slot_end_time=slot.end_time,
+                        )
+                    )
+
+    if not dry_run:
+        # 6a. Update event fields
+        if payload.name is not None:
+            db_event.name = payload.name
+        if payload.description is not None:
+            db_event.description = payload.description
+        if payload.start_date is not None:
+            db_event.start_date = payload.start_date
+        if payload.end_date is not None:
+            db_event.end_date = payload.end_date
+        if payload.location is not None:
+            db_event.location = payload.location
+        if payload.category is not None:
+            db_event.category = payload.category
+
+        # Store generation config
+        db_event.slot_duration_minutes = payload.schedule.slot_duration_minutes
+        db_event.default_start_time = payload.schedule.default_start_time
+        db_event.default_end_time = payload.schedule.default_end_time
+        db_event.people_per_slot = payload.schedule.people_per_slot
+        db_event.schedule_overrides = [
+            o.model_dump(mode="json") for o in payload.schedule.overrides
+        ]
+        session.add(db_event)
+
+        # 6b. Delete unmatched slots (cascade deletes bookings)
+        for slot in slots_to_delete:
+            await session.delete(slot)
+
+        # 6c. Create new slots
+        for slot_in in slots_to_create:
+            await crud_duty_slot.create(session, obj_in=slot_in)
+
+        await session.flush()
+        await session.refresh(db_event)
+
+    return SlotRegenerationResult(
+        event=EventRead.model_validate(db_event),
+        slots_added=len(slots_to_create),
+        slots_removed=len(slots_to_delete),
+        slots_kept=len(matched_keys),
+        affected_bookings=affected_bookings,
     )
 
 

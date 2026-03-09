@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
-import { ArrowLeft, CalendarPlus, Clock, Plus, Trash2, Users } from 'lucide-vue-next'
+import { parseDate } from '@internationalized/date'
+import { ArrowLeft, CalendarDays, CalendarPlus, Clock, Plus, Trash2, Users, X } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-import type { EventGroupListResponse, EventGroupRead } from '@/client/types.gen'
+import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { type RemainderMode, type ScheduleConfig, useSlotPreview } from '@/composables/useSlotPreview'
+
 import {
   Accordion,
   AccordionContent,
@@ -30,11 +33,12 @@ import {
 } from '@/components/ui/select'
 import Separator from '@/components/ui/separator/Separator.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
-import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
-import { type ScheduleConfig, useSlotPreview } from '@/composables/useSlotPreview'
+import { TimePicker } from '@/components/ui/time-picker'
+
+import type { EventGroupListResponse, EventGroupRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const router = useRouter()
 const { get, post } = useAuthenticatedClient()
 
@@ -43,8 +47,6 @@ const name = ref('')
 const description = ref('')
 const location = ref('')
 const category = ref('')
-const startDate = ref<DateValue>()
-const endDate = ref<DateValue>()
 
 // Event group
 const eventGroupMode = ref<'none' | 'existing' | 'new'>('none')
@@ -55,16 +57,154 @@ const newGroupDescription = ref('')
 const newGroupStartDate = ref<DateValue>()
 const newGroupEndDate = ref<DateValue>()
 
+// Dates
+const dateMode = ref<'single' | 'range' | 'specific'>('single')
+const singleDate = ref<DateValue>()
+const rangeStartDate = ref<DateValue>()
+const rangeEndDate = ref<DateValue>()
+const specificDates = ref<DateValue[]>([])
+const specificDatePicker = ref<DateValue>()
+
+// Computed effective start/end dates (derived from date mode)
+const startDate = computed((): DateValue | undefined => {
+  if (dateMode.value === 'single') return singleDate.value
+  if (dateMode.value === 'range') return rangeStartDate.value
+  if (dateMode.value === 'specific' && specificDates.value.length > 0) {
+    const raw = specificDates.value.map((d) => toRaw(d))
+    let min = raw[0]
+    for (const d of raw) {
+      if (d.compare(min) < 0) min = d
+    }
+    return min
+  }
+  return undefined
+})
+
+const endDate = computed((): DateValue | undefined => {
+  if (dateMode.value === 'single') return singleDate.value
+  if (dateMode.value === 'range') return rangeEndDate.value
+  if (dateMode.value === 'specific' && specificDates.value.length > 0) {
+    const raw = specificDates.value.map((d) => toRaw(d))
+    let max = raw[0]
+    for (const d of raw) {
+      if (d.compare(max) > 0) max = d
+    }
+    return max
+  }
+  return undefined
+})
+
+// Date constraints from event group
+const selectedGroup = computed(() => {
+  if (eventGroupMode.value === 'existing' && selectedEventGroupId.value) {
+    return eventGroups.value.find((g) => g.id === selectedEventGroupId.value)
+  }
+  return null
+})
+
+const groupMinDate = computed(() => {
+  if (selectedGroup.value) return parseDate(selectedGroup.value.start_date)
+  if (eventGroupMode.value === 'new' && newGroupStartDate.value) return newGroupStartDate.value
+  return undefined
+})
+
+const groupMaxDate = computed(() => {
+  if (selectedGroup.value) return parseDate(selectedGroup.value.end_date)
+  if (eventGroupMode.value === 'new' && newGroupEndDate.value) return newGroupEndDate.value
+  return undefined
+})
+
+const hasGroupDateConstraint = computed(() => !!groupMinDate.value && !!groupMaxDate.value)
+
+// Add specific date
+const addSpecificDate = () => {
+  if (!specificDatePicker.value) return
+  const newDate = toRaw(specificDatePicker.value)
+  const already = specificDates.value.some((d) => toRaw(d).compare(newDate) === 0)
+  if (!already) {
+    specificDates.value.push(newDate)
+    specificDates.value.sort((a, b) => (toRaw(a) as DateValue).compare(toRaw(b) as DateValue))
+  }
+  specificDatePicker.value = undefined
+}
+
+const removeSpecificDate = (index: number) => {
+  specificDates.value.splice(index, 1)
+}
+
+// Clear dates when mode changes
+watch(dateMode, () => {
+  singleDate.value = undefined
+  rangeStartDate.value = undefined
+  rangeEndDate.value = undefined
+  specificDates.value = []
+  specificDatePicker.value = undefined
+  overrides.value = []
+})
+
+// Clear dates when group changes (constraints may have changed)
+watch([eventGroupMode, selectedEventGroupId], () => {
+  singleDate.value = undefined
+  rangeStartDate.value = undefined
+  rangeEndDate.value = undefined
+  specificDates.value = []
+})
+
 // Schedule
 const defaultStartTime = ref('10:00')
 const defaultEndTime = ref('18:00')
 const slotDurationMinutes = ref(30)
 const peoplePerSlot = ref(2)
+const remainderMode = ref<RemainderMode>('drop')
 const overrides = ref<Array<{ date: string; startTime: string; endTime: string }>>([])
 
 // UI state
 const submitting = ref(false)
-const expandedSections = ref(['details', 'schedule'])
+const activeSection = ref('details')
+
+const sections = ['details', 'eventGroup', 'dates', 'schedule', 'preview'] as const
+
+const isDetailsValid = computed(() => {
+  return !!name.value.trim()
+})
+
+const isEventGroupValid = computed(() => {
+  if (eventGroupMode.value === 'existing') return !!selectedEventGroupId.value
+  if (eventGroupMode.value === 'new') {
+    return !!newGroupName.value.trim() && !!newGroupStartDate.value && !!newGroupEndDate.value
+  }
+  return true
+})
+
+const isDatesValid = computed(() => {
+  if (dateMode.value === 'single') return !!singleDate.value
+  if (dateMode.value === 'range') return !!rangeStartDate.value && !!rangeEndDate.value
+  if (dateMode.value === 'specific') return specificDates.value.length > 0
+  return false
+})
+
+const isScheduleValid = computed(() => {
+  return !!defaultStartTime.value && !!defaultEndTime.value && slotDurationMinutes.value >= 1
+})
+
+const sectionValid: Record<string, () => boolean> = {
+  details: () => isDetailsValid.value,
+  eventGroup: () => isEventGroupValid.value,
+  dates: () => isDatesValid.value,
+  schedule: () => isScheduleValid.value,
+}
+
+const isCurrentSectionValid = computed(() => {
+  const check = sectionValid[activeSection.value]
+  return check ? check() : true
+})
+
+const goToNext = () => {
+  const idx = sections.indexOf(activeSection.value as (typeof sections)[number])
+  if (idx < sections.length - 1) {
+    activeSection.value = sections[idx + 1]
+  }
+}
 
 // Duration options
 const durationOptions = [15, 30, 45, 60, 90, 120]
@@ -74,20 +214,28 @@ const scheduleConfig = computed<ScheduleConfig>(() => ({
   eventName: name.value || 'Event',
   startDate: startDate.value?.toString() ?? '',
   endDate: endDate.value?.toString() ?? '',
+  specificDates: dateMode.value === 'specific'
+    ? specificDates.value.map((d) => d.toString())
+    : undefined,
   defaultStartTime: defaultStartTime.value,
   defaultEndTime: defaultEndTime.value,
   slotDurationMinutes: slotDurationMinutes.value,
   peoplePerSlot: peoplePerSlot.value,
+  remainderMode: remainderMode.value,
   overrides: overrides.value,
 }))
 
-const { totalSlots, totalDays, slotsByDate } = useSlotPreview(scheduleConfig)
+const { totalSlots, totalDays, slotsByDate, hasRemainder, excludedSlots, toggleSlotExclusion, isSlotExcluded } = useSlotPreview(scheduleConfig)
 
 // --- Date sync ---
-watch(startDate, (val) => {
-  if (val && endDate.value && endDate.value.compare(val) < 0) {
-    endDate.value = undefined
+watch(rangeStartDate, (val) => {
+  if (val && rangeEndDate.value && rangeEndDate.value.compare(val) < 0) {
+    rangeEndDate.value = undefined
   }
+})
+
+watch(hasRemainder, (val) => {
+  if (!val) remainderMode.value = 'drop'
 })
 
 // --- Load event groups ---
@@ -121,13 +269,19 @@ const removeOverride = (index: number) => {
 // --- Available dates for exceptions ---
 const availableDates = computed(() => {
   if (!startDate.value || !endDate.value) return []
+
+  if (dateMode.value === 'specific') {
+    return specificDates.value
+      .map((d) => d.toString())
+      .filter((dateStr) => !overrides.value.some((o) => o.date === dateStr))
+  }
+
   const dates: string[] = []
   const start = new Date(startDate.value.toString())
   const end = new Date(endDate.value.toString())
   const current = new Date(start)
   while (current <= end) {
     const dateStr = current.toISOString().split('T')[0]
-    // Exclude already overridden dates
     if (!overrides.value.some((o) => o.date === dateStr)) {
       dates.push(dateStr)
     }
@@ -138,19 +292,7 @@ const availableDates = computed(() => {
 
 // --- Form validation ---
 const isValid = computed(() => {
-  if (!name.value.trim()) return false
-  if (!startDate.value || !endDate.value) return false
-  if (!defaultStartTime.value || !defaultEndTime.value) return false
-  if (slotDurationMinutes.value < 1) return false
-  if (totalSlots.value === 0) return false
-
-  if (eventGroupMode.value === 'existing' && !selectedEventGroupId.value) return false
-  if (eventGroupMode.value === 'new') {
-    if (!newGroupName.value.trim()) return false
-    if (!newGroupStartDate.value || !newGroupEndDate.value) return false
-  }
-
-  return true
+  return isDetailsValid.value && isEventGroupValid.value && isDatesValid.value && isScheduleValid.value && totalSlots.value > 0
 })
 
 // --- Submit ---
@@ -171,6 +313,7 @@ const handleSubmit = async () => {
         default_end_time: defaultEndTime.value + ':00',
         slot_duration_minutes: slotDurationMinutes.value,
         people_per_slot: peoplePerSlot.value,
+        remainder_mode: remainderMode.value,
         overrides: overrides.value
           .filter((o) => o.date)
           .map((o) => ({
@@ -178,6 +321,10 @@ const handleSubmit = async () => {
             start_time: o.startTime + ':00',
             end_time: o.endTime + ':00',
           })),
+        excluded_slots: [...excludedSlots.value].map((key) => {
+          const [date, start_time, end_time] = key.split('|')
+          return { date, start_time: start_time + ':00', end_time: end_time + ':00' }
+        }),
       },
     }
 
@@ -210,12 +357,12 @@ const handleSubmit = async () => {
 
 const formatDateLabel = (dateStr: string) => {
   const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  return d.toLocaleDateString(locale.value, { weekday: 'short', month: 'short', day: 'numeric' })
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl space-y-6 pb-24">
+  <div class="mx-auto max-w-3xl space-y-6">
     <!-- Header -->
     <div class="space-y-2">
       <Button variant="ghost" size="sm" class="-ml-2" @click="router.push({ name: 'events' })">
@@ -226,7 +373,7 @@ const formatDateLabel = (dateStr: string) => {
       <p class="text-muted-foreground">{{ t('duties.events.createView.subtitle') }}</p>
     </div>
 
-    <Accordion v-model="expandedSections" type="multiple" class="space-y-4">
+    <Accordion v-model="activeSection" type="single" collapsible class="space-y-4">
       <!-- Section 1: Event Details -->
       <AccordionItem value="details" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
@@ -260,15 +407,8 @@ const formatDateLabel = (dateStr: string) => {
                 <Input v-model="category" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label>{{ t('duties.events.fields.startDate') }} *</Label>
-                <DatePicker v-model="startDate" :max-value="endDate" />
-              </div>
-              <div class="space-y-2">
-                <Label>{{ t('duties.events.fields.endDate') }} *</Label>
-                <DatePicker v-model="endDate" :min-value="startDate" :highlight="startDate" />
-              </div>
+            <div class="flex justify-end pt-2">
+              <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{ t('common.actions.next') }}</Button>
             </div>
           </div>
         </AccordionContent>
@@ -309,7 +449,9 @@ const formatDateLabel = (dateStr: string) => {
           <div v-if="eventGroupMode === 'existing'" class="mt-4">
             <Select v-model="selectedEventGroupId">
               <SelectTrigger>
-                <SelectValue :placeholder="t('duties.events.createView.eventGroupOption.existing')" />
+                <SelectValue
+                  :placeholder="t('duties.events.createView.eventGroupOption.existing')"
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="group in eventGroups" :key="group.id" :value="group.id">
@@ -344,10 +486,127 @@ const formatDateLabel = (dateStr: string) => {
               </div>
             </div>
           </div>
+          <div class="mt-4 flex justify-end">
+            <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{ t('common.actions.next') }}</Button>
+          </div>
         </AccordionContent>
       </AccordionItem>
 
-      <!-- Section 3: Schedule & Slots -->
+      <!-- Section 3: Event Dates -->
+      <AccordionItem value="dates" class="rounded-lg border">
+        <AccordionTrigger class="px-6 hover:no-underline">
+          <div class="flex items-center gap-3">
+            <CalendarDays class="h-5 w-5 text-primary" />
+            <div class="text-left">
+              <p class="font-semibold">{{ t('duties.events.createView.sections.dates') }}</p>
+              <p class="text-sm text-muted-foreground">
+                {{ t('duties.events.createView.sections.datesDesc') }}
+              </p>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent class="px-6 pb-6">
+          <div class="space-y-4">
+            <!-- Group date constraint hint -->
+            <p v-if="hasGroupDateConstraint" class="text-sm text-muted-foreground">
+              {{ t('duties.events.createView.groupDateHint', {
+                start: formatDateLabel(groupMinDate!.toString()),
+                end: formatDateLabel(groupMaxDate!.toString()),
+              }) }}
+            </p>
+
+            <!-- Date mode selection -->
+            <RadioGroup v-model="dateMode" class="flex gap-4">
+              <div class="flex items-center gap-2">
+                <RadioGroupItem value="single" id="dm-single" />
+                <Label for="dm-single">{{ t('duties.events.createView.dateMode.single') }}</Label>
+              </div>
+              <div class="flex items-center gap-2">
+                <RadioGroupItem value="range" id="dm-range" />
+                <Label for="dm-range">{{ t('duties.events.createView.dateMode.range') }}</Label>
+              </div>
+              <div class="flex items-center gap-2">
+                <RadioGroupItem value="specific" id="dm-specific" />
+                <Label for="dm-specific">{{ t('duties.events.createView.dateMode.specific') }}</Label>
+              </div>
+            </RadioGroup>
+
+            <!-- Single date -->
+            <div v-if="dateMode === 'single'" class="space-y-2">
+              <Label>{{ t('duties.dutySlots.fields.date') }} *</Label>
+              <DatePicker
+                v-model="singleDate"
+                :min-value="groupMinDate"
+                :max-value="groupMaxDate"
+              />
+            </div>
+
+            <!-- Date range -->
+            <div v-if="dateMode === 'range'" class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label>{{ t('duties.events.fields.startDate') }} *</Label>
+                <DatePicker
+                  v-model="rangeStartDate"
+                  :min-value="groupMinDate"
+                  :max-value="rangeEndDate ?? groupMaxDate"
+                />
+              </div>
+              <div class="space-y-2">
+                <Label>{{ t('duties.events.fields.endDate') }} *</Label>
+                <DatePicker
+                  v-model="rangeEndDate"
+                  :min-value="rangeStartDate ?? groupMinDate"
+                  :max-value="groupMaxDate"
+                  :highlight="rangeStartDate"
+                />
+              </div>
+            </div>
+
+            <!-- Specific dates -->
+            <div v-if="dateMode === 'specific'" class="space-y-3">
+              <div class="flex items-end gap-3">
+                <div class="flex-1 space-y-2">
+                  <Label>{{ t('duties.events.createView.addDate') }}</Label>
+                  <DatePicker
+                    v-model="specificDatePicker"
+                    :min-value="groupMinDate"
+                    :max-value="groupMaxDate"
+                  />
+                </div>
+                <Button :disabled="!specificDatePicker" @click="addSpecificDate">
+                  <Plus class="mr-1.5 h-4 w-4" />
+                  {{ t('duties.events.createView.addDate') }}
+                </Button>
+              </div>
+              <div v-if="specificDates.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                {{ t('duties.events.createView.noDatesSelected') }}
+              </div>
+              <div v-else class="flex flex-wrap gap-2">
+                <Badge
+                  v-for="(date, index) in specificDates"
+                  :key="date.toString()"
+                  variant="secondary"
+                  class="gap-1 py-1.5 pl-3 pr-1.5"
+                >
+                  {{ formatDateLabel(date.toString()) }}
+                  <button
+                    class="ml-1 rounded-full p-0.5 hover:bg-muted"
+                    @click="removeSpecificDate(index)"
+                  >
+                    <X class="h-3 w-3" />
+                  </button>
+                </Badge>
+              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{ t('common.actions.next') }}</Button>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+
+      <!-- Section 4: Schedule & Slots -->
       <AccordionItem value="schedule" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
@@ -365,11 +624,11 @@ const formatDateLabel = (dateStr: string) => {
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <Label>{{ t('duties.events.createView.schedule.defaultStartTime') }}</Label>
-                <Input v-model="defaultStartTime" type="time" />
+                <TimePicker v-model="defaultStartTime" />
               </div>
               <div class="space-y-2">
                 <Label>{{ t('duties.events.createView.schedule.defaultEndTime') }}</Label>
-                <Input v-model="defaultEndTime" type="time" />
+                <TimePicker v-model="defaultEndTime" />
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -380,11 +639,7 @@ const formatDateLabel = (dateStr: string) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem
-                      v-for="d in durationOptions"
-                      :key="d"
-                      :value="d"
-                    >
+                    <SelectItem v-for="d in durationOptions" :key="d" :value="d">
                       {{ t('duties.events.createView.schedule.minutes', { n: d }) }}
                     </SelectItem>
                   </SelectContent>
@@ -396,66 +651,111 @@ const formatDateLabel = (dateStr: string) => {
               </div>
             </div>
 
-            <!-- Date exceptions -->
-            <Separator />
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium">{{ t('duties.events.createView.schedule.overrides') }}</p>
-                  <p class="text-sm text-muted-foreground">
-                    {{ t('duties.events.createView.schedule.overridesDesc') }}
-                  </p>
+            <!-- Remainder handling -->
+            <Transition
+              enter-active-class="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+              enter-from-class="grid-rows-[0fr] opacity-0"
+              enter-to-class="grid-rows-[1fr] opacity-100"
+              leave-active-class="grid transition-[grid-template-rows,opacity] duration-200 ease-in"
+              leave-from-class="grid-rows-[1fr] opacity-100"
+              leave-to-class="grid-rows-[0fr] opacity-0"
+            >
+              <div v-if="hasRemainder">
+                <div class="overflow-hidden">
+                  <div class="space-y-2">
+                    <Label>{{ t('duties.events.createView.schedule.remainder') }}</Label>
+                    <p class="text-sm text-muted-foreground">
+                      {{ t('duties.events.createView.schedule.remainderDesc') }}
+                    </p>
+                    <RadioGroup v-model="remainderMode" class="flex gap-4 pt-1">
+                      <div class="flex items-center gap-2">
+                        <RadioGroupItem value="drop" id="rm-drop" />
+                        <Label for="rm-drop">{{ t('duties.events.createView.schedule.remainderMode.drop') }}</Label>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <RadioGroupItem value="short" id="rm-short" />
+                        <Label for="rm-short">{{ t('duties.events.createView.schedule.remainderMode.short') }}</Label>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <RadioGroupItem value="extend" id="rm-extend" />
+                        <Label for="rm-extend">{{ t('duties.events.createView.schedule.remainderMode.extend') }}</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  :disabled="availableDates.length === 0"
-                  @click="addOverride"
-                >
-                  <Plus class="mr-1.5 h-4 w-4" />
-                  {{ t('duties.events.createView.schedule.addException') }}
-                </Button>
               </div>
+            </Transition>
 
-              <div v-for="(override, index) in overrides" :key="index" class="flex items-end gap-3 rounded-md border p-3">
-                <div class="flex-1 space-y-2">
-                  <Label>{{ t('duties.dutySlots.fields.date') }}</Label>
-                  <Select v-model="override.date">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="d in availableDates" :key="d" :value="d">
-                        {{ formatDateLabel(d) }}
-                      </SelectItem>
-                      <!-- Keep selected date visible even if filtered -->
-                      <SelectItem
-                        v-if="override.date && !availableDates.includes(override.date)"
-                        :value="override.date"
-                      >
-                        {{ formatDateLabel(override.date) }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+            <!-- Date exceptions (only for range/specific with multiple dates) -->
+            <template v-if="dateMode !== 'single'">
+              <Separator />
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-medium">{{ t('duties.events.createView.schedule.overrides') }}</p>
+                    <p class="text-sm text-muted-foreground">
+                      {{ t('duties.events.createView.schedule.overridesDesc') }}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    :disabled="availableDates.length === 0"
+                    @click="addOverride"
+                  >
+                    <Plus class="mr-1.5 h-4 w-4" />
+                    {{ t('duties.events.createView.schedule.addException') }}
+                  </Button>
                 </div>
-                <div class="space-y-2">
-                  <Label>{{ t('duties.dutySlots.fields.startTime') }}</Label>
-                  <Input v-model="override.startTime" type="time" class="w-32" />
+
+                <div
+                  v-for="(override, index) in overrides"
+                  :key="index"
+                  class="flex items-end gap-3 rounded-md border p-3"
+                >
+                  <div class="flex-1 space-y-2">
+                    <Label>{{ t('duties.dutySlots.fields.date') }}</Label>
+                    <Select v-model="override.date">
+                      <SelectTrigger class="min-w-40">
+                        <SelectValue :placeholder="t('duties.dutySlots.pickDate')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="d in availableDates" :key="d" :value="d">
+                          {{ formatDateLabel(d) }}
+                        </SelectItem>
+                        <!-- Keep selected date visible even if filtered -->
+                        <SelectItem
+                          v-if="override.date && !availableDates.includes(override.date)"
+                          :value="override.date"
+                        >
+                          {{ formatDateLabel(override.date) }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div class="space-y-2">
+                    <Label>{{ t('duties.dutySlots.fields.startTime') }}</Label>
+                    <TimePicker v-model="override.startTime" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label>{{ t('duties.dutySlots.fields.endTime') }}</Label>
+                    <TimePicker v-model="override.endTime" />
+                  </div>
+                  <Button variant="ghost" size="icon" @click="removeOverride(index)">
+                    <Trash2 class="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
-                <div class="space-y-2">
-                  <Label>{{ t('duties.dutySlots.fields.endTime') }}</Label>
-                  <Input v-model="override.endTime" type="time" class="w-32" />
-                </div>
-                <Button variant="ghost" size="icon" @click="removeOverride(index)">
-                  <Trash2 class="h-4 w-4 text-destructive" />
-                </Button>
               </div>
+            </template>
+
+            <div class="flex justify-end pt-2">
+              <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{ t('common.actions.next') }}</Button>
             </div>
           </div>
         </AccordionContent>
       </AccordionItem>
 
-      <!-- Section 4: Preview -->
+      <!-- Section 5: Preview -->
       <AccordionItem value="preview" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
@@ -467,7 +767,12 @@ const formatDateLabel = (dateStr: string) => {
               </p>
             </div>
             <Badge v-if="totalSlots > 0" variant="secondary" class="ml-2">
-              {{ t('duties.events.createView.preview.summary', { slots: totalSlots, days: totalDays }) }}
+              {{
+                t('duties.events.createView.preview.summary', {
+                  slots: totalSlots,
+                  days: totalDays,
+                })
+              }}
             </Badge>
           </div>
         </AccordionTrigger>
@@ -477,19 +782,33 @@ const formatDateLabel = (dateStr: string) => {
           </div>
           <div v-else class="space-y-4">
             <p class="text-sm font-medium text-muted-foreground">
-              {{ t('duties.events.createView.preview.summary', { slots: totalSlots, days: totalDays }) }}
+              {{
+                t('duties.events.createView.preview.summary', {
+                  slots: totalSlots,
+                  days: totalDays,
+                })
+              }}
             </p>
             <div v-for="[dateStr, slots] in slotsByDate" :key="dateStr" class="space-y-2">
               <div class="flex items-center gap-2">
                 <p class="font-medium">{{ formatDateLabel(dateStr) }}</p>
                 <Badge variant="outline">
-                  {{ t('duties.events.createView.preview.slotsOnDate', { count: slots.length }) }}
+                  {{ t('duties.events.createView.preview.slotsOnDate', { count: slots.filter(s => !isSlotExcluded(s)).length }) }}
                 </Badge>
               </div>
               <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                <Card v-for="slot in slots" :key="slot.startTime" class="p-2">
+                <Card
+                  v-for="slot in slots"
+                  :key="slot.startTime"
+                  class="cursor-pointer p-2 transition-opacity"
+                  :class="isSlotExcluded(slot) ? 'opacity-30' : 'hover:ring-1 hover:ring-destructive/40'"
+                  @click="toggleSlotExclusion(slot)"
+                >
                   <CardContent class="p-0">
-                    <p class="text-center text-sm font-mono">
+                    <p
+                      class="text-center text-sm font-mono"
+                      :class="isSlotExcluded(slot) ? 'line-through text-muted-foreground' : ''"
+                    >
                       {{ slot.startTime }} - {{ slot.endTime }}
                     </p>
                   </CardContent>
@@ -497,21 +816,17 @@ const formatDateLabel = (dateStr: string) => {
               </div>
             </div>
           </div>
+          <div class="mt-4 flex justify-end gap-3">
+            <Button variant="outline" @click="router.push({ name: 'events' })">
+              {{ t('common.actions.cancel') }}
+            </Button>
+            <Button :disabled="!isValid || submitting" @click="handleSubmit">
+              <CalendarPlus class="mr-2 h-4 w-4" />
+              {{ submitting ? t('common.states.saving') : t('duties.events.createView.submit') }}
+            </Button>
+          </div>
         </AccordionContent>
       </AccordionItem>
     </Accordion>
-
-    <!-- Sticky footer -->
-    <div class="fixed inset-x-0 bottom-0 border-t bg-background p-4">
-      <div class="mx-auto flex max-w-3xl items-center justify-between">
-        <Button variant="outline" @click="router.push({ name: 'events' })">
-          {{ t('common.actions.cancel') }}
-        </Button>
-        <Button :disabled="!isValid || submitting" @click="handleSubmit">
-          <CalendarPlus class="mr-2 h-4 w-4" />
-          {{ submitting ? t('common.states.saving') : t('duties.events.createView.submit') }}
-        </Button>
-      </div>
-    </div>
   </div>
 </template>

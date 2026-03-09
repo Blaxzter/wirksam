@@ -661,15 +661,41 @@ export type UserAvailabilityCreate = {
   /**
    * Availability Type
    */
-  availability_type: 'fully_available' | 'specific_dates'
+  availability_type: 'fully_available' | 'specific_dates' | 'time_range'
   /**
    * Notes
    */
   notes?: string | null
   /**
+   * Default Start Time
+   */
+  default_start_time?: string | null
+  /**
+   * Default End Time
+   */
+  default_end_time?: string | null
+  /**
    * Dates
    */
-  dates?: Array<string>
+  dates?: Array<string | UserAvailabilityDateInput>
+}
+
+/**
+ * UserAvailabilityDateInput
+ */
+export type UserAvailabilityDateInput = {
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
 }
 
 /**
@@ -684,6 +710,14 @@ export type UserAvailabilityDateRead = {
    * Slot Date
    */
   slot_date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
 }
 
 /**
@@ -693,11 +727,19 @@ export type UserAvailabilityRead = {
   /**
    * Availability Type
    */
-  availability_type: 'fully_available' | 'specific_dates'
+  availability_type: 'fully_available' | 'specific_dates' | 'time_range'
   /**
    * Notes
    */
   notes?: string | null
+  /**
+   * Default Start Time
+   */
+  default_start_time?: string | null
+  /**
+   * Default End Time
+   */
+  default_end_time?: string | null
   /**
    * Id
    */
@@ -732,11 +774,19 @@ export type UserAvailabilityWithUser = {
   /**
    * Availability Type
    */
-  availability_type: 'fully_available' | 'specific_dates'
+  availability_type: 'fully_available' | 'specific_dates' | 'time_range'
   /**
    * Notes
    */
   notes?: string | null
+  /**
+   * Default Start Time
+   */
+  default_start_time?: string | null
+  /**
+   * Default End Time
+   */
+  default_end_time?: string | null
   /**
    * Id
    */

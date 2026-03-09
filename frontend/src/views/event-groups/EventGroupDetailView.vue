@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import type { DateValue } from '@internationalized/date'
-import { parseDate } from '@internationalized/date'
-import { ArrowLeft, CalendarDays, Check, Pencil, Trash2, UserCheck, Users } from 'lucide-vue-next'
+import { ArrowLeft, CalendarDays, Check, ChevronDown, Pencil, Trash2, UserCheck, Users } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -15,9 +13,10 @@ import type {
   UserAvailabilityRead,
   UserAvailabilityWithUser,
 } from '@/client/types.gen'
+import AvailabilityDialog from '@/components/events/AvailabilityDialog.vue'
+import AvailabilityDisplay from '@/components/events/AvailabilityDisplay.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { DatePicker } from '@/components/ui/date-picker'
 import {
   Card,
   CardContent,
@@ -26,19 +25,16 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import Input from '@/components/ui/input/Input.vue'
-import Label from '@/components/ui/label/Label.vue'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import Separator from '@/components/ui/separator/Separator.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
+import { formatDate, formatDateWithTime } from '@/lib/format'
+import { statusVariant } from '@/lib/status'
 import { toastApiError } from '@/lib/api-errors'
 import { useAuthStore } from '@/stores/auth'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
@@ -48,8 +44,9 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const breadcrumbStore = useBreadcrumbStore()
-const { get, post, delete: del } = useAuthenticatedClient()
+const { get, post, patch, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
+
 
 const groupId = computed(() => route.params.groupId as string)
 const group = ref<EventGroupRead | null>(null)
@@ -57,27 +54,21 @@ const groupEvents = ref<EventRead[]>([])
 const myAvailability = ref<UserAvailabilityRead | null>(null)
 const allAvailabilities = ref<UserAvailabilityWithUser[]>([])
 const loading = ref(false)
-
-// Availability form
 const showAvailabilityDialog = ref(false)
-const availabilityForm = ref({
-  availability_type: 'fully_available' as 'fully_available' | 'specific_dates',
-  notes: '',
-})
-const availabilityDateValues = ref<(DateValue | undefined)[]>([])
 
-const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString()
+const statuses = ['draft', 'published', 'archived'] as const
 
-const statusVariant = (status?: string) => {
-  switch (status) {
-    case 'published':
-      return 'default'
-    case 'draft':
-      return 'secondary'
-    case 'archived':
-      return 'outline'
-    default:
-      return 'secondary'
+const handleStatusChange = async (status: 'draft' | 'published' | 'archived') => {
+  if (!group.value || group.value.status === status) return
+  try {
+    const res = await patch<{ data: EventGroupRead }>({
+      url: `/event-groups/${groupId.value}`,
+      body: { status },
+    })
+    group.value = res.data
+    toast.success(t(`duties.eventGroups.statuses.${status}`))
+  } catch (error) {
+    toastApiError(error)
   }
 }
 
@@ -89,14 +80,12 @@ const loadGroup = async () => {
       get<{ data: EventListResponse }>({ url: '/events/', query: { limit: 200 } }),
     ])
     group.value = groupRes.data
-    // Filter events that belong to this group
     groupEvents.value = eventsRes.data.items.filter(
       (e: EventRead) => e.event_group_id === groupId.value,
     )
 
     breadcrumbStore.setDynamicTitle(group.value.name)
 
-    // Load my availability (may 404 if not registered)
     try {
       const availRes = await get<{ data: UserAvailabilityRead }>({
         url: `/event-groups/${groupId.value}/availability/me`,
@@ -106,7 +95,6 @@ const loadGroup = async () => {
       myAvailability.value = null
     }
 
-    // Admin: load all availabilities
     if (authStore.isAdmin) {
       try {
         const adminRes = await get<{ data: UserAvailabilityWithUser[] }>({
@@ -124,41 +112,27 @@ const loadGroup = async () => {
   }
 }
 
-const openAvailabilityDialog = () => {
-  if (myAvailability.value) {
-    availabilityForm.value = {
-      availability_type: myAvailability.value.availability_type as
-        | 'fully_available'
-        | 'specific_dates',
-      notes: myAvailability.value.notes ?? '',
-    }
-    availabilityDateValues.value = myAvailability.value.available_dates.map((d) =>
-      parseDate(d.slot_date),
-    )
-  } else {
-    availabilityForm.value = { availability_type: 'fully_available', notes: '' }
-    availabilityDateValues.value = []
-  }
-  showAvailabilityDialog.value = true
-}
-
-const handleSaveAvailability = async () => {
+const handleSaveAvailability = async (payload: {
+  availability_type: 'fully_available' | 'specific_dates' | 'time_range'
+  notes?: string
+  default_start_time?: string
+  default_end_time?: string
+  dates: { date: string; start_time?: string; end_time?: string }[]
+}) => {
   try {
     const res = await post<{ data: UserAvailabilityRead }>({
       url: `/event-groups/${groupId.value}/availability`,
       body: {
-        availability_type: availabilityForm.value.availability_type,
-        notes: availabilityForm.value.notes || undefined,
-        dates:
-          availabilityForm.value.availability_type === 'specific_dates'
-            ? availabilityDateValues.value.filter(Boolean).map((d) => d!.toString())
-            : [],
+        availability_type: payload.availability_type,
+        notes: payload.notes,
+        default_start_time: payload.default_start_time,
+        default_end_time: payload.default_end_time,
+        dates: payload.dates,
       },
     })
     myAvailability.value = res.data
     showAvailabilityDialog.value = false
     toast.success(t('duties.availability.update'))
-    // Refresh admin list too
     if (authStore.isAdmin) {
       const adminRes = await get<{ data: UserAvailabilityWithUser[] }>({
         url: `/event-groups/${groupId.value}/availabilities`,
@@ -189,14 +163,6 @@ const handleRemoveAvailability = async () => {
   }
 }
 
-const addDateField = () => {
-  availabilityDateValues.value.push(undefined)
-}
-
-const removeDateField = (idx: number) => {
-  availabilityDateValues.value.splice(idx, 1)
-}
-
 const navigateToEvent = (event: EventRead) => {
   router.push({ name: 'event-detail', params: { eventId: event.id } })
 }
@@ -222,7 +188,29 @@ onMounted(loadGroup)
         <div class="space-y-1">
           <div class="flex items-center gap-3">
             <h1 class="text-3xl font-bold">{{ group.name }}</h1>
-            <Badge :variant="statusVariant(group.status)">
+            <DropdownMenu v-if="authStore.isAdmin">
+              <DropdownMenuTrigger as-child>
+                <button class="inline-flex cursor-pointer items-center gap-1">
+                  <Badge :variant="statusVariant(group.status)">
+                    {{ t(`duties.eventGroups.statuses.${group.status ?? 'draft'}`) }}
+                    <ChevronDown class="ml-1 h-3 w-3" />
+                  </Badge>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  v-for="s in statuses"
+                  :key="s"
+                  :disabled="group.status === s"
+                  @click="handleStatusChange(s)"
+                >
+                  <Check v-if="group.status === s" class="mr-2 h-4 w-4" />
+                  <span v-else class="mr-2 h-4 w-4" />
+                  {{ t(`duties.eventGroups.statuses.${s}`) }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Badge v-else :variant="statusVariant(group.status)">
               {{ t(`duties.eventGroups.statuses.${group.status ?? 'draft'}`) }}
             </Badge>
           </div>
@@ -248,7 +236,7 @@ onMounted(loadGroup)
               <CardDescription>{{ t('duties.availability.subtitle') }}</CardDescription>
             </div>
             <div class="flex gap-2">
-              <Button v-if="myAvailability" variant="outline" size="sm" @click="openAvailabilityDialog">
+              <Button v-if="myAvailability" variant="outline" size="sm" @click="showAvailabilityDialog = true">
                 <Pencil class="mr-2 h-4 w-4" />
                 {{ t('duties.availability.update') }}
               </Button>
@@ -256,7 +244,7 @@ onMounted(loadGroup)
                 <Trash2 class="mr-1.5 h-4 w-4" />
                 {{ t('duties.availability.remove') }}
               </Button>
-              <Button v-if="!myAvailability" @click="openAvailabilityDialog">
+              <Button v-if="!myAvailability" @click="showAvailabilityDialog = true">
                 <Check class="mr-2 h-4 w-4" />
                 {{ t('duties.availability.register') }}
               </Button>
@@ -264,29 +252,7 @@ onMounted(loadGroup)
           </div>
         </CardHeader>
         <CardContent>
-          <div v-if="myAvailability" class="space-y-2">
-            <div class="flex items-center gap-2">
-              <Badge variant="secondary">
-                {{ t(`duties.availability.types.${myAvailability.availability_type}`) }}
-              </Badge>
-            </div>
-            <div
-              v-if="myAvailability.availability_type === 'specific_dates' && myAvailability.available_dates.length"
-              class="flex flex-wrap gap-1"
-            >
-              <Badge
-                v-for="d in myAvailability.available_dates"
-                :key="d.id"
-                variant="outline"
-                class="text-xs"
-              >
-                {{ formatDate(d.slot_date) }}
-              </Badge>
-            </div>
-            <p v-if="myAvailability.notes" class="text-sm text-muted-foreground">
-              {{ myAvailability.notes }}
-            </p>
-          </div>
+          <AvailabilityDisplay v-if="myAvailability" :availability="myAvailability" />
           <p v-else class="text-sm text-muted-foreground">
             {{ t('duties.availability.notRegistered') }}
           </p>
@@ -358,21 +324,29 @@ onMounted(loadGroup)
                     <div class="text-xs text-muted-foreground">{{ avail.user_email ?? '' }}</div>
                   </td>
                   <td class="px-4 py-2">
-                    <Badge variant="secondary">
-                      {{ t(`duties.availability.types.${avail.availability_type}`) }}
-                    </Badge>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <Badge variant="secondary">
+                        {{ t(`duties.availability.types.${avail.availability_type}`) }}
+                      </Badge>
+                      <span
+                        v-if="avail.default_start_time || avail.default_end_time"
+                        class="text-xs text-muted-foreground"
+                      >
+                        {{ [avail.default_start_time, avail.default_end_time].filter(Boolean).join(' – ') }}
+                      </span>
+                    </div>
                   </td>
                   <td class="px-4 py-2">
-                    <span
-                      v-if="avail.availability_type === 'specific_dates' && avail.available_dates?.length"
-                    >
+                    <span v-if="avail.available_dates?.length">
                       <span class="text-xs">
-                        {{ avail.available_dates.map((d) => formatDate(d.slot_date)).join(', ') }}
+                        {{ avail.available_dates.map((d) => formatDateWithTime(d)).join(', ') }}
                       </span>
                     </span>
                     <span v-else class="text-muted-foreground">—</span>
                   </td>
-                  <td class="px-4 py-2 text-muted-foreground">{{ avail.notes ?? '—' }}</td>
+                  <td class="max-w-48 px-4 py-2 text-muted-foreground">
+                    <p class="line-clamp-3" :title="avail.notes ?? undefined">{{ avail.notes ?? '—' }}</p>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -382,87 +356,12 @@ onMounted(loadGroup)
     </template>
 
     <!-- Availability Dialog -->
-    <Dialog v-model:open="showAvailabilityDialog">
-      <DialogContent class="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{{ t('duties.availability.title') }}</DialogTitle>
-          <DialogDescription>{{ t('duties.availability.subtitle') }}</DialogDescription>
-        </DialogHeader>
-        <form class="space-y-4" @submit.prevent="handleSaveAvailability">
-          <!-- Type selection -->
-          <div class="space-y-2">
-            <Label>{{ t('duties.availability.fields.type') }}</Label>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                class="rounded-lg border-2 p-3 text-left text-sm transition-colors"
-                :class="
-                  availabilityForm.availability_type === 'fully_available'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground'
-                "
-                @click="availabilityForm.availability_type = 'fully_available'"
-              >
-                <div class="font-medium">
-                  {{ t('duties.availability.types.fully_available') }}
-                </div>
-              </button>
-              <button
-                type="button"
-                class="rounded-lg border-2 p-3 text-left text-sm transition-colors"
-                :class="
-                  availabilityForm.availability_type === 'specific_dates'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-muted-foreground'
-                "
-                @click="availabilityForm.availability_type = 'specific_dates'"
-              >
-                <div class="font-medium">
-                  {{ t('duties.availability.types.specific_dates') }}
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Specific dates -->
-          <div v-if="availabilityForm.availability_type === 'specific_dates'" class="space-y-2">
-            <Label>{{ t('duties.availability.fields.dates') }}</Label>
-            <div class="space-y-2">
-              <div
-                v-for="(_, idx) in availabilityDateValues"
-                :key="idx"
-                class="flex items-center gap-2"
-              >
-                <DatePicker
-                  :model-value="availabilityDateValues[idx]"
-                  :placeholder="t('duties.eventGroups.pickDate')"
-                  class="flex-1"
-                  @update:model-value="(val) => availabilityDateValues[idx] = val"
-                />
-                <Button type="button" variant="ghost" size="icon" @click="removeDateField(idx)">
-                  <Trash2 class="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-              <Button type="button" variant="outline" size="sm" @click="addDateField">
-                + {{ t('duties.availability.fields.dates') }}
-              </Button>
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div class="space-y-2">
-            <Label>{{ t('duties.availability.fields.notes') }}</Label>
-            <Textarea v-model="availabilityForm.notes" rows="2" />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" @click="showAvailabilityDialog = false">
-              {{ t('common.actions.cancel') }}
-            </Button>
-            <Button type="submit">{{ t('common.actions.save') }}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <AvailabilityDialog
+      v-if="group"
+      v-model:open="showAvailabilityDialog"
+      :group="group"
+      :existing-availability="myAvailability"
+      @save="handleSaveAvailability"
+    />
   </div>
 </template>

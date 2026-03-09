@@ -4,7 +4,7 @@ import uuid
 from datetime import date, time, timedelta
 
 from app.schemas.duty_slot import DutySlotCreate
-from app.schemas.event import ScheduleOverride
+from app.schemas.event import ExcludedSlot, ScheduleOverride
 
 
 def generate_duty_slots(
@@ -17,9 +17,11 @@ def generate_duty_slots(
     default_end_time: time,
     slot_duration_minutes: int,
     people_per_slot: int = 1,
+    remainder_mode: str = "drop",
     location: str | None = None,
     category: str | None = None,
     overrides: list[ScheduleOverride] | None = None,
+    excluded_slots: list[ExcludedSlot] | None = None,
 ) -> list[DutySlotCreate]:
     """Generate a list of DutySlotCreate objects for each time slot.
 
@@ -31,6 +33,12 @@ def generate_duty_slots(
     if overrides:
         for o in overrides:
             override_map[o.date] = o
+
+    # Build exclusion set for fast lookup
+    exclusion_set: set[tuple[date, time, time]] = set()
+    if excluded_slots:
+        for ex in excluded_slots:
+            exclusion_set.add((ex.date, ex.start_time, ex.end_time))
 
     slots: list[DutySlotCreate] = []
     current_date = start_date
@@ -50,11 +58,20 @@ def generate_duty_slots(
                 day_end=day_end,
                 duration=duration,
                 people_per_slot=people_per_slot,
+                remainder_mode=remainder_mode,
                 location=location,
                 category=category,
             )
         )
         current_date += timedelta(days=1)
+
+    # Filter out excluded slots
+    if exclusion_set:
+        slots = [
+            s
+            for s in slots
+            if (s.date, s.start_time, s.end_time) not in exclusion_set
+        ]
 
     return slots
 
@@ -68,6 +85,7 @@ def _generate_slots_for_day(
     day_end: time,
     duration: timedelta,
     people_per_slot: int,
+    remainder_mode: str = "drop",
     location: str | None,
     category: str | None,
 ) -> list[DutySlotCreate]:
@@ -100,6 +118,32 @@ def _generate_slots_for_day(
             )
         )
         current = slot_end
+
+    # Handle remaining time that doesn't fill a full slot
+    if current < end_dt:
+        if remainder_mode == "short":
+            # Create a shorter final slot for the remaining time
+            slot_start_time = current.time()
+            slot_end_time = end_dt.time()
+            title = f"{event_name} {slot_start_time.strftime('%H:%M')}-{slot_end_time.strftime('%H:%M')}"
+            slots.append(
+                DutySlotCreate(
+                    event_id=event_id,
+                    title=title,
+                    date=slot_date,
+                    start_time=slot_start_time,
+                    end_time=slot_end_time,
+                    location=location,
+                    category=category,
+                    max_bookings=people_per_slot,
+                )
+            )
+        elif remainder_mode == "extend" and slots:
+            # Extend the last slot to cover the remaining time
+            last = slots[-1]
+            last.end_time = end_dt.time()
+            last.title = f"{event_name} {last.start_time.strftime('%H:%M')}-{last.end_time.strftime('%H:%M')}"
+        # remainder_mode == "drop": do nothing (default)
 
     return slots
 

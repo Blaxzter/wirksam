@@ -1,5 +1,17 @@
 {
     "home": {
+        "calendar": {
+            "title": "Kalender",
+            "filter": "Filter",
+            "filterTooltip": "{count} Kategorie ausgeblendet | {count} Kategorien ausgeblendet",
+            "filterTooltipNone": "Kalendereinträge filtern",
+            "hiddenCount": "{count} Kategorie ausgeblendet | {count} Kategorien ausgeblendet",
+            "filters": {
+                "events": "Veranstaltungen",
+                "groups": "Veranstaltungsgruppen",
+                "bookings": "Meine Buchungen"
+            }
+        },
         "quickActions": {
             "browseEvents": "Veranstaltungen durchsuchen",
             "myBookings": "Meine Buchungen",

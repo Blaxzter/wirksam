@@ -1,3 +1,4 @@
+import datetime as dt
 import uuid
 
 from sqlalchemy import select
@@ -7,7 +8,11 @@ from sqlmodel import col
 
 from app.crud.base import CRUDBase
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
-from app.schemas.user_availability import UserAvailabilityCreate, UserAvailabilityUpdate
+from app.schemas.user_availability import (
+    UserAvailabilityCreate,
+    UserAvailabilityDateInput,
+    UserAvailabilityUpdate,
+)
 
 
 class CRUDUserAvailability(
@@ -49,6 +54,22 @@ class CRUDUserAvailability(
         result = await db.execute(query)
         return list(result.scalars().all())
 
+    @staticmethod
+    def _make_date_entry(
+        availability_id: uuid.UUID,
+        day: dt.date | UserAvailabilityDateInput,
+    ) -> UserAvailabilityDate:
+        if isinstance(day, UserAvailabilityDateInput):
+            return UserAvailabilityDate(
+                availability_id=availability_id,
+                slot_date=day.date,
+                start_time=day.start_time,
+                end_time=day.end_time,
+            )
+        return UserAvailabilityDate(
+            availability_id=availability_id, slot_date=day
+        )
+
     async def upsert_for_user(
         self,
         db: AsyncSession,
@@ -64,33 +85,32 @@ class CRUDUserAvailability(
             # Update fields
             existing.availability_type = obj_in.availability_type
             existing.notes = obj_in.notes
-            # Replace dates
-            for d in list(existing.available_dates):
-                await db.delete(d)
+            existing.default_start_time = obj_in.default_start_time
+            existing.default_end_time = obj_in.default_end_time
+            # Replace dates — use cascade-aware clear instead of manual delete
+            existing.available_dates.clear()
             await db.flush()
-            existing.available_dates = []
             for day in obj_in.dates:
-                db.add(UserAvailabilityDate(availability_id=existing.id, slot_date=day))
-            db.add(existing)
+                db.add(self._make_date_entry(existing.id, day))
             await db.flush()
-            await db.refresh(existing)
-            # Re-load dates
-            existing = await self.get_by_user_and_group(
+            # Re-load with dates
+            return await self.get_by_user_and_group(  # type: ignore[return-value]
                 db, user_id=user_id, event_group_id=event_group_id
             )
-            return existing  # type: ignore[return-value]
         else:
             avail = UserAvailability(
                 user_id=user_id,
                 event_group_id=event_group_id,
                 availability_type=obj_in.availability_type,
                 notes=obj_in.notes,
+                default_start_time=obj_in.default_start_time,
+                default_end_time=obj_in.default_end_time,
             )
             db.add(avail)
             await db.flush()
             await db.refresh(avail)
             for day in obj_in.dates:
-                db.add(UserAvailabilityDate(availability_id=avail.id, slot_date=day))
+                db.add(self._make_date_entry(avail.id, day))
             await db.flush()
             # Load with dates
             result = await self.get_by_user_and_group(

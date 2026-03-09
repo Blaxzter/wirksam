@@ -48,6 +48,15 @@ export const useBreadcrumbStore = defineStore('breadcrumb', () => {
     dynamicBreadcrumbs.value.push(item)
   }
 
+  const setDynamicTitle = (title: string) => {
+    const items = breadcrumbs.value
+    if (items.length > 0) {
+      const updated = [...items]
+      updated[updated.length - 1] = { ...updated[updated.length - 1], title, titleKey: undefined }
+      dynamicBreadcrumbs.value = updated
+    }
+  }
+
   const updateCurrentRoute = (route: RouteLocationNormalized) => {
     currentRoute.value = route
     // Clear dynamic breadcrumbs when route changes (unless you want to keep them)
@@ -113,6 +122,7 @@ export const useBreadcrumbStore = defineStore('breadcrumb', () => {
     setBreadcrumbs,
     clearBreadcrumbs,
     addBreadcrumb,
+    setDynamicTitle,
     updateCurrentRoute,
   }
 })

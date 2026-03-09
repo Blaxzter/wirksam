@@ -272,12 +272,23 @@ export const zProfileInit = z
   })
 
 /**
+ * UserAvailabilityDateInput
+ */
+export const zUserAvailabilityDateInput = z.object({
+  date: z.iso.date(),
+  start_time: z.optional(z.union([z.iso.time(), z.null()])),
+  end_time: z.optional(z.union([z.iso.time(), z.null()])),
+})
+
+/**
  * UserAvailabilityCreate
  */
 export const zUserAvailabilityCreate = z.object({
-  availability_type: z.enum(['fully_available', 'specific_dates']),
+  availability_type: z.enum(['fully_available', 'specific_dates', 'time_range']),
   notes: z.optional(z.union([z.string(), z.null()])),
-  dates: z.optional(z.array(z.iso.date())).default([]),
+  default_start_time: z.optional(z.union([z.iso.time(), z.null()])),
+  default_end_time: z.optional(z.union([z.iso.time(), z.null()])),
+  dates: z.optional(z.array(z.union([z.iso.date(), zUserAvailabilityDateInput]))).default([]),
 })
 
 /**
@@ -286,14 +297,18 @@ export const zUserAvailabilityCreate = z.object({
 export const zUserAvailabilityDateRead = z.object({
   id: z.uuid(),
   slot_date: z.iso.date(),
+  start_time: z.optional(z.union([z.iso.time(), z.null()])),
+  end_time: z.optional(z.union([z.iso.time(), z.null()])),
 })
 
 /**
  * UserAvailabilityRead
  */
 export const zUserAvailabilityRead = z.object({
-  availability_type: z.enum(['fully_available', 'specific_dates']),
+  availability_type: z.enum(['fully_available', 'specific_dates', 'time_range']),
   notes: z.optional(z.union([z.string(), z.null()])),
+  default_start_time: z.optional(z.union([z.iso.time(), z.null()])),
+  default_end_time: z.optional(z.union([z.iso.time(), z.null()])),
   id: z.uuid(),
   user_id: z.uuid(),
   event_group_id: z.uuid(),
@@ -308,8 +323,10 @@ export const zUserAvailabilityRead = z.object({
  */
 export const zUserAvailabilityWithUser = z
   .object({
-    availability_type: z.enum(['fully_available', 'specific_dates']),
+    availability_type: z.enum(['fully_available', 'specific_dates', 'time_range']),
     notes: z.optional(z.union([z.string(), z.null()])),
+    default_start_time: z.optional(z.union([z.iso.time(), z.null()])),
+    default_end_time: z.optional(z.union([z.iso.time(), z.null()])),
     id: z.uuid(),
     user_id: z.uuid(),
     event_group_id: z.uuid(),

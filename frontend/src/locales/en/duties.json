@@ -8,12 +8,22 @@
         "removeConfirm": "Are you sure you want to remove your availability?",
         "notRegistered": "You haven't registered availability yet.",
         "types": {
-            "fully_available": "Open to be requested",
-            "specific_dates": "Available on specific dates"
+            "fully_available": "Fully available",
+            "time_range": "Daily time range",
+            "specific_dates": "Specific dates"
         },
         "fields": {
             "type": "Availability Type",
             "dates": "Available Dates",
+            "datesWithRange": "Available Dates ({start} – {end})",
+            "startTime": "From",
+            "endTime": "To",
+            "fullDay": "Full day",
+            "setTimes": "Set times",
+            "timeRange": "Time Range",
+            "timeRangeHint": "Set a daily time window. Leave either empty for open-ended (e.g. only 'from' = after that time).",
+            "afterTime": "after {time}",
+            "beforeTime": "before {time}",
             "notes": "Notes"
         },
         "adminTitle": "Member Availabilities",
@@ -93,7 +103,15 @@
         },
         "edit": "Edit Event",
         "calendar": {
-            "more": "more"
+            "more": "more",
+            "views": {
+                "month": "Month",
+                "week": "Week",
+                "day": "Day"
+            },
+            "today": "Today",
+            "allDay": "All day",
+            "noItems": "Nothing scheduled for this day."
         },
         "empty": "No events found.",
         "fields": {
@@ -117,6 +135,26 @@
             "list": "List"
         },
         "title": "Events",
+        "editView": {
+            "title": "Edit Event",
+            "subtitle": "Modify event details and regenerate duty slots",
+            "regenerate": "Regenerate Slots",
+            "saving": "Saving...",
+            "saveSuccess": "Event updated successfully!",
+            "preview": {
+                "added": "{count} new",
+                "removed": "{count} removed",
+                "kept": "{count} unchanged"
+            },
+            "affectedBookings": {
+                "title": "Affected Bookings",
+                "description": "The following confirmed bookings will be cancelled because their slots no longer exist after regeneration. Users have not been notified yet — this is a manual process for now.",
+                "slot": "Slot",
+                "user": "User",
+                "confirm": "Proceed anyway",
+                "cancel": "Cancel"
+            }
+        },
         "createView": {
             "title": "Create Event",
             "subtitle": "Set up a new event with auto-generated duty slots",
@@ -125,11 +163,21 @@
                 "detailsDesc": "Basic information about the event",
                 "eventGroup": "Event Group",
                 "eventGroupDesc": "Optionally assign this event to a group",
+                "dates": "Event Dates",
+                "datesDesc": "Choose when this event takes place",
                 "schedule": "Schedule & Slots",
                 "scheduleDesc": "Configure when duty slots should be created",
                 "preview": "Preview",
                 "previewDesc": "Review the slots that will be generated"
             },
+            "dateMode": {
+                "single": "One day",
+                "range": "Date range",
+                "specific": "Specific dates"
+            },
+            "addDate": "Add date",
+            "noDatesSelected": "No dates selected yet",
+            "groupDateHint": "Dates are restricted to the selected event group ({start} – {end})",
             "eventGroupOption": {
                 "none": "No event group",
                 "existing": "Select existing",
@@ -140,6 +188,13 @@
                 "defaultEndTime": "Default End Time",
                 "slotDuration": "Slot Duration",
                 "peoplePerSlot": "People per Slot",
+                "remainder": "Remaining time",
+                "remainderDesc": "How to handle time left over when slots don't divide evenly",
+                "remainderMode": {
+                    "drop": "Ignore remaining time",
+                    "short": "Create a shorter final slot",
+                    "extend": "Extend the last slot"
+                },
                 "overrides": "Date Exceptions",
                 "overridesDesc": "Override times for specific dates",
                 "addException": "Add Exception",

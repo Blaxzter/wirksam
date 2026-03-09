@@ -172,13 +172,19 @@ async def set_my_availability(
     current_user: CurrentUser,
 ) -> UserAvailabilityRead:
     await crud_event_group.get(session, group_id, raise_404_error=True)
-    avail = await crud_availability.upsert_for_user(
+    await crud_availability.upsert_for_user(
         session,
         user_id=current_user.id,
         event_group_id=uuid.UUID(group_id),
         obj_in=avail_in,
     )
     await session.commit()
+    # Re-fetch after commit to get eagerly-loaded available_dates
+    avail = await crud_availability.get_by_user_and_group(
+        session,
+        user_id=current_user.id,
+        event_group_id=uuid.UUID(group_id),
+    )
     return UserAvailabilityRead.model_validate(avail)
 
 

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
-import { ArrowLeft, Plus, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, Check, ChevronDown, Pencil, Plus, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -32,12 +32,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import Separator from '@/components/ui/separator/Separator.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { toastApiError } from '@/lib/api-errors'
+import { formatDate } from '@/lib/format'
+import { statusVariant } from '@/lib/status'
 import { useAuthStore } from '@/stores/auth'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
@@ -51,6 +59,7 @@ const { confirmDestructive } = useDialog()
 
 const eventId = computed(() => route.params.eventId as string)
 const event = ref<EventRead | null>(null)
+const statuses = ['draft', 'published', 'archived'] as const
 const dutySlots = ref<DutySlotRead[]>([])
 const myBookings = ref<BookingRead[]>([])
 const loading = ref(false)
@@ -96,23 +105,6 @@ const getBookingForSlot = (slotId: string) => {
 
 const isSlotFull = (slot: DutySlotRead) => {
   return (slot.current_bookings ?? 0) >= (slot.max_bookings ?? 1)
-}
-
-const statusVariant = (status?: string) => {
-  switch (status) {
-    case 'published':
-      return 'default'
-    case 'draft':
-      return 'secondary'
-    case 'archived':
-      return 'outline'
-    default:
-      return 'secondary'
-  }
-}
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString()
 }
 
 const loadEvent = async () => {
@@ -166,15 +158,28 @@ const loadMyBookings = async () => {
   }
 }
 
-const handlePublish = async () => {
-  if (!event.value) return
+const handleStatusChange = async (status: 'draft' | 'published' | 'archived') => {
+  if (!event.value || event.value.status === status) return
   try {
     const response = await patch<{ data: EventRead }>({
       url: `/events/${event.value.id}`,
-      body: { status: 'published' },
+      body: { status },
     })
     event.value = response.data
-    toast.success(t('common.actions.publish'))
+    toast.success(t(`duties.events.statuses.${status}`))
+  } catch (error) {
+    toastApiError(error)
+  }
+}
+
+const handleDeleteEvent = async () => {
+  const confirmed = await confirmDestructive(t('duties.events.deleteConfirm'))
+  if (!confirmed) return
+
+  try {
+    await del({ url: `/events/${eventId.value}` })
+    toast.success(t('duties.events.delete'))
+    router.push({ name: 'events' })
   } catch (error) {
     toastApiError(error)
   }
@@ -279,7 +284,29 @@ onMounted(async () => {
           <div class="space-y-2">
             <div class="flex items-center gap-3">
               <h1 class="text-3xl font-bold">{{ event.name }}</h1>
-              <Badge :variant="statusVariant(event.status)">
+              <DropdownMenu v-if="authStore.isAdmin">
+                <DropdownMenuTrigger as-child>
+                  <button class="inline-flex cursor-pointer items-center gap-1">
+                    <Badge :variant="statusVariant(event.status)">
+                      {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
+                      <ChevronDown class="ml-1 h-3 w-3" />
+                    </Badge>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem
+                    v-for="s in statuses"
+                    :key="s"
+                    :disabled="event.status === s"
+                    @click="handleStatusChange(s)"
+                  >
+                    <Check v-if="event.status === s" class="mr-2 h-4 w-4" />
+                    <span v-else class="mr-2 h-4 w-4" />
+                    {{ t(`duties.events.statuses.${s}`) }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Badge v-else :variant="statusVariant(event.status)">
                 {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
               </Badge>
             </div>
@@ -292,15 +319,18 @@ onMounted(async () => {
           </div>
           <div v-if="authStore.isAdmin" class="flex gap-2">
             <Button
-              v-if="event.status === 'draft'"
               variant="outline"
-              @click="handlePublish"
+              @click="router.push({ name: 'event-edit', params: { eventId: event.id } })"
             >
-              {{ t('common.actions.publish') }}
+              <Pencil class="mr-2 h-4 w-4" />
+              {{ t('duties.events.edit') }}
             </Button>
             <Button @click="showCreateSlotDialog = true">
               <Plus class="mr-2 h-4 w-4" />
               {{ t('duties.events.detail.addSlot') }}
+            </Button>
+            <Button variant="destructive" size="icon" @click="handleDeleteEvent">
+              <Trash2 class="h-4 w-4" />
             </Button>
           </div>
         </div>

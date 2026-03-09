@@ -32,6 +32,8 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { toastApiError } from '@/lib/api-errors'
+import { formatDate } from '@/lib/format'
+import { statusVariant } from '@/lib/status'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
@@ -56,21 +58,6 @@ const filteredGroups = computed(() => {
     (g) => g.name.toLowerCase().includes(query) || g.description?.toLowerCase().includes(query),
   )
 })
-
-const statusVariant = (status?: string) => {
-  switch (status) {
-    case 'published':
-      return 'default'
-    case 'draft':
-      return 'secondary'
-    case 'archived':
-      return 'outline'
-    default:
-      return 'secondary'
-  }
-}
-
-const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString()
 
 const loadGroups = async () => {
   loading.value = true

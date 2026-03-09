@@ -80,12 +80,23 @@ class ScheduleOverride(BaseModel):
         return self
 
 
+RemainderMode = Literal["drop", "short", "extend"]
+
+
+class ExcludedSlot(BaseModel):
+    date: dt.date
+    start_time: dt.time
+    end_time: dt.time
+
+
 class SlotGenerationConfig(BaseModel):
     default_start_time: dt.time
     default_end_time: dt.time
     slot_duration_minutes: int
     people_per_slot: int = 1
+    remainder_mode: RemainderMode = "drop"
     overrides: list[ScheduleOverride] = []
+    excluded_slots: list[ExcludedSlot] = []
 
     @field_validator("slot_duration_minutes")
     @classmethod
@@ -143,3 +154,33 @@ class EventCreateWithSlotsResponse(BaseModel):
     event: EventRead
     duty_slots_created: int
     event_group: EventGroupRead | None = None
+
+
+# --- Slot regeneration schemas ---
+
+
+class EventUpdateWithSlots(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    start_date: dt.date | None = None
+    end_date: dt.date | None = None
+    location: str | None = None
+    category: str | None = None
+    schedule: SlotGenerationConfig
+
+
+class AffectedBookingInfo(BaseModel):
+    booking_id: uuid.UUID
+    user_id: uuid.UUID
+    slot_title: str
+    slot_date: dt.date
+    slot_start_time: dt.time | None = None
+    slot_end_time: dt.time | None = None
+
+
+class SlotRegenerationResult(BaseModel):
+    event: EventRead
+    slots_added: int
+    slots_removed: int
+    slots_kept: int
+    affected_bookings: list[AffectedBookingInfo]

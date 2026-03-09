@@ -45,13 +45,13 @@ function onSelect(value: DateValue | undefined) {
         variant="outline"
         :class="
           cn(
-            'w-full justify-start text-left font-normal',
+            'w-full min-w-0 justify-start text-left font-normal',
             !model && 'text-muted-foreground',
           )
         "
       >
-        <CalendarIcon class="mr-2 h-4 w-4" />
-        {{ displayText ?? placeholder ?? t('duties.events.pickDate') }}
+        <CalendarIcon class="mr-2 h-4 w-4 shrink-0" />
+        <span class="truncate">{{ displayText ?? placeholder ?? t('duties.events.pickDate') }}</span>
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-auto p-0">

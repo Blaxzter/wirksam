@@ -17,6 +17,7 @@ import {
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { toastApiError } from '@/lib/api-errors'
+import { formatDate } from '@/lib/format'
 
 const { t } = useI18n()
 const { get, delete: del } = useAuthenticatedClient()
@@ -38,10 +39,6 @@ const statusVariant = (status?: string) => {
     default:
       return 'outline'
   }
-}
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString()
 }
 
 const loadBookings = async () => {

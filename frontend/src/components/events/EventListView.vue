@@ -12,6 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { formatDate } from '@/lib/format'
+import { statusVariant } from '@/lib/status'
 import { useAuthStore } from '@/stores/auth'
 
 defineProps<{
@@ -25,21 +27,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const authStore = useAuthStore()
-
-const statusVariant = (status?: string) => {
-  switch (status) {
-    case 'published':
-      return 'default'
-    case 'draft':
-      return 'secondary'
-    case 'archived':
-      return 'outline'
-    default:
-      return 'secondary'
-  }
-}
-
-const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString()
 </script>
 
 <template>

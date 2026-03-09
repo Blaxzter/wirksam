@@ -33,6 +33,12 @@ class UserAvailability(Base, table=True):
         sa_column=sa.Column(sa.String, nullable=False, index=True)
     )
     notes: str | None = Field(default=None, sa_column=sa.Column(sa.Text, nullable=True))
+    default_start_time: datetime.time | None = Field(
+        default=None, sa_column=sa.Column(sa.Time, nullable=True)
+    )
+    default_end_time: datetime.time | None = Field(
+        default=None, sa_column=sa.Column(sa.Time, nullable=True)
+    )
 
     event_group: "EventGroup" = Relationship(back_populates="availabilities")
     available_dates: list["UserAvailabilityDate"] = Relationship(
@@ -50,5 +56,11 @@ class UserAvailabilityDate(Base, table=True):
         )
     )
     slot_date: datetime.date = Field(sa_column=sa.Column(sa.Date, nullable=False))
+    start_time: datetime.time | None = Field(
+        default=None, sa_column=sa.Column(sa.Time, nullable=True)
+    )
+    end_time: datetime.time | None = Field(
+        default=None, sa_column=sa.Column(sa.Time, nullable=True)
+    )
 
     availability: "UserAvailability" = Relationship(back_populates="available_dates")

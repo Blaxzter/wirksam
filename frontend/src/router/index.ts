@@ -93,6 +93,18 @@ const router = createRouter({
           },
         },
         {
+          path: 'events/:eventId/edit',
+          name: 'event-edit',
+          component: () => import('@/views/events/EventEditView.vue'),
+          meta: {
+            requiresRole: 'admin',
+            breadcrumbs: [
+              { title: 'Events', titleKey: 'duties.events.title', to: { name: 'events' } },
+              { title: 'Edit Event', titleKey: 'duties.events.editView.title' },
+            ],
+          },
+        },
+        {
           path: 'events/:eventId',
           name: 'event-detail',
           component: () => import('@/views/events/EventDetailView.vue'),

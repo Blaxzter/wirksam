@@ -8,12 +8,22 @@
         "removeConfirm": "Möchten Sie Ihre Verfügbarkeit wirklich entfernen?",
         "notRegistered": "Sie haben noch keine Verfügbarkeit registriert.",
         "types": {
-            "fully_available": "Offen für Anfragen",
-            "specific_dates": "An bestimmten Terminen verfügbar"
+            "fully_available": "Voll verfügbar",
+            "time_range": "Täglicher Zeitraum",
+            "specific_dates": "Bestimmte Termine"
         },
         "fields": {
             "type": "Verfügbarkeitstyp",
             "dates": "Verfügbare Termine",
+            "datesWithRange": "Verfügbare Termine ({start} – {end})",
+            "startTime": "Von",
+            "endTime": "Bis",
+            "fullDay": "Ganztägig",
+            "setTimes": "Uhrzeiten angeben",
+            "timeRange": "Zeitraum",
+            "timeRangeHint": "Tägliches Zeitfenster festlegen. Leer lassen für offen (z.B. nur 'Von' = ab dieser Uhrzeit).",
+            "afterTime": "ab {time}",
+            "beforeTime": "vor {time}",
             "notes": "Anmerkungen"
         },
         "adminTitle": "Verfügbarkeiten der Mitglieder",
@@ -93,7 +103,15 @@
         },
         "edit": "Veranstaltung bearbeiten",
         "calendar": {
-            "more": "weitere"
+            "more": "weitere",
+            "views": {
+                "month": "Monat",
+                "week": "Woche",
+                "day": "Tag"
+            },
+            "today": "Heute",
+            "allDay": "Ganztägig",
+            "noItems": "Keine Termine für diesen Tag."
         },
         "empty": "Keine Veranstaltungen gefunden.",
         "fields": {
@@ -117,6 +135,26 @@
             "list": "Liste"
         },
         "title": "Veranstaltungen",
+        "editView": {
+            "title": "Veranstaltung bearbeiten",
+            "subtitle": "Veranstaltungsdetails ändern und Dienstschichten neu generieren",
+            "regenerate": "Schichten neu generieren",
+            "saving": "Wird gespeichert...",
+            "saveSuccess": "Veranstaltung erfolgreich aktualisiert!",
+            "preview": {
+                "added": "{count} neu",
+                "removed": "{count} entfernt",
+                "kept": "{count} unverändert"
+            },
+            "affectedBookings": {
+                "title": "Betroffene Buchungen",
+                "description": "Die folgenden bestätigten Buchungen werden storniert, da ihre Schichten nach der Neugenerierung nicht mehr existieren. Die Benutzer wurden noch nicht benachrichtigt — dies ist derzeit ein manueller Prozess.",
+                "slot": "Schicht",
+                "user": "Benutzer",
+                "confirm": "Trotzdem fortfahren",
+                "cancel": "Abbrechen"
+            }
+        },
         "createView": {
             "title": "Veranstaltung erstellen",
             "subtitle": "Neue Veranstaltung mit automatisch generierten Dienstschichten einrichten",
@@ -125,11 +163,21 @@
                 "detailsDesc": "Grundlegende Informationen zur Veranstaltung",
                 "eventGroup": "Veranstaltungsgruppe",
                 "eventGroupDesc": "Diese Veranstaltung optional einer Gruppe zuordnen",
+                "dates": "Veranstaltungstermine",
+                "datesDesc": "Wählen Sie, wann die Veranstaltung stattfindet",
                 "schedule": "Zeitplan & Schichten",
                 "scheduleDesc": "Konfigurieren, wann Dienstschichten erstellt werden sollen",
                 "preview": "Vorschau",
                 "previewDesc": "Überprüfen Sie die Schichten, die generiert werden"
             },
+            "dateMode": {
+                "single": "Ein Tag",
+                "range": "Zeitraum",
+                "specific": "Bestimmte Tage"
+            },
+            "addDate": "Datum hinzufügen",
+            "noDatesSelected": "Noch keine Termine ausgewählt",
+            "groupDateHint": "Termine sind auf die Veranstaltungsgruppe beschränkt ({start} – {end})",
             "eventGroupOption": {
                 "none": "Keine Veranstaltungsgruppe",
                 "existing": "Bestehende auswählen",
@@ -140,6 +188,13 @@
                 "defaultEndTime": "Standard-Endzeit",
                 "slotDuration": "Schichtdauer",
                 "peoplePerSlot": "Personen pro Schicht",
+                "remainder": "Restzeit",
+                "remainderDesc": "Wie mit übrig gebliebener Zeit umgegangen wird, wenn Schichten nicht gleichmäßig aufgehen",
+                "remainderMode": {
+                    "drop": "Restzeit ignorieren",
+                    "short": "Kürzere letzte Schicht erstellen",
+                    "extend": "Letzte Schicht verlängern"
+                },
                 "overrides": "Datumsausnahmen",
                 "overridesDesc": "Zeiten für bestimmte Tage anpassen",
                 "addException": "Ausnahme hinzufügen",

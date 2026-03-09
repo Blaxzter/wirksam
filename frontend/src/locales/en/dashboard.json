@@ -1,5 +1,17 @@
 {
     "home": {
+        "calendar": {
+            "title": "Calendar",
+            "filter": "Filter",
+            "filterTooltip": "{count} category hidden | {count} categories hidden",
+            "filterTooltipNone": "Filter calendar items",
+            "hiddenCount": "{count} category hidden | {count} categories hidden",
+            "filters": {
+                "events": "Events",
+                "groups": "Event Groups",
+                "bookings": "My Bookings"
+            }
+        },
         "quickActions": {
             "browseEvents": "Browse Events",
             "myBookings": "My Bookings",
