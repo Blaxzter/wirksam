@@ -5,6 +5,7 @@ import { useLocalStorage } from '@vueuse/core'
 import { BookCheck, CalendarDays, ClipboardList, SlidersHorizontal } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -20,7 +21,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DutyCalendar } from '@/components/events/duty-calendar'
 import type { BookingCalendarItem } from '@/components/events/duty-calendar'
 
+import SlotDetailDialog from '@/components/events/SlotDetailDialog.vue'
+
 import type {
+  BookingRead,
   DutySlotRead,
   EventGroupListResponse,
   EventGroupRead,
@@ -33,7 +37,10 @@ import { toastApiError } from '@/lib/api-errors'
 const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
-const { get } = useAuthenticatedClient()
+import { useDialog } from '@/composables/useDialog'
+
+const { get, delete: del } = useAuthenticatedClient()
+const { confirmDestructive } = useDialog()
 
 const eventCount = ref(0)
 const myBookingCount = ref(0)
@@ -42,6 +49,22 @@ const loading = ref(true)
 const events = ref<EventRead[]>([])
 const eventGroups = ref<EventGroupRead[]>([])
 const bookings = ref<BookingCalendarItem[]>([])
+
+// Slot detail dialog
+const showSlotDetail = ref(false)
+const detailSlotId = ref<string | null>(null)
+const detailBooking = ref<BookingRead | null>(null)
+
+// Map booking ID → raw booking for dialog
+const bookingMap = ref<Map<string, { slotId: string; booking: BookingRead }>>(new Map())
+
+const openBookingDetail = (calendarItem: BookingCalendarItem) => {
+  const entry = bookingMap.value.get(calendarItem.id)
+  if (!entry) return
+  detailSlotId.value = entry.slotId
+  detailBooking.value = entry.booking
+  showSlotDetail.value = true
+}
 
 const showEvents = useLocalStorage('dutyhub-calendar-show-events', true)
 const showGroups = useLocalStorage('dutyhub-calendar-show-groups', true)
@@ -69,6 +92,7 @@ async function loadStats() {
 
     // Enrich bookings with slot details for calendar display
     const rawBookings = bookingsRes.data.items
+    const newMap = new Map<string, { slotId: string; booking: BookingRead }>()
     const settled = await Promise.all(
       rawBookings.map(async (booking): Promise<BookingCalendarItem | null> => {
         try {
@@ -76,8 +100,10 @@ async function loadStats() {
             url: `/duty-slots/${booking.duty_slot_id}`,
           })
           const slot = slotRes.data
+          newMap.set(booking.id, { slotId: slot.id, booking })
           return {
             id: booking.id,
+            slotId: slot.id,
             date: slot.date,
             title: slot.title,
             startTime: slot.start_time,
@@ -89,6 +115,7 @@ async function loadStats() {
       }),
     )
     const enriched = settled.filter((b): b is BookingCalendarItem => b !== null)
+    bookingMap.value = newMap
     bookings.value = enriched
   } catch (error) {
     toastApiError(error)
@@ -105,8 +132,19 @@ const navigateToGroup = (group: EventGroupRead) => {
   router.push({ name: 'event-group-detail', params: { groupId: group.id } })
 }
 
-const navigateToBookings = () => {
-  router.push({ name: 'my-bookings' })
+const handleCancelBooking = async () => {
+  if (!detailBooking.value) return
+  const confirmed = await confirmDestructive(t('duties.bookings.cancelConfirm'))
+  if (!confirmed) return
+
+  try {
+    await del({ url: `/bookings/${detailBooking.value.id}` })
+    toast.success(t('duties.bookings.cancelSuccess'))
+    showSlotDetail.value = false
+    await loadStats()
+  } catch (error) {
+    toastApiError(error)
+  }
 }
 
 onMounted(loadStats)
@@ -264,7 +302,7 @@ onMounted(loadStats)
         :show-bookings="showBookings"
         @navigate-event="navigateToEvent"
         @navigate-group="navigateToGroup"
-        @navigate-booking="navigateToBookings"
+        @navigate-booking="openBookingDetail"
       />
     </div>
 
@@ -282,5 +320,14 @@ onMounted(loadStats)
         </Button>
       </div>
     </div>
+
+    <!-- Slot Detail Dialog -->
+    <SlotDetailDialog
+      v-model:open="showSlotDetail"
+      :slot-id="detailSlotId"
+      :my-booking="detailBooking"
+      @booking-updated="loadStats"
+      @cancel-booking="handleCancelBooking"
+    />
   </div>
 </template>

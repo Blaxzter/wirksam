@@ -375,6 +375,7 @@ export const zProfileInit = z
     email: z.optional(z.union([z.email(), z.null()])),
     name: z.optional(z.union([z.string(), z.null()])),
     nickname: z.optional(z.union([z.string(), z.null()])),
+    picture: z.optional(z.union([z.string(), z.null()])),
   })
   .register(z.globalRegistry, {
     description: 'Profile data from Auth0 ID token for user initialization.',
@@ -400,6 +401,24 @@ export const zSlotBatchRead = z.object({
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
 })
+
+/**
+ * SlotBookingEntry
+ * A confirmed booking for a slot, with basic user info.
+ */
+export const zSlotBookingEntry = z
+  .object({
+    id: z.uuid(),
+    user_id: z.uuid(),
+    user_name: z.optional(z.union([z.string(), z.null()])),
+    user_email: z.optional(z.union([z.string(), z.null()])),
+    user_picture: z.optional(z.union([z.string(), z.null()])),
+    notes: z.optional(z.union([z.string(), z.null()])),
+    created_at: z.iso.datetime(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A confirmed booking for a slot, with basic user info.',
+  })
 
 /**
  * SlotRegenerationResult
@@ -490,6 +509,7 @@ export const zUserCreate = z.object({
   }),
   email: z.optional(z.union([z.email(), z.null()])),
   name: z.optional(z.union([z.string(), z.null()])),
+  picture: z.optional(z.union([z.string(), z.null()])),
   roles: z.optional(
     z.array(z.string()).register(z.globalRegistry, {
       description: 'List of role identifiers',
@@ -554,6 +574,7 @@ export const zUserRead = z.object({
   auth0_sub: z.string(),
   email: z.optional(z.union([z.email(), z.null()])),
   name: z.optional(z.union([z.string(), z.null()])),
+  picture: z.optional(z.union([z.string(), z.null()])),
   roles: z.array(z.string()),
   is_active: z.boolean(),
   created_at: z.iso.datetime(),
@@ -930,6 +951,24 @@ export const zDutySlotsUpdateDutySlotData = z.object({
  * Successful Response
  */
 export const zDutySlotsUpdateDutySlotResponse = zDutySlotRead
+
+export const zDutySlotsListSlotBookingsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    slot_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Duty-Slots-List Slot Bookings
+ * Successful Response
+ */
+export const zDutySlotsListSlotBookingsResponse = z
+  .array(zSlotBookingEntry)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
 
 export const zBookingsListMyBookingsData = z.object({
   body: z.optional(z.never()),

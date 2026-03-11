@@ -60,6 +60,10 @@ async def update_user_profile(
             status_code=500, detail="Failed to update user profile in Auth0"
         )
 
+    # Sync picture to local DB
+    if user_update.picture is not None:
+        current_user.picture = str(user_update.picture)
+
     # Return updated user data
     updated_user: dict[str, Any] = claims.copy()
 

@@ -2,6 +2,7 @@ import type { EventGroupRead, EventRead } from '@/client/types.gen'
 
 export interface BookingCalendarItem {
   id: string
+  slotId: string
   date: string
   title: string
   startTime?: string | null | undefined
@@ -25,10 +26,21 @@ export interface GroupBar {
   isEnd: boolean
 }
 
+export interface EventBar {
+  event: EventRead
+  startCol: number
+  span: number
+  lane: number
+  isStart: boolean
+  isEnd: boolean
+}
+
 export interface CalendarWeek {
   days: CalendarDay[]
   groupBars: GroupBar[]
+  eventBars: EventBar[]
   barLaneCount: number
+  eventBarLaneCount: number
 }
 
 export type ViewMode = 'month' | 'week' | 'day'
@@ -78,6 +90,42 @@ export function computeGroupBars(weekDays: CalendarDay[]): GroupBar[] {
   })
 }
 
+export function computeEventBars(weekDays: CalendarDay[]): EventBar[] {
+  const seen = new Set<string>()
+  const multiDayEvents: EventRead[] = []
+  for (const day of weekDays) {
+    for (const e of day.events) {
+      if (!seen.has(e.id) && e.start_date !== e.end_date) {
+        seen.add(e.id)
+        multiDayEvents.push(e)
+      }
+    }
+  }
+
+  return multiDayEvents.map((event, lane) => {
+    let startCol = -1
+    let endCol = -1
+    for (let col = 0; col < weekDays.length; col++) {
+      if (weekDays[col].events.some((e) => e.id === event.id)) {
+        if (startCol === -1) startCol = col
+        endCol = col
+      }
+    }
+
+    const startDay = weekDays[startCol]
+    const endDay = weekDays[endCol]
+    const isStart = startDay.dateStr === event.start_date
+    const isEnd = endDay.dateStr === event.end_date
+
+    return { event, startCol, span: endCol - startCol + 1, lane, isStart, isEnd }
+  })
+}
+
+/** Check if an event spans multiple days */
+export function isMultiDayEvent(event: EventRead): boolean {
+  return event.start_date !== event.end_date
+}
+
 export function dateToStr(d: Date): string {
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
@@ -90,13 +138,21 @@ export function isToday(date: Date | null): boolean {
   return dateToStr(date) === dateToStr(new Date())
 }
 
+function stripSeconds(time: string): string {
+  // "HH:MM:SS" → "HH:MM"
+  const parts = time.split(':')
+  return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : time
+}
+
 export function formatTimeRange(
   start: string | null | undefined,
   end: string | null | undefined,
 ): string {
-  if (start && end) return `${start} – ${end}`
-  if (start) return start
-  if (end) return `– ${end}`
+  const s = start ? stripSeconds(start) : null
+  const e = end ? stripSeconds(end) : null
+  if (s && e) return `${s} – ${e}`
+  if (s) return s
+  if (e) return `– ${e}`
   return ''
 }
 

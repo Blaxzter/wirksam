@@ -59,32 +59,46 @@ async def _get_or_create_user(
 
     user = await crud_user.get_by_auth0_sub(session, auth0_sub=auth0_sub)
     if user:
+        dirty = False
         # Ensure superadmin emails always have the admin role
         if user.email and user.email in [str(e) for e in settings.SUPERADMIN_EMAILS]:
             if "admin" not in user.roles:
                 user.roles = list(user.roles) + ["admin"]
-                session.add(user)
-                await session.flush()
+                dirty = True
+        # Sync picture from Auth0 on each login
+        if profile_data:
+            picture = profile_data.get("picture")
+            if picture and picture != user.picture:
+                user.picture = picture
+                dirty = True
+        if dirty:
+            session.add(user)
+            await session.flush()
         return user
 
     # Use profile_data from frontend if available, fallback to claims
     email: str | None = None
     name: str | None = None
+    picture: str | None = None
     if profile_data:
         email = profile_data.get("email")
         name = profile_data.get("name") or profile_data.get("nickname")
+        picture = profile_data.get("picture")
 
     # Fallback to claims if profile_data not provided
     if not email:
         email = claims.get("email")
     if not name:
         name = claims.get("name") or claims.get("nickname")
+    if not picture:
+        picture = claims.get("picture")
 
     is_superadmin = bool(email and email in [str(e) for e in settings.SUPERADMIN_EMAILS])
     user_in = UserCreate(
         auth0_sub=auth0_sub,
         email=email,
         name=name,
+        picture=picture,
         roles=["admin"] if is_superadmin else [],
     )
     new_user = await crud_user.create(session, obj_in=user_in)

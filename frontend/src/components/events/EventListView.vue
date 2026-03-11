@@ -43,12 +43,12 @@ const authStore = useAuthStore()
     >
       <CardHeader class="pb-3">
         <div class="flex items-start justify-between">
-          <CardTitle class="text-lg">{{ event.name }}</CardTitle>
+          <CardTitle class="text-lg line-clamp-1 break-words">{{ event.name }}</CardTitle>
           <Badge :variant="statusVariant(event.status)">
             {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
           </Badge>
         </div>
-        <CardDescription v-if="event.description">
+        <CardDescription v-if="event.description" class="line-clamp-2 break-words">
           {{ event.description }}
         </CardDescription>
       </CardHeader>

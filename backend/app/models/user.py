@@ -20,6 +20,11 @@ class User(Base, table=True):
         description="User's email address",
     )
     name: str | None = Field(default=None, description="User's display name")
+    picture: str | None = Field(
+        default=None,
+        sa_column=sa.Column(sa.String, nullable=True),
+        description="URL to user's profile picture",
+    )
 
     roles: list[str] = Field(
         default_factory=list,

@@ -93,7 +93,29 @@
     },
     "full": "Ausgebucht",
     "pickDate": "Datum auswählen",
-    "title": "Dienstschicht"
+    "title": "Dienstschicht",
+    "detail": {
+      "title": "Schicht-Details",
+      "event": "Veranstaltung",
+      "date": "Datum",
+      "time": "Zeit",
+      "description": "Beschreibung",
+      "location": "Ort",
+      "category": "Kategorie",
+      "capacity": "Kapazität",
+      "capacityValue": "{current} / {max} gebucht",
+      "bookedUsers": "Gebuchte Benutzer",
+      "noBookings": "Noch keine Buchungen.",
+      "userName": "Name",
+      "userNotes": "Anmerkungen",
+      "bookedAt": "Gebucht am",
+      "viewEvent": "Veranstaltung anzeigen",
+      "openDetails": "Details anzeigen",
+      "myNotes": "Meine Anmerkungen",
+      "notesPlaceholder": "z.B. komme später, brauche Ausrüstung, Ernährungshinweise...",
+      "noNotes": "Füge eine Notiz hinzu, die für den Organisator sichtbar ist — z.B. Fragen, Einschränkungen oder besondere Wünsche.",
+      "notesSaved": "Anmerkungen gespeichert."
+    }
   },
   "eventGroups": {
     "create": "Veranstaltungsgruppe erstellen",

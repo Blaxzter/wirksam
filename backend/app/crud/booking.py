@@ -124,10 +124,15 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         *,
         duty_slot_id: uuid.UUID,
         status: str | None = None,
+        with_user: bool = False,
     ) -> list[Booking]:
         query = select(Booking).where(col(Booking.duty_slot_id) == duty_slot_id)
         if status:
             query = query.where(col(Booking.status) == status)
+        if with_user:
+            from app.models.user import User  # noqa: F401
+
+            query = query.options(selectinload(Booking.user))
         result = await db.execute(query)
         return list(result.scalars().all())
 

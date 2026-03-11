@@ -1,6 +1,6 @@
 <template>
   <Dialog v-model:open="dialogStore.dialog.isOpen">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="sm:max-w-md" priority>
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">
           <component :is="titleIcon" v-if="titleIcon" class="h-5 w-5" :class="titleIconClass" />

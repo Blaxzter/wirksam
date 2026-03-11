@@ -13,5 +13,6 @@
     "python.testing.pytestArgs": ["."],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "basedpyright.analysis.configFilePath": "backend"
+    "basedpyright.analysis.configFilePath": "backend",
+    "python.terminal.activateEnvironment": false
 }

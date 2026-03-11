@@ -66,3 +66,16 @@ class MyBookingsListResponse(BaseModel):
     total: int
     skip: int
     limit: int
+
+
+class SlotBookingEntry(BaseModel):
+    """A confirmed booking for a slot, with basic user info."""
+
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    user_id: uuid.UUID
+    user_name: str | None = None
+    user_email: str | None = None
+    user_picture: str | None = None
+    notes: str | None = None
+    created_at: dt.datetime

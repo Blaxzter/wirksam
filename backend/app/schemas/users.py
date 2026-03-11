@@ -7,6 +7,7 @@ class ProfileInit(BaseModel):
     email: EmailStr | None = None
     name: str | None = None
     nickname: str | None = None
+    picture: str | None = None
 
 
 class UserProfileUpdate(BaseModel):

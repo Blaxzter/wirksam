@@ -93,7 +93,29 @@
         },
         "full": "Fully booked",
         "pickDate": "Pick a date",
-        "title": "Duty Slot"
+        "title": "Duty Slot",
+        "detail": {
+            "title": "Slot Details",
+            "event": "Event",
+            "date": "Date",
+            "time": "Time",
+            "description": "Description",
+            "location": "Location",
+            "category": "Category",
+            "capacity": "Capacity",
+            "capacityValue": "{current} / {max} booked",
+            "bookedUsers": "Booked Users",
+            "noBookings": "No bookings yet.",
+            "userName": "Name",
+            "userNotes": "Notes",
+            "bookedAt": "Booked at",
+            "viewEvent": "View Event",
+            "openDetails": "View details",
+            "myNotes": "My Notes",
+            "notesPlaceholder": "e.g. arriving late, need equipment, dietary requirements...",
+            "noNotes": "Add a note visible to the organizer — e.g. questions, availability constraints, or special requests.",
+            "notesSaved": "Notes saved."
+        }
     },
     "eventGroups": {
         "create": "Create Event Group",

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { EventGroupRead, EventRead } from '@/client/types.gen'
 
+import EventBars from './EventBars.vue'
 import GroupBars from './GroupBars.vue'
 import type { BookingCalendarItem, CalendarDay, CalendarWeek } from './types'
-import { formatTimeRange, isToday } from './types'
+import { formatTimeRange, isMultiDayEvent, isToday } from './types'
 
 defineProps<{
   week: CalendarWeek
   weekdayNames: string[]
   hoveredGroupId: string | null
+  hoveredEventId: string | null
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +18,7 @@ const emit = defineEmits<{
   navigateGroup: [group: EventGroupRead]
   navigateBooking: [booking: BookingCalendarItem]
   hoverGroup: [groupId: string | null]
+  hoverEvent: [eventId: string | null]
   selectDay: [day: CalendarDay]
 }>()
 </script>
@@ -52,6 +55,15 @@ const emit = defineEmits<{
         @hover="emit('hoverGroup', $event)"
       />
 
+      <!-- Event bars (multi-day events) -->
+      <EventBars
+        :bars="week.eventBars"
+        :hovered-event-id="hoveredEventId"
+        :top-offset="4 + week.barLaneCount * 22"
+        @navigate-event="emit('navigateEvent', $event)"
+        @hover="emit('hoverEvent', $event)"
+      />
+
       <!-- Day columns -->
       <div class="grid grid-cols-7">
         <div
@@ -64,16 +76,16 @@ const emit = defineEmits<{
           ]"
         >
           <template v-if="day.date">
-            <!-- Spacer for group bar lanes -->
+            <!-- Spacer for group + event bar lanes -->
             <div
-              v-if="week.barLaneCount > 0"
+              v-if="week.barLaneCount + week.eventBarLaneCount > 0"
               class="hidden sm:block"
-              :style="{ height: `${week.barLaneCount * 22 + 4}px` }"
+              :style="{ height: `${(week.barLaneCount + week.eventBarLaneCount) * 22 + 4}px` }"
             />
 
-            <!-- All items (no truncation in week view) -->
+            <!-- All items (no truncation in week view; multi-day events shown as bars) -->
             <div class="space-y-1">
-              <template v-for="event in day.events" :key="'we-' + event.id">
+              <template v-for="event in day.events.filter(e => !isMultiDayEvent(e))" :key="'we-' + event.id">
                 <button
                   class="w-full truncate rounded px-1.5 py-1 text-left text-xs font-medium transition-opacity hover:opacity-75"
                   :class="event.status === 'published' ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'"

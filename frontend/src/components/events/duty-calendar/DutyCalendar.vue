@@ -11,7 +11,7 @@ import DutyCalendarDay from './DutyCalendarDay.vue'
 import DutyCalendarMonth from './DutyCalendarMonth.vue'
 import DutyCalendarWeek from './DutyCalendarWeek.vue'
 import type { BookingCalendarItem, CalendarDay as CalendarDayType, CalendarWeek, ViewMode } from './types'
-import { computeGroupBars, dateToStr, EMPTY_DAY } from './types'
+import { computeEventBars, computeGroupBars, dateToStr, EMPTY_DAY } from './types'
 
 const props = withDefaults(
   defineProps<{
@@ -45,6 +45,7 @@ const { t, locale } = useI18n()
 const viewMode = ref<ViewMode>(props.defaultView)
 const calendarDate = ref(new Date())
 const hoveredGroupId = ref<string | null>(null)
+const hoveredEventId = ref<string | null>(null)
 
 // ── Helpers ──
 
@@ -97,7 +98,8 @@ const calendarWeeks = computed<CalendarWeek[]>(() => {
   for (let i = 0; i < allDays.length; i += 7) {
     const days = allDays.slice(i, i + 7)
     const groupBars = computeGroupBars(days)
-    weeks.push({ days, groupBars, barLaneCount: groupBars.length })
+    const eventBars = computeEventBars(days)
+    weeks.push({ days, groupBars, eventBars, barLaneCount: groupBars.length, eventBarLaneCount: eventBars.length })
   }
   return weeks
 })
@@ -113,7 +115,8 @@ const currentWeek = computed<CalendarWeek>(() => {
     days.push(buildDay(d))
   }
   const groupBars = computeGroupBars(days)
-  return { days, groupBars, barLaneCount: groupBars.length }
+  const eventBars = computeEventBars(days)
+  return { days, groupBars, eventBars, barLaneCount: groupBars.length, eventBarLaneCount: eventBars.length }
 })
 
 // ── Day view data ──
@@ -231,10 +234,12 @@ const goToDay = (day: CalendarDayType) => {
     :weeks="calendarWeeks"
     :weekday-names="weekdayNames"
     :hovered-group-id="hoveredGroupId"
+    :hovered-event-id="hoveredEventId"
     @navigate-event="emit('navigateEvent', $event)"
     @navigate-group="emit('navigateGroup', $event)"
     @navigate-booking="emit('navigateBooking', $event)"
     @hover-group="hoveredGroupId = $event"
+    @hover-event="hoveredEventId = $event"
     @select-day="goToDay"
   />
 
@@ -243,10 +248,12 @@ const goToDay = (day: CalendarDayType) => {
     :week="currentWeek"
     :weekday-names="weekdayNames"
     :hovered-group-id="hoveredGroupId"
+    :hovered-event-id="hoveredEventId"
     @navigate-event="emit('navigateEvent', $event)"
     @navigate-group="emit('navigateGroup', $event)"
     @navigate-booking="emit('navigateBooking', $event)"
     @hover-group="hoveredGroupId = $event"
+    @hover-event="hoveredEventId = $event"
     @select-day="goToDay"
   />
 

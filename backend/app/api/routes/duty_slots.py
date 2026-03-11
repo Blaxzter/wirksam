@@ -7,6 +7,7 @@ from app.crud.booking import booking as crud_booking
 from app.crud.duty_slot import duty_slot as crud_duty_slot
 from app.crud.event import event as crud_event
 from app.models.duty_slot import DutySlot
+from app.schemas.booking import SlotBookingEntry
 from app.schemas.duty_slot import (
     DutySlotCreate,
     DutySlotListResponse,
@@ -115,3 +116,28 @@ async def delete_duty_slot(
 
     await session.delete(slot)
     await session.commit()
+
+
+@router.get("/{slot_id}/bookings", response_model=list[SlotBookingEntry])
+async def list_slot_bookings(
+    slot_id: str,
+    session: DBDep,
+    _current_user: CurrentUser,
+) -> list[SlotBookingEntry]:
+    """List confirmed bookings for a slot with basic user info."""
+    await crud_duty_slot.get(session, slot_id, raise_404_error=True)
+    bookings = await crud_booking.get_multi_by_slot(
+        session, duty_slot_id=slot_id, status="confirmed", with_user=True
+    )
+    return [
+        SlotBookingEntry(
+            id=b.id,
+            user_id=b.user_id,
+            user_name=b.user.name if b.user else None,
+            user_email=b.user.email if b.user else None,
+            user_picture=b.user.picture if b.user else None,
+            notes=b.notes,
+            created_at=b.created_at,
+        )
+        for b in bookings
+    ]

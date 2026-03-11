@@ -860,6 +860,10 @@ export type ProfileInit = {
    * Nickname
    */
   nickname?: string | null
+  /**
+   * Picture
+   */
+  picture?: string | null
 }
 
 /**
@@ -946,6 +950,41 @@ export type SlotBatchRead = {
    * Updated At
    */
   updated_at: string
+}
+
+/**
+ * SlotBookingEntry
+ * A confirmed booking for a slot, with basic user info.
+ */
+export type SlotBookingEntry = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * User Name
+   */
+  user_name?: string | null
+  /**
+   * User Email
+   */
+  user_email?: string | null
+  /**
+   * User Picture
+   */
+  user_picture?: string | null
+  /**
+   * Notes
+   */
+  notes?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
 }
 
 /**
@@ -1192,6 +1231,11 @@ export type UserCreate = {
    */
   name?: string | null
   /**
+   * Picture
+   * URL to user's profile picture
+   */
+  picture?: string | null
+  /**
    * Roles
    * List of role identifiers
    */
@@ -1298,6 +1342,10 @@ export type UserRead = {
    * Name
    */
   name?: string | null
+  /**
+   * Picture
+   */
+  picture?: string | null
   /**
    * Roles
    */
@@ -2851,6 +2899,67 @@ export type DutySlotsUpdateDutySlotResponses = {
 
 export type DutySlotsUpdateDutySlotResponse =
   DutySlotsUpdateDutySlotResponses[keyof DutySlotsUpdateDutySlotResponses]
+
+export type DutySlotsListSlotBookingsData = {
+  body?: never
+  path: {
+    /**
+     * Slot Id
+     */
+    slot_id: string
+  }
+  query?: never
+  url: '/api/v1/duty-slots/{slot_id}/bookings'
+}
+
+export type DutySlotsListSlotBookingsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type DutySlotsListSlotBookingsError =
+  DutySlotsListSlotBookingsErrors[keyof DutySlotsListSlotBookingsErrors]
+
+export type DutySlotsListSlotBookingsResponses = {
+  /**
+   * Response Duty-Slots-List Slot Bookings
+   * Successful Response
+   */
+  200: Array<SlotBookingEntry>
+}
+
+export type DutySlotsListSlotBookingsResponse =
+  DutySlotsListSlotBookingsResponses[keyof DutySlotsListSlotBookingsResponses]
 
 export type BookingsListMyBookingsData = {
   body?: never

@@ -14,7 +14,7 @@ const props = defineProps<{
     role="link"
     aria-disabled="true"
     aria-current="page"
-    :class="cn('text-foreground font-normal select-none', props.class)"
+    :class="cn('text-foreground font-normal select-none max-w-[200px] truncate', props.class)"
   >
     <slot />
   </span>

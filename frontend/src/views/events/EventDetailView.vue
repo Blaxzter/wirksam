@@ -8,6 +8,7 @@ import {
   CalendarPlus,
   Check,
   ChevronDown,
+  Expand,
   Info,
   MapPin,
   Pencil,
@@ -48,6 +49,8 @@ import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import Separator from '@/components/ui/separator/Separator.vue'
 import { Textarea } from '@/components/ui/textarea'
+
+import SlotDetailDialog from '@/components/events/SlotDetailDialog.vue'
 
 import type {
   BookingRead,
@@ -243,6 +246,15 @@ const myBookedSlotsForEvent = computed(() => {
 
 const busySlotId = ref<string | null>(null)
 
+// Slot detail dialog
+const showSlotDetail = ref(false)
+const selectedSlot = ref<DutySlotRead | null>(null)
+
+const openSlotDetail = (slot: DutySlotRead) => {
+  selectedSlot.value = slot
+  showSlotDetail.value = true
+}
+
 // --- Delete confirmation dialog with optional reason ---
 const showDeleteDialog = ref(false)
 const deleteReason = ref('')
@@ -267,6 +279,21 @@ const confirmDelete = async () => {
 
 const countConfirmedBookings = (slots: DutySlotRead[]) => {
   return slots.reduce((sum, s) => sum + (s.current_bookings ?? 0), 0)
+}
+
+const handleCancelFromDetail = async (slot: DutySlotRead) => {
+  const booking = getBookingForSlot(slot.id)
+  if (!booking) return
+  const confirmed = await confirmDestructive(t('duties.bookings.cancelConfirm'))
+  if (!confirmed) return
+  try {
+    await del({ url: `/bookings/${booking.id}` })
+    toast.success(t('duties.bookings.cancelSuccess'))
+    showSlotDetail.value = false
+    await Promise.all([loadDutySlots(), loadMyBookings()])
+  } catch (error) {
+    toastApiError(error)
+  }
 }
 
 const handleSlotClick = async (slot: DutySlotRead) => {
@@ -487,17 +514,21 @@ onMounted(async () => {
         </Button>
 
         <!-- Draft banner -->
-        <Alert v-if="event.status === 'draft'" variant="default" class="border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-500/30">
+        <Alert
+          v-if="event.status === 'draft'"
+          variant="default"
+          class="border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-500/30"
+        >
           <Info class="h-4 w-4 text-amber-600 dark:text-amber-400" />
           <AlertDescription>
             {{ t('duties.events.draftBanner') }}
           </AlertDescription>
         </Alert>
 
-        <div class="flex items-start justify-between">
+        <div class="flex items-start justify-between gap-2">
           <div class="space-y-2">
             <div class="flex items-center gap-3">
-              <h1 class="text-3xl font-bold">{{ event.name }}</h1>
+              <h1 class="text-3xl font-bold line-clamp-2 break-words">{{ event.name }}</h1>
               <DropdownMenu v-if="authStore.isAdmin">
                 <DropdownMenuTrigger as-child>
                   <button class="inline-flex cursor-pointer items-center gap-1">
@@ -524,18 +555,18 @@ onMounted(async () => {
                 {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
               </Badge>
             </div>
-            <p v-if="event.description" class="text-muted-foreground">
+            <p v-if="event.description" class="text-muted-foreground line-clamp-3 break-words">
               {{ event.description }}
             </p>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span>{{ formatDate(event.start_date) }} - {{ formatDate(event.end_date) }}</span>
-              <span v-if="sharedLocation" class="flex items-center gap-1">
-                <MapPin class="h-3.5 w-3.5" />
-                {{ sharedLocation }}
+              <span v-if="sharedLocation" class="flex items-center gap-1 max-w-xs truncate">
+                <MapPin class="h-3.5 w-3.5 shrink-0" />
+                <span class="truncate">{{ sharedLocation }}</span>
               </span>
-              <span v-if="sharedCategory" class="flex items-center gap-1">
-                <Tag class="h-3.5 w-3.5" />
-                {{ sharedCategory }}
+              <span v-if="sharedCategory" class="flex items-center gap-1 max-w-xs truncate">
+                <Tag class="h-3.5 w-3.5 shrink-0" />
+                <span class="truncate">{{ sharedCategory }}</span>
               </span>
             </div>
           </div>
@@ -604,8 +635,8 @@ onMounted(async () => {
                 v-for="slot in myBookedSlotsForEvent"
                 :key="slot.id"
                 variant="secondary"
-                class="cursor-pointer px-3 py-1.5 text-sm hover:bg-destructive/10 hover:text-destructive transition-colors"
-                @click="handleSlotClick(slot)"
+                class="cursor-pointer px-3 py-1.5 text-sm hover:bg-secondary/80 hover:ring-1 hover:ring-primary/30 transition-colors"
+                @click="openSlotDetail(slot)"
               >
                 {{ formatDateLabel(slot.date) }}
                 <template v-if="slot.start_time">
@@ -779,7 +810,7 @@ onMounted(async () => {
                   <Card
                     v-for="slot in slots"
                     :key="slot.id"
-                    class="relative cursor-pointer select-none transition-all"
+                    class="group relative cursor-pointer select-none transition-all"
                     :class="[
                       myBookedSlotIds.has(slot.id)
                         ? 'ring-2 ring-primary bg-primary/5'
@@ -795,6 +826,15 @@ onMounted(async () => {
                       <div v-if="myBookedSlotIds.has(slot.id)" class="absolute top-1.5 right-1.5">
                         <Check class="h-4 w-4 text-primary" />
                       </div>
+
+                      <!-- Expand button (visible on hover) -->
+                      <button
+                        class="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-sm opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted"
+                        :title="t('duties.dutySlots.detail.openDetails')"
+                        @click.stop="openSlotDetail(slot)"
+                      >
+                        <Expand class="h-3 w-3 text-muted-foreground" />
+                      </button>
 
                       <!-- Time -->
                       <p class="text-center text-lg font-mono font-semibold">
@@ -963,5 +1003,16 @@ onMounted(async () => {
         </form>
       </DialogContent>
     </Dialog>
+
+    <!-- Slot Detail Dialog -->
+    <SlotDetailDialog
+      v-model:open="showSlotDetail"
+      :duty-slot="selectedSlot"
+      :event-name="event?.name"
+      :show-event-link="false"
+      :my-booking="selectedSlot ? (getBookingForSlot(selectedSlot.id) ?? null) : null"
+      @booking-updated="loadMyBookings"
+      @cancel-booking="selectedSlot && handleCancelFromDetail(selectedSlot)"
+    />
   </div>
 </template>

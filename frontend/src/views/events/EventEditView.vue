@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
+import type { DateValue } from '@internationalized/date'
+import { parseDate } from '@internationalized/date'
 import { ArrowLeft, Clock, Info, Plus, RefreshCw, Trash2, Users } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-import type { DutySlotRead, EventRead, SlotBatchRead } from '@/client/types.gen'
+import { useBreadcrumbStore } from '@/stores/breadcrumb'
+
+import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import {
+  type RemainderMode,
+  type ScheduleConfig,
+  slotKey,
+  useSlotPreview,
+} from '@/composables/useSlotPreview'
+
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DatePicker } from '@/components/ui/date-picker'
 import {
   Dialog,
   DialogContent,
@@ -37,15 +43,9 @@ import {
 import Separator from '@/components/ui/separator/Separator.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { TimePicker } from '@/components/ui/time-picker'
-import { DatePicker } from '@/components/ui/date-picker'
 
-import type { DateValue } from '@internationalized/date'
-import { parseDate } from '@internationalized/date'
-
-import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
-import { type RemainderMode, type ScheduleConfig, slotKey, useSlotPreview } from '@/composables/useSlotPreview'
+import type { DutySlotRead, EventRead, SlotBatchRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
-import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -131,7 +131,11 @@ const pendingPreview = ref<RegenerationResult | null>(null)
 // --- Existing slot bookings (fetched from backend) ---
 const existingBookings = ref(new Map<string, number>())
 
-const getSlotBookingCount = (slot: { date: string; startTime: string; endTime: string }): number => {
+const getSlotBookingCount = (slot: {
+  date: string
+  startTime: string
+  endTime: string
+}): number => {
   const key = `${slot.date}|${slot.startTime}|${slot.endTime}`
   return existingBookings.value.get(key) ?? 0
 }
@@ -149,7 +153,16 @@ const scheduleConfig = computed<ScheduleConfig>(() => ({
   overrides: overrides.value,
 }))
 
-const { previewSlots, totalSlots, totalDays, slotsByDate, hasRemainder, excludedSlots, toggleSlotExclusion, isSlotExcluded } = useSlotPreview(scheduleConfig)
+const {
+  previewSlots,
+  totalSlots,
+  totalDays,
+  slotsByDate,
+  hasRemainder,
+  excludedSlots,
+  toggleSlotExclusion,
+  isSlotExcluded,
+} = useSlotPreview(scheduleConfig)
 
 const excludedSlotsChanged = computed(() => {
   const orig = originalExcludedSlots.value
@@ -166,20 +179,28 @@ const scheduleChanged = computed(() => {
   if (!originalSchedule.value || !currentScheduleSnapshot.value) return true
   const orig = originalSchedule.value
   const curr = currentScheduleSnapshot.value
-  return orig.startDate !== curr.startDate
-    || orig.endDate !== curr.endDate
-    || orig.defaultStartTime !== curr.defaultStartTime
-    || orig.defaultEndTime !== curr.defaultEndTime
-    || orig.slotDurationMinutes !== curr.slotDurationMinutes
-    || orig.peoplePerSlot !== curr.peoplePerSlot
-    || orig.overrides !== curr.overrides
+  return (
+    orig.startDate !== curr.startDate ||
+    orig.endDate !== curr.endDate ||
+    orig.defaultStartTime !== curr.defaultStartTime ||
+    orig.defaultEndTime !== curr.defaultEndTime ||
+    orig.slotDurationMinutes !== curr.slotDurationMinutes ||
+    orig.peoplePerSlot !== curr.peoplePerSlot ||
+    orig.overrides !== curr.overrides
+  )
 })
 
 const isValid = computed(() => {
   const hasName = isBatchMode.value || !!name.value.trim()
-  return hasName && !!startDate.value && !!endDate.value
-    && !!defaultStartTime.value && !!defaultEndTime.value
-    && slotDurationMinutes.value >= 1 && totalSlots.value > 0
+  return (
+    hasName &&
+    !!startDate.value &&
+    !!endDate.value &&
+    !!defaultStartTime.value &&
+    !!defaultEndTime.value &&
+    slotDurationMinutes.value >= 1 &&
+    totalSlots.value > 0
+  )
 })
 
 // --- Date sync ---
@@ -271,7 +292,9 @@ const loadEvent = async () => {
       if (src.people_per_slot) peoplePerSlot.value = src.people_per_slot
       if (src.remainder_mode) remainderMode.value = src.remainder_mode as RemainderMode
       if (src.schedule_overrides) {
-        overrides.value = (src.schedule_overrides as Array<{ date: string; start_time: string; end_time: string }>).map((o) => ({
+        overrides.value = (
+          src.schedule_overrides as Array<{ date: string; start_time: string; end_time: string }>
+        ).map((o) => ({
           date: o.date,
           startTime: formatTime(o.start_time),
           endTime: formatTime(o.end_time),
@@ -287,7 +310,9 @@ const loadEvent = async () => {
       if (ev.slot_duration_minutes) slotDurationMinutes.value = ev.slot_duration_minutes
       if (ev.people_per_slot) peoplePerSlot.value = ev.people_per_slot
       if (ev.schedule_overrides) {
-        overrides.value = (ev.schedule_overrides as Array<{ date: string; start_time: string; end_time: string }>).map((o) => ({
+        overrides.value = (
+          ev.schedule_overrides as Array<{ date: string; start_time: string; end_time: string }>
+        ).map((o) => ({
           date: o.date,
           startTime: formatTime(o.start_time),
           endTime: formatTime(o.end_time),
@@ -350,7 +375,11 @@ const loadEvent = async () => {
     breadcrumbStore.setBreadcrumbs([
       { title: 'Events', titleKey: 'duties.events.title', to: { name: 'events' } },
       { title: ev.name, to: { name: 'event-detail', params: { eventId: ev.id } } },
-      { title: isBatchMode.value ? t('duties.events.editView.editBatch') : t('duties.events.editView.title') },
+      {
+        title: isBatchMode.value
+          ? t('duties.events.editView.editBatch')
+          : t('duties.events.editView.title'),
+      },
     ])
   } catch (error) {
     toastApiError(error)
@@ -478,15 +507,26 @@ onMounted(loadEvent)
     <template v-else-if="event">
       <!-- Header -->
       <div class="space-y-2">
-        <Button variant="ghost" size="sm" class="-ml-2" @click="router.push({ name: 'event-detail', params: { eventId: eventId } })">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="-ml-2"
+          @click="router.push({ name: 'event-detail', params: { eventId: eventId } })"
+        >
           <ArrowLeft class="mr-1.5 h-4 w-4" />
           {{ t('common.actions.back') }}
         </Button>
         <h1 class="text-3xl font-bold">
-          {{ isBatchMode ? t('duties.events.editView.editBatch') : t('duties.events.editView.title') }}
+          {{
+            isBatchMode ? t('duties.events.editView.editBatch') : t('duties.events.editView.title')
+          }}
         </h1>
         <p class="text-muted-foreground">
-          {{ isBatchMode ? t('duties.events.editView.editBatchSubtitle') : t('duties.events.editView.subtitle') }}
+          {{
+            isBatchMode
+              ? t('duties.events.editView.editBatchSubtitle')
+              : t('duties.events.editView.subtitle')
+          }}
         </p>
       </div>
 
@@ -494,7 +534,9 @@ onMounted(loadEvent)
       <Card v-if="!isBatchMode">
         <CardHeader>
           <CardTitle>{{ t('duties.events.createView.sections.details') }}</CardTitle>
-          <CardDescription>{{ t('duties.events.createView.sections.detailsDesc') }}</CardDescription>
+          <CardDescription>{{
+            t('duties.events.createView.sections.detailsDesc')
+          }}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-2">
@@ -503,7 +545,7 @@ onMounted(loadEvent)
           </div>
           <div class="space-y-2">
             <Label>{{ t('duties.events.fields.description') }}</Label>
-            <Textarea v-model="description" :rows="3" />
+            <Textarea v-model="description" :rows="3" class="max-h-[150px]" />
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
@@ -522,7 +564,9 @@ onMounted(loadEvent)
       <Card v-if="isBatchMode">
         <CardHeader>
           <CardTitle>{{ t('duties.events.addSlotsView.sections.batch') }}</CardTitle>
-          <CardDescription>{{ t('duties.events.addSlotsView.sections.batchDesc') }}</CardDescription>
+          <CardDescription>{{
+            t('duties.events.addSlotsView.sections.batchDesc')
+          }}</CardDescription>
         </CardHeader>
         <CardContent>
           <div class="grid grid-cols-2 gap-4">
@@ -565,7 +609,9 @@ onMounted(loadEvent)
             <Clock class="h-5 w-5 text-primary" />
             <div>
               <CardTitle>{{ t('duties.events.createView.sections.schedule') }}</CardTitle>
-              <CardDescription>{{ t('duties.events.createView.sections.scheduleDesc') }}</CardDescription>
+              <CardDescription>{{
+                t('duties.events.createView.sections.scheduleDesc')
+              }}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -619,15 +665,21 @@ onMounted(loadEvent)
                   <RadioGroup v-model="remainderMode" class="flex gap-4 pt-1">
                     <div class="flex items-center gap-2">
                       <RadioGroupItem value="drop" id="rm-drop" />
-                      <Label for="rm-drop">{{ t('duties.events.createView.schedule.remainderMode.drop') }}</Label>
+                      <Label for="rm-drop">{{
+                        t('duties.events.createView.schedule.remainderMode.drop')
+                      }}</Label>
                     </div>
                     <div class="flex items-center gap-2">
                       <RadioGroupItem value="short" id="rm-short" />
-                      <Label for="rm-short">{{ t('duties.events.createView.schedule.remainderMode.short') }}</Label>
+                      <Label for="rm-short">{{
+                        t('duties.events.createView.schedule.remainderMode.short')
+                      }}</Label>
                     </div>
                     <div class="flex items-center gap-2">
                       <RadioGroupItem value="extend" id="rm-extend" />
-                      <Label for="rm-extend">{{ t('duties.events.createView.schedule.remainderMode.extend') }}</Label>
+                      <Label for="rm-extend">{{
+                        t('duties.events.createView.schedule.remainderMode.extend')
+                      }}</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -702,10 +754,17 @@ onMounted(loadEvent)
           <div class="flex items-center justify-between">
             <div>
               <CardTitle>{{ t('duties.events.createView.sections.preview') }}</CardTitle>
-              <CardDescription>{{ t('duties.events.createView.sections.previewDesc') }}</CardDescription>
+              <CardDescription>{{
+                t('duties.events.createView.sections.previewDesc')
+              }}</CardDescription>
             </div>
             <Badge v-if="totalSlots > 0" variant="secondary">
-              {{ t('duties.events.createView.preview.summary', { slots: totalSlots, days: totalDays }) }}
+              {{
+                t('duties.events.createView.preview.summary', {
+                  slots: totalSlots,
+                  days: totalDays,
+                })
+              }}
             </Badge>
           </div>
         </CardHeader>
@@ -718,7 +777,11 @@ onMounted(loadEvent)
               <div class="flex items-center gap-2">
                 <p class="font-medium">{{ formatDateLabel(dateStr) }}</p>
                 <Badge variant="outline">
-                  {{ t('duties.events.createView.preview.slotsOnDate', { count: slots.filter(s => !isSlotExcluded(s)).length }) }}
+                  {{
+                    t('duties.events.createView.preview.slotsOnDate', {
+                      count: slots.filter((s) => !isSlotExcluded(s)).length,
+                    })
+                  }}
                 </Badge>
               </div>
               <div class="grid grid-cols-2 items-center gap-2 sm:grid-cols-3 md:grid-cols-4">
@@ -728,7 +791,9 @@ onMounted(loadEvent)
                   class="cursor-pointer p-2 transition-opacity"
                   :class="[
                     isSlotExcluded(slot) ? 'opacity-30' : 'hover:ring-1 hover:ring-destructive/40',
-                    getSlotBookingCount(slot) > 0 && !isSlotExcluded(slot) ? 'ring-1 ring-primary/30' : '',
+                    getSlotBookingCount(slot) > 0 && !isSlotExcluded(slot)
+                      ? 'ring-1 ring-primary/30'
+                      : '',
                   ]"
                   @click="toggleSlotExclusion(slot)"
                 >
@@ -742,10 +807,16 @@ onMounted(loadEvent)
                     <p
                       v-if="getSlotBookingCount(slot) > 0"
                       class="mt-0.5 flex items-center justify-center gap-1 text-xs"
-                      :class="isSlotExcluded(slot) ? 'text-destructive line-through' : 'text-primary'"
+                      :class="
+                        isSlotExcluded(slot) ? 'text-destructive line-through' : 'text-primary'
+                      "
                     >
                       <Users class="h-3 w-3" />
-                      {{ t('duties.events.editView.preview.booked', { count: getSlotBookingCount(slot) }) }}
+                      {{
+                        t('duties.events.editView.preview.booked', {
+                          count: getSlotBookingCount(slot),
+                        })
+                      }}
                     </p>
                   </CardContent>
                 </Card>
@@ -757,16 +828,20 @@ onMounted(loadEvent)
 
       <!-- Actions -->
       <div class="flex justify-end gap-3">
-        <Button variant="outline" @click="router.push({ name: 'event-detail', params: { eventId: eventId } })">
+        <Button
+          variant="outline"
+          @click="router.push({ name: 'event-detail', params: { eventId: eventId } })"
+        >
           {{ t('common.actions.cancel') }}
         </Button>
         <Button :disabled="!isValid || submitting" @click="handleSubmit">
           <RefreshCw v-if="scheduleChanged" class="mr-2 h-4 w-4" />
-          {{ submitting
-            ? t('duties.events.editView.saving')
-            : scheduleChanged
-              ? t('duties.events.editView.regenerate')
-              : t('common.actions.save')
+          {{
+            submitting
+              ? t('duties.events.editView.saving')
+              : scheduleChanged
+                ? t('duties.events.editView.regenerate')
+                : t('common.actions.save')
           }}
         </Button>
       </div>
@@ -792,7 +867,9 @@ onMounted(loadEvent)
               {{ t('duties.events.editView.preview.added', { count: pendingPreview.slots_added }) }}
             </Badge>
             <Badge variant="destructive">
-              {{ t('duties.events.editView.preview.removed', { count: pendingPreview.slots_removed }) }}
+              {{
+                t('duties.events.editView.preview.removed', { count: pendingPreview.slots_removed })
+              }}
             </Badge>
             <Badge variant="secondary">
               {{ t('duties.events.editView.preview.kept', { count: pendingPreview.slots_kept }) }}
@@ -811,7 +888,8 @@ onMounted(loadEvent)
                 <p class="text-muted-foreground">
                   {{ formatDateLabel(booking.slot_date) }}
                   <template v-if="booking.slot_start_time">
-                    {{ formatTime(booking.slot_start_time) }} - {{ formatTime(booking.slot_end_time) }}
+                    {{ formatTime(booking.slot_start_time) }} -
+                    {{ formatTime(booking.slot_end_time) }}
                   </template>
                 </p>
               </div>

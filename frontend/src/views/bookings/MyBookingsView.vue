@@ -8,10 +8,10 @@ import {
   Clock,
   Layers,
   MapPin,
+  Trash2,
   XCircle,
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
@@ -28,16 +28,31 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
+import SlotDetailDialog from '@/components/events/SlotDetailDialog.vue'
+
 import type { BookingReadWithSlot, MyBookingsListResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t, locale } = useI18n()
-const router = useRouter()
 const { get, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
 
 const bookings = ref<BookingReadWithSlot[]>([])
 const loading = ref(false)
+
+// Slot detail dialog
+const showSlotDetail = ref(false)
+const detailSlotId = ref<string | null>(null)
+const detailEventName = ref<string | null>(null)
+const detailBooking = ref<BookingReadWithSlot | null>(null)
+
+const openSlotDetail = (booking: BookingReadWithSlot) => {
+  if (!booking.duty_slot) return
+  detailSlotId.value = booking.duty_slot.id
+  detailEventName.value = booking.duty_slot.event_name ?? null
+  detailBooking.value = booking
+  showSlotDetail.value = true
+}
 
 // --- Filter state ---
 type FilterPreset = 'upcoming' | 'thisMonth' | 'all'
@@ -57,6 +72,8 @@ const filterDates = computed(() => {
       return { date_from: toISODate(start), date_to: toISODate(end) }
     }
     case 'all':
+      return { date_from: undefined, date_to: undefined }
+    default:
       return { date_from: undefined, date_to: undefined }
   }
 })
@@ -212,6 +229,7 @@ const handleCancel = async (booking: BookingReadWithSlot) => {
   try {
     await del({ url: `/bookings/${booking.id}` })
     toast.success(t('duties.bookings.cancelSuccess'))
+    showSlotDetail.value = false
     await loadBookings()
   } catch (error) {
     toastApiError(error)
@@ -270,13 +288,6 @@ const formatDateLabel = (dateStr: string) => {
     month: 'short',
     day: 'numeric',
   })
-}
-
-const navigateToEvent = (booking: BookingReadWithSlot) => {
-  const eventId = booking.duty_slot?.event_id
-  if (eventId) {
-    router.push({ name: 'event-detail', params: { eventId } })
-  }
 }
 
 onMounted(loadBookings)
@@ -358,7 +369,7 @@ onMounted(loadBookings)
       <section v-for="group in groupedBookings" :key="group.key">
         <!-- Group header (only when grouping is active) -->
         <div v-if="group.label" class="flex items-center gap-3 mb-4">
-          <h2 class="text-lg font-semibold whitespace-nowrap">{{ group.label }}</h2>
+          <h2 class="text-lg font-semibold truncate min-w-0 max-w-sm" :title="group.label">{{ group.label }}</h2>
           <Separator class="flex-1" />
           <span class="text-sm text-muted-foreground whitespace-nowrap">
             {{ group.bookings.length }}
@@ -372,22 +383,15 @@ onMounted(loadBookings)
             :key="booking.id"
             :class="[
               booking.status === 'cancelled' ? 'opacity-75 border-destructive/30' : '',
-              booking.duty_slot ? 'cursor-pointer hover:bg-muted/50 transition-colors' : '',
             ]"
-            @click="booking.duty_slot ? navigateToEvent(booking) : undefined"
           >
             <CardHeader class="pb-3">
-              <div class="flex items-start justify-between gap-2">
+              <div class="flex items-start justify-between gap-2 min-w-0">
                 <div class="min-w-0">
-                  <CardTitle class="text-lg truncate">
-                    {{ slotTitle(booking) }}
+                  <!-- Use event name as title for active bookings; fall back to slot title for cancelled -->
+                  <CardTitle class="text-lg truncate" :title="eventName(booking) ?? slotTitle(booking)">
+                    {{ eventName(booking) ?? slotTitle(booking) }}
                   </CardTitle>
-                  <p
-                    v-if="eventName(booking)"
-                    class="text-sm text-muted-foreground truncate"
-                  >
-                    {{ eventName(booking) }}
-                  </p>
                 </div>
                 <Badge :variant="statusVariant(booking.status)" class="shrink-0">
                   {{ t(`duties.bookings.statuses.${booking.status ?? 'confirmed'}`) }}
@@ -455,20 +459,46 @@ onMounted(loadBookings)
               <!-- Spacer -->
               <div class="flex-1"></div>
 
-              <!-- Cancel button -->
-              <div v-if="booking.status === 'confirmed'" class="mt-4">
-                <Button variant="outline" size="sm" @click.stop="handleCancel(booking)">
-                  {{ t('duties.bookings.cancel') }}
-                </Button>
-              </div>
-
-              <!-- Dismiss button for cancelled bookings -->
-              <div v-if="booking.status === 'cancelled'" class="mt-4">
+              <!-- Action buttons -->
+              <div class="mt-4 flex items-center gap-2">
+                <!-- Detail button (only for active slots) -->
                 <Button
+                  v-if="booking.duty_slot"
+                  variant="outline"
+                  size="sm"
+                  @click="openSlotDetail(booking)"
+                >
+                  {{ t('duties.dutySlots.detail.openDetails') }}
+                </Button>
+
+                <div class="flex-1" />
+
+                <!-- Cancel button -->
+                <TooltipProvider v-if="booking.status === 'confirmed'" :delay-duration="300">
+                  <Tooltip>
+                    <TooltipTrigger as-child>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-8 w-8 text-destructive hover:text-destructive"
+                        @click="handleCancel(booking)"
+                      >
+                        <Trash2 class="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {{ t('duties.bookings.cancel') }}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <!-- Dismiss button for cancelled bookings -->
+                <Button
+                  v-if="booking.status === 'cancelled'"
                   variant="ghost"
                   size="sm"
                   class="text-muted-foreground"
-                  @click.stop="handleDismiss(booking)"
+                  @click="handleDismiss(booking)"
                 >
                   {{ t('duties.bookings.dismiss') }}
                 </Button>
@@ -478,5 +508,15 @@ onMounted(loadBookings)
         </div>
       </section>
     </div>
+
+    <!-- Slot Detail Dialog -->
+    <SlotDetailDialog
+      v-model:open="showSlotDetail"
+      :slot-id="detailSlotId"
+      :event-name="detailEventName"
+      :my-booking="detailBooking"
+      @booking-updated="loadBookings"
+      @cancel-booking="detailBooking && handleCancel(detailBooking)"
+    />
   </div>
 </template>

@@ -9,6 +9,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.duty_slot import DutySlot  # noqa: F401
+    from app.models.user import User  # noqa: F401
 
 
 class Booking(Base, table=True):
@@ -57,3 +58,4 @@ class Booking(Base, table=True):
     )
 
     duty_slot: Optional["DutySlot"] = Relationship(back_populates="bookings")
+    user: Optional["User"] = Relationship()

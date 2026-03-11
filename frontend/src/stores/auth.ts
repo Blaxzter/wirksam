@@ -70,6 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
               email: auth0.user.value.email,
               name: auth0.user.value.name,
               nickname: auth0.user.value.nickname,
+              picture: auth0.user.value.picture,
             }
           : null
 
