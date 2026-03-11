@@ -1,18 +1,13 @@
 import { computed, ref, watch } from 'vue'
 
 import { useAuth0 } from '@auth0/auth0-vue'
+import type { User } from '@auth0/auth0-vue'
 import { defineStore } from 'pinia'
 
 import type { UserProfile } from '@/client/types.gen'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
-export interface User {
-  sub: string
-  email?: string
-  name?: string
-  nickname?: string
-  picture?: string
-}
+export type { User }
 
 export const useAuthStore = defineStore('auth', () => {
   const auth0 = useAuth0()
@@ -72,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
               name: auth0.user.value.name,
               nickname: auth0.user.value.nickname,
               picture: auth0.user.value.picture,
+              email_verified: auth0.user.value.email_verified,
             }
           : null
 

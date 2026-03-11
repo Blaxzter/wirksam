@@ -8,6 +8,7 @@ class ProfileInit(BaseModel):
     name: str | None = None
     nickname: str | None = None
     picture: str | None = None
+    email_verified: bool | None = None
 
 
 class UserProfileUpdate(BaseModel):
@@ -24,7 +25,7 @@ class UserProfile(BaseModel):
     email: str | None = None
     picture: HttpUrl | None = None
     bio: str | None = None
-    email_verified: bool | None = None
+    email_verified: bool = False
     roles: list[str] = Field(default_factory=list, description="User's roles")
     is_admin: bool = Field(default=False, description="Whether user has admin role")
     is_active: bool = Field(default=True, description="Whether user is active")

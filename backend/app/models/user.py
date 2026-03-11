@@ -25,6 +25,10 @@ class User(Base, table=True):
         sa_column=sa.Column(sa.String, nullable=True),
         description="URL to user's profile picture",
     )
+    email_verified: bool = Field(
+        default=False,
+        description="Whether the user's email is verified",
+    )
 
     roles: list[str] = Field(
         default_factory=list,

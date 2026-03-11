@@ -35,7 +35,8 @@ import { computed } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
-import { type User, useAuthStore } from '@/stores/auth'
+import type { User } from '@auth0/auth0-vue'
+import { useAuthStore } from '@/stores/auth'
 
 import CurrentProfileCard from '@/components/account/user/CurrentProfileCard.vue'
 import EditProfileForm from '@/components/account/user/EditProfileForm.vue'

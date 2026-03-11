@@ -41,7 +41,11 @@ async def get_current_user_profile(
     user = await _get_or_create_user(session, claims, profile_data=profile_dict)
 
     return UserProfile(
-        **claims,
+        sub=claims["sub"],
+        name=user.name,
+        email=user.email,
+        picture=user.picture,
+        email_verified=user.email_verified,
         roles=user.roles,
         is_admin=user.is_admin,
         is_active=user.is_active,
@@ -71,20 +75,14 @@ async def update_user_profile(
     if user_update.picture is not None:
         current_user.picture = str(user_update.picture)
 
-    # Return updated user data
-    updated_user: dict[str, Any] = claims.copy()
-
-    if user_update.name is not None:
-        updated_user["name"] = user_update.name
-    if user_update.nickname is not None:
-        updated_user["nickname"] = user_update.nickname
-    if user_update.picture is not None:
-        updated_user["picture"] = str(user_update.picture)
-    if user_update.bio is not None:
-        updated_user["bio"] = user_update.bio
-
     return UserProfile(
-        **updated_user,
+        sub=claims["sub"],
+        name=user_update.name if user_update.name is not None else current_user.name,
+        email=current_user.email,
+        picture=user_update.picture if user_update.picture is not None else current_user.picture,
+        email_verified=current_user.email_verified,
+        bio=user_update.bio,
+        nickname=user_update.nickname,
         roles=current_user.roles,
         is_admin=current_user.is_admin,
         is_active=current_user.is_active,

@@ -65,11 +65,15 @@ async def _get_or_create_user(
             if "admin" not in user.roles:
                 user.roles = list(user.roles) + ["admin"]
                 dirty = True
-        # Sync picture from Auth0 on each login
+        # Sync profile data from Auth0 on each login
         if profile_data:
             picture = profile_data.get("picture")
             if picture and picture != user.picture:
                 user.picture = picture
+                dirty = True
+            email_verified = profile_data.get("email_verified")
+            if email_verified is not None and email_verified != user.email_verified:
+                user.email_verified = email_verified
                 dirty = True
         if dirty:
             session.add(user)
@@ -80,10 +84,12 @@ async def _get_or_create_user(
     email: str | None = None
     name: str | None = None
     picture: str | None = None
+    email_verified: bool = False
     if profile_data:
         email = profile_data.get("email")
         name = profile_data.get("name") or profile_data.get("nickname")
         picture = profile_data.get("picture")
+        email_verified = bool(profile_data.get("email_verified"))
 
     # Fallback to claims if profile_data not provided
     if not email:
@@ -99,6 +105,7 @@ async def _get_or_create_user(
         email=email,
         name=name,
         picture=picture,
+        email_verified=email_verified,
         roles=["admin"] if is_superadmin else [],
         is_active=is_superadmin,
     )

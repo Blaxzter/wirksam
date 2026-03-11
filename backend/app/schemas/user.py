@@ -9,6 +9,7 @@ class UserCreate(BaseModel):
     email: EmailStr | None = Field(default=None, description="User's email address")
     name: str | None = Field(default=None, description="User's display name")
     picture: str | None = Field(default=None, description="URL to user's profile picture")
+    email_verified: bool = Field(default=False, description="Whether the user's email is verified")
     roles: list[str] = Field(
         default_factory=list, description="List of role identifiers"
     )

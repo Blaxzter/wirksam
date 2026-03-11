@@ -138,7 +138,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
 import { zUserProfileUpdate } from '@/client/zod.gen'
-import type { User } from '@/stores/auth'
+import type { User } from '@auth0/auth0-vue'
 import type { UserProfileUpdate } from '@/client/types.gen'
 
 interface Props {

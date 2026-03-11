@@ -87,7 +87,7 @@ import { Label } from '@/components/ui/label'
 
 import SimpleIcon from '@/components/utils/SimpleIcon.vue'
 
-import type { User } from '@/stores/auth'
+import type { User } from '@auth0/auth0-vue'
 
 import { useAuthProvider } from './useAuthProvider'
 
