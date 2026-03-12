@@ -281,21 +281,6 @@ const countConfirmedBookings = (slots: DutySlotRead[]) => {
   return slots.reduce((sum, s) => sum + (s.current_bookings ?? 0), 0)
 }
 
-const handleCancelFromDetail = async (slot: DutySlotRead) => {
-  const booking = getBookingForSlot(slot.id)
-  if (!booking) return
-  const confirmed = await confirmDestructive(t('duties.bookings.cancelConfirm'))
-  if (!confirmed) return
-  try {
-    await del({ url: `/bookings/${booking.id}` })
-    toast.success(t('duties.bookings.cancelSuccess'))
-    showSlotDetail.value = false
-    await Promise.all([loadDutySlots(), loadMyBookings()])
-  } catch (error) {
-    toastApiError(error)
-  }
-}
-
 const handleSlotClick = async (slot: DutySlotRead) => {
   if (busySlotId.value) return
   busySlotId.value = slot.id
@@ -1011,8 +996,7 @@ onMounted(async () => {
       :event-name="event?.name"
       :show-event-link="false"
       :my-booking="selectedSlot ? (getBookingForSlot(selectedSlot.id) ?? null) : null"
-      @booking-updated="loadMyBookings"
-      @cancel-booking="selectedSlot && handleCancelFromDetail(selectedSlot)"
+      @booking-updated="Promise.all([loadDutySlots(), loadMyBookings()])"
     />
   </div>
 </template>

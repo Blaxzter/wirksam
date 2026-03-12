@@ -13,9 +13,12 @@ from app.api.deps import (
     auth0,
 )
 from app.core.config import settings
+from app.core.security import verify_password
+from app.crud.site_settings import site_settings as crud_site_settings
 from app.crud.user import user as crud_user
 from app.logic.auth0.auth0_service import delete_auth0_user, update_auth0_user
 from app.models.user import User
+from app.schemas.site_settings import SelfApproveRequest
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.schemas.users import ProfileInit, UserProfile, UserProfileUpdate
 
@@ -52,6 +55,7 @@ async def get_current_user_profile(
         roles=user.roles,
         is_admin=user.is_admin,
         is_active=user.is_active,
+        rejection_reason=user.rejection_reason,
     )
 
 
@@ -82,13 +86,87 @@ async def update_user_profile(
         sub=claims["sub"],
         name=user_update.name if user_update.name is not None else current_user.name,
         email=current_user.email,
-        picture=user_update.picture if user_update.picture is not None else current_user.picture,
+        picture=(
+            user_update.picture
+            if user_update.picture is not None
+            else current_user.picture
+        ),
         email_verified=current_user.email_verified,
         bio=user_update.bio,
         nickname=user_update.nickname,
         roles=current_user.roles,
         is_admin=current_user.is_admin,
         is_active=current_user.is_active,
+    )
+
+
+@router.get("/approval-password-status")
+async def get_approval_password_status(
+    session: DBDep,
+    claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
+) -> dict[str, bool]:
+    """Check whether an approval password is configured.
+
+    Available to any authenticated user (including inactive/pending users)
+    so the pending-approval page knows whether to show the password input.
+    """
+    _ = claims  # just need valid JWT
+    site_settings = await crud_site_settings.get(session)
+    return {"has_approval_password": site_settings.approval_password is not None}
+
+
+@router.post("/self-approve", response_model=UserProfile)
+async def self_approve(
+    body: SelfApproveRequest,
+    session: DBDep,
+    claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
+) -> UserProfile:
+    """Allow a pending user to self-approve by providing the approval password.
+
+    Does NOT require is_active so that pending users can call this.
+    Returns 400 if the user is already active or rejected.
+    Returns 403 if no approval password is configured or the password is wrong.
+    """
+    user = await _get_or_create_user(session, claims)
+
+    if user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already active",
+        )
+    if user.rejection_reason:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User has been rejected",
+        )
+
+    site_settings = await crud_site_settings.get(session)
+    if not site_settings.approval_password:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Self-approval is not enabled",
+        )
+
+    if not verify_password(body.password, site_settings.approval_password):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid approval password",
+        )
+
+    user.is_active = True
+    session.add(user)
+    await session.flush()
+
+    return UserProfile(
+        sub=claims["sub"],
+        name=user.name,
+        email=user.email,
+        picture=user.picture,
+        email_verified=user.email_verified,
+        roles=user.roles,
+        is_admin=user.is_admin,
+        is_active=user.is_active,
+        rejection_reason=user.rejection_reason,
     )
 
 
@@ -145,10 +223,12 @@ async def update_user(
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_current_user(
     session: DBDep,
-    current_user: CurrentUser,
     claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
 ) -> None:
     """Delete the currently authenticated user's account.
+
+    This endpoint does NOT require is_active so that pending users
+    can revoke their approval request before being activated.
 
     This will:
     1. Delete all user data (projects, tasks) from the database
@@ -159,6 +239,10 @@ async def delete_current_user(
     if not auth0_sub:
         raise HTTPException(status_code=400, detail="User ID not found in token")
 
+    user = await _get_or_create_user(session, claims)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     # Delete user from Auth0 first — if this fails, we abort to keep things consistent
     auth0_deleted = await delete_auth0_user(auth0_sub)
     if not auth0_deleted:
@@ -168,7 +252,7 @@ async def delete_current_user(
         )
 
     # Delete user from DB (cascades to projects → tasks)
-    await session.delete(current_user)
+    await session.delete(user)
     await session.commit()
 
     logger.info("User account deleted: %s", auth0_sub)

@@ -18,10 +18,12 @@
             "title": "Quick Actions"
         },
         "stats": {
-            "admin": {
-                "action": "Manage Events",
-                "description": "Create events, add duty slots, and manage bookings.",
-                "title": "Admin"
+            "users": {
+                "description": "Users awaiting approval",
+                "title": "Pending Users",
+                "pendingToast": "{count} user is waiting for approval | {count} users are waiting for approval",
+                "pendingAction": "Review",
+                "pendingDismiss": "Dismiss"
             },
             "bookings": {
                 "description": "Your confirmed duty bookings",

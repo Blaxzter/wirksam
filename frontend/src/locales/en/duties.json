@@ -1,304 +1,309 @@
 {
-    "availability": {
-        "title": "My Availability",
-        "subtitle": "Register your availability for this programme",
-        "register": "Register Availability",
-        "update": "Update Availability",
-        "remove": "Remove Availability",
-        "removeConfirm": "Are you sure you want to remove your availability?",
-        "notRegistered": "You haven't registered availability yet.",
-        "types": {
-            "fully_available": "Fully available",
-            "time_range": "Daily time range",
-            "specific_dates": "Specific dates"
-        },
-        "fields": {
-            "type": "Availability Type",
-            "dates": "Available Dates",
-            "datesWithRange": "Available Dates ({start} – {end})",
-            "startTime": "From",
-            "endTime": "To",
-            "fullDay": "Full day",
-            "setTimes": "Set times",
-            "timeRange": "Time Range",
-            "timeRangeHint": "Set a daily time window. Leave either empty for open-ended (e.g. only 'from' = after that time).",
-            "afterTime": "after {time}",
-            "beforeTime": "before {time}",
-            "notes": "Notes"
-        },
-        "adminTitle": "Member Availabilities",
-        "adminEmpty": "No members have registered availability yet."
+  "availability": {
+    "title": "My Availability",
+    "subtitle": "Register your availability for this programme",
+    "register": "Register Availability",
+    "update": "Update Availability",
+    "remove": "Remove Availability",
+    "removeConfirm": "Are you sure you want to remove your availability?",
+    "notRegistered": "You haven't registered availability yet.",
+    "types": {
+      "fully_available": "Fully available",
+      "time_range": "Daily time range",
+      "specific_dates": "Specific dates"
     },
-    "bookings": {
-        "bookSuccess": "Slot booked successfully!",
-        "cancel": "Cancel Booking",
-        "cancelConfirm": "Are you sure you want to cancel this booking?",
-        "cancelSuccess": "Booking cancelled.",
-        "empty": "You have no bookings yet.",
-        "statuses": {
-            "cancelled": "Cancelled",
-            "confirmed": "Confirmed"
-        },
-        "subtitle": "Your duty slot reservations",
-        "title": "My Bookings",
-        "cancellationReason": "Reason for cancellation",
-        "slotDeleted": "This slot was removed by an administrator.",
-        "unknownSlot": "Unknown slot",
-        "dismiss": "Dismiss",
-        "dismissSuccess": "Booking removed from your list.",
-        "filters": {
-            "upcoming": "Upcoming",
-            "thisMonth": "This Month",
-            "all": "All",
-            "showCancelled": "Cancelled"
-        },
-        "groupBy": {
-            "none": "No grouping",
-            "date": "Group by date",
-            "event": "Group by event",
-            "location": "Group by location"
-        },
-        "noDate": "No date",
-        "noEvent": "No event",
-        "noLocation": "No location",
-        "today": "Today",
-        "tomorrow": "Tomorrow",
-        "yesterday": "Yesterday"
+    "fields": {
+      "type": "Availability Type",
+      "dates": "Available Dates",
+      "datesWithRange": "Available Dates ({start} – {end})",
+      "startTime": "From",
+      "endTime": "To",
+      "fullDay": "Full day",
+      "setTimes": "Set times",
+      "timeRange": "Time Range",
+      "timeRangeHint": "Set a daily time window. Leave either empty for open-ended (e.g. only 'from' = after that time).",
+      "afterTime": "after {time}",
+      "beforeTime": "before {time}",
+      "notes": "Notes"
     },
-    "deleteDialog": {
-        "activeBookings": "This will cancel {count} active booking(s). Affected users will see the cancellation in their bookings.",
-        "activeBookingsWarning": "If there are any active bookings, they will be cancelled. Affected users will see the cancellation in their bookings.",
-        "reasonLabel": "Cancellation reason (optional)",
-        "reasonPlaceholder": "e.g. Event rescheduled, no longer needed...",
-        "reasonHint": "This reason will be visible to users whose bookings are cancelled."
+    "adminTitle": "Member Availabilities",
+    "adminEmpty": "No members have registered availability yet."
+  },
+  "bookings": {
+    "bookSuccess": "Slot booked successfully!",
+    "cancel": "Cancel Booking",
+    "cancelConfirm": "Are you sure you want to cancel this booking?",
+    "cancelSuccess": "Booking cancelled.",
+    "empty": "You have no bookings yet.",
+    "statuses": {
+      "cancelled": "Cancelled",
+      "confirmed": "Confirmed"
     },
-    "dutySlots": {
-        "availability": "{current} / {max} booked",
-        "available": "Available",
-        "book": "Book this slot",
-        "create": "Create Duty Slot",
-        "delete": "Delete Duty Slot",
-        "deleteConfirm": "Are you sure you want to delete this duty slot?",
-        "edit": "Edit Duty Slot",
-        "empty": "No duty slots for this event yet.",
-        "fields": {
-            "category": "Category",
-            "date": "Date",
-            "description": "Description",
-            "endTime": "End Time",
-            "location": "Location",
-            "maxBookings": "Max Bookings",
-            "startTime": "Start Time",
-            "title": "Title"
-        },
-        "full": "Fully booked",
-        "pickDate": "Pick a date",
-        "title": "Duty Slot",
-        "detail": {
-            "title": "Slot Details",
-            "event": "Event",
-            "date": "Date",
-            "time": "Time",
-            "description": "Description",
-            "location": "Location",
-            "category": "Category",
-            "capacity": "Capacity",
-            "capacityValue": "{current} / {max} booked",
-            "bookedUsers": "Booked Users",
-            "noBookings": "No bookings yet.",
-            "userName": "Name",
-            "userNotes": "Notes",
-            "bookedAt": "Booked at",
-            "viewEvent": "View Event",
-            "openDetails": "View details",
-            "myNotes": "My Notes",
-            "notesPlaceholder": "e.g. arriving late, need equipment, dietary requirements...",
-            "noNotes": "Add a note visible to the organizer — e.g. questions, availability constraints, or special requests.",
-            "notesSaved": "Notes saved."
-        }
+    "subtitle": "Your duty slot reservations",
+    "title": "My Bookings",
+    "cancellationReason": "Reason for cancellation",
+    "slotDeleted": "This slot was removed by an administrator.",
+    "unknownSlot": "Unknown slot",
+    "dismiss": "Dismiss",
+    "dismissSuccess": "Booking removed from your list.",
+    "filters": {
+      "upcoming": "Upcoming",
+      "thisMonth": "This Month",
+      "all": "All",
+      "showCancelled": "Cancelled"
     },
-    "eventGroups": {
-        "create": "Create Event Group",
-        "delete": "Delete Event Group",
-        "deleteConfirm": "Are you sure you want to delete this event group? All related availability data will be lost.",
-        "detail": {
-            "events": "Events in this Group",
-            "eventsEmpty": "No events assigned to this group yet.",
-            "title": "Event Group Details"
-        },
-        "edit": "Edit Event Group",
-        "empty": "No event groups found.",
-        "fields": {
-            "description": "Description",
-            "endDate": "End Date",
-            "name": "Name",
-            "startDate": "Start Date",
-            "status": "Status"
-        },
-        "statuses": {
-            "archived": "Archived",
-            "draft": "Draft",
-            "published": "Published"
-        },
-        "draftBanner": "This event group is a draft and is not visible to regular users. Change the status to \"Published\" to make it available.",
-        "pickDate": "Pick a date",
-        "subtitle": "Browse upcoming event programmes",
-        "title": "Event Groups"
+    "groupBy": {
+      "none": "No grouping",
+      "date": "Group by date",
+      "event": "Group by event",
+      "location": "Group by location"
     },
-    "events": {
-        "create": "Create Event",
-        "delete": "Delete Event",
-        "deleteConfirm": "Are you sure you want to delete this event? All duty slots and bookings will be lost.",
-        "detail": {
-            "addSlot": "Add Duty Slot",
-            "slots": "Duty Slots",
-            "title": "Event Details",
-            "allLocations": "All locations",
-            "allCategories": "All categories",
-            "booked": "Booked",
-            "slotsCount": "{count} slots",
-            "noSlotsMatch": "No slots match the current filters.",
-            "myBookings": "My Bookings",
-            "myBookingsCount": "{count} booked",
-            "noBookingsYet": "Click on a slot to book it.",
-            "addSlots": "Add Slots",
-            "addSingleSlot": "Add single slot",
-            "addSlotBatch": "Generate slot batch",
-            "unbatchedSlots": "Other Slots",
-            "deleteBatchConfirm": "Are you sure you want to delete this batch? All its duty slots and bookings will be removed.",
-            "deleteBatchSuccess": "Batch deleted successfully.",
-            "hiddenSlots": "{count} slots hidden by filter"
-        },
-        "edit": "Edit Event",
-        "calendar": {
-            "more": "more",
-            "views": {
-                "month": "Month",
-                "week": "Week",
-                "day": "Day"
-            },
-            "today": "Today",
-            "allDay": "All day",
-            "noItems": "Nothing scheduled for this day."
-        },
-        "myBookingsFilter": "My bookings only",
-        "empty": "No events found.",
-        "fields": {
-            "description": "Description",
-            "endDate": "End Date",
-            "name": "Name",
-            "startDate": "Start Date",
-            "status": "Status",
-            "location": "Location",
-            "category": "Category"
-        },
-        "statuses": {
-            "archived": "Archived",
-            "draft": "Draft",
-            "published": "Published"
-        },
-        "draftBanner": "This event is a draft and is not visible to regular users. Change the status to \"Published\" to make it available.",
-        "pickDate": "Pick a date",
-        "subtitle": "Browse upcoming duty events",
-        "views": {
-            "calendar": "Calendar",
-            "list": "List",
-            "box": "Cards"
-        },
-        "quickView": {
-            "availableSlots": "{count} available",
-            "showMore": "Show {count} more",
-            "showLess": "Show less",
-            "noMore": "No more events"
-        },
-        "title": "Events",
-        "editView": {
-            "title": "Edit Event",
-            "subtitle": "Modify event details and regenerate duty slots",
-            "editBatch": "Edit Batch",
-            "editBatchSubtitle": "Modify batch schedule and regenerate its duty slots",
-            "regenerate": "Regenerate Slots",
-            "saving": "Saving...",
-            "saveSuccess": "Event updated successfully!",
-            "preview": {
-                "added": "{count} new",
-                "removed": "{count} removed",
-                "kept": "{count} unchanged",
-                "booked": "{count} booked"
-            },
-            "affectedBookings": {
-                "title": "Affected Bookings",
-                "description": "The following confirmed bookings will be cancelled because their slots no longer exist after regeneration. Users have not been notified yet — this is a manual process for now.",
-                "slot": "Slot",
-                "user": "User",
-                "confirm": "Proceed anyway",
-                "cancel": "Cancel"
-            }
-        },
-        "addSlotsView": {
-            "title": "Add Slots",
-            "subtitle": "Add a new batch of duty slots to this event",
-            "sections": {
-                "batch": "Batch Details",
-                "batchDesc": "Optional location and category for this batch of slots"
-            },
-            "submit": "Add Slots",
-            "success": "{count} duty slots added!"
-        },
-        "createView": {
-            "title": "Create Event",
-            "subtitle": "Set up a new event with auto-generated duty slots",
-            "sections": {
-                "details": "Event Details",
-                "detailsDesc": "Basic information about the event",
-                "eventGroup": "Event Group",
-                "eventGroupDesc": "Optionally assign this event to a group",
-                "dates": "Event Dates",
-                "datesDesc": "Choose when this event takes place",
-                "schedule": "Schedule & Slots",
-                "scheduleDesc": "Configure when duty slots should be created",
-                "preview": "Preview",
-                "previewDesc": "Review the slots that will be generated"
-            },
-            "dateMode": {
-                "single": "One day",
-                "range": "Date range",
-                "specific": "Specific dates"
-            },
-            "addDate": "Add date",
-            "noDatesSelected": "No dates selected yet",
-            "groupDateHint": "Dates are restricted to the selected event group ({start} – {end})",
-            "eventGroupOption": {
-                "none": "No event group",
-                "existing": "Select existing",
-                "new": "Create new"
-            },
-            "schedule": {
-                "defaultStartTime": "Default Start Time",
-                "defaultEndTime": "Default End Time",
-                "slotDuration": "Slot Duration",
-                "peoplePerSlot": "People per Slot",
-                "remainder": "Remaining time",
-                "remainderDesc": "How to handle time left over when slots don't divide evenly",
-                "remainderMode": {
-                    "drop": "Ignore remaining time",
-                    "short": "Create a shorter final slot",
-                    "extend": "Extend the last slot"
-                },
-                "overrides": "Date Exceptions",
-                "overridesDesc": "Override times for specific dates",
-                "addException": "Add Exception",
-                "removeException": "Remove",
-                "minutes": "{n} minutes"
-            },
-            "preview": {
-                "summary": "{slots} slots across {days} days",
-                "noSlots": "No slots will be generated with the current configuration. Please fill in the schedule section.",
-                "slotsOnDate": "{count} slots",
-                "clickToExclude": "Click on any slot to exclude it from being created."
-            },
-            "submit": "Create Event",
-            "success": "Event created with {count} duty slots!"
-        }
+    "noDate": "No date",
+    "noEvent": "No event",
+    "noLocation": "No location",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday"
+  },
+  "deleteDialog": {
+    "activeBookings": "This will cancel {count} active booking(s). Affected users will see the cancellation in their bookings.",
+    "activeBookingsWarning": "If there are any active bookings, they will be cancelled. Affected users will see the cancellation in their bookings.",
+    "reasonLabel": "Cancellation reason (optional)",
+    "reasonPlaceholder": "e.g. Event rescheduled, no longer needed...",
+    "reasonHint": "This reason will be visible to users whose bookings are cancelled."
+  },
+  "dutySlots": {
+    "availability": "{current} / {max} booked",
+    "available": "Available",
+    "book": "Book this slot",
+    "create": "Create Duty Slot",
+    "delete": "Delete Duty Slot",
+    "deleteConfirm": "Are you sure you want to delete this duty slot?",
+    "edit": "Edit Duty Slot",
+    "empty": "No duty slots for this event yet.",
+    "fields": {
+      "category": "Category",
+      "date": "Date",
+      "description": "Description",
+      "endTime": "End Time",
+      "location": "Location",
+      "maxBookings": "Max Bookings",
+      "startTime": "Start Time",
+      "title": "Title"
+    },
+    "full": "Fully booked",
+    "pickDate": "Pick a date",
+    "title": "Duty Slot",
+    "detail": {
+      "title": "Slot Details",
+      "event": "Event",
+      "date": "Date",
+      "time": "Time",
+      "description": "Description",
+      "location": "Location",
+      "category": "Category",
+      "capacity": "Capacity",
+      "capacityValue": "{current} / {max} booked",
+      "bookedUsers": "Booked Users",
+      "noBookings": "No bookings yet.",
+      "userName": "Name",
+      "userNotes": "Notes",
+      "bookedAt": "Booked at",
+      "viewEvent": "View Event",
+      "openDetails": "View details",
+      "myNotes": "My Notes",
+      "notesPlaceholder": "e.g. arriving late, need equipment, dietary requirements...",
+      "noNotes": "Add a note visible to the organizer — e.g. questions, availability constraints, or special requests.",
+      "notesSaved": "Notes saved."
     }
+  },
+  "eventGroups": {
+    "create": "Create Event Group",
+    "delete": "Delete Event Group",
+    "deleteConfirm": "Are you sure you want to delete this event group? All related availability data will be lost.",
+    "detail": {
+      "events": "Events in this Group",
+      "eventsEmpty": "No events assigned to this group yet.",
+      "title": "Event Group Details"
+    },
+    "edit": "Edit Event Group",
+    "empty": "No event groups found.",
+    "fields": {
+      "description": "Description",
+      "endDate": "End Date",
+      "name": "Name",
+      "startDate": "Start Date",
+      "status": "Status"
+    },
+    "statuses": {
+      "archived": "Archived",
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "draftBanner": "This event group is a draft and is not visible to regular users. Change the status to \"Published\" to make it available.",
+    "pickDate": "Pick a date",
+    "subtitle": "Browse upcoming event programmes",
+    "title": "Event Groups"
+  },
+  "events": {
+    "create": "Create Event",
+    "delete": "Delete Event",
+    "deleteConfirm": "Are you sure you want to delete this event? All duty slots and bookings will be lost.",
+    "detail": {
+      "addSlot": "Add Duty Slot",
+      "slots": "Duty Slots",
+      "title": "Event Details",
+      "allLocations": "All locations",
+      "allCategories": "All categories",
+      "booked": "Booked",
+      "slotsCount": "{count} slots",
+      "noSlotsMatch": "No slots match the current filters.",
+      "myBookings": "My Bookings",
+      "myBookingsCount": "{count} booked",
+      "noBookingsYet": "Click on a slot to book it.",
+      "addSlots": "Add Slots",
+      "addSingleSlot": "Add single slot",
+      "addSlotBatch": "Generate slot batch",
+      "unbatchedSlots": "Other Slots",
+      "deleteBatchConfirm": "Are you sure you want to delete this batch? All its duty slots and bookings will be removed.",
+      "deleteBatchSuccess": "Batch deleted successfully.",
+      "hiddenSlots": "{count} slots hidden by filter"
+    },
+    "edit": "Edit Event",
+    "calendar": {
+      "more": "more",
+      "views": {
+        "month": "Month",
+        "week": "Week",
+        "day": "Day"
+      },
+      "today": "Today",
+      "allDay": "All day",
+      "noItems": "Nothing scheduled for this day."
+    },
+    "myBookingsFilter": "My bookings only",
+    "hideFullSlots": "Hide fully booked",
+    "empty": "No events found.",
+    "fields": {
+      "description": "Description",
+      "endDate": "End Date",
+      "name": "Name",
+      "startDate": "Start Date",
+      "status": "Status",
+      "location": "Location",
+      "category": "Category"
+    },
+    "statuses": {
+      "archived": "Archived",
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "draftBanner": "This event is a draft and is not visible to regular users. Change the status to \"Published\" to make it available.",
+    "pickDate": "Pick a date",
+    "subtitle": "Browse upcoming duty events",
+    "views": {
+      "calendar": "Calendar",
+      "list": "List",
+      "box": "Cards"
+    },
+    "quickView": {
+      "availableSlots": "{count} available",
+      "showMore": "Show {count} more",
+      "showLess": "Show less",
+      "noMore": "No more events"
+    },
+    "focusMode": {
+      "today": "Center on today",
+      "firstAvailable": "Jump to first available"
+    },
+    "title": "Events",
+    "editView": {
+      "title": "Edit Event",
+      "subtitle": "Modify event details and regenerate duty slots",
+      "editBatch": "Edit Batch",
+      "editBatchSubtitle": "Modify batch schedule and regenerate its duty slots",
+      "regenerate": "Regenerate Slots",
+      "saving": "Saving...",
+      "saveSuccess": "Event updated successfully!",
+      "preview": {
+        "added": "{count} new",
+        "removed": "{count} removed",
+        "kept": "{count} unchanged",
+        "booked": "{count} booked"
+      },
+      "affectedBookings": {
+        "title": "Affected Bookings",
+        "description": "The following confirmed bookings will be cancelled because their slots no longer exist after regeneration. Users have not been notified yet — this is a manual process for now.",
+        "slot": "Slot",
+        "user": "User",
+        "confirm": "Proceed anyway",
+        "cancel": "Cancel"
+      }
+    },
+    "addSlotsView": {
+      "title": "Add Slots",
+      "subtitle": "Add a new batch of duty slots to this event",
+      "sections": {
+        "batch": "Batch Details",
+        "batchDesc": "Optional location and category for this batch of slots"
+      },
+      "submit": "Add Slots",
+      "success": "{count} duty slots added!"
+    },
+    "createView": {
+      "title": "Create Event",
+      "subtitle": "Set up a new event with auto-generated duty slots",
+      "sections": {
+        "details": "Event Details",
+        "detailsDesc": "Basic information about the event",
+        "eventGroup": "Event Group",
+        "eventGroupDesc": "Optionally assign this event to a group",
+        "dates": "Event Dates",
+        "datesDesc": "Choose when this event takes place",
+        "schedule": "Schedule & Slots",
+        "scheduleDesc": "Configure when duty slots should be created",
+        "preview": "Preview",
+        "previewDesc": "Review the slots that will be generated"
+      },
+      "dateMode": {
+        "single": "One day",
+        "range": "Date range",
+        "specific": "Specific dates"
+      },
+      "addDate": "Add date",
+      "noDatesSelected": "No dates selected yet",
+      "groupDateHint": "Dates are restricted to the selected event group ({start} – {end})",
+      "eventGroupOption": {
+        "none": "No event group",
+        "existing": "Select existing",
+        "new": "Create new"
+      },
+      "schedule": {
+        "defaultStartTime": "Default Start Time",
+        "defaultEndTime": "Default End Time",
+        "slotDuration": "Slot Duration",
+        "peoplePerSlot": "People per Slot",
+        "remainder": "Remaining time",
+        "remainderDesc": "How to handle time left over when slots don't divide evenly",
+        "remainderMode": {
+          "drop": "Ignore remaining time",
+          "short": "Create a shorter final slot",
+          "extend": "Extend the last slot"
+        },
+        "overrides": "Date Exceptions",
+        "overridesDesc": "Override times for specific dates",
+        "addException": "Add Exception",
+        "removeException": "Remove",
+        "minutes": "{n} minutes"
+      },
+      "preview": {
+        "summary": "{slots} slots across {days} days",
+        "noSlots": "No slots will be generated with the current configuration. Please fill in the schedule section.",
+        "slotsOnDate": "{count} slots",
+        "clickToExclude": "Click on any slot to exclude it from being created."
+      },
+      "submit": "Create Event",
+      "success": "Event created with {count} duty slots!"
+    }
+  }
 }

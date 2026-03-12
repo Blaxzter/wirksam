@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { useColorMode } from '@vueuse/core'
-import { BookCheck, CalendarDays, CalendarRange, House, Users } from 'lucide-vue-next'
+import { BookCheck, CalendarDays, CalendarRange, Database, House, Users } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 
@@ -78,6 +78,12 @@ const navAdmin = computed(() =>
           titleKey: 'admin.users.title',
           icon: Users,
           routeName: 'admin-users',
+        },
+        {
+          title: 'Demo Data',
+          titleKey: 'admin.demoData.title',
+          icon: Database,
+          routeName: 'admin-demo-data',
         },
       ]
     : [],

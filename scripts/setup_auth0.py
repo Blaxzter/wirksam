@@ -42,18 +42,18 @@ def check_auth0_cli() -> None:
                     "auth0",
                     "login",
                     "--scopes",
-                    "create:client_grants,read:users,update:users",
+                    "create:client_grants,read:users,update:users,delete:users",
                 ],
             )
             if login_result.returncode != 0:
                 print("Login failed. Please try manually:")
                 print(
-                    "  auth0 login --scopes create:client_grants,read:users,update:users"
+                    "  auth0 login --scopes create:client_grants,read:users,update:users,delete:users"
                 )
                 sys.exit(1)
         else:
             print("Please log in first with:")
-            print("  auth0 login --scopes create:client_grants,read:users,update:users")
+            print("  auth0 login --scopes create:client_grants,read:users,update:users,delete:users")
             sys.exit(1)
 
 
@@ -316,7 +316,7 @@ def main() -> None:
     print(f"  Auth0 API (audience):  {api_identifier}")
     print(f"  SPA application:       {project_name} Web")
     print(f"  M2M application:       {project_name} Backend M2M")
-    print("  Management API grant:  read:users, update:users")
+    print("  Management API grant:  read:users, update:users, delete:users")
     print("  Role:                  admin")
     print(f"  Admin user:            {admin_email}")
     print("  Post-Login Action:     Add Roles to Access Token")
@@ -432,11 +432,11 @@ def main() -> None:
             {
                 "client_id": m2m_client_id,
                 "audience": mgmt_audience,
-                "scope": ["read:users", "update:users"],
+                "scope": ["read:users", "update:users", "delete:users"],
             }
         )
         run("auth0", "api", "post", "client-grants", "--data", grant_payload)
-        print(f"  Granted read:users + update:users on {mgmt_audience}")
+        print(f"  Granted read:users + update:users + delete:users on {mgmt_audience}")
 
     # ── Step 5: Create admin role ──────────────────────────────────────────────
     step(5, "Create admin role")

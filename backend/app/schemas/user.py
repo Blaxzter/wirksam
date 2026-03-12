@@ -25,6 +25,9 @@ class UserUpdate(BaseModel):
     is_active: bool | None = Field(
         default=None, description="Whether the user is active"
     )
+    rejection_reason: str | None = Field(
+        default=None, description="Reason for account rejection"
+    )
 
 
 class UserRead(BaseModel):
@@ -37,5 +40,6 @@ class UserRead(BaseModel):
     picture: str | None = None
     roles: list[str]
     is_active: bool
+    rejection_reason: str | None = None
     created_at: datetime
     updated_at: datetime

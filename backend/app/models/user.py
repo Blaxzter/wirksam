@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING
-
+from pydantic import HttpUrl
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlmodel import Field, Relationship
+from sqlmodel import Field
 
 from app.models.base import Base
-
-if TYPE_CHECKING:
-    from app.models.project import Project
 
 
 class User(Base, table=True):
@@ -25,7 +21,7 @@ class User(Base, table=True):
         description="User's email address",
     )
     name: str | None = Field(default=None, description="User's display name")
-    picture: str | None = Field(
+    picture: HttpUrl | None = Field(
         default=None,
         sa_column=sa.Column(sa.String, nullable=True),
         description="URL to user's profile picture",
@@ -41,10 +37,10 @@ class User(Base, table=True):
         description="List of role identifiers",
     )
     is_active: bool = Field(default=True, description="Whether the user is active")
-
-    projects: list["Project"] = Relationship(
-        back_populates="owner",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    rejection_reason: str | None = Field(
+        default=None,
+        sa_column=sa.Column(sa.String, nullable=True),
+        description="Reason for account rejection",
     )
 
     @property

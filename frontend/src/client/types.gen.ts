@@ -216,6 +216,84 @@ export type BookingUpdate = {
 }
 
 /**
+ * DemoDataCreatedResponse
+ */
+export type DemoDataCreatedResponse = {
+  /**
+   * Event Groups Created
+   */
+  event_groups_created: number
+  /**
+   * Events Created
+   */
+  events_created: number
+  /**
+   * Users Created
+   */
+  users_created: number
+  /**
+   * Duty Slots Created
+   */
+  duty_slots_created: number
+  /**
+   * Bookings Created
+   */
+  bookings_created: number
+}
+
+/**
+ * DemoDataDeletedResponse
+ */
+export type DemoDataDeletedResponse = {
+  /**
+   * Events Deleted
+   */
+  events_deleted: number
+  /**
+   * Event Groups Deleted
+   */
+  event_groups_deleted: number
+  /**
+   * Users Deleted
+   */
+  users_deleted: number
+  /**
+   * Duty Slots Deleted
+   */
+  duty_slots_deleted: number
+  /**
+   * Bookings Deleted
+   */
+  bookings_deleted: number
+}
+
+/**
+ * DemoDataParams
+ */
+export type DemoDataParams = {
+  /**
+   * Num Events
+   */
+  num_events?: number
+  /**
+   * Num Event Groups
+   */
+  num_event_groups?: number
+  /**
+   * Num Users
+   */
+  num_users?: number
+  /**
+   * Num Slots Per Event
+   */
+  num_slots_per_event?: number
+  /**
+   * Publish Events
+   */
+  publish_events?: boolean
+}
+
+/**
  * DutySlotCreate
  */
 export type DutySlotCreate = {
@@ -343,6 +421,10 @@ export type DutySlotRead = {
    * Current Bookings
    */
   current_bookings?: number
+  /**
+   * Is Booked By Me
+   */
+  is_booked_by_me?: boolean
 }
 
 /**
@@ -889,6 +971,39 @@ export type ScheduleOverride = {
 }
 
 /**
+ * SelfApproveRequest
+ */
+export type SelfApproveRequest = {
+  /**
+   * Password
+   * The approval password to verify
+   */
+  password: string
+}
+
+/**
+ * SiteSettingsRead
+ */
+export type SiteSettingsRead = {
+  /**
+   * Has Approval Password
+   * Whether an approval password is currently configured
+   */
+  has_approval_password?: boolean
+}
+
+/**
+ * SiteSettingsUpdate
+ */
+export type SiteSettingsUpdate = {
+  /**
+   * Approval Password
+   * Set or clear the approval password (null to clear)
+   */
+  approval_password?: string | null
+}
+
+/**
  * SlotBatchRead
  */
 export type SlotBatchRead = {
@@ -1303,6 +1418,11 @@ export type UserProfile = {
    * Whether user is active
    */
   is_active?: boolean
+  /**
+   * Rejection Reason
+   * Reason for account rejection
+   */
+  rejection_reason?: string | null
 }
 
 /**
@@ -1364,6 +1484,10 @@ export type UserRead = {
    */
   is_active: boolean
   /**
+   * Rejection Reason
+   */
+  rejection_reason?: string | null
+  /**
    * Created At
    */
   created_at: string
@@ -1397,6 +1521,11 @@ export type UserUpdate = {
    * Whether the user is active
    */
   is_active?: boolean | null
+  /**
+   * Rejection Reason
+   * Reason for account rejection
+   */
+  rejection_reason?: string | null
 }
 
 export type ValidationErrorItem = {
@@ -1517,6 +1646,61 @@ export type HealthReadinessCheckResponses = {
   200: unknown
 }
 
+export type UsersDeleteCurrentUserData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/users/me'
+}
+
+export type UsersDeleteCurrentUserErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type UsersDeleteCurrentUserError =
+  UsersDeleteCurrentUserErrors[keyof UsersDeleteCurrentUserErrors]
+
+export type UsersDeleteCurrentUserResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type UsersDeleteCurrentUserResponse =
+  UsersDeleteCurrentUserResponses[keyof UsersDeleteCurrentUserResponses]
+
 export type UsersUpdateUserProfileData = {
   body: UserProfileUpdate
   path?: never
@@ -1629,6 +1813,117 @@ export type UsersGetCurrentUserProfileResponses = {
 
 export type UsersGetCurrentUserProfileResponse =
   UsersGetCurrentUserProfileResponses[keyof UsersGetCurrentUserProfileResponses]
+
+export type UsersGetApprovalPasswordStatusData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/users/approval-password-status'
+}
+
+export type UsersGetApprovalPasswordStatusErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type UsersGetApprovalPasswordStatusError =
+  UsersGetApprovalPasswordStatusErrors[keyof UsersGetApprovalPasswordStatusErrors]
+
+export type UsersGetApprovalPasswordStatusResponses = {
+  /**
+   * Response Users-Get Approval Password Status
+   * Successful Response
+   */
+  200: {
+    [key: string]: boolean
+  }
+}
+
+export type UsersGetApprovalPasswordStatusResponse =
+  UsersGetApprovalPasswordStatusResponses[keyof UsersGetApprovalPasswordStatusResponses]
+
+export type UsersSelfApproveData = {
+  body: SelfApproveRequest
+  path?: never
+  query?: never
+  url: '/api/v1/users/self-approve'
+}
+
+export type UsersSelfApproveErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type UsersSelfApproveError = UsersSelfApproveErrors[keyof UsersSelfApproveErrors]
+
+export type UsersSelfApproveResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserProfile
+}
+
+export type UsersSelfApproveResponse = UsersSelfApproveResponses[keyof UsersSelfApproveResponses]
 
 export type UsersGetAuth0ManagementUrlData = {
   body?: never
@@ -1977,6 +2272,116 @@ export type UsersUpdateUserResponses = {
 }
 
 export type UsersUpdateUserResponse = UsersUpdateUserResponses[keyof UsersUpdateUserResponses]
+
+export type SettingsGetSiteSettingsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/settings/'
+}
+
+export type SettingsGetSiteSettingsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SettingsGetSiteSettingsError =
+  SettingsGetSiteSettingsErrors[keyof SettingsGetSiteSettingsErrors]
+
+export type SettingsGetSiteSettingsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SiteSettingsRead
+}
+
+export type SettingsGetSiteSettingsResponse =
+  SettingsGetSiteSettingsResponses[keyof SettingsGetSiteSettingsResponses]
+
+export type SettingsUpdateSiteSettingsData = {
+  body: SiteSettingsUpdate
+  path?: never
+  query?: never
+  url: '/api/v1/settings/'
+}
+
+export type SettingsUpdateSiteSettingsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SettingsUpdateSiteSettingsError =
+  SettingsUpdateSiteSettingsErrors[keyof SettingsUpdateSiteSettingsErrors]
+
+export type SettingsUpdateSiteSettingsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SiteSettingsRead
+}
+
+export type SettingsUpdateSiteSettingsResponse =
+  SettingsUpdateSiteSettingsResponses[keyof SettingsUpdateSiteSettingsResponses]
 
 export type EventsListEventsData = {
   body?: never
@@ -3896,6 +4301,116 @@ export type EventGroupsSetMyAvailabilityResponses = {
 
 export type EventGroupsSetMyAvailabilityResponse =
   EventGroupsSetMyAvailabilityResponses[keyof EventGroupsSetMyAvailabilityResponses]
+
+export type DemoDataDeleteDemoDataData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/demo-data/'
+}
+
+export type DemoDataDeleteDemoDataErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type DemoDataDeleteDemoDataError =
+  DemoDataDeleteDemoDataErrors[keyof DemoDataDeleteDemoDataErrors]
+
+export type DemoDataDeleteDemoDataResponses = {
+  /**
+   * Successful Response
+   */
+  200: DemoDataDeletedResponse
+}
+
+export type DemoDataDeleteDemoDataResponse =
+  DemoDataDeleteDemoDataResponses[keyof DemoDataDeleteDemoDataResponses]
+
+export type DemoDataCreateDemoDataData = {
+  body: DemoDataParams
+  path?: never
+  query?: never
+  url: '/api/v1/demo-data/'
+}
+
+export type DemoDataCreateDemoDataErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type DemoDataCreateDemoDataError =
+  DemoDataCreateDemoDataErrors[keyof DemoDataCreateDemoDataErrors]
+
+export type DemoDataCreateDemoDataResponses = {
+  /**
+   * Successful Response
+   */
+  200: DemoDataCreatedResponse
+}
+
+export type DemoDataCreateDemoDataResponse =
+  DemoDataCreateDemoDataResponses[keyof DemoDataCreateDemoDataResponses]
 
 export type ClientOptions = {
   baseURL: `${string}://${string}` | (string & {})

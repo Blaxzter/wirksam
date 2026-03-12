@@ -1,27 +1,73 @@
 {
-    "sidebar": {
-        "section": "Administration"
+  "sidebar": {
+    "section": "Administration"
+  },
+  "users": {
+    "title": "User Management",
+    "subtitle": "View and manage platform users and their roles.",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "status": "Status",
+      "memberSince": "Member Since",
+      "actions": "Actions"
     },
-    "users": {
-        "title": "User Management",
-        "subtitle": "View and manage platform users and their roles.",
-        "columns": {
-            "name": "Name",
-            "email": "Email",
-            "roles": "Roles",
-            "status": "Status",
-            "actions": "Actions"
-        },
-        "active": "Active",
-        "inactive": "Inactive",
-        "pending": "Pending",
-        "activate": "Activate",
-        "deactivate": "Deactivate",
-        "activated": "Activated account for {name}.",
-        "deactivated": "Deactivated account for {name}.",
-        "makeAdmin": "Make Admin",
-        "removeAdmin": "Remove Admin",
-        "grantedAdmin": "Granted admin role to {name}.",
-        "removedAdmin": "Removed admin role from {name}."
+    "statsTotal": "Total Users",
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "activated": "Activated account for {name}.",
+    "deactivated": "Deactivated account for {name}.",
+    "makeAdmin": "Make Admin",
+    "removeAdmin": "Remove Admin",
+    "grantedAdmin": "Granted admin role to {name}.",
+    "removedAdmin": "Removed admin role from {name}.",
+    "reject": "Reject",
+    "rejected": "Rejected",
+    "rejectedToast": "Rejected account for {name}.",
+    "rejectDialogTitle": "Reject User",
+    "rejectDialogDescription": "Provide an optional reason for rejecting {name}'s account request. The user will see this message.",
+    "rejectReasonPlaceholder": "Reason for rejection (optional)...",
+    "showRejected": "Show Rejected",
+    "hideRejected": "Hide Rejected",
+    "approvalPassword": {
+      "title": "Approval Password",
+      "description": "Set an optional password that pending users can enter to approve themselves.",
+      "placeholder": "Enter approval password",
+      "changePlaceholder": "Enter new approval password",
+      "saved": "Approval password saved.",
+      "savedAndCopied": "Approval password saved and copied to clipboard.",
+      "clear": "Clear approval password",
+      "clearDialogTitle": "Clear Approval Password",
+      "clearDialogDescription": "Are you sure you want to clear the approval password? Pending users will no longer be able to self-approve.",
+      "cleared": "Approval password cleared."
     }
+  },
+  "demoData": {
+    "title": "Demo Data",
+    "subtitle": "Generate or remove demo data for testing purposes.",
+    "create": {
+      "title": "Create Demo Data",
+      "description": "Generate events, event groups, users, and duty slots with a [DEMO] prefix.",
+      "button": "Create Demo Data"
+    },
+    "delete": {
+      "title": "Delete Demo Data",
+      "description": "Remove all demo data from the system.",
+      "info": "This will delete all entities tagged with [DEMO] — events, event groups, duty slots, bookings, and demo users.",
+      "button": "Delete All Demo Data"
+    },
+    "fields": {
+      "numEvents": "Number of Events",
+      "numEventGroups": "Number of Event Groups",
+      "numUsers": "Number of Demo Users",
+      "numSlotsPerEvent": "Slots per Event",
+      "publishEvents": "Publish events immediately"
+    },
+    "createSuccess": "Created {events} events, {groups} groups, {users} users, {slots} slots, and {bookings} bookings.",
+    "deleteSuccess": "Deleted {events} events, {groups} groups, {users} users, {slots} slots, and {bookings} bookings."
+  }
 }

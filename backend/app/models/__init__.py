@@ -11,6 +11,7 @@ from .booking import Booking
 from .duty_slot import DutySlot
 from .event import Event
 from .event_group import EventGroup
+from .site_settings import SiteSettings
 from .slot_batch import SlotBatch
 from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
@@ -22,6 +23,7 @@ __all__ = [
     "DutySlot",
     "Event",
     "EventGroup",
+    "SiteSettings",
     "SlotBatch",
     "User",
     "UserAvailability",

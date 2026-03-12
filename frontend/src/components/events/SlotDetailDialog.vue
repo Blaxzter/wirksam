@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useDialog } from '@/composables/useDialog'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -39,12 +40,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:open': [value: boolean]
   'booking-updated': []
-  'cancel-booking': []
 }>()
 
 const { t, locale } = useI18n()
 const router = useRouter()
-const { get, patch } = useAuthenticatedClient()
+const { get, post, patch, delete: del } = useAuthenticatedClient()
+const { confirmDestructive } = useDialog()
 
 const fetchedSlot = ref<DutySlotRead | null>(null)
 const slotBookings = ref<SlotBookingEntry[]>([])
@@ -161,6 +162,51 @@ const timeDisplay = computed(() => {
   return parts.length > 0 ? parts.join(' – ') : null
 })
 
+const isSlotFull = computed(() => {
+  const s = resolvedSlot.value
+  if (!s) return true
+  return (s.current_bookings ?? 0) >= (s.max_bookings ?? 1)
+})
+
+const canBook = computed(() => {
+  return !props.myBooking && !isSlotFull.value
+})
+
+const bookingInProgress = ref(false)
+
+const handleBook = async () => {
+  const slot = resolvedSlot.value
+  if (!slot || isSlotFull.value) return
+  bookingInProgress.value = true
+  try {
+    await post({ url: '/bookings/', body: { duty_slot_id: slot.id } })
+    toast.success(t('duties.bookings.bookSuccess'))
+    emit('booking-updated')
+    dialogOpen.value = false
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    bookingInProgress.value = false
+  }
+}
+
+const handleCancelBooking = async () => {
+  if (!props.myBooking) return
+  const confirmed = await confirmDestructive(t('duties.bookings.cancelConfirm'))
+  if (!confirmed) return
+  bookingInProgress.value = true
+  try {
+    await del({ url: `/bookings/${props.myBooking.id}` })
+    toast.success(t('duties.bookings.cancelSuccess'))
+    emit('booking-updated')
+    dialogOpen.value = false
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    bookingInProgress.value = false
+  }
+}
+
 const navigateToEvent = () => {
   const eventId = resolvedSlot.value?.event_id
   if (eventId) {
@@ -174,7 +220,12 @@ const navigateToEvent = () => {
   <Dialog v-model:open="dialogOpen">
     <DialogContent class="sm:max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>{{ t('duties.dutySlots.detail.title') }}</DialogTitle>
+        <div class="flex items-center justify-between gap-2 pr-6">
+          <DialogTitle>{{ t('duties.dutySlots.detail.title') }}</DialogTitle>
+          <Badge v-if="resolvedSlot" variant="outline" class="text-xs shrink-0">
+            {{ resolvedSlot.current_bookings ?? 0 }} / {{ resolvedSlot.max_bookings ?? 1 }}
+          </Badge>
+        </div>
         <DialogDescription v-if="eventName">
           {{ eventName }}
         </DialogDescription>
@@ -325,25 +376,39 @@ const navigateToEvent = () => {
         </div>
 
         <!-- Footer actions -->
-        <div class="flex items-center justify-between pt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
           <div class="flex items-center gap-2">
-            <Button v-if="eventName" variant="outline" size="sm" @click="navigateToEvent">
+            <Button
+              v-if="eventName"
+              variant="outline"
+              size="sm"
+              class="w-full sm:w-auto"
+              @click="navigateToEvent"
+            >
               <ExternalLink class="mr-1.5 h-3.5 w-3.5" />
               {{ t('duties.dutySlots.detail.viewEvent') }}
             </Button>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <Button
+              v-if="canBook"
+              size="sm"
+              class="w-full sm:w-auto"
+              :disabled="bookingInProgress"
+              @click="handleBook"
+            >
+              {{ t('duties.dutySlots.book') }}
+            </Button>
             <Button
               v-if="myBooking"
               variant="destructive"
               size="sm"
-              @click="emit('cancel-booking')"
+              class="w-full sm:w-auto"
+              :disabled="bookingInProgress"
+              @click="handleCancelBooking"
             >
               {{ t('duties.bookings.cancel') }}
             </Button>
-            <Badge variant="outline" class="text-xs">
-              {{ resolvedSlot.current_bookings ?? 0 }} / {{ resolvedSlot.max_bookings ?? 1 }}
-            </Badge>
           </div>
         </div>
       </template>

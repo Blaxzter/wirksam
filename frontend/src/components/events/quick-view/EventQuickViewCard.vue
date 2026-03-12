@@ -4,11 +4,13 @@ import { computed, ref } from 'vue'
 import { MapPin, Tag, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
-import type { DutySlotRead, EventRead } from '@/client/types.gen'
+import { useAuthStore } from '@/stores/auth'
+
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+
+import type { DutySlotRead, EventRead } from '@/client/types.gen'
 import { statusVariant } from '@/lib/status'
-import { useAuthStore } from '@/stores/auth'
 
 import WeekDayColumns from './WeekDayColumns.vue'
 import type { DayColumn, DaySlotEntry } from './WeekDayColumns.vue'
@@ -18,6 +20,7 @@ const props = defineProps<{
   slots: DutySlotRead[]
   initialStartDate: Date
   visibleDays?: number
+  hideFullSlots?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -52,6 +55,7 @@ const days = computed<DayColumn[]>(() => {
       endTime: slot.end_time,
       currentBookings: slot.current_bookings,
       maxBookings: slot.max_bookings,
+      isBookedByMe: slot.is_booked_by_me,
     })
   }
 
@@ -73,36 +77,49 @@ const totalAvailableSlots = computed(() => {
     return (s.current_bookings ?? 0) < s.max_bookings
   }).length
 })
-
-
 </script>
 
 <template>
   <div class="overflow-hidden rounded-lg border bg-card transition-colors hover:bg-muted/30">
-    <div class="flex">
-      <!-- Left: Event Info -->
+    <div class="flex flex-col md:flex-row md:min-h-[260px]">
+      <!-- Top/Left: Event Info -->
       <div
-        class="flex w-56 shrink-0 cursor-pointer flex-col justify-between border-r p-4"
+        class="flex cursor-pointer flex-col justify-between border-b p-4 md:w-56 md:shrink-0 md:border-b-0 md:border-r"
         @click="emit('navigate', event)"
       >
         <div class="space-y-2">
           <div class="flex items-start justify-between gap-2">
-            <h3 class="text-sm font-semibold leading-tight line-clamp-2 break-words">{{ event.name }}</h3>
-            <Badge :variant="statusVariant(event.status)" class="shrink-0 text-[10px]">
+            <h3 class="text-sm font-semibold leading-tight line-clamp-2 break-words">
+              {{ event.name }}
+            </h3>
+            <Badge
+              :variant="statusVariant(event.status)"
+              class="shrink-0 text-[10px]"
+              v-if="authStore.isAdmin"
+            >
               {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
             </Badge>
           </div>
 
-          <p v-if="event.description" class="text-xs text-muted-foreground line-clamp-2 break-words">
+          <p
+            v-if="event.description"
+            class="text-xs text-muted-foreground line-clamp-2 break-words"
+          >
             {{ event.description }}
           </p>
 
           <div class="space-y-1">
-            <div v-if="event.location" class="flex items-center gap-1 text-xs text-muted-foreground">
+            <div
+              v-if="event.location"
+              class="flex items-center gap-1 text-xs text-muted-foreground"
+            >
               <MapPin class="h-3 w-3 shrink-0" />
               <span class="truncate">{{ event.location }}</span>
             </div>
-            <div v-if="event.category" class="flex items-center gap-1 text-xs text-muted-foreground">
+            <div
+              v-if="event.category"
+              class="flex items-center gap-1 text-xs text-muted-foreground"
+            >
               <Tag class="h-3 w-3 shrink-0" />
               <span class="truncate">{{ event.category }}</span>
             </div>
@@ -132,6 +149,7 @@ const totalAvailableSlots = computed(() => {
           :days="days"
           :visible-days="numDays"
           :expanded="expanded"
+          :hide-full-slots="hideFullSlots"
           @previous="weekOffset--"
           @next="weekOffset++"
           @click-slot="(slotId) => emit('clickSlot', slotId, event)"

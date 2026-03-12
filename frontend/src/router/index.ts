@@ -147,6 +147,18 @@ const router = createRouter({
           },
         },
         {
+          path: 'admin/demo-data',
+          name: 'admin-demo-data',
+          component: () => import('@/views/admin/DemoDataView.vue'),
+          meta: {
+            requiresRole: 'admin',
+            breadcrumbs: [
+              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
+              { title: 'Demo Data', titleKey: 'admin.demoData.title' },
+            ],
+          },
+        },
+        {
           path: 'admin/users',
           name: 'admin-users',
           component: () => import('@/views/admin/UsersView.vue'),

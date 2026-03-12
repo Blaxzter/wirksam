@@ -1,19 +1,26 @@
-import { computed, ref, watch } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 
 import { useAuth0 } from '@auth0/auth0-vue'
 import type { User } from '@auth0/auth0-vue'
 import { defineStore } from 'pinia'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { toast } from 'vue-sonner'
 
-import type { UserProfile } from '@/client/types.gen'
+import type { UserProfile, UserRead } from '@/client/types.gen'
+import ActionToast from '@/components/ui/sonner/ActionToast.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 export type { User }
 
 export const useAuthStore = defineStore('auth', () => {
   const auth0 = useAuth0()
-  const { post } = useAuthenticatedClient()
+  const { post, get } = useAuthenticatedClient()
+  const { t } = useI18n()
+  const router = useRouter()
   const loading = ref(false)
   const profileLoading = ref(false)
+  const pendingUserCount = ref(0)
 
   const isAuthenticated = computed(() => auth0.isAuthenticated.value)
   const user = computed(() => auth0.user.value)
@@ -76,6 +83,12 @@ export const useAuthStore = defineStore('auth', () => {
         body: profileInit,
       })
       profile.value = response.data
+
+      // Check for pending users once per session (admin only)
+      if (response.data.is_admin) {
+        checkPendingUsers()
+      }
+
       return response.data
     })()
 
@@ -111,6 +124,31 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const checkPendingUsers = async () => {
+    try {
+      const usersRes = await get<{ data: UserRead[] }>({ url: '/users/' })
+      const pending = usersRes.data.filter((u) => !u.is_active && !u.rejection_reason)
+      pendingUserCount.value = pending.length
+      if (pending.length > 0) {
+        toast.custom(markRaw(ActionToast), {
+          duration: Infinity,
+          componentProps: {
+            message: t(
+              'dashboard.home.stats.users.pendingToast',
+              { count: pending.length },
+              pending.length,
+            ),
+            actionLabel: t('dashboard.home.stats.users.pendingAction'),
+            dismissLabel: t('dashboard.home.stats.users.pendingDismiss'),
+            onAction: () => router.push({ name: 'admin-users' }),
+          },
+        })
+      }
+    } catch {
+      // Non-critical, ignore
+    }
+  }
+
   watch(isAuthenticated, (next) => {
     if (!next) {
       profile.value = null
@@ -125,6 +163,7 @@ export const useAuthStore = defineStore('auth', () => {
     roles,
     isActive,
     isAdmin,
+    pendingUserCount,
     loading,
     profileLoading,
     logout,

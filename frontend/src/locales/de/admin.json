@@ -1,27 +1,73 @@
 {
-    "sidebar": {
-        "section": "Administration"
+  "sidebar": {
+    "section": "Administration"
+  },
+  "users": {
+    "title": "Benutzerverwaltung",
+    "subtitle": "Plattformbenutzer und deren Rollen anzeigen und verwalten.",
+    "columns": {
+      "name": "Name",
+      "email": "E-Mail",
+      "roles": "Rollen",
+      "status": "Status",
+      "memberSince": "Mitglied seit",
+      "actions": "Aktionen"
     },
-    "users": {
-        "title": "Benutzerverwaltung",
-        "subtitle": "Plattformbenutzer und deren Rollen anzeigen und verwalten.",
-        "columns": {
-            "name": "Name",
-            "email": "E-Mail",
-            "roles": "Rollen",
-            "status": "Status",
-            "actions": "Aktionen"
-        },
-        "active": "Aktiv",
-        "inactive": "Inaktiv",
-        "pending": "Ausstehend",
-        "activate": "Aktivieren",
-        "deactivate": "Deaktivieren",
-        "activated": "Konto für {name} aktiviert.",
-        "deactivated": "Konto für {name} deaktiviert.",
-        "makeAdmin": "Admin machen",
-        "removeAdmin": "Admin entfernen",
-        "grantedAdmin": "Adminrolle an {name} vergeben.",
-        "removedAdmin": "Adminrolle von {name} entfernt."
+    "statsTotal": "Benutzer gesamt",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "pending": "Ausstehend",
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren",
+    "activated": "Konto für {name} aktiviert.",
+    "deactivated": "Konto für {name} deaktiviert.",
+    "makeAdmin": "Admin machen",
+    "removeAdmin": "Admin entfernen",
+    "grantedAdmin": "Adminrolle an {name} vergeben.",
+    "removedAdmin": "Adminrolle von {name} entfernt.",
+    "reject": "Ablehnen",
+    "rejected": "Abgelehnt",
+    "rejectedToast": "Konto für {name} abgelehnt.",
+    "rejectDialogTitle": "Benutzer ablehnen",
+    "rejectDialogDescription": "Geben Sie optional einen Grund für die Ablehnung der Kontoanfrage von {name} an. Der Benutzer sieht diese Nachricht.",
+    "rejectReasonPlaceholder": "Grund für die Ablehnung (optional)...",
+    "showRejected": "Abgelehnte anzeigen",
+    "hideRejected": "Abgelehnte ausblenden",
+    "approvalPassword": {
+      "title": "Freigabe-Passwort",
+      "description": "Legen Sie ein optionales Passwort fest, das wartende Benutzer eingeben können, um sich selbst freizugeben.",
+      "placeholder": "Freigabe-Passwort eingeben",
+      "changePlaceholder": "Neues Freigabe-Passwort eingeben",
+      "saved": "Freigabe-Passwort gespeichert.",
+      "savedAndCopied": "Freigabe-Passwort gespeichert und in die Zwischenablage kopiert.",
+      "clear": "Freigabe-Passwort löschen",
+      "clearDialogTitle": "Freigabe-Passwort löschen",
+      "clearDialogDescription": "Sind Sie sicher, dass Sie das Freigabe-Passwort löschen möchten? Wartende Benutzer können sich dann nicht mehr selbst freigeben.",
+      "cleared": "Freigabe-Passwort gelöscht."
     }
+  },
+  "demoData": {
+    "title": "Demodaten",
+    "subtitle": "Demodaten zu Testzwecken generieren oder entfernen.",
+    "create": {
+      "title": "Demodaten erstellen",
+      "description": "Events, Eventgruppen, Benutzer und Dienstslots mit dem Präfix [DEMO] generieren.",
+      "button": "Demodaten erstellen"
+    },
+    "delete": {
+      "title": "Demodaten löschen",
+      "description": "Alle Demodaten aus dem System entfernen.",
+      "info": "Dies löscht alle mit [DEMO] gekennzeichneten Einträge — Events, Eventgruppen, Dienstslots, Buchungen und Demobenutzer.",
+      "button": "Alle Demodaten löschen"
+    },
+    "fields": {
+      "numEvents": "Anzahl Events",
+      "numEventGroups": "Anzahl Eventgruppen",
+      "numUsers": "Anzahl Demobenutzer",
+      "numSlotsPerEvent": "Slots pro Event",
+      "publishEvents": "Events sofort veröffentlichen"
+    },
+    "createSuccess": "{events} Events, {groups} Gruppen, {users} Benutzer, {slots} Slots und {bookings} Buchungen erstellt.",
+    "deleteSuccess": "{events} Events, {groups} Gruppen, {users} Benutzer, {slots} Slots und {bookings} Buchungen gelöscht."
+  }
 }

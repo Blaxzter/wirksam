@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,11 +20,20 @@ from app.schemas.duty_slot import (
 router = APIRouter(prefix="/duty-slots", tags=["duty-slots"])
 
 
-async def _enrich_slot(session: AsyncSession, slot: DutySlot) -> DutySlotRead:
-    """Add current_bookings count to a DutySlotRead."""
+async def _enrich_slot(
+    session: AsyncSession,
+    slot: DutySlot,
+    user_id: uuid.UUID | None = None,
+) -> DutySlotRead:
+    """Add current_bookings count and is_booked_by_me to a DutySlotRead."""
     count = await crud_booking.get_confirmed_count(session, duty_slot_id=slot.id)
     read = DutySlotRead.model_validate(slot)
     read.current_bookings = count
+    if user_id:
+        my_booking = await crud_booking.get_by_slot_and_user(
+            session, duty_slot_id=slot.id, user_id=user_id
+        )
+        read.is_booked_by_me = my_booking is not None and my_booking.status == "confirmed"
     return read
 
 
@@ -51,7 +62,7 @@ async def list_duty_slots(
         category=category,
         search=search,
     )
-    enriched = [await _enrich_slot(session, s) for s in items]
+    enriched = [await _enrich_slot(session, s, user_id=current_user.id) for s in items]
     total = await crud_duty_slot.get_count_filtered(
         session, event_id=event_id, category=category, search=search
     )
@@ -68,7 +79,7 @@ async def get_duty_slot(
         raise_problem(400, code="invalid_request", detail="slot_id is required")
 
     slot = await crud_duty_slot.get(session, slot_id, raise_404_error=True)
-    return await _enrich_slot(session, slot)
+    return await _enrich_slot(session, slot, user_id=_current_user.id)
 
 
 @router.post("/", response_model=DutySlotRead, status_code=201)

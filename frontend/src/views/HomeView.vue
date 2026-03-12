@@ -2,11 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { useLocalStorage } from '@vueuse/core'
-import { BookCheck, CalendarDays, ClipboardList, SlidersHorizontal } from 'lucide-vue-next'
+import { BookCheck, CalendarDays, SlidersHorizontal, Users } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { toast } from 'vue-sonner'
-
 import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
@@ -37,10 +35,8 @@ import { toastApiError } from '@/lib/api-errors'
 const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
-import { useDialog } from '@/composables/useDialog'
 
-const { get, delete: del } = useAuthenticatedClient()
-const { confirmDestructive } = useDialog()
+const { get } = useAuthenticatedClient()
 
 const eventCount = ref(0)
 const myBookingCount = ref(0)
@@ -132,21 +128,6 @@ const navigateToGroup = (group: EventGroupRead) => {
   router.push({ name: 'event-group-detail', params: { groupId: group.id } })
 }
 
-const handleCancelBooking = async () => {
-  if (!detailBooking.value) return
-  const confirmed = await confirmDestructive(t('duties.bookings.cancelConfirm'))
-  if (!confirmed) return
-
-  try {
-    await del({ url: `/bookings/${detailBooking.value.id}` })
-    toast.success(t('duties.bookings.cancelSuccess'))
-    showSlotDetail.value = false
-    await loadStats()
-  } catch (error) {
-    toastApiError(error)
-  }
-}
-
 onMounted(loadStats)
 </script>
 
@@ -197,20 +178,22 @@ onMounted(loadStats)
         </CardContent>
       </Card>
 
-      <Card v-if="authStore.isAdmin">
+      <Card
+        v-if="authStore.isAdmin"
+        class="cursor-pointer hover:shadow-md transition-shadow"
+        @click="router.push({ name: 'admin-users' })"
+      >
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">{{
-            t('dashboard.home.stats.admin.title')
+            t('dashboard.home.stats.users.title')
           }}</CardTitle>
-          <ClipboardList class="h-4 w-4 text-muted-foreground" />
+          <Users class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
+          <div class="text-2xl font-bold">{{ authStore.pendingUserCount }}</div>
           <p class="text-xs text-muted-foreground">
-            {{ t('dashboard.home.stats.admin.description') }}
+            {{ t('dashboard.home.stats.users.description') }}
           </p>
-          <Button size="sm" class="mt-2" @click="router.push({ name: 'events' })">
-            {{ t('dashboard.home.stats.admin.action') }}
-          </Button>
         </CardContent>
       </Card>
     </div>
@@ -327,7 +310,6 @@ onMounted(loadStats)
       :slot-id="detailSlotId"
       :my-booking="detailBooking"
       @booking-updated="loadStats"
-      @cancel-booking="handleCancelBooking"
     />
   </div>
 </template>

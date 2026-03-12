@@ -516,7 +516,6 @@ onMounted(loadBookings)
       :event-name="detailEventName"
       :my-booking="detailBooking"
       @booking-updated="loadBookings"
-      @cancel-booking="detailBooking && handleCancel(detailBooking)"
     />
   </div>
 </template>

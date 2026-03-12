@@ -182,6 +182,7 @@
       "noItems": "Keine Termine für diesen Tag."
     },
     "myBookingsFilter": "Nur meine Buchungen",
+    "hideFullSlots": "Ausgebuchte ausblenden",
     "empty": "Keine Veranstaltungen gefunden.",
     "fields": {
       "description": "Beschreibung",
@@ -210,6 +211,10 @@
       "showMore": "{count} weitere anzeigen",
       "showLess": "Weniger anzeigen",
       "noMore": "Keine weiteren Veranstaltungen"
+    },
+    "focusMode": {
+      "today": "Auf heute zentrieren",
+      "firstAvailable": "Zur ersten Verfügbarkeit springen"
     },
     "title": "Veranstaltungen",
     "editView": {

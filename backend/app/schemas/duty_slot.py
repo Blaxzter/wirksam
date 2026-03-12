@@ -38,6 +38,7 @@ class DutySlotRead(DutySlotBase):
     created_at: dt.datetime
     updated_at: dt.datetime
     current_bookings: int = 0
+    is_booked_by_me: bool = False
 
 
 class DutySlotListResponse(BaseModel):

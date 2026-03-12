@@ -173,6 +173,39 @@ export const zBookingUpdate = z.object({
 })
 
 /**
+ * DemoDataCreatedResponse
+ */
+export const zDemoDataCreatedResponse = z.object({
+  event_groups_created: z.int(),
+  events_created: z.int(),
+  users_created: z.int(),
+  duty_slots_created: z.int(),
+  bookings_created: z.int(),
+})
+
+/**
+ * DemoDataDeletedResponse
+ */
+export const zDemoDataDeletedResponse = z.object({
+  events_deleted: z.int(),
+  event_groups_deleted: z.int(),
+  users_deleted: z.int(),
+  duty_slots_deleted: z.int(),
+  bookings_deleted: z.int(),
+})
+
+/**
+ * DemoDataParams
+ */
+export const zDemoDataParams = z.object({
+  num_events: z.optional(z.int().gte(1).lte(50)).default(10),
+  num_event_groups: z.optional(z.int().gte(0).lte(10)).default(3),
+  num_users: z.optional(z.int().gte(0).lte(20)).default(5),
+  num_slots_per_event: z.optional(z.int().gte(1).lte(20)).default(4),
+  publish_events: z.optional(z.boolean()).default(true),
+})
+
+/**
  * DutySlotCreate
  */
 export const zDutySlotCreate = z.object({
@@ -206,6 +239,7 @@ export const zDutySlotRead = z.object({
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
   current_bookings: z.optional(z.int()).default(0),
+  is_booked_by_me: z.optional(z.boolean()).default(false),
 })
 
 /**
@@ -383,6 +417,35 @@ export const zProfileInit = z
   })
 
 /**
+ * SelfApproveRequest
+ */
+export const zSelfApproveRequest = z.object({
+  password: z.string().register(z.globalRegistry, {
+    description: 'The approval password to verify',
+  }),
+})
+
+/**
+ * SiteSettingsRead
+ */
+export const zSiteSettingsRead = z.object({
+  has_approval_password: z
+    .optional(
+      z.boolean().register(z.globalRegistry, {
+        description: 'Whether an approval password is currently configured',
+      }),
+    )
+    .default(false),
+})
+
+/**
+ * SiteSettingsUpdate
+ */
+export const zSiteSettingsUpdate = z.object({
+  approval_password: z.optional(z.union([z.string(), z.null()])),
+})
+
+/**
  * SlotBatchRead
  */
 export const zSlotBatchRead = z.object({
@@ -540,7 +603,7 @@ export const zUserProfile = z.object({
   name: z.optional(z.union([z.string(), z.null()])),
   nickname: z.optional(z.union([z.string(), z.null()])),
   email: z.optional(z.union([z.string(), z.null()])),
-  picture: z.optional(z.union([z.url().min(1).max(2083), z.null()])),
+  picture: z.optional(z.union([z.string(), z.null()])),
   bio: z.optional(z.union([z.string(), z.null()])),
   email_verified: z.optional(z.boolean()).default(false),
   roles: z.optional(
@@ -562,6 +625,7 @@ export const zUserProfile = z.object({
       }),
     )
     .default(true),
+  rejection_reason: z.optional(z.union([z.string(), z.null()])),
 })
 
 /**
@@ -585,6 +649,7 @@ export const zUserRead = z.object({
   picture: z.optional(z.union([z.string(), z.null()])),
   roles: z.array(z.string()),
   is_active: z.boolean(),
+  rejection_reason: z.optional(z.union([z.string(), z.null()])),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
 })
@@ -597,6 +662,7 @@ export const zUserUpdate = z.object({
   name: z.optional(z.union([z.string(), z.null()])),
   roles: z.optional(z.union([z.array(z.string()), z.null()])),
   is_active: z.optional(z.union([z.boolean(), z.null()])),
+  rejection_reason: z.optional(z.union([z.string(), z.null()])),
 })
 
 export const zValidationErrorItem = z.object({
@@ -627,6 +693,19 @@ export const zHealthReadinessCheckData = z.object({
   query: z.optional(z.never()),
 })
 
+export const zUsersDeleteCurrentUserData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zUsersDeleteCurrentUserResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
 export const zUsersUpdateUserProfileData = z.object({
   body: zUserProfileUpdate,
   path: z.optional(z.never()),
@@ -648,6 +727,31 @@ export const zUsersGetCurrentUserProfileData = z.object({
  * Successful Response
  */
 export const zUsersGetCurrentUserProfileResponse = zUserProfile
+
+export const zUsersGetApprovalPasswordStatusData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Users-Get Approval Password Status
+ * Successful Response
+ */
+export const zUsersGetApprovalPasswordStatusResponse = z.object({}).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zUsersSelfApproveData = z.object({
+  body: zSelfApproveRequest,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zUsersSelfApproveResponse = zUserProfile
 
 export const zUsersGetAuth0ManagementUrlData = z.object({
   body: z.optional(z.never()),
@@ -731,6 +835,28 @@ export const zUsersUpdateUserData = z.object({
  * Successful Response
  */
 export const zUsersUpdateUserResponse = zUserRead
+
+export const zSettingsGetSiteSettingsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zSettingsGetSiteSettingsResponse = zSiteSettingsRead
+
+export const zSettingsUpdateSiteSettingsData = z.object({
+  body: zSiteSettingsUpdate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zSettingsUpdateSiteSettingsResponse = zSiteSettingsRead
 
 export const zEventsListEventsData = z.object({
   body: z.optional(z.never()),
@@ -1195,3 +1321,25 @@ export const zEventGroupsSetMyAvailabilityData = z.object({
  * Successful Response
  */
 export const zEventGroupsSetMyAvailabilityResponse = zUserAvailabilityRead
+
+export const zDemoDataDeleteDemoDataData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zDemoDataDeleteDemoDataResponse = zDemoDataDeletedResponse
+
+export const zDemoDataCreateDemoDataData = z.object({
+  body: zDemoDataParams,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zDemoDataCreateDemoDataResponse = zDemoDataCreatedResponse

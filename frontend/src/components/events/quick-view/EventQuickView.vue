@@ -4,8 +4,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Loader2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
-import type { DutySlotListResponse, DutySlotRead, EventRead } from '@/client/types.gen'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+
+import type { DutySlotListResponse, DutySlotRead, EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 import EventQuickViewCard from './EventQuickViewCard.vue'
@@ -14,6 +15,8 @@ const PAGE_SIZE = 8
 
 const props = defineProps<{
   events: EventRead[]
+  focusMode?: 'today' | 'first-available'
+  hideFullSlots?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -80,6 +83,14 @@ function getNextAvailableDate(eventId: string): string | null {
     }
   }
   return earliest
+}
+
+function getInitialDate(eventId: string): Date {
+  if (props.focusMode !== 'first-available') return today.value
+  const nextDate = getNextAvailableDate(eventId)
+  if (!nextDate) return today.value
+  const [y, m, d] = nextDate.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 async function loadSlotsForEvents(eventIds: string[]) {
@@ -157,11 +168,14 @@ function setupObserver() {
   if (sentinelRef.value) observer.observe(sentinelRef.value)
 }
 
-watch(() => props.events, async () => {
-  await loadInitialPage()
-  await nextTick()
-  setupObserver()
-})
+watch(
+  () => props.events,
+  async () => {
+    await loadInitialPage()
+    await nextTick()
+    setupObserver()
+  },
+)
 
 onMounted(async () => {
   await loadInitialPage()
@@ -189,8 +203,9 @@ onBeforeUnmount(() => {
       :key="event.id"
       :event="event"
       :slots="slotsByEvent.get(event.id) ?? []"
-      :initial-start-date="today"
+      :initial-start-date="getInitialDate(event.id)"
       :visible-days="5"
+      :hide-full-slots="hideFullSlots"
       @navigate="emit('navigate', $event)"
       @delete="emit('delete', $event)"
       @click-slot="(slotId, ev) => emit('clickSlot', slotId, ev)"

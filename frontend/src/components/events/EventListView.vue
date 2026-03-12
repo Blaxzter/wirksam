@@ -2,19 +2,15 @@
 import { Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
-import type { EventRead } from '@/client/types.gen'
+import { useAuthStore } from '@/stores/auth'
+
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+import type { EventRead } from '@/client/types.gen'
 import { formatDate } from '@/lib/format'
 import { statusVariant } from '@/lib/status'
-import { useAuthStore } from '@/stores/auth'
 
 defineProps<{
   events: EventRead[]
@@ -44,7 +40,7 @@ const authStore = useAuthStore()
       <CardHeader class="pb-3">
         <div class="flex items-start justify-between">
           <CardTitle class="text-lg line-clamp-1 break-words">{{ event.name }}</CardTitle>
-          <Badge :variant="statusVariant(event.status)">
+          <Badge v-if="authStore.isAdmin" :variant="statusVariant(event.status)">
             {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
           </Badge>
         </div>

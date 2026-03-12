@@ -18,10 +18,12 @@
             "title": "Schnellzugriff"
         },
         "stats": {
-            "admin": {
-                "action": "Veranstaltungen verwalten",
-                "description": "Veranstaltungen erstellen, Schichten hinzufügen und Buchungen verwalten.",
-                "title": "Admin"
+            "users": {
+                "description": "Benutzer warten auf Freigabe",
+                "title": "Ausstehende Benutzer",
+                "pendingToast": "{count} Benutzer wartet auf Freigabe | {count} Benutzer warten auf Freigabe",
+                "pendingAction": "Überprüfen",
+                "pendingDismiss": "Schließen"
             },
             "bookings": {
                 "description": "Ihre bestätigten Dienstbuchungen",

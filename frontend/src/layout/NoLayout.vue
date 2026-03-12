@@ -7,7 +7,7 @@ import ErrorBoundary from '@/components/utils/ErrorBoundary.vue'
 <template>
   <div class="min-h-screen bg-background">
     <!-- Minimal layout - no header, no navigation -->
-    <main class="container mx-auto px-4 py-8">
+    <main class="container flex flex-col justify-center mx-auto px-4 py-8 min-h-screen">
       <ErrorBoundary>
         <RouterView />
       </ErrorBoundary>
