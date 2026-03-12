@@ -376,6 +376,7 @@ export const zProfileInit = z
     name: z.optional(z.union([z.string(), z.null()])),
     nickname: z.optional(z.union([z.string(), z.null()])),
     picture: z.optional(z.union([z.string(), z.null()])),
+    email_verified: z.optional(z.union([z.boolean(), z.null()])),
   })
   .register(z.globalRegistry, {
     description: 'Profile data from Auth0 ID token for user initialization.',
@@ -510,6 +511,13 @@ export const zUserCreate = z.object({
   email: z.optional(z.union([z.email(), z.null()])),
   name: z.optional(z.union([z.string(), z.null()])),
   picture: z.optional(z.union([z.string(), z.null()])),
+  email_verified: z
+    .optional(
+      z.boolean().register(z.globalRegistry, {
+        description: "Whether the user's email is verified",
+      }),
+    )
+    .default(false),
   roles: z.optional(
     z.array(z.string()).register(z.globalRegistry, {
       description: 'List of role identifiers',
@@ -534,7 +542,7 @@ export const zUserProfile = z.object({
   email: z.optional(z.union([z.string(), z.null()])),
   picture: z.optional(z.union([z.url().min(1).max(2083), z.null()])),
   bio: z.optional(z.union([z.string(), z.null()])),
-  email_verified: z.optional(z.union([z.boolean(), z.null()])),
+  email_verified: z.optional(z.boolean()).default(false),
   roles: z.optional(
     z.array(z.string()).register(z.globalRegistry, {
       description: "User's roles",

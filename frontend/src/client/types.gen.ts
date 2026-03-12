@@ -864,6 +864,10 @@ export type ProfileInit = {
    * Picture
    */
   picture?: string | null
+  /**
+   * Email Verified
+   */
+  email_verified?: boolean | null
 }
 
 /**
@@ -1236,6 +1240,11 @@ export type UserCreate = {
    */
   picture?: string | null
   /**
+   * Email Verified
+   * Whether the user's email is verified
+   */
+  email_verified?: boolean
+  /**
    * Roles
    * List of role identifiers
    */
@@ -1278,7 +1287,7 @@ export type UserProfile = {
   /**
    * Email Verified
    */
-  email_verified?: boolean | null
+  email_verified?: boolean
   /**
    * Roles
    * User's roles
