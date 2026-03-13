@@ -1,6 +1,5 @@
 """Route tests for EventGroup and UserAvailability endpoints."""
 
-import datetime
 
 import pytest
 from httpx import AsyncClient

@@ -1,18 +1,20 @@
+from typing import Any
+
 from fastapi import APIRouter, Query
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from sqlmodel import col
 
-from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
+from app.api.deps import CurrentSuperuser, DBDep
 from app.core.errors import raise_problem
-from app.crud.booking import booking as crud_booking
 from app.crud.duty_slot import duty_slot as crud_duty_slot
 from app.crud.event import event as crud_event
 from app.crud.event_group import event_group as crud_event_group
 from app.crud.slot_batch import slot_batch as crud_slot_batch
 from app.logic.slot_generator import generate_duty_slots
 from app.models.duty_slot import DutySlot
-from app.models.event import Event
 from app.models.slot_batch import SlotBatch
+from app.schemas.duty_slot import DutySlotCreate
 from app.schemas.event import (
     AddSlotsResponse,
     AddSlotsToEvent,
@@ -20,78 +22,14 @@ from app.schemas.event import (
     EventCreate,
     EventCreateWithSlots,
     EventCreateWithSlotsResponse,
-    EventListResponse,
     EventRead,
-    EventStatus,
-    EventUpdate,
     EventUpdateWithSlots,
     SlotRegenerationResult,
 )
 from app.schemas.event_group import EventGroupRead
-from app.schemas.slot_batch import SlotBatchCreate, SlotBatchRead
+from app.schemas.slot_batch import SlotBatchCreate
 
-router = APIRouter(prefix="/events", tags=["events"])
-
-
-@router.get("/", response_model=EventListResponse)
-async def list_events(
-    session: DBDep,
-    current_user: CurrentUser,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=200),
-    search: str | None = None,
-    status: EventStatus | None = None,
-    my_bookings: bool = Query(default=False),
-) -> EventListResponse:
-    """List published events (all users) or all events (admin)."""
-    effective_status = status
-    if not current_user.is_admin and effective_status is None:
-        effective_status = "published"
-
-    booked_by_user_id = str(current_user.id) if my_bookings else None
-
-    items = await crud_event.get_multi_filtered(
-        session,
-        skip=skip,
-        limit=limit,
-        search=search,
-        status=effective_status,
-        booked_by_user_id=booked_by_user_id,
-    )
-    total = await crud_event.get_count_filtered(
-        session,
-        search=search,
-        status=effective_status,
-        booked_by_user_id=booked_by_user_id,
-    )
-    return EventListResponse(
-        items=[EventRead.model_validate(i) for i in items],
-        total=total,
-        skip=skip,
-        limit=limit,
-    )
-
-
-@router.get("/{event_id}", response_model=EventRead)
-async def get_event(
-    event_id: str,
-    session: DBDep,
-    current_user: CurrentUser,
-) -> Event:
-    db_event = await crud_event.get(session, event_id, raise_404_error=True)
-    if not current_user.is_admin and db_event.status != "published":
-        raise_problem(403, code="event.not_published", detail="Event is not published")
-    return db_event
-
-
-@router.post("/", response_model=EventRead, status_code=201)
-async def create_event(
-    event_in: EventCreate,
-    session: DBDep,
-    current_user: CurrentSuperuser,
-) -> Event:
-    event_in.created_by_id = current_user.id
-    return await crud_event.create(session, obj_in=event_in)
+router = APIRouter()
 
 
 @router.post("/with-slots", response_model=EventCreateWithSlotsResponse, status_code=201)
@@ -312,23 +250,23 @@ async def regenerate_event_slots(
     # 2. Load existing slots with their bookings (scoped to batch if provided)
     stmt = (
         select(DutySlot)
-        .where(DutySlot.event_id == db_event.id)
-        .options(selectinload(DutySlot.bookings))
+        .where(col(DutySlot.event_id) == db_event.id)
+        .options(selectinload(DutySlot.bookings))  # type: ignore[arg-type]
     )
     if batch_id:
-        stmt = stmt.where(DutySlot.batch_id == batch_id)
+        stmt = stmt.where(col(DutySlot.batch_id) == batch_id)
     result = await session.execute(stmt)
     existing_slots = list(result.scalars().all())
 
     # 3. Build lookup of existing slots by (date, start_time, end_time)
-    existing_lookup: dict[tuple, DutySlot] = {}
+    existing_lookup: dict[tuple[Any, ...], DutySlot] = {}
     for slot in existing_slots:
         key = (slot.date, slot.start_time, slot.end_time)
         existing_lookup[key] = slot
 
     # 4. Match new slots to existing
-    matched_keys: set[tuple] = set()
-    slots_to_create = []
+    matched_keys: set[tuple[Any, ...]] = set()
+    slots_to_create: list[DutySlotCreate] = []
     for new_slot in new_slot_defs:
         key = (new_slot.date, new_slot.start_time, new_slot.end_time)
         if key in existing_lookup:
@@ -344,7 +282,7 @@ async def regenerate_event_slots(
 
     # 5. Find unmatched existing slots (to be deleted) and their confirmed bookings
     affected_bookings: list[AffectedBookingInfo] = []
-    slots_to_delete = []
+    slots_to_delete: list[DutySlot] = []
     for key, slot in existing_lookup.items():
         if key not in matched_keys:
             slots_to_delete.append(slot)
@@ -409,7 +347,7 @@ async def regenerate_event_slots(
 
         # 6d. Create new slots (linked to batch if scoped)
         for slot_in in slots_to_create:
-            if batch_id:
+            if batch_id and db_batch:
                 slot_in.batch_id = db_batch.id
             await crud_duty_slot.create(session, obj_in=slot_in)
 
@@ -423,88 +361,3 @@ async def regenerate_event_slots(
         slots_kept=len(matched_keys),
         affected_bookings=affected_bookings,
     )
-
-
-@router.patch("/{event_id}", response_model=EventRead)
-async def update_event(
-    event_id: str,
-    event_in: EventUpdate,
-    session: DBDep,
-    _current_user: CurrentSuperuser,
-) -> Event:
-    db_event = await crud_event.get(session, event_id, raise_404_error=True)
-    return await crud_event.update(session, db_obj=db_event, obj_in=event_in)
-
-
-@router.delete("/{event_id}", status_code=204)
-async def delete_event(
-    event_id: str,
-    session: DBDep,
-    _current_user: CurrentSuperuser,
-    cancellation_reason: str | None = Query(default=None),
-) -> None:
-    db_event = await crud_event.get(session, event_id, raise_404_error=True)
-
-    # Collect all slot IDs for this event
-    stmt = select(DutySlot.id).where(DutySlot.event_id == db_event.id)
-    result = await session.execute(stmt)
-    slot_ids = list(result.scalars().all())
-
-    # Cancel confirmed bookings with snapshot before deleting
-    await crud_booking.cancel_bookings_for_slots(
-        session,
-        slot_ids=slot_ids,
-        event_name=db_event.name,
-        cancellation_reason=cancellation_reason,
-    )
-
-    await session.delete(db_event)
-    await session.commit()
-
-
-# --- Slot Batch endpoints ---
-
-
-@router.get("/{event_id}/batches", response_model=list[SlotBatchRead])
-async def list_batches(
-    event_id: str,
-    session: DBDep,
-    _current_user: CurrentUser,
-) -> list[SlotBatchRead]:
-    """List all slot batches for an event."""
-    await crud_event.get(session, event_id, raise_404_error=True)
-    batches = await crud_slot_batch.get_by_event(session, event_id=event_id)
-    return [SlotBatchRead.model_validate(b) for b in batches]
-
-
-@router.delete("/{event_id}/batches/{batch_id}", status_code=204)
-async def delete_batch(
-    event_id: str,
-    batch_id: str,
-    session: DBDep,
-    _current_user: CurrentSuperuser,
-    cancellation_reason: str | None = Query(default=None),
-) -> None:
-    """Delete a slot batch and all its duty slots (cascade)."""
-    db_batch = await crud_slot_batch.get(session, batch_id, raise_404_error=True)
-    if str(db_batch.event_id) != event_id:
-        raise_problem(400, code="batch.wrong_event", detail="Batch does not belong to this event")
-
-    # Get event name for snapshot
-    db_event = await crud_event.get(session, event_id, raise_404_error=True)
-
-    # Collect slot IDs in this batch
-    stmt = select(DutySlot.id).where(DutySlot.batch_id == db_batch.id)
-    result = await session.execute(stmt)
-    slot_ids = list(result.scalars().all())
-
-    # Cancel confirmed bookings with snapshot
-    await crud_booking.cancel_bookings_for_slots(
-        session,
-        slot_ids=slot_ids,
-        event_name=db_event.name,
-        cancellation_reason=cancellation_reason,
-    )
-
-    await session.delete(db_batch)
-    await session.commit()

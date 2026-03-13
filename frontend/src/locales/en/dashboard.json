@@ -14,6 +14,7 @@
         },
         "quickActions": {
             "browseEvents": "Browse Events",
+            "howItWorks": "How It Works",
             "myBookings": "My Bookings",
             "title": "Quick Actions"
         },

@@ -95,6 +95,12 @@ add-upstream url:
 sync-upstream remote="upstream" branch="main":
     python scripts/sync_upstream.py --remote {{remote}} --branch {{branch}}
 
+# ── Screenshots ─────────────────────────────────────────────
+
+# Take screenshots for landing page and How It Works (usage: just screenshots, just screenshots de)
+screenshots lang="en":
+    cd frontend && LANG={{lang}} pnpm exec playwright test --config=scripts/screenshots.config.ts
+
 # ── Build & Deploy ────────────────────────────────────────────
 
 # Build frontend for production

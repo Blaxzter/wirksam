@@ -1,7 +1,7 @@
 """Generate duty slots from a schedule configuration."""
 
 import uuid
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from app.schemas.duty_slot import DutySlotCreate
 from app.schemas.event import ExcludedSlot, ScheduleOverride
@@ -142,14 +142,13 @@ def _generate_slots_for_day(
             # Extend the last slot to cover the remaining time
             last = slots[-1]
             last.end_time = end_dt.time()
-            last.title = f"{event_name} {last.start_time.strftime('%H:%M')}-{last.end_time.strftime('%H:%M')}"
+            if last.start_time and last.end_time:
+                last.title = f"{event_name} {last.start_time.strftime('%H:%M')}-{last.end_time.strftime('%H:%M')}"
         # remainder_mode == "drop": do nothing (default)
 
     return slots
 
 
-def _combine(d: date, t: time):
+def _combine(d: date, t: time) -> datetime:
     """Combine date and time into a datetime for arithmetic."""
-    from datetime import datetime
-
     return datetime.combine(d, t)

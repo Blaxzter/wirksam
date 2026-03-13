@@ -105,6 +105,15 @@ class Settings(BaseSettings):
 
     SUPERADMIN_EMAILS: list[EmailStr] = []
 
+    # Web Push (VAPID) configuration
+    VAPID_PRIVATE_KEY: str | None = None
+    VAPID_PUBLIC_KEY: str | None = None
+    VAPID_CLAIMS_EMAIL: str | None = None
+
+    # Telegram Bot configuration
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_BOT_USERNAME: str | None = None
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

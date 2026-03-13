@@ -1,4 +1,6 @@
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -40,6 +42,18 @@ def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0] if route.tags else 'default'}-{route.name}"
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
+    """Application lifespan: seed notification types on startup."""
+    from app.core.db import async_session
+    from app.logic.notifications.seeder import seed_notification_types
+
+    async with async_session() as session:
+        await seed_notification_types(session)
+    logger.info("Notification types seeded")
+    yield
+
+
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     import sentry_sdk
 
@@ -77,6 +91,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
+    lifespan=lifespan,
 )
 
 app.openapi = custom_openapi  # type: ignore[assignment]

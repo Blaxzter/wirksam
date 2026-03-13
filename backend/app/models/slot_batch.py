@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 from sqlmodel import Field, Relationship
@@ -15,7 +15,7 @@ if __name__ != "__main__":
 
 
 class SlotBatch(Base, table=True):
-    __tablename__ = "slot_batches"
+    __tablename__ = "slot_batches"  # type: ignore[assignment]
 
     event_id: uuid.UUID = Field(
         sa_column=sa.Column(
@@ -54,7 +54,7 @@ class SlotBatch(Base, table=True):
     remainder_mode: str | None = Field(
         default="drop", sa_column=sa.Column(sa.String, nullable=True)
     )
-    schedule_overrides: dict | None = Field(
+    schedule_overrides: list[dict[str, Any]] | None = Field(
         default=None, sa_column=sa.Column(sa.JSON, nullable=True)
     )
 

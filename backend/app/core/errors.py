@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 from fastapi import HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -206,7 +206,7 @@ def raise_problem(
     code: str,
     detail: str | None = None,
     headers: dict[str, str] | None = None,
-) -> None:
+) -> NoReturn:
     raise HTTPException(
         status_code=status_code,
         detail=problem_detail(code=code, detail=detail),

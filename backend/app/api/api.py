@@ -7,6 +7,7 @@ from app.api.routes import (
     event_groups,
     events,
     health,
+    notifications,
     site_settings,
     users,
 )
@@ -20,4 +21,5 @@ api_router.include_router(events.router)
 api_router.include_router(duty_slots.router)
 api_router.include_router(bookings.router)
 api_router.include_router(event_groups.router)
+api_router.include_router(notifications.router)
 api_router.include_router(demo_data.router)

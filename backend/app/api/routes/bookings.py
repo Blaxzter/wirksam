@@ -1,11 +1,16 @@
 import datetime as dt
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
 from app.crud.duty_slot import duty_slot as crud_duty_slot
+from app.logic.notifications.triggers import (
+    dispatch_booking_cancelled_by_user,
+    dispatch_booking_cobooked,
+    dispatch_booking_confirmed,
+)
 from app.models.booking import Booking
 from app.schemas.booking import (
     BookingBase,
@@ -70,6 +75,7 @@ async def create_booking(
     booking_in: BookingCreate,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ) -> Booking:
     """Book a duty slot for the current user."""
     slot = await crud_duty_slot.get(
@@ -94,20 +100,48 @@ async def create_booking(
             409, code="booking.slot_full", detail="This duty slot is fully booked"
         )
 
+    # Collect existing confirmed bookers for co-booking notification
+    existing_bookings = await crud_booking.get_multi_by_slot(
+        session, duty_slot_id=slot.id, status="confirmed"
+    )
+    existing_user_ids = [b.user_id for b in existing_bookings if b.user_id != current_user.id]
+
     # If previously cancelled, reactivate
     if existing and existing.status == "cancelled":
-        return await crud_booking.update(
+        result = await crud_booking.update(
             session,
             db_obj=existing,
             obj_in=BookingUpdate(status="confirmed", notes=booking_in.notes),
         )
+    else:
+        full_booking = BookingBase(
+            duty_slot_id=booking_in.duty_slot_id,
+            user_id=current_user.id,
+            notes=booking_in.notes,
+        )
+        result = await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
 
-    full_booking = BookingBase(
-        duty_slot_id=booking_in.duty_slot_id,
+    # Dispatch notifications
+    background_tasks.add_task(
+        dispatch_booking_confirmed,
+        booking_id=result.id,
         user_id=current_user.id,
-        notes=booking_in.notes,
+        slot_title=slot.title,
+        slot_id=slot.id,
+        event_id=slot.event_id,
+        event_group_id=None,
     )
-    return await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
+    if existing_user_ids:
+        background_tasks.add_task(
+            dispatch_booking_cobooked,
+            slot_id=slot.id,
+            slot_title=slot.title,
+            event_id=slot.event_id,
+            new_user_name=current_user.name,
+            existing_user_ids=existing_user_ids,
+        )
+
+    return result
 
 
 @router.get("/{booking_id}", response_model=BookingRead)
@@ -147,6 +181,7 @@ async def cancel_booking(
     booking_id: str,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ) -> Booking:
     """Cancel a booking (soft-cancel by setting status to 'cancelled')."""
     db_booking = await crud_booking.get(session, booking_id, raise_404_error=True)
@@ -156,9 +191,24 @@ async def cancel_booking(
             code="booking.forbidden",
             detail="You can only cancel your own bookings",
         )
-    return await crud_booking.update(
+    result = await crud_booking.update(
         session, db_obj=db_booking, obj_in=BookingUpdate(status="cancelled")
     )
+
+    # Dispatch cancellation notification
+    if db_booking.duty_slot_id:
+        slot = await crud_duty_slot.get(session, str(db_booking.duty_slot_id))
+        if slot:
+            background_tasks.add_task(
+                dispatch_booking_cancelled_by_user,
+                booking_id=result.id,
+                user_id=db_booking.user_id,
+                slot_title=slot.title,
+                slot_id=slot.id,
+                event_id=slot.event_id,
+            )
+
+    return result
 
 
 @router.delete("/{booking_id}/dismiss", status_code=204)

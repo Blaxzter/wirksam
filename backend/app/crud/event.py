@@ -1,7 +1,8 @@
-from typing import Literal
+from typing import Any, Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
@@ -16,13 +17,13 @@ EventSortField = Literal["name", "start_date", "end_date", "status", "created_at
 class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
     def _apply_common_filters(
         self,
-        query,
+        query: Select[Any],
         *,
         search: str | None = None,
         status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
-    ):
+    ) -> Select[Any]:
         if search:
             query = query.where(
                 col(Event.name).ilike(f"%{search}%")
@@ -34,12 +35,12 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             query = query.where(col(Event.created_by_id) == created_by_id)
         if booked_by_user_id:
             query = query.where(
-                Event.id.in_(  # type: ignore[attr-defined]
-                    select(DutySlot.event_id)
-                    .join(Booking, Booking.duty_slot_id == DutySlot.id)
+                col(Event.id).in_(
+                    select(col(DutySlot.event_id))
+                    .join(Booking, col(Booking.duty_slot_id) == col(DutySlot.id))
                     .where(
-                        Booking.user_id == booked_by_user_id,
-                        Booking.status == "confirmed",
+                        col(Booking.user_id) == booked_by_user_id,
+                        col(Booking.status) == "confirmed",
                     )
                 )
             )

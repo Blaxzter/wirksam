@@ -60,7 +60,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         if status:
             query = query.where(col(Booking.status) == status)
         if date_from or date_to:
-            query = query.outerjoin(DutySlot, Booking.duty_slot_id == DutySlot.id)
+            query = query.outerjoin(DutySlot, col(Booking.duty_slot_id) == col(DutySlot.id))
             if date_from:
                 query = query.where(
                     or_(
@@ -77,7 +77,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 )
         if with_slot:
             query = query.options(
-                selectinload(Booking.duty_slot).selectinload(DutySlot.event)
+                selectinload(Booking.duty_slot).selectinload(DutySlot.event)  # type: ignore[arg-type]
             )
         query = query.order_by(col(Booking.created_at).desc()).offset(skip).limit(limit)
         result = await db.execute(query)
@@ -100,7 +100,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         if status:
             query = query.where(col(Booking.status) == status)
         if date_from or date_to:
-            query = query.outerjoin(DutySlot, Booking.duty_slot_id == DutySlot.id)
+            query = query.outerjoin(DutySlot, col(Booking.duty_slot_id) == col(DutySlot.id))
             if date_from:
                 query = query.where(
                     or_(
@@ -130,9 +130,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         if status:
             query = query.where(col(Booking.status) == status)
         if with_user:
-            from app.models.user import User  # noqa: F401
-
-            query = query.options(selectinload(Booking.user))
+            query = query.options(selectinload(Booking.user))  # type: ignore[arg-type]
         result = await db.execute(query)
         return list(result.scalars().all())
 
@@ -161,13 +159,15 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                 col(Booking.duty_slot_id).in_(slot_ids),
                 col(Booking.status) == "confirmed",
             )
-            .options(selectinload(Booking.duty_slot))
+            .options(selectinload(Booking.duty_slot))  # type: ignore[arg-type]
         )
         result = await db.execute(query)
         bookings = list(result.scalars().all())
 
         for b in bookings:
-            slot: DutySlot = b.duty_slot
+            slot: DutySlot | None = b.duty_slot
+            if slot is None:
+                continue
             b.status = "cancelled"
             b.cancellation_reason = cancellation_reason
             b.cancelled_slot_title = slot.title

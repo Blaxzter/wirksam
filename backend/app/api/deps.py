@@ -38,7 +38,7 @@ def _normalize_required_roles(
     return list(required_roles)
 
 
-async def _get_or_create_user(
+async def get_or_create_user(
     session: AsyncSession,
     claims: dict[str, Any],
     profile_data: dict[str, Any] | None = None,
@@ -71,9 +71,9 @@ async def _get_or_create_user(
             if picture and picture != user.picture:
                 user.picture = picture
                 dirty = True
-            email_verified = profile_data.get("email_verified")
-            if email_verified is not None and email_verified != user.email_verified:
-                user.email_verified = email_verified
+            ev = profile_data.get("email_verified")
+            if ev is not None and bool(ev) != user.email_verified:
+                user.email_verified = bool(ev)
                 dirty = True
         if dirty:
             session.add(user)
@@ -110,6 +110,21 @@ async def _get_or_create_user(
         is_active=is_superadmin,
     )
     new_user = await crud_user.create(session, obj_in=user_in)
+
+    # Notify admins about new user registration (fire-and-forget)
+    if not is_superadmin:
+        import asyncio
+
+        from app.logic.notifications.triggers import dispatch_user_registered
+
+        asyncio.create_task(
+            dispatch_user_registered(
+                user_id=new_user.id,
+                user_name=new_user.name,
+                user_email=new_user.email,
+            )
+        )
+
     return new_user
 
 
@@ -123,7 +138,7 @@ def current_user(
         session: DBDep,
         claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
     ) -> User:
-        user = await _get_or_create_user(session, claims, profile_data)
+        user = await get_or_create_user(session, claims, profile_data)
 
         if not user.is_active:
             raise HTTPException(

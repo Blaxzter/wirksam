@@ -54,7 +54,7 @@ class EventRead(EventBase):
     default_start_time: dt.time | None = None
     default_end_time: dt.time | None = None
     people_per_slot: int | None = None
-    schedule_overrides: list[dict] | None = None
+    schedule_overrides: list[dict[str, Any]] | None = None
 
 
 class EventListResponse(BaseModel):

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class UserAvailability(Base, table=True):
-    __tablename__ = "user_availabilities"
+    __tablename__ = "user_availabilities"  # type: ignore[assignment]
     __table_args__ = (
         sa.UniqueConstraint(
             "user_id", "event_group_id", name="uq_availability_user_group"
@@ -48,7 +48,7 @@ class UserAvailability(Base, table=True):
 
 
 class UserAvailabilityDate(Base, table=True):
-    __tablename__ = "user_availability_dates"
+    __tablename__ = "user_availability_dates"  # type: ignore[assignment]
 
     availability_id: uuid.UUID = Field(
         sa_column=sa.Column(

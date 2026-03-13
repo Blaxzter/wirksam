@@ -1,4 +1,3 @@
-from pydantic import HttpUrl
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field
@@ -21,7 +20,7 @@ class User(Base, table=True):
         description="User's email address",
     )
     name: str | None = Field(default=None, description="User's display name")
-    picture: HttpUrl | None = Field(
+    picture: str | None = Field(
         default=None,
         sa_column=sa.Column(sa.String, nullable=True),
         description="URL to user's profile picture",

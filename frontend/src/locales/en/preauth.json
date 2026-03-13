@@ -67,8 +67,96 @@
         },
         "getStarted": "Sign In",
         "learnMore": "Learn More",
+        "showcase": {
+            "title": "See DutyHub in Action",
+            "subtitle": "Explore the key features that make duty scheduling effortless.",
+            "slides": {
+                "dashboard": {
+                    "title": "Dashboard",
+                    "description": "Get a bird's-eye view of your events, bookings, and an interactive calendar — all in one place."
+                },
+                "eventGroups": {
+                    "title": "Event Groups",
+                    "description": "Organize related events into groups like conferences or festivals for easy management."
+                },
+                "events": {
+                    "title": "Events & Slots",
+                    "description": "Browse all duty events with inline slot previews, search, and smart filters."
+                },
+                "eventDetail": {
+                    "title": "Event Detail",
+                    "description": "See all available duty slots by day, book with one click, and track availability."
+                },
+                "bookings": {
+                    "title": "My Bookings",
+                    "description": "All your confirmed duties in one place — filter by upcoming, this month, or view all."
+                },
+                "notifications": {
+                    "title": "Notifications",
+                    "description": "Stay informed with real-time notifications for bookings, events, and slot changes — right in your dashboard."
+                },
+                "notificationPreferences": {
+                    "title": "Notification Settings",
+                    "description": "Fine-tune how you receive notifications — via email, push, or Telegram — for each notification type."
+                },
+                "userManagement": {
+                    "title": "User Management",
+                    "description": "Admins can manage users, roles, and approval workflows from a central dashboard."
+                }
+            }
+        },
         "subtitle": "The digital duty scheduling platform for church events. Book your shifts for Pfingsten, Kirchentag, and more — simple, transparent, and reliable.",
         "welcome": "Welcome to DutyHub"
+    },
+    "howItWorks": {
+        "title": "How Event Creation Works",
+        "subtitle": "A step-by-step look at how organizers create events and generate duty slots in DutyHub.",
+        "backToHome": "Back to Home",
+        "steps": {
+            "details": {
+                "title": "1. Event Details",
+                "description": "Start by giving your event a name, description, location, and category. Optionally link it to an event group like a conference or festival."
+            },
+            "dates": {
+                "title": "2. Choose Dates",
+                "description": "Select a single date, a continuous date range, or pick specific individual dates. If linked to an event group, dates are constrained to the group's timeframe."
+            },
+            "schedule": {
+                "title": "3. Configure Schedule",
+                "description": "Set the daily start and end times, slot duration (15 min to 2 hours), and how many volunteers each slot needs. Add per-date overrides for days with different hours."
+            },
+            "remainder": {
+                "title": "4. Handle Remainders",
+                "description": "If the day doesn't divide evenly into slots, choose what to do with leftover time: drop it, create a shorter final slot, or extend the last slot to fill the gap."
+            },
+            "preview": {
+                "title": "5. Preview & Exclude",
+                "description": "See a real-time preview of all generated slots. Click any slot to exclude it before creating. The preview updates live as you adjust settings."
+            },
+            "publish": {
+                "title": "6. Publish & Manage",
+                "description": "Created events start as drafts. Publish when ready so volunteers can see and book slots. Add more slot batches later or regenerate slots without losing existing bookings."
+            }
+        },
+        "features": {
+            "title": "Advanced Capabilities",
+            "batchSlots": {
+                "title": "Multi-Batch Slots",
+                "description": "Add multiple slot batches to the same event with different schedules, locations, or time ranges."
+            },
+            "smartRegeneration": {
+                "title": "Smart Regeneration",
+                "description": "When you change a schedule, DutyHub matches existing slots by date and time — preserving bookings on unchanged slots."
+            },
+            "dryRun": {
+                "title": "Dry-Run Preview",
+                "description": "Before regenerating, see exactly which slots will be added, removed, or kept — and which bookings would be affected."
+            },
+            "overrides": {
+                "title": "Per-Day Overrides",
+                "description": "Need different hours on Saturday? Add schedule overrides for specific dates without changing the rest of the event."
+            }
+        }
     },
     "layout": {
         "appName": "DutyHub",
@@ -77,6 +165,7 @@
         },
         "navigation": {
             "about": "About",
+            "howItWorks": "How It Works",
             "goToDashboard": "Go to Dashboard",
             "signIn": "Sign In"
         }

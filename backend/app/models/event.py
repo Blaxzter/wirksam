@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, time
+from typing import Any
 
 import sqlalchemy as sa
 from sqlmodel import Field, Relationship
@@ -17,7 +18,7 @@ if __name__ != "__main__":
 
 
 class Event(Base, table=True):
-    __tablename__ = "events"
+    __tablename__ = "events"  # type: ignore[assignment]
 
     name: str = Field(sa_column=sa.Column(sa.String, nullable=False, index=True))
     description: str | None = Field(
@@ -60,7 +61,7 @@ class Event(Base, table=True):
     people_per_slot: int | None = Field(
         default=None, sa_column=sa.Column(sa.Integer, nullable=True)
     )
-    schedule_overrides: dict | None = Field(
+    schedule_overrides: list[dict[str, Any]] | None = Field(
         default=None, sa_column=sa.Column(sa.JSON, nullable=True)
     )
 

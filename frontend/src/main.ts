@@ -33,3 +33,10 @@ app.use(router)
 app.use(i18n)
 
 app.mount('#app')
+
+// Register service worker for push notifications
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch((error) => {
+    console.warn('Service worker registration failed:', error)
+  })
+}

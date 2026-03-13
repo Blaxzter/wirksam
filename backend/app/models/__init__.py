@@ -11,6 +11,13 @@ from .booking import Booking
 from .duty_slot import DutySlot
 from .event import Event
 from .event_group import EventGroup
+from .notification import (
+    Notification,
+    NotificationSubscription,
+    NotificationType,
+    PushSubscription,
+    TelegramBinding,
+)
 from .site_settings import SiteSettings
 from .slot_batch import SlotBatch
 from .user import User
@@ -23,8 +30,13 @@ __all__ = [
     "DutySlot",
     "Event",
     "EventGroup",
+    "Notification",
+    "NotificationSubscription",
+    "NotificationType",
+    "PushSubscription",
     "SiteSettings",
     "SlotBatch",
+    "TelegramBinding",
     "User",
     "UserAvailability",
     "UserAvailabilityDate",

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
@@ -99,9 +99,36 @@ async def update_duty_slot(
     slot_in: DutySlotUpdate,
     session: DBDep,
     _current_user: CurrentSuperuser,
+    background_tasks: BackgroundTasks,
 ) -> DutySlotRead:
     db_slot = await crud_duty_slot.get(session, slot_id, raise_404_error=True)
+    old_start = db_slot.start_time
+    old_end = db_slot.end_time
+    old_date = db_slot.date
     updated = await crud_duty_slot.update(session, db_obj=db_slot, obj_in=slot_in)
+
+    # Notify bookers if time changed
+    time_changed = (
+        (slot_in.start_time is not None and slot_in.start_time != old_start)
+        or (slot_in.end_time is not None and slot_in.end_time != old_end)
+        or (slot_in.date is not None and slot_in.date != old_date)
+    )
+    if time_changed:
+        bookings = await crud_booking.get_multi_by_slot(
+            session, duty_slot_id=updated.id, status="confirmed"
+        )
+        booked_user_ids = [b.user_id for b in bookings]
+        if booked_user_ids:
+            from app.logic.notifications.triggers import dispatch_slot_time_changed
+
+            background_tasks.add_task(
+                dispatch_slot_time_changed,
+                slot_id=updated.id,
+                slot_title=updated.title,
+                event_id=updated.event_id,
+                booked_user_ids=booked_user_ids,
+            )
+
     return await _enrich_slot(session, updated)
 
 
@@ -138,7 +165,7 @@ async def list_slot_bookings(
     """List confirmed bookings for a slot with basic user info."""
     await crud_duty_slot.get(session, slot_id, raise_404_error=True)
     bookings = await crud_booking.get_multi_by_slot(
-        session, duty_slot_id=slot_id, status="confirmed", with_user=True
+        session, duty_slot_id=uuid.UUID(slot_id), status="confirmed", with_user=True
     )
     return [
         SlotBookingEntry(

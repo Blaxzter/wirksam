@@ -67,8 +67,96 @@
         },
         "getStarted": "Anmelden",
         "learnMore": "Mehr erfahren",
+        "showcase": {
+            "title": "DutyHub in Aktion",
+            "subtitle": "Entdecken Sie die wichtigsten Funktionen, die Dienstplanung mühelos machen.",
+            "slides": {
+                "dashboard": {
+                    "title": "Dashboard",
+                    "description": "Erhalten Sie einen Überblick über Ihre Veranstaltungen, Buchungen und einen interaktiven Kalender — alles an einem Ort."
+                },
+                "eventGroups": {
+                    "title": "Veranstaltungsgruppen",
+                    "description": "Organisieren Sie zusammengehörige Veranstaltungen in Gruppen wie Konferenzen oder Festivals."
+                },
+                "events": {
+                    "title": "Veranstaltungen & Schichten",
+                    "description": "Durchsuchen Sie alle Dienst-Veranstaltungen mit Inline-Schichtvorschau, Suche und smarten Filtern."
+                },
+                "eventDetail": {
+                    "title": "Veranstaltungsdetail",
+                    "description": "Sehen Sie alle verfügbaren Schichten nach Tag, buchen Sie mit einem Klick und verfolgen Sie die Verfügbarkeit."
+                },
+                "bookings": {
+                    "title": "Meine Buchungen",
+                    "description": "Alle bestätigten Dienste an einem Ort — filtern nach bevorstehend, diesen Monat oder alle anzeigen."
+                },
+                "notifications": {
+                    "title": "Benachrichtigungen",
+                    "description": "Bleibe in Echtzeit über Buchungen, Veranstaltungen und Schichtänderungen informiert — direkt in deinem Dashboard."
+                },
+                "notificationPreferences": {
+                    "title": "Benachrichtigungseinstellungen",
+                    "description": "Passe an, wie du Benachrichtigungen erhältst — per E-Mail, Push oder Telegram — für jeden Benachrichtigungstyp."
+                },
+                "userManagement": {
+                    "title": "Benutzerverwaltung",
+                    "description": "Admins können Benutzer, Rollen und Genehmigungsabläufe von einem zentralen Dashboard aus verwalten."
+                }
+            }
+        },
         "subtitle": "Die digitale Dienstplan-Plattform für kirchliche Veranstaltungen. Buchen Sie Ihre Schichten für Pfingsten, Kirchentag und mehr — einfach, transparent und zuverlässig.",
         "welcome": "Willkommen bei DutyHub"
+    },
+    "howItWorks": {
+        "title": "So funktioniert die Veranstaltungserstellung",
+        "subtitle": "Ein schrittweiser Blick darauf, wie Organisatoren Veranstaltungen erstellen und Dienstschichten generieren.",
+        "backToHome": "Zurück zur Startseite",
+        "steps": {
+            "details": {
+                "title": "1. Veranstaltungsdetails",
+                "description": "Geben Sie Ihrer Veranstaltung einen Namen, eine Beschreibung, einen Ort und eine Kategorie. Optional können Sie sie einer Veranstaltungsgruppe wie einer Konferenz zuordnen."
+            },
+            "dates": {
+                "title": "2. Termine wählen",
+                "description": "Wählen Sie ein einzelnes Datum, einen zusammenhängenden Zeitraum oder wählen Sie einzelne Tage aus. Bei Zuordnung zu einer Gruppe sind die Termine auf deren Zeitraum begrenzt."
+            },
+            "schedule": {
+                "title": "3. Zeitplan konfigurieren",
+                "description": "Legen Sie tägliche Start- und Endzeiten, Schichtdauer (15 Min bis 2 Std) und die Anzahl der benötigten Freiwilligen pro Schicht fest. Fügen Sie Ausnahmen für bestimmte Tage hinzu."
+            },
+            "remainder": {
+                "title": "4. Restzeit behandeln",
+                "description": "Falls der Tag nicht gleichmäßig in Schichten teilbar ist: Restzeit verwerfen, eine kürzere letzte Schicht erstellen oder die letzte Schicht verlängern."
+            },
+            "preview": {
+                "title": "5. Vorschau & Ausschließen",
+                "description": "Sehen Sie eine Echtzeit-Vorschau aller generierten Schichten. Klicken Sie auf eine Schicht, um sie auszuschließen. Die Vorschau aktualisiert sich live."
+            },
+            "publish": {
+                "title": "6. Veröffentlichen & Verwalten",
+                "description": "Erstellte Veranstaltungen starten als Entwurf. Veröffentlichen Sie, wenn bereit. Fügen Sie später weitere Schicht-Batches hinzu oder regenerieren Sie Schichten ohne bestehende Buchungen zu verlieren."
+            }
+        },
+        "features": {
+            "title": "Erweiterte Funktionen",
+            "batchSlots": {
+                "title": "Multi-Batch Schichten",
+                "description": "Fügen Sie mehrere Schicht-Batches zur selben Veranstaltung mit unterschiedlichen Zeitplänen, Orten oder Zeiträumen hinzu."
+            },
+            "smartRegeneration": {
+                "title": "Intelligente Regenerierung",
+                "description": "Bei Zeitplanänderungen gleicht DutyHub bestehende Schichten nach Datum und Uhrzeit ab — Buchungen auf unveränderten Schichten bleiben erhalten."
+            },
+            "dryRun": {
+                "title": "Trockenlauf-Vorschau",
+                "description": "Vor der Regenerierung sehen Sie genau, welche Schichten hinzugefügt, entfernt oder beibehalten werden — und welche Buchungen betroffen wären."
+            },
+            "overrides": {
+                "title": "Tagesweise Ausnahmen",
+                "description": "Andere Zeiten am Samstag nötig? Fügen Sie Zeitplan-Ausnahmen für bestimmte Tage hinzu, ohne den Rest der Veranstaltung zu ändern."
+            }
+        }
     },
     "layout": {
         "appName": "DutyHub",
@@ -77,6 +165,7 @@
         },
         "navigation": {
             "about": "Über uns",
+            "howItWorks": "So funktioniert's",
             "goToDashboard": "Zum Dashboard",
             "signIn": "Anmelden"
         }

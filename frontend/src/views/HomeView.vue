@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { useLocalStorage } from '@vueuse/core'
-import { BookCheck, CalendarDays, SlidersHorizontal, Users } from 'lucide-vue-next'
+import { BookCheck, CalendarDays, HelpCircle, SlidersHorizontal, Users } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -300,6 +300,10 @@ onMounted(loadStats)
         <Button variant="outline" @click="router.push({ name: 'my-bookings' })">
           <BookCheck class="mr-2 h-4 w-4" />
           {{ t('dashboard.home.quickActions.myBookings') }}
+        </Button>
+        <Button variant="outline" @click="router.push({ name: 'how-it-works' })">
+          <HelpCircle class="mr-2 h-4 w-4" />
+          {{ t('dashboard.home.quickActions.howItWorks') }}
         </Button>
       </div>
     </div>

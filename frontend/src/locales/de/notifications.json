@@ -1,0 +1,69 @@
+{
+  "title": "Benachrichtigungen",
+  "empty": "Noch keine Benachrichtigungen",
+  "markAllRead": "Alle als gelesen markieren",
+  "markRead": "Als gelesen markieren",
+  "dismiss": "Verwerfen",
+  "managePreferences": "Benachrichtigungseinstellungen verwalten",
+  "adminOnly": "Nur Admin",
+
+  "timeAgo": {
+    "justNow": "Gerade eben",
+    "minutes": "Vor {n} Min.",
+    "hours": "Vor {n} Std.",
+    "days": "Vor {n} T."
+  },
+
+  "settings": {
+    "title": "Benachrichtigungen",
+    "description": "Konfiguriere, wie und wann du Benachrichtigungen erhalten moechtest.",
+    "manage": "Benachrichtigungseinstellungen verwalten"
+  },
+
+  "preferences": {
+    "title": "Benachrichtigungseinstellungen",
+    "subtitle": "Waehle aus, welche Benachrichtigungen du erhalten moechtest und wie sie zugestellt werden.",
+    "save": "Einstellungen speichern",
+    "saved": "Benachrichtigungseinstellungen gespeichert",
+    "saveFailed": "Fehler beim Speichern der Benachrichtigungseinstellungen"
+  },
+
+  "channels": {
+    "email": "E-Mail",
+    "push": "Push",
+    "telegram": "Telegram"
+  },
+
+  "categories": {
+    "booking": "Buchungen",
+    "slot": "Dienstschichten",
+    "event": "Veranstaltungen",
+    "eventGroup": "Veranstaltungsgruppen",
+    "availability": "Verfuegbarkeit",
+    "admin": "Admin",
+    "user": "Konto"
+  },
+
+  "push": {
+    "title": "Push-Benachrichtigungen",
+    "description": "Erhalte Push-Benachrichtigungen in deinem Browser, wenn wichtige Ereignisse eintreten.",
+    "enable": "Push-Benachrichtigungen aktivieren",
+    "enabled": "Push-Benachrichtigungen aktiviert",
+    "denied": "Push-Benachrichtigungen sind blockiert. Bitte aktiviere sie in deinen Browsereinstellungen.",
+    "notConfigured": "Push-Benachrichtigungen sind auf dem Server nicht konfiguriert.",
+    "failed": "Fehler beim Aktivieren der Push-Benachrichtigungen"
+  },
+
+  "telegram": {
+    "title": "Telegram",
+    "description": "Verbinde dein Telegram-Konto, um Benachrichtigungen ueber den DutyHub-Bot zu erhalten.",
+    "connect": "Telegram verbinden",
+    "connected": "Verbunden",
+    "disconnect": "Trennen",
+    "sendCode": "Sende den folgenden Code an den DutyHub-Bot auf Telegram:",
+    "sendTo": "Sende ihn an",
+    "bindFailed": "Fehler beim Starten der Telegram-Verbindung",
+    "unbound": "Telegram getrennt",
+    "unbindFailed": "Fehler beim Trennen von Telegram"
+  }
+}

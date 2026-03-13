@@ -926,6 +926,239 @@ export type MyBookingsListResponse = {
 }
 
 /**
+ * NotificationListResponse
+ */
+export type NotificationListResponse = {
+  /**
+   * Items
+   */
+  items: Array<NotificationRead>
+  /**
+   * Total
+   */
+  total: number
+  /**
+   * Unread Count
+   */
+  unread_count: number
+  /**
+   * Skip
+   */
+  skip: number
+  /**
+   * Limit
+   */
+  limit: number
+}
+
+/**
+ * NotificationPreferencesBulkUpdate
+ * Full matrix of preferences sent from the frontend.
+ */
+export type NotificationPreferencesBulkUpdate = {
+  /**
+   * Preferences
+   */
+  preferences: Array<NotificationSubscriptionCreate>
+}
+
+/**
+ * NotificationRead
+ */
+export type NotificationRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Recipient Id
+   */
+  recipient_id: string
+  /**
+   * Notification Type Code
+   */
+  notification_type_code: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Body
+   */
+  body: string
+  /**
+   * Data
+   */
+  data?: {
+    [key: string]: unknown
+  } | null
+  /**
+   * Is Read
+   */
+  is_read: boolean
+  /**
+   * Read At
+   */
+  read_at?: string | null
+  /**
+   * Channels Sent
+   */
+  channels_sent: Array<string>
+  /**
+   * Channels Failed
+   */
+  channels_failed: Array<string>
+  /**
+   * Created At
+   */
+  created_at: string
+}
+
+/**
+ * NotificationSubscriptionCreate
+ */
+export type NotificationSubscriptionCreate = {
+  /**
+   * Notification Type Id
+   */
+  notification_type_id: string
+  /**
+   * Email Enabled
+   */
+  email_enabled?: boolean
+  /**
+   * Push Enabled
+   */
+  push_enabled?: boolean
+  /**
+   * Telegram Enabled
+   */
+  telegram_enabled?: boolean
+  /**
+   * Scope Type
+   */
+  scope_type?: 'global' | 'event_group' | 'event' | 'duty_slot'
+  /**
+   * Scope Id
+   */
+  scope_id?: string | null
+  /**
+   * Is Muted
+   */
+  is_muted?: boolean
+}
+
+/**
+ * NotificationSubscriptionRead
+ */
+export type NotificationSubscriptionRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Notification Type Id
+   */
+  notification_type_id: string
+  /**
+   * Email Enabled
+   */
+  email_enabled: boolean
+  /**
+   * Push Enabled
+   */
+  push_enabled: boolean
+  /**
+   * Telegram Enabled
+   */
+  telegram_enabled: boolean
+  /**
+   * Scope Type
+   */
+  scope_type: string
+  /**
+   * Scope Id
+   */
+  scope_id?: string | null
+  /**
+   * Is Muted
+   */
+  is_muted: boolean
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+}
+
+/**
+ * NotificationSubscriptionUpdate
+ */
+export type NotificationSubscriptionUpdate = {
+  /**
+   * Email Enabled
+   */
+  email_enabled?: boolean | null
+  /**
+   * Push Enabled
+   */
+  push_enabled?: boolean | null
+  /**
+   * Telegram Enabled
+   */
+  telegram_enabled?: boolean | null
+  /**
+   * Is Muted
+   */
+  is_muted?: boolean | null
+}
+
+/**
+ * NotificationTypeRead
+ */
+export type NotificationTypeRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Code
+   */
+  code: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Category
+   */
+  category: string
+  /**
+   * Is Admin Only
+   */
+  is_admin_only: boolean
+  /**
+   * Default Channels
+   */
+  default_channels: Array<string>
+  /**
+   * Is Active
+   */
+  is_active: boolean
+}
+
+/**
  * ProfileInit
  * Profile data from Auth0 ID token for user initialization.
  */
@@ -950,6 +1183,50 @@ export type ProfileInit = {
    * Email Verified
    */
   email_verified?: boolean | null
+}
+
+/**
+ * PushSubscriptionCreate
+ */
+export type PushSubscriptionCreate = {
+  /**
+   * Endpoint
+   */
+  endpoint: string
+  /**
+   * P256Dh Key
+   */
+  p256dh_key: string
+  /**
+   * Auth Key
+   */
+  auth_key: string
+  /**
+   * User Agent
+   */
+  user_agent?: string | null
+}
+
+/**
+ * PushSubscriptionRead
+ */
+export type PushSubscriptionRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Endpoint
+   */
+  endpoint: string
+  /**
+   * User Agent
+   */
+  user_agent?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
 }
 
 /**
@@ -1161,6 +1438,78 @@ export type SlotRegenerationResult = {
    * Affected Bookings
    */
   affected_bookings: Array<AffectedBookingInfo>
+}
+
+/**
+ * TelegramBindResponse
+ */
+export type TelegramBindResponse = {
+  /**
+   * Verification Code
+   */
+  verification_code: string
+  /**
+   * Bot Username
+   */
+  bot_username?: string | null
+  /**
+   * Expires At
+   */
+  expires_at: string
+}
+
+/**
+ * TelegramBindingRead
+ */
+export type TelegramBindingRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Telegram Chat Id
+   */
+  telegram_chat_id?: string | null
+  /**
+   * Telegram Username
+   */
+  telegram_username?: string | null
+  /**
+   * Is Verified
+   */
+  is_verified: boolean
+  /**
+   * Created At
+   */
+  created_at: string
+}
+
+/**
+ * TelegramVerifyRequest
+ */
+export type TelegramVerifyRequest = {
+  /**
+   * Verification Code
+   */
+  verification_code: string
+  /**
+   * Telegram Chat Id
+   */
+  telegram_chat_id: string
+  /**
+   * Telegram Username
+   */
+  telegram_username?: string | null
+}
+
+/**
+ * UnreadCountResponse
+ */
+export type UnreadCountResponse = {
+  /**
+   * Unread Count
+   */
+  unread_count: number
 }
 
 /**
@@ -4301,6 +4650,1163 @@ export type EventGroupsSetMyAvailabilityResponses = {
 
 export type EventGroupsSetMyAvailabilityResponse =
   EventGroupsSetMyAvailabilityResponses[keyof EventGroupsSetMyAvailabilityResponses]
+
+export type NotificationsListNotificationTypesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/types'
+}
+
+export type NotificationsListNotificationTypesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsListNotificationTypesError =
+  NotificationsListNotificationTypesErrors[keyof NotificationsListNotificationTypesErrors]
+
+export type NotificationsListNotificationTypesResponses = {
+  /**
+   * Response Notifications-List Notification Types
+   * Successful Response
+   */
+  200: Array<NotificationTypeRead>
+}
+
+export type NotificationsListNotificationTypesResponse =
+  NotificationsListNotificationTypesResponses[keyof NotificationsListNotificationTypesResponses]
+
+export type NotificationsListNotificationsData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Skip
+     */
+    skip?: number
+    /**
+     * Limit
+     */
+    limit?: number
+    /**
+     * Unread Only
+     */
+    unread_only?: boolean
+  }
+  url: '/api/v1/notifications/'
+}
+
+export type NotificationsListNotificationsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsListNotificationsError =
+  NotificationsListNotificationsErrors[keyof NotificationsListNotificationsErrors]
+
+export type NotificationsListNotificationsResponses = {
+  /**
+   * Successful Response
+   */
+  200: NotificationListResponse
+}
+
+export type NotificationsListNotificationsResponse =
+  NotificationsListNotificationsResponses[keyof NotificationsListNotificationsResponses]
+
+export type NotificationsGetUnreadCountData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/unread-count'
+}
+
+export type NotificationsGetUnreadCountErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsGetUnreadCountError =
+  NotificationsGetUnreadCountErrors[keyof NotificationsGetUnreadCountErrors]
+
+export type NotificationsGetUnreadCountResponses = {
+  /**
+   * Successful Response
+   */
+  200: UnreadCountResponse
+}
+
+export type NotificationsGetUnreadCountResponse =
+  NotificationsGetUnreadCountResponses[keyof NotificationsGetUnreadCountResponses]
+
+export type NotificationsMarkNotificationReadData = {
+  body?: never
+  path: {
+    /**
+     * Notification Id
+     */
+    notification_id: string
+  }
+  query?: never
+  url: '/api/v1/notifications/{notification_id}/read'
+}
+
+export type NotificationsMarkNotificationReadErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsMarkNotificationReadError =
+  NotificationsMarkNotificationReadErrors[keyof NotificationsMarkNotificationReadErrors]
+
+export type NotificationsMarkNotificationReadResponses = {
+  /**
+   * Successful Response
+   */
+  200: NotificationRead
+}
+
+export type NotificationsMarkNotificationReadResponse =
+  NotificationsMarkNotificationReadResponses[keyof NotificationsMarkNotificationReadResponses]
+
+export type NotificationsMarkAllNotificationsReadData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/mark-all-read'
+}
+
+export type NotificationsMarkAllNotificationsReadErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsMarkAllNotificationsReadError =
+  NotificationsMarkAllNotificationsReadErrors[keyof NotificationsMarkAllNotificationsReadErrors]
+
+export type NotificationsMarkAllNotificationsReadResponses = {
+  /**
+   * Response Notifications-Mark All Notifications Read
+   * Successful Response
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type NotificationsMarkAllNotificationsReadResponse =
+  NotificationsMarkAllNotificationsReadResponses[keyof NotificationsMarkAllNotificationsReadResponses]
+
+export type NotificationsDismissNotificationData = {
+  body?: never
+  path: {
+    /**
+     * Notification Id
+     */
+    notification_id: string
+  }
+  query?: never
+  url: '/api/v1/notifications/{notification_id}'
+}
+
+export type NotificationsDismissNotificationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsDismissNotificationError =
+  NotificationsDismissNotificationErrors[keyof NotificationsDismissNotificationErrors]
+
+export type NotificationsDismissNotificationResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type NotificationsDismissNotificationResponse =
+  NotificationsDismissNotificationResponses[keyof NotificationsDismissNotificationResponses]
+
+export type NotificationsListPreferencesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/preferences'
+}
+
+export type NotificationsListPreferencesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsListPreferencesError =
+  NotificationsListPreferencesErrors[keyof NotificationsListPreferencesErrors]
+
+export type NotificationsListPreferencesResponses = {
+  /**
+   * Response Notifications-List Preferences
+   * Successful Response
+   */
+  200: Array<NotificationSubscriptionRead>
+}
+
+export type NotificationsListPreferencesResponse =
+  NotificationsListPreferencesResponses[keyof NotificationsListPreferencesResponses]
+
+export type NotificationsCreatePreferenceData = {
+  body: NotificationSubscriptionCreate
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/preferences'
+}
+
+export type NotificationsCreatePreferenceErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsCreatePreferenceError =
+  NotificationsCreatePreferenceErrors[keyof NotificationsCreatePreferenceErrors]
+
+export type NotificationsCreatePreferenceResponses = {
+  /**
+   * Successful Response
+   */
+  201: NotificationSubscriptionRead
+}
+
+export type NotificationsCreatePreferenceResponse =
+  NotificationsCreatePreferenceResponses[keyof NotificationsCreatePreferenceResponses]
+
+export type NotificationsBulkUpdatePreferencesData = {
+  body: NotificationPreferencesBulkUpdate
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/preferences'
+}
+
+export type NotificationsBulkUpdatePreferencesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsBulkUpdatePreferencesError =
+  NotificationsBulkUpdatePreferencesErrors[keyof NotificationsBulkUpdatePreferencesErrors]
+
+export type NotificationsBulkUpdatePreferencesResponses = {
+  /**
+   * Response Notifications-Bulk Update Preferences
+   * Successful Response
+   */
+  200: Array<NotificationSubscriptionRead>
+}
+
+export type NotificationsBulkUpdatePreferencesResponse =
+  NotificationsBulkUpdatePreferencesResponses[keyof NotificationsBulkUpdatePreferencesResponses]
+
+export type NotificationsDeletePreferenceData = {
+  body?: never
+  path: {
+    /**
+     * Preference Id
+     */
+    preference_id: string
+  }
+  query?: never
+  url: '/api/v1/notifications/preferences/{preference_id}'
+}
+
+export type NotificationsDeletePreferenceErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsDeletePreferenceError =
+  NotificationsDeletePreferenceErrors[keyof NotificationsDeletePreferenceErrors]
+
+export type NotificationsDeletePreferenceResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type NotificationsDeletePreferenceResponse =
+  NotificationsDeletePreferenceResponses[keyof NotificationsDeletePreferenceResponses]
+
+export type NotificationsUpdatePreferenceData = {
+  body: NotificationSubscriptionUpdate
+  path: {
+    /**
+     * Preference Id
+     */
+    preference_id: string
+  }
+  query?: never
+  url: '/api/v1/notifications/preferences/{preference_id}'
+}
+
+export type NotificationsUpdatePreferenceErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsUpdatePreferenceError =
+  NotificationsUpdatePreferenceErrors[keyof NotificationsUpdatePreferenceErrors]
+
+export type NotificationsUpdatePreferenceResponses = {
+  /**
+   * Successful Response
+   */
+  200: NotificationSubscriptionRead
+}
+
+export type NotificationsUpdatePreferenceResponse =
+  NotificationsUpdatePreferenceResponses[keyof NotificationsUpdatePreferenceResponses]
+
+export type NotificationsListPushSubscriptionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/push-subscriptions'
+}
+
+export type NotificationsListPushSubscriptionsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsListPushSubscriptionsError =
+  NotificationsListPushSubscriptionsErrors[keyof NotificationsListPushSubscriptionsErrors]
+
+export type NotificationsListPushSubscriptionsResponses = {
+  /**
+   * Response Notifications-List Push Subscriptions
+   * Successful Response
+   */
+  200: Array<PushSubscriptionRead>
+}
+
+export type NotificationsListPushSubscriptionsResponse =
+  NotificationsListPushSubscriptionsResponses[keyof NotificationsListPushSubscriptionsResponses]
+
+export type NotificationsRegisterPushSubscriptionData = {
+  body: PushSubscriptionCreate
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/push-subscriptions'
+}
+
+export type NotificationsRegisterPushSubscriptionErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsRegisterPushSubscriptionError =
+  NotificationsRegisterPushSubscriptionErrors[keyof NotificationsRegisterPushSubscriptionErrors]
+
+export type NotificationsRegisterPushSubscriptionResponses = {
+  /**
+   * Successful Response
+   */
+  201: PushSubscriptionRead
+}
+
+export type NotificationsRegisterPushSubscriptionResponse =
+  NotificationsRegisterPushSubscriptionResponses[keyof NotificationsRegisterPushSubscriptionResponses]
+
+export type NotificationsRemovePushSubscriptionData = {
+  body?: never
+  path: {
+    /**
+     * Subscription Id
+     */
+    subscription_id: string
+  }
+  query?: never
+  url: '/api/v1/notifications/push-subscriptions/{subscription_id}'
+}
+
+export type NotificationsRemovePushSubscriptionErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsRemovePushSubscriptionError =
+  NotificationsRemovePushSubscriptionErrors[keyof NotificationsRemovePushSubscriptionErrors]
+
+export type NotificationsRemovePushSubscriptionResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type NotificationsRemovePushSubscriptionResponse =
+  NotificationsRemovePushSubscriptionResponses[keyof NotificationsRemovePushSubscriptionResponses]
+
+export type NotificationsUnbindTelegramData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/telegram'
+}
+
+export type NotificationsUnbindTelegramErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsUnbindTelegramError =
+  NotificationsUnbindTelegramErrors[keyof NotificationsUnbindTelegramErrors]
+
+export type NotificationsUnbindTelegramResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type NotificationsUnbindTelegramResponse =
+  NotificationsUnbindTelegramResponses[keyof NotificationsUnbindTelegramResponses]
+
+export type NotificationsGetTelegramBindingData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/telegram'
+}
+
+export type NotificationsGetTelegramBindingErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsGetTelegramBindingError =
+  NotificationsGetTelegramBindingErrors[keyof NotificationsGetTelegramBindingErrors]
+
+export type NotificationsGetTelegramBindingResponses = {
+  /**
+   * Response Notifications-Get Telegram Binding
+   * Successful Response
+   */
+  200: TelegramBindingRead | null
+}
+
+export type NotificationsGetTelegramBindingResponse =
+  NotificationsGetTelegramBindingResponses[keyof NotificationsGetTelegramBindingResponses]
+
+export type NotificationsStartTelegramBindingData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/telegram/bind'
+}
+
+export type NotificationsStartTelegramBindingErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsStartTelegramBindingError =
+  NotificationsStartTelegramBindingErrors[keyof NotificationsStartTelegramBindingErrors]
+
+export type NotificationsStartTelegramBindingResponses = {
+  /**
+   * Successful Response
+   */
+  200: TelegramBindResponse
+}
+
+export type NotificationsStartTelegramBindingResponse =
+  NotificationsStartTelegramBindingResponses[keyof NotificationsStartTelegramBindingResponses]
+
+export type NotificationsVerifyTelegramBindingData = {
+  body: TelegramVerifyRequest
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/telegram/verify'
+}
+
+export type NotificationsVerifyTelegramBindingErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsVerifyTelegramBindingError =
+  NotificationsVerifyTelegramBindingErrors[keyof NotificationsVerifyTelegramBindingErrors]
+
+export type NotificationsVerifyTelegramBindingResponses = {
+  /**
+   * Successful Response
+   */
+  200: TelegramBindingRead
+}
+
+export type NotificationsVerifyTelegramBindingResponse =
+  NotificationsVerifyTelegramBindingResponses[keyof NotificationsVerifyTelegramBindingResponses]
+
+export type NotificationsTelegramWebhookData = {
+  /**
+   * Body
+   */
+  body: {
+    [key: string]: unknown
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/telegram/webhook'
+}
+
+export type NotificationsTelegramWebhookErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsTelegramWebhookError =
+  NotificationsTelegramWebhookErrors[keyof NotificationsTelegramWebhookErrors]
+
+export type NotificationsTelegramWebhookResponses = {
+  /**
+   * Response Notifications-Telegram Webhook
+   * Successful Response
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type NotificationsTelegramWebhookResponse =
+  NotificationsTelegramWebhookResponses[keyof NotificationsTelegramWebhookResponses]
+
+export type NotificationsGetVapidPublicKeyData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/notifications/vapid-public-key'
+}
+
+export type NotificationsGetVapidPublicKeyErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsGetVapidPublicKeyError =
+  NotificationsGetVapidPublicKeyErrors[keyof NotificationsGetVapidPublicKeyErrors]
+
+export type NotificationsGetVapidPublicKeyResponses = {
+  /**
+   * Response Notifications-Get Vapid Public Key
+   * Successful Response
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type NotificationsGetVapidPublicKeyResponse =
+  NotificationsGetVapidPublicKeyResponses[keyof NotificationsGetVapidPublicKeyResponses]
 
 export type DemoDataDeleteDemoDataData = {
   body?: never

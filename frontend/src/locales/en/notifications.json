@@ -1,0 +1,69 @@
+{
+  "title": "Notifications",
+  "empty": "No notifications yet",
+  "markAllRead": "Mark all as read",
+  "markRead": "Mark as read",
+  "dismiss": "Dismiss",
+  "managePreferences": "Manage notification preferences",
+  "adminOnly": "Admin only",
+
+  "timeAgo": {
+    "justNow": "Just now",
+    "minutes": "{n} min ago",
+    "hours": "{n}h ago",
+    "days": "{n}d ago"
+  },
+
+  "settings": {
+    "title": "Notifications",
+    "description": "Configure how and when you receive notifications.",
+    "manage": "Manage notification preferences"
+  },
+
+  "preferences": {
+    "title": "Notification Preferences",
+    "subtitle": "Choose which notifications you want to receive and how they are delivered.",
+    "save": "Save preferences",
+    "saved": "Notification preferences saved",
+    "saveFailed": "Failed to save notification preferences"
+  },
+
+  "channels": {
+    "email": "Email",
+    "push": "Push",
+    "telegram": "Telegram"
+  },
+
+  "categories": {
+    "booking": "Bookings",
+    "slot": "Duty Slots",
+    "event": "Events",
+    "eventGroup": "Event Groups",
+    "availability": "Availability",
+    "admin": "Admin",
+    "user": "Account"
+  },
+
+  "push": {
+    "title": "Push Notifications",
+    "description": "Receive push notifications in your browser when important events occur.",
+    "enable": "Enable push notifications",
+    "enabled": "Push notifications enabled",
+    "denied": "Push notifications are blocked. Please enable them in your browser settings.",
+    "notConfigured": "Push notifications are not configured on the server.",
+    "failed": "Failed to enable push notifications"
+  },
+
+  "telegram": {
+    "title": "Telegram",
+    "description": "Connect your Telegram account to receive notifications via the DutyHub bot.",
+    "connect": "Connect Telegram",
+    "connected": "Connected",
+    "disconnect": "Disconnect",
+    "sendCode": "Send the following code to the DutyHub bot on Telegram:",
+    "sendTo": "Send it to",
+    "bindFailed": "Failed to start Telegram connection",
+    "unbound": "Telegram disconnected",
+    "unbindFailed": "Failed to disconnect Telegram"
+  }
+}

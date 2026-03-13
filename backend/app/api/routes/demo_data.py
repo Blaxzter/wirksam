@@ -10,6 +10,7 @@ import uuid
 
 from fastapi import APIRouter
 from sqlalchemy import select
+from sqlmodel import col
 
 from app.api.deps import CurrentSuperuser, DBDep
 from app.models.booking import Booking
@@ -266,13 +267,13 @@ async def delete_demo_data(
 
     # Find demo events
     demo_events = (
-        await db.execute(select(Event).where(Event.name.startswith(DEMO_PREFIX)))
+        await db.execute(select(Event).where(col(Event.name).startswith(DEMO_PREFIX)))
     ).scalars().all()
 
     # Find demo slots
     demo_slots = (
         await db.execute(
-            select(DutySlot).where(DutySlot.title.startswith(DEMO_PREFIX))
+            select(DutySlot).where(col(DutySlot.title).startswith(DEMO_PREFIX))
         )
     ).scalars().all()
     demo_slot_ids = [s.id for s in demo_slots]
@@ -282,7 +283,7 @@ async def delete_demo_data(
     if demo_slot_ids:
         bookings = (
             await db.execute(
-                select(Booking).where(Booking.duty_slot_id.in_(demo_slot_ids))
+                select(Booking).where(col(Booking.duty_slot_id).in_(demo_slot_ids))
             )
         ).scalars().all()
         bookings_deleted = len(bookings)
@@ -300,7 +301,7 @@ async def delete_demo_data(
     # Delete demo event groups
     demo_groups = (
         await db.execute(
-            select(EventGroup).where(EventGroup.name.startswith(DEMO_PREFIX))
+            select(EventGroup).where(col(EventGroup.name).startswith(DEMO_PREFIX))
         )
     ).scalars().all()
     groups_deleted = len(demo_groups)
@@ -309,7 +310,7 @@ async def delete_demo_data(
 
     # Delete demo users (auth0_sub starts with 'demo|')
     demo_users = (
-        await db.execute(select(User).where(User.auth0_sub.startswith("demo|")))
+        await db.execute(select(User).where(col(User.auth0_sub).startswith("demo|")))
     ).scalars().all()
     users_deleted = len(demo_users)
     for u in demo_users:

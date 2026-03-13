@@ -401,6 +401,100 @@ export const zMyBookingsListResponse = z.object({
 })
 
 /**
+ * NotificationRead
+ */
+export const zNotificationRead = z.object({
+  id: z.uuid(),
+  recipient_id: z.uuid(),
+  notification_type_code: z.string(),
+  title: z.string(),
+  body: z.string(),
+  data: z.optional(z.union([z.object({}), z.null()])),
+  is_read: z.boolean(),
+  read_at: z.optional(z.union([z.iso.datetime(), z.null()])),
+  channels_sent: z.array(z.string()),
+  channels_failed: z.array(z.string()),
+  created_at: z.iso.datetime(),
+})
+
+/**
+ * NotificationListResponse
+ */
+export const zNotificationListResponse = z.object({
+  items: z.array(zNotificationRead),
+  total: z.int(),
+  unread_count: z.int(),
+  skip: z.int(),
+  limit: z.int(),
+})
+
+/**
+ * NotificationSubscriptionCreate
+ */
+export const zNotificationSubscriptionCreate = z.object({
+  notification_type_id: z.uuid(),
+  email_enabled: z.optional(z.boolean()).default(true),
+  push_enabled: z.optional(z.boolean()).default(true),
+  telegram_enabled: z.optional(z.boolean()).default(false),
+  scope_type: z.optional(z.enum(['global', 'event_group', 'event', 'duty_slot'])),
+  scope_id: z.optional(z.union([z.uuid(), z.null()])),
+  is_muted: z.optional(z.boolean()).default(false),
+})
+
+/**
+ * NotificationPreferencesBulkUpdate
+ * Full matrix of preferences sent from the frontend.
+ */
+export const zNotificationPreferencesBulkUpdate = z
+  .object({
+    preferences: z.array(zNotificationSubscriptionCreate),
+  })
+  .register(z.globalRegistry, {
+    description: 'Full matrix of preferences sent from the frontend.',
+  })
+
+/**
+ * NotificationSubscriptionRead
+ */
+export const zNotificationSubscriptionRead = z.object({
+  id: z.uuid(),
+  user_id: z.uuid(),
+  notification_type_id: z.uuid(),
+  email_enabled: z.boolean(),
+  push_enabled: z.boolean(),
+  telegram_enabled: z.boolean(),
+  scope_type: z.string(),
+  scope_id: z.optional(z.union([z.uuid(), z.null()])),
+  is_muted: z.boolean(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+})
+
+/**
+ * NotificationSubscriptionUpdate
+ */
+export const zNotificationSubscriptionUpdate = z.object({
+  email_enabled: z.optional(z.union([z.boolean(), z.null()])),
+  push_enabled: z.optional(z.union([z.boolean(), z.null()])),
+  telegram_enabled: z.optional(z.union([z.boolean(), z.null()])),
+  is_muted: z.optional(z.union([z.boolean(), z.null()])),
+})
+
+/**
+ * NotificationTypeRead
+ */
+export const zNotificationTypeRead = z.object({
+  id: z.uuid(),
+  code: z.string(),
+  name: z.string(),
+  description: z.optional(z.union([z.string(), z.null()])),
+  category: z.string(),
+  is_admin_only: z.boolean(),
+  default_channels: z.array(z.string()),
+  is_active: z.boolean(),
+})
+
+/**
  * ProfileInit
  * Profile data from Auth0 ID token for user initialization.
  */
@@ -415,6 +509,26 @@ export const zProfileInit = z
   .register(z.globalRegistry, {
     description: 'Profile data from Auth0 ID token for user initialization.',
   })
+
+/**
+ * PushSubscriptionCreate
+ */
+export const zPushSubscriptionCreate = z.object({
+  endpoint: z.string(),
+  p256dh_key: z.string(),
+  auth_key: z.string(),
+  user_agent: z.optional(z.union([z.string(), z.null()])),
+})
+
+/**
+ * PushSubscriptionRead
+ */
+export const zPushSubscriptionRead = z.object({
+  id: z.uuid(),
+  endpoint: z.string(),
+  user_agent: z.optional(z.union([z.string(), z.null()])),
+  created_at: z.iso.datetime(),
+})
 
 /**
  * SelfApproveRequest
@@ -493,6 +607,42 @@ export const zSlotRegenerationResult = z.object({
   slots_removed: z.int(),
   slots_kept: z.int(),
   affected_bookings: z.array(zAffectedBookingInfo),
+})
+
+/**
+ * TelegramBindResponse
+ */
+export const zTelegramBindResponse = z.object({
+  verification_code: z.string(),
+  bot_username: z.optional(z.union([z.string(), z.null()])),
+  expires_at: z.iso.datetime(),
+})
+
+/**
+ * TelegramBindingRead
+ */
+export const zTelegramBindingRead = z.object({
+  id: z.uuid(),
+  telegram_chat_id: z.optional(z.union([z.string(), z.null()])),
+  telegram_username: z.optional(z.union([z.string(), z.null()])),
+  is_verified: z.boolean(),
+  created_at: z.iso.datetime(),
+})
+
+/**
+ * TelegramVerifyRequest
+ */
+export const zTelegramVerifyRequest = z.object({
+  verification_code: z.string(),
+  telegram_chat_id: z.string(),
+  telegram_username: z.optional(z.union([z.string(), z.null()])),
+})
+
+/**
+ * UnreadCountResponse
+ */
+export const zUnreadCountResponse = z.object({
+  unread_count: z.int(),
 })
 
 /**
@@ -1321,6 +1471,282 @@ export const zEventGroupsSetMyAvailabilityData = z.object({
  * Successful Response
  */
 export const zEventGroupsSetMyAvailabilityResponse = zUserAvailabilityRead
+
+export const zNotificationsListNotificationTypesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-List Notification Types
+ * Successful Response
+ */
+export const zNotificationsListNotificationTypesResponse = z
+  .array(zNotificationTypeRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zNotificationsListNotificationsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      skip: z.optional(z.int().gte(0)).default(0),
+      limit: z.optional(z.int().gte(1).lte(200)).default(50),
+      unread_only: z.optional(z.boolean()).default(false),
+    }),
+  ),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsListNotificationsResponse = zNotificationListResponse
+
+export const zNotificationsGetUnreadCountData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsGetUnreadCountResponse = zUnreadCountResponse
+
+export const zNotificationsMarkNotificationReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    notification_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsMarkNotificationReadResponse = zNotificationRead
+
+export const zNotificationsMarkAllNotificationsReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-Mark All Notifications Read
+ * Successful Response
+ */
+export const zNotificationsMarkAllNotificationsReadResponse = z
+  .object({})
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zNotificationsDismissNotificationData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    notification_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsDismissNotificationResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zNotificationsListPreferencesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-List Preferences
+ * Successful Response
+ */
+export const zNotificationsListPreferencesResponse = z
+  .array(zNotificationSubscriptionRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zNotificationsCreatePreferenceData = z.object({
+  body: zNotificationSubscriptionCreate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsCreatePreferenceResponse = zNotificationSubscriptionRead
+
+export const zNotificationsBulkUpdatePreferencesData = z.object({
+  body: zNotificationPreferencesBulkUpdate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-Bulk Update Preferences
+ * Successful Response
+ */
+export const zNotificationsBulkUpdatePreferencesResponse = z
+  .array(zNotificationSubscriptionRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zNotificationsDeletePreferenceData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    preference_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsDeletePreferenceResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zNotificationsUpdatePreferenceData = z.object({
+  body: zNotificationSubscriptionUpdate,
+  path: z.object({
+    preference_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsUpdatePreferenceResponse = zNotificationSubscriptionRead
+
+export const zNotificationsListPushSubscriptionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-List Push Subscriptions
+ * Successful Response
+ */
+export const zNotificationsListPushSubscriptionsResponse = z
+  .array(zPushSubscriptionRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zNotificationsRegisterPushSubscriptionData = z.object({
+  body: zPushSubscriptionCreate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsRegisterPushSubscriptionResponse = zPushSubscriptionRead
+
+export const zNotificationsRemovePushSubscriptionData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    subscription_id: z.string(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsRemovePushSubscriptionResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zNotificationsUnbindTelegramData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsUnbindTelegramResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zNotificationsGetTelegramBindingData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-Get Telegram Binding
+ * Successful Response
+ */
+export const zNotificationsGetTelegramBindingResponse = z.union([zTelegramBindingRead, z.null()])
+
+export const zNotificationsStartTelegramBindingData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsStartTelegramBindingResponse = zTelegramBindResponse
+
+export const zNotificationsVerifyTelegramBindingData = z.object({
+  body: zTelegramVerifyRequest,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zNotificationsVerifyTelegramBindingResponse = zTelegramBindingRead
+
+export const zNotificationsTelegramWebhookData = z.object({
+  body: z.object({}),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-Telegram Webhook
+ * Successful Response
+ */
+export const zNotificationsTelegramWebhookResponse = z.object({}).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zNotificationsGetVapidPublicKeyData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Notifications-Get Vapid Public Key
+ * Successful Response
+ */
+export const zNotificationsGetVapidPublicKeyResponse = z.object({}).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
 
 export const zDemoDataDeleteDemoDataData = z.object({
   body: z.optional(z.never()),

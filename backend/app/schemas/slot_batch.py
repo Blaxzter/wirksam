@@ -1,5 +1,6 @@
 import datetime as dt
 import uuid
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -18,7 +19,7 @@ class SlotBatchBase(BaseModel):
     slot_duration_minutes: int | None = None
     people_per_slot: int | None = None
     remainder_mode: RemainderMode | None = "drop"
-    schedule_overrides: list[dict] | None = None
+    schedule_overrides: list[dict[str, Any]] | None = None
 
 
 class SlotBatchCreate(SlotBatchBase):
@@ -36,7 +37,7 @@ class SlotBatchUpdate(BaseModel):
     slot_duration_minutes: int | None = None
     people_per_slot: int | None = None
     remainder_mode: RemainderMode | None = None
-    schedule_overrides: list[dict] | None = None
+    schedule_overrides: list[dict[str, Any]] | None = None
 
 
 class SlotBatchRead(SlotBatchBase):

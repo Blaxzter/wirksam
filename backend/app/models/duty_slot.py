@@ -16,7 +16,7 @@ if __name__ != "__main__":
 
 
 class DutySlot(Base, table=True):
-    __tablename__ = "duty_slots"
+    __tablename__ = "duty_slots"  # type: ignore[assignment]
 
     event_id: uuid.UUID = Field(
         sa_column=sa.Column(

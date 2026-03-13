@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 
 import AppSidebar from '@/components/navigation/AppSidebar.vue'
+import NotificationBell from '@/components/navigation/NotificationBell.vue'
 import ErrorBoundary from '@/components/utils/ErrorBoundary.vue'
 
 const breadcrumbStore = useBreadcrumbStore()
@@ -37,7 +38,7 @@ const resolveBreadcrumbTitle = (title: string, titleKey?: string) => {
       <header
         class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
       >
-        <div class="flex items-center gap-2 px-4">
+        <div class="flex flex-1 items-center gap-2 px-4">
           <SidebarTrigger class="-ml-1" />
           <Separator orientation="vertical" class="mr-2 h-4" />
           <Breadcrumb>
@@ -58,6 +59,9 @@ const resolveBreadcrumbTitle = (title: string, titleKey?: string) => {
               </template>
             </BreadcrumbList>
           </Breadcrumb>
+          <div class="ml-auto">
+            <NotificationBell />
+          </div>
         </div>
       </header>
 

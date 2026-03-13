@@ -16,9 +16,9 @@ from tests.fixtures.auth import (
     mock_auth0_claims_no_sub,
     mock_auth0_new_user_claims,
 )
+from tests.fixtures.bookings import test_booking
 from tests.fixtures.client import app, as_admin, async_client
 from tests.fixtures.database import db_session, test_db_setup, test_engine
-from tests.fixtures.bookings import test_booking
 from tests.fixtures.duty_slots import test_duty_slot
 from tests.fixtures.event_groups import (
     test_draft_event_group,

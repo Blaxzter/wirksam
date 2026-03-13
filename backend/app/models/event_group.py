@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class EventGroup(Base, table=True):
-    __tablename__ = "event_groups"
+    __tablename__ = "event_groups"  # type: ignore[assignment]
 
     name: str = Field(sa_column=sa.Column(sa.String, nullable=False, index=True))
     description: str | None = Field(

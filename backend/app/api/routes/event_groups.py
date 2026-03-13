@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import select as sa_select
 
 from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
@@ -85,9 +85,23 @@ async def update_event_group(
     group_in: EventGroupUpdate,
     session: DBDep,
     _current_user: CurrentSuperuser,
+    background_tasks: BackgroundTasks,
 ) -> EventGroup:
     db_group = await crud_event_group.get(session, group_id, raise_404_error=True)
-    return await crud_event_group.update(session, db_obj=db_group, obj_in=group_in)
+    old_status = db_group.status
+    updated = await crud_event_group.update(session, db_obj=db_group, obj_in=group_in)
+
+    # Notify when event group is published
+    if old_status != "published" and updated.status == "published":
+        from app.logic.notifications.triggers import dispatch_event_group_published
+
+        background_tasks.add_task(
+            dispatch_event_group_published,
+            event_group_id=updated.id,
+            event_group_name=updated.name,
+        )
+
+    return updated
 
 
 @router.delete("/{group_id}", status_code=204)

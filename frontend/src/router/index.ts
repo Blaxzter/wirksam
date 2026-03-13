@@ -32,6 +32,11 @@ const router = createRouter({
           name: 'about',
           component: () => import('@/views/preauth/AboutView.vue'),
         },
+        {
+          path: 'how-it-works',
+          name: 'how-it-works',
+          component: () => import('@/views/preauth/HowItWorksView.vue'),
+        },
       ],
     },
     {
@@ -143,6 +148,22 @@ const router = createRouter({
             breadcrumbs: [
               { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
               { title: 'Settings', titleKey: 'navigation.breadcrumbs.settings' },
+            ],
+          },
+        },
+        {
+          path: 'settings/notifications',
+          name: 'notification-preferences',
+          component: () => import('@/views/NotificationPreferencesView.vue'),
+          meta: {
+            breadcrumbs: [
+              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
+              {
+                title: 'Settings',
+                titleKey: 'navigation.breadcrumbs.settings',
+                to: { name: 'settings' },
+              },
+              { title: 'Notifications', titleKey: 'notifications.preferences.title' },
             ],
           },
         },

@@ -24,6 +24,9 @@
       <!-- Password Reset (Auth0 users only) -->
       <PasswordResetCard v-if="authProvider.isAuth0" />
 
+      <!-- Notification Preferences -->
+      <NotificationSettingsCard />
+
       <!-- Language Settings -->
       <LanguageSettingsCard />
 
@@ -45,6 +48,7 @@ import CurrentProfileCard from '@/components/account/user/CurrentProfileCard.vue
 import DeleteAccountCard from '@/components/account/user/DeleteAccountCard.vue'
 import EditProfileForm from '@/components/account/user/EditProfileForm.vue'
 import LanguageSettingsCard from '@/components/account/user/LanguageSettingsCard.vue'
+import NotificationSettingsCard from '@/components/account/user/NotificationSettingsCard.vue'
 import PasswordResetCard from '@/components/account/user/PasswordResetCard.vue'
 import { useAuthProvider } from '@/components/account/user/useAuthProvider.ts'
 
