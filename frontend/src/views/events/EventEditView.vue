@@ -3,13 +3,15 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
 import { parseDate } from '@internationalized/date'
-import { ArrowLeft, Clock, Info, Plus, RefreshCw, Trash2, Users } from 'lucide-vue-next'
+import { ArrowLeft, Clock, Info, RefreshCw } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
+import ScheduleConfigForm from '@/components/events/ScheduleConfigForm.vue'
+import SlotPreviewGrid from '@/components/events/SlotPreviewGrid.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import {
   type RemainderMode,
@@ -32,22 +34,13 @@ import {
 } from '@/components/ui/dialog'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import Separator from '@/components/ui/separator/Separator.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
-import { TimePicker } from '@/components/ui/time-picker'
 
 import type { DutySlotRead, EventRead, SlotBatchRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { formatTime, formatDateLabel } = useFormatters()
 const route = useRoute()
 const router = useRouter()
 const breadcrumbStore = useBreadcrumbStore()
@@ -102,9 +95,6 @@ const currentScheduleSnapshot = computed<ScheduleSnapshot | null>(() => {
     overrides: JSON.stringify(overrides.value),
   }
 })
-
-// Duration options
-const durationOptions = [15, 30, 45, 60, 90, 120]
 
 // Affected bookings dialog
 const showAffectedDialog = ref(false)
@@ -210,10 +200,6 @@ watch(startDate, (val) => {
   }
 })
 
-watch(hasRemainder, (val) => {
-  if (!val) remainderMode.value = 'drop'
-})
-
 // --- Available dates for exceptions ---
 const availableDates = computed(() => {
   if (!startDate.value || !endDate.value) return []
@@ -230,29 +216,6 @@ const availableDates = computed(() => {
   }
   return dates
 })
-
-const addOverride = () => {
-  overrides.value.push({
-    date: '',
-    startTime: defaultStartTime.value,
-    endTime: defaultEndTime.value,
-  })
-}
-
-const removeOverride = (index: number) => {
-  overrides.value.splice(index, 1)
-}
-
-const formatDateLabel = (dateStr: string) => {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(locale.value, { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-// --- Format time (strip seconds from HH:MM:SS) ---
-const formatTime = (time: string | null | undefined): string => {
-  if (!time) return ''
-  return time.substring(0, 5)
-}
 
 // --- Load event data ---
 const loadEvent = async () => {
@@ -616,135 +579,17 @@ onMounted(loadEvent)
           </div>
         </CardHeader>
         <CardContent class="space-y-6">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <Label>{{ t('duties.events.createView.schedule.defaultStartTime') }}</Label>
-              <TimePicker v-model="defaultStartTime" />
-            </div>
-            <div class="space-y-2">
-              <Label>{{ t('duties.events.createView.schedule.defaultEndTime') }}</Label>
-              <TimePicker v-model="defaultEndTime" />
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <Label>{{ t('duties.events.createView.schedule.slotDuration') }}</Label>
-              <Select v-model="slotDurationMinutes">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem v-for="d in durationOptions" :key="d" :value="d">
-                    {{ t('duties.events.createView.schedule.minutes', { n: d }) }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="space-y-2">
-              <Label>{{ t('duties.events.createView.schedule.peoplePerSlot') }}</Label>
-              <Input v-model.number="peoplePerSlot" type="number" min="1" />
-            </div>
-          </div>
-
-          <!-- Remainder handling -->
-          <Transition
-            enter-active-class="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
-            enter-from-class="grid-rows-[0fr] opacity-0"
-            enter-to-class="grid-rows-[1fr] opacity-100"
-            leave-active-class="grid transition-[grid-template-rows,opacity] duration-200 ease-in"
-            leave-from-class="grid-rows-[1fr] opacity-100"
-            leave-to-class="grid-rows-[0fr] opacity-0"
-          >
-            <div v-if="hasRemainder">
-              <div class="overflow-hidden">
-                <div class="space-y-2">
-                  <Label>{{ t('duties.events.createView.schedule.remainder') }}</Label>
-                  <p class="text-sm text-muted-foreground">
-                    {{ t('duties.events.createView.schedule.remainderDesc') }}
-                  </p>
-                  <RadioGroup v-model="remainderMode" class="flex gap-4 pt-1">
-                    <div class="flex items-center gap-2">
-                      <RadioGroupItem value="drop" id="rm-drop" />
-                      <Label for="rm-drop">{{
-                        t('duties.events.createView.schedule.remainderMode.drop')
-                      }}</Label>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <RadioGroupItem value="short" id="rm-short" />
-                      <Label for="rm-short">{{
-                        t('duties.events.createView.schedule.remainderMode.short')
-                      }}</Label>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <RadioGroupItem value="extend" id="rm-extend" />
-                      <Label for="rm-extend">{{
-                        t('duties.events.createView.schedule.remainderMode.extend')
-                      }}</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Date exceptions -->
-          <Separator />
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-medium">{{ t('duties.events.createView.schedule.overrides') }}</p>
-                <p class="text-sm text-muted-foreground">
-                  {{ t('duties.events.createView.schedule.overridesDesc') }}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="availableDates.length === 0"
-                @click="addOverride"
-              >
-                <Plus class="mr-1.5 h-4 w-4" />
-                {{ t('duties.events.createView.schedule.addException') }}
-              </Button>
-            </div>
-
-            <div
-              v-for="(override, index) in overrides"
-              :key="index"
-              class="flex items-end gap-3 rounded-md border p-3"
-            >
-              <div class="flex-1 space-y-2">
-                <Label>{{ t('duties.dutySlots.fields.date') }}</Label>
-                <Select v-model="override.date">
-                  <SelectTrigger class="min-w-40">
-                    <SelectValue :placeholder="t('duties.dutySlots.pickDate')" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="d in availableDates" :key="d" :value="d">
-                      {{ formatDateLabel(d) }}
-                    </SelectItem>
-                    <SelectItem
-                      v-if="override.date && !availableDates.includes(override.date)"
-                      :value="override.date"
-                    >
-                      {{ formatDateLabel(override.date) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div class="space-y-2">
-                <Label>{{ t('duties.dutySlots.fields.startTime') }}</Label>
-                <TimePicker v-model="override.startTime" />
-              </div>
-              <div class="space-y-2">
-                <Label>{{ t('duties.dutySlots.fields.endTime') }}</Label>
-                <TimePicker v-model="override.endTime" />
-              </div>
-              <Button variant="ghost" size="icon" @click="removeOverride(index)">
-                <Trash2 class="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          </div>
+          <ScheduleConfigForm
+            v-model:default-start-time="defaultStartTime"
+            v-model:default-end-time="defaultEndTime"
+            v-model:slot-duration-minutes="slotDurationMinutes"
+            v-model:people-per-slot="peoplePerSlot"
+            v-model:remainder-mode="remainderMode"
+            v-model:overrides="overrides"
+            :has-remainder="hasRemainder"
+            :available-dates="availableDates"
+            show-overrides
+          />
         </CardContent>
       </Card>
 
@@ -772,56 +617,13 @@ onMounted(loadEvent)
           <div v-if="totalSlots === 0" class="py-8 text-center text-muted-foreground">
             {{ t('duties.events.createView.preview.noSlots') }}
           </div>
-          <div v-else class="space-y-4">
-            <div v-for="[dateStr, slots] in slotsByDate" :key="dateStr" class="space-y-2">
-              <div class="flex items-center gap-2">
-                <p class="font-medium">{{ formatDateLabel(dateStr) }}</p>
-                <Badge variant="outline">
-                  {{
-                    t('duties.events.createView.preview.slotsOnDate', {
-                      count: slots.filter((s) => !isSlotExcluded(s)).length,
-                    })
-                  }}
-                </Badge>
-              </div>
-              <div class="grid grid-cols-2 items-center gap-2 sm:grid-cols-3 md:grid-cols-4">
-                <Card
-                  v-for="slot in slots"
-                  :key="slot.startTime"
-                  class="cursor-pointer p-2 transition-opacity"
-                  :class="[
-                    isSlotExcluded(slot) ? 'opacity-30' : 'hover:ring-1 hover:ring-destructive/40',
-                    getSlotBookingCount(slot) > 0 && !isSlotExcluded(slot)
-                      ? 'ring-1 ring-primary/30'
-                      : '',
-                  ]"
-                  @click="toggleSlotExclusion(slot)"
-                >
-                  <CardContent class="p-0">
-                    <p
-                      class="text-center text-sm font-mono"
-                      :class="isSlotExcluded(slot) ? 'line-through text-muted-foreground' : ''"
-                    >
-                      {{ slot.startTime }} - {{ slot.endTime }}
-                    </p>
-                    <p
-                      v-if="getSlotBookingCount(slot) > 0"
-                      class="mt-0.5 flex items-center justify-center gap-1 text-xs"
-                      :class="
-                        isSlotExcluded(slot) ? 'text-destructive line-through' : 'text-primary'
-                      "
-                    >
-                      <Users class="h-3 w-3" />
-                      {{
-                        t('duties.events.editView.preview.booked', {
-                          count: getSlotBookingCount(slot),
-                        })
-                      }}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+          <div v-else>
+            <SlotPreviewGrid
+              :slots-by-date="slotsByDate"
+              :is-slot-excluded="isSlotExcluded"
+              :get-booking-count="getSlotBookingCount"
+              @toggle-exclusion="toggleSlotExclusion"
+            />
           </div>
         </CardContent>
       </Card>

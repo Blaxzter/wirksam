@@ -16,6 +16,7 @@ import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
+import { useFormatters } from '@/composables/useFormatters'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -34,6 +35,7 @@ import type { BookingReadWithSlot, MyBookingsListResponse } from '@/client/types
 import { toastApiError } from '@/lib/api-errors'
 
 const { t, locale } = useI18n()
+const { formatTime, formatDateLabel } = useFormatters()
 const { get, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
 
@@ -274,20 +276,6 @@ const slotLocation = (booking: BookingReadWithSlot) => {
 
 const eventName = (booking: BookingReadWithSlot) => {
   return booking.duty_slot?.event_name ?? booking.cancelled_event_name ?? null
-}
-
-const formatTime = (time: string | null | undefined): string => {
-  if (!time) return ''
-  return time.substring(0, 5)
-}
-
-const formatDateLabel = (dateStr: string) => {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(locale.value, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  })
 }
 
 onMounted(loadBookings)

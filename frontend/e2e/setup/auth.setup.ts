@@ -50,8 +50,25 @@ setup('authenticate with Auth0', async ({ page }) => {
     await consentButton.click()
   }
 
-  await page.waitForURL(/\/app\/home/, { timeout: 60_000 })
+  // Wait for Auth0 to process the callback code and authenticate
+  // The callback URL may return to root (/) if VITE_AUTH0_CALLBACK_URL points there
+  await page.waitForURL(/(\/app\/home|\?\w+=)/, { timeout: 60_000 })
+
+  // If we landed on root with auth code, the Auth0 SDK processes it and we become authenticated.
+  // Navigate to /app/home to trigger the post-auth redirect and profile load.
+  if (!page.url().includes('/app/home')) {
+    await page.goto('/app/home')
+  }
+
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 30_000 })
+
+  // Wait for the Auth0 SPA SDK to persist the token to localStorage.
+  // The SDK writes asynchronously after the token exchange completes.
+  await page.waitForFunction(
+    () => Object.keys(localStorage).some((k) => k.startsWith('@@auth0spajs@@')),
+    null,
+    { timeout: 15_000 },
+  )
 
   mkdirSync(dirname(authFile), { recursive: true })
   await page.context().storageState({ path: authFile })

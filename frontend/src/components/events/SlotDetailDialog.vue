@@ -8,6 +8,7 @@ import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
+import { useFormatters } from '@/composables/useFormatters'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -42,7 +43,8 @@ const emit = defineEmits<{
   'booking-updated': []
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { formatTime, formatDateLabel } = useFormatters()
 const router = useRouter()
 const { get, post, patch, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
@@ -138,21 +140,6 @@ watch(
   },
 )
 
-const formatTime = (time: string | null | undefined): string => {
-  if (!time) return ''
-  return time.substring(0, 5)
-}
-
-const formatDateLabel = (dateStr: string) => {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(locale.value, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
-
 const timeDisplay = computed(() => {
   const s = resolvedSlot.value
   if (!s) return null
@@ -247,7 +234,7 @@ const navigateToEvent = () => {
                 <p class="text-xs text-muted-foreground">
                   {{ t('duties.dutySlots.detail.date') }}
                 </p>
-                <p class="text-sm font-medium">{{ formatDateLabel(resolvedSlot.date) }}</p>
+                <p class="text-sm font-medium">{{ formatDateLabel(resolvedSlot.date, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
               </div>
             </div>
             <div v-if="timeDisplay" class="flex items-start gap-2.5">

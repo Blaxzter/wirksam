@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight, type LucideIcon } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/sidebar'
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 
 const props = defineProps<{
@@ -53,6 +54,11 @@ const handleSidebarToggle = (item: { isActive?: boolean; routeName?: string; url
 }
 
 const hasSubItems = (item: { items?: unknown[] }) => item.items && item.items.length > 0
+
+const isRouteActive = (routeName?: string) => {
+  if (!routeName) return false
+  return route.name === routeName || route.matched.some(r => r.name === routeName)
+}
 </script>
 
 <template>
@@ -62,10 +68,11 @@ const hasSubItems = (item: { items?: unknown[] }) => item.items && item.items.le
       <template v-for="item in items" :key="item.routeName ?? item.titleKey ?? item.title">
         <!-- Direct link (no sub-items) -->
         <SidebarMenuItem v-if="!hasSubItems(item)">
-          <SidebarMenuButton :tooltip="resolveTitle(item)" as-child>
+          <SidebarMenuButton :tooltip="resolveTitle(item)" :is-active="isRouteActive(item.routeName)" as-child>
             <RouterLink v-if="item.routeName" :to="{ name: item.routeName }">
               <component :is="item.icon" v-if="item.icon" />
               <span>{{ resolveTitle(item) }}</span>
+              <span v-if="isRouteActive(item.routeName)" class="ml-auto size-1.5 rounded-full bg-foreground" />
             </RouterLink>
             <a v-else :href="item.url">
               <component :is="item.icon" v-if="item.icon" />
@@ -97,9 +104,10 @@ const hasSubItems = (item: { items?: unknown[] }) => item.items && item.items.le
                   v-for="subItem in item.items"
                   :key="subItem.routeName ?? subItem.titleKey ?? subItem.title"
                 >
-                  <SidebarMenuSubButton as-child>
+                  <SidebarMenuSubButton :is-active="isRouteActive(subItem.routeName)" as-child>
                     <RouterLink v-if="subItem.routeName" :to="{ name: subItem.routeName }">
                       <span>{{ resolveTitle(subItem) }}</span>
+                      <span v-if="isRouteActive(subItem.routeName)" class="ml-auto size-1.5 rounded-full bg-foreground" />
                     </RouterLink>
                     <a v-else :href="subItem.url">
                       <span>{{ resolveTitle(subItem) }}</span>

@@ -11,7 +11,6 @@ import {
   List,
   Plus,
   Search,
-  Trash2,
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -21,18 +20,9 @@ import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
+import DeleteConfirmationDialog from '@/components/events/DeleteConfirmationDialog.vue'
 import Button from '@/components/ui/button/Button.vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import Input from '@/components/ui/input/Input.vue'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
   TooltipContent,
@@ -316,44 +306,11 @@ onMounted(loadEvents)
     />
 
     <!-- Delete Event Dialog -->
-    <Dialog v-model:open="showDeleteDialog">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Trash2 class="h-5 w-5 text-destructive" />
-            {{ t('common.dialog.confirm.title') }}
-          </DialogTitle>
-          <DialogDescription class="text-left">
-            {{ t('duties.events.deleteConfirm') }}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div class="space-y-3">
-          <p class="text-sm text-muted-foreground">
-            {{ t('duties.deleteDialog.activeBookingsWarning') }}
-          </p>
-          <div class="space-y-2">
-            <Label>{{ t('duties.deleteDialog.reasonLabel') }}</Label>
-            <Textarea
-              v-model="deleteReason"
-              :placeholder="t('duties.deleteDialog.reasonPlaceholder')"
-              rows="3"
-            />
-            <p class="text-xs text-muted-foreground">
-              {{ t('duties.deleteDialog.reasonHint') }}
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter class="sm:justify-start">
-          <Button variant="outline" @click="showDeleteDialog = false">
-            {{ t('common.dialog.confirm.cancelText') }}
-          </Button>
-          <Button variant="destructive" @click="confirmDeleteEvent">
-            {{ t('common.dialog.confirm.confirmText') }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DeleteConfirmationDialog
+      v-model:open="showDeleteDialog"
+      v-model:reason="deleteReason"
+      :message="t('duties.events.deleteConfirm')"
+      @confirm="confirmDeleteEvent"
+    />
   </div>
 </template>

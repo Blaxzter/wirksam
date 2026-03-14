@@ -119,10 +119,10 @@ services:
 
             - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8000
 
-            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`)
+            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`${API_DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=web
 
-            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`)
+            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`${API_DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=letsencrypt
@@ -136,7 +136,7 @@ services:
         build:
             context: ./frontend
             args:
-                - VITE_API_URL=https://api.${DOMAIN?Variable not set}/api/v1
+                - VITE_API_URL=https://${API_DOMAIN?Variable not set}/api/v1
                 - NODE_ENV=production
         labels:
             - traefik.enable=true

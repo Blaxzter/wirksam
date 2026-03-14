@@ -1,29 +1,91 @@
 name: Deploy to Production
 
 on:
-    release:
-        types:
-            - published
+  release:
+    types:
+      - published
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/frontend
 
 jobs:
-    deploy:
-        # Do not deploy in the main repository, only in user projects
-        if: github.repository_owner != 'fastapi'
-        runs-on:
-            - self-hosted
-            - production
-        env:
-            ENVIRONMENT: production
-            DOMAIN: ${{ secrets.DOMAIN_PRODUCTION }}
-            STACK_NAME: ${{ secrets.STACK_NAME_PRODUCTION }}
-            SMTP_HOST: ${{ secrets.SMTP_HOST }}
-            SMTP_USER: ${{ secrets.SMTP_USER }}
-            SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-            EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
-            POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-            SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v5
-            - run: docker compose -f docker-compose.yml --project-name ${{ secrets.STACK_NAME_PRODUCTION }} build
-            - run: docker compose -f docker-compose.yml --project-name ${{ secrets.STACK_NAME_PRODUCTION }} up -d
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version tag
+        id: meta
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.tag }}
+            ${{ env.FRONTEND_IMAGE }}:latest
+          build-args: |
+            VITE_API_URL=https://${{ secrets.API_DOMAIN }}/api/v1
+            VITE_AUTH0_DOMAIN=${{ secrets.VITE_AUTH0_DOMAIN }}
+            VITE_AUTH0_CLIENT_ID=${{ secrets.VITE_AUTH0_CLIENT_ID }}
+            VITE_AUTH0_API_AUDIENCE=${{ secrets.VITE_AUTH0_API_AUDIENCE }}
+            VITE_AUTH0_CALLBACK_URL=https://${{ secrets.DOMAIN_PRODUCTION }}/callback
+            NODE_ENV=production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH || '/opt/dutyhub' }}
+
+            # Log in to GHCR
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # Pull new images and restart
+            docker compose pull backend frontend prestart
+            docker compose up -d --remove-orphans
+
+            # Wait for backend health check
+            echo "Waiting for backend to become healthy..."
+            timeout 120 bash -c 'until docker compose ps backend | grep -q "healthy"; do sleep 5; done'
+            echo "Deployment complete!"

@@ -17,7 +17,7 @@ dev mode=dev_mode:
 
 # Start backend dev server directly (no Docker)
 dev-backend:
-    cd backend && uv run fastapi dev app/main.py
+    cd backend && uv run fastapi dev app/main.py --reload-exclude .venv
 
 # Start frontend dev server directly (no Docker)
 dev-frontend:

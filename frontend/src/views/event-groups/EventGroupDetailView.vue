@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { ArrowLeft, CalendarDays, Check, ChevronDown, Info, Pencil, Plus, Trash2, UserCheck, Users } from 'lucide-vue-next'
+import { ArrowLeft, CalendarDays, Check, Info, Pencil, Plus, Trash2, UserCheck, Users } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -25,12 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import StatusDropdown from '@/components/events/StatusDropdown.vue'
 import Separator from '@/components/ui/separator/Separator.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
@@ -57,8 +52,6 @@ const allAvailabilities = ref<UserAvailabilityWithUser[]>([])
 const loading = ref(false)
 const showAvailabilityDialog = ref(false)
 
-const statuses = ['draft', 'published', 'archived'] as const
-
 const handleStatusChange = async (status: 'draft' | 'published' | 'archived') => {
   if (!group.value || group.value.status === status) return
   try {
@@ -74,6 +67,7 @@ const handleStatusChange = async (status: 'draft' | 'published' | 'archived') =>
 }
 
 const loadGroup = async () => {
+  if (!groupId.value) return
   loading.value = true
   try {
     const [groupRes, eventsRes] = await Promise.all([
@@ -197,31 +191,12 @@ onMounted(loadGroup)
         <div class="space-y-1">
           <div class="flex items-center gap-3">
             <h1 class="text-3xl font-bold">{{ group.name }}</h1>
-            <DropdownMenu v-if="authStore.isAdmin">
-              <DropdownMenuTrigger as-child>
-                <button class="inline-flex cursor-pointer items-center gap-1">
-                  <Badge :variant="statusVariant(group.status)">
-                    {{ t(`duties.eventGroups.statuses.${group.status ?? 'draft'}`) }}
-                    <ChevronDown class="ml-1 h-3 w-3" />
-                  </Badge>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem
-                  v-for="s in statuses"
-                  :key="s"
-                  :disabled="group.status === s"
-                  @click="handleStatusChange(s)"
-                >
-                  <Check v-if="group.status === s" class="mr-2 h-4 w-4" />
-                  <span v-else class="mr-2 h-4 w-4" />
-                  {{ t(`duties.eventGroups.statuses.${s}`) }}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Badge v-else :variant="statusVariant(group.status)">
-              {{ t(`duties.eventGroups.statuses.${group.status ?? 'draft'}`) }}
-            </Badge>
+            <StatusDropdown
+              :status="group.status"
+              i18n-prefix="duties.eventGroups.statuses"
+              :editable="authStore.isAdmin"
+              @change="handleStatusChange"
+            />
           </div>
           <p v-if="group.description" class="text-muted-foreground">{{ group.description }}</p>
           <p class="text-sm text-muted-foreground">

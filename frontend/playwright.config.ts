@@ -39,11 +39,11 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
 
-    /* Only on CI systems run the tests headless */
-    headless: !!process.env.CI,
+    /* Run headless by default; set HEADED=true for visual debugging */
+    headless: !process.env.HEADED,
 
-    // slowMo
-    launchOptions: { slowMo: 500 },
+    // slowMo only when running headed
+    launchOptions: process.env.HEADED ? { slowMo: 500 } : {},
   },
 
   projects: [

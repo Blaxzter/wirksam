@@ -23,8 +23,11 @@ import { toast } from 'vue-sonner'
 import { useAuthStore } from '@/stores/auth'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
+import DeleteConfirmationDialog from '@/components/events/DeleteConfirmationDialog.vue'
+import StatusDropdown from '@/components/events/StatusDropdown.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
+import { useFormatters } from '@/composables/useFormatters'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -48,7 +51,6 @@ import {
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import Separator from '@/components/ui/separator/Separator.vue'
-import { Textarea } from '@/components/ui/textarea'
 
 import SlotDetailDialog from '@/components/events/SlotDetailDialog.vue'
 
@@ -62,9 +64,9 @@ import type {
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { formatDate } from '@/lib/format'
-import { statusVariant } from '@/lib/status'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { formatTime, formatDateLabel } = useFormatters()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -74,7 +76,6 @@ const { confirmDestructive } = useDialog()
 
 const eventId = computed(() => route.params.eventId as string)
 const event = ref<EventRead | null>(null)
-const statuses = ['draft', 'published', 'archived'] as const
 const dutySlots = ref<DutySlotRead[]>([])
 const myBookings = ref<BookingRead[]>([])
 const batches = ref<SlotBatchRead[]>([])
@@ -306,16 +307,6 @@ const handleSlotClick = async (slot: DutySlotRead) => {
   }
 }
 
-const formatTime = (time: string | null | undefined): string => {
-  if (!time) return ''
-  return time.substring(0, 5)
-}
-
-const formatDateLabel = (dateStr: string) => {
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(locale.value, { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
 const batchLabel = (batch: SlotBatchRead) => {
   return batch.label || `${formatDate(batch.start_date)} – ${formatDate(batch.end_date)}`
 }
@@ -516,31 +507,12 @@ onMounted(async () => {
           <div class="space-y-2">
             <div class="flex items-center gap-3">
               <h1 class="text-3xl font-bold line-clamp-2 break-words">{{ event.name }}</h1>
-              <DropdownMenu v-if="authStore.isAdmin">
-                <DropdownMenuTrigger as-child>
-                  <button class="inline-flex cursor-pointer items-center gap-1">
-                    <Badge :variant="statusVariant(event.status)">
-                      {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
-                      <ChevronDown class="ml-1 h-3 w-3" />
-                    </Badge>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    v-for="s in statuses"
-                    :key="s"
-                    :disabled="event.status === s"
-                    @click="handleStatusChange(s)"
-                  >
-                    <Check v-if="event.status === s" class="mr-2 h-4 w-4" />
-                    <span v-else class="mr-2 h-4 w-4" />
-                    {{ t(`duties.events.statuses.${s}`) }}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Badge v-else :variant="statusVariant(event.status)">
-                {{ t(`duties.events.statuses.${event.status ?? 'draft'}`) }}
-              </Badge>
+              <StatusDropdown
+                :status="event.status"
+                i18n-prefix="duties.events.statuses"
+                :editable="authStore.isAdmin"
+                @change="handleStatusChange"
+              />
             </div>
             <p v-if="event.description" class="text-muted-foreground line-clamp-3 break-words">
               {{ event.description }}
@@ -897,45 +869,13 @@ onMounted(async () => {
     </template>
 
     <!-- Delete Confirmation Dialog -->
-    <Dialog v-model:open="showDeleteDialog">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-2">
-            <Trash2 class="h-5 w-5 text-destructive" />
-            {{ t('common.dialog.confirm.title') }}
-          </DialogTitle>
-          <DialogDescription class="text-left">
-            {{ deleteMessage }}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div v-if="deleteBookingCount > 0" class="space-y-3">
-          <p class="text-sm font-medium text-destructive">
-            {{ t('duties.deleteDialog.activeBookings', { count: deleteBookingCount }) }}
-          </p>
-          <div class="space-y-2">
-            <Label>{{ t('duties.deleteDialog.reasonLabel') }}</Label>
-            <Textarea
-              v-model="deleteReason"
-              :placeholder="t('duties.deleteDialog.reasonPlaceholder')"
-              rows="3"
-            />
-            <p class="text-xs text-muted-foreground">
-              {{ t('duties.deleteDialog.reasonHint') }}
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter class="sm:justify-start">
-          <Button variant="outline" @click="showDeleteDialog = false">
-            {{ t('common.dialog.confirm.cancelText') }}
-          </Button>
-          <Button variant="destructive" @click="confirmDelete">
-            {{ t('common.dialog.confirm.confirmText') }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DeleteConfirmationDialog
+      v-model:open="showDeleteDialog"
+      v-model:reason="deleteReason"
+      :message="deleteMessage"
+      :booking-count="deleteBookingCount"
+      @confirm="confirmDelete"
+    />
 
     <!-- Create Slot Dialog -->
     <Dialog v-model:open="showCreateSlotDialog">

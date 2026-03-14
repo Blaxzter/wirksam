@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 
+import { useFormatters } from '@/composables/useFormatters'
+
 export interface DaySlotEntry {
   slotId: string
   startTime?: string | null
@@ -36,6 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+const { formatTime } = useFormatters()
 
 const COLLAPSED_LIMIT = 4
 
@@ -81,11 +84,6 @@ function formatDayLabel(date: Date): string {
 
 function formatDayDate(date: Date): string {
   return date.toLocaleDateString(locale.value, { day: 'numeric', month: 'short' })
-}
-
-function formatTime(time?: string | null): string {
-  if (!time) return ''
-  return time.slice(0, 5)
 }
 
 function slotHasCapacity(slot: DaySlotEntry): boolean {

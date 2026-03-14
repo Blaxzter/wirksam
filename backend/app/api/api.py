@@ -11,6 +11,7 @@ from app.api.routes import (
     site_settings,
     users,
 )
+from app.core.config import settings
 
 api_router = APIRouter()
 
@@ -23,3 +24,8 @@ api_router.include_router(bookings.router)
 api_router.include_router(event_groups.router)
 api_router.include_router(notifications.router)
 api_router.include_router(demo_data.router)
+
+if settings.ENVIRONMENT != "production":
+    from app.api.routes import debug
+
+    api_router.include_router(debug.router)

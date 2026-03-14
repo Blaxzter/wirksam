@@ -55,7 +55,7 @@ async def list_event_groups(
 
 @router.get("/{group_id}", response_model=EventGroupRead)
 async def get_event_group(
-    group_id: str,
+    group_id: uuid.UUID,
     session: DBDep,
     current_user: CurrentUser,
 ) -> EventGroup:
@@ -81,7 +81,7 @@ async def create_event_group(
 
 @router.patch("/{group_id}", response_model=EventGroupRead)
 async def update_event_group(
-    group_id: str,
+    group_id: uuid.UUID,
     group_in: EventGroupUpdate,
     session: DBDep,
     _current_user: CurrentSuperuser,
@@ -106,7 +106,7 @@ async def update_event_group(
 
 @router.delete("/{group_id}", status_code=204)
 async def delete_event_group(
-    group_id: str,
+    group_id: uuid.UUID,
     session: DBDep,
     _current_user: CurrentSuperuser,
 ) -> None:
@@ -120,7 +120,7 @@ async def delete_event_group(
 
 @router.get("/{group_id}/availabilities", response_model=list[UserAvailabilityWithUser])
 async def list_group_availabilities(
-    group_id: str,
+    group_id: uuid.UUID,
     session: DBDep,
     _current_user: CurrentSuperuser,
     skip: int = Query(default=0, ge=0),
@@ -129,7 +129,7 @@ async def list_group_availabilities(
     """Admin: list all user availabilities for this event group."""
     await crud_event_group.get(session, group_id, raise_404_error=True)
     availabilities = await crud_availability.get_multi_by_group(
-        session, event_group_id=uuid.UUID(group_id), skip=skip, limit=limit
+        session, event_group_id=group_id, skip=skip, limit=limit
     )
 
     user_ids = [a.user_id for a in availabilities]
@@ -156,14 +156,14 @@ async def list_group_availabilities(
 
 @router.get("/{group_id}/availability/me", response_model=UserAvailabilityRead)
 async def get_my_availability(
-    group_id: str,
+    group_id: uuid.UUID,
     session: DBDep,
     current_user: CurrentUser,
 ) -> UserAvailabilityRead:
     avail = await crud_availability.get_by_user_and_group(
         session,
         user_id=current_user.id,
-        event_group_id=uuid.UUID(group_id),
+        event_group_id=group_id,
     )
     if not avail:
         raise_problem(
@@ -180,7 +180,7 @@ async def get_my_availability(
     status_code=201,
 )
 async def set_my_availability(
-    group_id: str,
+    group_id: uuid.UUID,
     avail_in: UserAvailabilityCreate,
     session: DBDep,
     current_user: CurrentUser,
@@ -189,7 +189,7 @@ async def set_my_availability(
     await crud_availability.upsert_for_user(
         session,
         user_id=current_user.id,
-        event_group_id=uuid.UUID(group_id),
+        event_group_id=group_id,
         obj_in=avail_in,
     )
     await session.flush()
@@ -197,21 +197,21 @@ async def set_my_availability(
     avail = await crud_availability.get_by_user_and_group(
         session,
         user_id=current_user.id,
-        event_group_id=uuid.UUID(group_id),
+        event_group_id=group_id,
     )
     return UserAvailabilityRead.model_validate(avail)
 
 
 @router.delete("/{group_id}/availability/me", status_code=204)
 async def delete_my_availability(
-    group_id: str,
+    group_id: uuid.UUID,
     session: DBDep,
     current_user: CurrentUser,
 ) -> None:
     deleted = await crud_availability.delete_for_user(
         session,
         user_id=current_user.id,
-        event_group_id=uuid.UUID(group_id),
+        event_group_id=group_id,
     )
     if not deleted:
         raise_problem(
