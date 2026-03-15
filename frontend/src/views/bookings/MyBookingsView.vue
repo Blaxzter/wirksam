@@ -82,7 +82,7 @@ const filterDates = computed(() => {
 
 // --- Grouping state (persisted in localStorage) ---
 type GroupMode = 'none' | 'date' | 'event' | 'location'
-const STORAGE_KEY = 'dutyhub:bookings:groupBy'
+const STORAGE_KEY = 'wirksam:bookings:groupBy'
 const activeGrouping = ref<GroupMode>(
   (localStorage.getItem(STORAGE_KEY) as GroupMode) || 'none',
 )

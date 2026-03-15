@@ -1,5 +1,5 @@
 /**
- * Automated screenshot script for DutyHub landing page showcase.
+ * Automated screenshot script for WirkSam landing page showcase.
  *
  * Usage:
  *   pnpm exec playwright test --config=scripts/screenshots.config.ts

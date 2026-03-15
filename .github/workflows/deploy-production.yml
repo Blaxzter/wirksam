@@ -8,6 +8,9 @@ on:
 env:
   REGISTRY: ghcr.io
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -17,21 +20,22 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set image names
         id: images
+        env:
+          REPO: ${{ github.repository }}
         run: |
-          REPO="${{ github.repository }}"
           REPO_LOWER="${REPO,,}"
           echo "backend=ghcr.io/${REPO_LOWER}/backend" >> "$GITHUB_OUTPUT"
           echo "frontend=ghcr.io/${REPO_LOWER}/frontend" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -42,18 +46,18 @@ jobs:
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push backend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./backend
           push: true
           tags: |
             ${{ steps.images.outputs.backend }}:${{ steps.meta.outputs.tag }}
             ${{ steps.images.outputs.backend }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ steps.images.outputs.backend }}:buildcache
+          cache-to: type=registry,ref=${{ steps.images.outputs.backend }}:buildcache,mode=max
 
       - name: Build and push frontend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./frontend
           push: true
@@ -67,31 +71,37 @@ jobs:
             VITE_AUTH0_API_AUDIENCE=${{ secrets.VITE_AUTH0_API_AUDIENCE }}
             VITE_AUTH0_CALLBACK_URL=https://${{ secrets.DOMAIN_PRODUCTION }}/callback
             NODE_ENV=production
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=${{ steps.images.outputs.frontend }}:buildcache
+          cache-to: type=registry,ref=${{ steps.images.outputs.frontend }}:buildcache,mode=max
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions: {}
 
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ${{ secrets.DEPLOY_PATH }}
+          envs: GHCR_PAT,GHCR_USER,DEPLOY_PATH
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GHCR_USER: ${{ github.actor }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        script: |
+          cd "$DEPLOY_PATH"
 
-            # Log in to GHCR
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          # Log in to GHCR
+          echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-            # Pull new images and restart
-            docker compose pull backend frontend prestart
-            docker compose up -d --remove-orphans
+          # Pull new images and restart
+          docker compose pull backend frontend prestart
+          docker compose up -d --remove-orphans
 
-            # Wait for backend health check
-            echo "Waiting for backend to become healthy..."
-            timeout 120 bash -c 'until docker compose ps backend | grep -q "healthy"; do sleep 5; done'
-            echo "Deployment complete!"
+          # Wait for backend health check
+          echo "Waiting for backend to become healthy..."
+          timeout 120 bash -c 'until docker compose ps backend | grep -q "healthy"; do sleep 5; done'
+          echo "Deployment complete!"

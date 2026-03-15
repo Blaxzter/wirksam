@@ -3,7 +3,7 @@
         "backToHome": "Back to Home",
         "sections": {
             "development": {
-                "description": "DutyHub is a digital duty scheduling platform for churches and communities. Organizers create events with duty slots, and volunteers book themselves in — simple, transparent, and reliable.",
+                "description": "WirkSam is a digital duty scheduling platform for churches and communities. Organizers create events with duty slots, and volunteers book themselves in — simple, transparent, and reliable.",
                 "title": "How It Works"
             },
             "features": {
@@ -46,8 +46,8 @@
                 "title": "How It Works"
             }
         },
-        "subtitle": "Learn more about DutyHub and how it helps organize duty schedules.",
-        "title": "About DutyHub"
+        "subtitle": "Learn more about WirkSam and how it helps organize duty schedules.",
+        "title": "About WirkSam"
     },
     "landing": {
         "authNote": "Sign in to browse events and book your duties",
@@ -61,14 +61,14 @@
                 "title": "Locked Bookings"
             },
             "scalable": {
-                "description": "Whether it's a small gathering or a large church congress — DutyHub scales with your needs.",
+                "description": "Whether it's a small gathering or a large church congress — WirkSam scales with your needs.",
                 "title": "Any Event Size"
             }
         },
         "getStarted": "Sign In",
         "learnMore": "Learn More",
         "showcase": {
-            "title": "See DutyHub in Action",
+            "title": "See WirkSam in Action",
             "subtitle": "Explore the key features that make duty scheduling effortless.",
             "slides": {
                 "dashboard": {
@@ -105,12 +105,13 @@
                 }
             }
         },
-        "subtitle": "The digital duty scheduling platform for church events. Book your shifts for Pfingsten, Kirchentag, and more — simple, transparent, and reliable.",
-        "welcome": "Welcome to DutyHub"
+        "subtitle": "The volunteer scheduling platform for church events and community service. Book your shifts for Pfingsten, Kirchentag, and more — effective together.",
+        "welcome": "Welcome to WirkSam",
+        "nameExplainer": "WirkSam — from German \"wirksam\" (effective) and \"zusammen\" (together). Because volunteering works best when we work together."
     },
     "howItWorks": {
         "title": "How Event Creation Works",
-        "subtitle": "A step-by-step look at how organizers create events and generate duty slots in DutyHub.",
+        "subtitle": "A step-by-step look at how organizers create events and generate duty slots in WirkSam.",
         "backToHome": "Back to Home",
         "steps": {
             "details": {
@@ -146,7 +147,7 @@
             },
             "smartRegeneration": {
                 "title": "Smart Regeneration",
-                "description": "When you change a schedule, DutyHub matches existing slots by date and time — preserving bookings on unchanged slots."
+                "description": "When you change a schedule, WirkSam matches existing slots by date and time — preserving bookings on unchanged slots."
             },
             "dryRun": {
                 "title": "Dry-Run Preview",
@@ -159,9 +160,9 @@
         }
     },
     "layout": {
-        "appName": "DutyHub",
+        "appName": "WirkSam",
         "footer": {
-            "copyright": "© 2026 DutyHub. Duty scheduling made simple."
+            "copyright": "© 2026 WirkSam. Effective together."
         },
         "navigation": {
             "about": "About",

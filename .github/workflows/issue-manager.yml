@@ -23,11 +23,7 @@ jobs:
     if: github.repository_owner == 'fastapi'
     runs-on: ubuntu-latest
     steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - uses: tiangolo/issue-manager@0.5.1
+      - uses: tiangolo/issue-manager@f94f76c8fa2c48bb2982a099c29a0caadb92917e # 0.5.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config: >

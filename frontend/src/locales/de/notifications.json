@@ -56,11 +56,11 @@
 
   "telegram": {
     "title": "Telegram",
-    "description": "Verbinde dein Telegram-Konto, um Benachrichtigungen ueber den DutyHub-Bot zu erhalten.",
+    "description": "Verbinde dein Telegram-Konto, um Benachrichtigungen ueber den WirkSam-Bot zu erhalten.",
     "connect": "Telegram verbinden",
     "connected": "Verbunden",
     "disconnect": "Trennen",
-    "sendCode": "Sende den folgenden Code an den DutyHub-Bot auf Telegram:",
+    "sendCode": "Sende den folgenden Code an den WirkSam-Bot auf Telegram:",
     "sendTo": "Sende ihn an",
     "bindFailed": "Fehler beim Starten der Telegram-Verbindung",
     "unbound": "Telegram getrennt",

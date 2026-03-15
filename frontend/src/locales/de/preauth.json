@@ -3,7 +3,7 @@
         "backToHome": "Zurück zur Startseite",
         "sections": {
             "development": {
-                "description": "DutyHub ist eine digitale Dienstplan-Plattform für Kirchen und Gemeinden. Organisatoren erstellen Veranstaltungen mit Dienstschichten, und Freiwillige buchen sich selbst ein — einfach, transparent und zuverlässig.",
+                "description": "WirkSam ist eine digitale Dienstplan-Plattform für Kirchen und Gemeinden. Organisatoren erstellen Veranstaltungen mit Dienstschichten, und Freiwillige buchen sich selbst ein — einfach, transparent und zuverlässig.",
                 "title": "So funktioniert's"
             },
             "features": {
@@ -46,8 +46,8 @@
                 "title": "So funktioniert's"
             }
         },
-        "subtitle": "Erfahren Sie mehr über DutyHub und wie es bei der Organisation von Dienstplänen hilft.",
-        "title": "Über DutyHub"
+        "subtitle": "Erfahren Sie mehr über WirkSam und wie es bei der Organisation von Dienstplänen hilft.",
+        "title": "Über WirkSam"
     },
     "landing": {
         "authNote": "Melden Sie sich an, um Veranstaltungen zu sehen und Dienste zu buchen",
@@ -61,14 +61,14 @@
                 "title": "Gesperrte Buchungen"
             },
             "scalable": {
-                "description": "Ob kleines Treffen oder großer Kirchentag — DutyHub wächst mit Ihren Anforderungen.",
+                "description": "Ob kleines Treffen oder großer Kirchentag — WirkSam wächst mit Ihren Anforderungen.",
                 "title": "Jede Veranstaltungsgröße"
             }
         },
         "getStarted": "Anmelden",
         "learnMore": "Mehr erfahren",
         "showcase": {
-            "title": "DutyHub in Aktion",
+            "title": "WirkSam in Aktion",
             "subtitle": "Entdecken Sie die wichtigsten Funktionen, die Dienstplanung mühelos machen.",
             "slides": {
                 "dashboard": {
@@ -105,12 +105,13 @@
                 }
             }
         },
-        "subtitle": "Die digitale Dienstplan-Plattform für kirchliche Veranstaltungen. Buchen Sie Ihre Schichten für Pfingsten, Kirchentag und mehr — einfach, transparent und zuverlässig.",
-        "welcome": "Willkommen bei DutyHub"
+        "subtitle": "Die Plattform für ehrenamtliche Dienstplanung bei kirchlichen Veranstaltungen und Gemeindearbeit. Buchen Sie Ihre Schichten für Pfingsten, Kirchentag und mehr — wirksam, gemeinsam.",
+        "welcome": "Willkommen bei WirkSam",
+        "nameExplainer": "WirkSam — von \"wirksam\" und \"zusammen\". Weil Ehrenamt am besten funktioniert, wenn wir gemeinsam anpacken."
     },
     "howItWorks": {
         "title": "So funktioniert die Veranstaltungserstellung",
-        "subtitle": "Ein schrittweiser Blick darauf, wie Organisatoren Veranstaltungen erstellen und Dienstschichten generieren.",
+        "subtitle": "Ein schrittweiser Blick darauf, wie Organisatoren in WirkSam Veranstaltungen erstellen und Dienstschichten generieren.",
         "backToHome": "Zurück zur Startseite",
         "steps": {
             "details": {
@@ -146,7 +147,7 @@
             },
             "smartRegeneration": {
                 "title": "Intelligente Regenerierung",
-                "description": "Bei Zeitplanänderungen gleicht DutyHub bestehende Schichten nach Datum und Uhrzeit ab — Buchungen auf unveränderten Schichten bleiben erhalten."
+                "description": "Bei Zeitplanänderungen gleicht WirkSam bestehende Schichten nach Datum und Uhrzeit ab — Buchungen auf unveränderten Schichten bleiben erhalten."
             },
             "dryRun": {
                 "title": "Trockenlauf-Vorschau",
@@ -159,9 +160,9 @@
         }
     },
     "layout": {
-        "appName": "DutyHub",
+        "appName": "WirkSam",
         "footer": {
-            "copyright": "© 2026 DutyHub. Dienstplanung leicht gemacht."
+            "copyright": "© 2026 WirkSam. Wirksam gemeinsam."
         },
         "navigation": {
             "about": "Über uns",

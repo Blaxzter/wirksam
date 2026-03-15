@@ -22,7 +22,7 @@ self.addEventListener('push', (event) => {
     renotify: true,
   }
 
-  event.waitUntil(self.registration.showNotification(data.title || 'DutyHub', options))
+  event.waitUntil(self.registration.showNotification(data.title || 'WirkSam', options))
 })
 
 self.addEventListener('notificationclick', (event) => {

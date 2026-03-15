@@ -265,10 +265,145 @@ def find_existing_grant(client_id: str, audience: str) -> dict[str, Any] | None:
         return None
 
 
+# ── Teardown ──────────────────────────────────────────────────────────────────
+
+
+def delete_app(name: str) -> None:
+    app = find_existing_app(name)
+    if app:
+        client_id: str = app.get("client_id", "")
+        run("auth0", "apps", "delete", client_id, "--no-input", check=False)
+        print(f"  Deleted app: {name} ({client_id})")
+    else:
+        print(f"  Not found: {name}")
+
+
+def delete_api_by_identifier(identifier: str) -> None:
+    api = find_existing_api(identifier)
+    if api:
+        api_id: str = api.get("id", "")
+        run("auth0", "apis", "delete", api_id, "--no-input", check=False)
+        print(f"  Deleted API: {api.get('name')} ({api_id})")
+    else:
+        print(f"  Not found: {identifier}")
+
+
+def delete_action(name: str) -> None:
+    action = find_existing_action(name)
+    if action:
+        action_id: str = action.get("id", "")
+        run("auth0", "actions", "delete", action_id, "--no-input", check=False)
+        print(f"  Deleted action: {name} ({action_id})")
+    else:
+        print(f"  Not found: {name}")
+
+
+def delete_role(name: str) -> None:
+    role = find_existing_role(name)
+    if role:
+        role_id: str = role.get("id", "")
+        run("auth0", "roles", "delete", role_id, "--no-input", check=False)
+        print(f"  Deleted role: {name} ({role_id})")
+    else:
+        print(f"  Not found: {name}")
+
+
+def read_env_value(path: Path, key: str) -> str | None:
+    """Read a single value from an env file."""
+    if not path.exists():
+        return None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            k, _, v = stripped.partition("=")
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return None
+
+
+def delete_app_by_id(client_id: str, label: str) -> None:
+    """Delete an Auth0 application by client_id."""
+    run("auth0", "apps", "delete", client_id, "--no-input", check=False)
+    print(f"  Deleted {label}: {client_id}")
+
+
+def teardown() -> None:
+    check_auth0_cli()
+
+    print("=" * 60)
+    print("  Auth0 Teardown (from .env files)")
+    print("=" * 60)
+    print("Reading resource identifiers from .env and frontend/.env ...\n")
+
+    # Read identifiers from env files
+    m2m_client_id = read_env_value(ENV_FILE, "AUTH0_CLIENT_ID")
+    spa_client_id = read_env_value(FRONTEND_ENV_FILE, "VITE_AUTH0_CLIENT_ID")
+    api_audience = read_env_value(ENV_FILE, "AUTH0_AUDIENCE")
+    action_name = "Add Roles to Access Token"
+
+    found: list[tuple[str, str | None]] = [
+        ("M2M app (AUTH0_CLIENT_ID)", m2m_client_id),
+        ("SPA app (VITE_AUTH0_CLIENT_ID)", spa_client_id),
+        ("API (AUTH0_AUDIENCE)", api_audience),
+        ("Action", action_name),
+        ("Role", "admin"),
+    ]
+
+    print("Resources found in env files:")
+    for label, value in found:
+        status = value or "NOT FOUND"
+        print(f"  {label:40s} {status}")
+
+    if not any([m2m_client_id, spa_client_id, api_audience]):
+        print("\nNo resource identifiers found in env files. Nothing to tear down.")
+        sys.exit(0)
+
+    confirm = input("\nThis is DESTRUCTIVE. Delete these resources? [y/N]: ").strip().lower()
+    if confirm != "y":
+        print("Aborted.")
+        sys.exit(0)
+
+    if spa_client_id:
+        step(1, "Delete SPA application")
+        delete_app_by_id(spa_client_id, "SPA app")
+    else:
+        step(1, "Delete SPA application — skipped (not in env)")
+
+    if m2m_client_id:
+        step(2, "Delete M2M application")
+        delete_app_by_id(m2m_client_id, "M2M app")
+    else:
+        step(2, "Delete M2M application — skipped (not in env)")
+
+    if api_audience:
+        step(3, "Delete API")
+        delete_api_by_identifier(api_audience)
+    else:
+        step(3, "Delete API — skipped (not in env)")
+
+    step(4, "Delete Post-Login Action")
+    delete_action(action_name)
+
+    step(5, "Delete admin role")
+    delete_role("admin")
+
+    print()
+    print("=" * 60)
+    print("  Teardown complete!")
+    print("=" * 60)
+    print()
+    print("Note: Admin users were NOT deleted (they may be shared).")
+    print("You can now run setup again:  python scripts/setup_auth0.py")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] == "--teardown":
+        teardown()
+        return
+
     check_auth0_cli()
 
     print("=" * 60)
@@ -292,7 +427,7 @@ def main() -> None:
     project_name = prompt("Project name", default="My Project")
     slug = project_name.lower().replace(" ", "-")
 
-    base_domain = prompt("Base domain (e.g. dutyhub.dev or fabraham.dev)")
+    base_domain = prompt("Base domain (e.g. wirksam.dev or fabraham.dev)")
     domain_root = base_domain.split(".")[0]
     if domain_root == slug:
         default_api_id = f"https://api.{base_domain}"

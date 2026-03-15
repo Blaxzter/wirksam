@@ -118,6 +118,10 @@ build tag="latest":
 setup-auth0:
     python scripts/setup_auth0.py
 
+# Delete existing Auth0 resources (by project name) before re-creating
+teardown-auth0:
+    python scripts/setup_auth0.py --teardown
+
 # ── Pre-commit ────────────────────────────────────────────────
 
 # Run all pre-commit hooks

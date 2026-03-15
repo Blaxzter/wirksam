@@ -1,4 +1,4 @@
-# Auth0 Tutorial (DutyHub)
+# Auth0 Tutorial (WirkSam)
 
 This project uses Auth0 for authentication. The frontend is a SPA using Auth0 Universal Login, and the backend validates JWT access tokens.
 

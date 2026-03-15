@@ -22,15 +22,11 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           # To allow latest-changes to commit to the main branch
           token: ${{ secrets.LATEST_CHANGES }}
-      - uses: tiangolo/latest-changes@0.4.0
+      - uses: tiangolo/latest-changes@dd39d11d7dd4f4ebf30206448ad4baff5c477eca # 0.4.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           latest_changes_file: ./release-notes.md

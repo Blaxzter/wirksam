@@ -62,9 +62,9 @@ const openBookingDetail = (calendarItem: BookingCalendarItem) => {
   showSlotDetail.value = true
 }
 
-const showEvents = useLocalStorage('dutyhub-calendar-show-events', true)
-const showGroups = useLocalStorage('dutyhub-calendar-show-groups', true)
-const showBookings = useLocalStorage('dutyhub-calendar-show-bookings', true)
+const showEvents = useLocalStorage('wirksam-calendar-show-events', true)
+const showGroups = useLocalStorage('wirksam-calendar-show-groups', true)
+const showBookings = useLocalStorage('wirksam-calendar-show-bookings', true)
 
 const hiddenFilterCount = computed(
   () => [showEvents, showGroups, showBookings].filter((f) => !f.value).length,

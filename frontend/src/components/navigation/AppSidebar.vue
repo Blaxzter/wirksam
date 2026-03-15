@@ -6,8 +6,8 @@ import { BookCheck, CalendarDays, CalendarRange, Database, House, Users } from '
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import dutyhubDarkLogo from '@/assets/logo/dutyhub-dark.svg'
-import dutyhubLightLogo from '@/assets/logo/dutyhub-light.svg'
+import wirksamDarkLogo from '@/assets/logo/wirksam-dark.svg'
+import wirksamLightLogo from '@/assets/logo/wirksam-light.svg'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -42,7 +42,7 @@ const { isMobile, setOpenMobile } = useSidebar()
 const router = useRouter()
 const route = useRoute()
 const mode = useColorMode()
-const currentLogo = computed(() => (mode.value === 'light' ? dutyhubDarkLogo : dutyhubLightLogo))
+const currentLogo = computed(() => (mode.value === 'light' ? wirksamDarkLogo : wirksamLightLogo))
 
 router.afterEach(() => {
   if (isMobile.value) {
@@ -103,7 +103,7 @@ const navAdmin = computed(() =>
         :to="{ name: 'home' }"
         class="flex items-center gap-2 px-2 py-3 hover:opacity-80 transition-opacity"
       >
-        <img :src="currentLogo" alt="DutyHub" class="w-auto" />
+        <img :src="currentLogo" alt="WirkSam" class="w-auto" />
       </RouterLink>
     </SidebarHeader>
     <SidebarContent>
