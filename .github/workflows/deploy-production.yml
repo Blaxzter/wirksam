@@ -90,6 +90,9 @@ jobs:
 
             cd "$DEPLOY_PATH"
 
+            # Mark deploy path as safe (owner may differ from SSH user)
+            git config --global --add safe.directory "$DEPLOY_PATH"
+
             # Pull latest compose and config files
             git pull --ff-only
 
