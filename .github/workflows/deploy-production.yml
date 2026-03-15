@@ -24,10 +24,8 @@ jobs:
 
       - name: Set image names
         id: images
-        env:
-          REPO: ${{ github.repository }}
         run: |
-          REPO_LOWER="${REPO,,}"
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "backend=ghcr.io/${REPO_LOWER}/backend" >> "$GITHUB_OUTPUT"
           echo "frontend=ghcr.io/${REPO_LOWER}/frontend" >> "$GITHUB_OUTPUT"
 
