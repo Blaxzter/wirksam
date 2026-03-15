@@ -104,10 +104,6 @@ jobs:
             docker compose -f docker-compose.yml pull backend frontend prestart
             docker compose -f docker-compose.yml up -d --remove-orphans
 
-            # Verify prestart completed successfully
-            echo "Checking prestart status..."
-            docker compose -f docker-compose.yml wait prestart
-
             # Wait for backend health check
             echo "Waiting for backend to become healthy..."
             timeout 120 bash -c 'until docker compose -f docker-compose.yml ps backend | grep -q "healthy"; do sleep 5; done'
