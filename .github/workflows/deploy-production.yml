@@ -86,7 +86,12 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: GHCR_PAT,GHCR_USER,DEPLOY_PATH
           script: |
+            set -e
+
             cd "$DEPLOY_PATH"
+
+            # Pull latest compose and config files
+            git pull --ff-only
 
             # Log in to GHCR
             echo "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
@@ -94,6 +99,10 @@ jobs:
             # Pull new images and restart (exclude override to avoid dev settings)
             docker compose -f docker-compose.yml pull backend frontend prestart
             docker compose -f docker-compose.yml up -d --remove-orphans
+
+            # Verify prestart completed successfully
+            echo "Checking prestart status..."
+            docker compose -f docker-compose.yml wait prestart
 
             # Wait for backend health check
             echo "Waiting for backend to become healthy..."
