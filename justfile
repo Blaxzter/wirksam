@@ -136,12 +136,8 @@ release version:
     fi
     # Update VERSION file
     echo "{{version}}" > VERSION
-    # Update backend/pyproject.toml
-    sed -i 's/^version = ".*"/version = "{{version}}"/' backend/pyproject.toml
-    # Update frontend/package.json
-    cd frontend && npm pkg set version="{{version}}" && cd ..
     # Commit, tag, and push
-    git add VERSION backend/pyproject.toml frontend/package.json
+    git add VERSION
     git commit -m "release: v{{version}}"
     git tag "v{{version}}"
     git push origin main --tags
