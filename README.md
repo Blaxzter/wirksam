@@ -1,60 +1,88 @@
-# Full Stack FastAPI Template
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="frontend/src/assets/logo/wirksam-light.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="frontend/src/assets/logo/wirksam-dark.svg" />
+    <img alt="WirkSam" src="frontend/src/assets/logo/wirksam-dark.svg" height="80" />
+  </picture>
+</p>
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+<p align="center">
+  <em>The volunteer scheduling platform for church events and community service.<br/>Book your shifts for Pfingsten, Kirchentag, and more — effective together.</em>
+</p>
 
-## Technology Stack and Features
+<p align="center">
+  <em>WirkSam — from German "wirksam" (effective) and "zusammen" (together).<br/>Because volunteering works best when we work together.</em>
+</p>
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for ORM/database interactions.
-    - 🔍 [Pydantic](https://docs.pydantic.dev) v2 for data validation and settings.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-    - 🧭 [Alembic](https://alembic.sqlalchemy.org/) for migrations.
-    - 🔐 Auth0 integration via `auth0-fastapi-api` and JWTs (`pyjwt`).
-- 🚀 [Vue 3](https://vuejs.org) for the frontend.
-    - 💃 TypeScript, Composition API, and [Vite](https://vite.dev).
-    - 🎨 [Tailwind CSS v4](https://tailwindcss.com) for styling.
-    - 🧩 [shadcn-vue](https://www.shadcn-vue.com/) (built on [reka-ui](https://reka-ui.com)) for UI components.
-    - 📦 [Pinia](https://pinia.vuejs.org) for client state management.
-    - 🧭 [Vue Router](https://router.vuejs.org) for routing.
-    - 🔐 [Auth0](https://auth0.com) SPA authentication.
-    - ✅ [Zod](https://zod.dev) + [Vee-Validate](https://vee-validate.logaretm.com) for forms/validation.
-    - 🌍 [Vue I18n](https://vue-i18n.intlify.dev) for localization.
-    - 🤖 Auto-generated TypeScript API client via `@hey-api/openapi-ts`.
-    - 🎭 [Playwright](https://playwright.dev) for end-to-end testing.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 📫 Email based password recovery with MJML templates.
-- ✅ Tests with [Pytest](https://pytest.org) and Playwright.
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🧹 Linting & formatting with Ruff, basedpyright, ESLint, and Prettier.
-- 🏭 CI/CD based on GitHub Actions.
+---
 
-### Home Screen
+## Screenshots
 
-<img width="1135" height="782" alt="Home Screen" src="https://github.com/user-attachments/assets/d6e074e2-bb5c-40cf-9a46-f184fed45b35" />
+### Dashboard
 
-### User Settings
+Get a bird's-eye view of your events, bookings, and an interactive calendar — all in one place.
 
-<img width="1135" height="782" alt="User Settings" src="https://github.com/user-attachments/assets/212a7858-2c59-49a0-9c87-83431e5e9ba4" />
+<img alt="Dashboard" src="frontend/public/screenshots/en/dashboard.png" />
 
-### Landing Page
+### Events & Slots
 
-<img width="1135" height="782" alt="Image" src="https://github.com/user-attachments/assets/40ab9187-84e3-44b8-a3fb-40aa66240209" />
+Browse all duty events with inline slot previews, search, and smart filters.
 
-### Dynamic Breadcrumbs
+<img alt="Events" src="frontend/public/screenshots/en/events.png" />
 
-<img width="1135" height="782" alt="Image" src="https://github.com/user-attachments/assets/652b47f4-43bc-49ee-8c4c-ccde5f9bba7f" />
+### Event Detail
 
-### Api Example view
+See all available duty slots by day, book with one click, and track availability.
 
-<img width="1135" height="782" alt="Image" src="https://github.com/user-attachments/assets/79f4f91a-a5ff-43f5-947c-1bc7a7655959" />
+<img alt="Event Detail" src="frontend/public/screenshots/en/event-detail.png" />
+
+### My Bookings
+
+All your confirmed duties in one place — filter by upcoming, this month, or view all.
+
+<img alt="My Bookings" src="frontend/public/screenshots/en/my-bookings.png" />
+
+### Event Groups
+
+Organize related events into groups like conferences or festivals for easy management.
+
+<img alt="Event Groups" src="frontend/public/screenshots/en/event-groups.png" />
+
+### Notifications & Preferences
+
+Stay informed with real-time notifications and fine-tune delivery via email, push, or Telegram.
+
+<img alt="Notifications" src="frontend/public/screenshots/en/notification-bell.png" />
+<img alt="Notification Preferences" src="frontend/public/screenshots/en/notification-preferences.png" />
+
+### User Management
+
+Admins can manage users, roles, and approval workflows from a central dashboard.
+
+<img alt="User Management" src="frontend/public/screenshots/en/user-management.png" />
+
+### Event Creation Wizard
+
+Create events step-by-step: details, dates, schedule configuration, and a live slot preview.
+
+<img alt="Create Event - Details" src="frontend/public/screenshots/en/create-step1-details.png" />
+<img alt="Create Event - Dates" src="frontend/public/screenshots/en/create-step2-dates.png" />
+<img alt="Create Event - Schedule" src="frontend/public/screenshots/en/create-step3-schedule.png" />
+<img alt="Create Event - Preview" src="frontend/public/screenshots/en/create-step5-preview.png" />
+
+---
+
+## Technology Stack
+
+- **Backend:** [FastAPI](https://fastapi.tiangolo.com) + [SQLModel](https://sqlmodel.tiangolo.com) (async SQLAlchemy) + [PostgreSQL](https://www.postgresql.org) + [Alembic](https://alembic.sqlalchemy.org/) migrations + [Auth0](https://auth0.com) JWT authentication
+- **Frontend:** [Vue 3](https://vuejs.org) + TypeScript + [Vite](https://vite.dev) + [Pinia](https://pinia.vuejs.org) + [Vue Router](https://router.vuejs.org) + [Tailwind CSS v4](https://tailwindcss.com) + [shadcn-vue](https://www.shadcn-vue.com/) + [Vue I18n](https://vue-i18n.intlify.dev) (EN/DE)
+- **Testing:** [Pytest](https://pytest.org) (backend) + [Playwright](https://playwright.dev) (E2E)
+- **Infra:** [Docker Compose](https://www.docker.com) + [Traefik](https://traefik.io) reverse proxy + GitHub Actions CI/CD
+- **DX:** Auto-generated TypeScript API client via `@hey-api/openapi-ts`, [Zod](https://zod.dev) + [Vee-Validate](https://vee-validate.logaretm.com) forms, Ruff + basedpyright + ESLint linting
 
 ## How To Use It
 
 You can **just fork or clone** this repository and use it as is.
-
-✨ It just works. ✨
 
 ### How to Use a Private Repository
 
@@ -234,4 +262,4 @@ Check the file [release-notes.md](./release-notes.md).
 
 ## License
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+WirkSam is licensed under the [MIT License](./LICENSE). You're free to use, modify, and distribute it — just keep the copyright notice.

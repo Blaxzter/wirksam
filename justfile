@@ -130,9 +130,9 @@ release version:
     echo "{{version}}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' || (echo "Error: '{{version}}' is not valid semver (expected: X.Y.Z or X.Y.Z-pre.1)" && exit 1)
     echo "{{version}}" > VERSION
     git add VERSION
-    git commit -m "release: v{{version}}"
+    git diff --cached --quiet || git commit -m "release: v{{version}}"
     git push origin main
-    gh release create "v{{version}}" --generate-notes --title "v{{version}}" --target main
+    gh release create "v{{version}}" --generate-notes --title "v{{version}}" --target main --repo Blaxzter/wirksam
 
 # ── Pre-commit ────────────────────────────────────────────────
 
