@@ -32,9 +32,12 @@ RUN pnpm exec vite build
 
 FROM cgr.dev/chainguard/nginx:latest-dev AS production-stage
 
+USER root
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && chmod 777 /usr/share/nginx/html
+USER nginx
 
 EXPOSE 80
 
