@@ -26,6 +26,7 @@ import ScheduleConfigForm from '@/components/events/ScheduleConfigForm.vue'
 import SlotPreviewGrid from '@/components/events/SlotPreviewGrid.vue'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { type RemainderMode, type ScheduleConfig, useSlotPreview } from '@/composables/useSlotPreview'
+import { useFormatters } from '@/composables/useFormatters'
 import { toastApiError } from '@/lib/api-errors'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 

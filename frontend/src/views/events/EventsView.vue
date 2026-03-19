@@ -145,11 +145,11 @@ const handleClickSlot = (slotId: string, event: FeedEventItem) => {
   showSlotDialog.value = true
 }
 
-const navigateToEvent = (event: FeedEventItem) => {
+const navigateToEvent = (event: { id: string }) => {
   router.push({ name: 'event-detail', params: { eventId: event.id } })
 }
 
-const navigateToGroup = (group: EventGroupRead) => {
+const navigateToGroup = (group: { id: string }) => {
   router.push({ name: 'event-group-detail', params: { groupId: group.id } })
 }
 

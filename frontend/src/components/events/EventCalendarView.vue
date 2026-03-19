@@ -2,6 +2,7 @@
 import type { EventGroupRead, EventRead } from '@/client/types.gen'
 
 import { DutyCalendar } from '@/components/events/duty-calendar'
+import type { CalendarEvent, CalendarEventGroup } from '@/components/events/duty-calendar'
 
 defineProps<{
   events: EventRead[]
@@ -9,8 +10,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  navigate: [event: EventRead]
-  navigateGroup: [group: EventGroupRead]
+  navigate: [event: CalendarEvent]
+  navigateGroup: [group: CalendarEventGroup]
 }>()
 </script>
 

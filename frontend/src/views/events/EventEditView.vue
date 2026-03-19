@@ -37,6 +37,7 @@ import Label from '@/components/ui/label/Label.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import type { DutySlotRead, EventRead, SlotBatchRead } from '@/client/types.gen'
+import { useFormatters } from '@/composables/useFormatters'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()

@@ -1,6 +1,6 @@
 import type { BadgeVariants } from '@/components/ui/badge'
 
-export function statusVariant(status?: string): NonNullable<BadgeVariants['variant']> {
+export function statusVariant(status?: string | null): NonNullable<BadgeVariants['variant']> {
   switch (status) {
     case 'published':
       return 'default'

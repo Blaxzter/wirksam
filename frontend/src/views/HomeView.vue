@@ -72,7 +72,7 @@ async function loadStats() {
     myBookingCount.value = feed.booking_count
 
     // Update pending user count for admin badge
-    if (feed.pending_user_count !== null) {
+    if (feed.pending_user_count != null) {
       authStore.pendingUserCount = feed.pending_user_count
     }
 

@@ -12,7 +12,7 @@ import {
 import { statusVariant } from '@/lib/status'
 
 defineProps<{
-  status: string | null | undefined
+  status?: string | null
   i18nPrefix: string
   editable?: boolean
 }>()
