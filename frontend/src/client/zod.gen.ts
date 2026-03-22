@@ -680,6 +680,46 @@ export const zSelfApproveRequest = z.object({
 })
 
 /**
+ * SidebarBooking
+ */
+export const zSidebarBooking = z.object({
+  id: z.uuid(),
+  slot_id: z.uuid(),
+  event_id: z.uuid(),
+  slot_title: z.string(),
+  slot_date: z.iso.date(),
+  slot_start_time: z.optional(z.union([z.iso.time(), z.null()])),
+})
+
+/**
+ * SidebarEvent
+ */
+export const zSidebarEvent = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  open_slots: z.int(),
+  next_slot_date: z.optional(z.union([z.iso.date(), z.null()])),
+  next_slot_start_time: z.optional(z.union([z.iso.time(), z.null()])),
+})
+
+/**
+ * SidebarEventGroup
+ */
+export const zSidebarEventGroup = z.object({
+  id: z.uuid(),
+  name: z.string(),
+})
+
+/**
+ * SidebarResponse
+ */
+export const zSidebarResponse = z.object({
+  event_groups: z.array(zSidebarEventGroup),
+  events: z.array(zSidebarEvent),
+  bookings: z.array(zSidebarBooking),
+})
+
+/**
  * SiteSettingsRead
  */
 export const zSiteSettingsRead = z.object({
@@ -1167,6 +1207,20 @@ export const zUsersUpdateUserData = z.object({
  * Successful Response
  */
 export const zUsersUpdateUserResponse = zUserRead
+
+export const zUsersExportUserDataData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Users-Export User Data
+ * Successful Response
+ */
+export const zUsersExportUserDataResponse = z.object({}).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
 
 export const zSettingsGetSiteSettingsData = z.object({
   body: z.optional(z.never()),
@@ -1709,6 +1763,16 @@ export const zNotificationsListNotificationTypesResponse = z
     description: 'Successful Response',
   })
 
+export const zNotificationsNotificationStreamData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    token: z.string().register(z.globalRegistry, {
+      description: 'Bearer token for auth',
+    }),
+  }),
+})
+
 export const zNotificationsListNotificationsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -2001,6 +2065,17 @@ export const zDashboardDashboardFeedData = z.object({
  * Successful Response
  */
 export const zDashboardDashboardFeedResponse = zDashboardFeedResponse
+
+export const zDashboardDashboardSidebarData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zDashboardDashboardSidebarResponse = zSidebarResponse
 
 export const zDemoDataDeleteDemoDataData = z.object({
   body: z.optional(z.never()),

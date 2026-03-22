@@ -23,7 +23,10 @@
             "settings": "Settings"
         },
         "platform": "Platform",
-        "sections": {}
+        "sections": {},
+        "badges": {
+            "openSlots": "{count} open slot | {count} open slots"
+        }
     },
     "user": {
         "actions": {

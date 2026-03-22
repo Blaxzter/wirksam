@@ -1564,6 +1564,94 @@ export type SelfApproveRequest = {
 }
 
 /**
+ * SidebarBooking
+ */
+export type SidebarBooking = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Slot Id
+   */
+  slot_id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Slot Title
+   */
+  slot_title: string
+  /**
+   * Slot Date
+   */
+  slot_date: string
+  /**
+   * Slot Start Time
+   */
+  slot_start_time?: string | null
+}
+
+/**
+ * SidebarEvent
+ */
+export type SidebarEvent = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Open Slots
+   */
+  open_slots: number
+  /**
+   * Next Slot Date
+   */
+  next_slot_date?: string | null
+  /**
+   * Next Slot Start Time
+   */
+  next_slot_start_time?: string | null
+}
+
+/**
+ * SidebarEventGroup
+ */
+export type SidebarEventGroup = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+}
+
+/**
+ * SidebarResponse
+ */
+export type SidebarResponse = {
+  /**
+   * Event Groups
+   */
+  event_groups: Array<SidebarEventGroup>
+  /**
+   * Events
+   */
+  events: Array<SidebarEvent>
+  /**
+   * Bookings
+   */
+  bookings: Array<SidebarBooking>
+}
+
+/**
  * SiteSettingsRead
  */
 export type SiteSettingsRead = {
@@ -2978,6 +3066,63 @@ export type UsersUpdateUserResponses = {
 }
 
 export type UsersUpdateUserResponse = UsersUpdateUserResponses[keyof UsersUpdateUserResponses]
+
+export type UsersExportUserDataData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/users/me/export'
+}
+
+export type UsersExportUserDataErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type UsersExportUserDataError = UsersExportUserDataErrors[keyof UsersExportUserDataErrors]
+
+export type UsersExportUserDataResponses = {
+  /**
+   * Response Users-Export User Data
+   * Successful Response
+   */
+  200: {
+    [key: string]: unknown
+  }
+}
+
+export type UsersExportUserDataResponse =
+  UsersExportUserDataResponses[keyof UsersExportUserDataResponses]
 
 export type SettingsGetSiteSettingsData = {
   body?: never
@@ -5222,6 +5367,64 @@ export type NotificationsListNotificationTypesResponses = {
 export type NotificationsListNotificationTypesResponse =
   NotificationsListNotificationTypesResponses[keyof NotificationsListNotificationTypesResponses]
 
+export type NotificationsNotificationStreamData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Token
+     * Bearer token for auth
+     */
+    token: string
+  }
+  url: '/api/v1/notifications/stream'
+}
+
+export type NotificationsNotificationStreamErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type NotificationsNotificationStreamError =
+  NotificationsNotificationStreamErrors[keyof NotificationsNotificationStreamErrors]
+
+export type NotificationsNotificationStreamResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
 export type NotificationsListNotificationsData = {
   body?: never
   path?: never
@@ -6482,6 +6685,61 @@ export type DashboardDashboardFeedResponses = {
 
 export type DashboardDashboardFeedResponse =
   DashboardDashboardFeedResponses[keyof DashboardDashboardFeedResponses]
+
+export type DashboardDashboardSidebarData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/dashboard/sidebar'
+}
+
+export type DashboardDashboardSidebarErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type DashboardDashboardSidebarError =
+  DashboardDashboardSidebarErrors[keyof DashboardDashboardSidebarErrors]
+
+export type DashboardDashboardSidebarResponses = {
+  /**
+   * Successful Response
+   */
+  200: SidebarResponse
+}
+
+export type DashboardDashboardSidebarResponse =
+  DashboardDashboardSidebarResponses[keyof DashboardDashboardSidebarResponses]
 
 export type DemoDataDeleteDemoDataData = {
   body?: never

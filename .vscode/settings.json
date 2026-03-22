@@ -15,5 +15,6 @@
     "python.testing.pytestEnabled": true,
     "basedpyright.analysis.configFilePath": "backend",
     "python.terminal.activateEnvironment": false,
-    "workbench.colorTheme": "Monokai"
+    "workbench.colorTheme": "Monokai",
+    "i18n-ally.localesPaths": ["frontend/src/locales"]
 }

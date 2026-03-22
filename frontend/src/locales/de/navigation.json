@@ -23,7 +23,10 @@
             "settings": "Einstellungen"
         },
         "platform": "Plattform",
-        "sections": {}
+        "sections": {},
+        "badges": {
+            "openSlots": "{count} offener Platz | {count} offene Plätze"
+        }
     },
     "user": {
         "actions": {

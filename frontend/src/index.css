@@ -149,3 +149,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+#vue-devtools-anchor {
+  z-index: 2147483647 !important;
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import { useColorMode } from '@vueuse/core'
 import { BookCheck, CalendarDays, CalendarRange, Database, House, Users } from 'lucide-vue-next'
@@ -10,6 +10,7 @@ import wirksamDarkLogo from '@/assets/logo/wirksam-dark.svg'
 import wirksamLightLogo from '@/assets/logo/wirksam-light.svg'
 
 import { useAuthStore } from '@/stores/auth'
+import { useSidebarStore } from '@/stores/sidebar'
 
 import type { SidebarProps } from '@/components/ui/sidebar'
 import {
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/sidebar'
 
 import NavMain from '@/components/navigation/NavMain.vue'
+import type { NavSubItem } from '@/components/navigation/NavMain.vue'
 import NavUser from '@/components/navigation/NavUser.vue'
 
 interface AppSidebarProps extends SidebarProps {
@@ -38,11 +40,16 @@ const props = withDefaults(defineProps<AppSidebarProps>(), {
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const sidebarStore = useSidebarStore()
 const { isMobile, setOpenMobile } = useSidebar()
 const router = useRouter()
 const route = useRoute()
 const mode = useColorMode()
 const currentLogo = computed(() => (mode.value === 'light' ? wirksamDarkLogo : wirksamLightLogo))
+
+onMounted(() => {
+  sidebarStore.fetch()
+})
 
 router.afterEach(() => {
   if (isMobile.value) {
@@ -50,26 +57,89 @@ router.afterEach(() => {
   }
 })
 
-const navMain = [
-  {
-    title: 'Event Groups',
-    titleKey: 'navigation.sidebar.items.eventGroups.label',
-    icon: CalendarRange,
-    routeName: 'event-groups',
-  },
-  {
-    title: 'Events',
-    titleKey: 'navigation.sidebar.items.events.label',
-    icon: CalendarDays,
-    routeName: 'events',
-  },
-  {
-    title: 'My Bookings',
-    titleKey: 'navigation.sidebar.items.myBookings.label',
-    icon: BookCheck,
-    routeName: 'my-bookings',
-  },
-]
+/**
+ * Compute urgency badge variant for an event based on its next open slot.
+ * - Within 15 min → destructive (red)
+ * - Today → default (primary)
+ * - Otherwise → secondary (neutral)
+ */
+function eventBadge(
+  openSlots: number,
+  nextDate: string | null,
+  nextTime: string | null,
+): NavSubItem['badge'] | undefined {
+  if (openSlots <= 0) return undefined
+
+  const label = `${openSlots}`
+  const tooltip = t('navigation.sidebar.badges.openSlots', { count: openSlots })
+  if (!nextDate) return { text: label, tooltip, variant: 'secondary' }
+
+  const now = new Date()
+  const slotDateTime = nextTime
+    ? new Date(`${nextDate}T${nextTime}`)
+    : new Date(`${nextDate}T23:59:59`)
+
+  const diffMs = slotDateTime.getTime() - now.getTime()
+  const diffMin = diffMs / 60_000
+
+  if (diffMin <= 15 && diffMin > -60) return { text: label, tooltip, variant: 'destructive' }
+  if (nextDate === now.toISOString().slice(0, 10)) return { text: label, tooltip, variant: 'default' }
+  return { text: label, tooltip, variant: 'secondary' }
+}
+
+function formatBookingTitle(slotDate: string, slotTitle: string): string {
+  const d = new Date(slotDate + 'T00:00:00')
+  const formatted = d.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: '2-digit' })
+  return `${formatted} — ${slotTitle}`
+}
+
+const navMain = computed(() => {
+  const groupItems: NavSubItem[] = sidebarStore.eventGroups.map((g) => ({
+    title: g.name,
+    routeName: 'event-group-detail',
+    routeParams: { groupId: g.id },
+  }))
+
+  const eventItems: NavSubItem[] = sidebarStore.events.map((e) => ({
+    title: e.name,
+    routeName: 'event-detail',
+    routeParams: { eventId: e.id },
+    badge: eventBadge(e.open_slots, e.next_slot_date, e.next_slot_start_time),
+  }))
+
+  const bookingItems: NavSubItem[] = sidebarStore.bookings.map((b) => ({
+    title: formatBookingTitle(b.slot_date, b.slot_title),
+    routeName: 'event-detail',
+    routeParams: { eventId: b.event_id },
+  }))
+
+  return [
+    {
+      title: 'Event Groups',
+      titleKey: 'navigation.sidebar.items.eventGroups.label',
+      icon: CalendarRange,
+      routeName: 'event-groups',
+      isActive: groupItems.length > 0,
+      items: groupItems,
+    },
+    {
+      title: 'Events',
+      titleKey: 'navigation.sidebar.items.events.label',
+      icon: CalendarDays,
+      routeName: 'events',
+      isActive: eventItems.length > 0,
+      items: eventItems,
+    },
+    {
+      title: 'My Bookings',
+      titleKey: 'navigation.sidebar.items.myBookings.label',
+      icon: BookCheck,
+      routeName: 'my-bookings',
+      isActive: bookingItems.length > 0,
+      items: bookingItems,
+    },
+  ]
+})
 
 const navAdmin = computed(() =>
   authStore.isAdmin
