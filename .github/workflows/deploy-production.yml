@@ -69,6 +69,7 @@ jobs:
             VITE_AUTH0_API_AUDIENCE=${{ secrets.VITE_AUTH0_API_AUDIENCE }}
             VITE_AUTH0_CALLBACK_URL=https://${{ secrets.DOMAIN_PRODUCTION }}/app/home
             NODE_ENV=production
+            APP_VERSION=${{ steps.meta.outputs.tag }}
           cache-from: type=registry,ref=${{ steps.images.outputs.frontend }}:buildcache
           cache-to: type=registry,ref=${{ steps.images.outputs.frontend }}:buildcache,mode=max
 

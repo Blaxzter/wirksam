@@ -18,7 +18,12 @@ async def get_management_api_token() -> str:
             status_code=500, detail="Auth0 Management API credentials not configured"
         )
 
-    token_url = f"https://{settings.AUTH0_DOMAIN}/oauth/token"
+    # Management API tokens must be requested from the canonical tenant domain,
+    # not a custom domain, to ensure the correct issuer claim.
+    base = get_management_api_base_url()
+    # Extract tenant domain from audience (e.g. "https://tenant.auth0.com/api/v2" → "tenant.auth0.com")
+    tenant_domain = base.replace("https://", "").split("/")[0]
+    token_url = f"https://{tenant_domain}/oauth/token"
 
     payload = {
         "client_id": settings.AUTH0_CLIENT_ID,

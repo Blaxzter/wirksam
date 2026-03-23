@@ -28,6 +28,9 @@ ENV VITE_AUTH0_CALLBACK_URL=${VITE_AUTH0_CALLBACK_URL}
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
+
 RUN pnpm exec vite build
 
 FROM cgr.dev/chainguard/nginx:latest-dev AS production-stage

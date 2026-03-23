@@ -5,6 +5,10 @@ import { URL, fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 
 function getGitVersion(): { version: string; date: string } {
+  // In Docker builds, APP_VERSION is passed as an env var since .git is not available
+  if (process.env.APP_VERSION && process.env.APP_VERSION !== 'dev') {
+    return { version: process.env.APP_VERSION, date: new Date().toISOString().split('T')[0] }
+  }
   try {
     const version = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim()
     const date = execSync(`git log -1 --format=%aI ${version}`, { encoding: 'utf-8' }).trim()
