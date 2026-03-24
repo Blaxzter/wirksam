@@ -266,23 +266,23 @@ onMounted(loadGroup)
       <!-- My Availability -->
       <Card>
         <CardHeader>
-          <div class="flex items-center justify-between">
-            <div class="space-y-1">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0 space-y-1">
               <CardTitle class="flex items-center gap-2">
-                <UserCheck class="h-5 w-5" />
+                <UserCheck class="h-5 w-5 shrink-0" />
                 {{ t('duties.availability.title') }}
               </CardTitle>
               <CardDescription>{{ t('duties.availability.subtitle') }}</CardDescription>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 shrink-0">
               <Button
                 v-if="myAvailability"
                 variant="outline"
                 size="sm"
                 @click="showAvailabilityDialog = true"
               >
-                <Pencil class="mr-2 h-4 w-4" />
-                {{ t('duties.availability.update') }}
+                <Pencil class="sm:mr-2 h-4 w-4" />
+                <span class="hidden sm:inline">{{ t('duties.availability.update') }}</span>
               </Button>
               <Button
                 v-if="myAvailability"
@@ -291,12 +291,12 @@ onMounted(loadGroup)
                 class="text-destructive"
                 @click="handleRemoveAvailability"
               >
-                <Trash2 class="mr-1.5 h-4 w-4" />
-                {{ t('duties.availability.remove') }}
+                <Trash2 class="sm:mr-1.5 h-4 w-4" />
+                <span class="hidden sm:inline">{{ t('duties.availability.remove') }}</span>
               </Button>
-              <Button v-if="!myAvailability" @click="showAvailabilityDialog = true">
-                <Check class="mr-2 h-4 w-4" />
-                {{ t('duties.availability.register') }}
+              <Button v-if="!myAvailability" size="sm" @click="showAvailabilityDialog = true">
+                <Check class="sm:mr-2 h-4 w-4" />
+                <span class="hidden sm:inline">{{ t('duties.availability.register') }}</span>
               </Button>
             </div>
           </div>

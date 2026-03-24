@@ -8,6 +8,7 @@ import {
   CalendarPlus,
   Check,
   ChevronDown,
+  EllipsisVertical,
   Expand,
   Info,
   MapPin,
@@ -45,6 +46,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import Input from '@/components/ui/input/Input.vue'
@@ -507,8 +509,8 @@ onMounted(async () => {
         </Alert>
 
         <div class="flex items-start justify-between gap-2">
-          <div class="space-y-2">
-            <div class="flex items-center gap-3">
+          <div class="min-w-0 flex-1 space-y-2">
+            <div class="flex items-center gap-3 flex-wrap">
               <h1 class="text-3xl font-bold line-clamp-2 break-words">{{ event.name }}</h1>
               <StatusDropdown
                 :status="event.status"
@@ -532,8 +534,9 @@ onMounted(async () => {
               </span>
             </div>
           </div>
-          <div class="flex gap-2">
-            <!-- Print button (visible to all users) -->
+
+          <!-- Desktop actions -->
+          <div class="hidden sm:flex gap-2 shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -542,7 +545,6 @@ onMounted(async () => {
             >
               <Printer class="h-4 w-4" />
             </Button>
-            <!-- Only show event-level edit when no batches (legacy) -->
             <Button
               v-if="authStore.isAdmin && !hasBatches"
               variant="outline"
@@ -577,6 +579,49 @@ onMounted(async () => {
                 <Trash2 class="h-4 w-4" />
               </Button>
             </template>
+          </div>
+
+          <!-- Mobile actions menu -->
+          <div class="sm:hidden shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="outline" size="icon">
+                  <EllipsisVertical class="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  @click="router.push({ name: 'print-event', params: { eventId: event!.id } })"
+                >
+                  <Printer class="mr-2 h-4 w-4" />
+                  {{ t('print.printEvent') }}
+                </DropdownMenuItem>
+                <template v-if="authStore.isAdmin">
+                  <DropdownMenuItem
+                    v-if="!hasBatches"
+                    @click="router.push({ name: 'event-edit', params: { eventId: event.id } })"
+                  >
+                    <Pencil class="mr-2 h-4 w-4" />
+                    {{ t('duties.events.edit') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    @click="router.push({ name: 'event-add-slots', params: { eventId: event.id } })"
+                  >
+                    <CalendarPlus class="mr-2 h-4 w-4" />
+                    {{ t('duties.events.detail.addSlotBatch') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="showCreateSlotDialog = true">
+                    <Plus class="mr-2 h-4 w-4" />
+                    {{ t('duties.events.detail.addSingleSlot') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem class="text-destructive" @click="handleDeleteEvent">
+                    <Trash2 class="mr-2 h-4 w-4" />
+                    {{ t('duties.events.delete') }}
+                  </DropdownMenuItem>
+                </template>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>

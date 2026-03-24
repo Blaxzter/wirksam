@@ -138,8 +138,8 @@ watch(
   <template v-if="showOverrides">
     <Separator />
     <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <div>
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
           <p class="font-medium">{{ t('duties.events.createView.schedule.overrides') }}</p>
           <p class="text-sm text-muted-foreground">
             {{ t('duties.events.createView.schedule.overridesDesc') }}
@@ -148,11 +148,12 @@ watch(
         <Button
           variant="outline"
           size="sm"
+          class="shrink-0"
           :disabled="availableDates.length === 0"
           @click="addOverride"
         >
-          <Plus class="mr-1.5 h-4 w-4" />
-          {{ t('duties.events.createView.schedule.addException') }}
+          <Plus class="sm:mr-1.5 h-4 w-4" />
+          <span class="hidden sm:inline">{{ t('duties.events.createView.schedule.addException') }}</span>
         </Button>
       </div>
 

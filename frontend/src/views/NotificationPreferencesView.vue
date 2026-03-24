@@ -255,7 +255,7 @@ onMounted(async () => {
   <div class="mx-auto max-w-5xl space-y-6">
     <!-- Header -->
     <div class="pb-3">
-      <h1 class="text-3xl font-bold tracking-tight">{{ t('notifications.preferences.title') }}</h1>
+      <h1 class="text-3xl font-bold tracking-tight break-words">{{ t('notifications.preferences.title') }}</h1>
       <p class="text-muted-foreground mt-2">
         {{ t('notifications.preferences.subtitle') }}
       </p>
@@ -413,19 +413,19 @@ onMounted(async () => {
         </CardHeader>
         <CardContent class="space-y-0">
           <!-- Column headers -->
-          <div class="text-muted-foreground mb-3 flex items-center gap-4 text-xs font-medium">
-            <div class="flex-1" />
-            <div class="flex w-24 items-center justify-center gap-1">
-              <Mail class="h-3.5 w-3.5" />
-              {{ t('notifications.channels.email') }}
+          <div class="text-muted-foreground mb-3 flex items-center gap-2 sm:gap-4 text-xs font-medium">
+            <div class="min-w-0 flex-1" />
+            <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
+              <Mail class="h-3.5 w-3.5 shrink-0" />
+              <span class="hidden sm:inline">{{ t('notifications.channels.email') }}</span>
             </div>
-            <div class="flex w-24 items-center justify-center gap-1">
-              <Smartphone class="h-3.5 w-3.5" />
-              {{ t('notifications.channels.push') }}
+            <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
+              <Smartphone class="h-3.5 w-3.5 shrink-0" />
+              <span class="hidden sm:inline">{{ t('notifications.channels.push') }}</span>
             </div>
-            <div class="flex w-24 items-center justify-center gap-1">
-              <MessageCircle class="h-3.5 w-3.5" />
-              {{ t('notifications.channels.telegram') }}
+            <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
+              <MessageCircle class="h-3.5 w-3.5 shrink-0" />
+              <span class="hidden sm:inline">{{ t('notifications.channels.telegram') }}</span>
             </div>
           </div>
 
@@ -434,9 +434,9 @@ onMounted(async () => {
           <div
             v-for="type in categoryTypes as NotificationType[]"
             :key="type.id"
-            class="flex items-center gap-4 py-3"
+            class="flex items-center gap-2 sm:gap-4 py-3"
           >
-            <div class="flex-1">
+            <div class="min-w-0 flex-1">
               <p class="text-sm font-medium">{{ type.name }}</p>
               <p v-if="type.description" class="text-muted-foreground text-xs">
                 {{ type.description }}
@@ -445,19 +445,19 @@ onMounted(async () => {
                 {{ t('notifications.adminOnly') }}
               </Badge>
             </div>
-            <div class="flex w-24 justify-center">
+            <div class="flex w-10 sm:w-24 justify-center">
               <Switch
                 :model-value="getPreference(type.id).email"
                 @update:model-value="(v: boolean) => setPreference(type.id, 'email', v)"
               />
             </div>
-            <div class="flex w-24 justify-center">
+            <div class="flex w-10 sm:w-24 justify-center">
               <Switch
                 :model-value="getPreference(type.id).push"
                 @update:model-value="(v: boolean) => setPreference(type.id, 'push', v)"
               />
             </div>
-            <div class="flex w-24 justify-center">
+            <div class="flex w-10 sm:w-24 justify-center">
               <Switch
                 :model-value="getPreference(type.id).telegram"
                 @update:model-value="(v: boolean) => setPreference(type.id, 'telegram', v)"

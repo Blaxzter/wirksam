@@ -9,7 +9,7 @@
     </div>
 
     <!-- Profile Section -->
-    <div class="grid gap-6">
+    <div class="grid grid-cols-1 gap-6">
       <!-- Current Profile Card -->
       <CurrentProfileCard :user="user" />
 
