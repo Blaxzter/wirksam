@@ -58,6 +58,8 @@ async def notification_stream(
     shutdown_event = sse_manager.shutdown_event
 
     async def event_generator():
+        queue_task: asyncio.Task[dict[str, Any]] | None = None
+        shutdown_task: asyncio.Task[bool] | None = None
         try:
             # Send initial unread count immediately
             yield _sse_format("unread_count", {"unread_count": initial_count})
@@ -67,16 +69,17 @@ async def notification_stream(
                     break
 
                 try:
-                    # Wait for either a message or the shutdown signal
-                    queue_task = asyncio.ensure_future(queue.get())
-                    shutdown_task = asyncio.ensure_future(shutdown_event.wait())
-                    done, pending = await asyncio.wait(
+                    # Reuse queue_task across heartbeat timeouts
+                    if queue_task is None or queue_task.done():
+                        queue_task = asyncio.ensure_future(queue.get())
+                    if shutdown_task is None or shutdown_task.done():
+                        shutdown_task = asyncio.ensure_future(shutdown_event.wait())
+
+                    done, _pending = await asyncio.wait(
                         {queue_task, shutdown_task},
                         timeout=SSE_HEARTBEAT_SECONDS,
                         return_when=asyncio.FIRST_COMPLETED,
                     )
-                    for task in pending:
-                        task.cancel()
 
                     if shutdown_task in done:
                         break
@@ -84,12 +87,22 @@ async def notification_stream(
                     if queue_task in done:
                         message = queue_task.result()
                         yield _sse_format(message["event"], message["data"])
+                        queue_task = None  # consumed; create fresh next iteration
                     else:
                         # Timeout — send heartbeat
                         yield ": heartbeat\n\n"
                 except asyncio.CancelledError:
                     break
         finally:
+            # Cancel and await outstanding tasks to avoid "Task was destroyed
+            # but it is pending" warnings.
+            for task in (queue_task, shutdown_task):
+                if task is not None and not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except (asyncio.CancelledError, Exception):
+                        pass
             sse_manager.disconnect(user_id, queue)
 
     return StreamingResponse(
