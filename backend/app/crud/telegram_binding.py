@@ -103,6 +103,38 @@ class CRUDTelegramBinding(CRUDBase[TelegramBinding, _Empty, _Empty]):  # type: i
         await db.refresh(binding)
         return binding
 
+    async def create_verified_binding(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: uuid.UUID,
+        chat_id: str,
+        username: str | None = None,
+    ) -> TelegramBinding:
+        """Create a binding that is already verified (from Telegram Login Widget)."""
+        existing = await self.get_by_user(db, user_id=user_id)
+        if existing:
+            existing.telegram_chat_id = chat_id
+            existing.telegram_username = username
+            existing.is_verified = True
+            existing.verification_code = None
+            existing.verification_expires_at = None
+            db.add(existing)
+            await db.flush()
+            await db.refresh(existing)
+            return existing
+
+        binding = TelegramBinding(
+            user_id=user_id,
+            telegram_chat_id=chat_id,
+            telegram_username=username,
+            is_verified=True,
+        )
+        db.add(binding)
+        await db.flush()
+        await db.refresh(binding)
+        return binding
+
     async def remove_binding(
         self,
         db: AsyncSession,

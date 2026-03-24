@@ -317,6 +317,23 @@ export const useNotificationStore = defineStore('notification', () => {
 
   // ── Telegram ───────────────────────────────────────────────────
 
+  const telegramBotUsername = ref<string | null>(null)
+  const telegramConfigured = ref(false)
+
+  async function fetchTelegramConfig() {
+    try {
+      const res = await get<{ data: { bot_username: string | null; is_configured: boolean } }>({
+        url: '/notifications/telegram/config',
+      })
+      telegramBotUsername.value = res.data.bot_username
+      telegramConfigured.value = res.data.is_configured
+      return res.data
+    } catch {
+      telegramConfigured.value = false
+      return null
+    }
+  }
+
   async function fetchTelegramBinding() {
     try {
       const res = await get<{ data: TelegramBinding | null }>({
@@ -344,6 +361,28 @@ export const useNotificationStore = defineStore('notification', () => {
       return res.data
     } catch (error) {
       console.error('Failed to start Telegram binding:', error)
+      throw error
+    }
+  }
+
+  async function loginWithTelegram(data: {
+    id: number
+    first_name?: string
+    last_name?: string
+    username?: string
+    photo_url?: string
+    auth_date: number
+    hash: string
+  }) {
+    try {
+      const res = await post<{ data: TelegramBinding }>({
+        url: '/notifications/telegram/login',
+        body: data,
+      })
+      telegramBinding.value = res.data
+      return res.data
+    } catch (error) {
+      console.error('Failed to login with Telegram:', error)
       throw error
     }
   }
@@ -492,10 +531,14 @@ export const useNotificationStore = defineStore('notification', () => {
     fetchPushSubscriptions,
 
     // Telegram
+    fetchTelegramConfig,
     fetchTelegramBinding,
     startTelegramBinding,
+    loginWithTelegram,
     verifyTelegramBinding,
     unbindTelegram,
+    telegramBotUsername,
+    telegramConfigured,
 
     // Real-time updates
     startStream,

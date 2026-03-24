@@ -72,6 +72,12 @@
     "connect": "Telegram verbinden",
     "connected": "Verbunden",
     "disconnect": "Trennen",
+    "loginDescription": "Klicke den Button unten, um dein Telegram-Konto sofort zu verbinden.",
+    "connecting": "Dein Telegram-Konto wird verbunden...",
+    "authFailed": "Telegram-Authentifizierung fehlgeschlagen. Bitte versuche es erneut.",
+    "startBotHint": "Um Nachrichten zu erhalten, starte den Bot:",
+    "manualFallback": "Probleme? Stattdessen manuell verbinden",
+    "connectManually": "Manuell verbinden",
     "openInTelegram": "In Telegram oeffnen",
     "waitingForVerification": "Klicke den Button oben, dann druecke Start in Telegram. Diese Seite aktualisiert sich automatisch.",
     "manualCode": "Stattdessen manuell verbinden",
@@ -79,6 +85,8 @@
     "sendTo": "Sende ihn an",
     "bindFailed": "Fehler beim Starten der Telegram-Verbindung",
     "unbound": "Telegram getrennt",
-    "unbindFailed": "Fehler beim Trennen von Telegram"
+    "unbindFailed": "Fehler beim Trennen von Telegram",
+    "notConnectedWarning": "Telegram-Benachrichtigungen sind aktiviert, aber dein Konto ist nicht verbunden. Verbinde es unten, um Nachrichten zu erhalten.",
+    "notConnectedShort": "Nicht verbunden"
   }
 }

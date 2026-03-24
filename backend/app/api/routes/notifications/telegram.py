@@ -1,4 +1,7 @@
+import hashlib
+import hmac
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter
@@ -10,11 +13,46 @@ from app.crud.telegram_binding import telegram_binding as crud_telegram
 from app.schemas.notification import (
     TelegramBindingRead,
     TelegramBindResponse,
+    TelegramConfigResponse,
+    TelegramLoginData,
     TelegramVerifyRequest,
     TelegramWebhookUpdate,
 )
 
 router = APIRouter()
+
+
+def _clean_bot_username(name: str | None) -> str | None:
+    """Strip leading @ from bot username if present."""
+    if name:
+        return name.lstrip("@")
+    return name
+
+
+def _verify_telegram_login(data: TelegramLoginData, bot_token: str) -> bool:
+    """Verify auth data from the Telegram Login Widget.
+
+    See https://core.telegram.org/widgets/login#checking-authorization
+    """
+    check_hash = data.hash
+    data_dict = data.model_dump(exclude={"hash"}, exclude_none=True)
+    data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(data_dict.items()))
+    secret_key = hashlib.sha256(bot_token.encode()).digest()
+    computed = hmac.new(
+        secret_key, data_check_string.encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(computed, check_hash)
+
+
+@router.get("/telegram/config", response_model=TelegramConfigResponse)
+async def get_telegram_config(
+    _current_user: CurrentUser,
+) -> TelegramConfigResponse:
+    """Return Telegram bot configuration (needed for the Login Widget)."""
+    return TelegramConfigResponse(
+        bot_username=_clean_bot_username(settings.TELEGRAM_BOT_USERNAME),
+        is_configured=bool(settings.TELEGRAM_BOT_TOKEN),
+    )
 
 
 @router.get("/telegram", response_model=TelegramBindingRead | None)
@@ -26,6 +64,44 @@ async def get_telegram_binding(
     binding = await crud_telegram.get_by_user(session, user_id=current_user.id)
     if not binding:
         return None
+    return TelegramBindingRead.model_validate(binding)
+
+
+@router.post("/telegram/login", response_model=TelegramBindingRead)
+async def telegram_login(
+    body: TelegramLoginData,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> TelegramBindingRead:
+    """Authenticate via Telegram Login Widget and create a verified binding."""
+    if not settings.TELEGRAM_BOT_TOKEN:
+        raise_problem(
+            400,
+            code="telegram.not_configured",
+            detail="Telegram bot is not configured",
+        )
+
+    if not _verify_telegram_login(body, settings.TELEGRAM_BOT_TOKEN):
+        raise_problem(
+            400,
+            code="telegram.invalid_auth",
+            detail="Invalid Telegram authentication data",
+        )
+
+    # Check auth_date is not too old (1 hour)
+    if abs(time.time() - body.auth_date) > 3600:
+        raise_problem(
+            400,
+            code="telegram.auth_expired",
+            detail="Telegram authentication has expired",
+        )
+
+    binding = await crud_telegram.create_verified_binding(
+        session,
+        user_id=current_user.id,
+        chat_id=str(body.id),
+        username=body.username,
+    )
     return TelegramBindingRead.model_validate(binding)
 
 
@@ -47,7 +123,7 @@ async def start_telegram_binding(
 
     return TelegramBindResponse(
         verification_code=code,
-        bot_username=settings.TELEGRAM_BOT_USERNAME,
+        bot_username=_clean_bot_username(settings.TELEGRAM_BOT_USERNAME),
         expires_at=expires_at,
     )
 

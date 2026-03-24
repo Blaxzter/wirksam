@@ -72,6 +72,12 @@
     "connect": "Connect Telegram",
     "connected": "Connected",
     "disconnect": "Disconnect",
+    "loginDescription": "Click the button below to connect your Telegram account instantly.",
+    "connecting": "Connecting your Telegram account...",
+    "authFailed": "Telegram authentication failed. Please try again.",
+    "startBotHint": "To receive messages, make sure you have started the bot:",
+    "manualFallback": "Having trouble? Connect manually instead",
+    "connectManually": "Connect manually",
     "openInTelegram": "Open in Telegram",
     "waitingForVerification": "Click the button above, then press Start in Telegram. This page will update automatically.",
     "manualCode": "Connect manually instead",
@@ -79,6 +85,8 @@
     "sendTo": "Send it to",
     "bindFailed": "Failed to start Telegram connection",
     "unbound": "Telegram disconnected",
-    "unbindFailed": "Failed to disconnect Telegram"
+    "unbindFailed": "Failed to disconnect Telegram",
+    "notConnectedWarning": "Telegram notifications are enabled but your account is not connected. Connect below to receive messages.",
+    "notConnectedShort": "Not connected"
   }
 }

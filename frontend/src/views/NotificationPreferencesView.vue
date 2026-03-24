@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { Bell, ExternalLink, Mail, MessageCircle, Smartphone } from 'lucide-vue-next'
+import { Bell, ExternalLink, Mail, MessageCircle, Smartphone, TriangleAlert } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -14,6 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+
+import TelegramLoginWidget from '@/components/account/TelegramLoginWidget.vue'
 
 const { t } = useI18n()
 const notificationStore = useNotificationStore()
@@ -145,15 +147,50 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 // ── Telegram management ──────────────────────────────────────────
 
 const telegramBinding = computed(() => notificationStore.telegramBinding)
+const telegramBotUsername = computed(() => notificationStore.telegramBotUsername)
+const telegramConfigured = computed(() => notificationStore.telegramConfigured)
+const connectingTelegram = ref(false)
+
+const telegramNotConnectedWarning = computed(() => {
+  if (telegramBinding.value?.is_verified) return false
+  return globalChannelSettings.value.notify_telegram
+})
+
+// Manual code fallback
 const telegramCode = ref<string | null>(null)
-const telegramBotUsername = ref<string | null>(null)
+const manualBotUsername = ref<string | null>(null)
 const bindingTelegram = ref(false)
 let telegramPollTimer: ReturnType<typeof setInterval> | null = null
 
 const telegramDeepLink = computed(() => {
-  if (!telegramCode.value || !telegramBotUsername.value) return null
-  return `https://t.me/${telegramBotUsername.value}?start=${telegramCode.value}`
+  if (!telegramCode.value || !manualBotUsername.value) return null
+  return `https://t.me/${manualBotUsername.value}?start=${telegramCode.value}`
 })
+
+const botStartLink = computed(() => {
+  if (!telegramBotUsername.value) return null
+  return `https://t.me/${telegramBotUsername.value}`
+})
+
+async function onTelegramAuth(data: {
+  id: number
+  first_name?: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+  auth_date: number
+  hash: string
+}) {
+  connectingTelegram.value = true
+  try {
+    await notificationStore.loginWithTelegram(data)
+    toast.success(t('notifications.telegram.connected'))
+  } catch {
+    toast.error(t('notifications.telegram.authFailed'))
+  } finally {
+    connectingTelegram.value = false
+  }
+}
 
 function startTelegramPolling() {
   stopTelegramPolling()
@@ -174,12 +211,12 @@ function stopTelegramPolling() {
   }
 }
 
-async function startTelegramBinding() {
+async function startManualTelegramBinding() {
   bindingTelegram.value = true
   try {
     const result = await notificationStore.startTelegramBinding()
     telegramCode.value = result.verification_code
-    telegramBotUsername.value = result.bot_username
+    manualBotUsername.value = result.bot_username
     startTelegramPolling()
   } catch {
     toast.error(t('notifications.telegram.bindFailed'))
@@ -216,6 +253,7 @@ onMounted(async () => {
       notificationStore.fetchNotificationTypes(),
       notificationStore.fetchPreferences(),
       notificationStore.fetchTelegramBinding(),
+      notificationStore.fetchTelegramConfig(),
       notificationStore.fetchGlobalChannelSettings(),
     ])
 
@@ -255,7 +293,9 @@ onMounted(async () => {
   <div class="mx-auto max-w-5xl space-y-6">
     <!-- Header -->
     <div class="pb-3">
-      <h1 class="text-3xl font-bold tracking-tight break-words">{{ t('notifications.preferences.title') }}</h1>
+      <h1 class="text-3xl font-bold tracking-tight break-words">
+        {{ t('notifications.preferences.title') }}
+      </h1>
       <p class="text-muted-foreground mt-2">
         {{ t('notifications.preferences.subtitle') }}
       </p>
@@ -293,7 +333,7 @@ onMounted(async () => {
       </Card>
 
       <!-- Telegram binding -->
-      <Card>
+      <Card v-if="telegramConfigured">
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <MessageCircle class="h-5 w-5" />
@@ -304,7 +344,17 @@ onMounted(async () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div v-if="telegramBinding?.is_verified" class="space-y-2">
+          <!-- Warning: Telegram enabled but not connected -->
+          <div
+            v-if="telegramNotConnectedWarning && !telegramBinding?.is_verified"
+            class="bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 mb-4 flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-800 p-3 text-sm"
+          >
+            <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{{ t('notifications.telegram.notConnectedWarning') }}</span>
+          </div>
+
+          <!-- Connected state -->
+          <div v-if="telegramBinding?.is_verified" class="space-y-3">
             <div class="flex items-center gap-2">
               <Badge variant="outline" class="text-green-600">
                 {{ t('notifications.telegram.connected') }}
@@ -313,36 +363,79 @@ onMounted(async () => {
                 @{{ telegramBinding.telegram_username }}
               </span>
             </div>
+            <p v-if="botStartLink" class="text-muted-foreground text-sm">
+              {{ t('notifications.telegram.startBotHint') }}
+              <a
+                :href="botStartLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-primary underline underline-offset-2"
+              >
+                @{{ telegramBotUsername }}
+              </a>
+            </p>
             <Button variant="outline" size="sm" @click="unbindTelegram">
               {{ t('notifications.telegram.disconnect') }}
             </Button>
           </div>
-          <div v-else-if="telegramCode" class="space-y-3">
-            <Button v-if="telegramDeepLink" as="a" :href="telegramDeepLink" target="_blank">
-              <ExternalLink class="mr-2 h-4 w-4" />
-              {{ t('notifications.telegram.openInTelegram') }}
-            </Button>
-            <p class="text-muted-foreground text-sm">
-              {{ t('notifications.telegram.waitingForVerification') }}
-            </p>
-            <details class="text-muted-foreground text-xs">
-              <summary class="cursor-pointer">{{ t('notifications.telegram.manualCode') }}</summary>
-              <div class="mt-2 space-y-2">
-                <p>{{ t('notifications.telegram.sendCode') }}</p>
-                <div class="bg-muted rounded-lg p-3 text-center">
-                  <code class="text-sm font-bold">{{ telegramCode }}</code>
+
+          <!-- Not connected: show Login Widget or manual fallback -->
+          <div v-else class="space-y-4">
+            <!-- Telegram Login Widget (primary) -->
+            <div v-if="telegramBotUsername && !telegramCode">
+              <p class="text-muted-foreground mb-3 text-sm">
+                {{ t('notifications.telegram.loginDescription') }}
+              </p>
+              <TelegramLoginWidget :bot-username="telegramBotUsername" @auth="onTelegramAuth" />
+              <div v-if="connectingTelegram" class="text-muted-foreground mt-2 text-sm">
+                {{ t('notifications.telegram.connecting') }}
+              </div>
+            </div>
+
+            <!-- Manual code fallback (collapsed) -->
+            <details class="text-sm">
+              <summary class="text-muted-foreground cursor-pointer text-xs">
+                {{ t('notifications.telegram.manualFallback') }}
+              </summary>
+              <div class="mt-3 space-y-3">
+                <div v-if="telegramCode" class="space-y-3">
+                  <a
+                    v-if="telegramDeepLink"
+                    :href="telegramDeepLink"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded-md px-4 py-2 text-sm font-medium"
+                  >
+                    <ExternalLink class="mr-2 h-4 w-4" />
+                    {{ t('notifications.telegram.openInTelegram') }}
+                  </a>
+                  <p class="text-muted-foreground text-sm">
+                    {{ t('notifications.telegram.waitingForVerification') }}
+                  </p>
+                  <div class="space-y-2">
+                    <p class="text-muted-foreground text-xs">
+                      {{ t('notifications.telegram.sendCode') }}
+                    </p>
+                    <div class="bg-muted rounded-lg p-3 text-center">
+                      <code class="text-sm font-bold">{{ telegramCode }}</code>
+                    </div>
+                    <p v-if="manualBotUsername" class="text-muted-foreground text-xs">
+                      {{ t('notifications.telegram.sendTo') }}
+                      <strong>@{{ manualBotUsername }}</strong>
+                    </p>
+                  </div>
                 </div>
-                <p v-if="telegramBotUsername">
-                  {{ t('notifications.telegram.sendTo') }}
-                  <strong>@{{ telegramBotUsername }}</strong>
-                </p>
+                <Button
+                  v-else
+                  variant="outline"
+                  size="sm"
+                  :disabled="bindingTelegram"
+                  @click="startManualTelegramBinding"
+                >
+                  {{ t('notifications.telegram.connectManually') }}
+                </Button>
               </div>
             </details>
-          </div>
-          <div v-else>
-            <Button variant="outline" :disabled="bindingTelegram" @click="startTelegramBinding">
-              {{ t('notifications.telegram.connect') }}
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -397,6 +490,13 @@ onMounted(async () => {
               <p class="text-muted-foreground text-xs">
                 {{ t('notifications.globalToggle.telegramDescription') }}
               </p>
+              <p
+                v-if="telegramNotConnectedWarning"
+                class="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400"
+              >
+                <TriangleAlert class="h-3 w-3 shrink-0" />
+                {{ t('notifications.telegram.notConnectedShort') }}
+              </p>
             </div>
             <Switch
               :model-value="globalChannelSettings.notify_telegram"
@@ -413,7 +513,9 @@ onMounted(async () => {
         </CardHeader>
         <CardContent class="space-y-0">
           <!-- Column headers -->
-          <div class="text-muted-foreground mb-3 flex items-center gap-2 sm:gap-4 text-xs font-medium">
+          <div
+            class="text-muted-foreground mb-3 flex items-center gap-2 sm:gap-4 text-xs font-medium"
+          >
             <div class="min-w-0 flex-1" />
             <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
               <Mail class="h-3.5 w-3.5 shrink-0" />

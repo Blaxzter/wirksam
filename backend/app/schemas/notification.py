@@ -144,6 +144,23 @@ class TelegramVerifyRequest(BaseModel):
     telegram_username: str | None = None
 
 
+class TelegramLoginData(BaseModel):
+    """Auth data returned by the Telegram Login Widget."""
+
+    id: int
+    first_name: str | None = None
+    last_name: str | None = None
+    username: str | None = None
+    photo_url: str | None = None
+    auth_date: int
+    hash: str
+
+
+class TelegramConfigResponse(BaseModel):
+    bot_username: str | None = None
+    is_configured: bool
+
+
 # ── Global channel settings (user-level kill switches) ───────────
 
 
