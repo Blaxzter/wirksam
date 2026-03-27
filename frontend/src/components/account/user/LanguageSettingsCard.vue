@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GlobeIcon } from 'lucide-vue-next'
+import { GlobeIcon, InfoIcon } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,6 +30,10 @@ useI18n()
         </div>
         <LanguageSwitch variant="outline" size="default" :show-text="true" />
       </div>
+      <p class="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <InfoIcon class="h-3.5 w-3.5 shrink-0" />
+        {{ $t('user.settings.language.notificationHint') }}
+      </p>
     </CardContent>
   </Card>
 </template>

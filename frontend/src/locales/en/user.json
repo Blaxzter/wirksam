@@ -27,6 +27,7 @@
       "current": "Current Language",
       "currentDescription": "Select your preferred language for the application interface.",
       "description": "Choose your preferred language for the interface.",
+      "notificationHint": "This setting also applies to email notifications and other messages you receive.",
       "title": "Language & Region"
     },
     "password": {

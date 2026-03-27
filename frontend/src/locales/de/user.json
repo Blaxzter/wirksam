@@ -27,6 +27,7 @@
       "current": "Aktuelle Sprache",
       "currentDescription": "Wählen Sie Ihre bevorzugte Sprache für die Anwendungsoberfläche.",
       "description": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche.",
+      "notificationHint": "Diese Einstellung gilt auch für E-Mail-Benachrichtigungen und andere Mitteilungen, die Sie erhalten.",
       "title": "Sprache & Region"
     },
     "password": {
