@@ -125,7 +125,7 @@ const activeIndex = computed({
   get: () => versionToIndex(route.params.version as string | undefined),
   set: (index: number) => {
     const version = entries.value[index]?.version
-    router.replace({ name: 'changelog', params: { version: index === 0 ? undefined : version } })
+    router.replace({ name: route.name!, params: { version: index === 0 ? undefined : version } })
   },
 })
 

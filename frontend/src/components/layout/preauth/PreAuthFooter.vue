@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { SparklesIcon } from 'lucide-vue-next'
+
 import { formatDate } from '@/lib/format'
 
 const appVersion = __APP_VERSION__
@@ -12,14 +14,20 @@ const appVersionDate = __APP_VERSION_DATE__
     >
       <div class="flex flex-col items-center sm:items-start gap-1">
         <p>{{ $t('preauth.layout.footer.copyright') }}</p>
-        <p class="text-xs">
-          {{
-            $t('preauth.layout.footer.version', {
-              version: appVersion,
-              date: formatDate(appVersionDate),
-            })
-          }}
-        </p>
+        <router-link
+          :to="{ name: 'preauth-changelog' }"
+          class="text-xs hover:text-foreground transition-colors inline-flex items-center gap-1"
+        >
+          <SparklesIcon class="size-3" />
+          <span>
+            {{
+              $t('preauth.layout.footer.version', {
+                version: appVersion,
+                date: formatDate(appVersionDate),
+              })
+            }}
+          </span>
+        </router-link>
       </div>
       <nav class="flex items-center gap-4">
         <router-link :to="{ name: 'privacy' }" class="hover:text-foreground transition-colors">

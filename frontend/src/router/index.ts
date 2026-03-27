@@ -52,6 +52,11 @@ const router = createRouter({
           name: 'impressum',
           component: () => import('@/views/preauth/ImpressumView.vue'),
         },
+        {
+          path: 'changelog/:version?',
+          name: 'preauth-changelog',
+          component: () => import('@/views/ChangelogView.vue'),
+        },
       ],
     },
     {
