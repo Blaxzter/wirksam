@@ -27,11 +27,9 @@
     "save": "Einstellungen speichern",
     "saved": "Benachrichtigungseinstellungen gespeichert",
     "saveFailed": "Fehler beim Speichern der Benachrichtigungseinstellungen",
-    "perTypeTitle": "Einstellungen pro Benachrichtigung",
-    "nav": {
-      "channels": "Kanaele",
-      "perType": "Feineinstellung"
-    }
+    "autoSaving": "Speichern…",
+    "autoSaved": "Gespeichert",
+    "perTypeTitle": "Einstellungen pro Benachrichtigung"
   },
 
   "globalToggle": {

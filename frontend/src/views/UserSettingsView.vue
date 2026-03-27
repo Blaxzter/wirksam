@@ -133,6 +133,7 @@ import {
   UserIcon,
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -160,9 +161,11 @@ interface NavItem {
   auth0Only?: boolean
 }
 
-// Store
+// Store & router
 const authStore = useAuthStore()
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 
 // Computed properties
 const user = computed(() => authStore.user)
@@ -191,24 +194,52 @@ const chipItems = computed(() =>
   visibleNavItems.value.map((item) => ({ label: item.label, icon: item.icon })),
 )
 
-// ── Desktop state ──
-const activeSection = ref('profile')
+// ── Section from route ──
+const validSectionIds = computed(() => visibleNavItems.value.map((item) => item.id))
+
+const activeSection = computed({
+  get: () => {
+    const param = route.params.section as string | undefined
+    if (param && validSectionIds.value.includes(param)) return param
+    return 'profile'
+  },
+  set: (id: string) => {
+    router.replace({ name: 'settings', params: { section: id === 'profile' ? undefined : id } })
+  },
+})
 
 // ── Mobile carousel state ──
-const mobileSlide = ref(0)
+const mobileSlide = ref(validSectionIds.value.indexOf(activeSection.value))
 const carouselApi = ref<UnwrapRefCarouselApi>()
 useAdaptiveCarouselHeight(carouselApi)
 
 function onCarouselInit(api: UnwrapRefCarouselApi) {
   carouselApi.value = api
   api.on('select', () => {
-    mobileSlide.value = api.selectedScrollSnap()
+    const index = api.selectedScrollSnap()
+    mobileSlide.value = index
+    const sectionId = visibleNavItems.value[index]?.id
+    if (sectionId && sectionId !== activeSection.value) {
+      activeSection.value = sectionId
+    }
   })
 }
 
-// Sync chip taps → carousel
+// Sync chip taps → carousel + route
 watch(mobileSlide, (index) => {
   carouselApi.value?.scrollTo(index)
+  const sectionId = visibleNavItems.value[index]?.id
+  if (sectionId && sectionId !== activeSection.value) {
+    activeSection.value = sectionId
+  }
+})
+
+// Sync route changes → mobile carousel
+watch(activeSection, (id) => {
+  const index = validSectionIds.value.indexOf(id)
+  if (index !== -1 && index !== mobileSlide.value) {
+    mobileSlide.value = index
+  }
 })
 
 // Handle profile updated event

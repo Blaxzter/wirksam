@@ -156,7 +156,7 @@ const router = createRouter({
           },
         },
         {
-          path: 'changelog',
+          path: 'changelog/:version?',
           name: 'changelog',
           component: () => import('@/views/ChangelogView.vue'),
           meta: {
@@ -167,18 +167,7 @@ const router = createRouter({
           },
         },
         {
-          path: 'settings',
-          name: 'settings',
-          component: () => import('@/views/UserSettingsView.vue'),
-          meta: {
-            breadcrumbs: [
-              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
-              { title: 'Settings', titleKey: 'navigation.breadcrumbs.settings' },
-            ],
-          },
-        },
-        {
-          path: 'settings/notifications',
+          path: 'settings/notification-preferences',
           name: 'notification-preferences',
           component: () => import('@/views/NotificationPreferencesView.vue'),
           meta: {
@@ -190,6 +179,17 @@ const router = createRouter({
                 to: { name: 'settings' },
               },
               { title: 'Notifications', titleKey: 'notifications.preferences.title' },
+            ],
+          },
+        },
+        {
+          path: 'settings/:section?',
+          name: 'settings',
+          component: () => import('@/views/UserSettingsView.vue'),
+          meta: {
+            breadcrumbs: [
+              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
+              { title: 'Settings', titleKey: 'navigation.breadcrumbs.settings' },
             ],
           },
         },

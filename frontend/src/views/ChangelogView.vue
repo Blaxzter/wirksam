@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useAdaptiveCarouselHeight } from '@/composables/useAdaptiveCarouselHeight'
 import { useChangelogStatus } from '@/composables/useChangelogStatus'
@@ -19,6 +20,8 @@ import {
 import ChipNav from '@/components/utils/ChipNav.vue'
 
 const { t, locale } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const { isNewVersion, markAsSeen } = useChangelogStatus()
 
 onMounted(markAsSeen)
@@ -111,25 +114,53 @@ const chipItems = computed(() =>
   })),
 )
 
+// ── Route-synced state ──
+function versionToIndex(version: string | undefined): number {
+  if (!version) return 0
+  const idx = entries.value.findIndex((e) => e.version === version)
+  return idx !== -1 ? idx : 0
+}
+
+const activeIndex = computed({
+  get: () => versionToIndex(route.params.version as string | undefined),
+  set: (index: number) => {
+    const version = entries.value[index]?.version
+    router.replace({ name: 'changelog', params: { version: index === 0 ? undefined : version } })
+  },
+})
+
+const desktopSelected = computed(() => entries.value[activeIndex.value])
+
 // ── Mobile carousel state ──
-const mobileSlide = ref(0)
+const mobileSlide = ref(activeIndex.value)
 const carouselApi = ref<UnwrapRefCarouselApi>()
 useAdaptiveCarouselHeight(carouselApi)
 
 function onCarouselInit(api: UnwrapRefCarouselApi) {
   carouselApi.value = api
   api.on('select', () => {
-    mobileSlide.value = api.selectedScrollSnap()
+    const index = api.selectedScrollSnap()
+    mobileSlide.value = index
+    if (index !== activeIndex.value) {
+      activeIndex.value = index
+    }
   })
 }
 
+// Sync chip taps → carousel + route
 watch(mobileSlide, (index) => {
   carouselApi.value?.scrollTo(index)
+  if (index !== activeIndex.value) {
+    activeIndex.value = index
+  }
 })
 
-// ── Desktop state ──
-const activeIndex = ref(0)
-const desktopSelected = computed(() => entries.value[activeIndex.value])
+// Sync route changes → mobile carousel
+watch(activeIndex, (index) => {
+  if (index !== mobileSlide.value) {
+    mobileSlide.value = index
+  }
+})
 </script>
 
 <template>
