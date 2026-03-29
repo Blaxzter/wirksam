@@ -50,7 +50,7 @@
   "devDependencies": {
     "@hey-api/openapi-ts": "0.80.1",
     "@playwright/test": "^1.54.1",
-    "@trivago/prettier-plugin-sort-imports": "^5.2.2",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@tsconfig/node22": "^22.0.2",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.1.0",
