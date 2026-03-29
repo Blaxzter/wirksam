@@ -2,7 +2,15 @@
 import { computed, onMounted } from 'vue'
 
 import { useColorMode } from '@vueuse/core'
-import { BookCheck, CalendarDays, CalendarRange, Database, House, Users } from 'lucide-vue-next'
+import {
+  BarChart3,
+  BookCheck,
+  CalendarDays,
+  CalendarRange,
+  Database,
+  House,
+  Users,
+} from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -10,8 +18,9 @@ import wirksamDarkLogo from '@/assets/logo/wirksam-dark.svg'
 import wirksamLightLogo from '@/assets/logo/wirksam-light.svg'
 
 import { useAuthStore } from '@/stores/auth'
-import { useChangelogStatus } from '@/composables/useChangelogStatus'
 import { useSidebarStore } from '@/stores/sidebar'
+
+import { useChangelogStatus } from '@/composables/useChangelogStatus'
 
 import type { SidebarProps } from '@/components/ui/sidebar'
 import {
@@ -157,6 +166,12 @@ const navAdmin = computed(() =>
           routeName: 'admin-users',
         },
         {
+          title: 'Reports',
+          titleKey: 'admin.reporting.title',
+          icon: BarChart3,
+          routeName: 'admin-reporting',
+        },
+        {
           title: 'Demo Data',
           titleKey: 'admin.demoData.title',
           icon: Database,
@@ -203,13 +218,14 @@ const navAdmin = computed(() =>
         </SidebarMenuItem>
       </SidebarMenu>
       <NavMain :items="navMain" :open="props.open" />
-      <NavMain
-        v-if="navAdmin.length > 0"
-        :items="navAdmin"
-        :open="props.open"
-        group-label-key="admin.sidebar.section"
-      />
     </SidebarContent>
+    <NavMain
+      v-if="navAdmin.length > 0"
+      :items="navAdmin"
+      :open="props.open"
+      group-label-key="admin.sidebar.section"
+      class="shrink-0 px-2 pb-2"
+    />
     <SidebarFooter class="flex flex-col gap-1 p-2 pb-1">
       <NavUser />
       <RouterLink
@@ -217,10 +233,7 @@ const navAdmin = computed(() =>
         class="inline-flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors pb-1 group-data-[collapsible=icon]:hidden"
       >
         <span>WirkSam {{ appVersion }}</span>
-        <span
-          v-if="hasNewVersions"
-          class="size-1.5 rounded-full bg-primary"
-        />
+        <span v-if="hasNewVersions" class="size-1.5 rounded-full bg-primary" />
       </RouterLink>
     </SidebarFooter>
     <SidebarRail />

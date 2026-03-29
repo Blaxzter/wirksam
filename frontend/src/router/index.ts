@@ -216,6 +216,18 @@ const router = createRouter({
           },
         },
         {
+          path: 'admin/reporting',
+          name: 'admin-reporting',
+          component: () => import('@/views/admin/ReportingView.vue'),
+          meta: {
+            requiresRole: 'admin',
+            breadcrumbs: [
+              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
+              { title: 'Reports', titleKey: 'admin.reporting.title' },
+            ],
+          },
+        },
+        {
           path: 'admin/demo-data',
           name: 'admin-demo-data',
           component: () => import('@/views/admin/DemoDataView.vue'),

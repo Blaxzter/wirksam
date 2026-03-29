@@ -46,6 +46,70 @@
       "cleared": "Freigabe-Passwort gelöscht."
     }
   },
+  "reporting": {
+    "title": "Berichte",
+    "subtitle": "Statistiken und Nutzungsberichte Ihrer Organisation einsehen.",
+    "dateRange": "Zeitraum",
+    "from": "Von",
+    "to": "Bis",
+    "apply": "Anwenden",
+    "reset": "Zurücksetzen",
+    "export": "CSV exportieren",
+    "noData": "Keine Daten für den ausgewählten Zeitraum verfügbar.",
+    "overview": {
+      "title": "Übersicht",
+      "totalBookings": "Buchungen gesamt",
+      "confirmedBookings": "Bestätigt",
+      "cancelledBookings": "Storniert",
+      "cancellationRate": "Stornierungsrate",
+      "totalEvents": "Events",
+      "totalSlots": "Slots",
+      "fillRate": "Auslastung",
+      "activeVolunteers": "Aktive Freiwillige",
+      "totalVolunteers": "Freiwillige gesamt",
+      "filledSlots": "Belegte Slots",
+      "totalCapacity": "Gesamtkapazität"
+    },
+    "bookingsByMonth": {
+      "title": "Buchungen im Zeitverlauf",
+      "description": "Bestätigte und stornierte Buchungen nach Datum."
+    },
+    "granularity": {
+      "day": "Tag",
+      "month": "Monat"
+    },
+    "topVolunteers": {
+      "title": "Aktivste Freiwillige",
+      "description": "Top 10 Freiwillige nach bestätigten Buchungen.",
+      "name": "Name",
+      "email": "E-Mail",
+      "bookings": "Buchungen"
+    },
+    "categories": {
+      "title": "Nach Kategorie",
+      "description": "Slot-Kapazität und Auslastung pro Kategorie.",
+      "category": "Kategorie",
+      "uncategorized": "Ohne Kategorie",
+      "slots": "Slots",
+      "capacity": "Kapazität",
+      "booked": "Gebucht",
+      "fillRate": "Auslastung"
+    },
+    "busiestTimes": {
+      "title": "Buchungen nach Tageszeit",
+      "description": "Bestätigte Buchungen gruppiert nach Startuhrzeit.",
+      "time": "Uhrzeit",
+      "bookings": "Buchungen"
+    },
+    "eventFillRates": {
+      "title": "Auslastung nach Event",
+      "description": "Wie voll die Slots jedes Events belegt sind.",
+      "event": "Event",
+      "capacity": "Kapazität",
+      "booked": "Gebucht",
+      "fillRate": "Auslastung"
+    }
+  },
   "demoData": {
     "title": "Demodaten",
     "subtitle": "Demodaten zu Testzwecken generieren oder entfernen.",

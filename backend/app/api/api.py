@@ -11,6 +11,7 @@ from app.api.routes import (
     events,
     health,
     notifications,
+    reporting,
     site_settings,
     users,
 )
@@ -29,6 +30,7 @@ api_router.include_router(calendar_feed.router)
 api_router.include_router(event_groups.router)
 api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(reporting.router)
 api_router.include_router(demo_data.router)
 
 if settings.ENVIRONMENT != "production":

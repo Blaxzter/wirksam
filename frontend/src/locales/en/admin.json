@@ -46,6 +46,70 @@
       "cleared": "Approval password cleared."
     }
   },
+  "reporting": {
+    "title": "Reports",
+    "subtitle": "View statistics and usage reports across your organization.",
+    "dateRange": "Date Range",
+    "from": "From",
+    "to": "To",
+    "apply": "Apply",
+    "reset": "Reset",
+    "export": "Export CSV",
+    "noData": "No data available for the selected period.",
+    "overview": {
+      "title": "Overview",
+      "totalBookings": "Total Bookings",
+      "confirmedBookings": "Confirmed",
+      "cancelledBookings": "Cancelled",
+      "cancellationRate": "Cancellation Rate",
+      "totalEvents": "Events",
+      "totalSlots": "Slots",
+      "fillRate": "Fill Rate",
+      "activeVolunteers": "Active Volunteers",
+      "totalVolunteers": "Total Volunteers",
+      "filledSlots": "Filled Slots",
+      "totalCapacity": "Total Capacity"
+    },
+    "bookingsByMonth": {
+      "title": "Bookings Over Time",
+      "description": "Confirmed and cancelled bookings by date."
+    },
+    "granularity": {
+      "day": "Day",
+      "month": "Month"
+    },
+    "topVolunteers": {
+      "title": "Most Active Volunteers",
+      "description": "Top 10 volunteers by confirmed bookings.",
+      "name": "Name",
+      "email": "Email",
+      "bookings": "Bookings"
+    },
+    "categories": {
+      "title": "By Category",
+      "description": "Slot capacity and fill rate per category.",
+      "category": "Category",
+      "uncategorized": "Uncategorized",
+      "slots": "Slots",
+      "capacity": "Capacity",
+      "booked": "Booked",
+      "fillRate": "Fill Rate"
+    },
+    "busiestTimes": {
+      "title": "Bookings by Time of Day",
+      "description": "Confirmed bookings grouped by start hour.",
+      "time": "Time",
+      "bookings": "Bookings"
+    },
+    "eventFillRates": {
+      "title": "Fill Rate by Event",
+      "description": "How full each event's slots are.",
+      "event": "Event",
+      "capacity": "Capacity",
+      "booked": "Booked",
+      "fillRate": "Fill Rate"
+    }
+  },
   "demoData": {
     "title": "Demo Data",
     "subtitle": "Generate or remove demo data for testing purposes.",

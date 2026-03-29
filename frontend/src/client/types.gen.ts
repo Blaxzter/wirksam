@@ -198,6 +198,65 @@ export type BookingReadWithSlot = {
 }
 
 /**
+ * BookingReminderCreate
+ * User provides the offset and channels; remind_at is computed server-side.
+ */
+export type BookingReminderCreate = {
+  /**
+   * Offset Minutes
+   */
+  offset_minutes: 15 | 30 | 60 | 120 | 180 | 360 | 720 | 1440 | 2880
+  /**
+   * Channels
+   */
+  channels?: Array<'email' | 'push' | 'telegram'>
+}
+
+/**
+ * BookingReminderListResponse
+ */
+export type BookingReminderListResponse = {
+  /**
+   * Items
+   */
+  items: Array<BookingReminderRead>
+}
+
+/**
+ * BookingReminderRead
+ */
+export type BookingReminderRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Offset Minutes
+   */
+  offset_minutes: number
+  /**
+   * Channels
+   */
+  channels: Array<string>
+  /**
+   * Remind At
+   */
+  remind_at: string
+  /**
+   * Status
+   */
+  status: 'pending' | 'sent' | 'cancelled' | 'expired'
+  /**
+   * Created At
+   */
+  created_at: string
+}
+
+/**
  * BookingUpdate
  */
 export type BookingUpdate = {
@@ -213,6 +272,38 @@ export type BookingUpdate = {
    * Cancellation Reason
    */
   cancellation_reason?: string | null
+}
+
+/**
+ * BookingsByHour
+ */
+export type BookingsByHour = {
+  /**
+   * Hour
+   */
+  hour: number
+  /**
+   * Booking Count
+   */
+  booking_count: number
+}
+
+/**
+ * BookingsTrendPoint
+ */
+export type BookingsTrendPoint = {
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Confirmed
+   */
+  confirmed: number
+  /**
+   * Cancelled
+   */
+  cancelled: number
 }
 
 /**
@@ -240,6 +331,32 @@ export type CalendarFeedRead = {
    * Created At
    */
   created_at: string
+}
+
+/**
+ * CategoryBreakdown
+ */
+export type CategoryBreakdown = {
+  /**
+   * Category
+   */
+  category: string | null
+  /**
+   * Slot Count
+   */
+  slot_count: number
+  /**
+   * Total Capacity
+   */
+  total_capacity: number
+  /**
+   * Confirmed Bookings
+   */
+  confirmed_bookings: number
+  /**
+   * Fill Rate
+   */
+  fill_rate: number
 }
 
 /**
@@ -359,6 +476,26 @@ export type DashboardFeedResponse = {
    * Pending User Count
    */
   pending_user_count?: number | null
+}
+
+/**
+ * DefaultReminderOffsetsRead
+ */
+export type DefaultReminderOffsetsRead = {
+  /**
+   * Default Reminder Offsets
+   */
+  default_reminder_offsets: Array<ReminderOffsetEntry>
+}
+
+/**
+ * DefaultReminderOffsetsUpdate
+ */
+export type DefaultReminderOffsetsUpdate = {
+  /**
+   * Default Reminder Offsets
+   */
+  default_reminder_offsets: Array<ReminderOffsetEntry>
 }
 
 /**
@@ -787,6 +924,32 @@ export type EventFeedResponse = {
    * Limit
    */
   limit: number
+}
+
+/**
+ * EventFillRate
+ */
+export type EventFillRate = {
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Event Name
+   */
+  event_name: string
+  /**
+   * Total Capacity
+   */
+  total_capacity: number
+  /**
+   * Confirmed Bookings
+   */
+  confirmed_bookings: number
+  /**
+   * Fill Rate
+   */
+  fill_rate: number
 }
 
 /**
@@ -1511,6 +1674,10 @@ export type NotificationTypeRead = {
    * Is Active
    */
   is_active: boolean
+  /**
+   * Is User Configurable
+   */
+  is_user_configurable: boolean
 }
 
 /**
@@ -1586,6 +1753,98 @@ export type PushSubscriptionRead = {
    * Created At
    */
   created_at: string
+}
+
+/**
+ * ReminderOffsetEntry
+ * A single default reminder: offset + which channels to use.
+ */
+export type ReminderOffsetEntry = {
+  /**
+   * Offset Minutes
+   */
+  offset_minutes: 15 | 30 | 60 | 120 | 180 | 360 | 720 | 1440 | 2880
+  /**
+   * Channels
+   */
+  channels?: Array<'email' | 'push' | 'telegram'>
+}
+
+/**
+ * ReportingOverviewStats
+ */
+export type ReportingOverviewStats = {
+  /**
+   * Total Bookings
+   */
+  total_bookings: number
+  /**
+   * Confirmed Bookings
+   */
+  confirmed_bookings: number
+  /**
+   * Cancelled Bookings
+   */
+  cancelled_bookings: number
+  /**
+   * Cancellation Rate
+   */
+  cancellation_rate: number
+  /**
+   * Total Events
+   */
+  total_events: number
+  /**
+   * Total Slots
+   */
+  total_slots: number
+  /**
+   * Total Slot Capacity
+   */
+  total_slot_capacity: number
+  /**
+   * Filled Slots
+   */
+  filled_slots: number
+  /**
+   * Fill Rate
+   */
+  fill_rate: number
+  /**
+   * Active Volunteers
+   */
+  active_volunteers: number
+  /**
+   * Total Volunteers
+   */
+  total_volunteers: number
+}
+
+/**
+ * ReportingResponse
+ */
+export type ReportingResponse = {
+  overview: ReportingOverviewStats
+  /**
+   * Bookings Trend
+   */
+  bookings_trend: Array<BookingsTrendPoint>
+  /**
+   * Top Volunteers
+   */
+  top_volunteers: Array<TopVolunteer>
+  /**
+   * Category Breakdown
+   */
+  category_breakdown: Array<CategoryBreakdown>
+  /**
+   * Bookings By Hour
+   */
+  bookings_by_hour: Array<BookingsByHour>
+  /**
+   * Event Fill Rates
+   */
+  event_fill_rates: Array<EventFillRate>
 }
 
 /**
@@ -2052,6 +2311,28 @@ export type TelegramVerifyRequest = {
  */
 export type TelegramWebhookUpdate = {
   message?: TelegramMessage | null
+}
+
+/**
+ * TopVolunteer
+ */
+export type TopVolunteer = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name: string | null
+  /**
+   * Email
+   */
+  email: string | null
+  /**
+   * Booking Count
+   */
+  booking_count: number
 }
 
 /**
@@ -5088,6 +5369,296 @@ export type BookingsDismissBookingResponses = {
 export type BookingsDismissBookingResponse =
   BookingsDismissBookingResponses[keyof BookingsDismissBookingResponses]
 
+export type BookingRemindersGetReminderDefaultsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/users/me/reminder-defaults'
+}
+
+export type BookingRemindersGetReminderDefaultsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type BookingRemindersGetReminderDefaultsError =
+  BookingRemindersGetReminderDefaultsErrors[keyof BookingRemindersGetReminderDefaultsErrors]
+
+export type BookingRemindersGetReminderDefaultsResponses = {
+  /**
+   * Successful Response
+   */
+  200: DefaultReminderOffsetsRead
+}
+
+export type BookingRemindersGetReminderDefaultsResponse =
+  BookingRemindersGetReminderDefaultsResponses[keyof BookingRemindersGetReminderDefaultsResponses]
+
+export type BookingRemindersUpdateReminderDefaultsData = {
+  body: DefaultReminderOffsetsUpdate
+  path?: never
+  query?: never
+  url: '/api/v1/users/me/reminder-defaults'
+}
+
+export type BookingRemindersUpdateReminderDefaultsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type BookingRemindersUpdateReminderDefaultsError =
+  BookingRemindersUpdateReminderDefaultsErrors[keyof BookingRemindersUpdateReminderDefaultsErrors]
+
+export type BookingRemindersUpdateReminderDefaultsResponses = {
+  /**
+   * Successful Response
+   */
+  200: DefaultReminderOffsetsRead
+}
+
+export type BookingRemindersUpdateReminderDefaultsResponse =
+  BookingRemindersUpdateReminderDefaultsResponses[keyof BookingRemindersUpdateReminderDefaultsResponses]
+
+export type BookingRemindersListBookingRemindersData = {
+  body?: never
+  path: {
+    /**
+     * Booking Id
+     */
+    booking_id: string
+  }
+  query?: never
+  url: '/api/v1/bookings/{booking_id}/reminders'
+}
+
+export type BookingRemindersListBookingRemindersErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type BookingRemindersListBookingRemindersError =
+  BookingRemindersListBookingRemindersErrors[keyof BookingRemindersListBookingRemindersErrors]
+
+export type BookingRemindersListBookingRemindersResponses = {
+  /**
+   * Successful Response
+   */
+  200: BookingReminderListResponse
+}
+
+export type BookingRemindersListBookingRemindersResponse =
+  BookingRemindersListBookingRemindersResponses[keyof BookingRemindersListBookingRemindersResponses]
+
+export type BookingRemindersAddBookingReminderData = {
+  body: BookingReminderCreate
+  path: {
+    /**
+     * Booking Id
+     */
+    booking_id: string
+  }
+  query?: never
+  url: '/api/v1/bookings/{booking_id}/reminders'
+}
+
+export type BookingRemindersAddBookingReminderErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type BookingRemindersAddBookingReminderError =
+  BookingRemindersAddBookingReminderErrors[keyof BookingRemindersAddBookingReminderErrors]
+
+export type BookingRemindersAddBookingReminderResponses = {
+  /**
+   * Successful Response
+   */
+  201: BookingReminderRead
+}
+
+export type BookingRemindersAddBookingReminderResponse =
+  BookingRemindersAddBookingReminderResponses[keyof BookingRemindersAddBookingReminderResponses]
+
+export type BookingRemindersDeleteReminderData = {
+  body?: never
+  path: {
+    /**
+     * Reminder Id
+     */
+    reminder_id: string
+  }
+  query?: never
+  url: '/api/v1/reminders/{reminder_id}'
+}
+
+export type BookingRemindersDeleteReminderErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type BookingRemindersDeleteReminderError =
+  BookingRemindersDeleteReminderErrors[keyof BookingRemindersDeleteReminderErrors]
+
+export type BookingRemindersDeleteReminderResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type BookingRemindersDeleteReminderResponse =
+  BookingRemindersDeleteReminderResponses[keyof BookingRemindersDeleteReminderResponses]
+
 export type CalendarDisableFeedData = {
   body?: never
   path?: never
@@ -7469,6 +8040,133 @@ export type DashboardDashboardSidebarResponses = {
 
 export type DashboardDashboardSidebarResponse =
   DashboardDashboardSidebarResponses[keyof DashboardDashboardSidebarResponses]
+
+export type ReportingReportingOverviewData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Date From
+     * Start date filter
+     */
+    date_from?: string | null
+    /**
+     * Date To
+     * End date filter
+     */
+    date_to?: string | null
+  }
+  url: '/api/v1/reporting/overview'
+}
+
+export type ReportingReportingOverviewErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type ReportingReportingOverviewError =
+  ReportingReportingOverviewErrors[keyof ReportingReportingOverviewErrors]
+
+export type ReportingReportingOverviewResponses = {
+  /**
+   * Successful Response
+   */
+  200: ReportingResponse
+}
+
+export type ReportingReportingOverviewResponse =
+  ReportingReportingOverviewResponses[keyof ReportingReportingOverviewResponses]
+
+export type ReportingReportingExportData = {
+  body?: never
+  path?: never
+  query?: {
+    /**
+     * Date From
+     */
+    date_from?: string | null
+    /**
+     * Date To
+     */
+    date_to?: string | null
+  }
+  url: '/api/v1/reporting/export'
+}
+
+export type ReportingReportingExportErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type ReportingReportingExportError =
+  ReportingReportingExportErrors[keyof ReportingReportingExportErrors]
+
+export type ReportingReportingExportResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
 
 export type DemoDataDeleteDemoDataData = {
   body?: never

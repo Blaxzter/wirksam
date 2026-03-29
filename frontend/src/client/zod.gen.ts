@@ -164,12 +164,62 @@ export const zBookingReadWithSlot = z
   })
 
 /**
+ * BookingReminderCreate
+ * User provides the offset and channels; remind_at is computed server-side.
+ */
+export const zBookingReminderCreate = z
+  .object({
+    offset_minutes: z.unknown(),
+    channels: z.optional(z.array(z.enum(['email', 'push', 'telegram'])).min(1)).default(['push']),
+  })
+  .register(z.globalRegistry, {
+    description: 'User provides the offset and channels; remind_at is computed server-side.',
+  })
+
+/**
+ * BookingReminderRead
+ */
+export const zBookingReminderRead = z.object({
+  id: z.uuid(),
+  booking_id: z.uuid(),
+  offset_minutes: z.int(),
+  channels: z.array(z.string()),
+  remind_at: z.iso.datetime(),
+  status: z.enum(['pending', 'sent', 'cancelled', 'expired']),
+  created_at: z.iso.datetime(),
+})
+
+/**
+ * BookingReminderListResponse
+ */
+export const zBookingReminderListResponse = z.object({
+  items: z.array(zBookingReminderRead),
+})
+
+/**
  * BookingUpdate
  */
 export const zBookingUpdate = z.object({
   status: z.optional(z.union([z.enum(['confirmed', 'cancelled']), z.null()])),
   notes: z.optional(z.union([z.string(), z.null()])),
   cancellation_reason: z.optional(z.union([z.string(), z.null()])),
+})
+
+/**
+ * BookingsByHour
+ */
+export const zBookingsByHour = z.object({
+  hour: z.int(),
+  booking_count: z.int(),
+})
+
+/**
+ * BookingsTrendPoint
+ */
+export const zBookingsTrendPoint = z.object({
+  date: z.iso.date(),
+  confirmed: z.int(),
+  cancelled: z.int(),
 })
 
 /**
@@ -187,6 +237,17 @@ export const zCalendarFeedRead = z
   .register(z.globalRegistry, {
     description: 'Response for calendar feed management endpoints.',
   })
+
+/**
+ * CategoryBreakdown
+ */
+export const zCategoryBreakdown = z.object({
+  category: z.union([z.string(), z.null()]),
+  slot_count: z.int(),
+  total_capacity: z.int(),
+  confirmed_bookings: z.int(),
+  fill_rate: z.number(),
+})
 
 /**
  * DashboardBookingItem
@@ -248,6 +309,33 @@ export const zDashboardFeedResponse = z.object({
   bookings: z.array(zDashboardBookingItem),
   booking_count: z.int(),
   pending_user_count: z.optional(z.union([z.int(), z.null()])),
+})
+
+/**
+ * ReminderOffsetEntry
+ * A single default reminder: offset + which channels to use.
+ */
+export const zReminderOffsetEntry = z
+  .object({
+    offset_minutes: z.unknown(),
+    channels: z.optional(z.array(z.enum(['email', 'push', 'telegram'])).min(1)).default(['push']),
+  })
+  .register(z.globalRegistry, {
+    description: 'A single default reminder: offset + which channels to use.',
+  })
+
+/**
+ * DefaultReminderOffsetsRead
+ */
+export const zDefaultReminderOffsetsRead = z.object({
+  default_reminder_offsets: z.array(zReminderOffsetEntry),
+})
+
+/**
+ * DefaultReminderOffsetsUpdate
+ */
+export const zDefaultReminderOffsetsUpdate = z.object({
+  default_reminder_offsets: z.array(zReminderOffsetEntry).max(5),
 })
 
 /**
@@ -486,6 +574,17 @@ export const zEventFeedResponse = z.object({
 })
 
 /**
+ * EventFillRate
+ */
+export const zEventFillRate = z.object({
+  event_id: z.uuid(),
+  event_name: z.string(),
+  total_capacity: z.int(),
+  confirmed_bookings: z.int(),
+  fill_rate: z.number(),
+})
+
+/**
  * EventGroupListResponse
  */
 export const zEventGroupListResponse = z.object({
@@ -663,6 +762,7 @@ export const zNotificationTypeRead = z.object({
   is_admin_only: z.boolean(),
   default_channels: z.array(z.string()),
   is_active: z.boolean(),
+  is_user_configurable: z.boolean(),
 })
 
 /**
@@ -700,6 +800,45 @@ export const zPushSubscriptionRead = z.object({
   endpoint: z.string(),
   user_agent: z.optional(z.union([z.string(), z.null()])),
   created_at: z.iso.datetime(),
+})
+
+/**
+ * ReportingOverviewStats
+ */
+export const zReportingOverviewStats = z.object({
+  total_bookings: z.int(),
+  confirmed_bookings: z.int(),
+  cancelled_bookings: z.int(),
+  cancellation_rate: z.number(),
+  total_events: z.int(),
+  total_slots: z.int(),
+  total_slot_capacity: z.int(),
+  filled_slots: z.int(),
+  fill_rate: z.number(),
+  active_volunteers: z.int(),
+  total_volunteers: z.int(),
+})
+
+/**
+ * TopVolunteer
+ */
+export const zTopVolunteer = z.object({
+  user_id: z.uuid(),
+  name: z.union([z.string(), z.null()]),
+  email: z.union([z.string(), z.null()]),
+  booking_count: z.int(),
+})
+
+/**
+ * ReportingResponse
+ */
+export const zReportingResponse = z.object({
+  overview: zReportingOverviewStats,
+  bookings_trend: z.array(zBookingsTrendPoint),
+  top_volunteers: z.array(zTopVolunteer),
+  category_breakdown: z.array(zCategoryBreakdown),
+  bookings_by_hour: z.array(zBookingsByHour),
+  event_fill_rates: z.array(zEventFillRate),
 })
 
 /**
@@ -1740,6 +1879,69 @@ export const zBookingsDismissBookingResponse = z.void().register(z.globalRegistr
   description: 'Successful Response',
 })
 
+export const zBookingRemindersGetReminderDefaultsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zBookingRemindersGetReminderDefaultsResponse = zDefaultReminderOffsetsRead
+
+export const zBookingRemindersUpdateReminderDefaultsData = z.object({
+  body: zDefaultReminderOffsetsUpdate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zBookingRemindersUpdateReminderDefaultsResponse = zDefaultReminderOffsetsRead
+
+export const zBookingRemindersListBookingRemindersData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    booking_id: z.uuid(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zBookingRemindersListBookingRemindersResponse = zBookingReminderListResponse
+
+export const zBookingRemindersAddBookingReminderData = z.object({
+  body: zBookingReminderCreate,
+  path: z.object({
+    booking_id: z.uuid(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zBookingRemindersAddBookingReminderResponse = zBookingReminderRead
+
+export const zBookingRemindersDeleteReminderData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    reminder_id: z.uuid(),
+  }),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zBookingRemindersDeleteReminderResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
 export const zCalendarDisableFeedData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -2288,6 +2490,33 @@ export const zDashboardDashboardSidebarData = z.object({
  * Successful Response
  */
 export const zDashboardDashboardSidebarResponse = zSidebarResponse
+
+export const zReportingReportingOverviewData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      date_from: z.optional(z.union([z.iso.date(), z.null()])),
+      date_to: z.optional(z.union([z.iso.date(), z.null()])),
+    }),
+  ),
+})
+
+/**
+ * Successful Response
+ */
+export const zReportingReportingOverviewResponse = zReportingResponse
+
+export const zReportingReportingExportData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      date_from: z.optional(z.union([z.iso.date(), z.null()])),
+      date_to: z.optional(z.union([z.iso.date(), z.null()])),
+    }),
+  ),
+})
 
 export const zDemoDataDeleteDemoDataData = z.object({
   body: z.optional(z.never()),
