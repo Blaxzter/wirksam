@@ -46,4 +46,6 @@ class DefaultReminderOffsetsRead(BaseModel):
 
 
 class DefaultReminderOffsetsUpdate(BaseModel):
-    default_reminder_offsets: list[ReminderOffsetEntry] = Field(max_length=MAX_REMINDERS_PER_BOOKING)
+    default_reminder_offsets: list[ReminderOffsetEntry] = Field(
+        max_length=MAX_REMINDERS_PER_BOOKING
+    )

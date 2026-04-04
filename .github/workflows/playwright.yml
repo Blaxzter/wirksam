@@ -85,11 +85,13 @@ jobs:
       working-directory: backend
     - run: pnpm install --frozen-lockfile
       working-directory: frontend
+    - name: Create .env file
+      run: cp .env.example .env
     - run: uv run bash scripts/generate-client.sh
       env:
         VIRTUAL_ENV: backend/.venv
-    - name: Create .env file
-      run: cp .env.example .env
+    - name: Create external network
+      run: docker network create traefik-net || true
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
     - name: Run Playwright tests

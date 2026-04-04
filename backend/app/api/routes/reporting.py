@@ -88,37 +88,41 @@ async def reporting_export(
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "Booking ID",
-        "Status",
-        "Booked At",
-        "Cancellation Reason",
-        "Volunteer Name",
-        "Volunteer Email",
-        "Slot Title",
-        "Slot Date",
-        "Start Time",
-        "End Time",
-        "Location",
-        "Category",
-        "Event Name",
-    ])
+    writer.writerow(
+        [
+            "Booking ID",
+            "Status",
+            "Booked At",
+            "Cancellation Reason",
+            "Volunteer Name",
+            "Volunteer Email",
+            "Slot Title",
+            "Slot Date",
+            "Start Time",
+            "End Time",
+            "Location",
+            "Category",
+            "Event Name",
+        ]
+    )
     for row in rows:
-        writer.writerow([
-            str(row.booking_id),
-            row.status,
-            str(row.created_at) if row.created_at else "",
-            row.cancellation_reason or "",
-            row.volunteer_name or "",
-            row.volunteer_email or "",
-            row.slot_title or "",
-            str(row.slot_date) if row.slot_date else "",
-            str(row.slot_start_time) if row.slot_start_time else "",
-            str(row.slot_end_time) if row.slot_end_time else "",
-            row.slot_location or "",
-            row.slot_category or "",
-            row.event_name or "",
-        ])
+        writer.writerow(
+            [
+                str(row.booking_id),
+                row.status,
+                str(row.created_at) if row.created_at else "",
+                row.cancellation_reason or "",
+                row.volunteer_name or "",
+                row.volunteer_email or "",
+                row.slot_title or "",
+                str(row.slot_date) if row.slot_date else "",
+                str(row.slot_start_time) if row.slot_start_time else "",
+                str(row.slot_end_time) if row.slot_end_time else "",
+                row.slot_location or "",
+                row.slot_category or "",
+                row.event_name or "",
+            ]
+        )
 
     output.seek(0)
     return StreamingResponse(
@@ -200,9 +204,7 @@ async def _overview_stats(  # noqa: ANN001
         .scalar_subquery()
     )
     filled_query = (
-        select(func.count())
-        .select_from(DutySlot)
-        .where(confirmed_count_sq > 0)
+        select(func.count()).select_from(DutySlot).where(confirmed_count_sq > 0)
     )
     if date_from:
         filled_query = filled_query.where(col(DutySlot.date) >= date_from)
@@ -212,9 +214,7 @@ async def _overview_stats(  # noqa: ANN001
     filled_slots = filled_result.scalar_one()
 
     # Confirmed bookings as % of total capacity
-    fill_rate = (
-        confirmed_bookings / total_capacity * 100 if total_capacity > 0 else 0.0
-    )
+    fill_rate = confirmed_bookings / total_capacity * 100 if total_capacity > 0 else 0.0
 
     # Volunteer counts
     volunteer_query = select(
@@ -245,12 +245,8 @@ async def _bookings_trend(  # noqa: ANN001
     query = (
         select(
             col(DutySlot.date).label("date"),
-            func.count()
-            .filter(col(Booking.status) == "confirmed")
-            .label("confirmed"),
-            func.count()
-            .filter(col(Booking.status) == "cancelled")
-            .label("cancelled"),
+            func.count().filter(col(Booking.status) == "confirmed").label("confirmed"),
+            func.count().filter(col(Booking.status) == "cancelled").label("cancelled"),
         )
         .select_from(Booking)
         .join(DutySlot, col(Booking.duty_slot_id) == col(DutySlot.id))
@@ -318,9 +314,7 @@ async def _category_breakdown(  # noqa: ANN001
             func.coalesce(func.sum(col(DutySlot.max_bookings)), 0).label(
                 "total_capacity"
             ),
-            func.coalesce(func.sum(confirmed_count_sq), 0).label(
-                "confirmed_bookings"
-            ),
+            func.coalesce(func.sum(confirmed_count_sq), 0).label("confirmed_bookings"),
         )
         .select_from(DutySlot)
         .group_by(col(DutySlot.category))
@@ -396,9 +390,7 @@ async def _event_fill_rates(  # noqa: ANN001
             func.coalesce(func.sum(col(DutySlot.max_bookings)), 0).label(
                 "total_capacity"
             ),
-            func.coalesce(func.sum(confirmed_count_sq), 0).label(
-                "confirmed_bookings"
-            ),
+            func.coalesce(func.sum(confirmed_count_sq), 0).label("confirmed_bookings"),
         )
         .select_from(Event)
         .join(DutySlot, col(DutySlot.event_id) == col(Event.id))

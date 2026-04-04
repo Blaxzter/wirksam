@@ -35,6 +35,8 @@ jobs:
           enable-cache: true
       - name: Create .env file
         run: cp .env.example .env
+      - name: Create external network
+        run: docker network create traefik-net || true
       - run: docker compose down -v --remove-orphans
       - run: docker compose up -d db mailcatcher
       - name: Migrate DB
