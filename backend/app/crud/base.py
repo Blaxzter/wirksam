@@ -64,8 +64,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         *,
         raise_404_error: Literal[True],
         select_in_load: list[str] | None = None,
-    ) -> ModelType:
-        ...
+    ) -> ModelType: ...
 
     @overload
     async def get(  # noqa: E704
@@ -75,8 +74,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         *,
         raise_404_error: Literal[False] = False,
         select_in_load: list[str] | None = None,
-    ) -> ModelType | None:
-        ...
+    ) -> ModelType | None: ...
 
     async def get(
         self,

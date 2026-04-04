@@ -35,11 +35,11 @@ jobs:
         run: cp .env.example .env
       - name: Create external network
         run: docker network create traefik-net || true
-      - run: docker compose build
-      - run: docker compose down -v --remove-orphans
-      - run: docker compose up -d --wait backend frontend adminer
+      - run: docker compose -f docker-compose.yml build
+      - run: docker compose -f docker-compose.yml down -v --remove-orphans
+      - run: docker compose -f docker-compose.yml up -d --wait backend frontend adminer
       - name: Test backend is up
-        run: curl http://localhost:8000/api/v1/utils/health-check
+        run: docker compose -f docker-compose.yml exec backend curl -f http://localhost:8000/api/v1/healthz
       - name: Test frontend is up
-        run: curl http://localhost:5173
-      - run: docker compose down -v --remove-orphans
+        run: docker compose -f docker-compose.yml exec backend curl -f http://frontend
+      - run: docker compose -f docker-compose.yml down -v --remove-orphans

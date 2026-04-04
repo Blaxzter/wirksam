@@ -30,9 +30,9 @@ auth0 = Auth0FastAPI(
 if settings.TESTING:
     _real_require_auth = auth0.require_auth
 
-    def _test_aware_require_auth() -> (
-        Callable[..., Coroutine[Any, Any, dict[str, Any]]]
-    ):
+    def _test_aware_require_auth() -> Callable[
+        ..., Coroutine[Any, Any, dict[str, Any]]
+    ]:
         """Auth dependency that bypasses JWT validation only when
         the X-Test-User-Email header is present.
         Real Auth0 tokens still work in local dev.
