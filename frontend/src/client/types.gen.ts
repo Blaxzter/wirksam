@@ -2314,6 +2314,32 @@ export type TelegramWebhookUpdate = {
 }
 
 /**
+ * TestUserSeed
+ */
+export type TestUserSeed = {
+  /**
+   * Email
+   */
+  email: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Roles
+   */
+  roles?: Array<string>
+  /**
+   * Is Active
+   */
+  is_active?: boolean
+  /**
+   * Preferred Language
+   */
+  preferred_language?: string
+}
+
+/**
  * TopVolunteer
  */
 export type TopVolunteer = {
@@ -8391,6 +8417,117 @@ export type DebugStopLogCaptureResponses = {
 
 export type DebugStopLogCaptureResponse =
   DebugStopLogCaptureResponses[keyof DebugStopLogCaptureResponses]
+
+export type TestingSeedTestUserData = {
+  body: TestUserSeed
+  path?: never
+  query?: never
+  url: '/api/v1/testing/seed'
+}
+
+export type TestingSeedTestUserErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TestingSeedTestUserError = TestingSeedTestUserErrors[keyof TestingSeedTestUserErrors]
+
+export type TestingSeedTestUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserRead
+}
+
+export type TestingSeedTestUserResponse =
+  TestingSeedTestUserResponses[keyof TestingSeedTestUserResponses]
+
+export type TestingResetTestDataData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/testing/reset'
+}
+
+export type TestingResetTestDataErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TestingResetTestDataError = TestingResetTestDataErrors[keyof TestingResetTestDataErrors]
+
+export type TestingResetTestDataResponses = {
+  /**
+   * Response Testing-Reset Test Data
+   * Successful Response
+   */
+  200: {
+    [key: string]: number
+  }
+}
+
+export type TestingResetTestDataResponse =
+  TestingResetTestDataResponses[keyof TestingResetTestDataResponses]
 
 export type ClientOptions = {
   baseURL: `${string}://${string}` | (string & {})

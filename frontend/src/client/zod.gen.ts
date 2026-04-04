@@ -1059,6 +1059,17 @@ export const zTelegramWebhookUpdate = z
   })
 
 /**
+ * TestUserSeed
+ */
+export const zTestUserSeed = z.object({
+  email: z.email(),
+  name: z.string(),
+  roles: z.optional(z.array(z.string())).default([]),
+  is_active: z.optional(z.boolean()).default(true),
+  preferred_language: z.optional(z.string()).default('en'),
+})
+
+/**
  * UnreadCountResponse
  */
 export const zUnreadCountResponse = z.object({
@@ -2565,5 +2576,30 @@ export const zDebugStopLogCaptureData = z.object({
  * Successful Response
  */
 export const zDebugStopLogCaptureResponse = z.object({}).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTestingSeedTestUserData = z.object({
+  body: zTestUserSeed,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Successful Response
+ */
+export const zTestingSeedTestUserResponse = zUserRead
+
+export const zTestingResetTestDataData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+})
+
+/**
+ * Response Testing-Reset Test Data
+ * Successful Response
+ */
+export const zTestingResetTestDataResponse = z.object({}).register(z.globalRegistry, {
   description: 'Successful Response',
 })
