@@ -1,24 +1,24 @@
 {
-  "booking": {
-    "already_exists": "You already have a booking for this slot",
-    "forbidden": "You can only manage your own bookings",
-    "slot_full": "This duty slot is fully booked"
-  },
-  "duty_slot": {
-    "not_found": "Duty slot not found"
-  },
-  "event": {
-    "not_found": "Event not found",
-    "not_published": "This event is not yet published"
-  },
-  "not_found": "The requested resource was not found",
-  "project": {
-    "not_found": "The requested project was not found"
-  },
-  "task": {
-    "not_found": "The requested task was not found"
-  },
-  "user": {
-    "not_found": "The requested user was not found"
-  }
+    "booking": {
+        "already_exists": "You already have a booking for this slot",
+        "forbidden": "You can only manage your own bookings",
+        "slot_full": "This duty slot is fully booked"
+    },
+    "duty_slot": {
+        "not_found": "Duty slot not found"
+    },
+    "event": {
+        "not_found": "Event not found",
+        "not_published": "This event is not yet published"
+    },
+    "not_found": "The requested resource was not found",
+    "project": {
+        "not_found": "The requested project was not found"
+    },
+    "task": {
+        "not_found": "The requested task was not found"
+    },
+    "user": {
+        "not_found": "The requested user was not found"
+    }
 }

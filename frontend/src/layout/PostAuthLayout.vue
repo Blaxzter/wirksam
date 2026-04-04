@@ -56,7 +56,7 @@ function goToChangelog() {
 
       <div class="flex-1 p-4 pt-0" data-testid="main-content">
         <ErrorBoundary>
-          <RouterView :key="$route.meta.routerViewKey ?? $route.fullPath" />
+          <RouterView :key="($route.meta.routerViewKey as string | undefined) ?? $route.fullPath" />
         </ErrorBoundary>
       </div>
 

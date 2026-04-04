@@ -90,7 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Apply server-side language preference
       if (response.data.preferred_language) {
-        i18n.global.locale.value = response.data.preferred_language
+        i18n.global.locale.value = response.data.preferred_language as 'en' | 'de'
         localStorage.setItem('locale', response.data.preferred_language)
       }
 

@@ -138,8 +138,8 @@ useAdaptiveCarouselHeight(carouselApi)
 
 function onCarouselInit(api: UnwrapRefCarouselApi) {
   carouselApi.value = api
-  api.on('select', () => {
-    const index = api.selectedScrollSnap()
+  api?.on('select', () => {
+    const index = api!.selectedScrollSnap()
     mobileSlide.value = index
     if (index !== activeIndex.value) {
       activeIndex.value = index

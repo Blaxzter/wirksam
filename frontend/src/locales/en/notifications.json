@@ -1,209 +1,198 @@
 {
-  "title": "Notifications",
-  "empty": "No notifications yet",
-  "allLoaded": "You're all caught up",
-  "markAllRead": "Mark all as read",
-  "markRead": "Mark as read",
-  "dismiss": "Dismiss",
-  "managePreferences": "Manage notification preferences",
-  "adminOnly": "Admin only",
-
-  "timeAgo": {
-    "justNow": "Just now",
-    "minutes": "{n} min ago",
-    "hours": "{n}h ago",
-    "days": "{n}d ago"
-  },
-
-  "settings": {
+    "adminOnly": "Admin only",
+    "allLoaded": "You're all caught up",
+    "categories": {
+        "admin": "Admin",
+        "availability": "Availability",
+        "booking": "Bookings",
+        "event": "Events",
+        "eventGroup": "Event Groups",
+        "slot": "Duty Slots",
+        "user": "Account"
+    },
+    "channels": {
+        "email": "Email",
+        "push": "Push",
+        "sectionTitle": "Delivery Channels",
+        "telegram": "Telegram"
+    },
+    "dismiss": "Dismiss",
+    "email": {
+        "description": "Receive notifications via email.",
+        "title": "Email"
+    },
+    "empty": "No notifications yet",
+    "globalToggle": {
+        "description": "Disable a channel entirely to stop all notifications through it, regardless of individual preferences below.",
+        "emailDescription": "Receive notifications via email",
+        "emailLabel": "Email notifications",
+        "pushDescription": "Receive push notifications in your browser",
+        "pushLabel": "Push notifications",
+        "telegramDescription": "Receive notifications via Telegram",
+        "telegramLabel": "Telegram notifications",
+        "title": "Global Channel Settings"
+    },
+    "managePreferences": "Manage notification preferences",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "preferences": {
+        "autoSaved": "Saved",
+        "autoSaving": "Saving…",
+        "perTypeTitle": "Per-notification Preferences",
+        "save": "Save preferences",
+        "saveFailed": "Failed to save notification preferences",
+        "saved": "Notification preferences saved",
+        "subtitle": "Choose which notifications you want to receive and how they are delivered.",
+        "title": "Notification Preferences"
+    },
+    "push": {
+        "denied": "Push notifications are blocked. Please enable them in your browser settings.",
+        "description": "Receive push notifications in your browser when important events occur.",
+        "disable": "Disable",
+        "disableFailed": "Failed to disable push notifications",
+        "disabled": "Push notifications disabled",
+        "enable": "Enable push notifications",
+        "enabled": "Push notifications enabled",
+        "failed": "Failed to enable push notifications",
+        "notConfigured": "Push notifications are not configured on the server.",
+        "testButton": "Send test notification",
+        "testError": "Failed to send test notification. Please try again.",
+        "testSending": "Sending...",
+        "testSuccess": "Test notification sent! Check your device.",
+        "title": "Push Notifications"
+    },
+    "reminders": {
+        "addReminder": "Add reminder",
+        "channelActiveHint": "You'll be notified via {channel} {offset}",
+        "description": "Automatically add reminders when you book a slot. You can also adjust reminders individually per booking.",
+        "lastChannelHint": "At least one channel must stay enabled",
+        "noDefaults": "No default reminders set. You can add them below.",
+        "offset": {
+            "15": "15 minutes before",
+            "30": "30 minutes before",
+            "60": "1 hour before",
+            "120": "2 hours before",
+            "180": "3 hours before",
+            "360": "6 hours before",
+            "720": "12 hours before",
+            "1440": "1 day before",
+            "2880": "2 days before"
+        },
+        "perBooking": {
+            "add": "Add reminder",
+            "addFailed": "Failed to add reminder",
+            "cancelled": "Cancelled",
+            "empty": "No reminders set",
+            "expired": "Expired",
+            "pending": "Scheduled",
+            "removeFailed": "Failed to remove reminder",
+            "sent": "Sent",
+            "title": "Reminders"
+        },
+        "remove": "Remove",
+        "removeConfirm": "Remove?",
+        "saveFailed": "Failed to save reminder settings",
+        "title": "Default Booking Reminders"
+    },
+    "settings": {
+        "description": "Configure how and when you receive notifications.",
+        "manage": "Manage notification preferences",
+        "title": "Notifications"
+    },
+    "telegram": {
+        "authFailed": "Telegram authentication failed. Please try again.",
+        "bindFailed": "Failed to start Telegram connection",
+        "connect": "Connect Telegram",
+        "connectManually": "Connect manually",
+        "connected": "Connected",
+        "connecting": "Connecting your Telegram account...",
+        "description": "Connect your Telegram account to receive notifications via the WirkSam bot.",
+        "disconnect": "Disconnect",
+        "loginDescription": "Click the button below to connect your Telegram account instantly.",
+        "manualCode": "Connect manually instead",
+        "manualFallback": "Having trouble? Connect manually instead",
+        "notConnectedShort": "Not connected",
+        "notConnectedWarning": "Telegram notifications are enabled but your account is not connected. Connect below to receive messages.",
+        "openInTelegram": "Open in Telegram",
+        "sendCode": "Send the following code to the WirkSam bot on Telegram:",
+        "sendTo": "Send it to",
+        "startBotHint": "To receive messages, make sure you have started the bot:",
+        "title": "Telegram",
+        "unbindFailed": "Failed to disconnect Telegram",
+        "unbound": "Telegram disconnected",
+        "waitingForVerification": "Click the button above, then press Start in Telegram. This page will update automatically."
+    },
+    "timeAgo": {
+        "days": "{n}d ago",
+        "hours": "{n}h ago",
+        "justNow": "Just now",
+        "minutes": "{n} min ago"
+    },
     "title": "Notifications",
-    "description": "Configure how and when you receive notifications.",
-    "manage": "Manage notification preferences"
-  },
-
-  "preferences": {
-    "title": "Notification Preferences",
-    "subtitle": "Choose which notifications you want to receive and how they are delivered.",
-    "save": "Save preferences",
-    "saved": "Notification preferences saved",
-    "saveFailed": "Failed to save notification preferences",
-    "autoSaving": "Saving…",
-    "autoSaved": "Saved",
-    "perTypeTitle": "Per-notification Preferences"
-  },
-
-  "globalToggle": {
-    "title": "Global Channel Settings",
-    "description": "Disable a channel entirely to stop all notifications through it, regardless of individual preferences below.",
-    "emailLabel": "Email notifications",
-    "emailDescription": "Receive notifications via email",
-    "pushLabel": "Push notifications",
-    "pushDescription": "Receive push notifications in your browser",
-    "telegramLabel": "Telegram notifications",
-    "telegramDescription": "Receive notifications via Telegram"
-  },
-
-  "channels": {
-    "sectionTitle": "Delivery Channels",
-    "email": "Email",
-    "push": "Push",
-    "telegram": "Telegram"
-  },
-
-  "email": {
-    "title": "Email",
-    "description": "Receive notifications via email."
-  },
-
-  "categories": {
-    "booking": "Bookings",
-    "slot": "Duty Slots",
-    "event": "Events",
-    "eventGroup": "Event Groups",
-    "availability": "Availability",
-    "admin": "Admin",
-    "user": "Account"
-  },
-
-  "types": {
-    "booking": {
-      "confirmed": {
-        "name": "Booking Confirmed",
-        "description": "When your booking is confirmed"
-      },
-      "cancelled_by_user": {
-        "name": "Booking Cancelled",
-        "description": "When you cancel a booking"
-      },
-      "cancelled_by_admin": {
-        "name": "Booking Cancelled by Admin",
-        "description": "When an admin cancels your booking"
-      },
-      "slot_cobooked": {
-        "name": "Slot Co-booked",
-        "description": "When someone else books a slot you are on"
-      },
-      "reminder": {
-        "name": "Booking Reminder",
-        "description": "Reminder before a booked slot starts"
-      }
-    },
-    "slot": {
-      "starting_soon_unfilled": {
-        "name": "Slot Starting Soon (Unfilled)",
-        "description": "When a slot starts soon but still has open spots"
-      },
-      "time_changed": {
-        "name": "Slot Time Changed",
-        "description": "When a slot you booked has its time changed"
-      }
-    },
-    "event": {
-      "published": {
-        "name": "Event Published",
-        "description": "When a new event is published"
-      }
-    },
-    "event_group": {
-      "published": {
-        "name": "Event Group Published",
-        "description": "When a new event group is published"
-      }
-    },
-    "availability": {
-      "reminder": {
-        "name": "Availability Reminder",
-        "description": "Reminder to submit your availability for a published event group"
-      }
-    },
-    "user": {
-      "registered": {
-        "name": "New User Registered",
-        "description": "When a new user signs up and is pending approval"
-      },
-      "approved": {
-        "name": "Account Approved",
-        "description": "When your account is approved"
-      },
-      "rejected": {
-        "name": "Account Rejected",
-        "description": "When your account is rejected"
-      }
+    "types": {
+        "availability": {
+            "reminder": {
+                "description": "Reminder to submit your availability for a published event group",
+                "name": "Availability Reminder"
+            }
+        },
+        "booking": {
+            "cancelled_by_admin": {
+                "description": "When an admin cancels your booking",
+                "name": "Booking Cancelled by Admin"
+            },
+            "cancelled_by_user": {
+                "description": "When you cancel a booking",
+                "name": "Booking Cancelled"
+            },
+            "confirmed": {
+                "description": "When your booking is confirmed",
+                "name": "Booking Confirmed"
+            },
+            "reminder": {
+                "description": "Reminder before a booked slot starts",
+                "name": "Booking Reminder"
+            },
+            "slot_cobooked": {
+                "description": "When someone else books a slot you are on",
+                "name": "Slot Co-booked"
+            }
+        },
+        "event": {
+            "published": {
+                "description": "When a new event is published",
+                "name": "Event Published"
+            }
+        },
+        "event_group": {
+            "published": {
+                "description": "When a new event group is published",
+                "name": "Event Group Published"
+            }
+        },
+        "slot": {
+            "starting_soon_unfilled": {
+                "description": "When a slot starts soon but still has open spots",
+                "name": "Slot Starting Soon (Unfilled)"
+            },
+            "time_changed": {
+                "description": "When a slot you booked has its time changed",
+                "name": "Slot Time Changed"
+            }
+        },
+        "user": {
+            "approved": {
+                "description": "When your account is approved",
+                "name": "Account Approved"
+            },
+            "registered": {
+                "description": "When a new user signs up and is pending approval",
+                "name": "New User Registered"
+            },
+            "rejected": {
+                "description": "When your account is rejected",
+                "name": "Account Rejected"
+            }
+        }
     }
-  },
-
-  "push": {
-    "title": "Push Notifications",
-    "description": "Receive push notifications in your browser when important events occur.",
-    "enable": "Enable push notifications",
-    "enabled": "Push notifications enabled",
-    "denied": "Push notifications are blocked. Please enable them in your browser settings.",
-    "notConfigured": "Push notifications are not configured on the server.",
-    "failed": "Failed to enable push notifications",
-    "disable": "Disable",
-    "disabled": "Push notifications disabled",
-    "disableFailed": "Failed to disable push notifications",
-    "testButton": "Send test notification",
-    "testSending": "Sending...",
-    "testSuccess": "Test notification sent! Check your device.",
-    "testError": "Failed to send test notification. Please try again."
-  },
-
-  "reminders": {
-    "title": "Default Booking Reminders",
-    "description": "Automatically add reminders when you book a slot. You can also adjust reminders individually per booking.",
-    "addReminder": "Add reminder",
-    "noDefaults": "No default reminders set. You can add them below.",
-    "offset": {
-      "15": "15 minutes before",
-      "30": "30 minutes before",
-      "60": "1 hour before",
-      "120": "2 hours before",
-      "180": "3 hours before",
-      "360": "6 hours before",
-      "720": "12 hours before",
-      "1440": "1 day before",
-      "2880": "2 days before"
-    },
-    "saveFailed": "Failed to save reminder settings",
-    "remove": "Remove",
-    "removeConfirm": "Remove?",
-    "lastChannelHint": "At least one channel must stay enabled",
-    "channelActiveHint": "You'll be notified via {channel} {offset}",
-    "perBooking": {
-      "title": "Reminders",
-      "add": "Add reminder",
-      "empty": "No reminders set",
-      "addFailed": "Failed to add reminder",
-      "removeFailed": "Failed to remove reminder",
-      "pending": "Scheduled",
-      "sent": "Sent",
-      "expired": "Expired",
-      "cancelled": "Cancelled"
-    }
-  },
-
-  "telegram": {
-    "title": "Telegram",
-    "description": "Connect your Telegram account to receive notifications via the WirkSam bot.",
-    "connect": "Connect Telegram",
-    "connected": "Connected",
-    "disconnect": "Disconnect",
-    "loginDescription": "Click the button below to connect your Telegram account instantly.",
-    "connecting": "Connecting your Telegram account...",
-    "authFailed": "Telegram authentication failed. Please try again.",
-    "startBotHint": "To receive messages, make sure you have started the bot:",
-    "manualFallback": "Having trouble? Connect manually instead",
-    "connectManually": "Connect manually",
-    "openInTelegram": "Open in Telegram",
-    "waitingForVerification": "Click the button above, then press Start in Telegram. This page will update automatically.",
-    "manualCode": "Connect manually instead",
-    "sendCode": "Send the following code to the WirkSam bot on Telegram:",
-    "sendTo": "Send it to",
-    "bindFailed": "Failed to start Telegram connection",
-    "unbound": "Telegram disconnected",
-    "unbindFailed": "Failed to disconnect Telegram",
-    "notConnectedWarning": "Telegram notifications are enabled but your account is not connected. Connect below to receive messages.",
-    "notConnectedShort": "Not connected"
-  }
 }

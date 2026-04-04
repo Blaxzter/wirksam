@@ -16,7 +16,7 @@ const API = process.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
 const LOG_DIR = path.resolve('e2e/test-logs')
 
 export const test = base.extend<{ backendLogs: void }>({
-   
+
   backendLogs: [async ({ request }, use, testInfo) => {
     // Start capturing before the test
     await request.post(`${API}/debug/start-log-capture`).catch(() => {

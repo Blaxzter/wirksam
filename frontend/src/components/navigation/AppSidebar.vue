@@ -119,7 +119,7 @@ const navMain = computed(() => {
     title: e.name,
     routeName: 'event-detail',
     routeParams: { eventId: e.id },
-    badge: eventBadge(e.open_slots, e.next_slot_date, e.next_slot_start_time),
+    badge: eventBadge(e.open_slots, e.next_slot_date ?? null, e.next_slot_start_time ?? null),
   }))
 
   const bookingItems: NavSubItem[] = sidebarStore.bookings.map((b) => ({

@@ -1,20 +1,20 @@
 {
-  "printButton": "Print",
-  "printEvent": "Print event",
-  "overview": "Print overview",
-  "allEvents": "Print all events",
-  "scanToSignUp": "Scan to sign up online",
-  "nameColumn": "Name",
-  "contactColumn": "Contact",
-  "optionsDialog": {
-    "selectAll": "Select all"
-  },
-  "toolbar": {
-    "title": "Display Options",
-    "showTitle": "Show title column",
-    "showLocation": "Show location column",
-    "repeatHeader": "Repeat header on each page",
-    "includeNames": "Show booked names",
-    "filterDates": "Filter dates"
-  }
+    "allEvents": "Print all events",
+    "contactColumn": "Contact",
+    "nameColumn": "Name",
+    "optionsDialog": {
+        "selectAll": "Select all"
+    },
+    "overview": "Print overview",
+    "printButton": "Print",
+    "printEvent": "Print event",
+    "scanToSignUp": "Scan to sign up online",
+    "toolbar": {
+        "filterDates": "Filter dates",
+        "includeNames": "Show booked names",
+        "repeatHeader": "Repeat header on each page",
+        "showLocation": "Show location column",
+        "showTitle": "Show title column",
+        "title": "Display Options"
+    }
 }

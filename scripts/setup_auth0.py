@@ -53,7 +53,9 @@ def check_auth0_cli() -> None:
                 sys.exit(1)
         else:
             print("Please log in first with:")
-            print("  auth0 login --scopes create:client_grants,read:users,update:users,delete:users")
+            print(
+                "  auth0 login --scopes create:client_grants,read:users,update:users,delete:users"
+            )
             sys.exit(1)
 
 
@@ -358,7 +360,9 @@ def teardown() -> None:
         print("\nNo resource identifiers found in env files. Nothing to tear down.")
         sys.exit(0)
 
-    confirm = input("\nThis is DESTRUCTIVE. Delete these resources? [y/N]: ").strip().lower()
+    confirm = (
+        input("\nThis is DESTRUCTIVE. Delete these resources? [y/N]: ").strip().lower()
+    )
     if confirm != "y":
         print("Aborted.")
         sys.exit(0)

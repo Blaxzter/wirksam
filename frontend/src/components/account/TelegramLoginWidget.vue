@@ -28,9 +28,9 @@ function mount() {
 
   // The Telegram widget calls this global callback on success
   const callbackName = `__telegramLoginCallback_${Date.now()}`
-  ;(window as Record<string, unknown>)[callbackName] = (user: Record<string, unknown>) => {
+  ;(window as unknown as Record<string, unknown>)[callbackName] = (user: Record<string, unknown>) => {
     emit('auth', user as Parameters<typeof emit>[1])
-    delete (window as Record<string, unknown>)[callbackName]
+    delete (window as unknown as Record<string, unknown>)[callbackName]
   }
 
   scriptEl = document.createElement('script')
@@ -52,7 +52,7 @@ function cleanup() {
   // Clean up any leftover global callbacks
   for (const key of Object.keys(window)) {
     if (key.startsWith('__telegramLoginCallback_')) {
-      delete (window as Record<string, unknown>)[key]
+      delete (window as unknown as Record<string, unknown>)[key]
     }
   }
 }

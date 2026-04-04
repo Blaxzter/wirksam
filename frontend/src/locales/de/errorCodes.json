@@ -1,24 +1,24 @@
 {
-  "booking": {
-    "already_exists": "Sie haben bereits eine Buchung für diese Schicht",
-    "forbidden": "Sie können nur Ihre eigenen Buchungen verwalten",
-    "slot_full": "Diese Dienstschicht ist ausgebucht"
-  },
-  "duty_slot": {
-    "not_found": "Dienstschicht nicht gefunden"
-  },
-  "event": {
-    "not_found": "Veranstaltung nicht gefunden",
-    "not_published": "Diese Veranstaltung ist noch nicht veröffentlicht"
-  },
-  "not_found": "Die angeforderte Ressource wurde nicht gefunden",
-  "project": {
-    "not_found": "Das angeforderte Projekt wurde nicht gefunden"
-  },
-  "task": {
-    "not_found": "Die angeforderte Aufgabe wurde nicht gefunden"
-  },
-  "user": {
-    "not_found": "Der angeforderte Benutzer wurde nicht gefunden"
-  }
+    "booking": {
+        "already_exists": "Sie haben bereits eine Buchung für diese Schicht",
+        "forbidden": "Sie können nur Ihre eigenen Buchungen verwalten",
+        "slot_full": "Diese Dienstschicht ist ausgebucht"
+    },
+    "duty_slot": {
+        "not_found": "Dienstschicht nicht gefunden"
+    },
+    "event": {
+        "not_found": "Veranstaltung nicht gefunden",
+        "not_published": "Diese Veranstaltung ist noch nicht veröffentlicht"
+    },
+    "not_found": "Die angeforderte Ressource wurde nicht gefunden",
+    "project": {
+        "not_found": "Das angeforderte Projekt wurde nicht gefunden"
+    },
+    "task": {
+        "not_found": "Die angeforderte Aufgabe wurde nicht gefunden"
+    },
+    "user": {
+        "not_found": "Der angeforderte Benutzer wurde nicht gefunden"
+    }
 }

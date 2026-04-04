@@ -46,6 +46,13 @@ repos:
             language: python
             files: \.py$
 
+          - id: vue-tsc
+            name: vue-tsc
+            entry: bash -c "cd frontend && pnpm vue-tsc --noEmit --project tsconfig.app.json"
+            language: system
+            files: ^frontend/src/.*\.(ts|vue)$
+            pass_filenames: false
+
           - id: sort-locales
             name: Sort locale JSON files
             entry: node scripts/pre-commit/sort_locales.js

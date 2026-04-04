@@ -1,42 +1,42 @@
 {
-  "breadcrumbs": {
-    "home": "Home",
-    "settings": "Settings"
-  },
-  "sidebar": {
-    "items": {
-      "home": {
-        "label": "Home"
-      },
-      "eventGroups": {
-        "description": "Browse event programmes",
-        "label": "Event Groups"
-      },
-      "events": {
-        "description": "Browse duty events",
-        "label": "Events"
-      },
-      "myBookings": {
-        "description": "Your reservations",
-        "label": "My Bookings"
-      },
-      "settings": "Settings"
+    "breadcrumbs": {
+        "home": "Home",
+        "settings": "Settings"
     },
-    "platform": "Platform",
-    "sections": {},
-    "badges": {
-      "openSlots": "{count} open slot | {count} open slots"
+    "sidebar": {
+        "badges": {
+            "openSlots": "{count} open slot | {count} open slots"
+        },
+        "items": {
+            "eventGroups": {
+                "description": "Browse event programmes",
+                "label": "Event Groups"
+            },
+            "events": {
+                "description": "Browse duty events",
+                "label": "Events"
+            },
+            "home": {
+                "label": "Home"
+            },
+            "myBookings": {
+                "description": "Your reservations",
+                "label": "My Bookings"
+            },
+            "settings": "Settings"
+        },
+        "platform": "Platform",
+        "sections": {}
+    },
+    "user": {
+        "actions": {
+            "account": "Account",
+            "landingPage": "Landing Page",
+            "logout": "Log out",
+            "notifications": "Notifications",
+            "switchToDark": "Switch to Dark",
+            "switchToLight": "Switch to Light"
+        },
+        "loginPrompt": "Please log in to access your account."
     }
-  },
-  "user": {
-    "actions": {
-      "account": "Account",
-      "notifications": "Notifications",
-      "landingPage": "Landing Page",
-      "logout": "Log out",
-      "switchToDark": "Switch to Dark",
-      "switchToLight": "Switch to Light"
-    },
-    "loginPrompt": "Please log in to access your account."
-  }
 }

@@ -1,12 +1,12 @@
 {
-  "title": "What's New",
-  "subtitle": "Latest updates and improvements",
-  "latest": "Latest",
-  "whatsNew": {
-    "titleSingle": "New update: {version}",
-    "titleMultiple": "{count} new updates",
-    "description": "We've made some improvements since your last visit.",
-    "dismiss": "Maybe later",
-    "showMe": "See what changed"
-  }
+    "latest": "Latest",
+    "subtitle": "Latest updates and improvements",
+    "title": "What's New",
+    "whatsNew": {
+        "description": "We've made some improvements since your last visit.",
+        "dismiss": "Maybe later",
+        "showMe": "See what changed",
+        "titleMultiple": "{count} new updates",
+        "titleSingle": "New update: {version}"
+    }
 }
