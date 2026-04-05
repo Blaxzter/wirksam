@@ -1,109 +1,109 @@
 {
-  "actions": {
-    "back": "Zurück",
-    "cancel": "Abbrechen",
-    "close": "Schließen",
-    "confirm": "Bestätigen",
-    "create": "Erstellen",
-    "delete": "Löschen",
-    "edit": "Bearbeiten",
-    "next": "Weiter",
-    "previous": "Vorherige",
-    "publish": "Veröffentlichen",
-    "reset": "Zurücksetzen",
-    "save": "Speichern",
-    "search": "Suchen...",
-    "submit": "Absenden"
-  },
-  "dialog": {
-    "alert": {
-      "okText": "OK",
-      "title": "Hinweis"
+    "actions": {
+        "back": "Zurück",
+        "cancel": "Abbrechen",
+        "close": "Schließen",
+        "confirm": "Bestätigen",
+        "create": "Erstellen",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "next": "Weiter",
+        "previous": "Vorherige",
+        "publish": "Veröffentlichen",
+        "reset": "Zurücksetzen",
+        "save": "Speichern",
+        "search": "Suchen...",
+        "submit": "Absenden"
     },
-    "confirm": {
-      "cancelText": "Abbrechen",
-      "confirmText": "Bestätigen",
-      "title": "Aktion bestätigen"
+    "dialog": {
+        "alert": {
+            "okText": "OK",
+            "title": "Hinweis"
+        },
+        "confirm": {
+            "cancelText": "Abbrechen",
+            "confirmText": "Bestätigen",
+            "title": "Aktion bestätigen"
+        },
+        "info": {
+            "okText": "OK",
+            "title": "Information"
+        }
     },
-    "info": {
-      "okText": "OK",
-      "title": "Information"
+    "errors": {
+        "api": {
+            "createProject": "Projekt konnte nicht erstellt werden",
+            "createTask": "Aufgabe konnte nicht erstellt werden",
+            "default": "Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+            "deleteProject": "Projekt konnte nicht gelöscht werden",
+            "deleteTask": "Aufgabe konnte nicht gelöscht werden",
+            "forbidden": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen.",
+            "loadProject": "Projekt konnte nicht geladen werden",
+            "loadProjects": "Projekte konnten nicht geladen werden",
+            "loadTasks": "Aufgaben konnten nicht geladen werden",
+            "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.",
+            "notFoundResource": "Die angeforderte Ressource wurde nicht gefunden",
+            "projectNameRequired": "Projektname ist erforderlich",
+            "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
+            "server": "Unerwarteter Fehler auf dem Server.",
+            "statusFallback": "Anfrage fehlgeschlagen mit Status {status}",
+            "taskTitleRequired": "Aufgabentitel ist erforderlich",
+            "timeout": "Zeitüberschreitung der Anfrage. Der Server antwortet zu langsam.",
+            "unauthorized": "Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.",
+            "updateProject": "Projekt konnte nicht aktualisiert werden",
+            "updateTask": "Aufgabe konnte nicht aktualisiert werden",
+            "validation": "Validierungsfehler: {message}"
+        },
+        "boundary": {
+            "description": "Beim Rendern dieser Seite ist ein unerwarteter Fehler aufgetreten.",
+            "goHome": "Zur Startseite",
+            "title": "Etwas ist schiefgelaufen",
+            "tryAgain": "Erneut versuchen"
+        },
+        "notFound": {
+            "description": "Die Seite, die Sie suchen, existiert nicht.",
+            "goHome": "Zurück zur Startseite",
+            "subtitle": "Seite nicht gefunden",
+            "title": "404"
+        }
+    },
+    "language": {
+        "current": "Aktuelle Sprache",
+        "switch": "Sprache wechseln"
+    },
+    "pendingApproval": {
+        "approvalCodeLabel": "Freigabecode vorhanden?",
+        "approvalCodePlaceholder": "Freigabecode eingeben",
+        "approvalSuccess": "Ihr Konto wurde freigegeben!",
+        "approvalWrongPassword": "Ungültiger Freigabecode. Bitte versuchen Sie es erneut.",
+        "approveButton": "Freigeben",
+        "approving": "Wird freigegeben...",
+        "cancel": "Abbrechen",
+        "confirmDelete": "Konto löschen",
+        "deleteAccount": "Anfrage zurückziehen",
+        "deleteConfirmDescription": "Ihr Konto wird dauerhaft gelöscht. Sie können sich jederzeit erneut registrieren.",
+        "deleteConfirmTitle": "Freigabeanfrage zurückziehen?",
+        "deleteError": "Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+        "deleting": "Wird gelöscht...",
+        "description": "Ihr Konto wurde erstellt, muss aber von einem Administrator freigegeben werden, bevor Sie auf die Plattform zugreifen können.",
+        "hint": "Sie können sich anmelden, sobald Ihr Konto bestätigt wurde.",
+        "logout": "Abmelden",
+        "rejectedDescription": "Ihre Kontoanfrage wurde geprüft und nicht genehmigt.",
+        "rejectedTitle": "Konto abgelehnt",
+        "rejectionReasonLabel": "Begründung",
+        "title": "Konto wartet auf Freigabe"
+    },
+    "states": {
+        "error": "Fehler",
+        "info": "Info",
+        "loading": "Lädt...",
+        "saving": "Speichere...",
+        "success": "Erfolgreich!",
+        "warning": "Warnung"
+    },
+    "validation": {
+        "endDateBeforeStart": "Das Enddatum muss nach dem Startdatum liegen",
+        "invalidDate": "Bitte wählen Sie ein gültiges Datum",
+        "required": "Dieses Feld ist erforderlich"
     }
-  },
-  "errors": {
-    "api": {
-      "createProject": "Projekt konnte nicht erstellt werden",
-      "createTask": "Aufgabe konnte nicht erstellt werden",
-      "default": "Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es erneut.",
-      "deleteProject": "Projekt konnte nicht gelöscht werden",
-      "deleteTask": "Aufgabe konnte nicht gelöscht werden",
-      "forbidden": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen.",
-      "loadProject": "Projekt konnte nicht geladen werden",
-      "loadProjects": "Projekte konnten nicht geladen werden",
-      "loadTasks": "Aufgaben konnten nicht geladen werden",
-      "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.",
-      "notFoundResource": "Die angeforderte Ressource wurde nicht gefunden",
-      "projectNameRequired": "Projektname ist erforderlich",
-      "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
-      "server": "Unerwarteter Fehler auf dem Server.",
-      "statusFallback": "Anfrage fehlgeschlagen mit Status {status}",
-      "taskTitleRequired": "Aufgabentitel ist erforderlich",
-      "timeout": "Zeitüberschreitung der Anfrage. Der Server antwortet zu langsam.",
-      "unauthorized": "Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.",
-      "updateProject": "Projekt konnte nicht aktualisiert werden",
-      "updateTask": "Aufgabe konnte nicht aktualisiert werden",
-      "validation": "Validierungsfehler: {message}"
-    },
-    "boundary": {
-      "description": "Beim Rendern dieser Seite ist ein unerwarteter Fehler aufgetreten.",
-      "goHome": "Zur Startseite",
-      "title": "Etwas ist schiefgelaufen",
-      "tryAgain": "Erneut versuchen"
-    },
-    "notFound": {
-      "description": "Die Seite, die Sie suchen, existiert nicht.",
-      "goHome": "Zurück zur Startseite",
-      "subtitle": "Seite nicht gefunden",
-      "title": "404"
-    }
-  },
-  "validation": {
-    "required": "Dieses Feld ist erforderlich",
-    "invalidDate": "Bitte wählen Sie ein gültiges Datum",
-    "endDateBeforeStart": "Das Enddatum muss nach dem Startdatum liegen"
-  },
-  "language": {
-    "current": "Aktuelle Sprache",
-    "switch": "Sprache wechseln"
-  },
-  "pendingApproval": {
-    "title": "Konto wartet auf Freigabe",
-    "description": "Ihr Konto wurde erstellt, muss aber von einem Administrator freigegeben werden, bevor Sie auf die Plattform zugreifen können.",
-    "rejectedTitle": "Konto abgelehnt",
-    "rejectedDescription": "Ihre Kontoanfrage wurde geprüft und nicht genehmigt.",
-    "rejectionReasonLabel": "Begründung",
-    "hint": "Sie können sich anmelden, sobald Ihr Konto bestätigt wurde.",
-    "logout": "Abmelden",
-    "deleteAccount": "Anfrage zurückziehen",
-    "deleteConfirmTitle": "Freigabeanfrage zurückziehen?",
-    "deleteConfirmDescription": "Ihr Konto wird dauerhaft gelöscht. Sie können sich jederzeit erneut registrieren.",
-    "cancel": "Abbrechen",
-    "confirmDelete": "Konto löschen",
-    "deleting": "Wird gelöscht...",
-    "deleteError": "Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
-    "approvalCodeLabel": "Freigabecode vorhanden?",
-    "approvalCodePlaceholder": "Freigabecode eingeben",
-    "approveButton": "Freigeben",
-    "approving": "Wird freigegeben...",
-    "approvalWrongPassword": "Ungültiger Freigabecode. Bitte versuchen Sie es erneut.",
-    "approvalSuccess": "Ihr Konto wurde freigegeben!"
-  },
-  "states": {
-    "error": "Fehler",
-    "info": "Info",
-    "loading": "Lädt...",
-    "saving": "Speichere...",
-    "success": "Erfolgreich!",
-    "warning": "Warnung"
-  }
 }

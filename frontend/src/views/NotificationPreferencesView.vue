@@ -160,7 +160,7 @@ onMounted(async () => {
   <div class="mx-auto max-w-5xl space-y-6">
     <!-- Header -->
     <div class="pb-3">
-      <h1 class="text-3xl font-bold tracking-tight break-words">
+      <h1 data-testid="page-heading" class="text-3xl font-bold tracking-tight break-words">
         {{ t('notifications.preferences.title') }}
       </h1>
       <p class="text-muted-foreground mt-2">
@@ -180,6 +180,7 @@ onMounted(async () => {
 
       <!-- Email channel -->
       <Card
+        data-testid="channel-email"
         :class="[
           'transition-colors duration-300',
           globalChannelSettings.notify_email
@@ -213,12 +214,14 @@ onMounted(async () => {
 
       <!-- Push channel -->
       <PushChannelCard
+        data-testid="channel-push"
         :enabled="globalChannelSettings.notify_push"
         @toggle="(v) => toggleGlobalChannel('notify_push', v)"
       />
 
       <!-- Telegram channel -->
       <TelegramChannelCard
+        data-testid="channel-telegram"
         :enabled="globalChannelSettings.notify_telegram"
         @toggle="(v) => toggleGlobalChannel('notify_telegram', v)"
       />
@@ -229,6 +232,7 @@ onMounted(async () => {
       </h2>
 
       <DefaultRemindersCard
+        data-testid="section-reminders"
         :entries="defaultReminderEntries"
         :available-channels="reminderChannels"
         @update:entries="defaultReminderEntries = $event"
@@ -240,6 +244,7 @@ onMounted(async () => {
       </h2>
 
       <PerTypePreferencesSection
+        data-testid="section-per-type"
         :grouped-types="groupedTypes"
         :preferences="preferences"
         @set-preference="setPreference"

@@ -1,5 +1,6 @@
 """Email notification channel using aiosmtplib."""
 
+from email.message import EmailMessage
 from pathlib import Path
 
 from app.core.config import settings
@@ -18,7 +19,18 @@ class EmailChannel(NotificationChannel):
     name = "email"
 
     def is_configured(self) -> bool:
-        return settings.emails_enabled
+        return settings.emails_enabled and settings.emails_configured
+
+    def _is_valid_recipient(self, recipient: User) -> bool:
+        if not recipient.email:
+            logger.warning(
+                f"No email for user {recipient.id}, skipping email notification"
+            )
+            return False
+        if recipient.auth0_sub.startswith("demo|"):
+            logger.debug(f"Skipping email for demo user {recipient.id}")
+            return False
+        return True
 
     async def send(
         self,
@@ -28,56 +40,114 @@ class EmailChannel(NotificationChannel):
         body: str,
         data: NotificationData | None = None,
     ) -> bool:
-        if not self.is_configured():
-            logger.warning("Email channel not configured, skipping")
-            return False
-
-        if not recipient.email:
+        if not settings.emails_enabled:
+            logger.debug("Email disabled in local environment, skipping")
+            return True
+        if not settings.emails_configured:
             logger.warning(
-                f"No email for user {recipient.id}, skipping email notification"
+                "SMTP not configured (missing SMTP_HOST or EMAILS_FROM_EMAIL)"
             )
             return False
 
-        if recipient.auth0_sub.startswith("demo|"):
-            logger.debug(f"Skipping email for demo user {recipient.id}")
+        if not self._is_valid_recipient(recipient):
             return False
 
         try:
-            from email.message import EmailMessage
-
-            import aiosmtplib
-
-            html_body = _build_html(
+            msg = self._build_message(
                 title=title,
                 body=body,
                 data=data,
                 language=recipient.preferred_language,
+                to=recipient.email,
             )
-            from_name = settings.EMAILS_FROM_NAME or settings.PROJECT_NAME
-            from_email = settings.EMAILS_FROM_EMAIL or "noreply@example.com"
-
-            msg = EmailMessage()
-            msg["Subject"] = f"[{settings.PROJECT_NAME}] {title}"
-            msg["From"] = f"{from_name} <{from_email}>"
-            msg["To"] = recipient.email
-            msg.set_content(body)
-            msg.add_alternative(html_body, subtype="html")
-
-            await aiosmtplib.send(
-                msg,
-                hostname=settings.SMTP_HOST or "localhost",
-                port=settings.SMTP_PORT,
-                username=settings.SMTP_USER or None,
-                password=settings.SMTP_PASSWORD or None,  # type: ignore[arg-type]
-                start_tls=settings.SMTP_TLS,
-                use_tls=settings.SMTP_SSL,
-            )
+            await self._smtp_send(msg)
             logger.info(f"Email sent to {recipient.email}: {title}")
             return True
 
         except Exception:
             logger.exception(f"Failed to send email to {recipient.email}")
             return False
+
+    async def send_batch(
+        self,
+        *,
+        recipients: list[User],
+        title: str,
+        body: str,
+        data: NotificationData | None = None,
+        language: str = "en",
+    ) -> bool:
+        """Send a single email to multiple recipients via BCC, grouped by language."""
+        if not settings.emails_enabled:
+            logger.debug("Email disabled in local environment, skipping batch")
+            return True
+        if not settings.emails_configured:
+            logger.warning(
+                "SMTP not configured (missing SMTP_HOST or EMAILS_FROM_EMAIL)"
+            )
+            return False
+
+        valid = [r for r in recipients if self._is_valid_recipient(r)]
+        if not valid:
+            return False
+
+        try:
+            from_email = settings.EMAILS_FROM_EMAIL or "noreply@example.com"
+            from_name = settings.EMAILS_FROM_NAME or settings.PROJECT_NAME
+            msg = self._build_message(
+                title=title,
+                body=body,
+                data=data,
+                language=language,
+                to=f"{from_name} <{from_email}>",
+            )
+            msg["Bcc"] = ", ".join(r.email for r in valid if r.email)
+            await self._smtp_send(msg)
+            emails = [r.email for r in valid]
+            logger.info(
+                f"Batch email sent to {len(emails)} recipients ({language}): {title}"
+            )
+            return True
+
+        except Exception:
+            logger.exception(
+                f"Failed to send batch email to {len(valid)} recipients ({language})"
+            )
+            return False
+
+    def _build_message(
+        self,
+        *,
+        title: str,
+        body: str,
+        data: NotificationData | None,
+        language: str,
+        to: str | None,
+    ) -> EmailMessage:
+        html_body = _build_html(title=title, body=body, data=data, language=language)
+        from_name = settings.EMAILS_FROM_NAME or settings.PROJECT_NAME
+        from_email = settings.EMAILS_FROM_EMAIL or "noreply@example.com"
+
+        msg = EmailMessage()
+        msg["Subject"] = f"[{settings.PROJECT_NAME}] {title}"
+        msg["From"] = f"{from_name} <{from_email}>"
+        msg["To"] = to
+        msg.set_content(body)
+        msg.add_alternative(html_body, subtype="html")
+        return msg
+
+    async def _smtp_send(self, msg: EmailMessage) -> None:
+        import aiosmtplib
+
+        await aiosmtplib.send(
+            msg,
+            hostname=settings.SMTP_HOST or "localhost",
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USER or None,
+            password=settings.SMTP_PASSWORD or None,  # type: ignore[arg-type]
+            start_tls=settings.SMTP_TLS,
+            use_tls=settings.SMTP_SSL,
+        )
 
 
 def _build_html(

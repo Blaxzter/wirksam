@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+    TESTING: bool | None = None
 
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
@@ -86,6 +87,14 @@ class Settings(BaseSettings):
             self.EMAILS_FROM_NAME = self.PROJECT_NAME  # type: ignore[assignment]
         return self
 
+    @model_validator(mode="after")
+    def _resolve_testing_flag(self) -> Self:
+        if self.TESTING is None:
+            self.TESTING = self.ENVIRONMENT == "local"  # type: ignore[reportConstantRedefinition]
+        if self.TESTING and self.ENVIRONMENT == "production":
+            raise ValueError("TESTING=true is not allowed in production")
+        return self
+
     # Auth0 configuration
     AUTH0_DOMAIN: str
     AUTH0_AUDIENCE: str
@@ -100,6 +109,11 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:
+        return self.ENVIRONMENT != "local"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def emails_configured(self) -> bool:
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"

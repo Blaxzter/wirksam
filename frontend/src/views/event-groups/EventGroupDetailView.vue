@@ -184,7 +184,7 @@ onMounted(loadGroup)
 <template>
   <div class="mx-auto max-w-5xl space-y-6">
     <!-- Back -->
-    <Button variant="ghost" size="sm" @click="router.push({ name: 'event-groups' })">
+    <Button variant="ghost" size="sm" data-testid="btn-back" @click="router.push({ name: 'event-groups' })">
       <ArrowLeft class="mr-2 h-4 w-4" />
       {{ t('duties.eventGroups.title') }}
     </Button>
@@ -210,8 +210,9 @@ onMounted(loadGroup)
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="space-y-1">
           <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-bold">{{ group.name }}</h1>
+            <h1 data-testid="page-heading" class="text-3xl font-bold">{{ group.name }}</h1>
             <StatusDropdown
+              data-testid="group-status"
               :status="group.status"
               i18n-prefix="duties.eventGroups.statuses"
               :editable="authStore.isAdmin"
@@ -264,7 +265,7 @@ onMounted(loadGroup)
       <Separator />
 
       <!-- My Availability -->
-      <Card>
+      <Card data-testid="section-my-availability">
         <CardHeader>
           <div class="flex items-center justify-between gap-2">
             <div class="min-w-0 space-y-1">
@@ -277,6 +278,7 @@ onMounted(loadGroup)
             <div class="flex gap-2 shrink-0">
               <Button
                 v-if="myAvailability"
+                data-testid="btn-availability"
                 variant="outline"
                 size="sm"
                 @click="showAvailabilityDialog = true"
@@ -286,6 +288,7 @@ onMounted(loadGroup)
               </Button>
               <Button
                 v-if="myAvailability"
+                data-testid="btn-remove-availability"
                 variant="ghost"
                 size="sm"
                 class="text-destructive"
@@ -294,7 +297,7 @@ onMounted(loadGroup)
                 <Trash2 class="sm:mr-1.5 h-4 w-4" />
                 <span class="hidden sm:inline">{{ t('duties.availability.remove') }}</span>
               </Button>
-              <Button v-if="!myAvailability" size="sm" @click="showAvailabilityDialog = true">
+              <Button v-if="!myAvailability" data-testid="btn-availability" size="sm" @click="showAvailabilityDialog = true">
                 <Check class="sm:mr-2 h-4 w-4" />
                 <span class="hidden sm:inline">{{ t('duties.availability.register') }}</span>
               </Button>
@@ -310,7 +313,7 @@ onMounted(loadGroup)
       </Card>
 
       <!-- Events in group -->
-      <div class="space-y-3">
+      <div data-testid="section-events" class="space-y-3">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">{{ t('duties.eventGroups.detail.events') }}</h2>
           <Button
@@ -353,7 +356,7 @@ onMounted(loadGroup)
       <!-- Admin: all member availabilities -->
       <template v-if="authStore.isAdmin">
         <Separator />
-        <div class="space-y-3">
+        <div data-testid="section-admin-availabilities" class="space-y-3">
           <h2 class="flex items-center gap-2 text-xl font-semibold">
             <Users class="h-5 w-5" />
             {{ t('duties.availability.adminTitle') }}

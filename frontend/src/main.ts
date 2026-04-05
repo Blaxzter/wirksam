@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 
 import { client } from '@/client/client.gen'
 import i18n from '@/locales/i18n.ts'
+import { installFakeAuth0 } from '@/testing/fake-auth0'
 
 import App from './App.vue'
 import './index.css'
@@ -17,17 +18,22 @@ client.setConfig({
 
 const app = createApp(App)
 
-app.use(
-  createAuth0({
-    domain: import.meta.env.VITE_AUTH0_DOMAIN,
-    clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,
-    cacheLocation: 'localstorage',
-    authorizationParams: {
-      audience: import.meta.env.VITE_AUTH0_API_AUDIENCE,
-      redirect_uri: import.meta.env.VITE_AUTH0_CALLBACK_URL || `${window.location.origin}/app/home`,
-    },
-  }),
-)
+if (import.meta.env.VITE_E2E_AUTH_BYPASS === 'true' && document.cookie.includes('e2e_bypass=1')) {
+  installFakeAuth0(app)
+} else {
+  app.use(
+    createAuth0({
+      domain: import.meta.env.VITE_AUTH0_DOMAIN,
+      clientId: import.meta.env.VITE_AUTH0_CLIENT_ID,
+      cacheLocation: 'localstorage',
+      authorizationParams: {
+        audience: import.meta.env.VITE_AUTH0_API_AUDIENCE,
+        redirect_uri:
+          import.meta.env.VITE_AUTH0_CALLBACK_URL || `${window.location.origin}/app/home`,
+      },
+    }),
+  )
+}
 
 app.use(createPinia())
 app.use(router)

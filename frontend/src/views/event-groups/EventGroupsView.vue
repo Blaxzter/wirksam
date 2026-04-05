@@ -143,10 +143,10 @@ onMounted(loadGroups)
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-2">
-        <h1 class="text-3xl font-bold">{{ t('duties.eventGroups.title') }}</h1>
+        <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('duties.eventGroups.title') }}</h1>
         <p class="text-muted-foreground">{{ t('duties.eventGroups.subtitle') }}</p>
       </div>
-      <Button v-if="authStore.isAdmin" @click="showCreateDialog = true">
+      <Button v-if="authStore.isAdmin" data-testid="btn-create-group" @click="showCreateDialog = true">
         <Plus class="mr-2 h-4 w-4" />
         {{ t('duties.eventGroups.create') }}
       </Button>
@@ -156,7 +156,7 @@ onMounted(loadGroups)
     <div class="flex flex-wrap items-center gap-4">
       <div class="relative flex-1">
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input v-model="searchQuery" :placeholder="t('common.actions.search')" class="pl-10" />
+        <Input v-model="searchQuery" data-testid="input-search" :placeholder="t('common.actions.search')" class="pl-10" />
       </div>
       <DateRangePicker
         :date-from="dateFrom"
@@ -188,7 +188,7 @@ onMounted(loadGroups)
           <CardHeader class="pb-3">
             <div class="flex items-start justify-between">
               <CardTitle class="text-lg">{{ group.name }}</CardTitle>
-              <Badge :variant="statusVariant(group.status)">
+              <Badge data-testid="group-status" :variant="statusVariant(group.status)">
                 {{ t(`duties.eventGroups.statuses.${group.status ?? 'draft'}`) }}
               </Badge>
             </div>

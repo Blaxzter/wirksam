@@ -1,42 +1,42 @@
 {
-  "breadcrumbs": {
-    "home": "Startseite",
-    "settings": "Einstellungen"
-  },
-  "sidebar": {
-    "items": {
-      "home": {
-        "label": "Startseite"
-      },
-      "eventGroups": {
-        "description": "Veranstaltungsprogramme durchsuchen",
-        "label": "Veranstaltungsgruppen"
-      },
-      "events": {
-        "description": "Dienst-Veranstaltungen durchsuchen",
-        "label": "Veranstaltungen"
-      },
-      "myBookings": {
-        "description": "Ihre Reservierungen",
-        "label": "Meine Buchungen"
-      },
-      "settings": "Einstellungen"
+    "breadcrumbs": {
+        "home": "Startseite",
+        "settings": "Einstellungen"
     },
-    "platform": "Plattform",
-    "sections": {},
-    "badges": {
-      "openSlots": "{count} offener Platz | {count} offene Plätze"
+    "sidebar": {
+        "badges": {
+            "openSlots": "{count} offener Platz | {count} offene Plätze"
+        },
+        "items": {
+            "eventGroups": {
+                "description": "Veranstaltungsprogramme durchsuchen",
+                "label": "Veranstaltungsgruppen"
+            },
+            "events": {
+                "description": "Dienst-Veranstaltungen durchsuchen",
+                "label": "Veranstaltungen"
+            },
+            "home": {
+                "label": "Startseite"
+            },
+            "myBookings": {
+                "description": "Ihre Reservierungen",
+                "label": "Meine Buchungen"
+            },
+            "settings": "Einstellungen"
+        },
+        "platform": "Plattform",
+        "sections": {}
+    },
+    "user": {
+        "actions": {
+            "account": "Konto",
+            "landingPage": "Startseite",
+            "logout": "Abmelden",
+            "notifications": "Benachrichtigungen",
+            "switchToDark": "Zu Dunkel wechseln",
+            "switchToLight": "Zu Hell wechseln"
+        },
+        "loginPrompt": "Bitte melden Sie sich an, um auf Ihr Konto zuzugreifen."
     }
-  },
-  "user": {
-    "actions": {
-      "account": "Konto",
-      "notifications": "Benachrichtigungen",
-      "landingPage": "Startseite",
-      "logout": "Abmelden",
-      "switchToDark": "Zu Dunkel wechseln",
-      "switchToLight": "Zu Hell wechseln"
-    },
-    "loginPrompt": "Bitte melden Sie sich an, um auf Ihr Konto zuzugreifen."
-  }
 }

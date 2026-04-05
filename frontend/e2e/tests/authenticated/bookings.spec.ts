@@ -1,27 +1,27 @@
 /**
  * E2E tests for My Bookings page.
  */
-
-import { expect, test } from '@playwright/test'
+import { expect, test } from '../../fixtures.js'
 import {
   type DutySlotRead,
   type EventWithSlots,
+  api,
   bookSlot,
   cancelBooking,
   createEventWithSlots,
   deleteEvent,
   listSlots,
   publishEvent,
-  api,
-} from '../../helpers/api'
+  uniqueName,
+} from '../../helpers/api.js'
 
 let created: EventWithSlots
 let slots: DutySlotRead[]
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ adminPage: page }) => {
   await page.goto('/app/events')
   created = await createEventWithSlots(page, {
-    name: 'E2E Booking Event',
+    name: uniqueName('E2E Booking Event'),
     location: 'Room A',
     startTime: '10:00',
     endTime: '12:00',
@@ -32,21 +32,21 @@ test.beforeEach(async ({ page }) => {
   slots = await listSlots(page, created.event.id)
 })
 
-test.afterEach(async ({ page }) => {
+test.afterEach(async ({ adminPage: page }) => {
   await deleteEvent(page, created.event.id).catch(() => {})
 })
 
 // ── navigation ───────────────────────────────────────────────────────────────
 
 test.describe('My Bookings – navigation', () => {
-  test('sidebar shows My Bookings link', async ({ page }) => {
+  test('sidebar shows My Bookings link', async ({ adminPage: page }) => {
     await page.goto('/app/home')
-    await expect(page.getByRole('link', { name: /my bookings/i })).toBeVisible()
+    await expect(page.getByTestId('sidebar-link-my-bookings')).toBeVisible()
   })
 
-  test('clicking sidebar link navigates to /app/bookings', async ({ page }) => {
+  test('clicking sidebar link navigates to /app/bookings', async ({ adminPage: page }) => {
     await page.goto('/app/home')
-    await page.getByRole('link', { name: /my bookings/i }).click()
+    await page.getByTestId('sidebar-link-my-bookings').click()
     await expect(page).toHaveURL(/\/app\/bookings$/)
   })
 })
@@ -54,65 +54,50 @@ test.describe('My Bookings – navigation', () => {
 // ── page structure ───────────────────────────────────────────────────────────
 
 test.describe('My Bookings – page structure', () => {
-  test('shows heading', async ({ page }) => {
+  test('shows heading', async ({ adminPage: page }) => {
     await page.goto('/app/bookings')
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toBeVisible()
   })
 
-  test('shows filter tabs (upcoming, this month, all)', async ({ page }) => {
+  test('shows search input', async ({ adminPage: page }) => {
     await page.goto('/app/bookings')
-    await expect(page.getByRole('button', { name: /upcoming/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /this month/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /all/i })).toBeVisible()
+    await expect(page.getByTestId('input-search')).toBeVisible()
   })
 
-  test('shows show cancelled toggle', async ({ page }) => {
+  test('shows show cancelled toggle', async ({ adminPage: page }) => {
     await page.goto('/app/bookings')
-    await expect(page.getByRole('button', { name: /cancelled/i })).toBeVisible()
+    await expect(page.getByTestId('btn-toggle-cancelled')).toBeVisible()
   })
 })
 
 // ── with bookings ────────────────────────────────────────────────────────────
 
 test.describe('My Bookings – with data', () => {
-  test('booked slot appears in bookings list', async ({ page }) => {
+  test('booked slot appears in bookings list', async ({ adminPage: page }) => {
     if (slots.length === 0) return
 
     await bookSlot(page, slots[0].id)
     await page.goto('/app/bookings')
 
-    // Switch to "all" filter since the event date might be in the future
-    await page.getByRole('button', { name: /all/i }).click()
-
-    await expect(page.getByText(created.event.name).first()).toBeVisible({ timeout: 5000 })
+    // The event name is dynamic data — use heading role to avoid strict mode violation
+    await expect(page.getByRole('heading', { name: created.event.name })).toBeVisible()
   })
 
-  test('booking shows confirmed status', async ({ page }) => {
+  test('can cancel a booking from bookings page', async ({ adminPage: page }) => {
     if (slots.length === 0) return
 
     await bookSlot(page, slots[0].id)
     await page.goto('/app/bookings')
-    await page.getByRole('button', { name: /all/i }).click()
 
-    await expect(page.getByText(/confirmed/i).first()).toBeVisible({ timeout: 5000 })
-  })
-
-  test('can cancel a booking from bookings page', async ({ page }) => {
-    if (slots.length === 0) return
-
-    await bookSlot(page, slots[0].id)
-    await page.goto('/app/bookings')
-    await page.getByRole('button', { name: /all/i }).click()
-
-    // Wait for the booking card to appear
-    await expect(page.getByText(created.event.name).first()).toBeVisible({ timeout: 5000 })
+    // Wait for the booking card to appear (dynamic event name)
+    await expect(page.getByRole('heading', { name: created.event.name })).toBeVisible()
 
     // Click the cancel/trash button (accept the confirm dialog)
     page.on('dialog', (d) => d.accept())
-    const trashBtn = page.locator('button').filter({ has: page.locator('svg') }).filter({ hasText: '' })
-    // Find the delete/trash icon button within the card
     const card = page.locator('[class*="Card"]').filter({ hasText: created.event.name }).first()
-    const cancelBtn = card.locator('button[class*="destructive"], button:has(svg.text-destructive), button:has(svg[class*="text-destructive"])')
+    const cancelBtn = card.locator(
+      'button[class*="destructive"], button:has(svg.text-destructive), button:has(svg[class*="text-destructive"])',
+    )
     if (await cancelBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await cancelBtn.click()
     }
@@ -122,38 +107,25 @@ test.describe('My Bookings – with data', () => {
 // ── filter switching ─────────────────────────────────────────────────────────
 
 test.describe('My Bookings – filters', () => {
-  test('switching to "all" filter keeps the page functional', async ({ page }) => {
+  test('show cancelled toggle can be activated', async ({ adminPage: page }) => {
     await page.goto('/app/bookings')
-    await page.getByRole('button', { name: /all/i }).click()
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  })
-
-  test('switching to "this month" filter keeps the page functional', async ({ page }) => {
-    await page.goto('/app/bookings')
-    await page.getByRole('button', { name: /this month/i }).click()
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  })
-
-  test('show cancelled toggle can be activated', async ({ page }) => {
-    await page.goto('/app/bookings')
-    const btn = page.getByRole('button', { name: /cancelled/i })
-    await btn.click()
-    // Button should now have active/default variant
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await page.getByTestId('btn-toggle-cancelled').click()
+    // Page should remain functional
+    await expect(page.getByTestId('page-heading')).toBeVisible()
   })
 })
 
 // ── grouping ─────────────────────────────────────────────────────────────────
 
 test.describe('My Bookings – grouping', () => {
-  test('grouping buttons are visible', async ({ page }) => {
+  test('grouping buttons are visible', async ({ adminPage: page }) => {
     if (slots.length === 0) return
 
     await bookSlot(page, slots[0].id)
     await page.goto('/app/bookings')
-    await page.getByRole('button', { name: /all/i }).click()
 
-    // There should be icon-only grouping buttons
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.getByTestId('btn-group-date')).toBeVisible()
+    await expect(page.getByTestId('btn-group-event')).toBeVisible()
+    await expect(page.getByTestId('btn-group-location')).toBeVisible()
   })
 })

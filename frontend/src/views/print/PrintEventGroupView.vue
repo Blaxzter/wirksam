@@ -288,7 +288,7 @@ onMounted(async () => {
 <template>
   <div class="print-page mx-auto max-w-5xl w-full space-y-4 p-4 print:p-0">
     <!-- Floating toolbar -->
-    <PrintToolbar :disabled="loading || bookingsLoading" @print="handlePrint">
+    <PrintToolbar data-testid="print-toolbar" :disabled="loading || bookingsLoading" @print="handlePrint">
       <template v-if="mode === 'all'">
         <!-- Column toggles -->
         <label class="flex items-center gap-2 cursor-pointer">
@@ -348,7 +348,7 @@ onMounted(async () => {
       {{ t('common.states.loading') }}
     </div>
 
-    <template v-else-if="group">
+    <div v-else-if="group" data-testid="print-content">
       <!-- ======================== OVERVIEW MODE ======================== -->
       <template v-if="mode === 'overview'">
         <div class="flex items-start justify-between gap-4">
@@ -576,6 +576,6 @@ onMounted(async () => {
           </tbody>
         </table>
       </template>
-    </template>
+    </div>
   </div>
 </template>

@@ -234,7 +234,7 @@ onMounted(async () => {
 <template>
   <div class="print-page mx-auto max-w-5xl w-full space-y-4 p-4 print:p-0">
     <!-- Floating toolbar -->
-    <PrintToolbar :disabled="loading || bookingsLoading" @print="handlePrint">
+    <PrintToolbar data-testid="print-toolbar" :disabled="loading || bookingsLoading" @print="handlePrint">
       <!-- Column toggles -->
       <label class="flex items-center gap-2 cursor-pointer">
         <Checkbox v-model="showTitle" />
@@ -293,7 +293,7 @@ onMounted(async () => {
         Wrap everything in one <table> so the browser can repeat the <thead>
         (event header + column headers) on every printed page.
       -->
-      <table class="w-full border-collapse">
+      <table data-testid="print-content" class="w-full border-collapse">
         <thead :class="repeatHeader ? 'print-repeat-header' : ''">
           <tr>
             <th class="text-left font-normal p-0 pb-4">

@@ -20,13 +20,19 @@ class DutySlot(Base, table=True):
 
     event_id: uuid.UUID = Field(
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("events.id"), nullable=False, index=True
+            sa.Uuid,
+            sa.ForeignKey("events.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
     )
     batch_id: uuid.UUID | None = Field(
         default=None,
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("slot_batches.id"), nullable=True, index=True
+            sa.Uuid,
+            sa.ForeignKey("slot_batches.id", ondelete="CASCADE"),
+            nullable=True,
+            index=True,
         ),
     )
     title: str = Field(sa_column=sa.Column(sa.String, nullable=False, index=True))

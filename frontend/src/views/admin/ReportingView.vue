@@ -160,7 +160,7 @@ onMounted(() => {
     <!-- Header + actions -->
     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight">{{ t('admin.reporting.title') }}</h1>
+        <h1 data-testid="page-heading" class="text-2xl font-bold tracking-tight">{{ t('admin.reporting.title') }}</h1>
         <p class="text-muted-foreground">{{ t('admin.reporting.subtitle') }}</p>
       </div>
       <div class="flex items-center gap-2 mt-2 sm:mt-0">
@@ -174,6 +174,7 @@ onMounted(() => {
           @update:visible-month="handleVisibleMonth"
         />
         <Button
+          data-testid="btn-export"
           variant="outline"
           size="sm"
           class="hidden sm:inline-flex"
@@ -207,8 +208,9 @@ onMounted(() => {
 
     <!-- Data -->
     <template v-else-if="data">
-      <ReportingOverviewCards :overview="data.overview" />
+      <ReportingOverviewCards data-testid="section-overview" :overview="data.overview" />
 
+      <div data-testid="section-charts">
       <ReportingBookingsChart
         v-if="data.bookings_trend?.length > 0"
         :trend="data.bookings_trend"
@@ -234,6 +236,7 @@ onMounted(() => {
         v-if="data.event_fill_rates.length > 0"
         :events="data.event_fill_rates"
       />
+      </div>
 
       <!-- No data state -->
       <Card v-if="data.overview.total_bookings === 0 && data.overview.total_events === 0">

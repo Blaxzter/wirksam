@@ -19,7 +19,10 @@ class SlotBatch(Base, table=True):
 
     event_id: uuid.UUID = Field(
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("events.id"), nullable=False, index=True
+            sa.Uuid,
+            sa.ForeignKey("events.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
     )
     label: str | None = Field(

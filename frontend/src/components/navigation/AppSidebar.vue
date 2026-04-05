@@ -119,7 +119,7 @@ const navMain = computed(() => {
     title: e.name,
     routeName: 'event-detail',
     routeParams: { eventId: e.id },
-    badge: eventBadge(e.open_slots, e.next_slot_date, e.next_slot_start_time),
+    badge: eventBadge(e.open_slots, e.next_slot_date ?? null, e.next_slot_start_time ?? null),
   }))
 
   const bookingItems: NavSubItem[] = sidebarStore.bookings.map((b) => ({
@@ -206,7 +206,7 @@ const navAdmin = computed(() =>
             :is-active="route.name === 'home'"
             as-child
           >
-            <RouterLink :to="{ name: 'home' }">
+            <RouterLink :to="{ name: 'home' }" data-testid="sidebar-link-home">
               <House />
               <span>{{ t('navigation.sidebar.items.home.label') }}</span>
               <span
@@ -230,6 +230,7 @@ const navAdmin = computed(() =>
       <NavUser />
       <RouterLink
         :to="{ name: 'changelog' }"
+        data-testid="sidebar-version-link"
         class="inline-flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors pb-1 group-data-[collapsible=icon]:hidden"
       >
         <span>WirkSam {{ appVersion }}</span>

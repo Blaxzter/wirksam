@@ -26,7 +26,8 @@ const { t } = useI18n()
 const router = useRouter()
 const open = ref(true)
 
-const { hasNewVersions, newVersionCount, latestVersion, latestTitle, markAsSeen } = useChangelogStatus()
+const { hasNewVersions, newVersionCount, latestVersion, latestTitle, markAsSeen } =
+  useChangelogStatus()
 const showWhatsNew = ref(false)
 
 onMounted(() => {
@@ -53,23 +54,20 @@ function goToChangelog() {
     <SidebarInset class="flex flex-col">
       <PostAuthHeader />
 
-      <div class="flex-1 p-4 pt-0">
+      <div class="flex-1 p-4 pt-0" data-testid="main-content">
         <ErrorBoundary>
-          <RouterView :key="$route.meta.routerViewKey ?? $route.fullPath" />
+          <RouterView :key="($route.meta.routerViewKey as string | undefined) ?? $route.fullPath" />
         </ErrorBoundary>
       </div>
 
-      <footer class="flex items-center justify-center gap-3 px-4 py-1.5 text-xs text-muted-foreground/60">
-        <RouterLink
-          :to="{ name: 'privacy' }"
-          class="hover:text-muted-foreground transition-colors"
-        >
+      <footer
+        data-testid="layout-footer"
+        class="flex items-center justify-center gap-3 px-4 py-1.5 text-xs text-muted-foreground/60"
+      >
+        <RouterLink :to="{ name: 'privacy' }" class="hover:text-muted-foreground transition-colors">
           {{ $t('preauth.layout.footer.privacy') }}
         </RouterLink>
-        <RouterLink
-          :to="{ name: 'terms' }"
-          class="hover:text-muted-foreground transition-colors"
-        >
+        <RouterLink :to="{ name: 'terms' }" class="hover:text-muted-foreground transition-colors">
           {{ $t('preauth.layout.footer.terms') }}
         </RouterLink>
         <RouterLink
@@ -82,8 +80,15 @@ function goToChangelog() {
     </SidebarInset>
 
     <!-- What's New dialog -->
-    <Dialog :open="showWhatsNew" @update:open="(v: boolean) => { if (!v) dismissWhatsNew() }">
-      <DialogContent class="sm:max-w-md">
+    <Dialog
+      :open="showWhatsNew"
+      @update:open="
+        (v: boolean) => {
+          if (!v) dismissWhatsNew()
+        }
+      "
+    >
+      <DialogContent class="sm:max-w-md" data-testid="dialog-whats-new">
         <DialogHeader>
           <DialogTitle class="flex items-center gap-2">
             <Sparkles class="size-5" />
@@ -104,7 +109,7 @@ function goToChangelog() {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter class="flex-row gap-2 sm:justify-end">
-          <Button variant="ghost" @click="dismissWhatsNew">
+          <Button variant="ghost" data-testid="btn-dismiss-whats-new" @click="dismissWhatsNew">
             {{ t('changelog.whatsNew.dismiss') }}
           </Button>
           <Button @click="goToChangelog">

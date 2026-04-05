@@ -1,137 +1,137 @@
 {
-  "sidebar": {
-    "section": "Administration"
-  },
-  "users": {
-    "title": "User Management",
-    "subtitle": "View and manage platform users and their roles.",
-    "columns": {
-      "name": "Name",
-      "email": "Email",
-      "roles": "Roles",
-      "status": "Status",
-      "memberSince": "Member Since",
-      "actions": "Actions"
+    "demoData": {
+        "create": {
+            "button": "Create Demo Data",
+            "description": "Generate events, event groups, users, and duty slots with a [DEMO] prefix.",
+            "title": "Create Demo Data"
+        },
+        "createSuccess": "Created {events} events, {groups} groups, {users} users, {slots} slots, and {bookings} bookings.",
+        "delete": {
+            "button": "Delete All Demo Data",
+            "description": "Remove all demo data from the system.",
+            "info": "This will delete all entities tagged with [DEMO] — events, event groups, duty slots, bookings, and demo users.",
+            "title": "Delete Demo Data"
+        },
+        "deleteSuccess": "Deleted {events} events, {groups} groups, {users} users, {slots} slots, and {bookings} bookings.",
+        "fields": {
+            "numEventGroups": "Number of Event Groups",
+            "numEvents": "Number of Events",
+            "numSlotsPerEvent": "Slots per Event",
+            "numUsers": "Number of Demo Users",
+            "publishEvents": "Publish events immediately"
+        },
+        "subtitle": "Generate or remove demo data for testing purposes.",
+        "title": "Demo Data"
     },
-    "statsTotal": "Total Users",
-    "active": "Active",
-    "inactive": "Inactive",
-    "pending": "Pending",
-    "activate": "Activate",
-    "deactivate": "Deactivate",
-    "activated": "Activated account for {name}.",
-    "deactivated": "Deactivated account for {name}.",
-    "makeAdmin": "Make Admin",
-    "removeAdmin": "Remove Admin",
-    "grantedAdmin": "Granted admin role to {name}.",
-    "removedAdmin": "Removed admin role from {name}.",
-    "reject": "Reject",
-    "rejected": "Rejected",
-    "rejectedToast": "Rejected account for {name}.",
-    "rejectDialogTitle": "Reject User",
-    "rejectDialogDescription": "Provide an optional reason for rejecting {name}'s account request. The user will see this message.",
-    "rejectReasonPlaceholder": "Reason for rejection (optional)...",
-    "showRejected": "Show Rejected",
-    "hideRejected": "Hide Rejected",
-    "approvalPassword": {
-      "title": "Approval Password",
-      "description": "Set an optional password that pending users can enter to approve themselves.",
-      "placeholder": "Enter approval password",
-      "changePlaceholder": "Enter new approval password",
-      "saved": "Approval password saved.",
-      "savedAndCopied": "Approval password saved and copied to clipboard.",
-      "clear": "Clear approval password",
-      "clearDialogTitle": "Clear Approval Password",
-      "clearDialogDescription": "Are you sure you want to clear the approval password? Pending users will no longer be able to self-approve.",
-      "cleared": "Approval password cleared."
+    "reporting": {
+        "apply": "Apply",
+        "bookingsByMonth": {
+            "description": "Confirmed and cancelled bookings by date.",
+            "title": "Bookings Over Time"
+        },
+        "busiestTimes": {
+            "bookings": "Bookings",
+            "description": "Confirmed bookings grouped by start hour.",
+            "time": "Time",
+            "title": "Bookings by Time of Day"
+        },
+        "categories": {
+            "booked": "Booked",
+            "capacity": "Capacity",
+            "category": "Category",
+            "description": "Slot capacity and fill rate per category.",
+            "fillRate": "Fill Rate",
+            "slots": "Slots",
+            "title": "By Category",
+            "uncategorized": "Uncategorized"
+        },
+        "dateRange": "Date Range",
+        "eventFillRates": {
+            "booked": "Booked",
+            "capacity": "Capacity",
+            "description": "How full each event's slots are.",
+            "event": "Event",
+            "fillRate": "Fill Rate",
+            "title": "Fill Rate by Event"
+        },
+        "export": "Export CSV",
+        "from": "From",
+        "granularity": {
+            "day": "Day",
+            "month": "Month"
+        },
+        "noData": "No data available for the selected period.",
+        "overview": {
+            "activeVolunteers": "Active Volunteers",
+            "cancellationRate": "Cancellation Rate",
+            "cancelledBookings": "Cancelled",
+            "confirmedBookings": "Confirmed",
+            "fillRate": "Fill Rate",
+            "filledSlots": "Filled Slots",
+            "title": "Overview",
+            "totalBookings": "Total Bookings",
+            "totalCapacity": "Total Capacity",
+            "totalEvents": "Events",
+            "totalSlots": "Slots",
+            "totalVolunteers": "Total Volunteers"
+        },
+        "reset": "Reset",
+        "subtitle": "View statistics and usage reports across your organization.",
+        "title": "Reports",
+        "to": "To",
+        "topVolunteers": {
+            "bookings": "Bookings",
+            "description": "Top 10 volunteers by confirmed bookings.",
+            "email": "Email",
+            "name": "Name",
+            "title": "Most Active Volunteers"
+        }
+    },
+    "sidebar": {
+        "section": "Administration"
+    },
+    "users": {
+        "activate": "Activate",
+        "activated": "Activated account for {name}.",
+        "active": "Active",
+        "approvalPassword": {
+            "changePlaceholder": "Enter new approval password",
+            "clear": "Clear approval password",
+            "clearDialogDescription": "Are you sure you want to clear the approval password? Pending users will no longer be able to self-approve.",
+            "clearDialogTitle": "Clear Approval Password",
+            "cleared": "Approval password cleared.",
+            "description": "Set an optional password that pending users can enter to approve themselves.",
+            "placeholder": "Enter approval password",
+            "saved": "Approval password saved.",
+            "savedAndCopied": "Approval password saved and copied to clipboard.",
+            "title": "Approval Password"
+        },
+        "columns": {
+            "actions": "Actions",
+            "email": "Email",
+            "memberSince": "Member Since",
+            "name": "Name",
+            "roles": "Roles",
+            "status": "Status"
+        },
+        "deactivate": "Deactivate",
+        "deactivated": "Deactivated account for {name}.",
+        "grantedAdmin": "Granted admin role to {name}.",
+        "hideRejected": "Hide Rejected",
+        "inactive": "Inactive",
+        "makeAdmin": "Make Admin",
+        "pending": "Pending",
+        "reject": "Reject",
+        "rejectDialogDescription": "Provide an optional reason for rejecting {name}'s account request. The user will see this message.",
+        "rejectDialogTitle": "Reject User",
+        "rejectReasonPlaceholder": "Reason for rejection (optional)...",
+        "rejected": "Rejected",
+        "rejectedToast": "Rejected account for {name}.",
+        "removeAdmin": "Remove Admin",
+        "removedAdmin": "Removed admin role from {name}.",
+        "showRejected": "Show Rejected",
+        "statsTotal": "Total Users",
+        "subtitle": "View and manage platform users and their roles.",
+        "title": "User Management"
     }
-  },
-  "reporting": {
-    "title": "Reports",
-    "subtitle": "View statistics and usage reports across your organization.",
-    "dateRange": "Date Range",
-    "from": "From",
-    "to": "To",
-    "apply": "Apply",
-    "reset": "Reset",
-    "export": "Export CSV",
-    "noData": "No data available for the selected period.",
-    "overview": {
-      "title": "Overview",
-      "totalBookings": "Total Bookings",
-      "confirmedBookings": "Confirmed",
-      "cancelledBookings": "Cancelled",
-      "cancellationRate": "Cancellation Rate",
-      "totalEvents": "Events",
-      "totalSlots": "Slots",
-      "fillRate": "Fill Rate",
-      "activeVolunteers": "Active Volunteers",
-      "totalVolunteers": "Total Volunteers",
-      "filledSlots": "Filled Slots",
-      "totalCapacity": "Total Capacity"
-    },
-    "bookingsByMonth": {
-      "title": "Bookings Over Time",
-      "description": "Confirmed and cancelled bookings by date."
-    },
-    "granularity": {
-      "day": "Day",
-      "month": "Month"
-    },
-    "topVolunteers": {
-      "title": "Most Active Volunteers",
-      "description": "Top 10 volunteers by confirmed bookings.",
-      "name": "Name",
-      "email": "Email",
-      "bookings": "Bookings"
-    },
-    "categories": {
-      "title": "By Category",
-      "description": "Slot capacity and fill rate per category.",
-      "category": "Category",
-      "uncategorized": "Uncategorized",
-      "slots": "Slots",
-      "capacity": "Capacity",
-      "booked": "Booked",
-      "fillRate": "Fill Rate"
-    },
-    "busiestTimes": {
-      "title": "Bookings by Time of Day",
-      "description": "Confirmed bookings grouped by start hour.",
-      "time": "Time",
-      "bookings": "Bookings"
-    },
-    "eventFillRates": {
-      "title": "Fill Rate by Event",
-      "description": "How full each event's slots are.",
-      "event": "Event",
-      "capacity": "Capacity",
-      "booked": "Booked",
-      "fillRate": "Fill Rate"
-    }
-  },
-  "demoData": {
-    "title": "Demo Data",
-    "subtitle": "Generate or remove demo data for testing purposes.",
-    "create": {
-      "title": "Create Demo Data",
-      "description": "Generate events, event groups, users, and duty slots with a [DEMO] prefix.",
-      "button": "Create Demo Data"
-    },
-    "delete": {
-      "title": "Delete Demo Data",
-      "description": "Remove all demo data from the system.",
-      "info": "This will delete all entities tagged with [DEMO] — events, event groups, duty slots, bookings, and demo users.",
-      "button": "Delete All Demo Data"
-    },
-    "fields": {
-      "numEvents": "Number of Events",
-      "numEventGroups": "Number of Event Groups",
-      "numUsers": "Number of Demo Users",
-      "numSlotsPerEvent": "Slots per Event",
-      "publishEvents": "Publish events immediately"
-    },
-    "createSuccess": "Created {events} events, {groups} groups, {users} users, {slots} slots, and {bookings} bookings.",
-    "deleteSuccess": "Deleted {events} events, {groups} groups, {users} users, {slots} slots, and {bookings} bookings."
-  }
 }

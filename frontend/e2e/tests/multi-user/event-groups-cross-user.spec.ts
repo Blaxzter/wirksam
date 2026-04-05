@@ -1,165 +1,127 @@
 /**
- * Cross-user E2E tests — scenarios requiring both an admin and a member session.
+ * Cross-user E2E tests -- scenarios requiring both an admin and a member session.
  *
- * Uses browser.newContext() with explicit storage states so both users
- * can be active in the same test.
+ * Uses adminPage/memberPage fixtures for isolated auth.
  */
+import { expect, test } from '../../fixtures.js'
+import {
+  api,
+  clearAvailability,
+  createGroup,
+  deleteGroup,
+  futureDate,
+  uniqueName,
+} from '../../helpers/api.js'
+import type { EventGroupRead } from '../../helpers/api.js'
 
-import { expect, test } from '@playwright/test'
-import { api, clearAvailability, createGroup, deleteGroup } from '../../helpers/api'
-import type { EventGroupRead } from '../../helpers/api'
-
-// ── Admin creates group → member sees it ─────────────────────────────────────
+// ── Admin creates group -> member sees it ─────────────────────────────────────
 
 test.describe('Cross-user – visibility', () => {
-  test('admin-published group is visible to member', async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const memberCtx = await browser.newContext({ storageState: 'e2e/.auth/member.json' })
-    const adminPage = await adminCtx.newPage()
-    const memberPage = await memberCtx.newPage()
-
+  test('admin-published group is visible to member', async ({ adminPage, memberPage }) => {
     await adminPage.goto('/app/event-groups')
-    const group = await createGroup(adminPage, 'E2E Cross Published Group')
+    const group = await createGroup(adminPage, uniqueName('E2E Cross Published Group'))
 
     try {
       await memberPage.goto('/app/event-groups')
-      await expect(memberPage.getByText(group.name)).toBeVisible()
+      await expect(memberPage.getByRole('heading', { name: group.name })).toBeVisible()
     } finally {
       await deleteGroup(adminPage, group.id)
-      await adminCtx.close()
-      await memberCtx.close()
     }
   })
 
-  test('admin draft group is hidden from member', async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const memberCtx = await browser.newContext({ storageState: 'e2e/.auth/member.json' })
-    const adminPage = await adminCtx.newPage()
-    const memberPage = await memberCtx.newPage()
-
+  test('admin draft group is hidden from member', async ({ adminPage, memberPage }) => {
     await adminPage.goto('/app/event-groups')
-    const draft = await createGroup(adminPage, 'E2E Cross Draft Group', 'draft')
+    const draft = await createGroup(adminPage, uniqueName('E2E Cross Draft Group'), 'draft')
 
     try {
       await memberPage.goto('/app/event-groups')
       await expect(memberPage.getByText(draft.name)).toBeHidden()
     } finally {
       await deleteGroup(adminPage, draft.id)
-      await adminCtx.close()
-      await memberCtx.close()
     }
   })
 })
 
-// ── Member registers availability → admin sees it ────────────────────────────
+// ── Member registers availability -> admin sees it ────────────────────────────
 
 test.describe('Cross-user – availability flow', () => {
   let group: EventGroupRead
 
-  test.beforeEach(async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const adminPage = await adminCtx.newPage()
+  test.beforeEach(async ({ adminPage }) => {
     await adminPage.goto('/app/event-groups')
-    group = await createGroup(adminPage, 'E2E Cross Availability Group')
-    await adminCtx.close()
+    group = await createGroup(adminPage, uniqueName('E2E Cross Availability Group'))
   })
 
-  test.afterEach(async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const adminPage = await adminCtx.newPage()
-    await adminPage.goto('/app/event-groups')
+  test.afterEach(async ({ adminPage }) => {
     await deleteGroup(adminPage, group.id)
-    await adminCtx.close()
   })
 
-  test('member availability appears in admin member table', async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const memberCtx = await browser.newContext({ storageState: 'e2e/.auth/member.json' })
-    const adminPage = await adminCtx.newPage()
-    const memberPage = await memberCtx.newPage()
+  test('member availability appears in admin member table', async ({ adminPage, memberPage }) => {
+    // Member registers availability via UI
+    await memberPage.goto(`/app/event-groups/${group.id}`)
+    await memberPage.getByTestId('btn-availability').click()
+    await memberPage.getByTestId('availability-type-fully_available').click()
+    await memberPage.getByTestId('btn-save').click()
+    await expect(memberPage.getByTestId('btn-availability')).toBeVisible()
 
-    try {
-      // Member registers availability via UI
-      await memberPage.goto(`/app/event-groups/${group.id}`)
-      await memberPage.getByRole('button', { name: /register availability/i }).click()
-      await memberPage.getByText(/open to be requested|fully.?available/i).click()
-      await memberPage.getByRole('button', { name: /save/i }).click()
-      await expect(memberPage.getByRole('button', { name: /update|change/i })).toBeVisible()
+    // Admin sees the entry in the member availability table
+    await adminPage.goto(`/app/event-groups/${group.id}`)
+    const adminTable = adminPage.getByTestId('section-admin-availabilities')
+    await expect(adminTable.getByText(/fully.?available|open to be requested/i)).toBeVisible()
 
-      // Admin sees the entry in the member availability table
-      await adminPage.goto(`/app/event-groups/${group.id}`)
-      await expect(
-        adminPage.getByText(/fully.?available|open to be requested/i).nth(1),
-      ).toBeVisible({ timeout: 5000 })
-    } finally {
-      await clearAvailability(memberPage, group.id).catch(() => {})
-      await adminCtx.close()
-      await memberCtx.close()
-    }
+    await clearAvailability(memberPage, group.id).catch(() => {})
   })
 
-  test('member removing availability is reflected in admin table', async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const memberCtx = await browser.newContext({ storageState: 'e2e/.auth/member.json' })
-    const adminPage = await adminCtx.newPage()
-    const memberPage = await memberCtx.newPage()
+  test('member removing availability is reflected in admin table', async ({
+    adminPage,
+    memberPage,
+  }) => {
+    // Pre-seed availability as member via API
+    await memberPage.goto(`/app/event-groups/${group.id}`)
+    await api(memberPage, 'POST', `/event-groups/${group.id}/availability`, {
+      availability_type: 'fully_available',
+      dates: [],
+    })
 
-    try {
-      // Pre-seed availability as member via API
-      await memberPage.goto(`/app/event-groups/${group.id}`)
-      await api(memberPage, 'POST', `/event-groups/${group.id}/availability`, {
-        availability_type: 'fully_available',
-        dates: [],
-      })
+    // Member removes it via UI
+    await memberPage.reload()
+    await memberPage.getByTestId('btn-remove-availability').click()
 
-      // Member removes it via UI
-      await memberPage.reload()
-      memberPage.on('dialog', (d) => d.accept())
-      await memberPage.getByRole('button', { name: /remove/i }).click()
-      await expect(memberPage.getByRole('button', { name: /register availability/i })).toBeVisible({
-        timeout: 5000,
-      })
-
-      // Admin table shows empty state
-      await adminPage.goto(`/app/event-groups/${group.id}`)
-      await expect(adminPage.getByText(/no.*(members|registrations|availability)/i)).toBeVisible()
-    } finally {
-      await clearAvailability(memberPage, group.id).catch(() => {})
-      await adminCtx.close()
-      await memberCtx.close()
+    // Handle app-level confirmation dialog
+    const confirmBtn = memberPage.getByRole('button', { name: /confirm|bestätigen/i })
+    if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await confirmBtn.click()
     }
+    await expect(memberPage.getByTestId('btn-availability')).toBeVisible()
+
+    // Admin table shows empty state
+    await adminPage.goto(`/app/event-groups/${group.id}`)
+    const adminTable = adminPage.getByTestId('section-admin-availabilities')
+    await expect(adminTable.getByText(/no.*(members|registrations|availability)/i)).toBeVisible()
   })
 
-  test('multiple members availability visible to admin', async ({ browser }) => {
-    const adminCtx = await browser.newContext({ storageState: 'e2e/.auth/user.json' })
-    const memberCtx = await browser.newContext({ storageState: 'e2e/.auth/member.json' })
-    const adminPage = await adminCtx.newPage()
-    const memberPage = await memberCtx.newPage()
+  test('multiple members availability visible to admin', async ({ adminPage, memberPage }) => {
+    // Admin registers as fully available
+    await adminPage.goto(`/app/event-groups/${group.id}`)
+    await api(adminPage, 'POST', `/event-groups/${group.id}/availability`, {
+      availability_type: 'fully_available',
+      dates: [],
+    })
 
-    try {
-      // Admin registers as fully available
-      await adminPage.goto(`/app/event-groups/${group.id}`)
-      await api(adminPage, 'POST', `/event-groups/${group.id}/availability`, {
-        availability_type: 'fully_available',
-        dates: [],
-      })
+    // Member registers with specific dates
+    await memberPage.goto(`/app/event-groups/${group.id}`)
+    await api(memberPage, 'POST', `/event-groups/${group.id}/availability`, {
+      availability_type: 'specific_dates',
+      dates: [futureDate(30), futureDate(31)],
+    })
 
-      // Member registers with specific dates
-      await memberPage.goto(`/app/event-groups/${group.id}`)
-      await api(memberPage, 'POST', `/event-groups/${group.id}/availability`, {
-        availability_type: 'specific_dates',
-        dates: ['2026-06-10', '2026-06-11'],
-      })
+    // Admin sees both entries in the table
+    await adminPage.reload()
+    const adminTable = adminPage.getByTestId('section-admin-availabilities')
+    const rows = adminTable.getByText(/fully.?available|specific.?dates/i)
+    await expect(rows).toHaveCount(2)
 
-      // Admin sees both entries in the table
-      await adminPage.reload()
-      const rows = adminPage.getByText(/fully.?available|specific.?dates/i)
-      await expect(rows).toHaveCount(2, { timeout: 5000 })
-    } finally {
-      await clearAvailability(adminPage, group.id).catch(() => {})
-      await clearAvailability(memberPage, group.id).catch(() => {})
-      await adminCtx.close()
-      await memberCtx.close()
-    }
+    await clearAvailability(adminPage, group.id).catch(() => {})
+    await clearAvailability(memberPage, group.id).catch(() => {})
   })
 })

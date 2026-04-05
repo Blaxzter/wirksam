@@ -10,11 +10,13 @@ Fixtures are organized by domain for better maintainability:
 
 # Import all fixtures so they are available to tests
 # ruff: noqa: F401
+# pyright: reportUnusedImport=false
 from tests.fixtures.auth import (
     mock_auth0_admin_claims,
     mock_auth0_claims,
     mock_auth0_claims_no_sub,
     mock_auth0_new_user_claims,
+    mock_request,
 )
 from tests.fixtures.bookings import test_booking
 from tests.fixtures.client import app, as_admin, async_client

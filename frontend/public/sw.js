@@ -1,4 +1,4 @@
- 
+
 /**
  * Service Worker for Web Push Notifications
  */

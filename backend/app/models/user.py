@@ -76,7 +76,11 @@ class User(Base, table=True):
             ReminderOffsetEntry(offset_minutes=15, channels=["push"]),
             ReminderOffsetEntry(offset_minutes=1440, channels=["email"]),
         ],
-        sa_column=sa.Column(PydanticJSONB(ReminderOffsetEntry, is_list=True), nullable=False, server_default="[]"),
+        sa_column=sa.Column(
+            PydanticJSONB(ReminderOffsetEntry, is_list=True),
+            nullable=False,
+            server_default="[]",
+        ),
         description="Default reminders, e.g. [{offset_minutes: 60, channels: ['push']}]",
     )
 

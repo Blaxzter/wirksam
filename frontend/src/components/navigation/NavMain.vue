@@ -95,7 +95,7 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
             :is-active="isRouteActive(item.routeName)"
             as-child
           >
-            <RouterLink v-if="item.routeName" :to="{ name: item.routeName }">
+            <RouterLink v-if="item.routeName" :to="{ name: item.routeName }" :data-testid="'sidebar-link-' + item.routeName">
               <component :is="item.icon" v-if="item.icon" />
               <span>{{ resolveTitle(item) }}</span>
               <span
@@ -118,6 +118,7 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
                 <RouterLink
                   v-if="item.routeName"
                   :to="{ name: item.routeName }"
+                  :data-testid="'sidebar-link-' + item.routeName"
                   class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-l-md p-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                 >
                   <component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />

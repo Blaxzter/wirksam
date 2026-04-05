@@ -491,7 +491,7 @@ onMounted(async () => {
     <template v-else-if="event">
       <!-- Back button + Header -->
       <div class="space-y-4">
-        <Button variant="ghost" size="sm" @click="router.push({ name: 'events' })">
+        <Button data-testid="btn-back" variant="ghost" size="sm" @click="router.push({ name: 'events' })">
           <ArrowLeft class="mr-2 h-4 w-4" />
           {{ t('common.actions.back') }}
         </Button>
@@ -511,8 +511,9 @@ onMounted(async () => {
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0 flex-1 space-y-2">
             <div class="flex items-center gap-3 flex-wrap">
-              <h1 class="text-3xl font-bold line-clamp-2 break-words">{{ event.name }}</h1>
+              <h1 data-testid="page-heading" class="text-3xl font-bold line-clamp-2 break-words">{{ event.name }}</h1>
               <StatusDropdown
+                data-testid="event-status"
                 :status="event.status"
                 i18n-prefix="duties.events.statuses"
                 :editable="authStore.isAdmin"
@@ -538,6 +539,7 @@ onMounted(async () => {
           <!-- Desktop actions -->
           <div class="hidden sm:flex gap-2 shrink-0">
             <Button
+              data-testid="btn-print"
               variant="outline"
               size="icon"
               :title="t('print.printEvent')"
@@ -547,6 +549,7 @@ onMounted(async () => {
             </Button>
             <Button
               v-if="authStore.isAdmin && !hasBatches"
+              data-testid="btn-edit-event"
               variant="outline"
               @click="router.push({ name: 'event-edit', params: { eventId: event.id } })"
             >
@@ -556,7 +559,7 @@ onMounted(async () => {
             <template v-if="authStore.isAdmin">
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                  <Button>
+                  <Button data-testid="btn-add-slots">
                     <CalendarPlus class="mr-2 h-4 w-4" />
                     {{ t('duties.events.detail.addSlots') }}
                     <ChevronDown class="ml-1 h-3 w-3" />
@@ -575,7 +578,7 @@ onMounted(async () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="destructive" size="icon" @click="handleDeleteEvent">
+              <Button data-testid="btn-delete-event" variant="destructive" size="icon" @click="handleDeleteEvent">
                 <Trash2 class="h-4 w-4" />
               </Button>
             </template>
@@ -675,7 +678,7 @@ onMounted(async () => {
       </Transition>
 
       <!-- Duty Slots -->
-      <div class="space-y-4">
+      <div data-testid="section-duty-slots" class="space-y-4">
         <h2 class="text-xl font-semibold">{{ t('duties.events.detail.slots') }}</h2>
 
         <!-- Filters (only shown when multiple distinct values exist) -->

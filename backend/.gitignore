@@ -5,3 +5,4 @@ app.egg-info
 htmlcov
 .cache
 .venv
+.testmondata

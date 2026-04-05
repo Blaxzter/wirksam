@@ -73,7 +73,7 @@ const flowSteps = [
   <div class="space-y-12 sm:space-y-16 max-w-4xl mx-auto">
     <!-- Header -->
     <div class="space-y-4">
-      <Button variant="ghost" size="sm" @click="router.push({ name: 'landing' })">
+      <Button data-testid="btn-back" variant="ghost" size="sm" @click="router.push({ name: 'landing' })">
         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
@@ -87,7 +87,7 @@ const flowSteps = [
 
       <div class="text-center space-y-3">
         <Badge variant="secondary" class="text-sm px-3 py-1">How It Works</Badge>
-        <h1 class="text-2xl sm:text-4xl font-bold tracking-tight">
+        <h1 data-testid="page-heading" class="text-2xl sm:text-4xl font-bold tracking-tight">
           {{ $t('preauth.howItWorks.title') }}
         </h1>
         <p class="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">

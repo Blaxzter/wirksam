@@ -4,10 +4,16 @@ import os
 import subprocess
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Any
 
 import pytest_asyncio
 from sqlalchemy import event, text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.core.config import settings
 
@@ -104,7 +110,7 @@ async def test_engine(test_db_setup: None):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
     """Create a test database session with nested transaction rollback."""
     connection = await test_engine.connect()
     transaction = await connection.begin()
@@ -119,7 +125,7 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
         await session.begin_nested()
 
         @event.listens_for(session.sync_session, "after_transaction_end")
-        def _restart_savepoint(sync_session, nested_transaction):
+        def _restart_savepoint(sync_session: Any, nested_transaction: Any) -> None:  # pyright: ignore[reportUnusedFunction]
             if nested_transaction.nested and not nested_transaction._parent.nested:
                 sync_session.begin_nested()
 

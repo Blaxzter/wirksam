@@ -369,17 +369,17 @@ const handleSubmit = async () => {
   <div class="mx-auto max-w-3xl space-y-6">
     <!-- Header -->
     <div class="space-y-2">
-      <Button variant="ghost" size="sm" class="-ml-2" @click="router.push({ name: 'events' })">
+      <Button data-testid="btn-back" variant="ghost" size="sm" class="-ml-2" @click="router.push({ name: 'events' })">
         <ArrowLeft class="mr-1.5 h-4 w-4" />
         {{ t('common.actions.back') }}
       </Button>
-      <h1 class="text-3xl font-bold">{{ t('duties.events.createView.title') }}</h1>
+      <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('duties.events.createView.title') }}</h1>
       <p class="text-muted-foreground">{{ t('duties.events.createView.subtitle') }}</p>
     </div>
 
     <Accordion v-model="activeSection" type="single" collapsible class="space-y-4">
       <!-- Section 1: Event Details -->
-      <AccordionItem value="details" class="rounded-lg border">
+      <AccordionItem value="details" data-testid="section-event-details" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
             <CalendarPlus class="h-5 w-5 text-primary" />
@@ -395,7 +395,7 @@ const handleSubmit = async () => {
           <div class="space-y-4">
             <div class="space-y-2">
               <Label>{{ t('duties.events.fields.name') }} *</Label>
-              <Input v-model="name" />
+              <Input v-model="name" data-testid="input-event-name" />
             </div>
             <div class="space-y-2">
               <Label>{{ t('duties.events.fields.description') }}</Label>
@@ -421,7 +421,7 @@ const handleSubmit = async () => {
       </AccordionItem>
 
       <!-- Section 2: Event Group -->
-      <AccordionItem value="eventGroup" class="rounded-lg border">
+      <AccordionItem value="eventGroup" data-testid="section-event-group" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
             <Users class="h-5 w-5 text-primary" />
@@ -501,7 +501,7 @@ const handleSubmit = async () => {
       </AccordionItem>
 
       <!-- Section 3: Event Dates -->
-      <AccordionItem value="dates" class="rounded-lg border">
+      <AccordionItem value="dates" data-testid="section-event-dates" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
             <CalendarDays class="h-5 w-5 text-primary" />
@@ -624,7 +624,7 @@ const handleSubmit = async () => {
       </AccordionItem>
 
       <!-- Section 4: Schedule & Slots -->
-      <AccordionItem value="schedule" class="rounded-lg border">
+      <AccordionItem value="schedule" data-testid="section-schedule" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
             <Clock class="h-5 w-5 text-primary" />
@@ -660,7 +660,7 @@ const handleSubmit = async () => {
       </AccordionItem>
 
       <!-- Section 5: Preview -->
-      <AccordionItem value="preview" class="rounded-lg border">
+      <AccordionItem value="preview" data-testid="section-preview" class="rounded-lg border">
         <AccordionTrigger class="px-6 hover:no-underline">
           <div class="flex items-center gap-3">
             <CalendarPlus class="h-5 w-5 text-primary" />
@@ -703,10 +703,10 @@ const handleSubmit = async () => {
             />
           </div>
           <div class="mt-4 flex justify-end gap-3">
-            <Button variant="outline" @click="router.push({ name: 'events' })">
+            <Button data-testid="btn-cancel" variant="outline" @click="router.push({ name: 'events' })">
               {{ t('common.actions.cancel') }}
             </Button>
-            <Button :disabled="!isValid || submitting" @click="handleSubmit">
+            <Button data-testid="btn-submit" :disabled="!isValid || submitting" @click="handleSubmit">
               <CalendarPlus class="mr-2 h-4 w-4" />
               {{ submitting ? t('common.states.saving') : t('duties.events.createView.submit') }}
             </Button>

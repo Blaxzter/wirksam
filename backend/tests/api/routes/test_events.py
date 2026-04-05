@@ -46,7 +46,9 @@ class TestEventsRoutes:
 
         assert r.status_code == 403
 
-    async def test_create_event_as_admin(self, async_client: AsyncClient, as_admin):
+    async def test_create_event_as_admin(
+        self, async_client: AsyncClient, as_admin: None
+    ):
         """Test that an admin can create an event."""
         r = await async_client.post(
             "/api/v1/events/",
@@ -62,7 +64,7 @@ class TestEventsRoutes:
         assert r.json()["status"] == "draft"
 
     async def test_update_event_as_admin(
-        self, async_client: AsyncClient, test_event: Event, as_admin
+        self, async_client: AsyncClient, test_event: Event, as_admin: None
     ):
         """Test that an admin can update an event."""
         r = await async_client.patch(
@@ -74,7 +76,7 @@ class TestEventsRoutes:
         assert r.json()["name"] == "Updated Event Name"
 
     async def test_delete_event_as_admin(
-        self, async_client: AsyncClient, test_event: Event, as_admin
+        self, async_client: AsyncClient, test_event: Event, as_admin: None
     ):
         """Test that an admin can delete an event."""
         r = await async_client.delete(f"/api/v1/events/{test_event.id}")
@@ -101,7 +103,9 @@ class TestEventsRoutes:
 
         assert r.status_code == 404
 
-    async def test_create_event_with_slots(self, async_client: AsyncClient, as_admin):
+    async def test_create_event_with_slots(
+        self, async_client: AsyncClient, as_admin: None
+    ):
         """Test creating an event with auto-generated duty slots."""
         r = await async_client.post(
             "/api/v1/events/with-slots",
@@ -131,7 +135,7 @@ class TestEventsRoutes:
         assert data["event_group"] is None
 
     async def test_create_event_with_slots_and_new_group(
-        self, async_client: AsyncClient, as_admin
+        self, async_client: AsyncClient, as_admin: None
     ):
         """Test creating an event with slots and a new event group."""
         r = await async_client.post(
@@ -163,7 +167,7 @@ class TestEventsRoutes:
         assert data["duty_slots_created"] == 4  # 2 hours / 30 min
 
     async def test_create_event_with_slots_and_overrides(
-        self, async_client: AsyncClient, as_admin
+        self, async_client: AsyncClient, as_admin: None
     ):
         """Test per-date schedule overrides."""
         r = await async_client.post(

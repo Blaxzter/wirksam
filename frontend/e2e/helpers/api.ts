@@ -3,8 +3,30 @@
  */
 
 import type { Page } from '@playwright/test'
+import type {
+  BookingRead,
+  DutySlotRead,
+  EventCreateWithSlotsResponse,
+  EventGroupRead,
+  EventRead,
+} from '../../src/client/types.gen.js'
+
+export type { BookingRead, DutySlotRead, EventGroupRead, EventRead }
+export type EventWithSlots = EventCreateWithSlotsResponse
 
 export const API = process.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
+
+/** Return a unique test name to avoid collisions between parallel workers. */
+export function uniqueName(prefix: string): string {
+  return `${prefix} ${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+/** Return an ISO date string (YYYY-MM-DD) offset from today by `daysFromNow`. */
+export function futureDate(daysFromNow: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + daysFromNow)
+  return d.toISOString().slice(0, 10)
+}
 
 /** Extract the Auth0 access token from localStorage. */
 export async function getToken(page: Page): Promise<string> {
@@ -23,7 +45,7 @@ export async function getToken(page: Page): Promise<string> {
 /** Make an authenticated API call inside the browser context. */
 export async function api<T = unknown>(page: Page, method: string, path: string, body?: object): Promise<T> {
   const token = await getToken(page)
-  return page.evaluate(
+  const result = await page.evaluate(
     async ({ url, method, body, token }) => {
       const res = await fetch(url, {
         method,
@@ -33,19 +55,19 @@ export async function api<T = unknown>(page: Page, method: string, path: string,
         },
         body: body ? JSON.stringify(body) : undefined,
       })
-      if (res.status === 204) return null
-      return res.json()
+      if (res.status === 204) return { __status: 204, __ok: true, __body: null }
+      const json = await res.json()
+      return { __status: res.status, __ok: res.ok, __body: json }
     },
     { url: `${API}${path}`, method, body, token },
-  ) as Promise<T>
-}
-
-export interface EventGroupRead {
-  id: string
-  name: string
-  status: string
-  start_date: string
-  end_date: string
+  )
+  if (!result.__ok) {
+    const detail = typeof result.__body === 'object' && result.__body !== null
+      ? JSON.stringify(result.__body)
+      : String(result.__body)
+    throw new Error(`API ${method} ${path} failed with ${result.__status}: ${detail}`)
+  }
+  return result.__body as T
 }
 
 /** Create an event group (draft or published). Admin token required. */
@@ -56,8 +78,8 @@ export async function createGroup(
 ): Promise<EventGroupRead> {
   const draft = await api<EventGroupRead>(page, 'POST', '/event-groups/', {
     name,
-    start_date: '2026-06-10',
-    end_date: '2026-06-14',
+    start_date: futureDate(30),
+    end_date: futureDate(34),
   })
   if (status === 'draft') return draft
   return api<EventGroupRead>(page, 'PATCH', `/event-groups/${draft.id}`, { status: 'published' })
@@ -77,43 +99,6 @@ export async function clearAvailability(page: Page, groupId: string): Promise<vo
 
 // ── Event helpers ──────────────────────────────────────────────────────────────
 
-export interface EventRead {
-  id: string
-  name: string
-  description: string | null
-  status: string
-  start_date: string
-  end_date: string
-  location: string | null
-  category: string | null
-  event_group_id: string | null
-}
-
-export interface EventWithSlots {
-  event: EventRead
-  duty_slots_created: number
-}
-
-export interface DutySlotRead {
-  id: string
-  title: string
-  date: string
-  start_time: string | null
-  end_time: string | null
-  location: string | null
-  category: string | null
-  max_bookings: number
-  current_bookings: number
-  event_id: string
-}
-
-export interface BookingRead {
-  id: string
-  duty_slot_id: string
-  user_id: string
-  status: string
-}
-
 /** Create an event with auto-generated slots via the /events/with-slots endpoint. */
 export async function createEventWithSlots(
   page: Page,
@@ -130,10 +115,12 @@ export async function createEventWithSlots(
     slotDuration?: number
     peoplePerSlot?: number
   },
-): Promise<EventWithSlots> {
-  const startDate = opts.startDate ?? '2026-07-01'
-  const endDate = opts.endDate ?? '2026-07-01'
-  return api<EventWithSlots>(page, 'POST', '/events/with-slots', {
+): Promise<EventCreateWithSlotsResponse> {
+  // Use tomorrow to avoid the backend's future_slots_cutoff filtering out past-time slots
+  const defaultDate = futureDate(1)
+  const startDate = opts.startDate ?? defaultDate
+  const endDate = opts.endDate ?? defaultDate
+  return api<EventCreateWithSlotsResponse>(page, 'POST', '/events/with-slots', {
     name: opts.name,
     description: opts.description ?? null,
     start_date: startDate,

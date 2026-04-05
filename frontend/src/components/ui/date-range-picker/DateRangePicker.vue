@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import {
   CalendarDate,
@@ -73,7 +73,8 @@ function toIso(date: DateValue): string {
 }
 
 // Internal range model synced with props
-const rangeValue = ref<DateRange | undefined>(
+// Use shallowRef to preserve class identity (CalendarDate etc.) which ref's deep unwrap would strip
+const rangeValue = shallowRef<DateRange | undefined>(
   props.dateFrom
     ? {
         start: toCalendarDate(props.dateFrom),
@@ -82,7 +83,7 @@ const rangeValue = ref<DateRange | undefined>(
     : undefined,
 )
 
-const placeholder = ref<DateValue>(props.dateFrom ? toCalendarDate(props.dateFrom) : todayVal)
+const placeholder = shallowRef<DateValue>(props.dateFrom ? toCalendarDate(props.dateFrom) : todayVal)
 
 const formatter = useDateFormatter(locale.value)
 
@@ -112,7 +113,7 @@ function emitVisibleMonth(date: DateValue) {
   emit('update:visibleMonth', { from, to })
 }
 
-watch(placeholder, (val) => emitVisibleMonth(val), { immediate: true })
+watch(placeholder, (val) => emitVisibleMonth(val as DateValue), { immediate: true })
 
 function isMarked(date: DateValue): boolean {
   return props.markedDays.has(toIso(date))
@@ -121,7 +122,7 @@ function isMarked(date: DateValue): boolean {
 function isEndpoint(date: DateValue): boolean {
   if (!rangeValue.value) return false
   const { start, end } = rangeValue.value
-  return (!!start && date.compare(start) === 0) || (!!end && date.compare(end) === 0)
+  return (!!start && date.compare(start as DateValue) === 0) || (!!end && date.compare(end as DateValue) === 0)
 }
 
 // Display label

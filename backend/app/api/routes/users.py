@@ -5,14 +5,15 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from sqlmodel import select
+from sqlalchemy import select
+from sqlmodel import col
 
 from app.api.deps import (
+    AnyUser,
     CurrentSuperuser,
     CurrentUser,
     DBDep,
     auth0,
-    get_or_create_user,
 )
 from app.core.config import settings
 from app.core.security import verify_password
@@ -34,10 +35,10 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/me", response_model=UserProfile)
 async def get_current_user_profile(
+    user: AnyUser,
     profile_init: ProfileInit | None = None,
     *,
     session: DBDep,
-    claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
 ) -> UserProfile:
     """Get current user profile information.
 
@@ -45,45 +46,54 @@ async def get_current_user_profile(
     This allows the frontend to send email/name from Auth0 ID token
     when the user first logs in.
 
-    Note: This endpoint does NOT check is_active, so even pending users
-    can retrieve their profile status after registering.
+    Does NOT require is_active, so even pending users can retrieve
+    their profile status after registering.
     """
-    profile_dict = profile_init.model_dump() if profile_init else None
-    user = await get_or_create_user(session, claims, profile_data=profile_dict)
+    if profile_init:
+        dirty = False
+        for field in (
+            "name",
+            "email",
+            "picture",
+            "email_verified",
+            "preferred_language",
+        ):
+            value = getattr(profile_init, field, None)
+            if value is not None and getattr(user, field) != value:
+                setattr(user, field, value)
+                dirty = True
 
-    return UserProfile(
-        sub=claims["sub"],
-        name=user.name,
-        email=user.email,
-        picture=user.picture,
-        phone_number=user.phone_number,
-        preferred_language=user.preferred_language,
-        email_verified=user.email_verified,
-        roles=user.roles,
-        is_admin=user.is_admin,
-        is_active=user.is_active,
-        rejection_reason=user.rejection_reason,
-    )
+        # Auto-activate superadmin emails that were created before email was synced
+        if user.email and user.email in [str(e) for e in settings.SUPERADMIN_EMAILS]:
+            if "admin" not in user.roles:
+                user.roles = list(user.roles) + ["admin"]
+                dirty = True
+            if not user.is_active:
+                user.is_active = True
+                dirty = True
+
+        if dirty:
+            session.add(user)
+            await session.flush()
+
+    return UserProfile.model_validate(user)
 
 
 @router.patch("/me", response_model=UserProfile)
 async def update_user_profile(
     user_update: UserProfileUpdate,
     current_user: CurrentUser,
-    claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
 ) -> UserProfile:
     """Update current user profile information using Auth0 Management API."""
-    user_id: str | None = claims.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID not found")
+    auth0_sub = current_user.auth0_sub
 
-    # Update user in Auth0 using Management API
-    success = await update_auth0_user(user_id, user_update)
-
-    if not success:
-        raise HTTPException(
-            status_code=500, detail="Failed to update user profile in Auth0"
-        )
+    # In test mode, skip Auth0 Management API call
+    if not settings.TESTING:
+        success = await update_auth0_user(auth0_sub, user_update)
+        if not success:
+            raise HTTPException(
+                status_code=500, detail="Failed to update user profile in Auth0"
+            )
 
     # Sync picture to local DB
     if user_update.picture is not None:
@@ -97,23 +107,20 @@ async def update_user_profile(
     if user_update.preferred_language is not None:
         current_user.preferred_language = user_update.preferred_language
 
-    return UserProfile(
-        sub=claims["sub"],
-        name=user_update.name if user_update.name is not None else current_user.name,
-        email=current_user.email,
-        picture=(
-            str(user_update.picture)
-            if user_update.picture is not None
-            else current_user.picture
-        ),
-        phone_number=current_user.phone_number,
-        preferred_language=current_user.preferred_language,
-        email_verified=current_user.email_verified,
-        bio=user_update.bio,
-        nickname=user_update.nickname,
-        roles=current_user.roles,
-        is_admin=current_user.is_admin,
-        is_active=current_user.is_active,
+    profile = UserProfile.model_validate(current_user)
+    return profile.model_copy(
+        update={
+            k: v
+            for k, v in {
+                "name": user_update.name,
+                "picture": str(user_update.picture)
+                if user_update.picture is not None
+                else None,
+                "bio": user_update.bio,
+                "nickname": user_update.nickname,
+            }.items()
+            if v is not None
+        }
     )
 
 
@@ -134,9 +141,9 @@ async def get_approval_password_status(
 
 @router.post("/self-approve", response_model=UserProfile)
 async def self_approve(
+    user: AnyUser,
     body: SelfApproveRequest,
     session: DBDep,
-    claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
 ) -> UserProfile:
     """Allow a pending user to self-approve by providing the approval password.
 
@@ -144,8 +151,6 @@ async def self_approve(
     Returns 400 if the user is already active or rejected.
     Returns 403 if no approval password is configured or the password is wrong.
     """
-    user = await get_or_create_user(session, claims)
-
     if user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -174,18 +179,7 @@ async def self_approve(
     session.add(user)
     await session.flush()
 
-    return UserProfile(
-        sub=claims["sub"],
-        name=user.name,
-        email=user.email,
-        picture=user.picture,
-        preferred_language=user.preferred_language,
-        email_verified=user.email_verified,
-        roles=user.roles,
-        is_admin=user.is_admin,
-        is_active=user.is_active,
-        rejection_reason=user.rejection_reason,
-    )
+    return UserProfile.model_validate(user)
 
 
 @router.get("/auth0-management-url")
@@ -265,8 +259,8 @@ async def export_user_data(
     user_id = current_user.id
 
     # Bookings
-    bookings_result = await session.exec(
-        select(Booking).where(Booking.user_id == user_id)
+    bookings_result = await session.execute(
+        select(Booking).where(col(Booking.user_id) == user_id)
     )
     bookings = [
         {
@@ -281,13 +275,13 @@ async def export_user_data(
             "cancelled_event_name": b.cancelled_event_name,
             "created_at": b.created_at.isoformat(),
         }
-        for b in bookings_result.all()
+        for b in bookings_result.scalars().all()
     ]
 
     # Notification preferences
-    subs_result = await session.exec(
+    subs_result = await session.execute(
         select(NotificationSubscription).where(
-            NotificationSubscription.user_id == user_id
+            col(NotificationSubscription.user_id) == user_id
         )
     )
     notification_preferences = [
@@ -298,18 +292,18 @@ async def export_user_data(
             "telegram_enabled": s.telegram_enabled,
             "is_muted": s.is_muted,
         }
-        for s in subs_result.all()
+        for s in subs_result.scalars().all()
     ]
 
     # Availability
-    avail_result = await session.exec(
-        select(UserAvailability).where(UserAvailability.user_id == user_id)
+    avail_result = await session.execute(
+        select(UserAvailability).where(col(UserAvailability.user_id) == user_id)
     )
-    availabilities = []
-    for a in avail_result.all():
-        dates_result = await session.exec(
+    availabilities: list[dict[str, Any]] = []
+    for a in avail_result.scalars().all():
+        dates_result = await session.execute(
             select(UserAvailabilityDate).where(
-                UserAvailabilityDate.availability_id == a.id
+                col(UserAvailabilityDate.availability_id) == a.id
             )
         )
         availabilities.append(
@@ -322,7 +316,7 @@ async def export_user_data(
                         "start_time": str(d.start_time) if d.start_time else None,
                         "end_time": str(d.end_time) if d.end_time else None,
                     }
-                    for d in dates_result.all()
+                    for d in dates_result.scalars().all()
                 ],
             }
         )
@@ -347,40 +341,31 @@ async def export_user_data(
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_current_user(
+    user: AnyUser,
     session: DBDep,
-    claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
 ) -> None:
     """Delete the currently authenticated user's account.
 
-    This endpoint does NOT require is_active so that pending users
-    can revoke their approval request before being activated.
+    Does NOT require is_active so that pending users can revoke
+    their approval request before being activated.
 
     This will:
-    1. Delete all user data (projects, tasks) from the database
-    2. Delete the user record from the database
-    3. Delete the user from Auth0
+    1. Delete the user from Auth0
+    2. Delete the user record and cascaded data from the database
     """
-    auth0_sub: str | None = claims.get("sub")
-    if not auth0_sub:
-        raise HTTPException(status_code=400, detail="User ID not found in token")
-
-    user = await get_or_create_user(session, claims)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # Delete user from Auth0 first — if this fails, we abort to keep things consistent
-    auth0_deleted = await delete_auth0_user(auth0_sub)
-    if not auth0_deleted:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to delete account from authentication provider",
-        )
+    if not settings.TESTING:
+        auth0_deleted = await delete_auth0_user(user.auth0_sub)
+        if not auth0_deleted:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to delete account from authentication provider",
+            )
 
-    # Delete user from DB (cascades to projects → tasks)
     await session.delete(user)
     await session.commit()
 
-    logger.info("User account deleted: %s", auth0_sub)
+    logger.info("User account deleted: %s", user.auth0_sub)
 
 
 @router.delete("/{user_id}", response_model=UserRead)

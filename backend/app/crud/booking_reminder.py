@@ -8,10 +8,16 @@ from sqlmodel import col
 
 from app.crud.base import CRUDBase
 from app.models.booking_reminder import BookingReminder
-from app.schemas.booking_reminder import AllowedChannel, BookingReminderCreate, ReminderOffsetEntry
+from app.schemas.booking_reminder import (
+    AllowedChannel,
+    BookingReminderCreate,
+    ReminderOffsetEntry,
+)
 
 
-class CRUDBookingReminder(CRUDBase[BookingReminder, BookingReminderCreate, BookingReminderCreate]):
+class CRUDBookingReminder(
+    CRUDBase[BookingReminder, BookingReminderCreate, BookingReminderCreate]
+):
     async def create_reminder(
         self,
         db: AsyncSession,

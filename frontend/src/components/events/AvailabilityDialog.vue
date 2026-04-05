@@ -159,7 +159,7 @@ defineExpose({ resetForm })
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-lg max-h-[85vh] overflow-y-auto">
+    <DialogContent class="max-w-lg max-h-[85vh] overflow-y-auto" data-testid="dialog-availability">
       <DialogHeader>
         <DialogTitle>{{ t('duties.availability.title') }}</DialogTitle>
         <DialogDescription>{{ t('duties.availability.subtitle') }}</DialogDescription>
@@ -174,6 +174,7 @@ defineExpose({ resetForm })
               v-for="type in availabilityTypes"
               :key="type"
               type="button"
+              :data-testid="`availability-type-${type}`"
               class="rounded-lg border-2 p-3 text-left text-sm transition-colors"
               :class="
                 form.availability_type === type
@@ -297,7 +298,7 @@ defineExpose({ resetForm })
               </div>
             </div>
           </div>
-          <Button type="button" variant="outline" size="sm" @click="addDateEntry">
+          <Button type="button" variant="outline" size="sm" data-testid="btn-add-date" @click="addDateEntry">
             + {{ t('duties.availability.fields.dates') }}
           </Button>
         </div>
@@ -309,10 +310,10 @@ defineExpose({ resetForm })
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" @click="open = false">
+          <Button type="button" variant="outline" data-testid="btn-cancel" @click="open = false">
             {{ t('common.actions.cancel') }}
           </Button>
-          <Button type="submit">{{ t('common.actions.save') }}</Button>
+          <Button type="submit" data-testid="btn-save">{{ t('common.actions.save') }}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

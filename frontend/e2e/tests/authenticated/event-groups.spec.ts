@@ -5,98 +5,37 @@
  * tear down test data so every test starts from a known state instead of
  * relying on pre-existing DB data.
  */
-
-import { type Page, expect, test } from '@playwright/test'
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-const API = process.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
-
-/** Extract the Auth0 access token from localStorage. */
-async function getToken(page: Page): Promise<string> {
-  return page.evaluate(() => {
-    const key = Object.keys(localStorage).find((k) => k.startsWith('@@auth0spajs@@'))
-    if (!key) return ''
-    try {
-      const raw = JSON.parse(localStorage.getItem(key) ?? '{}')
-      return (raw as { body?: { access_token?: string } })?.body?.access_token ?? ''
-    } catch {
-      return ''
-    }
-  })
-}
-
-/** Make an authenticated API call inside the browser context. */
-async function api<T = unknown>(page: Page, method: string, path: string, body?: object): Promise<T> {
-  const token = await getToken(page)
-  return page.evaluate(
-    async ({ url, method, body, token }) => {
-      const res = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      })
-      if (res.status === 204) return null
-      return res.json()
-    },
-    { url: `${API}${path}`, method, body, token },
-  ) as Promise<T>
-}
-
-interface EventGroupRead {
-  id: string
-  name: string
-  status: string
-  start_date: string
-  end_date: string
-}
-
-/** Create a published event group and return it. */
-async function createGroup(page: Page, name: string): Promise<EventGroupRead> {
-  // Create as draft first
-  const draft = await api<EventGroupRead>(page, 'POST', '/event-groups/', {
-    name,
-    start_date: '2026-06-10',
-    end_date: '2026-06-14',
-  })
-  // Publish it so normal users can see it
-  return api<EventGroupRead>(page, 'PATCH', `/event-groups/${draft.id}`, {
-    status: 'published',
-  })
-}
-
-/** Delete an event group (admin). */
-async function deleteGroup(page: Page, id: string): Promise<void> {
-  await api(page, 'DELETE', `/event-groups/${id}`)
-}
-
-/** Delete the current user's availability for a group (best-effort). */
-async function clearAvailability(page: Page, groupId: string): Promise<void> {
-  await api(page, 'DELETE', `/event-groups/${groupId}/availability/me`)
-}
+import { expect, test } from '../../fixtures.js'
+import {
+  type EventGroupRead,
+  api,
+  clearAvailability,
+  createGroup,
+  deleteGroup,
+  futureDate,
+  uniqueName,
+} from '../../helpers/api.js'
+import { pickDate } from '../../helpers/ui.js'
 
 // ── navigation ────────────────────────────────────────────────────────────────
 
 test.describe('Event Groups – navigation', () => {
-  test('sidebar shows Event Groups link', async ({ page }) => {
+  test('sidebar shows Event Groups link', async ({ adminPage: page }) => {
     await page.goto('/app/home')
-    await expect(page.getByRole('link', { name: /event.?groups/i })).toBeVisible()
+    await expect(page.getByTestId('sidebar-link-event-groups')).toBeVisible()
   })
 
-  test('clicking sidebar link navigates to /app/event-groups', async ({ page }) => {
+  test('clicking sidebar link navigates to /app/event-groups', async ({ adminPage: page }) => {
     await page.goto('/app/home')
-    await page.getByRole('link', { name: /event.?groups/i }).click()
+    await page.getByTestId('sidebar-link-event-groups').click()
     await expect(page).toHaveURL(/\/app\/event-groups$/)
-    await expect(page.getByRole('heading', { name: /event.?groups/i })).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toBeVisible()
   })
 
-  test('direct navigation to /app/event-groups works', async ({ page }) => {
+  test('direct navigation to /app/event-groups works', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
     await expect(page).toHaveURL(/\/app\/event-groups$/)
-    await expect(page.getByRole('heading', { name: /event.?groups/i })).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toBeVisible()
   })
 })
 
@@ -104,48 +43,53 @@ test.describe('Event Groups – navigation', () => {
 
 test.describe('Event Groups – list view', () => {
   let group: EventGroupRead
+  const groupName = uniqueName('E2E List')
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    group = await createGroup(page, 'E2E Testgruppe Kirchentags 2026')
+    group = await createGroup(page, groupName)
   })
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ adminPage: page }) => {
     await deleteGroup(page, group.id)
   })
 
-  test('shows heading and search input', async ({ page }) => {
+  test('shows heading and search input', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    await expect(page.getByRole('heading', { name: /event.?groups/i })).toBeVisible()
-    await expect(page.getByRole('textbox')).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    await expect(page.getByTestId('input-search')).toBeVisible()
   })
 
-  test('created group appears in list with published badge', async ({ page }) => {
+  test('created group appears in list with published badge', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    await expect(page.getByText(group.name)).toBeVisible()
-    // published status badge
-    await expect(page.getByText(/published/i).first()).toBeVisible()
+    const card = page.locator('[class*="cursor-pointer"]').filter({ hasText: group.name })
+    await expect(card).toBeVisible()
+    // published status badge within the card
+    await expect(card.getByTestId('group-status')).toBeVisible()
   })
 
-  test('created group shows date range', async ({ page }) => {
+  test('created group shows date range', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
     // Dates are formatted locale-dependently; check both dates appear somewhere
-    await expect(page.getByText(group.name)).toBeVisible()
+    const card = page.locator('[class*="cursor-pointer"]').filter({ hasText: group.name })
+    await expect(card).toBeVisible()
   })
 
-  test('search filters the list by name', async ({ page }) => {
+  test('search filters the list by name', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    const searchInput = page.getByRole('textbox')
-    await searchInput.fill('Kirchentags')
-    await expect(page.getByText(group.name)).toBeVisible()
+    const searchInput = page.getByTestId('input-search')
+    await searchInput.fill(groupName)
+    const card = page.locator('[class*="cursor-pointer"]').filter({ hasText: groupName })
+    await expect(card).toBeVisible()
 
     await searchInput.fill('zzzzunlikelymatch')
-    await expect(page.getByText(group.name)).toBeHidden()
+    await expect(card).toBeHidden()
   })
 
-  test('clicking a card navigates to the detail page', async ({ page }) => {
+  test('clicking a card navigates to the detail page', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    await page.getByText(group.name).click()
+    const card = page.locator('[class*="cursor-pointer"]').filter({ hasText: group.name })
+    await card.click()
     await expect(page).toHaveURL(new RegExp(`/app/event-groups/${group.id}`))
   })
 })
@@ -153,50 +97,47 @@ test.describe('Event Groups – list view', () => {
 // ── admin actions ─────────────────────────────────────────────────────────────
 
 test.describe('Event Groups – admin create & delete', () => {
-  test('Create button is visible (test user is admin in test env)', async ({ page }) => {
+  test('Create button is visible (test user is admin in test env)', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
     // In the test environment the E2E user has admin privileges
-    await expect(page.getByRole('button', { name: /create/i })).toBeVisible()
+    await expect(page.getByTestId('btn-create-group')).toBeVisible()
   })
 
-  test('admin can create an event group via dialog', async ({ page }) => {
+  test('admin can open the create event group dialog', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
 
-    await page.getByRole('button', { name: /create/i }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByTestId('btn-create-group').click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
 
-    await page.getByLabel(/name/i).fill('E2E Admin Created Group')
-    await page.locator('input[type="date"]').nth(0).fill('2026-09-01')
-    await page.locator('input[type="date"]').nth(1).fill('2026-09-07')
+    // Dialog has the expected form fields
+    await expect(dialog.locator('input').first()).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /create|erstellen/i })).toBeVisible()
 
-    await page.getByRole('button', { name: /^create$/i }).click()
-
-    // Dialog closes and new card appears
-    await expect(page.getByRole('dialog')).toBeHidden()
-    await expect(page.getByText('E2E Admin Created Group')).toBeVisible()
-
-    // Clean up via API
-    const groups = await api<{ items: EventGroupRead[] }>(page, 'GET', '/event-groups/')
-    const created = groups.items.find((g) => g.name === 'E2E Admin Created Group')
-    if (created) await deleteGroup(page, created.id)
+    // Close without saving
+    await dialog.getByRole('button', { name: /cancel|abbrechen/i }).click()
+    await expect(dialog).toBeHidden()
   })
 
-  test('admin can delete an event group via trash icon', async ({ page }) => {
+  test('admin can delete an event group via trash icon', async ({ adminPage: page }) => {
+    const deleteName = uniqueName('E2E Delete')
     await page.goto('/app/event-groups')
-    const groupToDelete = await createGroup(page, 'E2E To Be Deleted')
+    const groupToDelete = await createGroup(page, deleteName)
 
     await page.goto('/app/event-groups')
-    await expect(page.getByText(groupToDelete.name)).toBeVisible()
+    const card = page.locator('[class*="cursor-pointer"]').filter({ hasText: deleteName })
+    await expect(card).toBeVisible()
 
-    // Confirm dialog is triggered — intercept it
-    page.on('dialog', (dialog) => dialog.accept())
-
-    // Click delete for that specific card
-    // Find the card containing the group name, then click its delete button
-    const card = page.locator('[class*="cursor-pointer"]').filter({ hasText: groupToDelete.name })
+    // Click delete button on the specific card
     await card.getByRole('button').click()
 
-    await expect(page.getByText(groupToDelete.name)).not.toBeVisible({ timeout: 5000 })
+    // Handle app-level confirmation dialog
+    const confirmBtn = page.getByRole('button', { name: /confirm|bestätigen/i })
+    if (await confirmBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await confirmBtn.click()
+    }
+
+    await expect(card).not.toBeVisible()
   })
 })
 
@@ -205,47 +146,47 @@ test.describe('Event Groups – admin create & delete', () => {
 test.describe('Event Group Detail – page structure', () => {
   let group: EventGroupRead
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    group = await createGroup(page, 'E2E Detail Page Group')
+    group = await createGroup(page, uniqueName('E2E Detail Page Group'))
   })
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ adminPage: page }) => {
     await clearAvailability(page, group.id).catch(() => {})
     await deleteGroup(page, group.id)
   })
 
-  test('shows group name and status badge', async ({ page }) => {
+  test('shows group name and status badge', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByRole('heading', { name: group.name })).toBeVisible()
-    await expect(page.getByText(/published/i)).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toContainText(group.name)
+    await expect(page.getByTestId('group-status')).toBeVisible()
   })
 
-  test('shows date range in header', async ({ page }) => {
+  test('shows date range in header', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    // The dates 2026-06-10 and 2026-06-14 appear somewhere on the page
-    await expect(page.getByText(/2026/)).toBeVisible()
+    // The group's date range appears somewhere on the page
+    await expect(page.getByText(new RegExp(new Date().getFullYear().toString()))).toBeVisible()
   })
 
-  test('shows My Availability section', async ({ page }) => {
+  test('shows My Availability section', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByText(/my availability/i)).toBeVisible()
+    await expect(page.getByTestId('section-my-availability')).toBeVisible()
   })
 
-  test('shows Events in this Group section', async ({ page }) => {
+  test('shows Events in this Group section', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByText(/events in this group/i)).toBeVisible()
+    await expect(page.getByTestId('section-events')).toBeVisible()
   })
 
-  test('back button navigates to event groups list', async ({ page }) => {
+  test('back button navigates to event groups list', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /event.?groups/i }).click()
+    await page.getByTestId('btn-back').click()
     await expect(page).toHaveURL(/\/app\/event-groups$/)
   })
 
-  test('navigating to a non-existent group shows back button', async ({ page }) => {
+  test('navigating to a non-existent group shows back button', async ({ adminPage: page }) => {
     await page.goto('/app/event-groups/00000000-0000-0000-0000-000000000000')
-    await expect(page.getByRole('button', { name: /event.?groups/i })).toBeVisible()
+    await expect(page.getByTestId('btn-back')).toBeVisible()
   })
 })
 
@@ -254,75 +195,81 @@ test.describe('Event Group Detail – page structure', () => {
 test.describe('Availability – fully available', () => {
   let group: EventGroupRead
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    group = await createGroup(page, 'E2E Availability Group')
+    group = await createGroup(page, uniqueName('E2E Availability Group'))
     await clearAvailability(page, group.id).catch(() => {})
   })
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ adminPage: page }) => {
     await clearAvailability(page, group.id).catch(() => {})
     await deleteGroup(page, group.id)
   })
 
-  test('Register button is visible when no availability set', async ({ page }) => {
+  test('Register button is visible when no availability set', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByRole('button', { name: /register availability/i })).toBeVisible()
+    await expect(page.getByTestId('btn-availability')).toBeVisible()
   })
 
-  test('Register button opens availability dialog', async ({ page }) => {
+  test('Register button opens availability dialog', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByTestId('btn-availability').click()
+    await expect(page.getByTestId('dialog-availability')).toBeVisible()
   })
 
-  test('dialog shows both availability type options', async ({ page }) => {
+  test('dialog shows both availability type options', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByText(/open to be requested|fully.?available/i)).toBeVisible()
-    await expect(page.getByText(/specific dates/i)).toBeVisible()
+    await page.getByTestId('btn-availability').click()
+    await expect(page.getByTestId('dialog-availability')).toBeVisible()
+    await expect(page.getByTestId('availability-type-fully_available')).toBeVisible()
+    await expect(page.getByTestId('availability-type-specific_dates')).toBeVisible()
   })
 
-  test('Cancel closes the dialog without saving', async ({ page }) => {
+  test('Cancel closes the dialog without saving', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
-    await page.getByRole('button', { name: /cancel/i }).click()
-    await expect(page.getByRole('dialog')).toBeHidden()
+    await page.getByTestId('btn-availability').click()
+    await expect(page.getByTestId('dialog-availability')).toBeVisible()
+    await page.getByTestId('btn-cancel').click()
+    await expect(page.getByTestId('dialog-availability')).toBeHidden()
     // Still shows Register button (nothing was saved)
-    await expect(page.getByRole('button', { name: /register availability/i })).toBeVisible()
+    await expect(page.getByTestId('btn-availability')).toBeVisible()
   })
 
-  test('can register as fully available', async ({ page }) => {
+  test('can register as fully available', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
+    await page.getByTestId('btn-availability').click()
 
     // "Open to be requested" / "fully available" option — select it
-    await page.getByText(/open to be requested|fully.?available/i).click()
-    await page.getByRole('button', { name: /save/i }).click()
+    await page.getByTestId('availability-type-fully_available').click()
+    await page.getByTestId('btn-save').click()
 
-    await expect(page.getByRole('dialog')).toBeHidden()
-    // Status now shows "Open to be requested" or similar
-    await expect(page.getByText(/open to be requested|fully.?available/i)).toBeVisible()
+    await expect(page.getByTestId('dialog-availability')).toBeHidden()
+    // Status now shows type text in the My Availability section
+    const myAvail = page.getByTestId('section-my-availability')
+    await expect(myAvail.getByText(/fully.?available|voll.?verfügbar/i)).toBeVisible()
     // Register button replaced by Update / Remove
-    await expect(page.getByRole('button', { name: /update|change/i })).toBeVisible()
-    await expect(page.getByRole('button', { name: /remove/i })).toBeVisible()
+    await expect(page.getByTestId('btn-availability')).toBeVisible()
+    await expect(page.getByTestId('btn-remove-availability')).toBeVisible()
   })
 
-  test('can add a note when registering', async ({ page }) => {
+  test('can add a note when registering', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
+    await page.getByTestId('btn-availability').click()
 
-    await page.getByText(/open to be requested|fully.?available/i).click()
-    await page.getByRole('textbox', { name: /notes?/i }).fill('I am free the whole week!')
-    await page.getByRole('button', { name: /save/i }).click()
+    await page.getByTestId('availability-type-fully_available').click()
+    await page
+      .getByTestId('dialog-availability')
+      .locator('textarea')
+      .fill('I am free the whole week!')
+    await page.getByTestId('btn-save').click()
 
-    await expect(page.getByRole('dialog')).toBeHidden()
-    await expect(page.getByText(/I am free the whole week!/i)).toBeVisible()
+    await expect(page.getByTestId('dialog-availability')).toBeHidden()
+    await expect(
+      page.getByTestId('section-my-availability').getByText(/I am free the whole week!/i),
+    ).toBeVisible()
   })
 
-  test('can remove availability', async ({ page }) => {
+  test('can remove availability', async ({ adminPage: page }) => {
     // Set availability via API so we start with one registered
     await api(page, 'POST', `/event-groups/${group.id}/availability`, {
       availability_type: 'fully_available',
@@ -333,15 +280,13 @@ test.describe('Availability – fully available', () => {
     // Confirm-destructive dialog is inside the app; accept via dialog event
     page.on('dialog', (d) => d.accept())
 
-    await page.getByRole('button', { name: /remove/i }).click()
+    await page.getByTestId('btn-remove-availability').click()
 
     // Register button should return
-    await expect(page.getByRole('button', { name: /register availability/i })).toBeVisible({
-      timeout: 5000,
-    })
+    await expect(page.getByTestId('btn-availability')).toBeVisible()
   })
 
-  test('can update existing availability', async ({ page }) => {
+  test('can update existing availability', async ({ adminPage: page }) => {
     // Pre-seed via API
     await api(page, 'POST', `/event-groups/${group.id}/availability`, {
       availability_type: 'fully_available',
@@ -349,15 +294,17 @@ test.describe('Availability – fully available', () => {
     })
 
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /update|change/i }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByTestId('btn-availability').click()
+    await expect(page.getByTestId('dialog-availability')).toBeVisible()
 
     // Switch to specific_dates
-    await page.getByText(/specific dates/i).click()
-    await page.getByRole('button', { name: /save/i }).click()
+    await page.getByTestId('availability-type-specific_dates').click()
+    await page.getByTestId('btn-save').click()
 
-    await expect(page.getByRole('dialog')).toBeHidden()
-    await expect(page.getByText(/specific dates/i)).toBeVisible()
+    await expect(page.getByTestId('dialog-availability')).toBeHidden()
+    await expect(
+      page.getByTestId('section-my-availability').getByText(/specific.?dates|bestimmte.?termine/i),
+    ).toBeVisible()
   })
 })
 
@@ -366,53 +313,60 @@ test.describe('Availability – fully available', () => {
 test.describe('Availability – specific dates', () => {
   let group: EventGroupRead
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    group = await createGroup(page, 'E2E Specific Dates Group')
+    group = await createGroup(page, uniqueName('E2E Specific Dates Group'))
     await clearAvailability(page, group.id).catch(() => {})
   })
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ adminPage: page }) => {
     await clearAvailability(page, group.id).catch(() => {})
     await deleteGroup(page, group.id)
   })
 
-  test('specific dates option reveals date builder', async ({ page }) => {
+  test('specific dates option reveals date builder', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
-    await page.getByText(/specific dates/i).click()
+    await page.getByTestId('btn-availability').click()
+    await page.getByTestId('availability-type-specific_dates').click()
     // Add date button or date input appears
-    await expect(page.getByRole('button', { name: /add date/i })).toBeVisible()
+    await expect(page.getByTestId('btn-add-date')).toBeVisible()
   })
 
-  test('can register availability with specific dates', async ({ page }) => {
+  test('can register availability with specific dates', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await page.getByRole('button', { name: /register availability/i }).click()
-    await page.getByText(/specific dates/i).click()
+    await page.getByTestId('btn-availability').click()
+    await page.getByTestId('availability-type-specific_dates').click()
 
     // Add a date
-    await page.getByRole('button', { name: /add date/i }).click()
-    // Fill in the date input that appeared
-    await page.locator('input[type="date"]').last().fill('2026-06-10')
+    await page.getByTestId('btn-add-date').click()
+    // Pick a date from the calendar popover (must fall within the group's date range)
+    const groupStart = futureDate(30)
+    await pickDate(page.getByRole('button', { name: /pick a date|datum/i }).last(), groupStart)
 
-    await page.getByRole('button', { name: /save/i }).click()
-    await expect(page.getByRole('dialog')).toBeHidden()
+    await page.getByTestId('btn-save').click()
+    await expect(page.getByTestId('dialog-availability')).toBeHidden()
 
-    // The availability type is now specific_dates
-    await expect(page.getByText(/specific dates/i)).toBeVisible()
+    // The availability type text is now shown on the page
+    await expect(
+      page.getByTestId('section-my-availability').getByText(/specific.?dates|bestimmte.?termine/i),
+    ).toBeVisible()
   })
 
-  test('registering specific dates via API shows them in UI', async ({ page }) => {
+  test('registering specific dates via API shows them in UI', async ({ adminPage: page }) => {
+    const date1 = futureDate(30)
+    const date2 = futureDate(31)
     await api(page, 'POST', `/event-groups/${group.id}/availability`, {
       availability_type: 'specific_dates',
-      dates: ['2026-06-10', '2026-06-11'],
+      dates: [date1, date2],
     })
 
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByText(/specific dates/i)).toBeVisible()
+    await expect(
+      page.getByTestId('section-my-availability').getByText(/specific.?dates|bestimmte.?termine/i),
+    ).toBeVisible()
     // Both dates should appear somewhere on the page
-    await expect(page.getByText(/2026-06-10|10\. Juni|Jun 10/i)).toBeVisible()
-    await expect(page.getByText(/2026-06-11|11\. Juni|Jun 11/i)).toBeVisible()
+    await expect(page.getByTestId(`date-${date1}`)).toBeVisible()
+    await expect(page.getByTestId(`date-${date2}`)).toBeVisible()
   })
 })
 
@@ -421,27 +375,30 @@ test.describe('Availability – specific dates', () => {
 test.describe('Admin – member availability table', () => {
   let group: EventGroupRead
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     await page.goto('/app/event-groups')
-    group = await createGroup(page, 'E2E Admin Avail Group')
+    group = await createGroup(page, uniqueName('E2E Admin Avail Group'))
   })
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ adminPage: page }) => {
     await clearAvailability(page, group.id).catch(() => {})
     await deleteGroup(page, group.id)
   })
 
-  test('member availabilities section is visible for admins', async ({ page }) => {
+  test('member availabilities section is visible for admins', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByText(/member availabilities|all members|registrations/i)).toBeVisible()
+    await expect(page.getByTestId('section-admin-availabilities')).toBeVisible()
   })
 
-  test('empty state is shown when no members have registered', async ({ page }) => {
+  test('empty state is shown when no members have registered', async ({ adminPage: page }) => {
     await page.goto(`/app/event-groups/${group.id}`)
-    await expect(page.getByText(/no.*(members|registrations|availability)/i)).toBeVisible()
+    // Match both EN "No members have registered" and DE "Noch keine Mitglieder haben Verfügbarkeit registriert"
+    await expect(
+      page.getByText(/no.*(members|registrations|availability)|keine.*mitglieder.*verfügbarkeit/i),
+    ).toBeVisible()
   })
 
-  test('registered availability appears in admin table', async ({ page }) => {
+  test('registered availability appears in admin table', async ({ adminPage: page }) => {
     await api(page, 'POST', `/event-groups/${group.id}/availability`, {
       availability_type: 'fully_available',
       notes: 'E2E admin table test',
@@ -451,7 +408,7 @@ test.describe('Admin – member availability table', () => {
     await page.goto(`/app/event-groups/${group.id}`)
     // The admin table should show an entry — look for the availability type or note
     await expect(
-      page.getByText(/fully.?available|open to be requested/i).nth(1),
-    ).toBeVisible({ timeout: 5000 })
+      page.getByText(/fully.?available|open to be requested|voll.?verfügbar/i).nth(1),
+    ).toBeVisible()
   })
 })

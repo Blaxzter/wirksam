@@ -1,41 +1,41 @@
 {
-  "home": {
-    "calendar": {
-      "title": "Calendar",
-      "filter": "Filter",
-      "filterTooltip": "{count} category hidden | {count} categories hidden",
-      "filterTooltipNone": "Filter calendar items",
-      "hiddenCount": "{count} category hidden | {count} categories hidden",
-      "filters": {
-        "events": "Events",
-        "groups": "Event Groups",
-        "bookings": "My Bookings"
-      }
-    },
-    "quickActions": {
-      "browseEvents": "Browse Events",
-      "howItWorks": "How It Works",
-      "myBookings": "My Bookings",
-      "title": "Quick Actions"
-    },
-    "stats": {
-      "users": {
-        "description": "Users awaiting approval",
-        "title": "Pending Users",
-        "pendingToast": "{count} user is waiting for approval | {count} users are waiting for approval",
-        "pendingAction": "Review",
-        "pendingDismiss": "Dismiss"
-      },
-      "bookings": {
-        "description": "Your confirmed duty bookings",
-        "title": "My Bookings"
-      },
-      "events": {
-        "description": "Available events to browse",
-        "title": "Events"
-      }
-    },
-    "subtitle": "Welcome back! Here's your duty overview.",
-    "title": "Dashboard"
-  }
+    "home": {
+        "calendar": {
+            "filter": "Filter",
+            "filterTooltip": "{count} category hidden | {count} categories hidden",
+            "filterTooltipNone": "Filter calendar items",
+            "filters": {
+                "bookings": "My Bookings",
+                "events": "Events",
+                "groups": "Event Groups"
+            },
+            "hiddenCount": "{count} category hidden | {count} categories hidden",
+            "title": "Calendar"
+        },
+        "quickActions": {
+            "browseEvents": "Browse Events",
+            "howItWorks": "How It Works",
+            "myBookings": "My Bookings",
+            "title": "Quick Actions"
+        },
+        "stats": {
+            "bookings": {
+                "description": "Your confirmed duty bookings",
+                "title": "My Bookings"
+            },
+            "events": {
+                "description": "Available events to browse",
+                "title": "Events"
+            },
+            "users": {
+                "description": "Users awaiting approval",
+                "pendingAction": "Review",
+                "pendingDismiss": "Dismiss",
+                "pendingToast": "{count} user is waiting for approval | {count} users are waiting for approval",
+                "title": "Pending Users"
+            }
+        },
+        "subtitle": "Welcome back! Here's your duty overview.",
+        "title": "Dashboard"
+    }
 }

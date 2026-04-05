@@ -60,15 +60,27 @@ setup('authenticate with Auth0', async ({ page }) => {
     await page.goto('/app/home')
   }
 
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 30_000 })
+  // Dismiss "What's New" dialog if it appears (blocks test interactions)
+  const dismissBtn = page.getByTestId('btn-dismiss-whats-new')
+  if (await dismissBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await dismissBtn.click()
+  }
+
+  // Wait for the dashboard to load (locale-independent via data-testid)
+  await expect(page.getByTestId('page-heading')).toBeVisible({ timeout: 30_000 })
 
   // Wait for the Auth0 SPA SDK to persist the token to localStorage.
-  // The SDK writes asynchronously after the token exchange completes.
   await page.waitForFunction(
     () => Object.keys(localStorage).some((k) => k.startsWith('@@auth0spajs@@')),
     null,
     { timeout: 15_000 },
   )
+
+  // Suppress "What's New" dialog and set English locale for all future tests
+  await page.evaluate(() => {
+    localStorage.setItem('wirksam-last-seen-changelog', '99.99.99')
+    localStorage.setItem('locale', 'en')
+  })
 
   mkdirSync(dirname(authFile), { recursive: true })
   await page.context().storageState({ path: authFile })

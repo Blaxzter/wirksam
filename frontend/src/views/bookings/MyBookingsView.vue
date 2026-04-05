@@ -286,7 +286,7 @@ onMounted(loadBookings)
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-2">
-        <h1 class="text-3xl font-bold">{{ t('duties.bookings.title') }}</h1>
+        <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('duties.bookings.title') }}</h1>
         <p class="text-muted-foreground">{{ t('duties.bookings.subtitle') }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -296,6 +296,7 @@ onMounted(loadBookings)
             <Tooltip v-for="opt in groupingOptions" :key="opt.mode">
               <TooltipTrigger as-child>
                 <Button
+                  :data-testid="`btn-group-${opt.mode}`"
                   :variant="activeGrouping === opt.mode ? 'default' : 'ghost'"
                   size="sm"
                   class="rounded-none border-0"
@@ -318,7 +319,7 @@ onMounted(loadBookings)
     <div class="flex flex-wrap items-center gap-4">
       <div class="relative flex-1">
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input v-model="searchQuery" :placeholder="t('common.actions.search')" class="pl-10" />
+        <Input v-model="searchQuery" data-testid="input-search" :placeholder="t('common.actions.search')" class="pl-10" />
       </div>
       <DateRangePicker
         :date-from="dateFrom"
@@ -330,6 +331,7 @@ onMounted(loadBookings)
         @update:visible-month="handleVisibleMonth"
       />
       <Button
+        data-testid="btn-toggle-cancelled"
         :variant="showCancelled ? 'default' : 'outline'"
         size="sm"
         @click="showCancelled = !showCancelled"

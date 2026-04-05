@@ -4,10 +4,14 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
+from app.models.duty_slot import DutySlot
+from app.models.user import User
 
 
 @pytest_asyncio.fixture
-async def test_booking(db_session: AsyncSession, test_duty_slot, test_user) -> Booking:
+async def test_booking(
+    db_session: AsyncSession, test_duty_slot: DutySlot, test_user: User
+) -> Booking:
     """Create a test booking."""
     booking = Booking(
         duty_slot_id=test_duty_slot.id,

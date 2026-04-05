@@ -1,12 +1,12 @@
 {
-  "title": "Neuigkeiten",
-  "subtitle": "Aktuelle Updates und Verbesserungen",
-  "latest": "Aktuell",
-  "whatsNew": {
-    "titleSingle": "Neues Update: {version}",
-    "titleMultiple": "{count} neue Updates",
-    "description": "Seit Ihrem letzten Besuch gibt es Verbesserungen.",
-    "dismiss": "Vielleicht später",
-    "showMe": "Änderungen ansehen"
-  }
+    "latest": "Aktuell",
+    "subtitle": "Aktuelle Updates und Verbesserungen",
+    "title": "Neuigkeiten",
+    "whatsNew": {
+        "description": "Seit Ihrem letzten Besuch gibt es Verbesserungen.",
+        "dismiss": "Vielleicht später",
+        "showMe": "Änderungen ansehen",
+        "titleMultiple": "{count} neue Updates",
+        "titleSingle": "Neues Update: {version}"
+    }
 }

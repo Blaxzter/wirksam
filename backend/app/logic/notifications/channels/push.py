@@ -33,7 +33,7 @@ class PushChannel(NotificationChannel):
             return False
 
         try:
-            from pywebpush import WebPushException, webpush
+            from pywebpush import WebPushException, webpush  # pyright: ignore[reportMissingTypeStubs]  # noqa: I001
 
             from app.core.db import async_session
             from app.crud.push_subscription import push_subscription as crud_push
@@ -77,11 +77,11 @@ class PushChannel(NotificationChannel):
                     )
                     any_success = True
                 except WebPushException as e:
+                    response = getattr(e, "response", None)
                     if (
-                        hasattr(e, "response")
-                        and e.response
-                        and e.response.status_code == 410
-                    ):  # type: ignore[union-attr]
+                        response is not None
+                        and getattr(response, "status_code", None) == 410
+                    ):
                         stale_endpoints.append(sub.endpoint)
                         logger.info(
                             f"Removing stale push subscription: {sub.endpoint[:50]}..."

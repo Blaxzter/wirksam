@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-screen items-center justify-center">
     <div class="text-center">
-      <h1 class="text-6xl font-bold text-gray-900 dark:text-gray-100">
+      <h1 data-testid="page-heading" class="text-6xl font-bold text-gray-900 dark:text-gray-100">
         {{ $t('common.errors.notFound.title') }}
       </h1>
       <p class="mt-4 text-xl text-gray-600 dark:text-gray-400">
@@ -11,6 +11,7 @@
         {{ $t('common.errors.notFound.description') }}
       </p>
       <router-link
+        data-testid="btn-go-home"
         to="/"
         class="mt-6 inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:bg-primary/90"
       >

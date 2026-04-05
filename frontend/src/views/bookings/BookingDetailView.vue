@@ -279,6 +279,7 @@ onMounted(loadData)
     <!-- Back + Header -->
     <div>
       <Button
+        data-testid="btn-back"
         variant="ghost"
         size="sm"
         class="mb-2 -ml-2 text-muted-foreground"
@@ -295,10 +296,10 @@ onMounted(loadData)
       <template v-else-if="booking && slot">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-bold tracking-tight">{{ slot.title }}</h1>
+            <h1 data-testid="page-heading" class="text-2xl font-bold tracking-tight">{{ slot.title }}</h1>
             <p v-if="eventName" class="text-muted-foreground mt-1">{{ eventName }}</p>
           </div>
-          <Badge :variant="isConfirmed ? 'default' : 'destructive'" class="mt-1">
+          <Badge data-testid="booking-status" :variant="isConfirmed ? 'default' : 'destructive'" class="mt-1">
             {{ t(`duties.bookings.statuses.${booking.status ?? 'confirmed'}`) }}
           </Badge>
         </div>
@@ -318,7 +319,7 @@ onMounted(loadData)
       </div>
 
       <!-- ── Slot Info Card ──────────────────────────────────── -->
-      <Card>
+      <Card data-testid="section-slot-info">
         <CardContent class="pt-6">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex items-start gap-2.5">
@@ -376,7 +377,7 @@ onMounted(loadData)
       </Card>
 
       <!-- ── My Notes Card ───────────────────────────────────── -->
-      <Card v-if="isConfirmed">
+      <Card v-if="isConfirmed" data-testid="section-notes">
         <CardHeader>
           <div class="flex items-center justify-between">
             <CardTitle class="text-base">{{ t('duties.dutySlots.detail.myNotes') }}</CardTitle>
@@ -419,7 +420,7 @@ onMounted(loadData)
       </Card>
 
       <!-- ── Reminders Card ──────────────────────────────────── -->
-      <Card v-if="isConfirmed || hasAnyReminders">
+      <Card v-if="isConfirmed || hasAnyReminders" data-testid="section-reminders">
         <CardHeader>
           <div class="flex items-center gap-2">
             <Bell class="h-4 w-4 text-amber-600 dark:text-amber-400" />
@@ -491,7 +492,7 @@ onMounted(loadData)
 
       <!-- ── Danger Zone ─────────────────────────────────────── -->
       <div v-if="isConfirmed" class="flex justify-end pt-2">
-        <Button variant="destructive" size="sm" @click="cancelBooking">
+        <Button data-testid="btn-cancel-booking" variant="destructive" size="sm" @click="cancelBooking">
           <Trash2 class="mr-1.5 h-4 w-4" />
           {{ t('duties.bookings.cancel') }}
         </Button>

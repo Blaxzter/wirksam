@@ -1,20 +1,20 @@
 {
-  "printButton": "Drucken",
-  "printEvent": "Veranstaltung drucken",
-  "overview": "Übersicht drucken",
-  "allEvents": "Alle Veranstaltungen drucken",
-  "scanToSignUp": "Scannen, um sich online anzumelden",
-  "nameColumn": "Name",
-  "contactColumn": "Kontakt",
-  "optionsDialog": {
-    "selectAll": "Alle auswählen"
-  },
-  "toolbar": {
-    "title": "Anzeigeoptionen",
-    "showTitle": "Titelspalte anzeigen",
-    "showLocation": "Ortspalte anzeigen",
-    "repeatHeader": "Kopfzeile auf jeder Seite",
-    "includeNames": "Gebuchte Namen anzeigen",
-    "filterDates": "Tage filtern"
-  }
+    "allEvents": "Alle Veranstaltungen drucken",
+    "contactColumn": "Kontakt",
+    "nameColumn": "Name",
+    "optionsDialog": {
+        "selectAll": "Alle auswählen"
+    },
+    "overview": "Übersicht drucken",
+    "printButton": "Drucken",
+    "printEvent": "Veranstaltung drucken",
+    "scanToSignUp": "Scannen, um sich online anzumelden",
+    "toolbar": {
+        "filterDates": "Tage filtern",
+        "includeNames": "Gebuchte Namen anzeigen",
+        "repeatHeader": "Kopfzeile auf jeder Seite",
+        "showLocation": "Ortspalte anzeigen",
+        "showTitle": "Titelspalte anzeigen",
+        "title": "Anzeigeoptionen"
+    }
 }

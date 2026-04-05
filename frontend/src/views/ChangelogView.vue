@@ -138,8 +138,8 @@ useAdaptiveCarouselHeight(carouselApi)
 
 function onCarouselInit(api: UnwrapRefCarouselApi) {
   carouselApi.value = api
-  api.on('select', () => {
-    const index = api.selectedScrollSnap()
+  api?.on('select', () => {
+    const index = api!.selectedScrollSnap()
     mobileSlide.value = index
     if (index !== activeIndex.value) {
       activeIndex.value = index
@@ -167,7 +167,7 @@ watch(activeIndex, (index) => {
   <div>
     <!-- Header — always centered -->
     <div class="mx-auto max-w-3xl pb-2">
-      <h1 class="text-3xl font-bold">{{ t('changelog.title') }}</h1>
+      <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('changelog.title') }}</h1>
       <p class="text-muted-foreground mt-2">{{ t('changelog.subtitle') }}</p>
     </div>
 
@@ -213,7 +213,7 @@ watch(activeIndex, (index) => {
     <div class="hidden xl:grid grid-cols-[1fr_48rem_1fr] mt-8">
       <!-- Nav in left gutter -->
       <div class="flex justify-end pr-8">
-        <nav class="w-44 sticky top-8 self-start">
+        <nav class="w-44 sticky top-8 self-start" data-testid="changelog-nav">
           <div class="rounded-lg border p-2 space-y-0.5">
             <button
               v-for="(entry, index) in entries"

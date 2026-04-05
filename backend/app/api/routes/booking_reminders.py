@@ -69,7 +69,9 @@ async def list_booking_reminders(
     db_booking = await crud_booking.get(session, str(booking_id), raise_404_error=True)
     if not current_user.is_admin and db_booking.user_id != current_user.id:
         raise_problem(
-            403, code="reminder.forbidden", detail="You can only view your own reminders"
+            403,
+            code="reminder.forbidden",
+            detail="You can only view your own reminders",
         )
     reminders = await crud_reminder.get_by_booking(session, booking_id=booking_id)
     return BookingReminderListResponse(items=reminders)  # type: ignore[arg-type]
@@ -90,16 +92,18 @@ async def add_booking_reminder(
     db_booking = await crud_booking.get(session, str(booking_id), raise_404_error=True)
     if not current_user.is_admin and db_booking.user_id != current_user.id:
         raise_problem(
-            403, code="reminder.forbidden", detail="You can only manage your own reminders"
+            403,
+            code="reminder.forbidden",
+            detail="You can only manage your own reminders",
         )
     if db_booking.status != "confirmed":
         raise_problem(
-            400, code="reminder.booking_not_confirmed", detail="Booking is not confirmed"
+            400,
+            code="reminder.booking_not_confirmed",
+            detail="Booking is not confirmed",
         )
     if not db_booking.duty_slot_id:
-        raise_problem(
-            400, code="reminder.no_slot", detail="Booking has no linked slot"
-        )
+        raise_problem(400, code="reminder.no_slot", detail="Booking has no linked slot")
 
     # Check max reminders
     count = await crud_reminder.count_by_booking(session, booking_id=booking_id)
@@ -140,7 +144,9 @@ async def delete_reminder(
         raise_problem(404, code="reminder.not_found", detail="Reminder not found")
     if not current_user.is_admin and reminder.user_id != current_user.id:
         raise_problem(
-            403, code="reminder.forbidden", detail="You can only delete your own reminders"
+            403,
+            code="reminder.forbidden",
+            detail="You can only delete your own reminders",
         )
     await session.delete(reminder)
 

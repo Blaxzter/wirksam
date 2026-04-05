@@ -21,12 +21,18 @@ class UserAvailability(Base, table=True):
 
     user_id: uuid.UUID = Field(
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("users.id"), nullable=False, index=True
+            sa.Uuid,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
     )
     event_group_id: uuid.UUID = Field(
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("event_groups.id"), nullable=False, index=True
+            sa.Uuid,
+            sa.ForeignKey("event_groups.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
     )
     availability_type: str = Field(
@@ -52,7 +58,10 @@ class UserAvailabilityDate(Base, table=True):
 
     availability_id: uuid.UUID = Field(
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("user_availabilities.id"), nullable=False, index=True
+            sa.Uuid,
+            sa.ForeignKey("user_availabilities.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
     )
     slot_date: datetime.date = Field(sa_column=sa.Column(sa.Date, nullable=False))

@@ -29,7 +29,10 @@ class Booking(Base, table=True):
     )
     user_id: uuid.UUID = Field(
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("users.id"), nullable=False, index=True
+            sa.Uuid,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
     )
     status: str = Field(

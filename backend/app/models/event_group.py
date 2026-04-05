@@ -27,7 +27,10 @@ class EventGroup(Base, table=True):
     created_by_id: uuid.UUID | None = Field(
         default=None,
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("users.id"), nullable=True, index=True
+            sa.Uuid,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=True,
+            index=True,
         ),
     )
 

@@ -46,6 +46,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
     """Application lifespan: seed notification types on startup, run reminder poller."""
     import asyncio
+    import signal
 
     from app.core.db import async_session
     from app.core.sse import sse_manager
@@ -56,10 +57,29 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
         await seed_notification_types(session)
     logger.info("Notification types seeded")
 
+    # Register signal handlers so SSE connections close BEFORE uvicorn
+    # waits for tasks to complete (lifespan teardown runs too late).
+    original_handlers: dict[int, Any] = {}
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        original_handlers[sig] = signal.getsignal(sig)
+
+        def _handler(
+            signum: int, frame: Any, _orig: Any = original_handlers[sig]
+        ) -> None:
+            sse_manager.shutdown_event.set()
+            # Re-raise to uvicorn's original handler so shutdown continues
+            if callable(_orig):
+                _orig(signum, frame)
+
+        signal.signal(sig, _handler)
+
     # Start reminder poller as a background task
     poller_task = asyncio.create_task(run_reminder_poller())
 
     yield
+
+    # Also signal here as a fallback (e.g. programmatic shutdown)
+    await sse_manager.shutdown()
 
     # Cancel reminder poller
     poller_task.cancel()
@@ -68,8 +88,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
     except asyncio.CancelledError:
         pass
 
-    # Signal SSE connections to close so uvicorn can shut down cleanly
-    await sse_manager.shutdown()
+    # Restore original signal handlers
+    for sig, handler in original_handlers.items():
+        signal.signal(sig, handler)
 
 
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":

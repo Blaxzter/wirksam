@@ -1,6 +1,7 @@
 """FastAPI app and client fixtures for testing."""
 
 from collections.abc import AsyncGenerator
+from typing import Any, get_args
 
 import pytest_asyncio
 from fastapi import FastAPI
@@ -31,10 +32,10 @@ async def app(
 
     fastapi_app.dependency_overrides[deps_module.get_db] = override_get_db
     fastapi_app.dependency_overrides[
-        deps_module.CurrentUser.__metadata__[0].dependency
+        get_args(deps_module.CurrentUser)[1].dependency
     ] = override_current_user
     fastapi_app.dependency_overrides[
-        deps_module.CurrentSuperuser.__metadata__[0].dependency
+        get_args(deps_module.CurrentSuperuser)[1].dependency
     ] = override_current_superuser
 
     yield fastapi_app
@@ -53,7 +54,7 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
 @pytest_asyncio.fixture
 async def as_admin(app: FastAPI, test_admin_user: User) -> AsyncGenerator[None, None]:
     """Temporarily override CurrentUser to return an admin user."""
-    dep = deps_module.CurrentUser.__metadata__[0].dependency
+    dep: Any = get_args(deps_module.CurrentUser)[1].dependency
     original = app.dependency_overrides.get(dep)
 
     async def override_current_user():

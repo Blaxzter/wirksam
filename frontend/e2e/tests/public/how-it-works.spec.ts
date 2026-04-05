@@ -12,7 +12,6 @@ test.describe('How It Works page', () => {
 
   test('shows page content', async ({ page }) => {
     await page.goto('/how-it-works')
-    // The page should render something beyond just the nav
-    await expect(page.locator('main').or(page.locator('[class*="container"]')).first()).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toBeVisible()
   })
 })

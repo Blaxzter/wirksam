@@ -41,65 +41,69 @@ function getPreference(typeId: string) {
 </script>
 
 <template>
-  <Card v-for="(categoryTypes, category) in groupedTypes" :key="category">
-    <CardHeader>
-      <CardTitle>{{ getCategoryLabel(category as string) }}</CardTitle>
-    </CardHeader>
-    <CardContent class="space-y-0">
-      <!-- Column headers -->
-      <div
-        class="text-muted-foreground mb-3 flex items-center gap-2 sm:gap-4 text-xs font-medium"
-      >
-        <div class="min-w-0 flex-1" />
-        <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
-          <Mail class="h-3.5 w-3.5 shrink-0" />
-          <span class="hidden sm:inline">{{ t('notifications.channels.email') }}</span>
+  <div v-bind="$attrs">
+    <Card v-for="(categoryTypes, category) in groupedTypes" :key="category">
+      <CardHeader>
+        <CardTitle>{{ getCategoryLabel(category as string) }}</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-0">
+        <!-- Column headers -->
+        <div
+          class="text-muted-foreground mb-3 flex items-center gap-2 sm:gap-4 text-xs font-medium"
+        >
+          <div class="min-w-0 flex-1" />
+          <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
+            <Mail class="h-3.5 w-3.5 shrink-0" />
+            <span class="hidden sm:inline">{{ t('notifications.channels.email') }}</span>
+          </div>
+          <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
+            <Smartphone class="h-3.5 w-3.5 shrink-0" />
+            <span class="hidden sm:inline">{{ t('notifications.channels.push') }}</span>
+          </div>
+          <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
+            <MessageCircle class="h-3.5 w-3.5 shrink-0" />
+            <span class="hidden sm:inline">{{ t('notifications.channels.telegram') }}</span>
+          </div>
         </div>
-        <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
-          <Smartphone class="h-3.5 w-3.5 shrink-0" />
-          <span class="hidden sm:inline">{{ t('notifications.channels.push') }}</span>
-        </div>
-        <div class="flex w-10 sm:w-24 items-center justify-center gap-1">
-          <MessageCircle class="h-3.5 w-3.5 shrink-0" />
-          <span class="hidden sm:inline">{{ t('notifications.channels.telegram') }}</span>
-        </div>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      <div
-        v-for="type in categoryTypes as NotificationType[]"
-        :key="type.id"
-        class="flex items-center gap-2 sm:gap-4 py-3"
-      >
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium">{{ t(`notifications.types.${type.code}.name`, type.name) }}</p>
-          <p v-if="type.description" class="text-muted-foreground text-xs">
-            {{ t(`notifications.types.${type.code}.description`, type.description) }}
-          </p>
-          <Badge v-if="type.is_admin_only" variant="secondary" class="mt-1 text-[10px]">
-            {{ t('notifications.adminOnly') }}
-          </Badge>
+        <div
+          v-for="type in categoryTypes as NotificationType[]"
+          :key="type.id"
+          class="flex items-center gap-2 sm:gap-4 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium">
+              {{ t(`notifications.types.${type.code}.name`, type.name) }}
+            </p>
+            <p v-if="type.description" class="text-muted-foreground text-xs">
+              {{ t(`notifications.types.${type.code}.description`, type.description) }}
+            </p>
+            <Badge v-if="type.is_admin_only" variant="secondary" class="mt-1 text-[10px]">
+              {{ t('notifications.adminOnly') }}
+            </Badge>
+          </div>
+          <div class="flex w-10 sm:w-24 justify-center">
+            <Switch
+              :model-value="getPreference(type.id).email"
+              @update:model-value="(v: boolean) => emit('set-preference', type.id, 'email', v)"
+            />
+          </div>
+          <div class="flex w-10 sm:w-24 justify-center">
+            <Switch
+              :model-value="getPreference(type.id).push"
+              @update:model-value="(v: boolean) => emit('set-preference', type.id, 'push', v)"
+            />
+          </div>
+          <div class="flex w-10 sm:w-24 justify-center">
+            <Switch
+              :model-value="getPreference(type.id).telegram"
+              @update:model-value="(v: boolean) => emit('set-preference', type.id, 'telegram', v)"
+            />
+          </div>
         </div>
-        <div class="flex w-10 sm:w-24 justify-center">
-          <Switch
-            :model-value="getPreference(type.id).email"
-            @update:model-value="(v: boolean) => emit('set-preference', type.id, 'email', v)"
-          />
-        </div>
-        <div class="flex w-10 sm:w-24 justify-center">
-          <Switch
-            :model-value="getPreference(type.id).push"
-            @update:model-value="(v: boolean) => emit('set-preference', type.id, 'push', v)"
-          />
-        </div>
-        <div class="flex w-10 sm:w-24 justify-center">
-          <Switch
-            :model-value="getPreference(type.id).telegram"
-            @update:model-value="(v: boolean) => emit('set-preference', type.id, 'telegram', v)"
-          />
-        </div>
-      </div>
-    </CardContent>
-  </Card>
+      </CardContent>
+    </Card>
+  </div>
 </template>

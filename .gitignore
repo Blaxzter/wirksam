@@ -9,3 +9,4 @@ __pycache__
 .config/auth0/config.json
 .playwright-mcp/
 .env.production
+e2e/.auth/user.json

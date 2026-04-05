@@ -473,6 +473,7 @@ onMounted(loadEvent)
       <!-- Header -->
       <div class="space-y-2">
         <Button
+          data-testid="btn-back"
           variant="ghost"
           size="sm"
           class="-ml-2"
@@ -481,7 +482,7 @@ onMounted(loadEvent)
           <ArrowLeft class="mr-1.5 h-4 w-4" />
           {{ t('common.actions.back') }}
         </Button>
-        <h1 class="text-3xl font-bold">
+        <h1 data-testid="page-heading" class="text-3xl font-bold">
           {{
             isBatchMode ? t('duties.events.editView.editBatch') : t('duties.events.editView.title')
           }}
@@ -568,7 +569,7 @@ onMounted(loadEvent)
       </Card>
 
       <!-- Schedule & Slots -->
-      <Card>
+      <Card data-testid="section-schedule">
         <CardHeader>
           <div class="flex items-center gap-3">
             <Clock class="h-5 w-5 text-primary" />
@@ -633,12 +634,13 @@ onMounted(loadEvent)
       <!-- Actions -->
       <div class="flex justify-end gap-3">
         <Button
+          data-testid="btn-cancel"
           variant="outline"
           @click="router.push({ name: 'event-detail', params: { eventId: eventId } })"
         >
           {{ t('common.actions.cancel') }}
         </Button>
-        <Button :disabled="!isValid || submitting" @click="handleSubmit">
+        <Button data-testid="btn-submit" :disabled="!isValid || submitting" @click="handleSubmit">
           <RefreshCw v-if="scheduleChanged" class="mr-2 h-4 w-4" />
           {{
             submitting

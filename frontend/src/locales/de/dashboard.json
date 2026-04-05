@@ -1,41 +1,41 @@
 {
-  "home": {
-    "calendar": {
-      "title": "Kalender",
-      "filter": "Filter",
-      "filterTooltip": "{count} Kategorie ausgeblendet | {count} Kategorien ausgeblendet",
-      "filterTooltipNone": "Kalendereinträge filtern",
-      "hiddenCount": "{count} Kategorie ausgeblendet | {count} Kategorien ausgeblendet",
-      "filters": {
-        "events": "Veranstaltungen",
-        "groups": "Veranstaltungsgruppen",
-        "bookings": "Meine Buchungen"
-      }
-    },
-    "quickActions": {
-      "browseEvents": "Veranstaltungen durchsuchen",
-      "howItWorks": "So funktioniert's",
-      "myBookings": "Meine Buchungen",
-      "title": "Schnellzugriff"
-    },
-    "stats": {
-      "users": {
-        "description": "Benutzer warten auf Freigabe",
-        "title": "Ausstehende Benutzer",
-        "pendingToast": "{count} Benutzer wartet auf Freigabe | {count} Benutzer warten auf Freigabe",
-        "pendingAction": "Überprüfen",
-        "pendingDismiss": "Schließen"
-      },
-      "bookings": {
-        "description": "Ihre bestätigten Dienstbuchungen",
-        "title": "Meine Buchungen"
-      },
-      "events": {
-        "description": "Verfügbare Veranstaltungen",
-        "title": "Veranstaltungen"
-      }
-    },
-    "subtitle": "Willkommen zurück! Hier ist Ihre Dienstübersicht.",
-    "title": "Dashboard"
-  }
+    "home": {
+        "calendar": {
+            "filter": "Filter",
+            "filterTooltip": "{count} Kategorie ausgeblendet | {count} Kategorien ausgeblendet",
+            "filterTooltipNone": "Kalendereinträge filtern",
+            "filters": {
+                "bookings": "Meine Buchungen",
+                "events": "Veranstaltungen",
+                "groups": "Veranstaltungsgruppen"
+            },
+            "hiddenCount": "{count} Kategorie ausgeblendet | {count} Kategorien ausgeblendet",
+            "title": "Kalender"
+        },
+        "quickActions": {
+            "browseEvents": "Veranstaltungen durchsuchen",
+            "howItWorks": "So funktioniert's",
+            "myBookings": "Meine Buchungen",
+            "title": "Schnellzugriff"
+        },
+        "stats": {
+            "bookings": {
+                "description": "Ihre bestätigten Dienstbuchungen",
+                "title": "Meine Buchungen"
+            },
+            "events": {
+                "description": "Verfügbare Veranstaltungen",
+                "title": "Veranstaltungen"
+            },
+            "users": {
+                "description": "Benutzer warten auf Freigabe",
+                "pendingAction": "Überprüfen",
+                "pendingDismiss": "Schließen",
+                "pendingToast": "{count} Benutzer wartet auf Freigabe | {count} Benutzer warten auf Freigabe",
+                "title": "Ausstehende Benutzer"
+            }
+        },
+        "subtitle": "Willkommen zurück! Hier ist Ihre Dienstübersicht.",
+        "title": "Dashboard"
+    }
 }

@@ -69,6 +69,7 @@ const initials = computed(() => {
           <SidebarMenuButton
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            data-testid="nav-user-menu"
           >
             <Avatar class="h-8 w-8 rounded-lg">
               <AvatarImage v-if="avatarUrl" :src="avatarUrl" :alt="displayName" />
@@ -118,11 +119,11 @@ const initials = computed(() => {
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem @click="$router.push({ name: 'settings' })">
+            <DropdownMenuItem data-testid="nav-user-settings" @click="$router.push({ name: 'settings' })">
               <BadgeCheck />
               {{ $t('navigation.user.actions.account') }}
             </DropdownMenuItem>
-            <DropdownMenuItem @click="$router.push({ name: 'notification-preferences' })">
+            <DropdownMenuItem data-testid="nav-user-notifications" @click="$router.push({ name: 'notification-preferences' })">
               <Bell />
               {{ $t('navigation.user.actions.notifications') }}
             </DropdownMenuItem>
@@ -132,7 +133,7 @@ const initials = computed(() => {
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem @click="authStore.logout">
+          <DropdownMenuItem data-testid="nav-user-logout" @click="authStore.logout">
             <LogOut />
             {{ $t('navigation.user.actions.logout') }}
           </DropdownMenuItem>

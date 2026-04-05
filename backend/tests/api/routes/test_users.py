@@ -79,12 +79,12 @@ class TestUserRouteHelpers:
         self,
         db_session: AsyncSession,
         test_user: User,
-        mock_auth0_claims: dict,
+        mock_auth0_claims: dict[str, str],
     ):
         profile = await get_current_user_profile(
+            user=test_user,
             profile_init=None,
             session=db_session,
-            claims=mock_auth0_claims,
         )
         assert profile.sub == mock_auth0_claims["sub"]
         assert profile.email == mock_auth0_claims["email"]
@@ -93,9 +93,8 @@ class TestUserRouteHelpers:
 
     async def test_update_user_profile(
         self,
-        monkeypatch,
+        monkeypatch: pytest.MonkeyPatch,
         test_user: User,
-        mock_auth0_claims: dict,
     ):
         called = {}
 
@@ -109,14 +108,12 @@ class TestUserRouteHelpers:
             fake_update_auth0_user,
         )
 
-        update = UserProfileUpdate(name="Updated Name", nickname="updated")
+        update = UserProfileUpdate(name="Updated Name", nickname="updated")  # type: ignore[reportCallIssue]
         profile = await update_user_profile(
             user_update=update,
             current_user=test_user,
-            claims=mock_auth0_claims,
         )
 
-        assert called["user_id"] == mock_auth0_claims["sub"]
         assert profile.name == "Updated Name"
         assert profile.nickname == "updated"
         assert profile.roles == test_user.roles

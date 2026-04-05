@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, Callable, Coroutine, Iterable
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi_plugin import Auth0FastAPI  # type: ignore[import-untyped]
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,28 @@ auth0 = Auth0FastAPI(
     domain=settings.AUTH0_DOMAIN,
     audience=settings.AUTH0_AUDIENCE,
 )
+
+if settings.TESTING:
+    _real_require_auth = auth0.require_auth
+
+    def _test_aware_require_auth() -> Callable[
+        ..., Coroutine[Any, Any, dict[str, Any]]
+    ]:
+        """Auth dependency that bypasses JWT validation only when
+        the X-Test-User-Email header is present.
+        Real Auth0 tokens still work in local dev.
+        """
+        real_dep = cast(Callable[[Request], Any], _real_require_auth())
+
+        async def _auth(request: Request) -> dict[str, Any]:
+            if request.headers.get("X-Test-User-Email"):
+                return {"sub": "test|noop"}
+            result: dict[str, Any] = await real_dep(request)
+            return result
+
+        return _auth
+
+    auth0.require_auth = _test_aware_require_auth  # type: ignore[assignment]
 
 
 def _normalize_required_roles(
@@ -64,6 +86,9 @@ async def get_or_create_user(
         if user.email and user.email in [str(e) for e in settings.SUPERADMIN_EMAILS]:
             if "admin" not in user.roles:
                 user.roles = list(user.roles) + ["admin"]
+                dirty = True
+            if not user.is_active:
+                user.is_active = True
                 dirty = True
         # Sync profile data from Auth0 on each login
         if profile_data:
@@ -135,17 +160,43 @@ async def get_or_create_user(
 
 def current_user(
     required_roles: str | Iterable[str] | None = None,
-    profile_data: dict[str, Any] | None = None,
+    *,
+    require_active: bool = True,
 ) -> _CurrentUserDep:
     required_roles_list = _normalize_required_roles(required_roles)
 
     async def _current_user(
+        request: Request,
         session: DBDep,
         claims: dict[str, Any] = Depends(auth0.require_auth()),  # type: ignore[assignment]
     ) -> User:
-        user = await get_or_create_user(session, claims, profile_data)
+        # In test mode, use X-Test-User-Email header instead of Auth0 claims
+        if settings.TESTING:
+            test_email = request.headers.get("X-Test-User-Email")
+            if test_email:
+                user = await crud_user.get_by_email(session, email=test_email)
+                if not user:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail=f"Test user not found: {test_email}",
+                    )
+                if require_active and not user.is_active:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Inactive user",
+                    )
+                if required_roles_list and not set(required_roles_list).issubset(
+                    set(user.roles)
+                ):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Not enough permissions",
+                    )
+                return user
 
-        if not user.is_active:
+        user = await get_or_create_user(session, claims)
+
+        if require_active and not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Inactive user",
@@ -166,3 +217,47 @@ def current_user(
 
 CurrentUser = Annotated[User, Depends(current_user())]
 CurrentSuperuser = Annotated[User, Depends(current_user("admin"))]
+AnyUser = Annotated[User, Depends(current_user(require_active=False))]
+
+
+async def _get_user_from_query_token(
+    request: Request,
+    token: str = Query(..., description="Bearer token for auth"),
+) -> User:
+    """Resolve user from a query-param JWT.
+
+    EventSource doesn't support custom headers, so endpoints like SSE
+    pass the token as ``?token=…``.  This dep opens short-lived sessions
+    so the caller isn't pinned to one for the life of the connection.
+    """
+    if settings.TESTING:
+        test_email = request.query_params.get("test_email") or request.headers.get(
+            "X-Test-User-Email"
+        )
+        if test_email:
+            async with async_session.begin() as session:
+                user = await crud_user.get_by_email(session, email=test_email)
+                if not user:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail=f"Test user not found: {test_email}",
+                    )
+                return user
+
+    try:
+        claims: dict[str, Any] = await auth0.api_client.verify_request(  # type: ignore[union-attr]
+            headers={"authorization": f"Bearer {token}"},
+            http_method="GET",
+            http_url=str(request.url),
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    async with async_session.begin() as session:
+        return await get_or_create_user(session, claims)
+
+
+QueryTokenUser = Annotated[User, Depends(_get_user_from_query_token)]

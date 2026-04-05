@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, HttpUrl
+from pydantic import AliasChoices, BaseModel, ConfigDict, EmailStr, Field, HttpUrl
 
 
 class ProfileInit(BaseModel):
@@ -26,7 +26,9 @@ class UserProfileUpdate(BaseModel):
 
 
 class UserProfile(BaseModel):
-    sub: str
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    sub: str = Field(validation_alias=AliasChoices("sub", "auth0_sub"))
     name: str | None = None
     nickname: str | None = None
     email: str | None = None

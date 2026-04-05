@@ -81,6 +81,7 @@ class TestUserCRUD:
 
     async def test_get_user_by_email(self, db_session: AsyncSession, test_user: User):
         """Test getting a user by email."""
+        assert test_user.email is not None
         user = await crud_user.get_by_email(db_session, email=test_user.email)
 
         assert user is not None

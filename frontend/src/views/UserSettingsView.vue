@@ -2,7 +2,7 @@
   <div>
     <!-- Header — always centered -->
     <div class="mx-auto max-w-3xl pb-2">
-      <h1 class="text-3xl font-bold tracking-tight">{{ $t('user.settings.title') }}</h1>
+      <h1 data-testid="page-heading" class="text-3xl font-bold tracking-tight">{{ $t('user.settings.title') }}</h1>
       <p class="text-muted-foreground mt-2">
         {{ $t('user.settings.subtitle') }}
       </p>
@@ -83,7 +83,7 @@
 
       <!-- Content -->
       <div class="space-y-6">
-        <template v-if="activeSection === 'profile'">
+        <div v-if="activeSection === 'profile'" data-testid="section-profile" class="space-y-6">
           <CurrentProfileCard :user="user" />
           <EditProfileForm
             :user="user"
@@ -91,28 +91,28 @@
             :auth-provider-name="authProvider.name"
             @profile-updated="handleProfileUpdated"
           />
-        </template>
+        </div>
 
-        <template v-if="activeSection === 'security'">
+        <div v-if="activeSection === 'security'" data-testid="section-security" class="space-y-6">
           <PasswordResetCard v-if="authProvider.isAuth0" />
-        </template>
+        </div>
 
-        <template v-if="activeSection === 'notifications'">
+        <div v-if="activeSection === 'notifications'" data-testid="section-notifications" class="space-y-6">
           <NotificationSettingsCard />
-        </template>
+        </div>
 
-        <template v-if="activeSection === 'calendar'">
+        <div v-if="activeSection === 'calendar'" data-testid="section-calendar" class="space-y-6">
           <CalendarSyncCard />
-        </template>
+        </div>
 
-        <template v-if="activeSection === 'language'">
+        <div v-if="activeSection === 'language'" data-testid="section-language" class="space-y-6">
           <LanguageSettingsCard />
-        </template>
+        </div>
 
-        <template v-if="activeSection === 'dataPrivacy'">
+        <div v-if="activeSection === 'dataPrivacy'" data-testid="section-data" class="space-y-6">
           <DataExportCard />
           <DeleteAccountCard />
-        </template>
+        </div>
       </div>
 
       <!-- Right spacer for symmetry -->

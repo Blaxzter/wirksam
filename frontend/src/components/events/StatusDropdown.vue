@@ -28,29 +28,31 @@ const statuses = ['draft', 'published', 'archived'] as const
 </script>
 
 <template>
-  <DropdownMenu v-if="editable">
-    <DropdownMenuTrigger as-child>
-      <button class="inline-flex cursor-pointer items-center gap-1">
-        <Badge :variant="statusVariant(status)">
-          {{ t(`${i18nPrefix}.${status ?? 'draft'}`) }}
-          <ChevronDown class="ml-1 h-3 w-3" />
-        </Badge>
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      <DropdownMenuItem
-        v-for="s in statuses"
-        :key="s"
-        :disabled="status === s"
-        @click="emit('change', s)"
-      >
-        <Check v-if="status === s" class="mr-2 h-4 w-4" />
-        <span v-else class="mr-2 h-4 w-4" />
-        {{ t(`${i18nPrefix}.${s}`) }}
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-  <Badge v-else :variant="statusVariant(status)">
-    {{ t(`${i18nPrefix}.${status ?? 'draft'}`) }}
-  </Badge>
+  <span v-bind="$attrs">
+    <DropdownMenu v-if="editable">
+      <DropdownMenuTrigger as-child>
+        <button class="inline-flex cursor-pointer items-center gap-1">
+          <Badge :variant="statusVariant(status)">
+            {{ t(`${i18nPrefix}.${status ?? 'draft'}`) }}
+            <ChevronDown class="ml-1 h-3 w-3" />
+          </Badge>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem
+          v-for="s in statuses"
+          :key="s"
+          :disabled="status === s"
+          @click="emit('change', s)"
+        >
+          <Check v-if="status === s" class="mr-2 h-4 w-4" />
+          <span v-else class="mr-2 h-4 w-4" />
+          {{ t(`${i18nPrefix}.${s}`) }}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+    <Badge v-else :variant="statusVariant(status)">
+      {{ t(`${i18nPrefix}.${status ?? 'draft'}`) }}
+    </Badge>
+  </span>
 </template>

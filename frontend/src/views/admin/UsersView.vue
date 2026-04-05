@@ -346,13 +346,13 @@ onMounted(() => {
 <template>
   <div class="mx-auto max-w-5xl space-y-6">
     <div class="space-y-2">
-      <h1 class="text-3xl font-bold">{{ t('admin.users.title') }}</h1>
+      <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('admin.users.title') }}</h1>
       <p class="text-muted-foreground">{{ t('admin.users.subtitle') }}</p>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <Card>
+    <div data-testid="section-stats" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Card data-testid="stat-total">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">{{ t('admin.users.statsTotal') }}</CardTitle>
           <Users class="h-4 w-4 text-muted-foreground" />
@@ -361,7 +361,7 @@ onMounted(() => {
           <div class="text-2xl font-bold">{{ totalUsers }}</div>
         </CardContent>
       </Card>
-      <Card>
+      <Card data-testid="stat-active">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">{{ t('admin.users.active') }}</CardTitle>
           <UserCheck class="h-4 w-4 text-muted-foreground" />
@@ -370,7 +370,7 @@ onMounted(() => {
           <div class="text-2xl font-bold">{{ activeUsers }}</div>
         </CardContent>
       </Card>
-      <Card>
+      <Card data-testid="stat-pending">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">{{ t('admin.users.pending') }}</CardTitle>
           <UserX class="h-4 w-4 text-muted-foreground" />
@@ -379,7 +379,7 @@ onMounted(() => {
           <div class="text-2xl font-bold">{{ pendingUsers }}</div>
         </CardContent>
       </Card>
-      <Card>
+      <Card data-testid="stat-rejected">
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle class="text-sm font-medium">{{ t('admin.users.rejected') }}</CardTitle>
           <UserRoundX class="h-4 w-4 text-muted-foreground" />
@@ -391,7 +391,7 @@ onMounted(() => {
     </div>
 
     <!-- Approval Password Card -->
-    <Card>
+    <Card data-testid="section-approval-password">
       <CardHeader>
         <div class="flex items-center gap-2">
           <KeyRound class="h-5 w-5 text-muted-foreground" />
@@ -465,7 +465,7 @@ onMounted(() => {
         </Button>
       </div>
 
-      <div class="rounded-lg border">
+      <div data-testid="users-table" class="rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -610,15 +610,14 @@ onMounted(() => {
               <PaginationItem
                 v-if="Math.abs(item - currentPage) <= 1 || item === 1 || item === totalPages"
                 :value="item"
+                :is-active="currentPage === item"
                 as-child
               >
                 <Button
                   variant="outline"
                   size="icon"
                   class="h-9 w-9"
-                  :class="{
-                    'border-primary bg-primary text-primary-foreground': currentPage === item,
-                  }"
+                  :class="currentPage === item ? '!bg-primary !text-primary-foreground !border-primary' : ''"
                 >
                   {{ item }}
                 </Button>

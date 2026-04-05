@@ -37,3 +37,8 @@ if settings.ENVIRONMENT != "production":
     from app.api.routes import debug
 
     api_router.include_router(debug.router)
+
+if settings.TESTING:
+    from app.api.routes import testing
+
+    api_router.include_router(testing.router)

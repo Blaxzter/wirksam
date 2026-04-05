@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import StreamingResponse
 
-from app.api.deps import CurrentUser, DBDep, auth0, get_or_create_user
+from app.api.deps import CurrentUser, DBDep, QueryTokenUser
 from app.core.db import async_session
 from app.core.errors import raise_problem
 from app.core.sse import sse_manager
@@ -25,27 +25,14 @@ SSE_HEARTBEAT_SECONDS = 30
 @router.get("/stream")
 async def notification_stream(
     request: Request,
-    token: str = Query(..., description="Bearer token for auth"),
+    user: QueryTokenUser,
 ) -> StreamingResponse:
     """SSE stream that pushes unread-count updates in real time.
 
     EventSource doesn't support custom headers, so the JWT is passed
-    as a query parameter instead.
+    as a query parameter instead (handled by the QueryTokenUser dep).
     """
-    # Validate token manually — construct a fake Authorization header
-    # so the Auth0 SDK can verify it the same way it does for normal requests.
-    try:
-        claims: dict[str, Any] = await auth0.api_client.verify_request(  # type: ignore[union-attr]
-            headers={"authorization": f"Bearer {token}"},
-            http_method="GET",
-            http_url=str(request.url),
-        )
-    except Exception:
-        raise_problem(401, code="auth.invalid_token", detail="Invalid or expired token")
-
-    async with async_session.begin() as session:
-        user = await get_or_create_user(session, claims)
-        user_id = user.id
+    user_id = user.id
 
     # Fetch initial unread count
     async with async_session.begin() as session:

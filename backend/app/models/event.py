@@ -32,13 +32,19 @@ class Event(Base, table=True):
     created_by_id: uuid.UUID | None = Field(
         default=None,
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("users.id"), nullable=True, index=True
+            sa.Uuid,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=True,
+            index=True,
         ),
     )
     event_group_id: uuid.UUID | None = Field(
         default=None,
         sa_column=sa.Column(
-            sa.Uuid, sa.ForeignKey("event_groups.id"), nullable=True, index=True
+            sa.Uuid,
+            sa.ForeignKey("event_groups.id", ondelete="SET NULL"),
+            nullable=True,
+            index=True,
         ),
     )
 

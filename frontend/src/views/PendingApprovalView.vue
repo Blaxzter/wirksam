@@ -98,7 +98,7 @@ onMounted(loadApprovalPasswordStatus)
           <Clock v-else class="h-12 w-12 text-muted-foreground" />
         </div>
       </div>
-      <h1 class="text-3xl font-bold">
+      <h1 data-testid="page-heading" class="text-3xl font-bold">
         {{
           isRejected ? t('common.pendingApproval.rejectedTitle') : t('common.pendingApproval.title')
         }}
@@ -132,6 +132,7 @@ onMounted(loadApprovalPasswordStatus)
         <form class="flex gap-2" @submit.prevent="submitApprovalPassword">
           <div class="relative flex-1">
             <Input
+              data-testid="input-approval-code"
               v-model="approvalPasswordInput"
               :type="showPassword ? 'text' : 'password'"
               :placeholder="t('common.pendingApproval.approvalCodePlaceholder')"
@@ -145,7 +146,7 @@ onMounted(loadApprovalPasswordStatus)
               <Eye v-else class="h-4 w-4" />
             </button>
           </div>
-          <Button type="submit" :disabled="isApproving || !approvalPasswordInput.trim()">
+          <Button data-testid="btn-approve" type="submit" :disabled="isApproving || !approvalPasswordInput.trim()">
             {{
               isApproving
                 ? t('common.pendingApproval.approving')
@@ -157,7 +158,7 @@ onMounted(loadApprovalPasswordStatus)
       </div>
 
       <div class="mt-8 flex items-center justify-center gap-3">
-        <Button variant="outline" @click="authStore.logout()">
+        <Button data-testid="btn-logout" variant="outline" @click="authStore.logout()">
           {{ t('common.pendingApproval.logout') }}
           <LogOut class="h-4 w-4 ml-2" />
         </Button>
@@ -175,6 +176,7 @@ onMounted(loadApprovalPasswordStatus)
       <Dialog v-model:open="showDeleteDialog">
         <DialogTrigger as-child>
           <button
+            data-testid="btn-withdraw"
             class="mt-6 text-xs text-muted-foreground underline-offset-4 hover:underline hover:text-destructive transition-colors"
           >
             {{ t('common.pendingApproval.deleteAccount') }}

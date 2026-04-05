@@ -43,7 +43,7 @@ async def send_email(
     subject: str = "",
     html_content: str = "",
 ) -> None:
-    assert settings.emails_enabled, "no provided configuration for email variables"
+    assert settings.emails_configured, "no provided configuration for email variables"
     message = MessageSchema(
         subject=subject,
         recipients=[NameEmail(name=email_to, email=email_to)],
@@ -61,7 +61,7 @@ async def send_email_template(
     template_name: str,
     template_body: dict[str, str],
 ) -> None:
-    assert settings.emails_enabled, "no provided configuration for email variables"
+    assert settings.emails_configured, "no provided configuration for email variables"
     message = MessageSchema(
         subject=subject,
         recipients=[NameEmail(name=email_to, email=email_to)],

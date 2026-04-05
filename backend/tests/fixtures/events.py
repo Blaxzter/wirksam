@@ -6,10 +6,11 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event
+from app.models.user import User
 
 
 @pytest_asyncio.fixture
-async def test_event(db_session: AsyncSession, test_user) -> Event:
+async def test_event(db_session: AsyncSession, test_user: User) -> Event:
     """Create a published test event."""
     event = Event(
         name="Pfingsten 2026",
@@ -26,7 +27,7 @@ async def test_event(db_session: AsyncSession, test_user) -> Event:
 
 
 @pytest_asyncio.fixture
-async def test_draft_event(db_session: AsyncSession, test_user) -> Event:
+async def test_draft_event(db_session: AsyncSession, test_user: User) -> Event:
     """Create a draft test event."""
     event = Event(
         name="Kirchentag 2026",

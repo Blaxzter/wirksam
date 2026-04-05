@@ -17,8 +17,8 @@ repos:
                 )$
           - id: trailing-whitespace
             exclude: ^frontend/src/client/.*
-    - repo: https://github.com/charliermarsh/ruff-pre-commit
-      rev: v0.2.2
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.15.0
       hooks:
           - id: ruff
             args:
@@ -45,6 +45,13 @@ repos:
             entry: python scripts/pre-commit/check_remove_comments.py
             language: python
             files: \.py$
+
+          - id: vue-tsc
+            name: vue-tsc
+            entry: bash -c "cd frontend && pnpm vue-tsc --noEmit --project tsconfig.app.json"
+            language: system
+            files: ^frontend/src/.*\.(ts|vue)$
+            pass_filenames: false
 
           - id: sort-locales
             name: Sort locale JSON files

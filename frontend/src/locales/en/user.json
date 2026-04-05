@@ -1,158 +1,158 @@
 {
-  "settings": {
-    "dataExport": {
-      "title": "Download My Data",
-      "subtitle": "Export your personal data as a JSON file.",
-      "description": "Download a copy of all personal data we store about you, including your profile, bookings, availability, and notification preferences. This is your right under GDPR Art. 20 (data portability).",
-      "button": "Download Data",
-      "exporting": "Exporting...",
-      "error": "Failed to export data. Please try again later."
-    },
-    "deleteAccount": {
-      "button": "Delete My Account",
-      "cancelButton": "Cancel",
-      "confirmButton": "Yes, delete my account",
-      "confirmDescription": "This will permanently delete your account, all your projects, tasks, and remove your authentication. This action cannot be undone.",
-      "confirmTitle": "Are you absolutely sure?",
-      "confirmWord": "DELETE",
-      "deleting": "Deleting...",
-      "error": "Failed to delete account. Please try again later.",
-      "subtitle": "Permanently delete your account and all associated data.",
-      "success": "Your account has been deleted successfully.",
-      "title": "Delete Account",
-      "typeToConfirm": "Type {confirmWord} to confirm",
-      "warning": "This action is irreversible. All your projects, tasks, and profile data will be permanently deleted."
-    },
-    "language": {
-      "current": "Current Language",
-      "currentDescription": "Select your preferred language for the application interface.",
-      "description": "Choose your preferred language for the interface.",
-      "notificationHint": "This setting also applies to email notifications and other messages you receive.",
-      "title": "Language & Region"
-    },
-    "password": {
-      "messages": {
-        "error": {
-          "emailNotFound": "User email not found.",
-          "sendFailed": "Failed to send password reset email. Please try again later.",
-          "title": "Error"
+    "settings": {
+        "calendarSync": {
+            "addTo": {
+                "apple": "Apple Calendar",
+                "google": "Google Calendar",
+                "outlook": "Outlook",
+                "title": "Add to your calendar"
+            },
+            "copied": "URL copied to clipboard",
+            "copyFailed": "Could not copy URL",
+            "description": "Subscribe to your duty bookings in your favourite calendar app.",
+            "disabled": "Calendar sync disabled",
+            "disabledMessage": "Calendar sync is currently paused. Turn it on to subscribe to your bookings in your calendar app.",
+            "enableButton": "Enable calendar sync",
+            "enableError": "Could not update calendar sync. Please try again.",
+            "enabled": "Calendar sync enabled",
+            "feedUrl": "Feed URL",
+            "instructions": {
+                "appleCalendar": "Apple Calendar",
+                "appleSteps": "Open the Calendar app → File → New Calendar Subscription → paste the URL above → Subscribe.",
+                "googleCalendar": "Google Calendar",
+                "googleSteps": "Open Google Calendar → Settings (gear icon) → Add other calendars → From URL → paste the URL above → Add calendar.",
+                "outlook": "Outlook",
+                "outlookSteps": "Open Outlook.com → Settings → Calendar → Shared calendars → Subscribe from web → paste the URL above → Import.",
+                "title": "How to subscribe"
+            },
+            "lastSynced": "Last synced",
+            "manual": {
+                "title": "Add manually with URL"
+            },
+            "neverSynced": "Not yet synced by any calendar app",
+            "regenerate": "Regenerate URL",
+            "regenerateConfirmButton": "Regenerate",
+            "regenerateConfirmDescription": "Your current calendar URL will stop working. You will need to re-subscribe with the new URL in all your calendar apps.",
+            "regenerateConfirmTitle": "Regenerate calendar URL?",
+            "regenerateError": "Could not regenerate URL. Please try again.",
+            "regenerated": "New calendar URL generated",
+            "title": "Calendar Sync"
         },
-        "success": {
-          "description": "Password reset email has been sent. Please check your inbox and follow the instructions.",
-          "title": "Success!"
-        }
-      },
-      "section": {
-        "button": "Send Password Reset Email",
-        "description": "Click the button below to receive a password reset email. You'll receive an email with instructions to reset your password.",
-        "sending": "Sending...",
-        "title": "Password Reset"
-      },
-      "subtitle": "Reset your password via email",
-      "title": "Password Reset"
-    },
-    "profile": {
-      "current": {
-        "fields": {
-          "authProvider": "Auth Provider",
-          "email": "Email",
-          "name": "Name",
-          "nickname": "Nickname",
-          "notProvided": "Not provided",
-          "unverified": "Unverified",
-          "verified": "Verified"
+        "dataExport": {
+            "button": "Download Data",
+            "description": "Download a copy of all personal data we store about you, including your profile, bookings, availability, and notification preferences. This is your right under GDPR Art. 20 (data portability).",
+            "error": "Failed to export data. Please try again later.",
+            "exporting": "Exporting...",
+            "subtitle": "Export your personal data as a JSON file.",
+            "title": "Download My Data"
         },
-        "subtitle": "Your current profile information from Auth0",
-        "title": "Current Profile"
-      },
-      "edit": {
-        "actions": {
-          "reset": "Reset",
-          "update": "Update Profile",
-          "updating": "Updating..."
+        "deleteAccount": {
+            "button": "Delete My Account",
+            "cancelButton": "Cancel",
+            "confirmButton": "Yes, delete my account",
+            "confirmDescription": "This will permanently delete your account, all your projects, tasks, and remove your authentication. This action cannot be undone.",
+            "confirmTitle": "Are you absolutely sure?",
+            "confirmWord": "DELETE",
+            "deleting": "Deleting...",
+            "error": "Failed to delete account. Please try again later.",
+            "subtitle": "Permanently delete your account and all associated data.",
+            "success": "Your account has been deleted successfully.",
+            "title": "Delete Account",
+            "typeToConfirm": "Type {confirmWord} to confirm",
+            "warning": "This action is irreversible. All your projects, tasks, and profile data will be permanently deleted."
         },
-        "authError": "User not authenticated",
-        "error": "Failed to update profile. Please try again.",
-        "fields": {
-          "bio": {
-            "description": "A short biography or description about yourself (optional).",
-            "label": "Bio",
-            "placeholder": "Tell us a little about yourself"
-          },
-          "displayName": {
-            "description": "This is your display name that others will see.",
-            "label": "Display Name",
-            "placeholder": "Enter your display name"
-          },
-          "nickname": {
-            "description": "A shorter name or alias for your profile.",
-            "label": "Nickname",
-            "placeholder": "Enter your nickname"
-          },
-          "phoneNumber": {
-            "description": "Your phone number so organizers can reach you if needed.",
-            "label": "Phone Number",
-            "placeholder": "+49 123 456789"
-          },
-          "picture": {
-            "description": "URL to your profile picture. Must be a valid image URL.",
-            "label": "Profile Picture URL",
-            "placeholder": "https://example.com/your-picture.jpg"
-          }
+        "language": {
+            "current": "Current Language",
+            "currentDescription": "Select your preferred language for the application interface.",
+            "description": "Choose your preferred language for the interface.",
+            "notificationHint": "This setting also applies to email notifications and other messages you receive.",
+            "title": "Language & Region"
         },
-        "providerLimitation": "Profile picture changes are not available for {provider} accounts. Please update your profile picture through your {provider} account settings.",
-        "subtitle": "Update your profile information. Changes will be processed through Auth0.",
-        "success": "Profile updated successfully!",
-        "title": "Update Profile"
-      }
-    },
-    "calendarSync": {
-      "title": "Calendar Sync",
-      "description": "Subscribe to your duty bookings in your favourite calendar app.",
-      "enableButton": "Enable calendar sync",
-      "enabled": "Calendar sync enabled",
-      "disabled": "Calendar sync disabled",
-      "disabledMessage": "Calendar sync is currently paused. Turn it on to subscribe to your bookings in your calendar app.",
-      "enableError": "Could not update calendar sync. Please try again.",
-      "feedUrl": "Feed URL",
-      "copied": "URL copied to clipboard",
-      "copyFailed": "Could not copy URL",
-      "regenerate": "Regenerate URL",
-      "regenerateConfirmTitle": "Regenerate calendar URL?",
-      "regenerateConfirmDescription": "Your current calendar URL will stop working. You will need to re-subscribe with the new URL in all your calendar apps.",
-      "regenerateConfirmButton": "Regenerate",
-      "regenerated": "New calendar URL generated",
-      "regenerateError": "Could not regenerate URL. Please try again.",
-      "lastSynced": "Last synced",
-      "neverSynced": "Not yet synced by any calendar app",
-      "manual": {
-        "title": "Add manually with URL"
-      },
-      "addTo": {
-        "title": "Add to your calendar",
-        "google": "Google Calendar",
-        "apple": "Apple Calendar",
-        "outlook": "Outlook"
-      },
-      "instructions": {
-        "title": "How to subscribe",
-        "googleCalendar": "Google Calendar",
-        "googleSteps": "Open Google Calendar → Settings (gear icon) → Add other calendars → From URL → paste the URL above → Add calendar.",
-        "appleCalendar": "Apple Calendar",
-        "appleSteps": "Open the Calendar app → File → New Calendar Subscription → paste the URL above → Subscribe.",
-        "outlook": "Outlook",
-        "outlookSteps": "Open Outlook.com → Settings → Calendar → Shared calendars → Subscribe from web → paste the URL above → Import."
-      }
-    },
-    "subtitle": "Manage your account settings and profile information.",
-    "title": "User Settings",
-    "nav": {
-      "profile": "Profile",
-      "security": "Security",
-      "notifications": "Notifications",
-      "calendar": "Calendar",
-      "language": "Language",
-      "dataPrivacy": "Data & Privacy"
+        "nav": {
+            "calendar": "Calendar",
+            "dataPrivacy": "Data & Privacy",
+            "language": "Language",
+            "notifications": "Notifications",
+            "profile": "Profile",
+            "security": "Security"
+        },
+        "password": {
+            "messages": {
+                "error": {
+                    "emailNotFound": "User email not found.",
+                    "sendFailed": "Failed to send password reset email. Please try again later.",
+                    "title": "Error"
+                },
+                "success": {
+                    "description": "Password reset email has been sent. Please check your inbox and follow the instructions.",
+                    "title": "Success!"
+                }
+            },
+            "section": {
+                "button": "Send Password Reset Email",
+                "description": "Click the button below to receive a password reset email. You'll receive an email with instructions to reset your password.",
+                "sending": "Sending...",
+                "title": "Password Reset"
+            },
+            "subtitle": "Reset your password via email",
+            "title": "Password Reset"
+        },
+        "profile": {
+            "current": {
+                "fields": {
+                    "authProvider": "Auth Provider",
+                    "email": "Email",
+                    "name": "Name",
+                    "nickname": "Nickname",
+                    "notProvided": "Not provided",
+                    "unverified": "Unverified",
+                    "verified": "Verified"
+                },
+                "subtitle": "Your current profile information from Auth0",
+                "title": "Current Profile"
+            },
+            "edit": {
+                "actions": {
+                    "reset": "Reset",
+                    "update": "Update Profile",
+                    "updating": "Updating..."
+                },
+                "authError": "User not authenticated",
+                "error": "Failed to update profile. Please try again.",
+                "fields": {
+                    "bio": {
+                        "description": "A short biography or description about yourself (optional).",
+                        "label": "Bio",
+                        "placeholder": "Tell us a little about yourself"
+                    },
+                    "displayName": {
+                        "description": "This is your display name that others will see.",
+                        "label": "Display Name",
+                        "placeholder": "Enter your display name"
+                    },
+                    "nickname": {
+                        "description": "A shorter name or alias for your profile.",
+                        "label": "Nickname",
+                        "placeholder": "Enter your nickname"
+                    },
+                    "phoneNumber": {
+                        "description": "Your phone number so organizers can reach you if needed.",
+                        "label": "Phone Number",
+                        "placeholder": "+49 123 456789"
+                    },
+                    "picture": {
+                        "description": "URL to your profile picture. Must be a valid image URL.",
+                        "label": "Profile Picture URL",
+                        "placeholder": "https://example.com/your-picture.jpg"
+                    }
+                },
+                "providerLimitation": "Profile picture changes are not available for {provider} accounts. Please update your profile picture through your {provider} account settings.",
+                "subtitle": "Update your profile information. Changes will be processed through Auth0.",
+                "success": "Profile updated successfully!",
+                "title": "Update Profile"
+            }
+        },
+        "subtitle": "Manage your account settings and profile information.",
+        "title": "User Settings"
     }
-  }
 }

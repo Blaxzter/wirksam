@@ -1,5 +1,6 @@
 """Route tests for EventGroup and UserAvailability endpoints."""
 
+from typing import Any
 
 import pytest
 from httpx import AsyncClient
@@ -42,7 +43,7 @@ class TestEventGroupRoutes:
         async_client: AsyncClient,
         test_event_group: EventGroup,
         test_draft_event_group: EventGroup,
-        as_admin,
+        as_admin: None,
     ):
         """Test that admins can see all groups including drafts."""
         r = await async_client.get("/api/v1/event-groups/")
@@ -74,7 +75,7 @@ class TestEventGroupRoutes:
         self,
         async_client: AsyncClient,
         test_draft_event_group: EventGroup,
-        as_admin,
+        as_admin: None,
     ):
         """Test that an admin can access a draft event group."""
         r = await async_client.get(f"/api/v1/event-groups/{test_draft_event_group.id}")
@@ -90,7 +91,7 @@ class TestEventGroupRoutes:
         assert r.status_code == 404
 
     async def test_create_event_group_as_admin(
-        self, async_client: AsyncClient, as_admin
+        self, async_client: AsyncClient, as_admin: None
     ):
         """Test that an admin can create an event group."""
         r = await async_client.post(
@@ -110,7 +111,7 @@ class TestEventGroupRoutes:
         self,
         async_client: AsyncClient,
         test_event_group: EventGroup,
-        as_admin,
+        as_admin: None,
     ):
         """Test that an admin can update an event group."""
         r = await async_client.patch(
@@ -125,7 +126,7 @@ class TestEventGroupRoutes:
         self,
         async_client: AsyncClient,
         test_event_group: EventGroup,
-        as_admin,
+        as_admin: None,
     ):
         """Test that an admin can delete an event group."""
         r = await async_client.delete(f"/api/v1/event-groups/{test_event_group.id}")
@@ -155,7 +156,11 @@ class TestAvailabilityRoutes:
         """Test registering as fully available."""
         r = await async_client.post(
             f"/api/v1/event-groups/{test_event_group.id}/availability",
-            json={"availability_type": "fully_available", "notes": "Ready!", "dates": []},
+            json={
+                "availability_type": "fully_available",
+                "notes": "Ready!",
+                "dates": [],
+            },
         )
 
         assert r.status_code == 201
@@ -257,7 +262,7 @@ class TestAvailabilityRoutes:
         async_client: AsyncClient,
         test_event_group: EventGroup,
         test_user_availability: UserAvailability,
-        as_admin,
+        as_admin: None,
     ):
         """Test admin can list all availabilities for a group."""
         r = await async_client.get(
@@ -265,14 +270,14 @@ class TestAvailabilityRoutes:
         )
 
         assert r.status_code == 200
-        data = r.json()
+        data: list[dict[str, Any]] = r.json()
         assert isinstance(data, list)
         assert len(data) >= 1
-        assert any(item["user_id"] == str(test_user_availability.user_id) for item in data)
+        assert any(
+            item["user_id"] == str(test_user_availability.user_id) for item in data
+        )
 
-    async def test_availability_for_nonexistent_group(
-        self, async_client: AsyncClient
-    ):
+    async def test_availability_for_nonexistent_group(self, async_client: AsyncClient):
         """Test that posting availability for a non-existent group returns 404."""
         import uuid
 

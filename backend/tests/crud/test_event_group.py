@@ -8,16 +8,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.event_group import event_group as crud_event_group
 from app.crud.user_availability import user_availability as crud_availability
 from app.models.event_group import EventGroup
+from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.schemas.event_group import EventGroupCreate, EventGroupUpdate
-from app.schemas.user_availability import UserAvailabilityCreate
+from app.schemas.user_availability import (
+    UserAvailabilityCreate,
+    UserAvailabilityDateInput,
+)
 
 
 @pytest.mark.asyncio
 class TestCRUDEventGroup:
     """Test suite for EventGroup CRUD operations."""
 
-    async def test_create_event_group(self, db_session: AsyncSession, test_user):
+    async def test_create_event_group(self, db_session: AsyncSession, test_user: User):
         """Test creating a new event group."""
         group_in = EventGroupCreate(
             name="Summer Camp 2026",
@@ -33,7 +37,9 @@ class TestCRUDEventGroup:
         assert group.created_by_id == test_user.id
         assert group.id is not None
 
-    async def test_get_event_group(self, db_session: AsyncSession, test_event_group: EventGroup):
+    async def test_get_event_group(
+        self, db_session: AsyncSession, test_event_group: EventGroup
+    ):
         """Test getting an event group by ID."""
         group = await crud_event_group.get(db_session, test_event_group.id)
 
@@ -110,7 +116,7 @@ class TestCRUDUserAvailability:
     """Test suite for UserAvailability CRUD operations."""
 
     async def test_upsert_creates_fully_available(
-        self, db_session: AsyncSession, test_user, test_event_group: EventGroup
+        self, db_session: AsyncSession, test_user: User, test_event_group: EventGroup
     ):
         """Test creating a new 'fully_available' availability via upsert."""
         avail_in = UserAvailabilityCreate(
@@ -132,10 +138,13 @@ class TestCRUDUserAvailability:
         assert avail.available_dates == []
 
     async def test_upsert_creates_with_specific_dates(
-        self, db_session: AsyncSession, test_user, test_event_group: EventGroup
+        self, db_session: AsyncSession, test_user: User, test_event_group: EventGroup
     ):
         """Test creating a 'specific_dates' availability with date entries."""
-        dates = [datetime.date(2026, 6, 10), datetime.date(2026, 6, 12)]
+        dates: list[datetime.date | UserAvailabilityDateInput] = [
+            datetime.date(2026, 6, 10),
+            datetime.date(2026, 6, 12),
+        ]
         avail_in = UserAvailabilityCreate(
             availability_type="specific_dates",
             notes=None,
@@ -156,7 +165,7 @@ class TestCRUDUserAvailability:
     async def test_upsert_updates_existing(
         self,
         db_session: AsyncSession,
-        test_user,
+        test_user: User,
         test_user_availability: UserAvailability,
         test_event_group: EventGroup,
     ):
@@ -182,7 +191,7 @@ class TestCRUDUserAvailability:
     async def test_get_by_user_and_group(
         self,
         db_session: AsyncSession,
-        test_user,
+        test_user: User,
         test_user_availability: UserAvailability,
         test_event_group: EventGroup,
     ):
@@ -197,7 +206,10 @@ class TestCRUDUserAvailability:
         assert found.id == test_user_availability.id
 
     async def test_get_by_user_and_group_not_found(
-        self, db_session: AsyncSession, test_admin_user, test_event_group: EventGroup
+        self,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_event_group: EventGroup,
     ):
         """Test that None is returned when no availability exists."""
         found = await crud_availability.get_by_user_and_group(
@@ -224,7 +236,7 @@ class TestCRUDUserAvailability:
     async def test_delete_for_user(
         self,
         db_session: AsyncSession,
-        test_user,
+        test_user: User,
         test_user_availability: UserAvailability,
         test_event_group: EventGroup,
     ):
@@ -244,7 +256,10 @@ class TestCRUDUserAvailability:
         assert found is None
 
     async def test_delete_for_user_not_found(
-        self, db_session: AsyncSession, test_admin_user, test_event_group: EventGroup
+        self,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_event_group: EventGroup,
     ):
         """Test that deleting a non-existent availability returns False."""
         deleted = await crud_availability.delete_for_user(

@@ -89,12 +89,10 @@ class CRUDUserAvailability(
             existing.available_dates.clear()
             await db.flush()
             for day in obj_in.dates:
-                db.add(self._make_date_entry(existing.id, day))
+                existing.available_dates.append(self._make_date_entry(existing.id, day))
             await db.flush()
-            # Re-load with dates
-            return await self.get_by_user_and_group(  # type: ignore[return-value]
-                db, user_id=user_id, event_group_id=event_group_id
-            )
+            await db.refresh(existing, ["available_dates"])
+            return existing
         else:
             avail = UserAvailability(
                 user_id=user_id,

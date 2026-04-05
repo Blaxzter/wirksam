@@ -137,7 +137,7 @@ onUnmounted(() => {
 <template>
   <Popover v-model:open="popoverOpen" @update:open="onOpen">
     <PopoverTrigger as-child>
-      <Button variant="ghost" size="icon" class="relative">
+      <Button variant="ghost" size="icon" class="relative" data-testid="notification-bell">
         <Bell class="h-5 w-5" />
         <span
           v-if="hasUnread"

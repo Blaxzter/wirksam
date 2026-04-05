@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
@@ -10,13 +11,13 @@ from app.models.notification import PushSubscription
 from app.schemas.notification import PushSubscriptionCreate
 
 
-class _PushSubUpdate:
+class _PushSubUpdate(BaseModel):
     pass
 
 
 class CRUDPushSubscription(
     CRUDBase[PushSubscription, PushSubscriptionCreate, _PushSubUpdate]
-):  # type: ignore[type-var]
+):
     async def get_by_user(
         self,
         db: AsyncSession,

@@ -299,6 +299,7 @@ onMounted(loadEvent)
       <!-- Header -->
       <div class="space-y-2">
         <Button
+          data-testid="btn-back"
           variant="ghost"
           size="sm"
           class="-ml-2"
@@ -307,7 +308,7 @@ onMounted(loadEvent)
           <ArrowLeft class="mr-1.5 h-4 w-4" />
           {{ t('common.actions.back') }}
         </Button>
-        <h1 class="text-3xl font-bold">{{ t('duties.events.addSlotsView.title') }}</h1>
+        <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('duties.events.addSlotsView.title') }}</h1>
         <p class="text-muted-foreground">
           {{ t('duties.events.addSlotsView.subtitle') }}
           <span class="font-medium text-foreground">{{ event.name }}</span>
@@ -499,12 +500,13 @@ onMounted(loadEvent)
       <!-- Actions -->
       <div class="flex justify-end gap-3">
         <Button
+          data-testid="btn-cancel"
           variant="outline"
           @click="router.push({ name: 'event-detail', params: { eventId: eventId } })"
         >
           {{ t('common.actions.cancel') }}
         </Button>
-        <Button :disabled="!isValid || submitting" @click="handleSubmit">
+        <Button data-testid="btn-submit" :disabled="!isValid || submitting" @click="handleSubmit">
           <CalendarPlus class="mr-2 h-4 w-4" />
           {{ submitting ? t('common.states.saving') : t('duties.events.addSlotsView.submit') }}
         </Button>

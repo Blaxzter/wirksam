@@ -56,10 +56,13 @@ class NotificationService:
         1. Resolve which channels are enabled (via hierarchical subscription)
         2. Resolve localized title/body via message_factory (or use static strings)
         3. Create in-app Notification record
-        4. Dispatch to each enabled channel
+        4. Dispatch to each enabled channel (emails batched by language via BCC)
         5. Record delivery status
         """
         notifications: list[Notification] = []
+
+        # Collect email recipients by language for batch sending
+        pending_emails: dict[str, list[tuple[User, Notification, str, str]]] = {}
 
         for recipient_id in recipient_ids:
             # Load recipient user
@@ -104,12 +107,19 @@ class NotificationService:
                 data=data,
             )
 
-            # Dispatch to channels
+            # Dispatch to non-email channels immediately; defer email for batching
             channels_sent: list[str] = []
             channels_failed: list[str] = []
 
             for channel_name, enabled in channel_config.items():
                 if not enabled:
+                    continue
+
+                if channel_name == "email":
+                    lang = recipient.preferred_language
+                    pending_emails.setdefault(lang, []).append(
+                        (recipient, notif, resolved_title, resolved_body)
+                    )
                     continue
 
                 channel = self.channels.get(channel_name)
@@ -133,7 +143,7 @@ class NotificationService:
                     )
                     channels_failed.append(channel_name)
 
-            # Update delivery status
+            # Update delivery status (email status added after batch send)
             notif.channels_sent = channels_sent
             notif.channels_failed = channels_failed
             self.db.add(notif)
@@ -148,6 +158,28 @@ class NotificationService:
             await sse_manager.broadcast(
                 recipient_id, "unread_count", {"unread_count": new_count}
             )
+
+        # Batch-send emails grouped by language via BCC
+        email_channel = self.channels.get("email")
+        if isinstance(email_channel, EmailChannel) and pending_emails:
+            for lang, entries in pending_emails.items():
+                recipients_for_lang = [user for user, _, _, _ in entries]
+                batch_title = entries[0][2]
+                batch_body = entries[0][3]
+                success = await email_channel.send_batch(
+                    recipients=recipients_for_lang,
+                    title=batch_title,
+                    body=batch_body,
+                    data=data,
+                    language=lang,
+                )
+                for _, notif, _, _ in entries:
+                    if success:
+                        notif.channels_sent = [*notif.channels_sent, "email"]
+                    else:
+                        notif.channels_failed = [*notif.channels_failed, "email"]
+                    self.db.add(notif)
+            await self.db.flush()
 
         return notifications
 

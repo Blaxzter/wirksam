@@ -97,7 +97,7 @@ const navigateToAbout = () => {
     <div class="text-center space-y-8">
       <div class="space-y-4">
         <img :src="logo" alt="Logo" class="h-24 w-24 mx-auto rounded-xl" />
-        <h1 class="text-4xl font-bold tracking-tight">{{ $t('preauth.landing.welcome') }}</h1>
+        <h1 data-testid="page-heading" class="text-4xl font-bold tracking-tight">{{ $t('preauth.landing.welcome') }}</h1>
         <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
           {{ $t('preauth.landing.subtitle') }}
         </p>
@@ -108,7 +108,7 @@ const navigateToAbout = () => {
 
       <div class="space-y-4">
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button @click="handleGetStarted" size="lg" class="px-8 py-3 text-lg font-medium">
+          <Button data-testid="btn-cta-primary" @click="handleGetStarted" size="lg" class="px-8 py-3 text-lg font-medium">
             {{
               authStore.isAuthenticated
                 ? $t('preauth.layout.navigation.goToDashboard')
@@ -116,6 +116,7 @@ const navigateToAbout = () => {
             }}
           </Button>
           <Button
+            data-testid="btn-cta-secondary"
             @click="navigateToAbout"
             variant="outline"
             size="lg"
@@ -129,7 +130,7 @@ const navigateToAbout = () => {
     </div>
 
     <!-- Feature Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div data-testid="section-features" class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="p-6 border rounded-lg">
         <h3 class="text-lg font-semibold mb-2">
           {{ $t('preauth.landing.features.fastSecure.title') }}
@@ -157,7 +158,7 @@ const navigateToAbout = () => {
     </div>
 
     <!-- Showcase Carousel Section -->
-    <div class="space-y-8">
+    <div data-testid="section-preview" class="space-y-8">
       <div class="text-center space-y-3">
         <Badge variant="secondary" class="text-sm px-3 py-1">Preview</Badge>
         <h2 class="text-3xl font-bold tracking-tight">
@@ -221,4 +222,3 @@ const navigateToAbout = () => {
     </div>
   </div>
 </template>
-

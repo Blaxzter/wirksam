@@ -45,6 +45,7 @@ const defaultTimeLabel = computed(() => {
         :key="d.id"
         variant="outline"
         class="text-xs"
+        :data-testid="`date-${d.slot_date}`"
       >
         {{ formatDateWithTime(d) }}
       </Badge>

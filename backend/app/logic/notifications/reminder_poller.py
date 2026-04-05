@@ -59,7 +59,9 @@ async def _process_reminder(reminder: BookingReminder) -> None:
             from sqlalchemy import select
             from sqlmodel import col
 
-            slot_query = select(DutySlot).where(col(DutySlot.id) == reminder.duty_slot_id)
+            slot_query = select(DutySlot).where(
+                col(DutySlot.id) == reminder.duty_slot_id
+            )
             result = await db.execute(slot_query)
             slot = result.scalar_one_or_none()
 
@@ -95,7 +97,9 @@ async def _process_reminder(reminder: BookingReminder) -> None:
                     slot_title=slot.title,
                     time_until=_format_time_until(reminder.offset_minutes, lang),
                     date=slot.date.strftime("%d.%m.%Y") if slot.date else "",
-                    start_time=slot.start_time.strftime("%H:%M") if slot.start_time else "",
+                    start_time=slot.start_time.strftime("%H:%M")
+                    if slot.start_time
+                    else "",
                     end_time=slot.end_time.strftime("%H:%M") if slot.end_time else "",
                     location=slot.location or "",
                 )
@@ -168,9 +172,7 @@ async def _cleanup_cycle() -> None:
             deleted = await crud_reminder.cleanup_old(db, days=30)
             await db.commit()
             if expired or deleted:
-                logger.info(
-                    f"Reminder cleanup: expired={expired}, deleted={deleted}"
-                )
+                logger.info(f"Reminder cleanup: expired={expired}, deleted={deleted}")
         except Exception:
             logger.exception("Failed during reminder cleanup")
             await db.rollback()
@@ -217,8 +219,6 @@ async def run_reminder_poller() -> None:
     finally:
         # Release advisory lock
         async with async_session() as db:
-            await db.execute(
-                text(f"SELECT pg_advisory_unlock({_ADVISORY_LOCK_KEY})")
-            )
+            await db.execute(text(f"SELECT pg_advisory_unlock({_ADVISORY_LOCK_KEY})"))
             await db.commit()
         logger.info("Reminder poller advisory lock released")

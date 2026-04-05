@@ -241,7 +241,7 @@ onMounted(loadEvents)
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-2">
-        <h1 class="text-3xl font-bold">{{ t('duties.events.title') }}</h1>
+        <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('duties.events.title') }}</h1>
         <p class="text-muted-foreground">{{ t('duties.events.subtitle') }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -251,6 +251,7 @@ onMounted(loadEvents)
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
+                  data-testid="btn-focus-today"
                   :variant="filters.focusMode === 'today' ? 'default' : 'ghost'"
                   size="sm"
                   class="rounded-none border-0"
@@ -266,6 +267,7 @@ onMounted(loadEvents)
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
+                  data-testid="btn-focus-first-available"
                   :variant="filters.focusMode === 'first-available' ? 'default' : 'ghost'"
                   size="sm"
                   class="rounded-none border-0 border-l"
@@ -284,6 +286,7 @@ onMounted(loadEvents)
         <!-- View Toggle -->
         <div class="flex overflow-hidden rounded-md border">
           <Button
+            data-testid="btn-view-list"
             :variant="filters.viewMode === 'list' ? 'default' : 'ghost'"
             size="sm"
             class="rounded-none border-0"
@@ -293,6 +296,7 @@ onMounted(loadEvents)
             <span class="hidden sm:inline">{{ t('duties.events.views.list') }}</span>
           </Button>
           <Button
+            data-testid="btn-view-cards"
             :variant="filters.viewMode === 'box' ? 'default' : 'ghost'"
             size="sm"
             class="rounded-none border-0 border-l"
@@ -302,6 +306,7 @@ onMounted(loadEvents)
             <span class="hidden sm:inline">{{ t('duties.events.views.box') }}</span>
           </Button>
           <Button
+            data-testid="btn-view-calendar"
             :variant="filters.viewMode === 'calendar' ? 'default' : 'ghost'"
             size="sm"
             class="rounded-none border-0 border-l"
@@ -315,7 +320,7 @@ onMounted(loadEvents)
         <TooltipProvider v-if="authStore.isAdmin">
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button @click="router.push({ name: 'event-create' })">
+              <Button data-testid="btn-create-event" @click="router.push({ name: 'event-create' })">
                 <Plus class="h-4 w-4" />
                 <span class="hidden sm:inline">{{ t('duties.events.create') }}</span>
               </Button>
@@ -334,6 +339,7 @@ onMounted(loadEvents)
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           v-model="filters.searchQuery"
+          data-testid="input-search"
           :placeholder="t('common.actions.search')"
           class="pl-10"
         />

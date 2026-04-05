@@ -1,158 +1,158 @@
 {
-  "settings": {
-    "dataExport": {
-      "title": "Meine Daten herunterladen",
-      "subtitle": "Exportieren Sie Ihre persönlichen Daten als JSON-Datei.",
-      "description": "Laden Sie eine Kopie aller persönlichen Daten herunter, die wir über Sie speichern, einschließlich Ihres Profils, Ihrer Buchungen, Verfügbarkeiten und Benachrichtigungseinstellungen. Dies ist Ihr Recht gemäß DSGVO Art. 20 (Datenübertragbarkeit).",
-      "button": "Daten herunterladen",
-      "exporting": "Wird exportiert...",
-      "error": "Fehler beim Exportieren der Daten. Bitte versuchen Sie es später erneut."
-    },
-    "deleteAccount": {
-      "button": "Mein Konto löschen",
-      "cancelButton": "Abbrechen",
-      "confirmButton": "Ja, mein Konto löschen",
-      "confirmDescription": "Dadurch werden Ihr Konto, alle Ihre Projekte, Aufgaben und Ihre Authentifizierung dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-      "confirmTitle": "Sind Sie absolut sicher?",
-      "confirmWord": "LÖSCHEN",
-      "deleting": "Wird gelöscht...",
-      "error": "Fehler beim Löschen des Kontos. Bitte versuchen Sie es später erneut.",
-      "subtitle": "Löschen Sie Ihr Konto und alle zugehörigen Daten dauerhaft.",
-      "success": "Ihr Konto wurde erfolgreich gelöscht.",
-      "title": "Konto löschen",
-      "typeToConfirm": "Geben Sie {confirmWord} ein, um zu bestätigen",
-      "warning": "Diese Aktion ist unwiderruflich. Alle Ihre Projekte, Aufgaben und Profildaten werden dauerhaft gelöscht."
-    },
-    "language": {
-      "current": "Aktuelle Sprache",
-      "currentDescription": "Wählen Sie Ihre bevorzugte Sprache für die Anwendungsoberfläche.",
-      "description": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche.",
-      "notificationHint": "Diese Einstellung gilt auch für E-Mail-Benachrichtigungen und andere Mitteilungen, die Sie erhalten.",
-      "title": "Sprache & Region"
-    },
-    "password": {
-      "messages": {
-        "error": {
-          "emailNotFound": "Benutzer-E-Mail nicht gefunden.",
-          "sendFailed": "Fehler beim Senden der E-Mail zum Passwort zurücksetzen. Bitte versuchen Sie es später erneut.",
-          "title": "Fehler"
+    "settings": {
+        "calendarSync": {
+            "addTo": {
+                "apple": "Apple Kalender",
+                "google": "Google Kalender",
+                "outlook": "Outlook",
+                "title": "Zu deinem Kalender hinzufügen"
+            },
+            "copied": "URL in die Zwischenablage kopiert",
+            "copyFailed": "URL konnte nicht kopiert werden",
+            "description": "Abonniere deine Dienstbuchungen in deiner Kalender-App.",
+            "disabled": "Kalender-Synchronisation deaktiviert",
+            "disabledMessage": "Die Kalender-Synchronisation ist derzeit pausiert. Aktiviere sie, um deine Buchungen in deiner Kalender-App zu abonnieren.",
+            "enableButton": "Kalender-Synchronisation aktivieren",
+            "enableError": "Kalender-Synchronisation konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+            "enabled": "Kalender-Synchronisation aktiviert",
+            "feedUrl": "Feed-URL",
+            "instructions": {
+                "appleCalendar": "Apple Kalender",
+                "appleSteps": "Öffne die Kalender-App → Ablage → Neues Kalenderabonnement → füge die obige URL ein → Abonnieren.",
+                "googleCalendar": "Google Kalender",
+                "googleSteps": "Öffne Google Kalender → Einstellungen (Zahnrad) → Weitere Kalender hinzufügen → Per URL → füge die obige URL ein → Kalender hinzufügen.",
+                "outlook": "Outlook",
+                "outlookSteps": "Öffne Outlook.com → Einstellungen → Kalender → Freigegebene Kalender → Aus dem Web abonnieren → füge die obige URL ein → Importieren.",
+                "title": "So abonnierst du"
+            },
+            "lastSynced": "Zuletzt synchronisiert",
+            "manual": {
+                "title": "Manuell mit URL hinzufügen"
+            },
+            "neverSynced": "Noch von keiner Kalender-App synchronisiert",
+            "regenerate": "URL erneuern",
+            "regenerateConfirmButton": "Erneuern",
+            "regenerateConfirmDescription": "Deine aktuelle Kalender-URL funktioniert dann nicht mehr. Du musst dich mit der neuen URL in allen Kalender-Apps erneut anmelden.",
+            "regenerateConfirmTitle": "Kalender-URL erneuern?",
+            "regenerateError": "URL konnte nicht erneuert werden. Bitte versuche es erneut.",
+            "regenerated": "Neue Kalender-URL wurde erstellt",
+            "title": "Kalender-Synchronisation"
         },
-        "success": {
-          "description": "E-Mail zum Passwort zurücksetzen wurde gesendet. Bitte überprüfen Sie Ihren Posteingang und folgen Sie den Anweisungen.",
-          "title": "Erfolgreich!"
-        }
-      },
-      "section": {
-        "button": "E-Mail zum Passwort zurücksetzen senden",
-        "description": "Klicken Sie auf die Schaltfläche unten, um eine E-Mail zum Zurücksetzen des Passworts zu erhalten. Sie erhalten eine E-Mail mit Anweisungen zum Zurücksetzen Ihres Passworts.",
-        "sending": "Wird gesendet...",
-        "title": "Passwort zurücksetzen"
-      },
-      "subtitle": "Setzen Sie Ihr Passwort per E-Mail zurück",
-      "title": "Passwort zurücksetzen"
-    },
-    "profile": {
-      "current": {
-        "fields": {
-          "authProvider": "Auth-Anbieter",
-          "email": "E-Mail",
-          "name": "Name",
-          "nickname": "Spitzname",
-          "notProvided": "Nicht angegeben",
-          "unverified": "Nicht verifiziert",
-          "verified": "Verifiziert"
+        "dataExport": {
+            "button": "Daten herunterladen",
+            "description": "Laden Sie eine Kopie aller persönlichen Daten herunter, die wir über Sie speichern, einschließlich Ihres Profils, Ihrer Buchungen, Verfügbarkeiten und Benachrichtigungseinstellungen. Dies ist Ihr Recht gemäß DSGVO Art. 20 (Datenübertragbarkeit).",
+            "error": "Fehler beim Exportieren der Daten. Bitte versuchen Sie es später erneut.",
+            "exporting": "Wird exportiert...",
+            "subtitle": "Exportieren Sie Ihre persönlichen Daten als JSON-Datei.",
+            "title": "Meine Daten herunterladen"
         },
-        "subtitle": "Ihre aktuellen Profilinformationen von Auth0",
-        "title": "Aktuelles Profil"
-      },
-      "edit": {
-        "actions": {
-          "reset": "Zurücksetzen",
-          "update": "Profil aktualisieren",
-          "updating": "Wird aktualisiert..."
+        "deleteAccount": {
+            "button": "Mein Konto löschen",
+            "cancelButton": "Abbrechen",
+            "confirmButton": "Ja, mein Konto löschen",
+            "confirmDescription": "Dadurch werden Ihr Konto, alle Ihre Projekte, Aufgaben und Ihre Authentifizierung dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+            "confirmTitle": "Sind Sie absolut sicher?",
+            "confirmWord": "LÖSCHEN",
+            "deleting": "Wird gelöscht...",
+            "error": "Fehler beim Löschen des Kontos. Bitte versuchen Sie es später erneut.",
+            "subtitle": "Löschen Sie Ihr Konto und alle zugehörigen Daten dauerhaft.",
+            "success": "Ihr Konto wurde erfolgreich gelöscht.",
+            "title": "Konto löschen",
+            "typeToConfirm": "Geben Sie {confirmWord} ein, um zu bestätigen",
+            "warning": "Diese Aktion ist unwiderruflich. Alle Ihre Projekte, Aufgaben und Profildaten werden dauerhaft gelöscht."
         },
-        "authError": "Benutzer nicht authentifiziert",
-        "error": "Fehler beim Aktualisieren des Profils. Bitte versuchen Sie es erneut.",
-        "fields": {
-          "bio": {
-            "description": "Eine kurze Biografie oder Beschreibung über sich selbst (optional).",
-            "label": "Biografie",
-            "placeholder": "Erzählen Sie uns etwas über sich"
-          },
-          "displayName": {
-            "description": "Dies ist Ihr Anzeigename, den andere sehen werden.",
-            "label": "Anzeigename",
-            "placeholder": "Geben Sie Ihren Anzeigenamen ein"
-          },
-          "nickname": {
-            "description": "Ein kürzerer Name oder Alias für Ihr Profil.",
-            "label": "Spitzname",
-            "placeholder": "Geben Sie Ihren Spitznamen ein"
-          },
-          "phoneNumber": {
-            "description": "Ihre Telefonnummer, damit Organisatoren Sie bei Bedarf erreichen können.",
-            "label": "Telefonnummer",
-            "placeholder": "+49 123 456789"
-          },
-          "picture": {
-            "description": "URL zu Ihrem Profilbild. Muss eine gültige Bild-URL sein.",
-            "label": "Profilbild-URL",
-            "placeholder": "https://example.com/ihr-bild.jpg"
-          }
+        "language": {
+            "current": "Aktuelle Sprache",
+            "currentDescription": "Wählen Sie Ihre bevorzugte Sprache für die Anwendungsoberfläche.",
+            "description": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche.",
+            "notificationHint": "Diese Einstellung gilt auch für E-Mail-Benachrichtigungen und andere Mitteilungen, die Sie erhalten.",
+            "title": "Sprache & Region"
         },
-        "providerLimitation": "Profilbild-Änderungen sind für {provider}-Konten nicht verfügbar. Bitte aktualisieren Sie Ihr Profilbild über Ihre {provider}-Kontoeinstellungen.",
-        "subtitle": "Aktualisieren Sie Ihre Profilinformationen. Änderungen werden über Auth0 verarbeitet.",
-        "success": "Profil erfolgreich aktualisiert!",
-        "title": "Profil aktualisieren"
-      }
-    },
-    "calendarSync": {
-      "title": "Kalender-Synchronisation",
-      "description": "Abonniere deine Dienstbuchungen in deiner Kalender-App.",
-      "enableButton": "Kalender-Synchronisation aktivieren",
-      "enabled": "Kalender-Synchronisation aktiviert",
-      "disabled": "Kalender-Synchronisation deaktiviert",
-      "disabledMessage": "Die Kalender-Synchronisation ist derzeit pausiert. Aktiviere sie, um deine Buchungen in deiner Kalender-App zu abonnieren.",
-      "enableError": "Kalender-Synchronisation konnte nicht aktualisiert werden. Bitte versuche es erneut.",
-      "feedUrl": "Feed-URL",
-      "copied": "URL in die Zwischenablage kopiert",
-      "copyFailed": "URL konnte nicht kopiert werden",
-      "regenerate": "URL erneuern",
-      "regenerateConfirmTitle": "Kalender-URL erneuern?",
-      "regenerateConfirmDescription": "Deine aktuelle Kalender-URL funktioniert dann nicht mehr. Du musst dich mit der neuen URL in allen Kalender-Apps erneut anmelden.",
-      "regenerateConfirmButton": "Erneuern",
-      "regenerated": "Neue Kalender-URL wurde erstellt",
-      "regenerateError": "URL konnte nicht erneuert werden. Bitte versuche es erneut.",
-      "lastSynced": "Zuletzt synchronisiert",
-      "neverSynced": "Noch von keiner Kalender-App synchronisiert",
-      "manual": {
-        "title": "Manuell mit URL hinzufügen"
-      },
-      "addTo": {
-        "title": "Zu deinem Kalender hinzufügen",
-        "google": "Google Kalender",
-        "apple": "Apple Kalender",
-        "outlook": "Outlook"
-      },
-      "instructions": {
-        "title": "So abonnierst du",
-        "googleCalendar": "Google Kalender",
-        "googleSteps": "Öffne Google Kalender → Einstellungen (Zahnrad) → Weitere Kalender hinzufügen → Per URL → füge die obige URL ein → Kalender hinzufügen.",
-        "appleCalendar": "Apple Kalender",
-        "appleSteps": "Öffne die Kalender-App → Ablage → Neues Kalenderabonnement → füge die obige URL ein → Abonnieren.",
-        "outlook": "Outlook",
-        "outlookSteps": "Öffne Outlook.com → Einstellungen → Kalender → Freigegebene Kalender → Aus dem Web abonnieren → füge die obige URL ein → Importieren."
-      }
-    },
-    "subtitle": "Verwalten Sie Ihre Kontoeinstellungen und Profilinformationen.",
-    "title": "Benutzereinstellungen",
-    "nav": {
-      "profile": "Profil",
-      "security": "Sicherheit",
-      "notifications": "Benachrichtigungen",
-      "calendar": "Kalender",
-      "language": "Sprache",
-      "dataPrivacy": "Daten & Datenschutz"
+        "nav": {
+            "calendar": "Kalender",
+            "dataPrivacy": "Daten & Datenschutz",
+            "language": "Sprache",
+            "notifications": "Benachrichtigungen",
+            "profile": "Profil",
+            "security": "Sicherheit"
+        },
+        "password": {
+            "messages": {
+                "error": {
+                    "emailNotFound": "Benutzer-E-Mail nicht gefunden.",
+                    "sendFailed": "Fehler beim Senden der E-Mail zum Passwort zurücksetzen. Bitte versuchen Sie es später erneut.",
+                    "title": "Fehler"
+                },
+                "success": {
+                    "description": "E-Mail zum Passwort zurücksetzen wurde gesendet. Bitte überprüfen Sie Ihren Posteingang und folgen Sie den Anweisungen.",
+                    "title": "Erfolgreich!"
+                }
+            },
+            "section": {
+                "button": "E-Mail zum Passwort zurücksetzen senden",
+                "description": "Klicken Sie auf die Schaltfläche unten, um eine E-Mail zum Zurücksetzen des Passworts zu erhalten. Sie erhalten eine E-Mail mit Anweisungen zum Zurücksetzen Ihres Passworts.",
+                "sending": "Wird gesendet...",
+                "title": "Passwort zurücksetzen"
+            },
+            "subtitle": "Setzen Sie Ihr Passwort per E-Mail zurück",
+            "title": "Passwort zurücksetzen"
+        },
+        "profile": {
+            "current": {
+                "fields": {
+                    "authProvider": "Auth-Anbieter",
+                    "email": "E-Mail",
+                    "name": "Name",
+                    "nickname": "Spitzname",
+                    "notProvided": "Nicht angegeben",
+                    "unverified": "Nicht verifiziert",
+                    "verified": "Verifiziert"
+                },
+                "subtitle": "Ihre aktuellen Profilinformationen von Auth0",
+                "title": "Aktuelles Profil"
+            },
+            "edit": {
+                "actions": {
+                    "reset": "Zurücksetzen",
+                    "update": "Profil aktualisieren",
+                    "updating": "Wird aktualisiert..."
+                },
+                "authError": "Benutzer nicht authentifiziert",
+                "error": "Fehler beim Aktualisieren des Profils. Bitte versuchen Sie es erneut.",
+                "fields": {
+                    "bio": {
+                        "description": "Eine kurze Biografie oder Beschreibung über sich selbst (optional).",
+                        "label": "Biografie",
+                        "placeholder": "Erzählen Sie uns etwas über sich"
+                    },
+                    "displayName": {
+                        "description": "Dies ist Ihr Anzeigename, den andere sehen werden.",
+                        "label": "Anzeigename",
+                        "placeholder": "Geben Sie Ihren Anzeigenamen ein"
+                    },
+                    "nickname": {
+                        "description": "Ein kürzerer Name oder Alias für Ihr Profil.",
+                        "label": "Spitzname",
+                        "placeholder": "Geben Sie Ihren Spitznamen ein"
+                    },
+                    "phoneNumber": {
+                        "description": "Ihre Telefonnummer, damit Organisatoren Sie bei Bedarf erreichen können.",
+                        "label": "Telefonnummer",
+                        "placeholder": "+49 123 456789"
+                    },
+                    "picture": {
+                        "description": "URL zu Ihrem Profilbild. Muss eine gültige Bild-URL sein.",
+                        "label": "Profilbild-URL",
+                        "placeholder": "https://example.com/ihr-bild.jpg"
+                    }
+                },
+                "providerLimitation": "Profilbild-Änderungen sind für {provider}-Konten nicht verfügbar. Bitte aktualisieren Sie Ihr Profilbild über Ihre {provider}-Kontoeinstellungen.",
+                "subtitle": "Aktualisieren Sie Ihre Profilinformationen. Änderungen werden über Auth0 verarbeitet.",
+                "success": "Profil erfolgreich aktualisiert!",
+                "title": "Profil aktualisieren"
+            }
+        },
+        "subtitle": "Verwalten Sie Ihre Kontoeinstellungen und Profilinformationen.",
+        "title": "Benutzereinstellungen"
     }
-  }
 }

@@ -1,333 +1,333 @@
 {
-  "about": {
-    "backToHome": "Back to Home",
-    "sections": {
-      "development": {
-        "description": "WirkSam is a digital duty scheduling platform for churches and communities. Organizers create events with duty slots, and volunteers book themselves in — simple, transparent, and reliable.",
-        "title": "How It Works"
-      },
-      "features": {
-        "apiIntegration": {
-          "description": "Browse available duty slots, book with one click, and manage your commitments from anywhere.",
-          "title": "Easy Booking"
+    "about": {
+        "backToHome": "Back to Home",
+        "sections": {
+            "development": {
+                "description": "WirkSam is a digital duty scheduling platform for churches and communities. Organizers create events with duty slots, and volunteers book themselves in — simple, transparent, and reliable.",
+                "title": "How It Works"
+            },
+            "features": {
+                "apiIntegration": {
+                    "description": "Browse available duty slots, book with one click, and manage your commitments from anywhere.",
+                    "title": "Easy Booking"
+                },
+                "authentication": {
+                    "description": "Your bookings are locked — only you or an admin can change them. No accidental overwrites.",
+                    "title": "Secure & Reliable"
+                },
+                "responsiveDesign": {
+                    "description": "Works on your phone, tablet, or desktop — manage duties on the go.",
+                    "title": "Works Everywhere"
+                },
+                "title": "Features"
+            },
+            "techStack": {
+                "backend": {
+                    "items": {
+                        "0": "Create events (e.g. Pfingsten, Kirchentag)",
+                        "1": "Define duty slots with date, time, and location",
+                        "2": "Set how many volunteers each slot needs",
+                        "3": "Publish when ready for booking",
+                        "4": "See who's signed up at a glance",
+                        "5": "Manage bookings across all events"
+                    },
+                    "title": "For Organizers"
+                },
+                "frontend": {
+                    "items": {
+                        "0": "Browse published events and duty slots",
+                        "1": "Book a slot with one click",
+                        "2": "See all your bookings in one place",
+                        "3": "Cancel if your plans change",
+                        "4": "Get a clear overview of availability"
+                    },
+                    "title": "For Volunteers"
+                },
+                "title": "How It Works"
+            }
         },
-        "authentication": {
-          "description": "Your bookings are locked — only you or an admin can change them. No accidental overwrites.",
-          "title": "Secure & Reliable"
-        },
-        "responsiveDesign": {
-          "description": "Works on your phone, tablet, or desktop — manage duties on the go.",
-          "title": "Works Everywhere"
-        },
-        "title": "Features"
-      },
-      "techStack": {
-        "backend": {
-          "items": {
-            "0": "Create events (e.g. Pfingsten, Kirchentag)",
-            "1": "Define duty slots with date, time, and location",
-            "2": "Set how many volunteers each slot needs",
-            "3": "Publish when ready for booking",
-            "4": "See who's signed up at a glance",
-            "5": "Manage bookings across all events"
-          },
-          "title": "For Organizers"
-        },
-        "frontend": {
-          "items": {
-            "0": "Browse published events and duty slots",
-            "1": "Book a slot with one click",
-            "2": "See all your bookings in one place",
-            "3": "Cancel if your plans change",
-            "4": "Get a clear overview of availability"
-          },
-          "title": "For Volunteers"
-        },
-        "title": "How It Works"
-      }
+        "subtitle": "Learn more about WirkSam and how it helps organize duty schedules.",
+        "title": "About WirkSam"
     },
-    "subtitle": "Learn more about WirkSam and how it helps organize duty schedules.",
-    "title": "About WirkSam"
-  },
-  "landing": {
-    "authNote": "Sign in to browse events and book your duties",
-    "features": {
-      "easyToUse": {
-        "description": "Browse events, pick a slot, and book — it's that simple. No spreadsheets, no confusion.",
-        "title": "Easy Booking"
-      },
-      "fastSecure": {
-        "description": "Your bookings are locked and can't be changed by others. Only you or an admin can cancel.",
-        "title": "Locked Bookings"
-      },
-      "scalable": {
-        "description": "Whether it's a small gathering or a large church congress — WirkSam scales with your needs.",
-        "title": "Any Event Size"
-      }
+    "cookieNotice": {
+        "dismiss": "OK",
+        "learnMore": "Learn more",
+        "message": "This site uses only essential cookies for authentication and session management. No tracking or analytics cookies are used."
     },
-    "getStarted": "Sign In",
-    "learnMore": "Learn More",
-    "showcase": {
-      "title": "See WirkSam in Action",
-      "subtitle": "Explore the key features that make duty scheduling effortless.",
-      "slides": {
-        "dashboard": {
-          "title": "Dashboard",
-          "description": "Get a bird's-eye view of your events, bookings, and an interactive calendar — all in one place."
+    "howItWorks": {
+        "backToHome": "Back to Home",
+        "features": {
+            "batchSlots": {
+                "description": "Add multiple slot batches to the same event with different schedules, locations, or time ranges.",
+                "title": "Multi-Batch Slots"
+            },
+            "dryRun": {
+                "description": "Before regenerating, see exactly which slots will be added, removed, or kept — and which bookings would be affected.",
+                "title": "Dry-Run Preview"
+            },
+            "overrides": {
+                "description": "Need different hours on Saturday? Add schedule overrides for specific dates without changing the rest of the event.",
+                "title": "Per-Day Overrides"
+            },
+            "smartRegeneration": {
+                "description": "When you change a schedule, WirkSam matches existing slots by date and time — preserving bookings on unchanged slots.",
+                "title": "Smart Regeneration"
+            },
+            "title": "Advanced Capabilities"
         },
-        "eventGroups": {
-          "title": "Event Groups",
-          "description": "Organize related events into groups like conferences or festivals for easy management."
+        "steps": {
+            "dates": {
+                "description": "Select a single date, a continuous date range, or pick specific individual dates. If linked to an event group, dates are constrained to the group's timeframe.",
+                "title": "2. Choose Dates"
+            },
+            "details": {
+                "description": "Start by giving your event a name, description, location, and category. Optionally link it to an event group like a conference or festival.",
+                "title": "1. Event Details"
+            },
+            "preview": {
+                "description": "See a real-time preview of all generated slots. Click any slot to exclude it before creating. The preview updates live as you adjust settings.",
+                "title": "5. Preview & Exclude"
+            },
+            "publish": {
+                "description": "Created events start as drafts. Publish when ready so volunteers can see and book slots. Add more slot batches later or regenerate slots without losing existing bookings.",
+                "title": "6. Publish & Manage"
+            },
+            "remainder": {
+                "description": "If the day doesn't divide evenly into slots, choose what to do with leftover time: drop it, create a shorter final slot, or extend the last slot to fill the gap.",
+                "title": "4. Handle Remainders"
+            },
+            "schedule": {
+                "description": "Set the daily start and end times, slot duration (15 min to 2 hours), and how many volunteers each slot needs. Add per-date overrides for days with different hours.",
+                "title": "3. Configure Schedule"
+            }
         },
-        "events": {
-          "title": "Events & Slots",
-          "description": "Browse all duty events with inline slot previews, search, and smart filters."
+        "subtitle": "A step-by-step look at how organizers create events and generate duty slots in WirkSam.",
+        "title": "How Event Creation Works"
+    },
+    "impressum": {
+        "backToHome": "Back to Home",
+        "contact": {
+            "emailLabel": "Email",
+            "phoneLabel": "Phone",
+            "title": "Contact"
         },
-        "eventDetail": {
-          "title": "Event Detail",
-          "description": "See all available duty slots by day, book with one click, and track availability."
+        "copyright": {
+            "content": "The content and works on this website are subject to copyright law. Any use beyond the limits of copyright law requires the written consent of the respective author or creator.",
+            "title": "Copyright"
         },
-        "bookings": {
-          "title": "My Bookings",
-          "description": "All your confirmed duties in one place — filter by upcoming, this month, or view all."
+        "country": "Germany",
+        "disclaimer": {
+            "content": "This is a private, non-commercial project for coordinating volunteer duty schedules at church events and community service. It is operated by a private individual.",
+            "title": "Disclaimer"
         },
-        "notifications": {
-          "title": "Notifications",
-          "description": "Stay informed with real-time notifications for bookings, events, and slot changes — right in your dashboard."
+        "liability": {
+            "content": "The contents of this website have been created with the greatest possible care. However, we cannot guarantee the accuracy, completeness, or timeliness of the content. As a service provider, we are responsible for our own content on these pages under general law (§ 7(1) TMG). However, we are not obligated to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity.",
+            "title": "Liability for Content"
         },
-        "notificationPreferences": {
-          "title": "Notification Settings",
-          "description": "Fine-tune how you receive notifications — via email, push, or Telegram — for each notification type."
+        "links": {
+            "content": "Our website may contain links to external third-party websites over whose content we have no influence. We therefore cannot accept any liability for this third-party content. The respective provider or operator of the linked pages is always responsible for the content of those pages.",
+            "title": "Liability for Links"
         },
-        "userManagement": {
-          "title": "User Management",
-          "description": "Admins can manage users, roles, and approval workflows from a central dashboard."
+        "responsible": {
+            "title": "Responsible Person"
+        },
+        "subtitle": "Information according to § 5 TMG (German Telemedia Act)",
+        "title": "Legal Notice"
+    },
+    "landing": {
+        "authNote": "Sign in to browse events and book your duties",
+        "features": {
+            "easyToUse": {
+                "description": "Browse events, pick a slot, and book — it's that simple. No spreadsheets, no confusion.",
+                "title": "Easy Booking"
+            },
+            "fastSecure": {
+                "description": "Your bookings are locked and can't be changed by others. Only you or an admin can cancel.",
+                "title": "Locked Bookings"
+            },
+            "scalable": {
+                "description": "Whether it's a small gathering or a large church congress — WirkSam scales with your needs.",
+                "title": "Any Event Size"
+            }
+        },
+        "getStarted": "Sign In",
+        "learnMore": "Learn More",
+        "nameExplainer": "WirkSam — from German \"wirksam\" (effective) and \"zusammen\" (together). Because volunteering works best when we work together.",
+        "showcase": {
+            "slides": {
+                "bookings": {
+                    "description": "All your confirmed duties in one place — filter by upcoming, this month, or view all.",
+                    "title": "My Bookings"
+                },
+                "dashboard": {
+                    "description": "Get a bird's-eye view of your events, bookings, and an interactive calendar — all in one place.",
+                    "title": "Dashboard"
+                },
+                "eventDetail": {
+                    "description": "See all available duty slots by day, book with one click, and track availability.",
+                    "title": "Event Detail"
+                },
+                "eventGroups": {
+                    "description": "Organize related events into groups like conferences or festivals for easy management.",
+                    "title": "Event Groups"
+                },
+                "events": {
+                    "description": "Browse all duty events with inline slot previews, search, and smart filters.",
+                    "title": "Events & Slots"
+                },
+                "notificationPreferences": {
+                    "description": "Fine-tune how you receive notifications — via email, push, or Telegram — for each notification type.",
+                    "title": "Notification Settings"
+                },
+                "notifications": {
+                    "description": "Stay informed with real-time notifications for bookings, events, and slot changes — right in your dashboard.",
+                    "title": "Notifications"
+                },
+                "userManagement": {
+                    "description": "Admins can manage users, roles, and approval workflows from a central dashboard.",
+                    "title": "User Management"
+                }
+            },
+            "subtitle": "Explore the key features that make duty scheduling effortless.",
+            "title": "See WirkSam in Action"
+        },
+        "subtitle": "The volunteer scheduling platform for church events and community service. Book your shifts for Pfingsten, Kirchentag, and more — effective together.",
+        "welcome": "Welcome to WirkSam"
+    },
+    "layout": {
+        "appName": "WirkSam",
+        "footer": {
+            "copyright": "© 2026 WirkSam. Effective together.",
+            "impressum": "Legal Notice",
+            "privacy": "Privacy Policy",
+            "terms": "Terms of Service",
+            "version": "Version {version} · Updated {date}"
+        },
+        "navigation": {
+            "about": "About",
+            "goToDashboard": "Go to Dashboard",
+            "howItWorks": "How It Works",
+            "signIn": "Sign In"
         }
-      }
     },
-    "subtitle": "The volunteer scheduling platform for church events and community service. Book your shifts for Pfingsten, Kirchentag, and more — effective together.",
-    "welcome": "Welcome to WirkSam",
-    "nameExplainer": "WirkSam — from German \"wirksam\" (effective) and \"zusammen\" (together). Because volunteering works best when we work together."
-  },
-  "howItWorks": {
-    "title": "How Event Creation Works",
-    "subtitle": "A step-by-step look at how organizers create events and generate duty slots in WirkSam.",
-    "backToHome": "Back to Home",
-    "steps": {
-      "details": {
-        "title": "1. Event Details",
-        "description": "Start by giving your event a name, description, location, and category. Optionally link it to an event group like a conference or festival."
-      },
-      "dates": {
-        "title": "2. Choose Dates",
-        "description": "Select a single date, a continuous date range, or pick specific individual dates. If linked to an event group, dates are constrained to the group's timeframe."
-      },
-      "schedule": {
-        "title": "3. Configure Schedule",
-        "description": "Set the daily start and end times, slot duration (15 min to 2 hours), and how many volunteers each slot needs. Add per-date overrides for days with different hours."
-      },
-      "remainder": {
-        "title": "4. Handle Remainders",
-        "description": "If the day doesn't divide evenly into slots, choose what to do with leftover time: drop it, create a shorter final slot, or extend the last slot to fill the gap."
-      },
-      "preview": {
-        "title": "5. Preview & Exclude",
-        "description": "See a real-time preview of all generated slots. Click any slot to exclude it before creating. The preview updates live as you adjust settings."
-      },
-      "publish": {
-        "title": "6. Publish & Manage",
-        "description": "Created events start as drafts. Publish when ready so volunteers can see and book slots. Add more slot batches later or regenerate slots without losing existing bookings."
-      }
+    "privacy": {
+        "backToHome": "Back to Home",
+        "changes": {
+            "description": "We may update this privacy policy from time to time. The current version is always available on this page. We encourage you to review it periodically.",
+            "title": "Changes to This Policy"
+        },
+        "controller": {
+            "title": "Data Controller"
+        },
+        "cookies": {
+            "description": "WirkSam uses only technically necessary cookies for authentication and session management. We do not use tracking cookies or third-party analytics.",
+            "title": "Cookies"
+        },
+        "dataCollected": {
+            "intro": "When you create an account and use WirkSam, we process the following personal data:",
+            "items": {
+                "bookings": "Booking data (which duty slots you signed up for)",
+                "email": "Email address",
+                "name": "Name (as provided by your Auth0 login)",
+                "picture": "Profile picture (if provided by your login provider)"
+            },
+            "title": "Data We Collect"
+        },
+        "intro": "We take the protection of your personal data seriously. This privacy policy explains what data we collect when you use WirkSam, how we use it, and what rights you have.",
+        "lastUpdated": "Last updated: March 2026",
+        "legalBasis": {
+            "description": "We process your data based on Art. 6(1)(b) GDPR (performance of a contract) for core account and booking functionality, and Art. 6(1)(f) GDPR (legitimate interest) for security and platform operation. Where we send optional notifications, we rely on your consent (Art. 6(1)(a) GDPR), which you can withdraw at any time in your notification settings.",
+            "title": "Legal Basis"
+        },
+        "purpose": {
+            "items": {
+                "account": "To create and manage your user account",
+                "notifications": "To send you notifications about your bookings and events (email, push, or Telegram if configured)",
+                "scheduling": "To enable duty scheduling and slot booking",
+                "security": "To ensure the security and proper operation of the platform"
+            },
+            "title": "How We Use Your Data"
+        },
+        "retention": {
+            "description": "Your personal data is stored as long as your account is active. If you request account deletion, we will erase your personal data without undue delay, unless we are legally required to retain it.",
+            "title": "Data Retention"
+        },
+        "rights": {
+            "contact": "To exercise any of these rights, contact us at the email address listed above. You also have the right to lodge a complaint with a supervisory authority.",
+            "intro": "Under the GDPR, you have the following rights:",
+            "items": {
+                "access": "Right of access — request a copy of your personal data",
+                "erasure": "Right to erasure — request deletion of your data",
+                "objection": "Right to object — object to processing based on legitimate interest",
+                "portability": "Right to data portability — receive your data in a structured format",
+                "rectification": "Right to rectification — correct inaccurate data",
+                "restriction": "Right to restriction — limit how we process your data"
+            },
+            "title": "Your Rights"
+        },
+        "thirdParty": {
+            "auth0": {
+                "description": "We use Auth0 for authentication and login. When you sign in, Auth0 processes your email, name, and profile picture. Auth0 may transfer data to the United States. For details, see the Auth0 privacy policy at auth0.com/privacy.",
+                "title": "Auth0 (Okta, Inc.)"
+            },
+            "email": {
+                "description": "We use Proton Mail to send transactional emails such as booking confirmations and notifications. Proton AG is based in Switzerland and subject to Swiss data protection law. Only your email address and the message content are processed.",
+                "title": "Proton Mail (Proton AG)"
+            },
+            "title": "Third-Party Services"
+        },
+        "title": "Privacy Policy"
     },
-    "features": {
-      "title": "Advanced Capabilities",
-      "batchSlots": {
-        "title": "Multi-Batch Slots",
-        "description": "Add multiple slot batches to the same event with different schedules, locations, or time ranges."
-      },
-      "smartRegeneration": {
-        "title": "Smart Regeneration",
-        "description": "When you change a schedule, WirkSam matches existing slots by date and time — preserving bookings on unchanged slots."
-      },
-      "dryRun": {
-        "title": "Dry-Run Preview",
-        "description": "Before regenerating, see exactly which slots will be added, removed, or kept — and which bookings would be affected."
-      },
-      "overrides": {
-        "title": "Per-Day Overrides",
-        "description": "Need different hours on Saturday? Add schedule overrides for specific dates without changing the rest of the event."
-      }
+    "terms": {
+        "account": {
+            "items": {
+                "accuracy": "You are responsible for keeping your account information accurate and up to date.",
+                "approval": "Account access may require approval by an administrator. We reserve the right to reject or deactivate accounts.",
+                "registration": "You need to create an account via Auth0 to use WirkSam.",
+                "security": "You are responsible for the security of your account credentials."
+            },
+            "title": "Your Account"
+        },
+        "availability": {
+            "description": "WirkSam is provided as-is, without guarantees of uninterrupted availability. We strive to keep the platform running reliably, but maintenance windows, outages, or changes may occur. We will try to communicate planned downtime in advance.",
+            "title": "Service Availability"
+        },
+        "backToHome": "Back to Home",
+        "bookings": {
+            "description": "When you book a duty slot, you commit to being available at the scheduled time and place. If you can no longer attend, please cancel your booking as early as possible so the slot can be filled by someone else. Organizers and administrators may cancel or reassign bookings if necessary.",
+            "title": "Bookings & Cancellations"
+        },
+        "changes": {
+            "description": "We may update these terms from time to time. The current version is always available on this page. Continued use of WirkSam after changes constitutes acceptance of the updated terms.",
+            "title": "Changes to These Terms"
+        },
+        "lastUpdated": "Last updated: March 2026",
+        "law": {
+            "description": "These terms are governed by the laws of the Federal Republic of Germany.",
+            "title": "Governing Law"
+        },
+        "liability": {
+            "description": "WirkSam is a free, volunteer-run project. We are not liable for any damages arising from the use of the platform, including but not limited to missed shifts, scheduling conflicts, or data loss. Use the platform at your own discretion.",
+            "title": "Limitation of Liability"
+        },
+        "scope": {
+            "description": "WirkSam is a free, non-commercial platform for coordinating volunteer duty schedules at church events and community service. By creating an account and using the platform, you agree to these terms.",
+            "title": "Scope of Service"
+        },
+        "termination": {
+            "description": "You can delete your account at any time from your settings page. All your personal data and bookings will be permanently removed. We reserve the right to deactivate or remove accounts that violate these terms.",
+            "title": "Account Termination"
+        },
+        "title": "Terms of Service",
+        "usage": {
+            "intro": "When using WirkSam, you agree to:",
+            "items": {
+                "lawful": "Use the platform only for its intended purpose of volunteer duty scheduling.",
+                "noAbuse": "Not attempt to manipulate, overload, or exploit the platform.",
+                "reliable": "Honor your booked duty slots or cancel in a timely manner if you cannot attend.",
+                "respectful": "Be respectful to other users and organizers."
+            },
+            "title": "Acceptable Use"
+        }
     }
-  },
-  "privacy": {
-    "title": "Privacy Policy",
-    "lastUpdated": "Last updated: March 2026",
-    "backToHome": "Back to Home",
-    "intro": "We take the protection of your personal data seriously. This privacy policy explains what data we collect when you use WirkSam, how we use it, and what rights you have.",
-    "controller": {
-      "title": "Data Controller"
-    },
-    "dataCollected": {
-      "title": "Data We Collect",
-      "intro": "When you create an account and use WirkSam, we process the following personal data:",
-      "items": {
-        "name": "Name (as provided by your Auth0 login)",
-        "email": "Email address",
-        "picture": "Profile picture (if provided by your login provider)",
-        "bookings": "Booking data (which duty slots you signed up for)"
-      }
-    },
-    "purpose": {
-      "title": "How We Use Your Data",
-      "items": {
-        "account": "To create and manage your user account",
-        "scheduling": "To enable duty scheduling and slot booking",
-        "notifications": "To send you notifications about your bookings and events (email, push, or Telegram if configured)",
-        "security": "To ensure the security and proper operation of the platform"
-      }
-    },
-    "legalBasis": {
-      "title": "Legal Basis",
-      "description": "We process your data based on Art. 6(1)(b) GDPR (performance of a contract) for core account and booking functionality, and Art. 6(1)(f) GDPR (legitimate interest) for security and platform operation. Where we send optional notifications, we rely on your consent (Art. 6(1)(a) GDPR), which you can withdraw at any time in your notification settings."
-    },
-    "thirdParty": {
-      "title": "Third-Party Services",
-      "auth0": {
-        "title": "Auth0 (Okta, Inc.)",
-        "description": "We use Auth0 for authentication and login. When you sign in, Auth0 processes your email, name, and profile picture. Auth0 may transfer data to the United States. For details, see the Auth0 privacy policy at auth0.com/privacy."
-      },
-      "email": {
-        "title": "Proton Mail (Proton AG)",
-        "description": "We use Proton Mail to send transactional emails such as booking confirmations and notifications. Proton AG is based in Switzerland and subject to Swiss data protection law. Only your email address and the message content are processed."
-      }
-    },
-    "retention": {
-      "title": "Data Retention",
-      "description": "Your personal data is stored as long as your account is active. If you request account deletion, we will erase your personal data without undue delay, unless we are legally required to retain it."
-    },
-    "rights": {
-      "title": "Your Rights",
-      "intro": "Under the GDPR, you have the following rights:",
-      "items": {
-        "access": "Right of access — request a copy of your personal data",
-        "rectification": "Right to rectification — correct inaccurate data",
-        "erasure": "Right to erasure — request deletion of your data",
-        "restriction": "Right to restriction — limit how we process your data",
-        "portability": "Right to data portability — receive your data in a structured format",
-        "objection": "Right to object — object to processing based on legitimate interest"
-      },
-      "contact": "To exercise any of these rights, contact us at the email address listed above. You also have the right to lodge a complaint with a supervisory authority."
-    },
-    "cookies": {
-      "title": "Cookies",
-      "description": "WirkSam uses only technically necessary cookies for authentication and session management. We do not use tracking cookies or third-party analytics."
-    },
-    "changes": {
-      "title": "Changes to This Policy",
-      "description": "We may update this privacy policy from time to time. The current version is always available on this page. We encourage you to review it periodically."
-    }
-  },
-  "impressum": {
-    "title": "Legal Notice",
-    "subtitle": "Information according to § 5 TMG (German Telemedia Act)",
-    "backToHome": "Back to Home",
-    "responsible": {
-      "title": "Responsible Person"
-    },
-    "contact": {
-      "title": "Contact",
-      "emailLabel": "Email",
-      "phoneLabel": "Phone"
-    },
-    "country": "Germany",
-    "disclaimer": {
-      "title": "Disclaimer",
-      "content": "This is a private, non-commercial project for coordinating volunteer duty schedules at church events and community service. It is operated by a private individual."
-    },
-    "liability": {
-      "title": "Liability for Content",
-      "content": "The contents of this website have been created with the greatest possible care. However, we cannot guarantee the accuracy, completeness, or timeliness of the content. As a service provider, we are responsible for our own content on these pages under general law (§ 7(1) TMG). However, we are not obligated to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity."
-    },
-    "links": {
-      "title": "Liability for Links",
-      "content": "Our website may contain links to external third-party websites over whose content we have no influence. We therefore cannot accept any liability for this third-party content. The respective provider or operator of the linked pages is always responsible for the content of those pages."
-    },
-    "copyright": {
-      "title": "Copyright",
-      "content": "The content and works on this website are subject to copyright law. Any use beyond the limits of copyright law requires the written consent of the respective author or creator."
-    }
-  },
-  "terms": {
-    "title": "Terms of Service",
-    "lastUpdated": "Last updated: March 2026",
-    "backToHome": "Back to Home",
-    "scope": {
-      "title": "Scope of Service",
-      "description": "WirkSam is a free, non-commercial platform for coordinating volunteer duty schedules at church events and community service. By creating an account and using the platform, you agree to these terms."
-    },
-    "account": {
-      "title": "Your Account",
-      "items": {
-        "registration": "You need to create an account via Auth0 to use WirkSam.",
-        "accuracy": "You are responsible for keeping your account information accurate and up to date.",
-        "security": "You are responsible for the security of your account credentials.",
-        "approval": "Account access may require approval by an administrator. We reserve the right to reject or deactivate accounts."
-      }
-    },
-    "usage": {
-      "title": "Acceptable Use",
-      "intro": "When using WirkSam, you agree to:",
-      "items": {
-        "lawful": "Use the platform only for its intended purpose of volunteer duty scheduling.",
-        "respectful": "Be respectful to other users and organizers.",
-        "reliable": "Honor your booked duty slots or cancel in a timely manner if you cannot attend.",
-        "noAbuse": "Not attempt to manipulate, overload, or exploit the platform."
-      }
-    },
-    "bookings": {
-      "title": "Bookings & Cancellations",
-      "description": "When you book a duty slot, you commit to being available at the scheduled time and place. If you can no longer attend, please cancel your booking as early as possible so the slot can be filled by someone else. Organizers and administrators may cancel or reassign bookings if necessary."
-    },
-    "availability": {
-      "title": "Service Availability",
-      "description": "WirkSam is provided as-is, without guarantees of uninterrupted availability. We strive to keep the platform running reliably, but maintenance windows, outages, or changes may occur. We will try to communicate planned downtime in advance."
-    },
-    "liability": {
-      "title": "Limitation of Liability",
-      "description": "WirkSam is a free, volunteer-run project. We are not liable for any damages arising from the use of the platform, including but not limited to missed shifts, scheduling conflicts, or data loss. Use the platform at your own discretion."
-    },
-    "termination": {
-      "title": "Account Termination",
-      "description": "You can delete your account at any time from your settings page. All your personal data and bookings will be permanently removed. We reserve the right to deactivate or remove accounts that violate these terms."
-    },
-    "changes": {
-      "title": "Changes to These Terms",
-      "description": "We may update these terms from time to time. The current version is always available on this page. Continued use of WirkSam after changes constitutes acceptance of the updated terms."
-    },
-    "law": {
-      "title": "Governing Law",
-      "description": "These terms are governed by the laws of the Federal Republic of Germany."
-    }
-  },
-  "cookieNotice": {
-    "message": "This site uses only essential cookies for authentication and session management. No tracking or analytics cookies are used.",
-    "learnMore": "Learn more",
-    "dismiss": "OK"
-  },
-  "layout": {
-    "appName": "WirkSam",
-    "footer": {
-      "copyright": "© 2026 WirkSam. Effective together.",
-      "version": "Version {version} · Updated {date}",
-      "privacy": "Privacy Policy",
-      "terms": "Terms of Service",
-      "impressum": "Legal Notice"
-    },
-    "navigation": {
-      "about": "About",
-      "howItWorks": "How It Works",
-      "goToDashboard": "Go to Dashboard",
-      "signIn": "Sign In"
-    }
-  }
 }

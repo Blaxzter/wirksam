@@ -1,109 +1,109 @@
 {
-  "actions": {
-    "back": "Back",
-    "cancel": "Cancel",
-    "close": "Close",
-    "confirm": "Confirm",
-    "create": "Create",
-    "delete": "Delete",
-    "edit": "Edit",
-    "next": "Next",
-    "previous": "Previous",
-    "publish": "Publish",
-    "reset": "Reset",
-    "save": "Save",
-    "search": "Search...",
-    "submit": "Submit"
-  },
-  "dialog": {
-    "alert": {
-      "okText": "OK",
-      "title": "Alert"
+    "actions": {
+        "back": "Back",
+        "cancel": "Cancel",
+        "close": "Close",
+        "confirm": "Confirm",
+        "create": "Create",
+        "delete": "Delete",
+        "edit": "Edit",
+        "next": "Next",
+        "previous": "Previous",
+        "publish": "Publish",
+        "reset": "Reset",
+        "save": "Save",
+        "search": "Search...",
+        "submit": "Submit"
     },
-    "confirm": {
-      "cancelText": "Cancel",
-      "confirmText": "Confirm",
-      "title": "Confirm Action"
+    "dialog": {
+        "alert": {
+            "okText": "OK",
+            "title": "Alert"
+        },
+        "confirm": {
+            "cancelText": "Cancel",
+            "confirmText": "Confirm",
+            "title": "Confirm Action"
+        },
+        "info": {
+            "okText": "OK",
+            "title": "Information"
+        }
     },
-    "info": {
-      "okText": "OK",
-      "title": "Information"
+    "errors": {
+        "api": {
+            "createProject": "Failed to create project",
+            "createTask": "Failed to create task",
+            "default": "An unexpected error occurred. Please try again.",
+            "deleteProject": "Failed to delete project",
+            "deleteTask": "Failed to delete task",
+            "forbidden": "You do not have permission to access this resource.",
+            "loadProject": "Failed to load project",
+            "loadProjects": "Failed to load projects",
+            "loadTasks": "Failed to load tasks",
+            "network": "Network error. Please check your internet connection.",
+            "notFoundResource": "The requested resource was not found",
+            "projectNameRequired": "Project name is required",
+            "rateLimited": "Too many requests. Please try again later.",
+            "server": "Unexpected error occurred on the server.",
+            "statusFallback": "Request failed with status {status}",
+            "taskTitleRequired": "Task title is required",
+            "timeout": "Request timeout. The server is taking too long to respond.",
+            "unauthorized": "Authentication failed. Please log in again.",
+            "updateProject": "Failed to update project",
+            "updateTask": "Failed to update task",
+            "validation": "Validation error: {message}"
+        },
+        "boundary": {
+            "description": "An unexpected error occurred while rendering this page.",
+            "goHome": "Go home",
+            "title": "Something went wrong",
+            "tryAgain": "Try again"
+        },
+        "notFound": {
+            "description": "The page you're looking for doesn't exist.",
+            "goHome": "Go back home",
+            "subtitle": "Page not found",
+            "title": "404"
+        }
+    },
+    "language": {
+        "current": "Current language",
+        "switch": "Switch language"
+    },
+    "pendingApproval": {
+        "approvalCodeLabel": "Have an approval code?",
+        "approvalCodePlaceholder": "Enter approval code",
+        "approvalSuccess": "Your account has been approved!",
+        "approvalWrongPassword": "Invalid approval code. Please try again.",
+        "approveButton": "Approve",
+        "approving": "Approving...",
+        "cancel": "Cancel",
+        "confirmDelete": "Delete Account",
+        "deleteAccount": "Withdraw Request",
+        "deleteConfirmDescription": "This will permanently delete your account. You can always sign up again later.",
+        "deleteConfirmTitle": "Withdraw Approval Request?",
+        "deleteError": "Failed to delete account. Please try again.",
+        "deleting": "Deleting...",
+        "description": "Your account has been created but needs to be approved by an administrator before you can access the platform.",
+        "hint": "You will be able to log in once your account has been confirmed.",
+        "logout": "Log Out",
+        "rejectedDescription": "Your account request has been reviewed and was not approved.",
+        "rejectedTitle": "Account Rejected",
+        "rejectionReasonLabel": "Reason",
+        "title": "Account Pending Approval"
+    },
+    "states": {
+        "error": "Error",
+        "info": "Info",
+        "loading": "Loading...",
+        "saving": "Saving...",
+        "success": "Success!",
+        "warning": "Warning"
+    },
+    "validation": {
+        "endDateBeforeStart": "End date must be after start date",
+        "invalidDate": "Please select a valid date",
+        "required": "This field is required"
     }
-  },
-  "errors": {
-    "api": {
-      "createProject": "Failed to create project",
-      "createTask": "Failed to create task",
-      "default": "An unexpected error occurred. Please try again.",
-      "deleteProject": "Failed to delete project",
-      "deleteTask": "Failed to delete task",
-      "forbidden": "You do not have permission to access this resource.",
-      "loadProject": "Failed to load project",
-      "loadProjects": "Failed to load projects",
-      "loadTasks": "Failed to load tasks",
-      "network": "Network error. Please check your internet connection.",
-      "notFoundResource": "The requested resource was not found",
-      "projectNameRequired": "Project name is required",
-      "rateLimited": "Too many requests. Please try again later.",
-      "server": "Unexpected error occurred on the server.",
-      "statusFallback": "Request failed with status {status}",
-      "taskTitleRequired": "Task title is required",
-      "timeout": "Request timeout. The server is taking too long to respond.",
-      "unauthorized": "Authentication failed. Please log in again.",
-      "updateProject": "Failed to update project",
-      "updateTask": "Failed to update task",
-      "validation": "Validation error: {message}"
-    },
-    "boundary": {
-      "description": "An unexpected error occurred while rendering this page.",
-      "goHome": "Go home",
-      "title": "Something went wrong",
-      "tryAgain": "Try again"
-    },
-    "notFound": {
-      "description": "The page you're looking for doesn't exist.",
-      "goHome": "Go back home",
-      "subtitle": "Page not found",
-      "title": "404"
-    }
-  },
-  "validation": {
-    "required": "This field is required",
-    "invalidDate": "Please select a valid date",
-    "endDateBeforeStart": "End date must be after start date"
-  },
-  "language": {
-    "current": "Current language",
-    "switch": "Switch language"
-  },
-  "pendingApproval": {
-    "title": "Account Pending Approval",
-    "description": "Your account has been created but needs to be approved by an administrator before you can access the platform.",
-    "rejectedTitle": "Account Rejected",
-    "rejectedDescription": "Your account request has been reviewed and was not approved.",
-    "rejectionReasonLabel": "Reason",
-    "hint": "You will be able to log in once your account has been confirmed.",
-    "logout": "Log Out",
-    "deleteAccount": "Withdraw Request",
-    "deleteConfirmTitle": "Withdraw Approval Request?",
-    "deleteConfirmDescription": "This will permanently delete your account. You can always sign up again later.",
-    "cancel": "Cancel",
-    "confirmDelete": "Delete Account",
-    "deleting": "Deleting...",
-    "deleteError": "Failed to delete account. Please try again.",
-    "approvalCodeLabel": "Have an approval code?",
-    "approvalCodePlaceholder": "Enter approval code",
-    "approveButton": "Approve",
-    "approving": "Approving...",
-    "approvalWrongPassword": "Invalid approval code. Please try again.",
-    "approvalSuccess": "Your account has been approved!"
-  },
-  "states": {
-    "error": "Error",
-    "info": "Info",
-    "loading": "Loading...",
-    "saving": "Saving...",
-    "success": "Success!",
-    "warning": "Warning"
-  }
 }

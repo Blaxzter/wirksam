@@ -111,7 +111,7 @@ onMounted(loadStats)
 <template>
   <div class="mx-auto max-w-7xl space-y-6">
     <div class="space-y-2">
-      <h1 class="text-3xl font-bold">{{ t('dashboard.home.title') }}</h1>
+      <h1 data-testid="page-heading" class="text-3xl font-bold">{{ t('dashboard.home.title') }}</h1>
       <p class="text-muted-foreground">
         {{ t('dashboard.home.subtitle') }}
       </p>
@@ -120,6 +120,7 @@ onMounted(loadStats)
     <!-- Stats Cards -->
     <div class="grid auto-rows-min gap-4 md:grid-cols-3">
       <Card
+        data-testid="stat-card-events"
         class="cursor-pointer hover:shadow-md transition-shadow"
         @click="router.push({ name: 'events' })"
       >
@@ -138,6 +139,7 @@ onMounted(loadStats)
       </Card>
 
       <Card
+        data-testid="stat-card-bookings"
         class="cursor-pointer hover:shadow-md transition-shadow"
         @click="router.push({ name: 'my-bookings' })"
       >
@@ -157,6 +159,7 @@ onMounted(loadStats)
 
       <Card
         v-if="authStore.isAdmin"
+        data-testid="stat-card-users"
         class="cursor-pointer hover:shadow-md transition-shadow"
         @click="router.push({ name: 'admin-users' })"
       >
@@ -176,7 +179,7 @@ onMounted(loadStats)
     </div>
 
     <!-- Calendar Section -->
-    <div class="space-y-4">
+    <div data-testid="dashboard-calendar" class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-xl font-semibold">{{ t('dashboard.home.calendar.title') }}</h2>
         <TooltipProvider>
@@ -184,7 +187,7 @@ onMounted(loadStats)
             <TooltipTrigger as="span" class="inline-flex">
               <Popover>
                 <PopoverTrigger as-child>
-                  <Button variant="outline" size="sm" class="relative">
+                  <Button data-testid="btn-calendar-filter" variant="outline" size="sm" class="relative">
                     <SlidersHorizontal class="mr-2 h-4 w-4" />
                     {{ t('dashboard.home.calendar.filter') }}
                     <span
@@ -267,14 +270,14 @@ onMounted(loadStats)
     </div>
 
     <!-- Quick Actions -->
-    <div class="rounded-xl bg-muted/50 p-6">
+    <div data-testid="dashboard-quick-actions" class="rounded-xl bg-muted/50 p-6">
       <h2 class="text-xl font-semibold mb-4">{{ t('dashboard.home.quickActions.title') }}</h2>
       <div class="flex flex-wrap gap-3">
-        <Button variant="outline" @click="router.push({ name: 'events' })">
+        <Button data-testid="btn-browse-events" variant="outline" @click="router.push({ name: 'events' })">
           <CalendarDays class="mr-2 h-4 w-4" />
           {{ t('dashboard.home.quickActions.browseEvents') }}
         </Button>
-        <Button variant="outline" @click="router.push({ name: 'my-bookings' })">
+        <Button data-testid="btn-my-bookings" variant="outline" @click="router.push({ name: 'my-bookings' })">
           <BookCheck class="mr-2 h-4 w-4" />
           {{ t('dashboard.home.quickActions.myBookings') }}
         </Button>

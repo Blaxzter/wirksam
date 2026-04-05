@@ -18,7 +18,7 @@ const useFixedHeader = ref(true)
   >
     <PreAuthHeader :use-fixed-header="useFixedHeader" />
 
-    <main :class="useFixedHeader ? 'flex-1 overflow-auto flex flex-col' : 'flex-1 flex flex-col'">
+    <main :class="useFixedHeader ? 'flex-1 overflow-auto flex flex-col' : 'flex-1 flex flex-col'" data-testid="main-content">
       <div class="max-w-7xl w-full mx-auto px-4 py-8 flex-1">
         <ErrorBoundary>
           <RouterView />

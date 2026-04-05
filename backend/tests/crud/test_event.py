@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.event import event as crud_event
 from app.models.event import Event
+from app.models.user import User
 from app.schemas.event import EventCreate, EventUpdate
 
 
@@ -14,7 +15,7 @@ from app.schemas.event import EventCreate, EventUpdate
 class TestCRUDEvent:
     """Test suite for Event CRUD operations."""
 
-    async def test_create_event(self, db_session: AsyncSession, test_user):
+    async def test_create_event(self, db_session: AsyncSession, test_user: User):
         """Test creating a new event."""
         event_in = EventCreate(
             name="Test Event",
@@ -59,7 +60,9 @@ class TestCRUDEvent:
         assert len(drafts) >= 1
         assert all(e.status == "draft" for e in drafts)
 
-    async def test_get_count_filtered(self, db_session: AsyncSession, test_event: Event):
+    async def test_get_count_filtered(
+        self, db_session: AsyncSession, test_event: Event
+    ):
         """Test counting events with filter."""
         count = await crud_event.get_count_filtered(db_session, status="published")
 

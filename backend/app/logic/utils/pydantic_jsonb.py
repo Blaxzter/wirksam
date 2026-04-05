@@ -38,10 +38,7 @@ class PydanticJSONB(TypeDecorator[Any]):
         if value is None:
             return [] if self.is_list else None
         if self.is_list:
-            return [
-                v.model_dump() if isinstance(v, BaseModel) else v
-                for v in value
-            ]
+            return [v.model_dump() if isinstance(v, BaseModel) else v for v in value]
         return value.model_dump() if isinstance(value, BaseModel) else value
 
     def process_result_value(self, value: Any, dialect: Any) -> Any:  # noqa: ANN401
@@ -49,7 +46,9 @@ class PydanticJSONB(TypeDecorator[Any]):
             return [] if self.is_list else None
         if self.is_list:
             return [
-                v if isinstance(v, self.model_class) else self.model_class.model_validate(v)
+                v
+                if isinstance(v, self.model_class)
+                else self.model_class.model_validate(v)
                 for v in value
             ]
         if isinstance(value, self.model_class):

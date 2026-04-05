@@ -1,5 +1,12 @@
-import { authGuard } from '@auth0/auth0-vue'
+import { authGuard as _authGuard } from '@auth0/auth0-vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
+// In E2E bypass mode, skip Auth0's authGuard entirely since the fake plugin
+// doesn't set the module-level client ref that authGuard reads.
+const authGuard =
+  import.meta.env.VITE_E2E_AUTH_BYPASS === 'true' && document.cookie.includes('e2e_bypass=1')
+    ? () => true
+    : _authGuard
 
 import { useAuthStore } from '@/stores/auth'
 import type { BreadcrumbItem } from '@/stores/breadcrumb'

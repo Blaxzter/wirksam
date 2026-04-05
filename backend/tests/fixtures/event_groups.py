@@ -6,11 +6,12 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event_group import EventGroup
+from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
 
 
 @pytest_asyncio.fixture
-async def test_event_group(db_session: AsyncSession, test_user) -> EventGroup:
+async def test_event_group(db_session: AsyncSession, test_user: User) -> EventGroup:
     """Create a published test event group."""
     group = EventGroup(
         name="Kirchentags Woche 2026",
@@ -27,7 +28,9 @@ async def test_event_group(db_session: AsyncSession, test_user) -> EventGroup:
 
 
 @pytest_asyncio.fixture
-async def test_draft_event_group(db_session: AsyncSession, test_user) -> EventGroup:
+async def test_draft_event_group(
+    db_session: AsyncSession, test_user: User
+) -> EventGroup:
     """Create a draft test event group."""
     group = EventGroup(
         name="Adventskonzert 2026",
@@ -45,7 +48,7 @@ async def test_draft_event_group(db_session: AsyncSession, test_user) -> EventGr
 
 @pytest_asyncio.fixture
 async def test_user_availability(
-    db_session: AsyncSession, test_user, test_event_group: EventGroup
+    db_session: AsyncSession, test_user: User, test_event_group: EventGroup
 ) -> UserAvailability:
     """Create a 'fully_available' UserAvailability for the test user."""
     avail = UserAvailability(
@@ -62,7 +65,7 @@ async def test_user_availability(
 
 @pytest_asyncio.fixture
 async def test_user_availability_with_dates(
-    db_session: AsyncSession, test_user, test_event_group: EventGroup
+    db_session: AsyncSession, test_user: User, test_event_group: EventGroup
 ) -> UserAvailability:
     """Create a 'specific_dates' UserAvailability with individual date entries."""
     avail = UserAvailability(

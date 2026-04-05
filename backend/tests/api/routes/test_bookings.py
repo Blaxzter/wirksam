@@ -4,9 +4,11 @@ from datetime import date, time
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
 from app.models.duty_slot import DutySlot
+from app.models.event import Event
 from app.models.user import User
 
 
@@ -14,7 +16,9 @@ from app.models.user import User
 class TestBookingsRoutes:
     """Test suite for /bookings/ routes."""
 
-    async def test_create_booking(self, async_client: AsyncClient, test_duty_slot: DutySlot):
+    async def test_create_booking(
+        self, async_client: AsyncClient, test_duty_slot: DutySlot
+    ):
         """Test creating a new booking."""
         r = await async_client.post(
             "/api/v1/bookings/",
@@ -36,7 +40,9 @@ class TestBookingsRoutes:
 
         assert r.status_code == 409
 
-    async def test_list_my_bookings(self, async_client: AsyncClient, test_booking: Booking):
+    async def test_list_my_bookings(
+        self, async_client: AsyncClient, test_booking: Booking
+    ):
         """Test listing the current user's bookings."""
         r = await async_client.get("/api/v1/bookings/me")
 
@@ -52,7 +58,9 @@ class TestBookingsRoutes:
         assert r.status_code == 200
         assert r.json()["id"] == str(test_booking.id)
 
-    async def test_cancel_booking(self, async_client: AsyncClient, test_booking: Booking):
+    async def test_cancel_booking(
+        self, async_client: AsyncClient, test_booking: Booking
+    ):
         """Test cancelling a booking via DELETE."""
         r = await async_client.delete(f"/api/v1/bookings/{test_booking.id}")
 
@@ -72,7 +80,7 @@ class TestBookingsRoutes:
         assert r.json()["notes"] == "Updated notes"
 
     async def test_slot_capacity_enforced(
-        self, async_client: AsyncClient, db_session, test_event
+        self, async_client: AsyncClient, db_session: AsyncSession, test_event: Event
     ):
         """Test that bookings are rejected when a slot is full."""
         slot = DutySlot(

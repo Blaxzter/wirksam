@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.49.0-jammy
+FROM mcr.microsoft.com/playwright:v1.54.0-jammy
 
 WORKDIR /app
 
@@ -13,6 +13,13 @@ RUN pnpm install
 
 # Copy the rest of the application
 COPY . .
+
+# Build the frontend for preview mode
+ARG VITE_API_URL
+ARG VITE_E2E_AUTH_BYPASS=true
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_E2E_AUTH_BYPASS=${VITE_E2E_AUTH_BYPASS}
+RUN pnpm build
 
 # Set default command to run tests
 CMD ["npx", "playwright", "test"]
