@@ -16,7 +16,9 @@ COPY . .
 
 # Build the frontend for preview mode
 ARG VITE_API_URL
+ARG VITE_E2E_AUTH_BYPASS=true
 ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_E2E_AUTH_BYPASS=${VITE_E2E_AUTH_BYPASS}
 RUN pnpm build
 
 # Set default command to run tests
