@@ -35,7 +35,7 @@ dependencies = [
     "httptools>=0.7.1,<1.0.0",
     "auth0-fastapi-api>=1.0.0b5",
     "pywebpush>=2.0.0,<3.0.0",
-    "icalendar>=6.0.0,<7.0.0",
+    "icalendar>=6.0.0,<8.0.0",
 ]
 
 [tool.uv]
