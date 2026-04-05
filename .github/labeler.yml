@@ -1,25 +1,34 @@
 docs:
-  - all:
+    - all:
+          - changed-files:
+                - any-glob-to-any-file:
+                      - "**/*.md"
+                - all-globs-to-all-files:
+                      - "!frontend/**"
+                      - "!backend/**"
+                      - "!.github/**"
+                      - "!scripts/**"
+                      - "!.gitignore"
+                      - "!.pre-commit-config.yaml"
+
+upgrade:
     - changed-files:
-      - any-glob-to-any-file:
-        - '**/*.md'
-      - all-globs-to-all-files:
-        - '!frontend/**'
-        - '!backend/**'
-        - '!.github/**'
-        - '!scripts/**'
-        - '!.gitignore'
-        - '!.pre-commit-config.yaml'
+          - any-glob-to-any-file:
+                - "frontend/package.json"
+                - "frontend/pnpm-lock.yaml"
+                - "backend/pyproject.toml"
+                - "backend/uv.lock"
+                - ".github/workflows/**"
 
 internal:
-  - all:
-    - changed-files:
-      - any-glob-to-any-file:
-        - .github/**
-        - scripts/**
-        - .gitignore
-        - .pre-commit-config.yaml
-      - all-globs-to-all-files:
-        - '!./**/*.md'
-        - '!frontend/**'
-        - '!backend/**'
+    - all:
+          - changed-files:
+                - any-glob-to-any-file:
+                      - .github/**
+                      - scripts/**
+                      - .gitignore
+                      - .pre-commit-config.yaml
+                - all-globs-to-all-files:
+                      - "!./**/*.md"
+                      - "!frontend/**"
+                      - "!backend/**"

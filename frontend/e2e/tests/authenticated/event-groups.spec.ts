@@ -137,7 +137,7 @@ test.describe('Event Groups – admin create & delete', () => {
       await confirmBtn.click()
     }
 
-    await expect(card).not.toBeVisible()
+    await expect(card).toBeHidden()
   })
 })
 

@@ -66,8 +66,8 @@ test.describe('Notifications – preferences page', () => {
       await firstSwitch.click()
       // State should have changed
       await page.waitForTimeout(500)
-      const nowChecked = await firstSwitch.getAttribute('data-state')
-      expect(nowChecked).not.toBe(wasChecked)
+      const nowChecked = firstSwitch
+      await expect(nowChecked).not.toHaveAttribute('data-state', wasChecked)
       // Toggle back to restore original state
       await firstSwitch.click()
     }
