@@ -3,6 +3,15 @@
  */
 
 import { test, expect } from '../../fixtures.js'
+import {
+  uniqueName,
+  createEventWithSlots,
+  publishEvent,
+  listSlots,
+  bookSlot,
+  deleteEvent,
+  type EventWithSlots,
+} from '../../helpers/api.js'
 
 test.describe('Reporting – navigation', () => {
   test('can navigate to reporting page via URL', async ({ adminPage: page }) => {
@@ -17,6 +26,19 @@ test.describe('Reporting – navigation', () => {
 })
 
 test.describe('Reporting – page structure', () => {
+  let created: EventWithSlots
+
+  test.beforeEach(async ({ adminPage: page }) => {
+    created = await createEventWithSlots(page, { name: uniqueName('Report') })
+    await publishEvent(page, created.event.id)
+    const slots = await listSlots(page, created.event.id)
+    await bookSlot(page, slots[0].id)
+  })
+
+  test.afterEach(async ({ adminPage: page }) => {
+    await deleteEvent(page, created?.event?.id).catch(() => {})
+  })
+
   test('shows page heading', async ({ adminPage: page }) => {
     await page.goto('/app/admin/reporting')
     await expect(page.getByTestId('page-heading')).toBeVisible()
@@ -32,12 +54,9 @@ test.describe('Reporting – page structure', () => {
     await expect(page.getByTestId('btn-export')).toBeVisible()
   })
 
-  test('shows charts or no-data state', async ({ adminPage: page }) => {
+  test('shows charts with booking data', async ({ adminPage: page }) => {
     await page.goto('/app/admin/reporting')
-    // With no bookings the charts div is empty (hidden); the no-data card shows instead
-    await expect(
-      page.getByTestId('section-charts').or(page.getByText(/no data|keine daten/i)),
-    ).toBeVisible()
+    await expect(page.getByTestId('section-charts')).toBeVisible()
   })
 })
 
