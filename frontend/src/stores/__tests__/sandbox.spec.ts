@@ -11,6 +11,9 @@ import type { UserProfile } from '@/client/types.gen'
 // the storage key, and reading the flag back through its own `hasAutoStarted`
 // is what proves the store cleared the thing `tour/install.ts` actually reads.
 import { hasAutoStarted, markAutoStarted } from '@/tour/autostart'
+// Likewise real: the store asks for the running tour to be put away through
+// this module's window event, and the event name is the contract.
+import { TOUR_STOP_EVENT } from '@/tour/offer'
 
 /**
  * Everything the store reaches for is stubbed, because none of it is what the
@@ -238,6 +241,22 @@ describe('useSandboxStore', () => {
       await useSandboxStore().start('manager')
 
       expect(hasAutoStarted()).toBe(false)
+    })
+
+    it('takes the tour from the previous demo off the screen', async () => {
+      // Re-arming the flag is only half of it. Nothing here reloads the page,
+      // and the tour keeps its place in `sessionStorage`, so a helper tour left
+      // running two clicks ago would still be mid-sentence over the organiser
+      // demo that replaced it — and `tour/install.ts` would decline to offer a
+      // new one, because one is already running.
+      const stopped = vi.fn()
+      window.addEventListener(TOUR_STOP_EVENT, stopped)
+      holders.post.mockResolvedValue(sandboxResponse())
+
+      await useSandboxStore().start('manager')
+
+      expect(stopped).toHaveBeenCalledOnce()
+      window.removeEventListener(TOUR_STOP_EVENT, stopped)
     })
 
     it('leaves the flag alone when the demo was refused', async () => {

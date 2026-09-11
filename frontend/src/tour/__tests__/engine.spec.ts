@@ -43,10 +43,39 @@ const Blank = defineComponent({ render: () => h('div') })
  */
 const OVERLAY_STEP_INDEX = TOUR_TRACKS.helper.steps.findIndex((step) => step.inOverlay)
 
-/** The step whose Next label is the generic one, because it has no copy of its own. */
-const FALLBACK_STEP = TOUR_TRACKS.helper.steps[0]
-/** The step after it, which does carry its own label. */
-const LABELLED_STEP = TOUR_TRACKS.helper.steps[1]
+/** The step a helper tour opens on, which is what most of these cases render. */
+const FIRST_STEP = TOUR_TRACKS.helper.steps[0]
+
+/**
+ * An adjacent pair — one step that carries its own Next label, followed by one
+ * that does not — so a single press across the two exercises both halves of
+ * `stepLabel()`.
+ *
+ * Probed out of the copy rather than written down, for the same reason as
+ * `OVERLAY_STEP_INDEX` above: which steps opt into a verb-shaped button is a
+ * translator's decision, made by adding a string to `tour.json` and nothing
+ * else, so a literal index here would pin a choice this file has no say in.
+ */
+const LABELLED_INDEX = TOUR_TRACKS.helper.steps.findIndex(
+  (step, index, steps) =>
+    i18n.global.te(step.nextKey) &&
+    steps[index + 1] !== undefined &&
+    !i18n.global.te(steps[index + 1].nextKey),
+)
+const LABELLED_STEP = TOUR_TRACKS.helper.steps[LABELLED_INDEX]
+const FALLBACK_STEP = TOUR_TRACKS.helper.steps[LABELLED_INDEX + 1]
+
+/**
+ * The dashboard, as much of it as the first step needs.
+ *
+ * Both anchors, because `main-content`/`page-heading` is what the engine waits
+ * out a route flush against and `dashboard-next-shift` is what step one
+ * actually highlights — an absent anchor is not an error, it is a six-second
+ * wait, which is longer than every `settle()` in this file put together.
+ */
+const DASHBOARD_DOM = `
+  <div data-testid="main-content"><h1 data-testid="page-heading">Dashboard</h1></div>
+  <div data-testid="dashboard-next-shift">Saturday, 09:00</div>`
 
 function makeRouter() {
   return createRouter({
@@ -203,8 +232,7 @@ describe('tour engine', () => {
     const controller = createTourController(router)
     router.afterEach((to) => controller.handleRouteChange(to))
 
-    document.body.innerHTML =
-      '<div data-testid="main-content"><h1 data-testid="page-heading">Dashboard</h1></div>'
+    document.body.innerHTML = DASHBOARD_DOM
 
     controller.start('helper')
     await settle()
@@ -227,6 +255,7 @@ describe('tour engine', () => {
     // resolution — that `nextKey` is consulted, and that a step without the copy
     // silently gets `tour.common.next` instead of the raw dotted path vue-i18n
     // renders for a key it cannot find.
+    expect(LABELLED_INDEX).toBeGreaterThan(-1)
     const generic = i18n.global.t('tour.common.next')
     const owned = i18n.global.t(LABELLED_STEP.nextKey)
     expect(owned).not.toBe(generic)
@@ -237,18 +266,25 @@ describe('tour engine', () => {
     const controller = createTourController(router)
     router.afterEach((to) => controller.handleRouteChange(to))
 
-    document.body.innerHTML = `
-      <div data-testid="main-content"><h1 data-testid="page-heading">Dashboard</h1></div>
-      <div data-testid="dashboard-next-shift">Saturday, 09:00</div>`
+    // Both screens the walk crosses, since the pair is not promised to sit on
+    // one route: `waitFor` on a selector that never turns up is a six-second
+    // stall, and a missing anchor is another.
+    document.body.innerHTML = `${DASHBOARD_DOM}
+      <div data-testid="task-list"><div data-testid="task-row">Welcome desk</div></div>`
 
-    controller.start('helper')
+    const store = useTourStore()
+    store.start('helper')
+    store.goTo(LABELLED_INDEX)
+    // Rendered through the route handler rather than `start()`, which always
+    // opens at step one — the pair this is about is wherever the copy puts it.
+    controller.handleRouteChange(router.currentRoute.value)
     await settle()
-    expect(nextButton()?.textContent).toBe(generic)
+    expect(nextButton()?.textContent).toBe(owned)
 
     nextButton()!.click()
     await settle()
-    expect(useTourStore().currentStep?.id).toBe(LABELLED_STEP.id)
-    expect(nextButton()?.textContent).toBe(owned)
+    expect(store.currentStep?.id).toBe(FALLBACK_STEP.id)
+    expect(nextButton()?.textContent).toBe(generic)
   })
 
   it('stamps the step and the end of the track onto the Next button', async () => {
@@ -262,13 +298,12 @@ describe('tour engine', () => {
     await router.isReady()
     const controller = createTourController(router)
 
-    document.body.innerHTML =
-      '<div data-testid="main-content"><h1 data-testid="page-heading">Dashboard</h1></div>'
+    document.body.innerHTML = DASHBOARD_DOM
 
     controller.start('helper')
     await settle()
 
-    expect(nextButton()?.dataset.tourStep).toBe(FALLBACK_STEP.id)
+    expect(nextButton()?.dataset.tourStep).toBe(FIRST_STEP.id)
     expect(nextButton()?.dataset.tourLast).toBe('false')
   })
 
@@ -278,14 +313,13 @@ describe('tour engine', () => {
     await router.isReady()
     const controller = createTourController(router)
 
-    document.body.innerHTML =
-      '<div data-testid="main-content"><h1 data-testid="page-heading">Dashboard</h1></div>'
+    document.body.innerHTML = DASHBOARD_DOM
 
     controller.start('helper')
     await settle()
 
     const progress = document.querySelector('.driver-popover-progress-text')?.textContent ?? ''
-    expect(progress).toContain(i18n.global.t(FALLBACK_STEP.chapterKey))
+    expect(progress).toContain(i18n.global.t(FIRST_STEP.chapterKey))
     // The e2e suite reads the current step out of this line with the first
     // `\d+` it finds, so a chapter name that arrived before the number — or
     // one carrying a digit of its own — would break it silently.

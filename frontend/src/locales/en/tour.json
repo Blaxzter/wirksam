@@ -17,77 +17,73 @@
     },
     "helper": {
         "availability": {
-            "body": "Instead of scanning the board, say when you are free: the whole event, the same hours every day, or a handful of dates. Pick one and the grid underneath changes to match, then press Save. Organisers read this while they build the schedule, so you stop being offered the mornings you were never going to make.",
+            "body": "Instead of searching the board, say when you have time: the whole festival, the same hours every day, or a few single dates. Pick one, the grid below changes to match, then save. Organisers see it while they plan, so you stop being asked about the mornings you were never free anyway.",
             "next": "Back to the start",
             "title": "Or let the shifts find you"
         },
         "bookIt": {
-            "body": "No form, no approval, no waiting to hear back. Press it and the block turns green on your board and the count goes up on everybody else's. Handing it back is the same single press, which is what stops anyone being left holding a name that cannot come. Press it now if you like — the tour carries on either way.",
+            "body": "No form, no approval, no waiting to hear back. One press and the block turns green for you, and the count goes up for everybody else. If something comes up, the same press hands it back. Try it if you like — the tour carries on either way.",
             "next": "See my shifts",
             "title": "Taking it is one press"
         },
         "finish": {
-            "body": "Jobs are cut into shifts, you take the ones that fit, and your availability fills the gaps you never went looking for. The buttons here take you straight back to the jobs and to your own shifts. The demo is yours until it expires, and nothing you do in it reaches anybody else.",
-            "title": "That is the whole model"
+            "body": "Jobs get cut into shifts, you take the ones that suit you, and your availability covers the rest. The buttons here take you straight to the jobs and to your own shifts. Have a proper look around — the demo is yours for as long as it lasts.",
+            "title": "That is all there is to it"
         },
         "jobRow": {
-            "body": "The left of this row is the job itself: what it is called, where it happens, how many places are still open. The rest of the row is the same job spread across the days of the festival, and each small block in it is one shift. Reading down the page shows you where people are still missing.",
+            "body": "On the left is the job itself: what it is called, where it happens, how many places are still free. The rest of the row is the same job spread across the days of the festival, and every small block in it is one shift. One look down the page shows you where people are still missing.",
             "title": "One row, one job"
         },
         "jobsIntro": {
-            "body": "A job is something that has to be covered over a stretch of time: a welcome desk across a whole weekend, a café counter on the Saturday. Nobody signs up for a job as a whole. wirksam cuts each one into individual shifts, and a shift is what you take. This screen is both of those at once.",
-            "title": "Jobs, and the shifts under them"
+            "body": "A job is something that has to be covered over a stretch of time: a welcome desk all weekend, a café counter on the Saturday. Nobody signs up for a whole job — it gets cut into shifts, and a shift is what you take. This screen shows you both at once.",
+            "title": "Jobs, and the shifts in them"
         },
         "myBookings": {
-            "body": "Past and upcoming together, each with the time, the place and who else is on it, which is what you actually want on the morning of. This is also where you hand a shift back if something changes. Which leaves the other half of the deal: nobody should have to go hunting for the shifts that fit them.",
+            "body": "Past and upcoming together, each with the time, the place and the people you are on it with — which is what you actually want on the morning of. This is also where you hand a shift back if something changes. Which leaves one question: how do you find the shifts that suit you?",
             "next": "Open my availability",
             "title": "Everything you said yes to"
         },
         "nextShift": {
-            "body": "The demo has put you on a few shifts, and the nearest one sits at the top of every visit: the time, the place, and how many others will be there with you. It is the one thing most helpers open this page to check. Where those shifts come from is the next screen.",
+            "body": "You are already signed up for a few shifts, and the next one always sits at the top: when it starts, where to go, and who else will be there. For most helpers that is the one thing they come to this page to check. Where those shifts come from is the next screen.",
             "next": "Show me the jobs",
             "title": "What you are already down for"
         },
         "openChip": {
-            "body": "One block is one shift: the start time, and underneath it the places taken out of the places needed. This one still has room. The pale ones are already covered and the green ones are yours, which is how you read a whole weekend without opening anything. Press below and I will open this one.",
+            "body": "One block is one shift: the start time on top, and under it the places taken out of the places needed. This one still has room. Pale blocks are full, green ones are yours — that is how you read a whole weekend without opening anything. Press below and I will open this one for you.",
             "next": "Open this shift",
             "title": "A shift with room in it"
         },
         "shiftRoster": {
-            "body": "A shift is not an empty slot, it is a small group with room left in it. This list is the people who have said yes, and the blank line is what is still going spare — knowing you would be the third of four rather than the only one is usually what settles it. Where to go and anything to bring sit just above.",
+            "body": "A shift is not an empty slot, it is a small group with a place left in it. The list is the people who have said yes, and the blank line is the place still going spare. Seeing that others are already in usually settles the question. Where to go and what to bring are right above.",
             "title": "Who is already on it"
-        },
-        "welcome": {
-            "body": "This is Riverside Summer Festival, a three-weekend village festival run entirely by volunteers, and you are one of them. Everything it needs doing is broken into jobs — the screen calls them tasks — and every job is cut into shifts you can take one at a time. Nothing here is real, and nothing you do reaches anybody else.",
-            "title": "You are inside a real event"
         }
     },
     "manager": {
         "attention": {
-            "body": "Shifts nobody has taken yet, shifts still short of a pair of hands, and anyone waiting to be let into the event. Every line is a count that is also a link, so this is a to-do list rather than a status board — and when none of it applies, the panel is not there at all. Below it sits every open shift, soonest first.",
+            "body": "Riverside Summer Festival is half staffed, and this is the part that needs you now: shifts nobody has taken, shifts still short of a pair of hands, and anyone waiting to be let in. Every line is a count and a link at once, so it is a to-do list rather than a status board. When nothing needs doing, the panel is not there at all.",
             "next": "Show me the jobs",
-            "title": "What needs you this week"
+            "title": "What needs you right now"
         },
         "finish": {
-            "body": "Describe a job once, let wirksam cut it into shifts, watch the thin ones, and read afterwards how it went. Nothing you have seen is a mock-up — the demo event behaves exactly as a real one would, and the person at the door is still waiting. It is yours until it expires, and no real event is touched by anything you do in it.",
+            "body": "Describe a job once, let wirksam cut it into shifts, keep an eye on the thin ones, and read afterwards how it went. Everything you have seen works exactly as it would in a real event — and the person at the door is still waiting. Have a proper look around; the demo is yours for as long as it lasts.",
             "title": "That is the whole loop"
         },
         "formIntro": {
-            "body": "Creating a job is this single page, folded into five sections: what the job is, which event it belongs to, which days it runs, how each day is cut up, and a preview of the result. The first two are filled in already, this event included, so the rest has something to work with. Nothing is saved until you say so.",
+            "body": "Creating a job is this one page, folded into five sections: what the job is, which event it belongs to, which days it runs, how each day is cut up, and a preview. The first two are filled in already so the rest has something to work with, and I will open the others one at a time. Nothing is saved until you say so.",
             "next": "Which days it runs",
             "title": "One form, one job"
         },
         "generateShifts": {
-            "body": "The daily window, how long one shift should run, and how many people it needs. From those three, every shift on every day you picked is worked out, down to the odd half hour left at the end. Change the shift length here and watch the count in the preview move — this is the step that saves you typing forty rows by hand.",
+            "body": "The daily window, how long one shift should run, and how many people it needs. From those three, every shift on every day you picked is worked out, down to the odd half hour left at the end. Change the shift length and watch the count in the preview move. This is the step that saves you typing forty rows by hand.",
             "next": "Show me the preview",
             "title": "This is where shifts come from"
         },
         "jobRow": {
-            "body": "A job is something that has to be covered over a stretch of time: a welcome desk across a whole weekend, a café counter on the Saturday. You describe it once, on the left of this row. The rest of the row is wirksam's work — the same job cut into individual shifts, day by day.",
+            "body": "A job is something that has to be covered over a stretch of time: a welcome desk all weekend, a café counter on the Saturday. You describe it once, on the left of this row. The rest is wirksam's work — the same job cut into single shifts, day by day.",
             "title": "One row, one job"
         },
         "people": {
-            "body": "Each row is somebody who can see the schedule, and the role beside the name says what they may do with it: members take shifts, admins build the schedule too, and the owner can hand the whole event on. Above this is the person the dashboard mentioned, still waiting to be let in — accept, and they can start taking shifts straight away. The invitation card below is the one thing on this tour you can look at but not use: the demo sends no email at all.",
+            "body": "Each row is somebody who can see the schedule, and the role beside the name says what they may do with it: members take shifts, admins plan as well, and whoever owns the event can hand it on. Above is the person the dashboard mentioned, still waiting to be let in — accept, and they can start taking shifts straight away. The invitation card below you can only look at: the demo sends no email.",
             "next": "How did it go?",
             "title": "The people in your event"
         },
@@ -97,24 +93,19 @@
             "title": "How it actually went"
         },
         "shiftPreview": {
-            "body": "Every shift your settings would produce, counted here and laid out below, before a single one exists. Tap one to leave it out — the Sunday morning nobody works. Fixing a two-hour block that should have been one costs nothing now, and a great deal once forty people have booked into it. Saving is the button at the bottom; the tour leaves that to you.",
+            "body": "Every shift your settings would produce, counted here and listed below, before a single one exists. Tap one to leave it out — the Sunday morning nobody works. Fixing a two-hour block that should have been one costs nothing now, and a great deal once forty people have booked into it. Saving is the button at the bottom; that one is yours.",
             "next": "Who is in the event",
-            "title": "Check before you commit"
+            "title": "Check before you save"
         },
         "staffing": {
-            "body": "Each block carries the places taken over the places needed, so a whole weekend's staffing is one downward glance. This one is still short of people; the pale ones are done. That is your list for the week before, and it is the same board a volunteer is looking at. Next comes the form all of this came out of — it arrives folded into sections, and I will open them one at a time.",
+            "body": "Each block carries the places taken over the places needed, so a whole weekend's staffing is one look down the page. This one is still short of people; the pale ones are done. That is your list for the week before, and volunteers are looking at exactly the same board. Next comes the form all of this came out of.",
             "next": "Create a job",
             "title": "Reading the schedule at a glance"
         },
         "taskDates": {
-            "body": "A single day, a run of days, or a few dates scattered across the event — the last one is what a festival with gaps in it actually looks like. A short run has been picked for you, inside the event's own window, which is why the calendar will not offer you anything outside it. Everything you set after this happens on each of the days chosen here.",
+            "body": "A single day, a run of days, or a few dates scattered across the event — the last one is what a festival with gaps in it really looks like. A short run is picked already, inside the event's own window, which is why the calendar offers you nothing outside it. Everything you set after this applies to each of those days.",
             "next": "How the day is cut up",
             "title": "Which days it runs"
-        },
-        "welcome": {
-            "body": "Riverside Summer Festival, half staffed: four jobs, a schedule cut into shifts, and a handful of volunteers already on it. Your side of this is two habits — describing the work once, and then watching where it is still uncovered. The second one starts just below.",
-            "next": "Where are the gaps?",
-            "title": "You are running this event"
         }
     }
 }

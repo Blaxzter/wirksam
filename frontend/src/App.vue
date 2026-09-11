@@ -13,6 +13,7 @@ import { usePalette } from '@/composables/usePalette'
 import { Toaster } from '@/components/ui/sonner'
 
 import SandboxBanner from '@/components/sandbox/SandboxBanner.vue'
+import SandboxWelcomeDialog from '@/components/sandbox/SandboxWelcomeDialog.vue'
 import GlobalDialog from '@/components/utils/GlobalDialog.vue'
 
 const { isLoading: sessionLoading } = useAuth()
@@ -37,6 +38,11 @@ usePalette()
        outlives every layout, and anywhere lower would be unmounted on the first
        navigation, resetting the countdown it is there to show. -->
   <SandboxBanner />
+
+  <!-- Opened by `tour/install.ts` on a demo session's first arrival at the
+       dashboard, and mounted here for the same reason the banner is: the
+       layout underneath it is rebuilt on every navigation. -->
+  <SandboxWelcomeDialog />
 
   <!-- Loading state -->
   <div v-if="isLoading" class="min-h-screen flex items-center justify-center bg-background">

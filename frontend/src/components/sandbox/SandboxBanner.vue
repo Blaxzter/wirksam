@@ -10,6 +10,7 @@ import { useSandboxStore } from '@/stores/sandbox'
 import { Button } from '@/components/ui/button'
 
 import { millisUntil } from '@/lib/server-time'
+import { requestTour } from '@/tour/offer'
 
 /**
  * The strip that admits the whole app is make-believe.
@@ -22,22 +23,6 @@ import { millisUntil } from '@/lib/server-time'
  * by navigation. That also means it cannot be pushed down by the layouts it
  * covers, hence the offsets below.
  */
-
-/**
- * Ask the guided tour to run again.
- *
- * The contract, in full — the tour listens for exactly this:
- *
- *   name:   'wirksam:restart-tour'
- *   target: window
- *   detail: { track: 'helper' | 'manager' }
- *
- * A `window` event rather than an import on purpose: the tour is a lazily
- * loaded feature of its own, and importing it from here would pull it into the
- * bundle every visitor downloads, demo or not. There is deliberately no
- * response — if nothing is listening, nothing happens.
- */
-const RESTART_TOUR_EVENT = 'wirksam:restart-tour'
 
 /**
  * How far the page is pushed down. Matches the bar's own `h-11`.
@@ -145,10 +130,18 @@ onBeforeUnmount(() => {
   removeOffset()
 })
 
+/**
+ * Ask the guided tour to run again.
+ *
+ * Through `tour/offer.ts`, which dispatches a window event the engine listens
+ * for — not through the engine itself. The import matters: `tour/engine.ts`
+ * brings driver.js with it, and this bar is mounted in `App.vue` for every
+ * visitor, demo or not. `offer.ts` costs a `ref` and a string.
+ */
 function restartTour() {
   const track = sandboxStore.role
   if (!track) return
-  window.dispatchEvent(new CustomEvent(RESTART_TOUR_EVENT, { detail: { track } }))
+  requestTour(track)
 }
 
 async function exit() {

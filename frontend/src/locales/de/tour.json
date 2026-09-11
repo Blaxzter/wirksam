@@ -17,104 +17,95 @@
     },
     "helper": {
         "availability": {
-            "body": "Statt die Liste abzusuchen, trägst du ein, wann du Zeit hast: das ganze Fest, jeden Tag dieselben Stunden oder ein paar einzelne Termine. Wähl eins aus, das Raster darunter passt sich an, und dann speicherst du. Die Organisation sieht das beim Planen und bietet dir die Vormittage gar nicht erst an, an denen du sowieso nicht kannst.",
+            "body": "Statt die Liste abzusuchen, trägst du ein, wann du Zeit hast: das ganze Fest, jeden Tag dieselben Stunden oder ein paar einzelne Termine. Wähl eins aus, das Raster darunter passt sich an, dann speicherst du. Die Organisation sieht das beim Planen und fragt dich gar nicht erst für die Vormittage, an denen du sowieso nie kannst.",
             "next": "Zurück zum Anfang",
             "title": "Oder die Schichten finden dich"
         },
         "bookIt": {
-            "body": "Kein Formular, keine Freigabe, kein Warten auf Antwort. Ein Klick, und das Kästchen wird grün — bei dir und bei allen anderen steigt der Zähler. Zurückgeben geht mit demselben einen Klick, damit niemand mit einem Namen dasteht, der doch nicht kann. Drück ruhig, wenn du magst — die Tour läuft so oder so weiter.",
+            "body": "Kein Formular, keine Freigabe, kein Warten auf Antwort. Ein Klick, und das Kästchen wird grün — bei dir, und bei allen anderen steigt der Zähler. Kommt etwas dazwischen, gibst du die Schicht mit demselben Klick wieder ab. Probier es ruhig aus, die Tour läuft so oder so weiter.",
             "next": "Meine Schichten zeigen",
             "title": "Ein Klick, und du bist dabei"
         },
         "finish": {
-            "body": "Aufgaben werden in Schichten zerlegt, du übernimmst die, die passen, und deine Verfügbarkeit füllt die Lücken, die du nie gesucht hast. Über die Schaltflächen hier kommst du direkt zurück zu den Aufgaben und zu deinen eigenen Schichten. Die Demo gehört dir, bis sie abläuft, und nichts davon erreicht jemand anderen.",
-            "title": "Das ist das ganze Prinzip"
+            "body": "Aufgaben werden in Schichten zerlegt, du übernimmst die, die dir passen, und deine Verfügbarkeit deckt den Rest ab. Über die Schaltflächen hier kommst du direkt zu den Aufgaben und zu deinen eigenen Schichten. Schau dich in Ruhe um — die Demo gehört dir, solange sie läuft.",
+            "title": "Mehr ist es nicht"
         },
         "jobRow": {
-            "body": "Links in der Zeile steht die Aufgabe selbst: wie sie heißt, wo sie stattfindet und wie viele Plätze noch frei sind. Der Rest der Zeile ist dieselbe Aufgabe über die Tage des Festes verteilt, und jedes kleine Kästchen darin ist eine Schicht. Ein Blick nach unten zeigt, wo noch Leute fehlen.",
+            "body": "Links steht die Aufgabe selbst: wie sie heißt, wo sie stattfindet und wie viele Plätze noch frei sind. Der Rest der Zeile ist dieselbe Aufgabe, verteilt über die Tage des Fests — und jedes kleine Kästchen darin ist eine Schicht. Einmal die Seite runterschauen, und du siehst, wo noch Leute fehlen.",
             "title": "Eine Zeile, eine Aufgabe"
         },
         "jobsIntro": {
-            "body": "Eine Aufgabe ist etwas, das über einen Zeitraum abgedeckt sein muss: ein Empfang übers ganze Wochenende, eine Cafétheke am Samstag. Für eine Aufgabe als Ganzes meldet sich niemand an. wirksam zerlegt jede in einzelne Schichten, und eine Schicht ist das, was du übernimmst. Diese Seite zeigt beides auf einmal.",
+            "body": "Eine Aufgabe ist etwas, das über längere Zeit besetzt sein muss: ein Empfang am ganzen Wochenende, die Cafétheke am Samstag. Für eine ganze Aufgabe meldet sich niemand — sie wird in Schichten zerlegt, und eine Schicht ist das, was du übernimmst. Diese Seite zeigt dir beides auf einmal.",
             "title": "Aufgaben und ihre Schichten"
         },
         "myBookings": {
-            "body": "Vergangenes und Kommendes zusammen, jeweils mit Zeit, Ort und wer sonst noch dabei ist — genau das, was du am Morgen davor brauchst. Hier gibst du eine Schicht auch wieder ab, wenn etwas dazwischenkommt. Bleibt die andere Hälfte: Niemand sollte nach den Schichten suchen müssen, die zu ihm passen.",
+            "body": "Vergangenes und Kommendes zusammen, jeweils mit Zeit, Ort und den Leuten, die mit dir eingeteilt sind — genau das, was du am Morgen davor brauchst. Hier gibst du eine Schicht auch wieder ab, wenn etwas dazwischenkommt. Bleibt eine Frage: Wie findest du die Schichten, die zu dir passen?",
             "next": "Verfügbarkeit öffnen",
             "title": "Alles, wozu du Ja gesagt hast"
         },
         "nextShift": {
-            "body": "Die Demo hat dich auf ein paar Schichten gesetzt, und die nächste steht bei jedem Besuch ganz oben: Uhrzeit, Ort und wie viele andere mit dir da sind. Das ist das, was die meisten Helfenden auf dieser Seite nachschauen. Woher diese Schichten kommen, siehst du gleich.",
+            "body": "Du bist schon für ein paar Schichten eingetragen, und die nächste steht immer ganz oben: wann sie losgeht, wo du hinmusst und wer sonst noch dabei ist. Die meisten Helfenden schauen genau dafür hier vorbei. Wo diese Schichten herkommen, siehst du gleich.",
             "next": "Zeig mir die Aufgaben",
             "title": "Wofür du schon eingetragen bist"
         },
         "openChip": {
-            "body": "Ein Kästchen ist eine Schicht: oben die Anfangszeit, darunter die belegten von den benötigten Plätzen. In dieser hier ist noch Platz. Die blassen sind schon voll, die grünen sind deine — so liest du ein ganzes Wochenende, ohne irgendetwas zu öffnen. Ein Klick unten, und ich öffne diese hier.",
+            "body": "Ein Kästchen ist eine Schicht: oben die Anfangszeit, darunter die belegten von den benötigten Plätzen. Hier ist noch etwas frei. Blasse Kästchen sind voll, grüne sind deine — so liest du ein ganzes Wochenende, ohne irgendetwas zu öffnen. Klick unten, dann mache ich dir diese hier auf.",
             "next": "Diese Schicht öffnen",
             "title": "Eine Schicht mit freiem Platz"
         },
         "shiftRoster": {
-            "body": "Eine Schicht ist kein leerer Platz, sondern eine kleine Gruppe, in der noch Platz ist. Diese Liste sind die Leute, die zugesagt haben, und die leere Zeile ist das, was übrig ist — zu wissen, dass du die dritte von vier wärst und nicht die einzige, gibt meistens den Ausschlag. Wo du hinmusst und was du mitbringen sollst, steht direkt darüber.",
+            "body": "Eine Schicht ist kein leerer Platz, sondern eine kleine Gruppe, in der noch jemand fehlt. In der Liste stehen die, die schon zugesagt haben, und die leere Zeile ist der Platz, der noch frei ist. Zu sehen, dass da schon andere dabei sind, macht die Entscheidung meistens leicht. Wo du hinmusst und was du mitbringen sollst, steht direkt darüber.",
             "title": "Wer schon dabei ist"
-        },
-        "welcome": {
-            "body": "Das hier ist das Sommerfest am Fluss, ein Dorffest über drei Wochenenden, komplett ehrenamtlich gestemmt — und du bist eine der Helfenden. Alles, was zu tun ist, steckt in Aufgaben, und jede Aufgabe ist in Schichten zerlegt, die du einzeln übernehmen kannst. Nichts davon ist echt, und nichts, was du tust, erreicht jemand anderen.",
-            "title": "Du bist in einer echten Veranstaltung"
         }
     },
     "manager": {
         "attention": {
-            "body": "Schichten, auf denen noch niemand steht, Schichten, denen Hände fehlen, und alle, die noch auf Einlass warten. Jede Zeile ist eine Zahl und zugleich ein Link, das ist also eine Aufgabenliste und keine Anzeigetafel — und wenn nichts davon zutrifft, ist das Feld gar nicht da. Darunter stehen alle offenen Schichten, die dringendste zuerst.",
+            "body": "Das Sommerfest am Fluss ist halb besetzt, und hier steht, was gerade an dir hängt: Schichten, auf denen noch niemand steht, Schichten, denen Hände fehlen, und alle, die noch auf Einlass warten. Jede Zeile ist eine Zahl und zugleich ein Link — also eher eine To-do-Liste als eine Anzeigetafel. Steht nichts an, ist das Feld gar nicht erst da.",
             "next": "Zeig mir die Aufgaben",
-            "title": "Was diese Woche an dir hängt"
+            "title": "Was gerade an dir hängt"
         },
         "finish": {
-            "body": "Eine Aufgabe einmal beschreiben, wirksam daraus Schichten machen lassen, auf die dünn besetzten achten und hinterher nachlesen, wie es lief. Nichts davon ist eine Attrappe — die Demo-Veranstaltung verhält sich genau wie eine echte, und die Person vor der Tür wartet noch. Sie gehört dir, bis sie abläuft, und keine echte Veranstaltung ist davon betroffen.",
+            "body": "Eine Aufgabe einmal beschreiben, wirksam daraus Schichten machen lassen, auf die dünn besetzten achten und hinterher nachlesen, wie es lief. Alles, was du gesehen hast, funktioniert genau wie in einer echten Veranstaltung — und die Person vor der Tür wartet immer noch. Schau dich in Ruhe um, die Demo gehört dir, solange sie läuft.",
             "title": "Das ist der ganze Kreislauf"
         },
         "formIntro": {
-            "body": "Eine Aufgabe anzulegen ist genau diese eine Seite, in fünf Abschnitte gefaltet: worum es geht, zu welcher Veranstaltung sie gehört, an welchen Tagen sie läuft, wie der Tag aufgeteilt wird, und eine Vorschau. Die ersten beiden sind schon ausgefüllt, diese Veranstaltung eingeschlossen, damit der Rest etwas zum Arbeiten hat. Gespeichert wird nichts, bevor du es sagst.",
+            "body": "Eine Aufgabe anzulegen ist genau diese eine Seite, in fünf Abschnitte gefaltet: worum es geht, zu welcher Veranstaltung sie gehört, an welchen Tagen sie läuft, wie der Tag aufgeteilt wird, und eine Vorschau. Die ersten beiden sind schon ausgefüllt, damit der Rest etwas zum Arbeiten hat; die anderen öffne ich dir nacheinander. Gespeichert wird nichts, bevor du es sagst.",
             "next": "An welchen Tagen",
             "title": "Ein Formular, eine Aufgabe"
         },
         "generateShifts": {
-            "body": "Das tägliche Zeitfenster, wie lang eine Schicht sein soll und wie viele Leute sie braucht. Daraus entsteht jede Schicht an jedem gewählten Tag, samt der halben Stunde, die am Ende übrig bleibt. Änder hier die Schichtlänge und sieh zu, wie sich die Zahl in der Vorschau bewegt — dieser Schritt erspart dir vierzig Zeilen Tipparbeit.",
+            "body": "Das tägliche Zeitfenster, wie lang eine Schicht sein soll und wie viele Leute sie braucht. Daraus entsteht jede Schicht an jedem gewählten Tag — samt der halben Stunde, die am Ende übrig bleibt. Änder hier mal die Schichtlänge und schau, wie sich die Zahl in der Vorschau bewegt. Dieser Schritt erspart dir vierzig Zeilen Tipparbeit.",
             "next": "Vorschau zeigen",
             "title": "Hier entstehen die Schichten"
         },
         "jobRow": {
-            "body": "Eine Aufgabe ist etwas, das über einen Zeitraum abgedeckt sein muss: ein Empfang übers ganze Wochenende, eine Cafétheke am Samstag. Du beschreibst sie einmal, links in dieser Zeile. Den Rest macht wirksam — dieselbe Aufgabe, zerlegt in einzelne Schichten, Tag für Tag.",
+            "body": "Eine Aufgabe ist etwas, das über längere Zeit besetzt sein muss: ein Empfang am ganzen Wochenende, die Cafétheke am Samstag. Du beschreibst sie einmal, links in dieser Zeile. Den Rest macht wirksam — dieselbe Aufgabe, zerlegt in einzelne Schichten, Tag für Tag.",
             "title": "Eine Zeile, eine Aufgabe"
         },
         "people": {
-            "body": "Jede Zeile ist jemand, der den Plan sehen kann, und die Rolle daneben sagt, was diese Person damit darf: Mitglieder übernehmen Schichten, Admins planen zusätzlich mit, und wem die Veranstaltung gehört, kann sie ganz abgeben. Darüber steht die Person, die die Übersicht erwähnt hat und noch auf Einlass wartet — nimmst du an, kann sie sofort Schichten übernehmen. Die Einladungskarte darunter ist das Einzige auf dieser Tour, das du nur ansehen kannst: Die Demo verschickt gar keine E-Mails.",
+            "body": "Jede Zeile ist jemand, der den Plan sehen kann, und die Rolle daneben sagt, was diese Person darf: Mitglieder übernehmen Schichten, Admins planen mit, und wem die Veranstaltung gehört, kann sie ganz abgeben. Darüber steht die Person, die auf der Übersicht erwähnt wurde und noch auf Einlass wartet — nimmst du an, kann sie sofort Schichten übernehmen. Die Einladungskarte darunter kannst du dir nur ansehen: Die Demo verschickt keine E-Mails.",
             "next": "Wie lief es?",
             "title": "Die Leute in deiner Veranstaltung"
         },
         "reporting": {
-            "body": "Wie voll der Plan am Ende war, wie viele Stunden zusammengekommen sind, wer am meisten übernommen hat und welche Tageszeiten am schwersten zu besetzen waren. Daneben liegt ein Tabellen-Export für alle, die lieber selbst weiterrechnen. Nützlich in der Woche danach und noch nützlicher, wenn du nächstes Jahr planst.",
+            "body": "Wie voll der Plan am Ende war, wie viele Stunden zusammengekommen sind, wer am meisten übernommen hat und welche Tageszeiten am schwersten zu besetzen waren. Daneben liegt ein Tabellen-Export für alle, die lieber selbst weiterrechnen. Nützlich in der Woche danach — und noch nützlicher, wenn du nächstes Jahr planst.",
             "next": "Zurück zum Überblick",
             "title": "Wie es tatsächlich gelaufen ist"
         },
         "shiftPreview": {
-            "body": "Alle Schichten, die aus deinen Einstellungen entstehen würden, hier gezählt und darunter aufgelistet, bevor eine einzige existiert. Tipp eine an, um sie wegzulassen — den Sonntagmorgen, an dem niemand arbeitet. Einen Zweistundenblock zu korrigieren, der eine Stunde hätte sein sollen, kostet jetzt nichts und später sehr viel. Speichern ist der Knopf ganz unten; das überlässt die Tour dir.",
+            "body": "Alle Schichten, die aus deinen Einstellungen entstehen würden, hier gezählt und darunter aufgelistet — bevor eine einzige existiert. Tipp eine an, um sie wegzulassen, etwa den Sonntagmorgen, an dem niemand arbeitet. Einen Zweistundenblock zu korrigieren, der eine Stunde hätte sein sollen, kostet jetzt nichts und später sehr viel. Speichern ist der Knopf ganz unten — den überlässt dir die Tour.",
             "next": "Wer dabei ist",
             "title": "Erst prüfen, dann speichern"
         },
         "staffing": {
-            "body": "In jedem Kästchen stehen die belegten von den benötigten Plätzen — ein Blick nach unten, und du kennst die Besetzung des ganzen Wochenendes. In diesem hier fehlen noch Leute, die blassen sind fertig besetzt. Das ist deine Liste für die Woche davor, und Helfende sehen genau dieselbe Ansicht. Als Nächstes kommt das Formular, aus dem das alles entstanden ist — es ist in Abschnitte gefaltet, und ich öffne sie nacheinander.",
+            "body": "In jedem Kästchen stehen die belegten von den benötigten Plätzen — einmal die Seite runterschauen, und du kennst die Besetzung des ganzen Wochenendes. Hier fehlen noch Leute, die blassen sind fertig besetzt. Das ist deine Liste für die Woche davor, und die Helfenden sehen genau dieselbe Ansicht. Als Nächstes kommt das Formular, aus dem das alles entstanden ist.",
             "next": "Aufgabe anlegen",
             "title": "Den Plan auf einen Blick lesen"
         },
         "taskDates": {
-            "body": "Ein einzelner Tag, mehrere Tage am Stück oder ein paar verstreute Termine — das Letzte ist das, was ein Fest mit Lücken wirklich braucht. Ein kurzer Zeitraum ist schon gewählt, innerhalb des Zeitraums der Veranstaltung; deshalb bietet dir der Kalender auch nichts außerhalb an. Alles, was du danach einstellst, gilt für jeden dieser Tage.",
+            "body": "Ein einzelner Tag, mehrere Tage am Stück oder ein paar verstreute Termine — das Letzte ist das, was ein Fest mit Lücken wirklich braucht. Ein kurzer Zeitraum ist schon gewählt, innerhalb der Veranstaltung; deshalb bietet dir der Kalender auch nichts außerhalb an. Alles, was du danach einstellst, gilt für jeden dieser Tage.",
             "next": "Wie der Tag aufgeteilt wird",
             "title": "An welchen Tagen"
-        },
-        "welcome": {
-            "body": "Das Sommerfest am Fluss, halb besetzt: vier Aufgaben, ein Plan aus lauter Schichten und ein paar Freiwillige, die schon dabei sind. Deine Seite besteht aus zwei Gewohnheiten — die Arbeit einmal beschreiben und dann beobachten, wo noch niemand eingetragen ist. Das Zweite fängt gleich hier darunter an.",
-            "next": "Wo fehlen noch Leute?",
-            "title": "Du leitest diese Veranstaltung"
         }
     }
 }

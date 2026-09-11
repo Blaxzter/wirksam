@@ -6,7 +6,7 @@
  * than the subject of a step. That is why the chapters are named after ideas
  * and not after routes:
  *
- *   `yourEvent`    — you are inside a real event, and already on some of it
+ *   `yourEvent`    — you are already on some of this event
  *                    (`home`)
  *   `theJobs`      — what a job is, and what the board is showing you
  *                    (`tasks`)
@@ -15,8 +15,16 @@
  *   `keepingTrack` — what you said yes to, and how to be found by the rest
  *                    (`my-bookings`, `availability`, back to `home`)
  *
- * Ten steps across four routes, all four of which `engine.spec.ts`'s memory
+ * Nine steps across four routes, all four of which `engine.spec.ts`'s memory
  * router already registers.
+ *
+ * ── Where the welcome went ───────────────────────────────────────────────────
+ * The track used to open on a step that said hello while highlighting the page
+ * heading, which pointed at a word the visitor could already read and asked for
+ * nothing. The greeting is now `SandboxWelcomeDialog.vue`, shown before any of
+ * this runs, and it is also where the tour is *offered* rather than started on
+ * somebody who never asked for one. So step one here points at something worth
+ * pointing at, and every step in the track earns its highlight.
  *
  * ── Why the anchors are small ────────────────────────────────────────────────
  * Every anchor here is a control or a row, never a section wrapper. driver.js
@@ -108,13 +116,6 @@ async function openShiftDialog({ waitFor }: TourStepContext): Promise<void> {
 }
 
 export const helperTrack = defineTrack('helper', [
-  {
-    id: 'welcome',
-    chapter: 'yourEvent',
-    route: 'home',
-    element: PAGE_HEADING,
-    side: 'bottom',
-  },
   {
     id: 'nextShift',
     chapter: 'yourEvent',

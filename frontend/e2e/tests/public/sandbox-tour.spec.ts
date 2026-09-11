@@ -30,13 +30,27 @@ import type { Page } from '@playwright/test'
  */
 const ANCHOR_CLASS = /wirksam-tour-anchor/
 
-async function startDemo(page: Page, role: 'helper' | 'manager') {
+/**
+ * Get into a demo and stop at the greeting.
+ *
+ * A demo session opens on `SandboxWelcomeDialog`, which *offers* the tour
+ * rather than starting one — so every case here has to answer it, and the two
+ * that are about the offer itself answer it themselves.
+ */
+async function openDemo(page: Page, role: 'helper' | 'manager') {
   await page.goto('/')
   await page.getByTestId('btn-cta-demo').click()
   await expect(page.getByTestId('dialog-sandbox-start')).toBeVisible()
   await page.getByTestId(`btn-sandbox-role-${role}`).click()
   await page.getByTestId('btn-sandbox-start').click()
   await page.waitForURL(/\/app\//, { timeout: 30_000 })
+  await expect(page.getByTestId('dialog-sandbox-welcome')).toBeVisible({ timeout: 20_000 })
+}
+
+/** Open a demo and say yes to the tour. */
+async function startDemo(page: Page, role: 'helper' | 'manager') {
+  await openDemo(page, role)
+  await page.getByTestId('btn-tour-accept').click()
 }
 
 async function exitDemo(page: Page) {
@@ -186,7 +200,7 @@ test.describe('guided tour', () => {
   // Walking a whole track means a dozen real navigations and page loads.
   test.slow()
 
-  test('the helper track starts on its own and runs to the end across routes', async ({ page }) => {
+  test('the helper track runs to the end across routes', async ({ page }) => {
     await startDemo(page, 'helper')
 
     const routes = await walk(page, 15)
@@ -216,6 +230,26 @@ test.describe('guided tour', () => {
     await exitDemo(page)
   })
 
+  test('the demo greets the visitor before it guides them', async ({ page }) => {
+    await openDemo(page, 'helper')
+
+    // Nothing is dimmed and nothing is highlighted while the question is on
+    // screen: the greeting is a plain dialog, and the tour it offers does not
+    // exist until somebody says yes.
+    await expect(page.locator('.driver-popover')).toBeHidden()
+
+    await page.getByTestId('btn-tour-decline').click()
+    await expect(page.getByTestId('dialog-sandbox-welcome')).toBeHidden()
+    await expect(page.locator('.driver-popover')).toBeHidden()
+
+    // Declining is not a door closing: the banner offers the same tour for as
+    // long as the demo lasts.
+    await page.getByTestId('btn-sandbox-tour').click()
+    await expect(page.locator('.driver-popover')).toBeVisible({ timeout: 20_000 })
+
+    await exitDemo(page)
+  })
+
   test('the first step highlights the screen it arrived on, not the one it left', async ({
     page,
   }) => {
@@ -224,13 +258,12 @@ test.describe('guided tour', () => {
 
     // `router.afterEach` fires one Vue flush before `RouterView` swaps its
     // component, so the landing page is still mounted and still measurable when
-    // an auto-started tour resolves its first anchor — and the landing page has
-    // a `page-heading` inside a `main-content` of its own, exactly like every
-    // screen the tour visits. Anchoring to it left driver drawing against a
-    // rectangle that was unmounted a microsecond later, which puts the popover
-    // in the top-left corner with nothing highlighted at all.
-    const heading = page.getByTestId('main-content').getByTestId('page-heading')
-    await expect(heading).toHaveClass(ANCHOR_CLASS)
+    // a tour resolves its first anchor — and the landing page carries a
+    // `main-content` of its own, exactly like every screen the tour visits.
+    // Resolving against it left driver drawing on a rectangle that was
+    // unmounted a microsecond later, which puts the popover in the top-left
+    // corner with nothing highlighted at all.
+    await expect(page.getByTestId('dashboard-next-shift')).toHaveClass(ANCHOR_CLASS)
 
     await exitDemo(page)
   })

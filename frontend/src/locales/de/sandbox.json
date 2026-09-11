@@ -43,5 +43,18 @@
         "start": "Demo starten",
         "starting": "Demo wird vorbereitet …",
         "title": "Demo-Veranstaltung ansehen"
+    },
+    "welcome": {
+        "explore": "Danke, ich schau mich selbst um",
+        "helper": {
+            "body": "Du bist beim Sommerfest am Fluss — einem Dorffest über drei Wochenenden, das komplett von Freiwilligen gestemmt wird. Du bist eine der Helfenden: Du kannst dich in Schichten eintragen, sie wieder abgeben und hinterlegen, wann du Zeit hast."
+        },
+        "manager": {
+            "body": "Du organisierst das Sommerfest am Fluss — ein Dorffest über drei Wochenenden, das komplett von Freiwilligen gestemmt wird. Du legst die Aufgaben an, lässt daraus Schichten entstehen und siehst, wo noch Leute fehlen."
+        },
+        "playground": "Probier ruhig alles aus. Die Veranstaltung gehört dir allein, niemand sonst bekommt etwas davon mit — und wenn die Zeit oben abgelaufen ist, verschwindet sie mit allem, was du darin angestellt hast.",
+        "question": "Soll ich dir kurz zeigen, wie das hier funktioniert?",
+        "title": "Willkommen in deiner Demo",
+        "tour": "Ja, zeig es mir"
     }
 }

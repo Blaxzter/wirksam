@@ -22,12 +22,21 @@ async function startDemo(page: import('@playwright/test').Page, role: 'helper' |
 }
 
 /**
- * Close the guided tour if it is running.
+ * Get the guided tour out of the way, whichever half of it is on screen.
  *
- * It starts on its own and its overlay swallows pointer events, so anything
- * that clicks the app itself has to get it out of the way first.
+ * A demo opens on the welcome dialog, which is modal, and the tour it offers
+ * dims the page and swallows pointer events — so anything that clicks the app
+ * itself has to answer the question first and then close whatever it started.
+ * Both are best-effort: a case that has already dealt with one of them should
+ * not fail here.
  */
 async function dismissTour(page: import('@playwright/test').Page) {
+  await page
+    .getByTestId('btn-tour-decline')
+    .click({ timeout: 10_000 })
+    .catch(() => {})
+  await expect(page.getByTestId('dialog-sandbox-welcome')).toBeHidden()
+
   await page
     .locator('.driver-popover-close-btn')
     .click({ timeout: 5000 })

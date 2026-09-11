@@ -43,5 +43,18 @@
         "start": "Start the demo",
         "starting": "Setting up your demo…",
         "title": "Look around a demo event"
+    },
+    "welcome": {
+        "explore": "No thanks, I'll explore",
+        "helper": {
+            "body": "You are at Riverside Summer Festival — a three-weekend village festival run entirely by volunteers. You are one of the helpers: you can take shifts, hand them back, and say when you have time."
+        },
+        "manager": {
+            "body": "You are running Riverside Summer Festival — a three-weekend village festival run entirely by volunteers. You describe the jobs, let the shifts fall out of them, and watch where people are still missing."
+        },
+        "playground": "Try anything you like. The event is yours alone, nobody else sees a thing — and when the clock at the top runs out, it disappears along with everything you got up to in it.",
+        "question": "Shall I show you round first?",
+        "title": "Welcome to your demo",
+        "tour": "Yes, show me round"
     }
 }

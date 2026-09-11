@@ -14,6 +14,7 @@ import { toastApiError } from '@/lib/api-errors'
 import { authSession } from '@/lib/auth-session'
 import i18n from '@/locales/i18n'
 import { clearAutoStarted } from '@/tour/autostart'
+import { endTour } from '@/tour/offer'
 
 /**
  * The throwaway demo session.
@@ -121,6 +122,12 @@ export const useSandboxStore = defineStore('sandbox', () => {
       // precisely so this line does not drag driver.js into the landing page's
       // bundle.
       clearAutoStarted()
+      // …and the tour from the demo just abandoned goes with it. The store
+      // keeps its place in `sessionStorage`, and nothing here reloads the page,
+      // so without this a second demo opened in the same tab inherits the first
+      // one's popover — an organiser being told, mid-sentence, what they are
+      // already down for as a volunteer.
+      endTour()
 
       // `ensureProfile()` short-circuits on whatever profile is already loaded,
       // which for somebody who was signed in a moment ago is still their real

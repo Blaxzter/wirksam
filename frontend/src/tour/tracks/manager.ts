@@ -5,7 +5,7 @@
  * thin ones → read afterwards how it went, and the chapters are that loop's
  * four beats rather than the four screens it happens to visit:
  *
- *   `whereThingsStand` — the event, and what is asking for you this week
+ *   `whereThingsStand` — what is asking for you this week
  *                        (`home`)
  *   `theJobs`          — what a job is, and how staffing reads at a glance
  *                        (`tasks`)
@@ -14,7 +14,14 @@
  *   `peopleAndNumbers` — who is in it, how it went, back to the start
  *                        (`event-settings`, `reporting`, `home`)
  *
- * Eleven steps across five routes.
+ * Ten steps across five routes.
+ *
+ * ── Where the welcome went ───────────────────────────────────────────────────
+ * The greeting is `SandboxWelcomeDialog.vue` now, shown before this track
+ * starts — and it is where the tour is offered rather than started on somebody
+ * who never asked. The step it replaced highlighted the page heading, which is
+ * a word the visitor can already read; see `tracks/helper.ts` for the longer
+ * version of that argument.
  *
  * ── The create form, opened one section at a time ────────────────────────────
  * `TaskCreateView` is a five-section accordion, `type="single" collapsible`, and
@@ -76,13 +83,6 @@ const PEOPLE_TAB = { tab: 'people' }
 const PREFILL = { tour: 'prefill' }
 
 export const managerTrack = defineTrack('manager', [
-  {
-    id: 'welcome',
-    chapter: 'whereThingsStand',
-    route: 'home',
-    element: PAGE_HEADING,
-    side: 'bottom',
-  },
   {
     id: 'attention',
     chapter: 'whereThingsStand',
