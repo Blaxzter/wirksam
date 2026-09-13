@@ -119,7 +119,11 @@ test.describe('Event clone wizard', () => {
 
     // (a) When — keep the prefilled dates, give the copy a findable name.
     await page.getByTestId('input-clone-name').fill(copyName)
-    await page.getByTestId('section-when').getByRole('button', { name: 'Next' }).click()
+    // The wizard shows one step at a time now: the stepper is the map, and the
+    // card's own footer is what moves it on.
+    await expect(page.getByTestId('clone-stepper')).toBeVisible()
+    await expect(page.getByTestId('step-when')).toHaveAttribute('data-state', 'active')
+    await page.getByTestId('btn-step-next').click()
 
     // (b) What to bring across — everything is picked by default; drop one.
     const tasksSection = page.getByTestId('section-tasks')
@@ -130,20 +134,28 @@ test.describe('Event clone wizard', () => {
     await expect(droppedBox).toHaveAttribute('data-state', 'checked')
     await droppedBox.click()
     await expect(droppedBox).toHaveAttribute('data-state', 'unchecked')
-    await tasksSection.getByRole('button', { name: 'Next' }).click()
+    await page.getByTestId('btn-step-next').click()
 
     // (c) Check each task — only the kept one is offered, and it is clean.
     const adjustSection = page.getByTestId('section-adjust')
     await expect(adjustSection.getByTestId(`btn-adjust-task-${taskKept.task.id}`)).toBeVisible()
     await expect(adjustSection.getByTestId(`btn-adjust-task-${taskDropped.task.id}`)).toHaveCount(0)
     await expect(adjustSection.getByTestId('badge-adjust-problems')).toHaveCount(0)
-    await adjustSection.getByRole('button', { name: 'Next' }).click()
+
+    // A step already behind you is a way back — and the step just left is
+    // ticked off rather than merely unvisited.
+    await expect(page.getByTestId('step-tasks')).toHaveAttribute('data-state', 'completed')
+    await page.getByTestId('step-tasks').click()
+    await expect(tasksSection.getByTestId(`check-task-${taskKept.task.id}`)).toBeVisible()
+    await page.getByTestId('btn-step-next').click()
+    await expect(adjustSection.getByTestId(`btn-adjust-task-${taskKept.task.id}`)).toBeVisible()
+    await page.getByTestId('btn-step-next').click()
 
     // (d) Tell people — the source has only the cloner on it, so there is
     // nobody to write to and the switch is not offered at all.
     const announceSection = page.getByTestId('section-announce')
     await expect(announceSection.getByTestId('announce-nobody')).toBeVisible()
-    await announceSection.getByRole('button', { name: 'Next' }).click()
+    await page.getByTestId('btn-step-next').click()
 
     // (e) Look it over.
     const reviewSection = page.getByTestId('section-review')
@@ -153,13 +165,12 @@ test.describe('Event clone wizard', () => {
     )
     await expect(reviewSection.getByTestId(`review-task-${taskKept.task.id}`)).toBeVisible()
     await expect(reviewSection.getByTestId(`review-task-${taskDropped.task.id}`)).toHaveCount(0)
-    await expect(reviewSection.getByTestId('review-blockers')).toHaveCount(0)
 
     const [response] = await Promise.all([
       page.waitForResponse(
         (r) => r.url().includes(`/events/${source.id}/clone`) && r.request().method() === 'POST',
       ),
-      reviewSection.getByTestId('btn-submit').click(),
+      page.getByTestId('btn-submit').click(),
     ])
     expect(response.status()).toBe(201)
     const clone = (await response.json()) as {
@@ -204,16 +215,16 @@ test.describe('Event clone wizard', () => {
     await page.goto(`/app/events/clone/${source.id}`)
     await expect(page.getByTestId('input-clone-name')).toHaveValue(`${source.name} (copy)`)
     await page.getByTestId('input-clone-name').fill(uniqueName('E2E Clone Untouched'))
-    await page.getByTestId('section-when').getByRole('button', { name: 'Next' }).click()
-    await page.getByTestId('section-tasks').getByRole('button', { name: 'Next' }).click()
-    await page.getByTestId('section-adjust').getByRole('button', { name: 'Next' }).click()
-    await page.getByTestId('section-announce').getByRole('button', { name: 'Next' }).click()
+    for (const step of ['when', 'tasks', 'adjust', 'announce']) {
+      await expect(page.getByTestId(`step-${step}`)).toHaveAttribute('data-state', 'active')
+      await page.getByTestId('btn-step-next').click()
+    }
 
     const [response] = await Promise.all([
       page.waitForResponse(
         (r) => r.url().includes(`/events/${source.id}/clone`) && r.request().method() === 'POST',
       ),
-      page.getByTestId('section-review').getByTestId('btn-submit').click(),
+      page.getByTestId('btn-submit').click(),
     ])
     const clone = (await response.json()) as { event: EventRead }
     created.push(clone.event.id)

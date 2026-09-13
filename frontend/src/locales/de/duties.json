@@ -153,6 +153,7 @@
                 "modeLabel": "Schichten dieser Aufgabe",
                 "none": "Keine Aufgaben ausgewählt — es gibt nichts anzupassen.",
                 "problemBadge": "Bitte prüfen",
+                "problemStrip": "Eine Aufgabe unten muss noch geprüft werden, bevor es weitergeht. | {count} Aufgaben unten müssen noch geprüft werden, bevor es weitergeht.",
                 "rangeCheckUnavailable": "Die Schichten dieser Aufgabe konnten nicht geladen werden — deshalb ließ sich nicht prüfen, ob ihre Termine in die neue Veranstaltung passen. Falls nicht, schlägt das Anlegen der Kopie fehl und nennt das Datum, das im Weg ist.",
                 "readOnlyNote": "Nur eine Vorschau. Einzelne Schichten lassen sich ändern, sobald die neue Veranstaltung angelegt ist.",
                 "shiftsUnknown": "Diese Schichten konnten nicht geladen werden, daher gibt es keine Anzahl. Kopiert werden sie trotzdem alle.",
@@ -196,7 +197,6 @@
                 "problemItem": "{task}: {problem}",
                 "problemNote": "Der Text ist länger als erlaubt.",
                 "problemWhen": "Bitte prüfen Sie Namen und Termine im ersten Schritt.",
-                "problems": "Bitte klären Sie das, bevor die Kopie angelegt wird:",
                 "shiftCount": "keine Schichten | 1 Schicht | {count} Schichten",
                 "shifts": "Schichten",
                 "shiftsUnknown": "Einige Schichten konnten nicht geladen werden, daher sind diese Zahlen unvollständig. Kopiert wird trotzdem jede Schicht des Originals.",
@@ -228,6 +228,14 @@
                 "contents": "keine Aufgaben | 1 Aufgabe | {tasks} Aufgaben",
                 "label": "Kopiert wird",
                 "untouched": "{name} bleibt genau so, wie es ist. Es entsteht eine eigene neue Veranstaltung."
+            },
+            "stepPosition": "Schritt {current} von {total}",
+            "steps": {
+                "adjust": "Anpassen",
+                "announce": "Mitteilen",
+                "review": "Prüfen",
+                "tasks": "Aufgaben",
+                "when": "Wann"
             },
             "submit": "Kopie anlegen",
             "subtitle": "Alles aus einer früheren Veranstaltung, an neuen Terminen. Das Original bleibt genau so, wie es ist; Eintragungen bleiben zurück.",

@@ -6,6 +6,7 @@ import { parseDate } from '@internationalized/date'
 import {
   ArrowLeft,
   CalendarDays,
+  Check,
   ChevronDown,
   ClipboardList,
   Copy,
@@ -23,14 +24,17 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useFormatters } from '@/composables/useFormatters'
 import { type PreviewShift, eachDateInRange } from '@/composables/useShiftPreview'
 
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -44,6 +48,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Stepper,
+  StepperIndicator,
+  StepperItem,
+  StepperSeparator,
+  StepperTitle,
+  StepperTrigger,
+} from '@/components/ui/stepper'
 import { Switch } from '@/components/ui/switch'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { TimePicker } from '@/components/ui/time-picker'
@@ -624,9 +636,24 @@ watch(canAnnounce, (value) => {
 // --- Wizard plumbing ----------------------------------------------------
 
 const submitting = ref(false)
-const activeSection = ref('when')
 
 const sections = ['when', 'tasks', 'adjust', 'announce', 'review'] as const
+
+type SectionName = (typeof sections)[number]
+
+const activeSection = ref<SectionName>('when')
+
+/** The steps that have actually been opened — the only ones a tick may claim. */
+const visitedSections = ref<Set<SectionName>>(new Set<SectionName>(['when']))
+
+/** One icon per step, worn by the step card's heading. */
+const stepIcons = {
+  when: CalendarDays,
+  tasks: ClipboardList,
+  adjust: Copy,
+  announce: Megaphone,
+  review: Copy,
+}
 
 const isWhenValid = computed(() => {
   if (!name.value.trim() || !newStartIso.value || !newEndIso.value) return false
@@ -741,61 +768,131 @@ const isCurrentSectionValid = computed(() => {
 })
 
 /**
- * Everything standing between the organiser and the Create button.
+ * Whether the card header carries the count chip.
  *
- * A per-task error lives inside a panel that is collapsed by default, so
- * without this list the only symptom of one is two greyed-out buttons and no
- * explanation anywhere on the page.
+ * It also switches the header to two columns: CardAction is placed into the
+ * second one explicitly, and without a second column to place it in it would
+ * push the description out of the title's row.
  */
-const blockers = computed<{ id: string; text: string }[]>(() => {
-  const out: { id: string; text: string }[] = []
-  if (!isWhenValid.value) {
-    out.push({ id: 'when', text: t('duties.events.clone.review.problemWhen') })
-  }
-  if (!isTasksValid.value) {
-    out.push({
-      id: 'tasks',
-      text: t('duties.events.clone.tasks.tooMany', { max: MAX_TASKS }),
-    })
-  }
+const showSelectedCount = computed(
+  () => activeSection.value === 'tasks' && selectedTasks.value.length > 0,
+)
+
+/** How many of the chosen tasks are currently wrong. */
+const problemTaskCount = computed(() => Object.keys(taskProblems.value).length)
+
+/** The first broken task, named along with what is wrong with it. */
+const firstTaskProblem = computed(() => {
   for (const task of configuredTasks.value) {
     const problem = taskProblems.value[task.id]
     if (!problem) continue
-    out.push({
-      id: task.id,
-      text: t('duties.events.clone.review.problemItem', {
-        task: taskConfigs.value[task.id]?.name.trim() || task.name,
-        problem,
-      }),
+    return t('duties.events.clone.review.problemItem', {
+      task: taskConfigs.value[task.id]?.name.trim() || task.name,
+      problem,
     })
   }
-  if (noteTooLong.value) {
-    out.push({ id: 'note', text: t('duties.events.clone.review.problemNote') })
+  return ''
+})
+
+/**
+ * Why the forward button is dead, on the step that is actually holding things
+ * up — which is always the one on screen.
+ *
+ * Every forward move gates on the departing step being valid, so a later step
+ * can never be entered with a problem behind it and a list of everything wrong
+ * would have nowhere to render. The reason has to travel with the step instead,
+ * or a greyed-out Next explains nothing at all.
+ */
+const stepBlockedReason = computed(() => {
+  if (isCurrentSectionValid.value) return ''
+  switch (activeSection.value) {
+    case 'when':
+      return t('duties.events.clone.review.problemWhen')
+    case 'tasks':
+      return t('duties.events.clone.tasks.tooMany', { max: MAX_TASKS })
+    case 'adjust':
+      return firstTaskProblem.value
+    case 'announce':
+      return t('duties.events.clone.review.problemNote')
+    default:
+      return ''
   }
-  return out
 })
 
 /**
  * Move focus with the wizard.
  *
- * The button that was just pressed sits inside the panel that closes, so
- * without this focus falls back to <body> and the next Tab starts at the top
- * of the page. The trigger is looked up through the section's test id because
- * the Accordion wrapper's root element is the header, not the button.
+ * The button that was just pressed sits inside the step that is about to
+ * unmount, so without this focus falls back to <body> and the next Tab starts
+ * at the top of the page. It lands on the new step's heading rather than its
+ * stepper trigger, so a screen reader reads the step's name and its
+ * description — what actually changed — instead of one chip in the map.
  */
-function focusSection(value: string) {
-  const trigger = document.querySelector<HTMLElement>(
-    `[data-testid="section-${value}"] [data-slot="accordion-trigger"]`,
-  )
-  trigger?.focus()
+function focusStepHeading() {
+  document.querySelector<HTMLElement>('[data-testid="clone-step-heading"]')?.focus()
+}
+
+/** StepperRoot counts from one; `sections` counts from zero. */
+const currentStepIndex = computed(() => sections.indexOf(activeSection.value))
+const currentStepNumber = computed(() => currentStepIndex.value + 1)
+
+function isSectionValid(value: SectionName): boolean {
+  const check = sectionValid[value]
+  return check ? check() : true
+}
+
+/**
+ * Whether a step may be opened.
+ *
+ * Back to anything already behind you; on to the next one once this one is
+ * clean; and, after a trip backwards, forward again over steps that are still
+ * valid. Never into a step whose predecessors are broken.
+ */
+function isStepReachable(value: SectionName): boolean {
+  const target = sections.indexOf(value)
+  const current = currentStepIndex.value
+  if (target <= current) return true
+  if (target > current + 1 && !visitedSections.value.has(value)) return false
+  for (let i = current; i < target; i += 1) {
+    if (!isSectionValid(sections[i])) return false
+  }
+  return true
+}
+
+/** A tick claims the step is done, so it needs both halves of that. */
+function isStepCompleted(value: SectionName): boolean {
+  return value !== activeSection.value && visitedSections.value.has(value) && isSectionValid(value)
+}
+
+/** Seen, and still wrong: the one state that has to be visible from outside. */
+function stepHasProblem(value: SectionName): boolean {
+  return visitedSections.value.has(value) && !isSectionValid(value)
+}
+
+function goToSection(value: SectionName) {
+  if (value === activeSection.value || !isStepReachable(value)) return
+  activeSection.value = value
+  visitedSections.value = new Set(visitedSections.value).add(value)
+  void nextTick().then(focusStepHeading)
+}
+
+/** The stepper hands back a 1-based step, or undefined while it settles. */
+function onStepChange(value: number | undefined) {
+  if (value === undefined) return
+  const next = sections[value - 1]
+  if (next) goToSection(next)
 }
 
 function goToNext() {
-  const idx = sections.indexOf(activeSection.value as (typeof sections)[number])
+  const idx = currentStepIndex.value
   if (idx < 0 || idx >= sections.length - 1) return
-  const next = sections[idx + 1]
-  activeSection.value = next
-  void nextTick().then(() => focusSection(next))
+  goToSection(sections[idx + 1])
+}
+
+function goToPrevious() {
+  const idx = currentStepIndex.value
+  if (idx <= 0) return
+  goToSection(sections[idx - 1])
 }
 
 const isValid = computed(
@@ -1061,30 +1158,104 @@ async function handleSubmit() {
       {{ t('common.states.loading') }}
     </p>
 
-    <Accordion
-      v-else-if="sourceEvent"
-      v-model="activeSection"
-      type="single"
-      collapsible
-      class="space-y-4"
-    >
-      <!-- Section 1: When -->
-      <AccordionItem value="when" data-testid="section-when" class="rounded-lg border">
-        <AccordionTrigger class="px-6 hover:no-underline">
-          <div class="flex items-center gap-3">
-            <CalendarDays class="h-5 w-5 text-primary" />
-            <div class="text-left">
-              <p class="font-semibold">{{ t('duties.events.clone.sections.when') }}</p>
-              <p class="text-sm text-muted-foreground">
-                {{ t('duties.events.clone.sections.whenDesc') }}
-              </p>
-            </div>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="px-6 pb-6">
-          <div class="space-y-4">
+    <div v-else-if="sourceEvent" class="space-y-6">
+      <!-- Where the wizard is, and nothing else: bare above the card, because
+           the map is not one of the places. -->
+      <!-- Not linear: reka's own linear rule stops one step past the current
+           one, which would strand a user who stepped back to fix a typo behind
+           four ticked-off steps that look clickable and are not. `:disabled`
+           below is the single gate, and it is the stricter of the two — a step
+           is only offered once everything in front of it is clean. -->
+      <Stepper
+        data-testid="clone-stepper"
+        class="w-full items-start gap-0"
+        :linear="false"
+        :model-value="currentStepNumber"
+        @update:model-value="onStepChange"
+      >
+        <StepperItem
+          v-for="(section, index) in sections"
+          :key="section"
+          class="relative flex w-full flex-col items-center"
+          :step="index + 1"
+          :completed="isStepCompleted(section)"
+          :disabled="!isStepReachable(section)"
+        >
+          <StepperSeparator
+            v-if="index < sections.length - 1"
+            class="absolute left-[calc(50%_+_1.25rem)] right-[calc(-50%_+_1.25rem)] top-5 h-0.5 rounded-full bg-border group-data-[state=completed]:bg-primary/50"
+          />
+          <StepperTrigger
+            :data-testid="`step-${section}`"
+            class="outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <StepperIndicator
+              class="h-8 w-8 border bg-background text-sm font-semibold text-muted-foreground group-data-[state=completed]:border-primary/40 group-data-[state=completed]:bg-primary/10 group-data-[state=completed]:text-primary"
+              :class="
+                stepHasProblem(section)
+                  ? 'border-destructive/60 bg-destructive/10 text-destructive group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground'
+                  : ''
+              "
+            >
+              <TriangleAlert v-if="stepHasProblem(section)" class="h-4 w-4" aria-hidden="true" />
+              <Check v-else-if="isStepCompleted(section)" class="h-4 w-4" aria-hidden="true" />
+              <template v-else>{{ index + 1 }}</template>
+            </StepperIndicator>
+            <!-- Below sm the words go and the numbers stay: five labels do not
+                 fit a phone, and the footer says which step this is in full. -->
+            <!-- Weight carries "you are here" and italics carry "not yet",
+                 so the three states survive a reader who cannot tell the
+                 accent hue from the muted one. -->
+            <StepperTitle
+              class="hidden text-xs sm:block"
+              :class="
+                section === activeSection
+                  ? 'font-semibold text-foreground'
+                  : isStepReachable(section)
+                    ? 'font-medium text-muted-foreground'
+                    : 'font-normal italic text-muted-foreground/60'
+              "
+            >
+              {{ t(`duties.events.clone.steps.${section}`) }}
+            </StepperTitle>
+          </StepperTrigger>
+        </StepperItem>
+      </Stepper>
+
+      <!-- One card, one step. The other four are not rendered at all. -->
+      <Card data-testid="clone-step-card">
+        <CardHeader :class="showSelectedCount ? 'grid-cols-[1fr_auto]' : ''">
+          <!-- Focus lands here on every step change, so the heading and the
+               description below it are what a screen reader reads out. -->
+          <CardTitle
+            data-testid="clone-step-heading"
+            tabindex="-1"
+            class="flex items-center gap-2 outline-none"
+          >
+            <component :is="stepIcons[activeSection]" class="h-5 w-5 text-primary" />
+            {{ t(`duties.events.clone.sections.${activeSection}`) }}
+          </CardTitle>
+          <CardDescription>
+            {{ t(`duties.events.clone.sections.${activeSection}Desc`) }}
+          </CardDescription>
+          <CardAction v-if="showSelectedCount">
+            <Badge variant="secondary" data-testid="clone-selected-count">
+              {{
+                t(
+                  'duties.events.clone.taskCount',
+                  { count: selectedTasks.length },
+                  selectedTasks.length,
+                )
+              }}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+
+        <CardContent>
+          <!-- Step 1: When -->
+          <div v-if="activeSection === 'when'" data-testid="section-when" class="space-y-4">
             <!-- What is being copied, read only -->
-            <div class="rounded-lg border bg-muted/30 p-4" data-testid="clone-source-summary">
+            <div class="rounded-lg border bg-muted/40 p-3" data-testid="clone-source-summary">
               <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {{ t('duties.events.clone.source.label') }}
               </p>
@@ -1159,40 +1330,10 @@ async function handleSubmit() {
                 {{ t('duties.events.clone.lengthHint', { days: newDayCount }, newDayCount) }}
               </p>
             </div>
-
-            <div class="flex justify-end pt-2">
-              <Button :disabled="!isCurrentSectionValid" @click="goToNext">
-                {{ t('common.actions.next') }}
-              </Button>
-            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
 
-      <!-- Section 2: Tasks -->
-      <AccordionItem value="tasks" data-testid="section-tasks" class="rounded-lg border">
-        <AccordionTrigger class="px-6 hover:no-underline">
-          <div class="flex items-center gap-3">
-            <ClipboardList class="h-5 w-5 text-primary" />
-            <div class="text-left">
-              <p class="font-semibold">{{ t('duties.events.clone.sections.tasks') }}</p>
-              <p class="text-sm text-muted-foreground">
-                {{ t('duties.events.clone.sections.tasksDesc') }}
-              </p>
-            </div>
-            <Badge v-if="selectedTasks.length > 0" variant="secondary" class="ml-2">
-              {{
-                t(
-                  'duties.events.clone.taskCount',
-                  { count: selectedTasks.length },
-                  selectedTasks.length,
-                )
-              }}
-            </Badge>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="px-6 pb-6">
-          <div class="space-y-4">
+          <!-- Step 2: Tasks -->
+          <div v-else-if="activeSection === 'tasks'" data-testid="section-tasks" class="space-y-4">
             <p v-if="sourceTasks.length === 0" class="py-6 text-center text-muted-foreground">
               {{ t('duties.events.clone.tasks.none') }}
             </p>
@@ -1201,7 +1342,7 @@ async function handleSubmit() {
                  only way back under the limit. -->
             <p
               v-if="!isTasksValid"
-              class="rounded-md border border-destructive/50 p-3 text-sm text-destructive"
+              class="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
               data-testid="clone-too-many-tasks"
             >
               {{ t('duties.events.clone.tasks.tooMany', { max: MAX_TASKS }) }}
@@ -1209,7 +1350,7 @@ async function handleSubmit() {
 
             <label
               v-if="sourceTasks.length > 0"
-              class="flex cursor-pointer items-center gap-2 rounded-md border bg-muted/30 px-3 py-2"
+              class="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2"
             >
               <Checkbox
                 data-testid="check-all-tasks"
@@ -1225,7 +1366,7 @@ async function handleSubmit() {
               <label
                 v-for="task in sourceTasks"
                 :key="task.id"
-                class="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+                class="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/40 p-3"
                 :data-testid="`check-task-${task.id}`"
               >
                 <Checkbox
@@ -1268,7 +1409,7 @@ async function handleSubmit() {
             </div>
 
             <!-- The roster -->
-            <div class="flex items-start justify-between gap-4 rounded-md border p-3">
+            <div class="flex items-start justify-between gap-4 rounded-lg border bg-muted/40 p-3">
               <div class="min-w-0">
                 <p
                   id="clone-copy-members-label"
@@ -1296,7 +1437,7 @@ async function handleSubmit() {
               />
             </div>
 
-            <div class="rounded-md border border-dashed p-3">
+            <div class="rounded-lg border border-dashed p-3">
               <p class="text-sm font-medium">{{ t('duties.events.clone.tasks.notCopied') }}</p>
               <ul class="mt-1 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
                 <li>{{ t('duties.events.clone.tasks.notCopiedItems.bookings') }}</li>
@@ -1307,39 +1448,34 @@ async function handleSubmit() {
                 <li>{{ t('duties.events.clone.tasks.notCopiedItems.featured') }}</li>
               </ul>
             </div>
-
-            <div class="flex justify-end pt-2">
-              <Button :disabled="!isCurrentSectionValid" @click="goToNext">
-                {{ t('common.actions.next') }}
-              </Button>
-            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
 
-      <!-- Section 3: Adjust -->
-      <AccordionItem value="adjust" data-testid="section-adjust" class="rounded-lg border">
-        <AccordionTrigger class="px-6 hover:no-underline">
-          <div class="flex items-center gap-3">
-            <Copy class="h-5 w-5 text-primary" />
-            <div class="text-left">
-              <p class="font-semibold">{{ t('duties.events.clone.sections.adjust') }}</p>
-              <p class="text-sm text-muted-foreground">
-                {{ t('duties.events.clone.sections.adjustDesc') }}
-              </p>
-            </div>
-            <Badge
+          <!-- Step 3: Adjust -->
+          <div
+            v-else-if="activeSection === 'adjust'"
+            data-testid="section-adjust"
+            class="space-y-4"
+          >
+            <!-- The per-task errors live inside panels that start closed, so
+                 the step says up front that one of them is broken. -->
+            <div
               v-if="hasTaskProblems"
-              variant="destructive"
-              class="ml-2"
-              data-testid="badge-adjust-problems"
+              class="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
             >
-              {{ t('duties.events.clone.adjust.problemBadge') }}
-            </Badge>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="px-6 pb-6">
-          <div class="space-y-4">
+              <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <p class="min-w-0 flex-1">
+                {{
+                  t(
+                    'duties.events.clone.adjust.problemStrip',
+                    { count: problemTaskCount },
+                    problemTaskCount,
+                  )
+                }}
+              </p>
+              <Badge variant="destructive" data-testid="badge-adjust-problems">
+                {{ t('duties.events.clone.adjust.problemBadge') }}
+              </Badge>
+            </div>
             <p v-if="configuredTasks.length === 0" class="py-6 text-center text-muted-foreground">
               {{ t('duties.events.clone.adjust.none') }}
             </p>
@@ -1348,11 +1484,11 @@ async function handleSubmit() {
               v-for="task in configuredTasks"
               :key="task.id"
               v-model:open="taskConfigs[task.id].expanded"
-              class="rounded-md border"
+              class="rounded-lg border bg-muted/40"
               :class="taskProblems[task.id] ? 'border-destructive' : ''"
             >
               <CollapsibleTrigger
-                class="flex w-full items-center gap-3 p-4 text-left"
+                class="flex w-full items-center gap-3 p-3 text-left"
                 :data-testid="`btn-adjust-task-${task.id}`"
               >
                 <span class="min-w-0 flex-1">
@@ -1394,7 +1530,7 @@ async function handleSubmit() {
                 />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div class="space-y-4 border-t px-4 py-4">
+                <div class="space-y-4 border-t p-3">
                   <div class="grid gap-4 sm:grid-cols-2">
                     <div class="space-y-2">
                       <Label :for="`clone-task-name-${task.id}`">
@@ -1463,7 +1599,7 @@ async function handleSubmit() {
                       <div
                         v-for="option in ['copy', 'regenerate'] as const"
                         :key="option"
-                        class="flex items-start gap-2 rounded-md border p-3"
+                        class="flex items-start gap-2 rounded-lg border p-3"
                       >
                         <RadioGroupItem
                           :id="`mode-${option}-${task.id}`"
@@ -1494,7 +1630,7 @@ async function handleSubmit() {
                       <div
                         v-for="option in ['draft', 'published'] as const"
                         :key="option"
-                        class="flex items-start gap-2 rounded-md border p-3"
+                        class="flex items-start gap-2 rounded-lg border p-3"
                       >
                         <RadioGroupItem
                           :id="`status-${option}-${task.id}`"
@@ -1582,7 +1718,7 @@ async function handleSubmit() {
                     {{ t('duties.events.clone.adjust.rangeCheckUnavailable') }}
                   </p>
 
-                  <div class="rounded-md bg-muted/40 p-3">
+                  <div class="rounded-lg border p-3">
                     <p
                       v-if="countUnknownFor(task.id)"
                       class="text-sm text-destructive"
@@ -1635,36 +1771,19 @@ async function handleSubmit() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
-
-            <div class="flex justify-end pt-2">
-              <Button :disabled="!isCurrentSectionValid" @click="goToNext">
-                {{ t('common.actions.next') }}
-              </Button>
-            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
 
-      <!-- Section 4: Announce -->
-      <AccordionItem value="announce" data-testid="section-announce" class="rounded-lg border">
-        <AccordionTrigger class="px-6 hover:no-underline">
-          <div class="flex items-center gap-3">
-            <Megaphone class="h-5 w-5 text-primary" />
-            <div class="text-left">
-              <p class="font-semibold">{{ t('duties.events.clone.sections.announce') }}</p>
-              <p class="text-sm text-muted-foreground">
-                {{ t('duties.events.clone.sections.announceDesc') }}
-              </p>
-            </div>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="px-6 pb-6">
-          <div class="space-y-4">
+          <!-- Step 4: Announce -->
+          <div
+            v-else-if="activeSection === 'announce'"
+            data-testid="section-announce"
+            class="space-y-4"
+          >
             <!-- No roster, no audience: the switch would do nothing, so it is
                  not offered at all. -->
             <p
               v-if="!canAnnounce"
-              class="rounded-md border border-dashed p-3 text-sm text-muted-foreground"
+              class="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
               data-testid="announce-nobody"
             >
               {{
@@ -1675,7 +1794,7 @@ async function handleSubmit() {
             </p>
 
             <template v-else>
-              <div class="flex items-start justify-between gap-4 rounded-md border p-3">
+              <div class="flex items-start justify-between gap-4 rounded-lg border bg-muted/40 p-3">
                 <div class="min-w-0">
                   <p id="clone-announce-label" class="text-sm font-medium">
                     {{ t('duties.events.clone.announce.toggle') }}
@@ -1724,39 +1843,18 @@ async function handleSubmit() {
                 </p>
               </div>
             </template>
-
-            <div class="flex justify-end pt-2">
-              <Button :disabled="!isCurrentSectionValid" @click="goToNext">
-                {{ t('common.actions.next') }}
-              </Button>
-            </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
 
-      <!-- Section 5: Review -->
-      <AccordionItem value="review" data-testid="section-review" class="rounded-lg border">
-        <AccordionTrigger class="px-6 hover:no-underline">
-          <div class="flex items-center gap-3">
-            <Copy class="h-5 w-5 text-primary" />
-            <div class="text-left">
-              <p class="font-semibold">{{ t('duties.events.clone.sections.review') }}</p>
-              <p class="text-sm text-muted-foreground">
-                {{ t('duties.events.clone.sections.reviewDesc') }}
-              </p>
-            </div>
-          </div>
-        </AccordionTrigger>
-        <AccordionContent class="px-6 pb-6">
-          <div class="space-y-4">
+          <!-- Step 5: Review -->
+          <div v-else data-testid="section-review" class="space-y-4">
             <div class="grid gap-3 sm:grid-cols-2" data-testid="review-summary">
-              <div class="rounded-md border p-3">
+              <div class="rounded-lg border bg-muted/40 p-3">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">
                   {{ t('duties.events.clone.review.tasks') }}
                 </p>
                 <p class="text-lg font-semibold">{{ configuredTasks.length }}</p>
               </div>
-              <div class="rounded-md border p-3">
+              <div class="rounded-lg border bg-muted/40 p-3">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">
                   {{ t('duties.events.clone.review.shifts') }}
                 </p>
@@ -1764,13 +1862,13 @@ async function handleSubmit() {
                   {{ totalsIncomplete ? '–' : totalShifts }}
                 </p>
               </div>
-              <div class="rounded-md border p-3">
+              <div class="rounded-lg border bg-muted/40 p-3">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">
                   {{ t('duties.events.clone.review.spots') }}
                 </p>
                 <p class="text-lg font-semibold">{{ totalsIncomplete ? '–' : totalSpots }}</p>
               </div>
-              <div class="rounded-md border p-3">
+              <div class="rounded-lg border bg-muted/40 p-3">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">
                   {{ t('duties.events.clone.review.people') }}
                 </p>
@@ -1780,7 +1878,7 @@ async function handleSubmit() {
 
             <p
               v-if="totalsIncomplete"
-              class="rounded-md border border-destructive/50 p-3 text-sm text-destructive"
+              class="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
               data-testid="review-shifts-unknown"
             >
               {{ t('duties.events.clone.review.shiftsUnknown') }}
@@ -1825,7 +1923,7 @@ async function handleSubmit() {
               <div
                 v-for="task in configuredTasks"
                 :key="task.id"
-                class="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm"
+                class="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/40 p-3 text-sm"
                 :data-testid="`review-task-${task.id}`"
               >
                 <span class="min-w-0">
@@ -1851,7 +1949,9 @@ async function handleSubmit() {
                     {{ t(`duties.events.clone.adjust.mode.${taskConfigs[task.id].mode}.short`) }}
                   </Badge>
                   <Badge variant="outline" :data-testid="`review-task-status-${task.id}`">
-                    {{ t(`duties.events.clone.adjust.status.${taskConfigs[task.id].status}.short`) }}
+                    {{
+                      t(`duties.events.clone.adjust.status.${taskConfigs[task.id].status}.short`)
+                    }}
                   </Badge>
                   <Badge variant="secondary">
                     {{
@@ -1867,38 +1967,91 @@ async function handleSubmit() {
                 </span>
               </div>
             </div>
+          </div>
+        </CardContent>
 
-            <!-- Why Create is greyed out, spelled out next to it. -->
-            <div
-              v-if="blockers.length > 0"
-              class="rounded-md border border-destructive/50 p-3"
-              data-testid="review-blockers"
+        <!-- One footer for every step: why you cannot leave it yet, where you
+             are, and the ways out. A column on a phone and a single row from sm
+             up, with the forward action pinned right the way every other form
+             view in the app places its actions. -->
+        <CardFooter class="flex-col items-stretch gap-3 border-t">
+          <!-- Whichever step is holding things up is the one on screen, so the
+               reason sits with the button it has switched off. -->
+          <p
+            v-if="stepBlockedReason"
+            class="flex items-start gap-2 rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive"
+            data-testid="clone-step-blocked"
+          >
+            <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span class="min-w-0 flex-1">{{ stepBlockedReason }}</span>
+          </p>
+
+          <div
+            class="flex flex-col-reverse gap-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-4"
+          >
+            <Button
+              data-testid="btn-step-back"
+              variant="ghost"
+              class="w-full sm:w-auto sm:justify-self-start"
+              :disabled="currentStepIndex === 0"
+              @click="goToPrevious"
             >
-              <p class="flex items-center gap-2 text-sm font-medium text-destructive">
-                <TriangleAlert class="h-4 w-4 shrink-0" aria-hidden="true" />
-                {{ t('duties.events.clone.review.problems') }}
-              </p>
-              <ul class="mt-1 list-disc space-y-0.5 pl-5 text-sm text-destructive">
-                <li v-for="blocker in blockers" :key="blocker.id">{{ blocker.text }}</li>
-              </ul>
-            </div>
+              <ArrowLeft class="mr-1.5 h-4 w-4" />
+              {{ t('common.actions.previousStep') }}
+            </Button>
 
-            <div class="mt-4 flex justify-end gap-3">
-              <Button data-testid="btn-cancel" variant="outline" @click="goBack">
-                {{ t('common.actions.cancel') }}
-              </Button>
+            <!-- The live region for the whole wizard: reka's own is hidden in
+                 Stepper.vue because it is hard-coded English. -->
+            <p
+              class="text-center text-xs text-muted-foreground"
+              data-testid="clone-step-position"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {{
+                t('duties.events.clone.stepPosition', {
+                  current: currentStepNumber,
+                  total: sections.length,
+                })
+              }}
+            </p>
+
+            <div
+              class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:gap-3 sm:justify-self-end"
+            >
+              <template v-if="activeSection === 'review'">
+                <Button
+                  data-testid="btn-cancel"
+                  variant="outline"
+                  class="w-full sm:w-auto"
+                  @click="goBack"
+                >
+                  {{ t('common.actions.cancel') }}
+                </Button>
+                <Button
+                  data-testid="btn-submit"
+                  class="w-full sm:w-auto"
+                  :disabled="!isValid || submitting"
+                  @click="handleSubmit"
+                >
+                  <Copy class="mr-2 h-4 w-4" />
+                  {{ submitting ? t('common.states.saving') : t('duties.events.clone.submit') }}
+                </Button>
+              </template>
               <Button
-                data-testid="btn-submit"
-                :disabled="!isValid || submitting"
-                @click="handleSubmit"
+                v-else
+                data-testid="btn-step-next"
+                class="w-full sm:w-auto"
+                :disabled="!isCurrentSectionValid"
+                @click="goToNext"
               >
-                <Copy class="mr-2 h-4 w-4" />
-                {{ submitting ? t('common.states.saving') : t('duties.events.clone.submit') }}
+                {{ t('common.actions.next') }}
               </Button>
             </div>
           </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+        </CardFooter>
+      </Card>
+    </div>
   </div>
 </template>

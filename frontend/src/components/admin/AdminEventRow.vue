@@ -39,7 +39,7 @@ const { t } = useI18n()
     ]"
   >
     <td class="px-4 py-2">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <span class="font-medium" :class="muted ? 'text-foreground/80' : ''">{{ event.name }}</span>
         <Badge
           v-if="event.id === selectedEventId"
@@ -56,6 +56,7 @@ const { t } = useI18n()
       </div>
       <div
         v-if="event.description"
+        :title="event.description"
         class="truncate text-xs"
         :class="muted ? '' : 'text-muted-foreground'"
       >
@@ -82,55 +83,57 @@ const { t } = useI18n()
       </span>
     </td>
     <td class="px-4 py-2 text-right">
-      <Button
-        v-if="canFeature"
-        variant="ghost"
-        size="icon"
-        class="h-8 w-8"
-        data-testid="btn-toggle-featured"
-        :disabled="featuringId === event.id || event.visibility !== 'public'"
-        :aria-label="
-          event.is_featured
-            ? t('duties.events.featured.unfeature', { name: event.name })
-            : t('duties.events.featured.feature', { name: event.name })
-        "
-        :title="
-          event.visibility !== 'public' ? t('duties.events.featured.requiresPublic') : undefined
-        "
-        @click="$emit('toggleFeatured', event)"
-      >
-        <Star class="h-4 w-4" :class="event.is_featured ? 'fill-amber-400 text-amber-500' : ''" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="h-8 w-8"
-        data-testid="btn-edit-event"
-        :aria-label="t('admin.events.editEvent', { name: event.name })"
-        @click="$emit('edit', event)"
-      >
-        <Pencil class="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="h-8 w-8"
-        data-testid="btn-clone-event-row"
-        :aria-label="t('duties.events.clone.rowAction', { name: event.name })"
-        @click="$emit('clone', event)"
-      >
-        <Copy class="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="h-8 w-8"
-        data-testid="btn-delete-event"
-        :aria-label="t('admin.events.deleteEvent', { name: event.name })"
-        @click="$emit('delete', event)"
-      >
-        <Trash2 class="h-4 w-4 text-destructive" />
-      </Button>
+      <div class="flex items-center justify-end gap-0.5">
+        <Button
+          v-if="canFeature"
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8"
+          data-testid="btn-toggle-featured"
+          :disabled="featuringId === event.id || event.visibility !== 'public'"
+          :aria-label="
+            event.is_featured
+              ? t('duties.events.featured.unfeature', { name: event.name })
+              : t('duties.events.featured.feature', { name: event.name })
+          "
+          :title="
+            event.visibility !== 'public' ? t('duties.events.featured.requiresPublic') : undefined
+          "
+          @click="$emit('toggleFeatured', event)"
+        >
+          <Star class="h-4 w-4" :class="event.is_featured ? 'fill-amber-400 text-amber-500' : ''" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8"
+          data-testid="btn-edit-event"
+          :aria-label="t('admin.events.editEvent', { name: event.name })"
+          @click="$emit('edit', event)"
+        >
+          <Pencil class="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8"
+          data-testid="btn-clone-event-row"
+          :aria-label="t('duties.events.clone.rowAction', { name: event.name })"
+          @click="$emit('clone', event)"
+        >
+          <Copy class="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8"
+          data-testid="btn-delete-event"
+          :aria-label="t('admin.events.deleteEvent', { name: event.name })"
+          @click="$emit('delete', event)"
+        >
+          <Trash2 class="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
     </td>
   </tr>
 </template>

@@ -299,7 +299,15 @@ onMounted(loadActive)
       {{ t('duties.events.empty') }}
     </div>
     <div v-else class="overflow-x-auto rounded-lg border bg-card">
-      <table class="w-full text-sm">
+      <table class="w-full min-w-[53rem] table-fixed text-sm">
+        <colgroup>
+          <col />
+          <col class="w-28" />
+          <col class="w-28" />
+          <col class="w-40" />
+          <col class="w-20" />
+          <col class="w-44" />
+        </colgroup>
         <thead class="bg-muted/50">
           <tr>
             <th class="px-4 py-2 text-left font-medium">{{ t('duties.events.fields.name') }}</th>
@@ -392,7 +400,15 @@ onMounted(loadActive)
         </div>
         <template v-else>
           <div class="mt-2 overflow-x-auto rounded-lg border bg-card">
-            <table class="w-full text-sm">
+            <table class="w-full min-w-[53rem] table-fixed text-sm">
+              <colgroup>
+                <col />
+                <col class="w-28" />
+                <col class="w-28" />
+                <col class="w-40" />
+                <col class="w-20" />
+                <col class="w-44" />
+              </colgroup>
               <thead class="bg-muted/50">
                 <tr>
                   <th class="px-4 py-2 text-left font-medium">

@@ -153,6 +153,7 @@
                 "modeLabel": "Shifts for this task",
                 "none": "No tasks picked, so there is nothing to adjust.",
                 "problemBadge": "Needs a look",
+                "problemStrip": "One task below needs a look before you can carry on. | {count} tasks below need a look before you can carry on.",
                 "rangeCheckUnavailable": "This task's shifts could not be loaded, so we could not check that its dates fit the new event. If they do not, creating the copy will fail and say which date is in the way.",
                 "readOnlyNote": "A preview only. Individual shifts can be changed once the new event exists.",
                 "shiftsUnknown": "These shifts could not be loaded, so there is no count to show. They are all copied across anyway.",
@@ -196,7 +197,6 @@
                 "problemItem": "{task}: {problem}",
                 "problemNote": "The note is longer than the limit.",
                 "problemWhen": "Check the name and the new dates in the first step.",
-                "problems": "Sort these out before creating the copy:",
                 "shiftCount": "no shifts | 1 shift | {count} shifts",
                 "shifts": "Shifts",
                 "shiftsUnknown": "Some shifts could not be loaded, so these totals are incomplete. Every shift from the original is still copied.",
@@ -228,6 +228,14 @@
                 "contents": "no tasks | 1 task | {tasks} tasks",
                 "label": "Copying from",
                 "untouched": "{name} stays exactly as it is. This makes a separate new event."
+            },
+            "stepPosition": "Step {current} of {total}",
+            "steps": {
+                "adjust": "Adjust",
+                "announce": "Tell",
+                "review": "Review",
+                "tasks": "Tasks",
+                "when": "When"
             },
             "submit": "Create the copy",
             "subtitle": "Everything from an earlier event, on new dates. The original is left exactly as it is, and bookings stay behind.",

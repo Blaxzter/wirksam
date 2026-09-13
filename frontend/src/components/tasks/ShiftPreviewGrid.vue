@@ -18,6 +18,11 @@ const props = defineProps<{
    * Where nothing can be excluded — the clone wizard's preview of an event that
    * does not exist yet — the cards must not offer the pointer cursor and the
    * destructive hover ring they carry when a click really removes a shift.
+   *
+   * It also flattens the chips to an outline. The grid is already three
+   * surfaces deep there, and in the dark palette `--card` sits *above*
+   * `--background`, so a filled chip at the bottom of that stack reads as the
+   * raised one — the lighting inverted.
    */
   readonly?: boolean
 }>()
@@ -49,7 +54,7 @@ const { formatDateLabel } = useFormatters()
           :key="shift.startTime"
           class="p-2 transition-opacity"
           :class="[
-            props.readonly ? '' : 'cursor-pointer',
+            props.readonly ? 'bg-transparent shadow-none' : 'cursor-pointer',
             isShiftExcluded(shift)
               ? 'opacity-30'
               : props.readonly
