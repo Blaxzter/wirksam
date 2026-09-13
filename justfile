@@ -178,6 +178,14 @@ build tag="latest":
 # Usage: just release 1.2.3
 release version:
     echo "{{version}}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$' || (echo "Error: '{{version}}' is not valid semver (expected: X.Y.Z or X.Y.Z-pre.1)" && exit 1)
+    # The bump is committed to whatever branch is checked out, but pushed and
+    # tagged as main. Released from anywhere else that combination strands the
+    # commit on the wrong branch, prints "Everything up-to-date", and still cuts
+    # a release — from a main that never got the bump. Refuse instead.
+    test "$(git rev-parse --abbrev-ref HEAD)" = "main" || (echo "Error: release must be run on main (you are on $(git rev-parse --abbrev-ref HEAD))" && exit 1)
+    git diff --quiet HEAD -- VERSION || (echo "Error: VERSION has uncommitted changes" && exit 1)
+    git fetch origin main --quiet
+    test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || (echo "Error: main is not in sync with origin/main — push or pull first" && exit 1)
     echo "{{version}}" > VERSION
     git add VERSION
     git diff --cached --quiet || git commit -m "release: v{{version}}"
