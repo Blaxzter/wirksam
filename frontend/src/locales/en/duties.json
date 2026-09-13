@@ -123,6 +123,139 @@
         "reasonPlaceholder": "e.g. Task rescheduled, no longer needed..."
     },
     "events": {
+        "clone": {
+            "action": "Copy this event",
+            "adjust": {
+                "copyKeepsOldLabels": "Copied shifts keep the name and place they had last time — only the task itself gets the new ones.",
+                "errors": {
+                    "batchOutside": "One of this task's blocks of shifts reaches {date}, which is outside the new event. Move the task, or widen the event.",
+                    "name": "Please give this task a name.",
+                    "numbers": "The shift length and the number of people both need to be at least 1.",
+                    "order": "This task would end before it starts.",
+                    "outside": "These dates fall outside the new event. Move the task, or widen the event.",
+                    "shiftOutside": "A shift on {date} would fall outside the new event. Move the task, or widen the event.",
+                    "timeFormat": "Please give both times as two digits, like 09:30.",
+                    "times": "The finish time has to be later than the start time."
+                },
+                "estimateNote": "A rough count: the new shifts are laid out across the whole task, so the real number is lower if last time's shifts only covered part of it.",
+                "mode": {
+                    "copy": {
+                        "hint": "Every shift comes across exactly as it is today, just on the new dates.",
+                        "label": "Keep last time’s shifts",
+                        "short": "Same shifts"
+                    },
+                    "regenerate": {
+                        "hint": "Throw the old shifts away and lay out fresh ones from the times below.",
+                        "label": "Plan the shifts again",
+                        "short": "New shifts"
+                    }
+                },
+                "modeLabel": "Shifts for this task",
+                "none": "No tasks picked, so there is nothing to adjust.",
+                "problemBadge": "Needs a look",
+                "rangeCheckUnavailable": "This task's shifts could not be loaded, so we could not check that its dates fit the new event. If they do not, creating the copy will fail and say which date is in the way.",
+                "readOnlyNote": "A preview only. Individual shifts can be changed once the new event exists.",
+                "shiftsUnknown": "These shifts could not be loaded, so there is no count to show. They are all copied across anyway.",
+                "showShifts": "Show the shifts",
+                "status": {
+                    "draft": {
+                        "hint": "Stays hidden until you publish this task from the task list. Nobody can book a shift before then.",
+                        "label": "A draft",
+                        "short": "Draft"
+                    },
+                    "published": {
+                        "hint": "Everyone in the new event can see this task and book a shift as soon as the copy exists.",
+                        "label": "Open for booking",
+                        "short": "Open"
+                    }
+                },
+                "statusLabel": "Starts as",
+                "willCreate": "no shifts | 1 shift | {count} shifts"
+            },
+            "announce": {
+                "noRoster": "Nobody will hear about this. You chose not to bring the people across, so you are the only one in the new event.",
+                "nobodyElse": "You are the only person on this list, so there is nobody to write to.",
+                "note": "Add a few words",
+                "noteCounter": "{used} of {max} characters",
+                "notePlaceholder": "e.g. Same weekend as last year — sign-up opens in May.",
+                "toggle": "Let everyone know",
+                "toggleHint": "Nobody else is in the event yet | Writes to the 1 other person you are bringing across | Writes to the {count} other people you are bringing across"
+            },
+            "lengthHint": "{days} day long | {days} days long",
+            "namePrefill": "{name} (copy)",
+            "offset": {
+                "earlier": "The copy runs {days} day earlier | The copy runs {days} days earlier",
+                "later": "The copy runs {days} day later | The copy runs {days} days later",
+                "same": "The copy runs on the same dates as the original.",
+                "sameWeekday": "Whole weeks, so every task lands on the same day of the week as last time."
+            },
+            "review": {
+                "draftNote": "The new event itself starts as a draft, so nobody outside it can find it. You can publish it from the event settings.",
+                "people": "People brought across",
+                "perTask": "Task by task",
+                "problemItem": "{task}: {problem}",
+                "problemNote": "The note is longer than the limit.",
+                "problemWhen": "Check the name and the new dates in the first step.",
+                "problems": "Sort these out before creating the copy:",
+                "shiftCount": "no shifts | 1 shift | {count} shifts",
+                "shifts": "Shifts",
+                "shiftsUnknown": "Some shifts could not be loaded, so these totals are incomplete. Every shift from the original is still copied.",
+                "spots": "Places to fill",
+                "taskStatusAllDraft": "Every task comes across as a draft. Publishing the event does not publish them — open each task in the new event and publish it there, otherwise nobody can book a shift.",
+                "taskStatusAllOpen": "Every task is open for booking straight away, so the people you bring across can sign up as soon as the copy exists.",
+                "taskStatusMixed": "{draft} of the {total} tasks come across as drafts. Publishing the event does not publish them — open each of those in the new event and publish it there. The rest are open for booking straight away.",
+                "tasks": "Tasks",
+                "untouched": "{name} stays exactly as it is. Nothing about the original changes.",
+                "visibilityPrivate": "Like the original, the copy is private: only the people you bring across or invite can see it.",
+                "visibilityPublic": "Like the original, the copy is public: once you publish it, anyone can find it and ask to join.",
+                "willNotTell": "Nobody will be written to.",
+                "willTell": "1 person will be written to | {count} people will be written to"
+            },
+            "rowAction": "Copy event {name}",
+            "sections": {
+                "adjust": "Check each task",
+                "adjustDesc": "Names, dates and how the shifts are laid out",
+                "announce": "Tell people",
+                "announceDesc": "Whether everyone hears about the new event",
+                "review": "Look it over",
+                "reviewDesc": "What you are about to create",
+                "tasks": "What to bring across",
+                "tasksDesc": "Tasks, and the people who helped",
+                "when": "When it runs again",
+                "whenDesc": "A name and the new dates"
+            },
+            "source": {
+                "contents": "no tasks | 1 task | {tasks} tasks",
+                "label": "Copying from",
+                "untouched": "{name} stays exactly as it is. This makes a separate new event."
+            },
+            "submit": "Create the copy",
+            "subtitle": "Everything from an earlier event, on new dates. The original is left exactly as it is, and bookings stay behind.",
+            "success": "New event created with {tasks} tasks and {shifts} shifts",
+            "successMembers": "Nobody was brought across. | 1 person was brought across. | {count} people were brought across.",
+            "successNotNotified": "Nobody was written to — there was no one left to tell.",
+            "successNotified": "They have been told about it.",
+            "taskCount": "no tasks | 1 task | {count} tasks",
+            "tasks": {
+                "copyMembers": "Bring the same people across",
+                "copyMembersHint": "Nobody is on this event yet | Adds the 1 person from the old event | Adds the {count} people from the old event",
+                "none": "This event has no tasks, so only the event itself will be copied.",
+                "notCopied": "What never comes across",
+                "notCopiedItems": {
+                    "availability": "Who said they were free, and when",
+                    "bookings": "Who signed up for which shift",
+                    "featured": "A place on the home screen",
+                    "invitations": "Invitations that were sent but not accepted",
+                    "joinRequests": "People still waiting to be let in",
+                    "reminders": "Reminders that were already sent out"
+                },
+                "selectAll": "Pick every task",
+                "shiftCount": "no shifts today | 1 shift today | {count} shifts today",
+                "shiftCountUnknown": "Could not load this task's shifts",
+                "tooMany": "Pick at most {max} tasks in one go. Copy the rest afterwards by cloning again."
+            },
+            "title": "Copy this event"
+        },
         "create": "Create Event",
         "createView": {
             "descriptionHint": "Optional. A sentence or two helps people know what they are signing up for.",

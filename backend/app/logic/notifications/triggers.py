@@ -294,6 +294,82 @@ async def dispatch_event_published(
         logger.exception("Failed to dispatch event.published notification")
 
 
+async def dispatch_event_cloned(
+    *,
+    event_id: uuid.UUID,
+    note: str | None = None,
+    exclude_user_id: uuid.UUID | None = None,
+) -> None:
+    """Tell the new event's members it was set up from an existing one.
+
+    Scoped to the clone's own roster for the same reason
+    ``dispatch_event_published`` is: a platform-wide announcement would leak
+    event names to strangers.
+
+    ``exclude_user_id`` is whoever pressed clone: they are the clone's owner
+    and therefore on its roster, and mailing someone the announcement they just
+    wrote is noise. Suspended accounts are filtered out the way
+    ``dispatch_task_published`` does — they cannot open the event they would be
+    invited into.
+    """
+    try:
+        from sqlalchemy import select
+        from sqlmodel import col
+
+        from app.crud.event_membership import event_membership as crud_membership
+        from app.models.user import User
+
+        async with async_session() as db:
+            member_ids = await crud_membership.list_user_ids(db, event_id=event_id)
+            member_ids = [uid for uid in member_ids if uid != exclude_user_id]
+            if not member_ids:
+                return
+
+            active = await db.execute(
+                select(col(User.id)).where(
+                    col(User.id).in_(member_ids),
+                    col(User.is_active) == True,  # noqa: E712
+                )
+            )
+            user_ids = list(active.scalars().all())
+            if not user_ids:
+                return
+
+            event_name = await _event_name(db, event_id)
+            clean_note = (note or "").strip()
+
+            def _factory(lang: str) -> tuple[str, str]:
+                # The note block is its own locale entry so its label travels
+                # with the wording it prefixes, the way ``role.*`` does for
+                # ``event.role_changed``. The note itself stays a format
+                # *value*, never part of the format string: an admin typing a
+                # stray brace must not be able to break — or steer — either
+                # template.
+                note_block = (
+                    get_message("event.cloned.note", lang, note=clean_note)[1]
+                    if clean_note
+                    else ""
+                )
+                return get_message(
+                    "event.cloned",
+                    lang,
+                    event_name=event_name,
+                    note=note_block,
+                )
+
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=user_ids,
+                type_code="event.cloned",
+                message_factory=_factory,
+                data={"event_id": str(event_id)},
+                scope_chain=[("event", event_id)],
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch event.cloned notification")
+
+
 async def dispatch_user_reinstated(
     *,
     user_id: uuid.UUID,

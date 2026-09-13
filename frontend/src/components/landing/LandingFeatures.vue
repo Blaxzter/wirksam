@@ -29,6 +29,9 @@ const rows = [
   { key: 'overview', screenshot: 'tasks' },
   { key: 'bookings', screenshot: 'my-bookings' },
   { key: 'reminders', screenshot: 'notification-preferences' },
+  // Appended, not inserted: e2e/tests/public/landing.spec.ts names the first
+  // two gallery frames by file, so an earlier position breaks that spec.
+  { key: 'clone', screenshot: 'clone-event' },
 ] as const
 
 const extras = [
@@ -44,7 +47,7 @@ function bullets(key: string): string[] {
   return getTranslationList(t, `preauth.landing.features.rows.${key}.points`)
 }
 
-/** The four rows double as a gallery, so the viewer can page between them. */
+/** The rows double as a gallery, so the viewer can page between them. */
 const gallery = computed<ScreenshotItem[]>(() =>
   rows.map((row) => ({
     name: row.screenshot,

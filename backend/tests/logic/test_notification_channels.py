@@ -537,11 +537,15 @@ class TestEmailHtmlBody:
         assert "View Details" in html
 
     def test_event_data_links_to_event_detail(self) -> None:
-        """Test that event_id data renders a link to the event page."""
+        """Test that event_id data renders a link to the event page.
+
+        ``/app/events/{id}`` is not a route — the in-app handler and this link
+        both have to target ``event-settings``.
+        """
         with _email_settings():
             html = _build_html(title="T", body="B", data={"event_id": "event-7"})
 
-        assert "https://app.example.test/app/events/event-7" in html
+        assert "https://app.example.test/app/event-settings/event-7" in html
 
     def test_task_id_wins_over_event_id(self) -> None:
         """Test that the task link takes precedence when both ids are present."""
@@ -551,7 +555,7 @@ class TestEmailHtmlBody:
             )
 
         assert "/app/tasks/task-42" in html
-        assert "/app/events/event-7" not in html
+        assert "/app/event-settings/event-7" not in html
 
     def test_no_action_button_without_data(self) -> None:
         """Test that no action button is rendered when there is no data."""
@@ -560,7 +564,7 @@ class TestEmailHtmlBody:
 
         assert "View Details" not in html
         assert "/app/tasks/" not in html
-        assert "/app/events/" not in html
+        assert "/app/event-settings/" not in html
 
     def test_no_action_button_for_unrelated_data(self) -> None:
         """Test that unrelated data keys do not produce an action button."""
@@ -596,6 +600,43 @@ class TestEmailHtmlBody:
             html = _build_html(title="T", body="Line one\nLine two")
 
         assert "Line one<br>Line two" in html
+
+    def test_body_markup_is_escaped(self) -> None:
+        """Test that a body carrying markup cannot rewrite the message.
+
+        The body is not template text: it carries event and task names, and the
+        free-text note an event admin types when cloning an event.
+        """
+        with _email_settings():
+            html = _build_html(title="T", body="<b>Ada</b> & <script>alert(1)</script>")
+
+        assert "&lt;b&gt;Ada&lt;/b&gt;" in html
+        assert "&amp;" in html
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+        assert "<b>Ada</b>" not in html
+        assert "<script>" not in html
+
+    def test_title_markup_is_escaped(self) -> None:
+        """Test that the title is escaped too, not just the body."""
+        with _email_settings():
+            html = _build_html(title="<img src=x onerror=alert(1)>", body="B")
+
+        assert "&lt;img src=x onerror=alert(1)&gt;" in html
+        assert "<img src=x" not in html
+
+    def test_escape_runs_before_newlines_become_breaks(self) -> None:
+        """Test the ORDER: escape the text, *then* restore line breaks.
+
+        Replacing newlines first would have ``html.escape`` turn the freshly
+        inserted ``<br>`` into ``&lt;br&gt;`` — every multi-line notification
+        would render its own markup as visible text, and the two behaviours
+        would regress independently of each other.
+        """
+        with _email_settings():
+            html = _build_html(title="T", body="Note: <b>x</b>\nsecond line")
+
+        assert "Note: &lt;b&gt;x&lt;/b&gt;<br>second line" in html
+        assert "&lt;br&gt;" not in html
 
     def test_footer_links_to_notification_settings(self) -> None:
         """Test that the footer links to the notification preferences page."""

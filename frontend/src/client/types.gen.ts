@@ -762,6 +762,143 @@ export type DemoDataParams = {
 }
 
 /**
+ * EventCloneAnnounce
+ *
+ * Whether to tell the new event's members about it, and what to add.
+ */
+export type EventCloneAnnounce = {
+  /**
+   * Send
+   */
+  send?: boolean
+  /**
+   * Note
+   */
+  note?: string | null
+}
+
+/**
+ * EventCloneRequest
+ */
+export type EventCloneRequest = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Start Date
+   */
+  start_date: string
+  /**
+   * End Date
+   */
+  end_date?: string | null
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Visibility
+   */
+  visibility?: 'public' | 'private'
+  /**
+   * Copy Defaults
+   */
+  copy_defaults?: boolean
+  /**
+   * Copy Members
+   */
+  copy_members?: boolean
+  /**
+   * Tasks
+   */
+  tasks?: Array<EventCloneTask>
+  announce?: EventCloneAnnounce | null
+}
+
+/**
+ * EventCloneResponse
+ */
+export type EventCloneResponse = {
+  event: EventRead
+  /**
+   * Tasks Created
+   */
+  tasks_created: number
+  /**
+   * Shifts Created
+   */
+  shifts_created: number
+  /**
+   * Members Copied
+   */
+  members_copied: number
+  /**
+   * Notified
+   */
+  notified: boolean
+}
+
+/**
+ * EventCloneTask
+ *
+ * One source task to reproduce in the clone, with optional overrides.
+ *
+ * Every override is optional; omitting one keeps the source value (dates keep
+ * the source value *plus the clone's date offset*).
+ */
+export type EventCloneTask = {
+  /**
+   * Source Task Id
+   */
+  source_task_id: string
+  /**
+   * Mode
+   */
+  mode?: 'copy' | 'regenerate'
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Status
+   */
+  status?: 'draft' | 'published' | 'archived' | null
+  /**
+   * Location
+   */
+  location?: string | null
+  /**
+   * Category
+   */
+  category?: string | null
+  /**
+   * Start Date
+   */
+  start_date?: string | null
+  /**
+   * End Date
+   */
+  end_date?: string | null
+  /**
+   * Default Start Time
+   */
+  default_start_time?: string | null
+  /**
+   * Default End Time
+   */
+  default_end_time?: string | null
+  /**
+   * Shift Duration Minutes
+   */
+  shift_duration_minutes?: number | null
+  /**
+   * People Per Shift
+   */
+  people_per_shift?: number | null
+}
+
+/**
  * EventCreate
  */
 export type EventCreate = {
@@ -3798,6 +3935,29 @@ export type ProblemDetails = {
   detail?: string
   instance?: string
   errors?: Array<ValidationErrorItem>
+}
+
+/**
+ * EventCloneResponse
+ */
+export type EventCloneResponseWritable = {
+  event: EventReadWritable
+  /**
+   * Tasks Created
+   */
+  tasks_created: number
+  /**
+   * Shifts Created
+   */
+  shifts_created: number
+  /**
+   * Members Copied
+   */
+  members_copied: number
+  /**
+   * Notified
+   */
+  notified: boolean
 }
 
 /**
@@ -8317,6 +8477,64 @@ export type EventsShiftEventDatesResponses = {
 
 export type EventsShiftEventDatesResponse =
   EventsShiftEventDatesResponses[keyof EventsShiftEventDatesResponses]
+
+export type EventsCloneEventData = {
+  body: EventCloneRequest
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/clone'
+}
+
+export type EventsCloneEventErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsCloneEventError = EventsCloneEventErrors[keyof EventsCloneEventErrors]
+
+export type EventsCloneEventResponses = {
+  /**
+   * Successful Response
+   */
+  201: EventCloneResponse
+}
+
+export type EventsCloneEventResponse = EventsCloneEventResponses[keyof EventsCloneEventResponses]
 
 export type EventsListEventAvailabilitiesData = {
   body?: never

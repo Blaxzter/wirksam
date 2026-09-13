@@ -181,6 +181,10 @@
             }
         },
         "event": {
+            "cloned": {
+                "description": "Wenn jemand eine neue Veranstaltung als Kopie einer früheren anlegt und dich dazu einträgt",
+                "name": "Veranstaltung kopiert"
+            },
             "published": {
                 "description": "Wenn eine neue Veranstaltungsgruppe veröffentlicht wird",
                 "name": "Veranstaltungsgruppe veröffentlicht"

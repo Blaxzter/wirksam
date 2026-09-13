@@ -95,6 +95,7 @@ function getNotificationIcon(typeCode: string): string {
     'booking.slot_cobooked': '👥',
     'shift.time_changed': '🕐',
     'task.published': '📅',
+    'event.cloned': '📑',
     'event.published': '📋',
     'user.registered': '👤',
     'user.approved': '✓',

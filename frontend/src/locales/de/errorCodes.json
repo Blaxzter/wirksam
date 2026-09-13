@@ -17,6 +17,9 @@
         "slot_full": "Diese Dienstschicht ist ausgebucht"
     },
     "event": {
+        "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
+        "forbidden": "Sie haben in dieser Veranstaltung keine Berechtigung dafür.",
+        "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
     "not_found": "Die angeforderte Ressource wurde nicht gefunden",
@@ -25,6 +28,7 @@
     },
     "sandbox": {
         "capacity_reached": "Gerade laufen zu viele Demos. Bitte in ein paar Minuten noch einmal versuchen.",
+        "clone_disabled": "Aus einer Demo-Veranstaltung lässt sich keine echte machen. Nehmen Sie dafür eine Ihrer eigenen Veranstaltungen als Vorlage.",
         "disabled": "Demo-Veranstaltungen sind auf dieser Seite abgeschaltet.",
         "forbidden": "Das ist kein Demo-Konto — es gibt also keine Demo zu beenden.",
         "invitations_disabled": "Eine Demo-Veranstaltung kann niemanden einladen — alle darin sind erfunden.",

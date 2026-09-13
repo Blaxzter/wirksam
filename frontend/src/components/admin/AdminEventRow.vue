@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2, Globe, Lock, Pencil, Star, Trash2, Users } from '@lucide/vue'
+import { CheckCircle2, Copy, Globe, Lock, Pencil, Star, Trash2, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -21,6 +21,7 @@ defineProps<{
 
 defineEmits<{
   edit: [event: EventRead]
+  clone: [event: EventRead]
   delete: [event: EventRead]
   toggleFeatured: [event: EventRead]
 }>()
@@ -109,6 +110,16 @@ const { t } = useI18n()
         @click="$emit('edit', event)"
       >
         <Pencil class="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="h-8 w-8"
+        data-testid="btn-clone-event-row"
+        :aria-label="t('duties.events.clone.rowAction', { name: event.name })"
+        @click="$emit('clone', event)"
+      >
+        <Copy class="h-4 w-4" />
       </Button>
       <Button
         variant="ghost"

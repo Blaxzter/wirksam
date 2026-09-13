@@ -1,5 +1,6 @@
 """Email notification channel using aiosmtplib."""
 
+import html
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -170,7 +171,12 @@ def _build_html(
         if "task_id" in data:
             action_link = f"{frontend_url}/app/tasks/{data['task_id']}"
         elif "event_id" in data:
-            action_link = f"{frontend_url}/app/events/{data['event_id']}"
+            # ``/app/events/{id}`` is not a route: the Vue router has
+            # ``events`` (the list), ``events/create`` and
+            # ``event-settings/:eventId?``, so an id appended to the list path
+            # fell through the catch-all to not-found. This is where the in-app
+            # notification handler sends the same payload.
+            action_link = f"{frontend_url}/app/event-settings/{data['event_id']}"
 
     action_html = ""
     if action_link:
@@ -187,6 +193,13 @@ def _build_html(
 
     logo_url = f"{frontend_url}/icon.svg"
     preferences_url = f"{frontend_url}/app/settings/notifications"
+
+    # Title and body carry user-supplied text — event and task names, and now a
+    # free-text note an event admin types when cloning. Escape before the
+    # interpolation below, then restore the one piece of markup this template
+    # actually wants: newlines as line breaks.
+    safe_title = html.escape(title)
+    safe_body = html.escape(body).replace("\n", "<br>")
 
     return f"""
     <!DOCTYPE html>
@@ -208,9 +221,9 @@ def _build_html(
                 </div>
                 <!-- Body -->
                 <div style="padding: 32px 24px;">
-                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{title}</h2>
+                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{safe_title}</h2>
                     <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
-                        {body.replace(chr(10), "<br>")}
+                        {safe_body}
                     </p>
                     {action_html}
                 </div>

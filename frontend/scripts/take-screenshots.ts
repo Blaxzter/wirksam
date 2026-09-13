@@ -371,6 +371,15 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
     await open(page, `/app/tasks/${seeded.featuredTaskId}/add-shifts`)
     await capture(page, 'shift-schedule', mode)
 
+    // The wizard opens on its first step, which is a name and two dates. The
+    // second step is the one worth advertising — last year's tasks, ticked,
+    // and the list of what deliberately stays behind — so open it first. The
+    // click also waits out the source load: the accordion only exists once the
+    // event, its tasks and their shifts are in.
+    await open(page, `/app/events/clone/${seeded.eventId}`)
+    await page.locator('[data-testid="section-tasks"] [data-slot="accordion-trigger"]').click()
+    await capture(page, 'clone-event', mode)
+
     await context.close()
   }
 

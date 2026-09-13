@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { ChevronDown, ChevronRight, Plus, Search } from '@lucide/vue'
+import { ChevronDown, ChevronRight, Copy, Plus, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -212,6 +212,24 @@ const handleEdit = (event: EventRead) => {
   router.push({ name: 'event-settings', params: { eventId: event.id } })
 }
 
+// Running an event again: same tasks, same shift grid, new dates. The row
+// action reaches any event in either table; the header button is a shortcut to
+// the one currently selected.
+const handleClone = (event: EventRead) => {
+  router.push({ name: 'event-clone', params: { sourceId: event.id } })
+}
+
+const cloneSourceId = computed(() =>
+  selectedEventId.value && authStore.canManageEvent(selectedEventId.value)
+    ? selectedEventId.value
+    : null,
+)
+
+const goToCloneSelected = () => {
+  if (!cloneSourceId.value) return
+  router.push({ name: 'event-clone', params: { sourceId: cloneSourceId.value } })
+}
+
 // Creating an event is a page of its own — the form never fitted a dialog on
 // a phone. It comes back here once the event exists.
 const goToCreate = () => {
@@ -230,10 +248,25 @@ onMounted(loadActive)
         </h1>
         <p class="text-muted-foreground">{{ t('admin.events.subtitle') }}</p>
       </div>
-      <Button data-testid="btn-create-event" class="max-xl:hidden" @click="goToCreate">
-        <Plus class="mr-2 h-4 w-4" />
-        {{ t('duties.events.create') }}
-      </Button>
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Visible at every width on purpose: "Create event" has a phone-sized
+             FAB to fall back on, this has none, and a second round button in
+             the same corner would sit on top of it. Without this the feature
+             has no reachable entry point on a phone at all. -->
+        <Button
+          v-if="cloneSourceId"
+          data-testid="btn-clone-event"
+          variant="outline"
+          @click="goToCloneSelected"
+        >
+          <Copy class="mr-2 h-4 w-4" />
+          {{ t('duties.events.clone.action') }}
+        </Button>
+        <Button data-testid="btn-create-event" class="max-xl:hidden" @click="goToCreate">
+          <Plus class="mr-2 h-4 w-4" />
+          {{ t('duties.events.create') }}
+        </Button>
+      </div>
     </div>
 
     <div class="flex flex-wrap items-center gap-4">
@@ -265,7 +298,7 @@ onMounted(loadActive)
     >
       {{ t('duties.events.empty') }}
     </div>
-    <div v-else class="overflow-hidden rounded-lg border bg-card">
+    <div v-else class="overflow-x-auto rounded-lg border bg-card">
       <table class="w-full text-sm">
         <thead class="bg-muted/50">
           <tr>
@@ -294,6 +327,7 @@ onMounted(loadActive)
             :can-feature="canFeature"
             :featuring-id="featuringId"
             @edit="handleEdit"
+            @clone="handleClone"
             @delete="handleDelete"
             @toggle-featured="handleToggleFeatured"
           />
@@ -357,7 +391,7 @@ onMounted(loadActive)
           {{ t('admin.events.noExpired') }}
         </div>
         <template v-else>
-          <div class="mt-2 overflow-hidden rounded-lg border bg-card">
+          <div class="mt-2 overflow-x-auto rounded-lg border bg-card">
             <table class="w-full text-sm">
               <thead class="bg-muted/50">
                 <tr>
@@ -393,6 +427,7 @@ onMounted(loadActive)
                   :featuring-id="featuringId"
                   muted
                   @edit="handleEdit"
+                  @clone="handleClone"
                   @delete="handleDelete"
                   @toggle-featured="handleToggleFeatured"
                 />

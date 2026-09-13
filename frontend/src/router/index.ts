@@ -153,6 +153,21 @@ const router = createRouter({
           },
         },
         {
+          // Cloning last year's event is the point of this screen, and last
+          // year's event is expired — see SELECTED_EVENT_EXEMPT_ROUTES.
+          path: 'events/clone/:sourceId',
+          name: 'event-clone',
+          component: () => import('@/views/events/EventCloneView.vue'),
+          meta: {
+            requiresEventManager: true,
+            breadcrumbs: [
+              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
+              { title: 'My Events', titleKey: 'admin.events.title', to: { name: 'my-events' } },
+              { title: 'Clone Event', titleKey: 'duties.events.clone.title' },
+            ],
+          },
+        },
+        {
           path: 'tasks',
           name: 'tasks',
           component: () => import('@/views/tasks/TasksView.vue'),
@@ -437,6 +452,10 @@ const SELECTED_EVENT_EXEMPT_ROUTES = new Set<string>([
   // Creating an event is the way out of having none, so it cannot sit behind
   // the gate that demands one.
   'event-create',
+  // The event worth cloning is usually the one that has just finished, and an
+  // expired selection is exactly what this guard bounces. Gating the clone
+  // wizard on it would shut the door on its main use.
+  'event-clone',
   'event-settings',
   'admin-users',
   'admin-demo-data',

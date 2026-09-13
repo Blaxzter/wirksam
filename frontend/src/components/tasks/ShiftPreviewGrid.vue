@@ -8,10 +8,18 @@ import type { PreviewShift } from '@/composables/useShiftPreview'
 import Badge from '@/components/ui/badge/Badge.vue'
 import { Card, CardContent } from '@/components/ui/card'
 
-defineProps<{
+const props = defineProps<{
   shiftsByDate: Map<string, PreviewShift[]>
   isShiftExcluded: (shift: PreviewShift) => boolean
   getBookingCount?: (shift: PreviewShift) => number
+  /**
+   * Show the grid without its strike-out affordances.
+   *
+   * Where nothing can be excluded — the clone wizard's preview of an event that
+   * does not exist yet — the cards must not offer the pointer cursor and the
+   * destructive hover ring they carry when a click really removes a shift.
+   */
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -39,14 +47,19 @@ const { formatDateLabel } = useFormatters()
         <Card
           v-for="shift in shifts"
           :key="shift.startTime"
-          class="cursor-pointer p-2 transition-opacity"
+          class="p-2 transition-opacity"
           :class="[
-            isShiftExcluded(shift) ? 'opacity-30' : 'hover:ring-1 hover:ring-destructive/40',
+            props.readonly ? '' : 'cursor-pointer',
+            isShiftExcluded(shift)
+              ? 'opacity-30'
+              : props.readonly
+                ? ''
+                : 'hover:ring-1 hover:ring-destructive/40',
             getBookingCount && getBookingCount(shift) > 0 && !isShiftExcluded(shift)
               ? 'ring-1 ring-primary/30'
               : '',
           ]"
-          @click="emit('toggleExclusion', shift)"
+          @click="props.readonly ? undefined : emit('toggleExclusion', shift)"
         >
           <CardContent class="p-0">
             <p

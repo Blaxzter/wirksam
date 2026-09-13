@@ -44,13 +44,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
 | `auth`       | 4          | 14      |
-| `chromium`   | 23         | 210     |
+| `chromium`   | 24         | 216     |
 | `member`     | 2          | 18      |
 | `mobile`     | 1          | 6       |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 27      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **47**     | **358** |
+| **Total**    | **48**     | **364** |
 
 ## Inventory
 
@@ -139,7 +139,7 @@ Not yet covered, and not currently tracked by an issue:
   - a new account signs straight in and lands in the app
   - registering twice with the same address is refused
 
-### Project `chromium` — 23 files, 210 tests
+### Project `chromium` — 24 files, 216 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -286,6 +286,17 @@ Not yet covered, and not currently tracked by an issue:
   - deactivating blocks a user and reactivating restores access
 - **Destructive – grant and revoke admin** (1)
   - the admin role opens and closes the admin area for that user
+
+#### `frontend/e2e/tests/authenticated/event-clone.spec.ts` — 6 tests
+
+- **Event clone wizard** (4)
+  - event admin reaches the wizard from the events overview
+  - picking tasks and walking the steps creates the copy
+  - the source event is left exactly as it was
+  - an event admin who is not the platform superadmin may open it
+- **Event clone wizard – who may not open it** (2)
+  - a plain participant is bounced off the wizard
+  - running some other event does not open the wizard for this one
 
 #### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 15 tests
 

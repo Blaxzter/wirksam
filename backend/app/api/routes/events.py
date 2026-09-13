@@ -1,9 +1,9 @@
 import datetime as dt
 import uuid
-from typing import Any
+from typing import Any, TypeVar
 
 from fastapi import APIRouter, BackgroundTasks, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import func as sa_func
 from sqlalchemy import select as sa_select
 from sqlalchemy import update as sa_update
@@ -20,7 +20,9 @@ from app.crud.event_membership import event_membership as crud_membership
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.logic.permissions import require_event_role, require_event_visible
+from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
+from app.models.event_membership import EventMembership
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
@@ -33,6 +35,11 @@ from app.schemas.event import (
     EventStatus,
     EventUpdate,
     EventVisibility,
+)
+from app.schemas.event_clone import (
+    EventCloneRequest,
+    EventCloneResponse,
+    EventCloneTask,
 )
 from app.schemas.event_invitation import (
     EventInvitationBulkCreate,
@@ -49,7 +56,9 @@ from app.schemas.event_membership import (
     EventMemberRead,
     EventMemberRoleUpdate,
     EventOwnershipTransfer,
+    EventRole,
 )
+from app.schemas.task import ScheduleOverride
 from app.schemas.user_availability import (
     UserAvailabilityCreate,
     UserAvailabilityRead,
@@ -292,8 +301,14 @@ async def update_event(
     return await decorate_event(session, current_user, updated)
 
 
-async def _refuse_if_sandbox(session: DBDep, event_id: uuid.UUID) -> None:
-    """Block anything that would send real mail on behalf of a demo.
+async def _refuse_if_sandbox(
+    session: DBDep,
+    event_id: uuid.UUID,
+    *,
+    code: str = "sandbox.invitations_disabled",
+    detail: str = "Invitations cannot be sent from a demo event",
+) -> None:
+    """Block anything a demo event must not do.
 
     A guest is seeded as ``owner`` of their sandbox so the manager tour can
     show them the screens an organiser uses. That role passes
@@ -304,14 +319,14 @@ async def _refuse_if_sandbox(session: DBDep, event_id: uuid.UUID) -> None:
 
     The tour visits these screens deliberately and explains that sending is
     switched off in the demo, so this is the enforcement behind that sentence.
+
+    ``code``/``detail`` default to the invitation wording every existing caller
+    wants; cloning passes its own so a refused clone does not talk about
+    invitations.
     """
     event = await crud_event.get(session, event_id, raise_404_error=True)
     if event.is_sandbox:
-        raise_problem(
-            403,
-            code="sandbox.invitations_disabled",
-            detail="Invitations cannot be sent from a demo event",
-        )
+        raise_problem(403, code=code, detail=detail)
 
 
 class FeaturedUpdate(BaseModel):
@@ -506,6 +521,477 @@ def _shift_overrides(
                 pass
         shifted.append(new_entry)
     return shifted
+
+
+# --- Clone -------------------------------------------------------------
+
+
+def _resolve_overrides(raw: list[dict[str, Any]] | None) -> list[ScheduleOverride]:
+    """Re-parse stored override JSON into the models ``generate_shifts`` takes.
+
+    The column is a plain JSON blob, so it can hold anything an older writer
+    put there. Entries that no longer parse are dropped rather than failing the
+    whole clone — they would not have produced a shift anyway.
+    """
+    parsed: list[ScheduleOverride] = []
+    for entry in raw or []:
+        try:
+            parsed.append(ScheduleOverride.model_validate(entry))
+        except ValidationError:
+            continue
+    return parsed
+
+
+_Pickable = TypeVar("_Pickable")
+
+
+def _pick(override: _Pickable | None, fallback: _Pickable | None) -> _Pickable | None:
+    """A caller's per-task override, or the source value when it was omitted."""
+    return fallback if override is None else override
+
+
+def _clone_batch(
+    src: ShiftBatch,
+    *,
+    task_id: uuid.UUID,
+    delta: dt.timedelta,
+    entry: EventCloneTask,
+) -> ShiftBatch:
+    """A copy of ``src`` on another task, moved by ``delta``.
+
+    Batches are mandatory on a clone, not an optimisation: ``remainder_mode``
+    is persisted nowhere else, the task edit screen reads batch config in
+    preference to the task's own, and the per-batch delete/regenerate flows
+    have nothing to act on without one.
+
+    The caller's per-task generation overrides are applied *here* as well as on
+    the task row. Every batch written by the normal creation paths fills in all
+    six of these columns, and both the generator and the edit screen read the
+    batch before the task — so a batch left holding the source values would
+    make the override a no-op and leave the two rows disagreeing.
+    """
+    return ShiftBatch(
+        task_id=task_id,
+        label=src.label,
+        start_date=src.start_date + delta,
+        end_date=src.end_date + delta,
+        location=_pick(entry.location, src.location),
+        category=_pick(entry.category, src.category),
+        default_start_time=_pick(entry.default_start_time, src.default_start_time),
+        default_end_time=_pick(entry.default_end_time, src.default_end_time),
+        shift_duration_minutes=_pick(
+            entry.shift_duration_minutes, src.shift_duration_minutes
+        ),
+        people_per_shift=_pick(entry.people_per_shift, src.people_per_shift),
+        remainder_mode=src.remainder_mode,
+        schedule_overrides=(
+            _shift_overrides(src.schedule_overrides, delta)
+            if src.schedule_overrides
+            else None
+        ),
+    )
+
+
+def _regenerate_batch_shifts(batch: ShiftBatch, task: Task) -> list[Shift]:
+    """Re-run the generator for one cloned batch.
+
+    Config resolution is batch column first, then the cloned task's own field.
+    Both rows already carry the caller's per-task overrides (``_clone_batch``
+    applies them too), so the two agree whichever one wins here. A batch
+    missing the three values generation needs (both default times and a
+    duration) yields nothing; there is no sensible guess to make.
+    """
+    start_time = batch.default_start_time or task.default_start_time
+    end_time = batch.default_end_time or task.default_end_time
+    duration = batch.shift_duration_minutes or task.shift_duration_minutes
+    if start_time is None or end_time is None or not duration:
+        return []
+
+    generated = generate_shifts(
+        task_id=task.id,
+        task_name=task.name,
+        start_date=batch.start_date,
+        end_date=batch.end_date,
+        default_start_time=start_time,
+        default_end_time=end_time,
+        shift_duration_minutes=duration,
+        people_per_shift=batch.people_per_shift or task.people_per_shift or 1,
+        remainder_mode=batch.remainder_mode or "drop",
+        location=batch.location or task.location,
+        category=batch.category or task.category,
+        overrides=_resolve_overrides(batch.schedule_overrides),
+    )
+    out: list[Shift] = []
+    for slot_in in generated:
+        slot_in.batch_id = batch.id
+        out.append(Shift(**slot_in.model_dump()))
+    return out
+
+
+def _assert_rows_fit_event(
+    *,
+    new_event: Event,
+    task_label: str,
+    batches: list[ShiftBatch],
+    shifts: list[Shift],
+) -> None:
+    """Refuse a task whose cloned batches or shifts fall outside the clone.
+
+    Validating the Task row is not enough. ``add_shifts_to_task`` validates
+    shift dates against the *event* range, never the task's, so a source task
+    may legitimately own batches and shifts outside its own start/end — and a
+    clone that shortens the window (an explicit ``end_date``, or a per-task
+    date override that moves the task by a different offset than its rows) can
+    land those outside the new event entirely. The same 422 as the task check:
+    from the caller's side it is one and the same conflict.
+    """
+    lo, hi = new_event.start_date, new_event.end_date
+    window = f"{lo.isoformat()}–{hi.isoformat()}"
+
+    for batch in batches:
+        if batch.start_date < lo or batch.end_date > hi:
+            raise_problem(
+                422,
+                code="event.date_range_conflict",
+                detail=(
+                    f'Shift block "{batch.label or task_label}" would run '
+                    f"{batch.start_date.isoformat()}–{batch.end_date.isoformat()}, "
+                    f"outside the new event's {window}"
+                ),
+            )
+
+    for shift in shifts:
+        if shift.date < lo or shift.date > hi:
+            raise_problem(
+                422,
+                code="event.date_range_conflict",
+                detail=(
+                    f'Task "{task_label}" would put a shift on '
+                    f"{shift.date.isoformat()}, outside the new event's {window}"
+                ),
+            )
+
+
+@router.post("/{event_id}/clone", response_model=EventCloneResponse, status_code=201)
+async def clone_event(
+    event_id: uuid.UUID,
+    body: EventCloneRequest,
+    session: DBDep,
+    current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
+) -> EventCloneResponse:
+    """Create a new event from an existing one: "run this again next year".
+
+    Everything is moved by a single offset, ``new start - source start``, so the
+    tasks, their batches, their shifts and the per-date overrides all stay in
+    step with each other. Bookings are never copied — a cloned shift starts
+    empty — and neither are ``is_featured``, ``is_sandbox`` or
+    ``sandbox_expires_at``, all of which mean something about the *source*.
+
+    The clone always starts as a draft: publishing is a separate, deliberate
+    act, and it is what fans a notification out to the roster.
+    """
+    source = await crud_event.get(session, event_id, raise_404_error=True)
+    await require_event_role(current_user, session, source.id, minimum="admin")
+    # A demo is seeded with its guest as owner, so the role check above passes
+    # for an anonymous visitor. A sandbox must never produce a real event.
+    await _refuse_if_sandbox(
+        session,
+        source.id,
+        code="sandbox.clone_disabled",
+        detail="A demo event cannot be cloned into a real one",
+    )
+
+    # Naming the same task twice would clone it twice — every batch and every
+    # shift row again, in one transaction — for no describable gain.
+    seen: set[uuid.UUID] = set()
+    for entry in body.tasks:
+        if entry.source_task_id in seen:
+            raise_problem(
+                422,
+                code="event.duplicate_task",
+                detail="Each task can only be cloned once",
+            )
+        seen.add(entry.source_task_id)
+
+    new_end = body.end_date or body.start_date + (source.end_date - source.start_date)
+    if new_end < body.start_date:
+        raise_problem(
+            422,
+            code="event.invalid_dates",
+            detail="End date must be on or after start date",
+        )
+
+    copy_description = "description" not in body.model_fields_set
+    event_in = EventCreate(
+        name=body.name,
+        description=source.description if copy_description else body.description,
+        start_date=body.start_date,
+        end_date=new_end,
+        default_start_time=source.default_start_time if body.copy_defaults else None,
+        default_end_time=source.default_end_time if body.copy_defaults else None,
+        status="draft",
+        visibility=body.visibility,
+        created_by_id=current_user.id,
+    )
+    new_event = await crud_event.create(session, obj_in=event_in)
+    # Not inherited, spelled out: each of these is a statement about the source
+    # that would be a privilege escalation or a scheduled deletion on the clone.
+    new_event.is_featured = False
+    new_event.is_sandbox = False
+    new_event.sandbox_expires_at = None
+    session.add(new_event)
+
+    # The owner grant is the membership row, not created_by_id — and it has to
+    # land before the roster copy, which skips whoever is already here.
+    await crud_membership.upsert(
+        session, user_id=current_user.id, event_id=new_event.id, role="owner"
+    )
+
+    delta = new_event.start_date - source.start_date
+
+    members_copied = 0
+    if body.copy_members:
+        # Built in memory and added in one go: the event is brand new, so
+        # ``upsert``'s SELECT can never hit and its per-row flush/refresh would
+        # be a round trip per member for nothing. The flush below covers them.
+        copied_rows: list[EventMembership] = []
+        for membership, member in await crud_membership.list_members(
+            session, event_id=source.id
+        ):
+            if member.id == current_user.id:
+                continue
+            # A suspended account cannot use the event it would be added to —
+            # every endpoint behind ``CurrentUser`` rejects it — so carrying it
+            # over only produces a roster entry that is a dead end, and an
+            # announcement email to someone who cannot act on it.
+            if not member.is_active:
+                continue
+            # One owner per event: the source's owner becomes an admin here.
+            role: EventRole = "admin" if membership.role != "member" else "member"
+            copied_rows.append(
+                EventMembership(user_id=member.id, event_id=new_event.id, role=role)
+            )
+            members_copied += 1
+        session.add_all(copied_rows)
+
+    new_shifts: list[Shift] = []
+    tasks_created = 0
+    for entry in body.tasks:
+        task_shifts = await _clone_task(
+            session,
+            entry=entry,
+            source_event_id=source.id,
+            new_event=new_event,
+            delta=delta,
+            current_user_id=current_user.id,
+        )
+        tasks_created += 1
+        new_shifts.extend(task_shifts)
+
+    if new_shifts:
+        session.add_all(new_shifts)
+    await session.flush()
+    await session.refresh(new_event)
+
+    # The announcement tells *other people* the event exists, so the cloner is
+    # never a recipient. Without ``copy_members`` the clone's only membership
+    # is the cloner's own owner row, which leaves nobody to tell — and saying
+    # ``notified: true`` there would have the UI report a mail that was never
+    # sent. Not an error: the clone itself succeeded.
+    notified = False
+    if body.announce is not None and body.announce.send and members_copied > 0:
+        from app.logic.notifications.triggers import dispatch_event_cloned
+
+        background_tasks.add_task(
+            dispatch_event_cloned,
+            event_id=new_event.id,
+            note=body.announce.note,
+            exclude_user_id=current_user.id,
+        )
+        notified = True
+
+    return EventCloneResponse(
+        event=await decorate_event(session, current_user, new_event),
+        tasks_created=tasks_created,
+        shifts_created=len(new_shifts),
+        members_copied=members_copied,
+        notified=notified,
+    )
+
+
+async def _clone_task(
+    session: DBDep,
+    *,
+    entry: EventCloneTask,
+    source_event_id: uuid.UUID,
+    new_event: Event,
+    delta: dt.timedelta,
+    current_user_id: uuid.UUID,
+) -> list[Shift]:
+    """Reproduce one source task, its batches and its shifts in ``new_event``.
+
+    ``delta`` is the event-level offset, which is only the *default*: a caller
+    who re-dates this task gets a task-level offset derived from where the task
+    actually lands, and everything under the task moves by that instead. Moving
+    the Task row alone would leave its batches and shifts sitting in the
+    source's window — a task pointing at shifts it does not contain.
+
+    The task and its batches are added to the session here; the shift rows are
+    returned so the caller can insert every task's shifts in one ``add_all``
+    rather than a flush per row.
+    """
+    # Scoped to the source event on purpose: without this filter the request
+    # body could name any task id on the installation and have it copied into
+    # an event the caller owns. This is the one authorisation hole a clone
+    # endpoint invites.
+    result = await session.execute(
+        sa_select(Task).where(
+            col(Task.id) == entry.source_task_id,
+            col(Task.event_id) == source_event_id,
+        )
+    )
+    src = result.scalars().first()
+    if src is None:
+        raise_problem(
+            404,
+            code="task.not_found",
+            detail="No such task in this event",
+        )
+
+    start_date = entry.start_date or src.start_date + delta
+    end_date = entry.end_date or src.end_date + delta
+    if end_date < start_date:
+        raise_problem(
+            422,
+            code="event.invalid_dates",
+            detail=f'Task "{entry.name or src.name}" would end before it starts',
+        )
+    if start_date < new_event.start_date or end_date > new_event.end_date:
+        raise_problem(
+            422,
+            code="event.date_range_conflict",
+            detail=(
+                f'Task "{entry.name or src.name}" would run '
+                f"{start_date.isoformat()}–{end_date.isoformat()}, outside the new "
+                f"event's {new_event.start_date.isoformat()}–"
+                f"{new_event.end_date.isoformat()}"
+            ),
+        )
+
+    # Everything below the task follows the task, not the event: with no
+    # override the two offsets are identical, and with one this is the only
+    # reading that keeps a re-dated task's batches and shifts inside it.
+    task_delta = start_date - src.start_date
+
+    new_task = Task(
+        name=entry.name or src.name,
+        description=src.description,
+        start_date=start_date,
+        end_date=end_date,
+        status=entry.status or src.status,
+        location=_pick(entry.location, src.location),
+        category=_pick(entry.category, src.category),
+        shift_duration_minutes=_pick(
+            entry.shift_duration_minutes, src.shift_duration_minutes
+        ),
+        default_start_time=_pick(entry.default_start_time, src.default_start_time),
+        default_end_time=_pick(entry.default_end_time, src.default_end_time),
+        people_per_shift=_pick(entry.people_per_shift, src.people_per_shift),
+        # Reassigned, never mutated in place: the JSON column is not
+        # mutation-tracked, so an in-place edit would simply not be persisted.
+        schedule_overrides=(
+            _shift_overrides(src.schedule_overrides, task_delta)
+            if src.schedule_overrides
+            else None
+        ),
+        event_id=new_event.id,
+        created_by_id=current_user_id,
+        is_sandbox=new_event.is_sandbox,
+    )
+    session.add(new_task)
+
+    batch_result = await session.execute(
+        sa_select(ShiftBatch)
+        .where(col(ShiftBatch.task_id) == src.id)
+        .order_by(col(ShiftBatch.created_at))
+    )
+    source_batches = list(batch_result.scalars().all())
+
+    # ``id`` is a client-side uuid4 default, so children can be wired to their
+    # parents before anything is flushed.
+    batch_map: dict[uuid.UUID, uuid.UUID] = {}
+    new_batches: list[ShiftBatch] = []
+    for src_batch in source_batches:
+        new_batch = _clone_batch(
+            src_batch, task_id=new_task.id, delta=task_delta, entry=entry
+        )
+        session.add(new_batch)
+        batch_map[src_batch.id] = new_batch.id
+        new_batches.append(new_batch)
+
+    if entry.mode == "regenerate":
+        if not new_batches:
+            # A task generated before batches existed, or seeded by hand. Give
+            # the clone the batch row every other generation path produces, so
+            # the regenerate screen has something to read.
+            synthetic = ShiftBatch(
+                task_id=new_task.id,
+                label=new_task.name,
+                start_date=new_task.start_date,
+                end_date=new_task.end_date,
+                location=new_task.location,
+                category=new_task.category,
+                default_start_time=new_task.default_start_time,
+                default_end_time=new_task.default_end_time,
+                shift_duration_minutes=new_task.shift_duration_minutes,
+                people_per_shift=new_task.people_per_shift,
+                remainder_mode="drop",
+                schedule_overrides=new_task.schedule_overrides,
+            )
+            session.add(synthetic)
+            new_batches.append(synthetic)
+        shifts: list[Shift] = []
+        for new_batch in new_batches:
+            shifts.extend(_regenerate_batch_shifts(new_batch, new_task))
+        _assert_rows_fit_event(
+            new_event=new_event,
+            task_label=new_task.name,
+            batches=new_batches,
+            shifts=shifts,
+        )
+        return shifts
+
+    shift_result = await session.execute(
+        sa_select(Shift)
+        .where(col(Shift.task_id) == src.id)
+        .order_by(col(Shift.date), col(Shift.start_time))
+    )
+    # New rows every time. Appending the source objects to the new task's
+    # collections would MOVE them off the source — both relationships are
+    # delete-orphan. Bookings are deliberately left behind.
+    copied = [
+        Shift(
+            task_id=new_task.id,
+            batch_id=batch_map.get(s.batch_id) if s.batch_id else None,
+            title=s.title,
+            description=s.description,
+            date=s.date + task_delta,
+            start_time=s.start_time,
+            end_time=s.end_time,
+            location=s.location,
+            category=s.category,
+            max_bookings=s.max_bookings,
+        )
+        for s in shift_result.scalars().all()
+    ]
+    _assert_rows_fit_event(
+        new_event=new_event,
+        task_label=new_task.name,
+        batches=new_batches,
+        shifts=copied,
+    )
+    return copied
 
 
 @router.delete("/{event_id}", status_code=204)

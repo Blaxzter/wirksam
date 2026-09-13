@@ -31,6 +31,14 @@
     "title": "New Event Published",
     "body": "Task group \"{event_name}\" has been published."
   },
+  "event.cloned": {
+    "title": "Event Set Up",
+    "body": "“{event_name}” was set up from an existing event.{note}"
+  },
+  "event.cloned.note": {
+    "title": "Note",
+    "body": "\n\nNote: {note}"
+  },
   "auth.verify_email": {
     "title": "Confirm your email address",
     "body": "One last step to finish setting up your {project_name} account: confirm that this address belongs to you.\n\nThe link expires in {expires_in}. If you did not create an account, you can ignore this email."

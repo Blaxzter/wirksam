@@ -181,6 +181,10 @@
             }
         },
         "event": {
+            "cloned": {
+                "description": "When someone sets up a new event as a copy of an earlier one and adds you to it",
+                "name": "Event Copied"
+            },
             "published": {
                 "description": "When a new event is published",
                 "name": "Event Published"

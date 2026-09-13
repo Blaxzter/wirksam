@@ -39,6 +39,7 @@ from app.crud.notification_type import notification_type as crud_notification_ty
 from app.logic.notifications import triggers
 from app.logic.notifications.seeder import seed_notification_types
 from app.models.event import Event
+from app.models.event_membership import EventMembership
 from app.models.notification import Notification, NotificationSubscription
 from app.models.user import User
 
@@ -141,6 +142,18 @@ async def _mute(
     await db.flush()
 
 
+async def _join_event(
+    db: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    event_id: uuid.UUID,
+    role: str = "member",
+) -> None:
+    """Put a user on an event's roster; the roster is who gets told."""
+    db.add(EventMembership(user_id=user_id, event_id=event_id, role=role))
+    await db.flush()
+
+
 async def _rows(db: AsyncSession, type_code: str | None = None) -> list[Notification]:
     """Every persisted notification, optionally narrowed to one type code."""
     query = select(Notification)
@@ -232,6 +245,12 @@ def _all_invocations(
             "dispatch_event_published",
             lambda: triggers.dispatch_event_published(
                 event_id=event_id, event_name="Event"
+            ),
+        ),
+        (
+            "dispatch_event_cloned",
+            lambda: triggers.dispatch_event_cloned(
+                event_id=event_id, note="Same as last year"
             ),
         ),
         (
@@ -1061,6 +1080,226 @@ class TestDispatchEventPublished:
             )
 
         assert await _rows(db_session) == []
+
+
+# ── event.cloned ──────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestDispatchEventCloned:
+    """``event.cloned`` tells a clone's roster that the new event exists.
+
+    The route hands this off to ``BackgroundTasks`` and its own tests stub it
+    out, so this class is the only place the real trigger runs: the locale
+    lookup, the note block and the recipient filtering are all unverified
+    anywhere else. A typo in the ``event.cloned`` locale key degrades to a
+    message titled ``event.cloned`` with an empty body, which is why the title
+    and the event name in the body are asserted rather than merely counted.
+    The note block is a second locale entry, ``event.cloned.note``, whose own
+    body carries the label — so the same typo there silently drops the note,
+    and the assertions below pin the rendered label, not just the note text.
+    """
+
+    async def test_notifies_every_member_with_a_localized_message(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+        test_admin_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """One row per member, carrying the real locale strings."""
+        outsider = await _make_user(db_session, tag="cloned-outsider")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(event_id=test_event.id)
+
+        rows = await _rows(db_session, "event.cloned")
+        assert len(rows) == 3
+        assert {row.recipient_id for row in rows} == {
+            test_user.id,
+            test_admin_user.id,
+            test_event_admin_user.id,
+        }
+        assert outsider.id not in {row.recipient_id for row in rows}
+
+        notif = await _single(db_session, "event.cloned", test_user.id)
+        # Not the raw type code, and not empty: that is what a missing or
+        # misspelled locale key looks like.
+        assert notif.title == "Event Set Up"
+        assert test_event.name in notif.body
+        assert "was set up from an existing event" in notif.body
+        assert notif.data == {"event_id": str(test_event.id)}
+
+    async def test_note_is_appended_under_a_localized_label(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """A note typed by the cloning admin lands in the body, labelled."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(
+                event_id=test_event.id, note="Bring aprons."
+            )
+
+        notif = await _single(db_session, "event.cloned", test_user.id)
+        assert notif.body.endswith(
+            "was set up from an existing event.\n\nNote: Bring aprons."
+        )
+        assert "{note}" not in notif.body
+
+    async def test_german_member_gets_the_german_note_label(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        """The note block follows the recipient's language, like the body."""
+        german = await _make_user(db_session, tag="cloned-de", language="de")
+        await _join_event(db_session, user_id=german.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(
+                event_id=test_event.id, note="Schürzen mitbringen."
+            )
+
+        notif = await _single(db_session, "event.cloned", german.id)
+        assert notif.title == "Veranstaltung eingerichtet"
+        assert notif.body.endswith(
+            "wurde aus einer bestehenden Veranstaltung eingerichtet."
+            "\n\nHinweis: Schürzen mitbringen."
+        )
+
+    async def test_no_note_leaves_no_label_behind(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """Without a note the body ends at the sentence — no empty block."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(event_id=test_event.id, note=None)
+
+        notif = await _single(db_session, "event.cloned", test_user.id)
+        assert "Note:" not in notif.body
+        assert "{note}" not in notif.body
+        assert notif.body.endswith("was set up from an existing event.")
+
+    async def test_whitespace_only_note_is_treated_as_absent(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """``"   "`` is not a note; it must not produce a dangling label."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(event_id=test_event.id, note="   \n ")
+
+        notif = await _single(db_session, "event.cloned", test_user.id)
+        assert "Note:" not in notif.body
+
+    async def test_acting_user_is_excluded(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+        test_admin_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """Whoever pressed clone wrote the announcement; do not mail it back."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(
+                event_id=test_event.id, exclude_user_id=test_event_admin_user.id
+            )
+
+        recipients = await _recipients(db_session, "event.cloned")
+        assert recipients == {test_user.id, test_admin_user.id}
+
+    async def test_suspended_member_is_excluded(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """A suspended account cannot open the event it is being told about."""
+        suspended = await _make_user(
+            db_session, tag="cloned-suspended", is_active=False
+        )
+        await _join_event(db_session, user_id=suspended.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(event_id=test_event.id)
+
+        recipients = await _recipients(db_session, "event.cloned")
+        assert suspended.id not in recipients
+        assert test_user.id in recipients
+
+    async def test_roster_of_only_the_cloner_notifies_nobody(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        """A clone without ``copy_members`` has one member: whoever cloned it."""
+        solo = Event(
+            name="Klon ohne Roster",
+            start_date=dt.date(2027, 6, 9),
+            end_date=dt.date(2027, 6, 13),
+            status="draft",
+            visibility="private",
+            created_by_id=test_user.id,
+        )
+        db_session.add(solo)
+        await db_session.flush()
+        await _join_event(
+            db_session, user_id=test_user.id, event_id=solo.id, role="owner"
+        )
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(
+                event_id=solo.id, exclude_user_id=test_user.id
+            )
+
+        assert await _rows(db_session) == []
+
+    async def test_event_without_members_creates_nothing(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+    ) -> None:
+        """No roster, no announcement — and no exception either."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(event_id=uuid.uuid4())
+
+        assert await _rows(db_session) == []
+
+    async def test_event_scoped_mute_is_honoured(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """Test that the ``[("event", event_id)]`` scope chain is applied."""
+        await _mute(
+            db_session,
+            user_id=test_user.id,
+            type_code="event.cloned",
+            scope_type="event",
+            scope_id=test_event.id,
+        )
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_cloned(event_id=test_event.id)
+
+        assert test_user.id not in await _recipients(db_session, "event.cloned")
 
 
 # -- event membership ----------------------------------------------

@@ -123,6 +123,139 @@
         "reasonPlaceholder": "z.B. Aufgabe verschoben, nicht mehr benötigt..."
     },
     "events": {
+        "clone": {
+            "action": "Veranstaltung kopieren",
+            "adjust": {
+                "copyKeepsOldLabels": "Kopierte Schichten behalten Namen und Ort von damals — nur die Aufgabe selbst bekommt die neuen.",
+                "errors": {
+                    "batchOutside": "Ein Schichtblock dieser Aufgabe reicht bis {date} und liegt damit außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder erweitern Sie den Zeitraum.",
+                    "name": "Bitte geben Sie dieser Aufgabe einen Namen.",
+                    "numbers": "Schichtdauer und Personenzahl müssen jeweils mindestens 1 betragen.",
+                    "order": "Diese Aufgabe würde enden, bevor sie beginnt.",
+                    "outside": "Diese Termine liegen außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder verlängern Sie die Veranstaltung.",
+                    "shiftOutside": "Eine Schicht am {date} läge außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder verlängern Sie die Veranstaltung.",
+                    "timeFormat": "Bitte geben Sie beide Zeiten zweistellig an, zum Beispiel 09:30.",
+                    "times": "Die Endzeit muss nach der Startzeit liegen."
+                },
+                "estimateNote": "Ein Richtwert: Die neuen Schichten werden über die ganze Aufgabe verteilt. Deckten die Schichten von damals nur einen Teil davon ab, werden es weniger.",
+                "mode": {
+                    "copy": {
+                        "hint": "Jede Schicht kommt genau so mit, wie sie heute ist — nur an den neuen Terminen.",
+                        "label": "Schichten von damals übernehmen",
+                        "short": "Gleiche Schichten"
+                    },
+                    "regenerate": {
+                        "hint": "Die alten Schichten verwerfen und aus den Zeiten unten neu einteilen.",
+                        "label": "Schichten neu einteilen",
+                        "short": "Neue Schichten"
+                    }
+                },
+                "modeLabel": "Schichten dieser Aufgabe",
+                "none": "Keine Aufgaben ausgewählt — es gibt nichts anzupassen.",
+                "problemBadge": "Bitte prüfen",
+                "rangeCheckUnavailable": "Die Schichten dieser Aufgabe konnten nicht geladen werden — deshalb ließ sich nicht prüfen, ob ihre Termine in die neue Veranstaltung passen. Falls nicht, schlägt das Anlegen der Kopie fehl und nennt das Datum, das im Weg ist.",
+                "readOnlyNote": "Nur eine Vorschau. Einzelne Schichten lassen sich ändern, sobald die neue Veranstaltung angelegt ist.",
+                "shiftsUnknown": "Diese Schichten konnten nicht geladen werden, daher gibt es keine Anzahl. Kopiert werden sie trotzdem alle.",
+                "showShifts": "Schichten anzeigen",
+                "status": {
+                    "draft": {
+                        "hint": "Bleibt verborgen, bis Sie diese Aufgabe in der Aufgabenliste veröffentlichen. Vorher kann niemand eine Schicht buchen.",
+                        "label": "Entwurf",
+                        "short": "Entwurf"
+                    },
+                    "published": {
+                        "hint": "Alle in der neuen Veranstaltung sehen diese Aufgabe und können sofort eine Schicht buchen, sobald die Kopie existiert.",
+                        "label": "Sofort buchbar",
+                        "short": "Buchbar"
+                    }
+                },
+                "statusLabel": "Startet als",
+                "willCreate": "keine Schichten | 1 Schicht | {count} Schichten"
+            },
+            "announce": {
+                "noRoster": "Niemand erfährt davon. Sie übernehmen die Personen nicht, also sind Sie allein in der neuen Veranstaltung.",
+                "nobodyElse": "Sie sind die einzige Person auf dieser Liste — es gibt niemanden zu benachrichtigen.",
+                "note": "Ein paar Worte dazu",
+                "noteCounter": "{used} von {max} Zeichen",
+                "notePlaceholder": "z. B. Gleiches Wochenende wie letztes Jahr — Eintragen ab Mai.",
+                "toggle": "Alle benachrichtigen",
+                "toggleHint": "Es ist noch niemand sonst dabei | Geht an die 1 weitere Person, die Sie übernehmen | Geht an die {count} weiteren Personen, die Sie übernehmen"
+            },
+            "lengthHint": "{days} Tag lang | {days} Tage lang",
+            "namePrefill": "{name} (Kopie)",
+            "offset": {
+                "earlier": "Die Kopie liegt {days} Tag früher | Die Kopie liegt {days} Tage früher",
+                "later": "Die Kopie liegt {days} Tag später | Die Kopie liegt {days} Tage später",
+                "same": "Die Kopie liegt auf denselben Terminen wie das Original.",
+                "sameWeekday": "Volle Wochen — jede Aufgabe fällt wieder auf denselben Wochentag."
+            },
+            "review": {
+                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen können Sie sie in den Einstellungen der Veranstaltung.",
+                "people": "Übernommene Personen",
+                "perTask": "Aufgabe für Aufgabe",
+                "problemItem": "{task}: {problem}",
+                "problemNote": "Der Text ist länger als erlaubt.",
+                "problemWhen": "Bitte prüfen Sie Namen und Termine im ersten Schritt.",
+                "problems": "Bitte klären Sie das, bevor die Kopie angelegt wird:",
+                "shiftCount": "keine Schichten | 1 Schicht | {count} Schichten",
+                "shifts": "Schichten",
+                "shiftsUnknown": "Einige Schichten konnten nicht geladen werden, daher sind diese Zahlen unvollständig. Kopiert wird trotzdem jede Schicht des Originals.",
+                "spots": "Zu besetzende Plätze",
+                "taskStatusAllDraft": "Alle Aufgaben werden als Entwurf übernommen. Die Veranstaltung zu veröffentlichen genügt dafür nicht — öffnen Sie jede Aufgabe in der neuen Veranstaltung und veröffentlichen Sie sie dort, sonst kann niemand eine Schicht buchen.",
+                "taskStatusAllOpen": "Alle Aufgaben sind sofort buchbar, die übernommenen Personen können sich also eintragen, sobald die Kopie existiert.",
+                "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Die Veranstaltung zu veröffentlichen genügt dafür nicht — öffnen Sie jede dieser Aufgaben in der neuen Veranstaltung und veröffentlichen Sie sie dort. Die übrigen sind sofort buchbar.",
+                "tasks": "Aufgaben",
+                "untouched": "{name} bleibt genau so, wie es ist. Am Original ändert sich nichts.",
+                "visibilityPrivate": "Wie das Original ist die Kopie privat: Nur übernommene oder eingeladene Personen sehen sie.",
+                "visibilityPublic": "Wie das Original ist die Kopie öffentlich: Sobald Sie sie veröffentlichen, kann jede Person sie finden und um Aufnahme bitten.",
+                "willNotTell": "Es wird niemand benachrichtigt.",
+                "willTell": "1 Person wird benachrichtigt | {count} Personen werden benachrichtigt"
+            },
+            "rowAction": "Veranstaltung {name} kopieren",
+            "sections": {
+                "adjust": "Aufgaben prüfen",
+                "adjustDesc": "Namen, Termine und die Einteilung der Schichten",
+                "announce": "Bescheid geben",
+                "announceDesc": "Ob alle von der neuen Veranstaltung erfahren",
+                "review": "Noch einmal ansehen",
+                "reviewDesc": "Was gleich angelegt wird",
+                "tasks": "Was mitkommt",
+                "tasksDesc": "Aufgaben und die Personen, die geholfen haben",
+                "when": "Wann es wieder losgeht",
+                "whenDesc": "Ein Name und die neuen Termine"
+            },
+            "source": {
+                "contents": "keine Aufgaben | 1 Aufgabe | {tasks} Aufgaben",
+                "label": "Kopiert wird",
+                "untouched": "{name} bleibt genau so, wie es ist. Es entsteht eine eigene neue Veranstaltung."
+            },
+            "submit": "Kopie anlegen",
+            "subtitle": "Alles aus einer früheren Veranstaltung, an neuen Terminen. Das Original bleibt genau so, wie es ist; Eintragungen bleiben zurück.",
+            "success": "Neue Veranstaltung mit {tasks} Aufgaben und {shifts} Schichten angelegt",
+            "successMembers": "Es wurde niemand übernommen. | 1 Person wurde übernommen. | {count} Personen wurden übernommen.",
+            "successNotNotified": "Es wurde niemand benachrichtigt — es war niemand mehr da.",
+            "successNotified": "Sie wurden benachrichtigt.",
+            "taskCount": "keine Aufgaben | 1 Aufgabe | {count} Aufgaben",
+            "tasks": {
+                "copyMembers": "Dieselben Personen übernehmen",
+                "copyMembersHint": "Bei dieser Veranstaltung ist noch niemand dabei | Übernimmt die 1 Person aus der alten Veranstaltung | Übernimmt die {count} Personen aus der alten Veranstaltung",
+                "none": "Diese Veranstaltung hat keine Aufgaben — es wird nur die Veranstaltung selbst kopiert.",
+                "notCopied": "Was nie mitkommt",
+                "notCopiedItems": {
+                    "availability": "Wer wann Zeit hatte",
+                    "bookings": "Wer sich für welche Schicht eingetragen hatte",
+                    "featured": "Ein Platz auf der Startseite",
+                    "invitations": "Einladungen, die verschickt, aber nicht angenommen wurden",
+                    "joinRequests": "Anfragen, die noch auf eine Antwort warten",
+                    "reminders": "Erinnerungen, die schon verschickt wurden"
+                },
+                "selectAll": "Alle Aufgaben auswählen",
+                "shiftCount": "heute keine Schichten | heute 1 Schicht | heute {count} Schichten",
+                "shiftCountUnknown": "Die Schichten dieser Aufgabe konnten nicht geladen werden",
+                "tooMany": "Wählen Sie höchstens {max} Aufgaben auf einmal. Den Rest kopieren Sie danach mit einem weiteren Durchgang."
+            },
+            "title": "Veranstaltung kopieren"
+        },
         "create": "Veranstaltung erstellen",
         "createView": {
             "descriptionHint": "Optional. Ein, zwei Sätze helfen anderen zu verstehen, worum es geht.",

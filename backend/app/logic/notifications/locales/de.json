@@ -31,6 +31,14 @@
     "title": "Neue Taskgruppe veröffentlicht",
     "body": "Die Taskgruppe „{event_name}“ wurde veröffentlicht."
   },
+  "event.cloned": {
+    "title": "Veranstaltung eingerichtet",
+    "body": "„{event_name}“ wurde aus einer bestehenden Veranstaltung eingerichtet.{note}"
+  },
+  "event.cloned.note": {
+    "title": "Hinweis",
+    "body": "\n\nHinweis: {note}"
+  },
   "auth.verify_email": {
     "title": "Bestätige deine E-Mail-Adresse",
     "body": "nur noch ein Schritt, um dein {project_name}-Konto einzurichten: bestätige, dass diese Adresse dir gehört.\n\nDer Link ist {expires_in} gültig. Falls du kein Konto erstellt hast, kannst du diese E-Mail ignorieren."

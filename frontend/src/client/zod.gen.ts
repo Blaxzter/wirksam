@@ -347,6 +347,63 @@ export const zDemoDataParams = z.object({
 })
 
 /**
+ * EventCloneAnnounce
+ *
+ * Whether to tell the new event's members about it, and what to add.
+ */
+export const zEventCloneAnnounce = z
+  .object({
+    send: z.boolean().optional().default(false),
+    note: z.string().max(500).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: "Whether to tell the new event's members about it, and what to add.",
+  })
+
+/**
+ * EventCloneTask
+ *
+ * One source task to reproduce in the clone, with optional overrides.
+ *
+ * Every override is optional; omitting one keeps the source value (dates keep
+ * the source value *plus the clone's date offset*).
+ */
+export const zEventCloneTask = z
+  .object({
+    source_task_id: z.uuid(),
+    mode: z.enum(['copy', 'regenerate']).optional().default('copy'),
+    name: z.string().nullish(),
+    status: z.enum(['draft', 'published', 'archived']).nullish(),
+    location: z.string().nullish(),
+    category: z.string().nullish(),
+    start_date: z.iso.date().nullish(),
+    end_date: z.iso.date().nullish(),
+    default_start_time: z.iso.time().nullish(),
+    default_end_time: z.iso.time().nullish(),
+    shift_duration_minutes: z.int().nullish(),
+    people_per_shift: z.int().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "One source task to reproduce in the clone, with optional overrides.\n\nEvery override is optional; omitting one keeps the source value (dates keep\nthe source value *plus the clone's date offset*).",
+  })
+
+/**
+ * EventCloneRequest
+ */
+export const zEventCloneRequest = z.object({
+  name: z.string(),
+  start_date: z.iso.date(),
+  end_date: z.iso.date().nullish(),
+  description: z.string().nullish(),
+  visibility: z.enum(['public', 'private']).optional().default('private'),
+  copy_defaults: z.boolean().optional().default(true),
+  copy_members: z.boolean().optional().default(false),
+  tasks: z.array(zEventCloneTask).max(50).optional().default([]),
+  announce: zEventCloneAnnounce.nullish(),
+})
+
+/**
  * EventCreate
  */
 export const zEventCreate = z.object({
@@ -540,6 +597,17 @@ export const zEventRead = z.object({
   pending_request_count: z.int().optional().default(0),
   can_manage: z.boolean().readonly(),
   is_expired: z.boolean().readonly(),
+})
+
+/**
+ * EventCloneResponse
+ */
+export const zEventCloneResponse = z.object({
+  event: zEventRead,
+  tasks_created: z.int(),
+  shifts_created: z.int(),
+  members_copied: z.int(),
+  notified: z.boolean(),
 })
 
 /**
@@ -1973,6 +2041,17 @@ export const zEventReadWritable = z.object({
 })
 
 /**
+ * EventCloneResponse
+ */
+export const zEventCloneResponseWritable = z.object({
+  event: zEventReadWritable,
+  tasks_created: z.int(),
+  shifts_created: z.int(),
+  members_copied: z.int(),
+  notified: z.boolean(),
+})
+
+/**
  * EventListResponse
  */
 export const zEventListResponseWritable = z.object({
@@ -2702,6 +2781,17 @@ export const zEventsShiftEventDatesPath = z.object({
  * Successful Response
  */
 export const zEventsShiftEventDatesResponse = zEventRead
+
+export const zEventsCloneEventBody = zEventCloneRequest
+
+export const zEventsCloneEventPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zEventsCloneEventResponse = zEventCloneResponse
 
 export const zEventsListEventAvailabilitiesPath = z.object({
   event_id: z.uuid(),

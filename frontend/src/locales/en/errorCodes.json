@@ -17,6 +17,9 @@
         "slot_full": "This duty shift is fully booked"
     },
     "event": {
+        "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
+        "forbidden": "You do not have permission to do this in this event.",
+        "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
     "not_found": "The requested resource was not found",
@@ -25,6 +28,7 @@
     },
     "sandbox": {
         "capacity_reached": "Too many demo events are running right now. Please try again in a few minutes.",
+        "clone_disabled": "A demo event cannot be turned into a real one. Copy one of your own events instead.",
         "disabled": "Demo events are switched off on this site.",
         "forbidden": "This is not a demo account, so there is no demo to end.",
         "invitations_disabled": "A demo event cannot invite anyone — everybody in it is made up.",

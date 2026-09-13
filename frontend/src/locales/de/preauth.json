@@ -130,6 +130,16 @@
                     "screenshotAlt": "Die Seite „Meine Buchungen“ mit den bestätigten Schichten samt Datum, Uhrzeit und Ort.",
                     "title": "Deine Zusagen an einem Ort"
                 },
+                "clone": {
+                    "description": "Kopiere eine Veranstaltung, die es schon gab, auf neue Termine. Aufgaben, Schichten und Zeiten kommen mit — das Original bleibt genau so, wie es war.",
+                    "points": {
+                        "0": "Die neuen Termine einmal setzen: Alles rückt mit und landet auf demselben Wochentag wie beim letzten Mal.",
+                        "1": "Nur die Aufgaben anhaken, die wieder dabei sind — der Rest bleibt zurück.",
+                        "2": "Die Eintragungen von damals kommen nicht mit: Die Kopie startet mit leeren Schichten."
+                    },
+                    "screenshotAlt": "Die Seite zum Kopieren einer Veranstaltung: die Aufgaben vom letzten Mal mit ihrer Schichtzahl, alle angehakt für die neuen Termine.",
+                    "title": "Nächstes Jahr nicht wieder von vorn"
+                },
                 "overview": {
                     "description": "Die Aufgaben deiner Veranstaltung als Liste, als Karten oder im Kalender — mit den freien Plätzen an jeder Schicht.",
                     "points": {

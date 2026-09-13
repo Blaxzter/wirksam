@@ -130,6 +130,16 @@
                     "screenshotAlt": "The My Bookings page listing confirmed shifts with their dates, times, and locations.",
                     "title": "Your commitments in one list"
                 },
+                "clone": {
+                    "description": "Copy an event you have already run onto new dates. The tasks, the shifts and the times all come across, and the original is left exactly as it was.",
+                    "points": {
+                        "0": "Set the new dates once and everything moves with them, landing on the same weekday as last time.",
+                        "1": "Tick only the tasks that are coming back and leave the rest behind.",
+                        "2": "Last year's sign-ups stay with last year — the copy starts with empty shifts."
+                    },
+                    "screenshotAlt": "The copy-event screen listing last year's tasks with their shift counts, each ticked to come across to the new dates.",
+                    "title": "Next year, not from scratch"
+                },
                 "overview": {
                     "description": "Your event's tasks as a list, as cards, or on a calendar — with the open places showing on every shift.",
                     "points": {

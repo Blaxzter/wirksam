@@ -139,6 +139,22 @@ EVENT_PUBLISHED = NotificationTypeDef(
     default_channels=["email"],
 )
 
+EVENT_CLONED = NotificationTypeDef(
+    code="event.cloned",
+    name="Event Cloned",
+    description=(
+        "Notification when an event you were carried over to was set up from "
+        "an existing one"
+    ),
+    category="event",
+    # "match", like event.published: the recipient is being told a thing they
+    # can take part in now exists. "announcement" is the catch-all for notices
+    # that need no action, and "change" is for something they already hold
+    # having moved — neither fits an event they have just been added to.
+    classification="match",
+    default_channels=["email"],
+)
+
 # ── Availability notifications ────────────────────────────────────
 
 AVAILABILITY_REMINDER = NotificationTypeDef(
@@ -247,6 +263,7 @@ ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
     EVENT_ROLE_CHANGED,
     USER_REINSTATED,
     USER_SUSPENDED,
+    EVENT_CLONED,
 ]
 
 
