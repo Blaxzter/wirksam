@@ -23,7 +23,7 @@
     },
     "expired": {
         "createAccount": "Create a real account",
-        "message": "Demo events only live for an hour, and yours has just been deleted along with everything in it. You can look around a fresh one, or make a real account and keep what you plan.",
+        "message": "Demo events only last an hour, and yours has just been deleted along with everything in it. You can try a fresh one, or create a real account and keep what you plan.",
         "startAnother": "Start another demo",
         "title": "Your demo has ended"
     },
@@ -33,13 +33,13 @@
             "description": "Book yourself into shifts, say when you are free, and see what you have signed up for.",
             "title": "As a helper"
         },
-        "intro": "We will set up an example event for you — tasks, shifts, a few teammates — and take you straight to it. Nothing in it is real, and the whole thing is deleted again after an hour.",
+        "intro": "We'll set up an example event for you, with tasks, shifts and a few teammates, and take you straight to it. Nothing in it is real, and it is all deleted after an hour.",
         "manager": {
             "description": "Plan the tasks and shifts, see which places are still open, and handle invitations and requests to join.",
             "title": "As an organiser"
         },
         "question": "Which side would you like to see?",
-        "signedInWarning": "Starting the demo signs you out of your account. Your own events are untouched — sign back in whenever you like.",
+        "signedInWarning": "Starting the demo signs you out of your account. Your own events stay as they are, and you can sign back in whenever you like.",
         "start": "Start the demo",
         "starting": "Setting up your demo…",
         "title": "Look around a demo event"
@@ -47,12 +47,12 @@
     "welcome": {
         "explore": "No thanks, I'll explore",
         "helper": {
-            "body": "You are at Riverside Summer Festival — a three-weekend village festival run entirely by volunteers. You are one of the helpers: you can take shifts, hand them back, and say when you have time."
+            "body": "You are at Riverside Summer Festival, a village festival over three weekends, run entirely by volunteers. You are one of the helpers: you can take shifts, hand them back, and say when you have time."
         },
         "manager": {
-            "body": "You are running Riverside Summer Festival — a three-weekend village festival run entirely by volunteers. You describe the jobs, let the shifts fall out of them, and watch where people are still missing."
+            "body": "You are running Riverside Summer Festival, a village festival over three weekends, run entirely by volunteers. You describe the jobs, wirksam turns them into shifts, and you can see where people are still missing."
         },
-        "playground": "Try anything you like. The event is yours alone, nobody else sees a thing — and when the clock at the top runs out, it disappears along with everything you got up to in it.",
+        "playground": "Try anything you like. The event is yours alone, and nobody else can see it. When the timer at the top runs out, it is deleted along with everything you did in it.",
         "question": "Shall I show you round first?",
         "title": "Welcome to your demo",
         "tour": "Yes, show me round"

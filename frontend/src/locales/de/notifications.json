@@ -5,7 +5,7 @@
         "admin": "Admin",
         "availability": "Verfügbarkeit",
         "booking": "Buchungen",
-        "event": "Veranstaltungsgruppen",
+        "event": "Veranstaltungen",
         "shift": "Dienstschichten",
         "task": "Aufgaben",
         "user": "Konto"
@@ -13,7 +13,7 @@
     "channels": {
         "email": "E-Mail",
         "push": "Push",
-        "sectionTitle": "Zustellkanaele",
+        "sectionTitle": "Zustellkanäle",
         "telegram": "Telegram"
     },
     "classifications": {
@@ -28,7 +28,7 @@
         "reminders": "Erinnerungen"
     },
     "deleteAll": "Alle löschen",
-    "deleteAllConfirm": "Dadurch werden alle deine Benachrichtigungen dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
+    "deleteAllConfirm": "Alle deine Benachrichtigungen werden dauerhaft gelöscht. Das lässt sich nicht rückgängig machen.",
     "deleteAllFailed": "Benachrichtigungen konnten nicht gelöscht werden",
     "deleteAllTitle": "Alle Benachrichtigungen löschen?",
     "deletedAll": "Alle Benachrichtigungen gelöscht",
@@ -44,12 +44,12 @@
     },
     "empty": "Noch keine Benachrichtigungen",
     "globalToggle": {
-        "description": "Deaktiviere einen Kanal vollstaendig, um alle Benachrichtigungen darueber zu stoppen, unabhaengig von den individuellen Einstellungen unten.",
+        "description": "Schalte einen Kanal ganz ab, um darüber keine Benachrichtigungen mehr zu bekommen, egal was du unten eingestellt hast.",
         "emailDescription": "Benachrichtigungen per E-Mail erhalten",
         "emailLabel": "E-Mail-Benachrichtigungen",
         "pushDescription": "Push-Benachrichtigungen im Browser erhalten",
         "pushLabel": "Push-Benachrichtigungen",
-        "telegramDescription": "Benachrichtigungen ueber Telegram erhalten",
+        "telegramDescription": "Benachrichtigungen über Telegram erhalten",
         "telegramLabel": "Telegram-Benachrichtigungen",
         "title": "Globale Kanaleinstellungen"
     },
@@ -62,33 +62,33 @@
         "autoSaving": "Speichern…",
         "perTypeTitle": "Einstellungen pro Benachrichtigung",
         "save": "Einstellungen speichern",
-        "saveFailed": "Fehler beim Speichern der Benachrichtigungseinstellungen",
+        "saveFailed": "Benachrichtigungseinstellungen konnten nicht gespeichert werden",
         "saved": "Benachrichtigungseinstellungen gespeichert",
-        "subtitle": "Waehle aus, welche Benachrichtigungen du erhalten moechtest und wie sie zugestellt werden.",
+        "subtitle": "Wähle aus, welche Benachrichtigungen du erhalten möchtest und wie sie zugestellt werden.",
         "title": "Benachrichtigungseinstellungen"
     },
     "push": {
         "denied": "Push-Benachrichtigungen sind blockiert. Bitte aktiviere sie in deinen Browsereinstellungen.",
-        "description": "Erhalte Push-Benachrichtigungen in deinem Browser, wenn wichtige Ereignisse eintreten.",
+        "description": "Erhalte Benachrichtigungen im Browser, wenn etwas Wichtiges passiert.",
         "disable": "Deaktivieren",
-        "disableFailed": "Fehler beim Deaktivieren der Push-Benachrichtigungen",
+        "disableFailed": "Push-Benachrichtigungen konnten nicht deaktiviert werden",
         "disabled": "Push-Benachrichtigungen deaktiviert",
         "enable": "Push-Benachrichtigungen aktivieren",
         "enabled": "Push-Benachrichtigungen aktiviert",
-        "failed": "Fehler beim Aktivieren der Push-Benachrichtigungen",
-        "notConfigured": "Push-Benachrichtigungen sind auf dem Server nicht konfiguriert.",
+        "failed": "Push-Benachrichtigungen konnten nicht aktiviert werden",
+        "notConfigured": "Push-Benachrichtigungen sind auf dieser Seite nicht eingerichtet.",
         "testButton": "Testbenachrichtigung senden",
         "testError": "Testbenachrichtigung konnte nicht gesendet werden. Bitte versuche es erneut.",
         "testSending": "Wird gesendet...",
-        "testSuccess": "Testbenachrichtigung gesendet! Pruefe dein Geraet.",
+        "testSuccess": "Testbenachrichtigung gesendet! Prüfe dein Gerät.",
         "title": "Push-Benachrichtigungen"
     },
     "reminders": {
-        "addReminder": "Erinnerung hinzufuegen",
+        "addReminder": "Erinnerung hinzufügen",
         "channelActiveHint": "Du wirst {offset} per {channel} benachrichtigt",
-        "description": "Erinnerungen werden automatisch hinzugefuegt, wenn du eine Schicht buchst. Du kannst sie auch pro Buchung anpassen.",
+        "description": "Diese Erinnerungen werden automatisch hinzugefügt, wenn du eine Schicht buchst. Du kannst sie für jede Buchung einzeln anpassen.",
         "lastChannelHint": "Mindestens ein Kanal muss aktiviert bleiben",
-        "noDefaults": "Keine Standard-Erinnerungen gesetzt. Du kannst sie unten hinzufuegen.",
+        "noDefaults": "Noch keine Standard-Erinnerungen. Füge unten eine hinzu.",
         "offset": {
             "15": "15 Minuten vorher",
             "30": "30 Minuten vorher",
@@ -101,48 +101,48 @@
             "2880": "2 Tage vorher"
         },
         "perBooking": {
-            "add": "Erinnerung hinzufuegen",
-            "addFailed": "Fehler beim Hinzufuegen der Erinnerung",
+            "add": "Erinnerung hinzufügen",
+            "addFailed": "Erinnerung konnte nicht hinzugefügt werden",
             "cancelled": "Abgebrochen",
             "empty": "Keine Erinnerungen gesetzt",
             "expired": "Abgelaufen",
             "pending": "Geplant",
-            "removeFailed": "Fehler beim Entfernen der Erinnerung",
+            "removeFailed": "Erinnerung konnte nicht entfernt werden",
             "sent": "Gesendet",
             "title": "Erinnerungen"
         },
         "remove": "Entfernen",
         "removeConfirm": "Entfernen?",
-        "saveFailed": "Fehler beim Speichern der Erinnerungseinstellungen",
+        "saveFailed": "Erinnerungseinstellungen konnten nicht gespeichert werden",
         "title": "Standard-Buchungserinnerungen"
     },
     "settings": {
-        "description": "Konfiguriere, wie und wann du Benachrichtigungen erhalten moechtest.",
+        "description": "Lege fest, wie und wann du benachrichtigt wirst.",
         "manage": "Benachrichtigungseinstellungen verwalten",
         "title": "Benachrichtigungen"
     },
     "telegram": {
-        "authFailed": "Telegram-Authentifizierung fehlgeschlagen. Bitte versuche es erneut.",
-        "bindFailed": "Fehler beim Starten der Telegram-Verbindung",
+        "authFailed": "Die Anmeldung über Telegram hat nicht geklappt. Bitte versuch es noch einmal.",
+        "bindFailed": "Die Verbindung mit Telegram konnte nicht gestartet werden",
         "connect": "Telegram verbinden",
         "connectManually": "Manuell verbinden",
         "connected": "Verbunden",
         "connecting": "Dein Telegram-Konto wird verbunden...",
-        "description": "Verbinde dein Telegram-Konto, um Benachrichtigungen ueber den WirkSam-Bot zu erhalten.",
+        "description": "Verbinde dein Telegram-Konto, um Benachrichtigungen über den WirkSam-Bot zu erhalten.",
         "disconnect": "Trennen",
-        "loginDescription": "Klicke den Button unten, um dein Telegram-Konto sofort zu verbinden.",
+        "loginDescription": "Mit dem Button unten verbindest du dein Telegram-Konto.",
         "manualCode": "Stattdessen manuell verbinden",
         "manualFallback": "Probleme? Stattdessen manuell verbinden",
         "notConnectedShort": "Nicht verbunden",
         "notConnectedWarning": "Telegram-Benachrichtigungen sind aktiviert, aber dein Konto ist nicht verbunden. Verbinde es unten, um Nachrichten zu erhalten.",
-        "openInTelegram": "In Telegram oeffnen",
+        "openInTelegram": "In Telegram öffnen",
         "sendCode": "Sende den folgenden Code an den WirkSam-Bot auf Telegram:",
         "sendTo": "Sende ihn an",
         "startBotHint": "Um Nachrichten zu erhalten, starte den Bot:",
         "title": "Telegram",
-        "unbindFailed": "Fehler beim Trennen von Telegram",
+        "unbindFailed": "Telegram konnte nicht getrennt werden",
         "unbound": "Telegram getrennt",
-        "waitingForVerification": "Klicke den Button oben, dann druecke Start in Telegram. Diese Seite aktualisiert sich automatisch."
+        "waitingForVerification": "Klicke oben auf den Button und tippe dann in Telegram auf Start. Diese Seite aktualisiert sich automatisch."
     },
     "timeAgo": {
         "days": "Vor {n} T.",
@@ -154,7 +154,7 @@
     "types": {
         "availability": {
             "reminder": {
-                "description": "Erinnerung, deine Verfügbarkeit für eine veröffentlichte Veranstaltungsgruppe einzutragen",
+                "description": "Erinnerung, deine Verfügbarkeit für eine veröffentlichte Veranstaltung einzutragen",
                 "name": "Verfügbarkeitserinnerung"
             }
         },
@@ -175,7 +175,7 @@
                 "description": "Erinnerung vor Beginn einer gebuchten Schicht",
                 "name": "Buchungserinnerung"
             },
-            "slot_cobooked": {
+            "shift_cobooked": {
                 "description": "Wenn jemand anderes eine Schicht bucht, auf der du eingeteilt bist",
                 "name": "Schicht mitgebucht"
             }
@@ -185,9 +185,33 @@
                 "description": "Wenn jemand eine neue Veranstaltung als Kopie einer früheren anlegt und dich dazu einträgt",
                 "name": "Veranstaltung kopiert"
             },
+            "invitation": {
+                "description": "Wenn dich jemand zu einer Veranstaltung einlädt",
+                "name": "Einladung zu einer Veranstaltung"
+            },
+            "invitation_accepted": {
+                "description": "Wenn jemand, den du eingeladen hast, deiner Veranstaltung beitritt",
+                "name": "Einladung angenommen"
+            },
+            "join_approved": {
+                "description": "Wenn deine Anfrage, einer Veranstaltung beizutreten, angenommen wurde",
+                "name": "Beitrittsanfrage angenommen"
+            },
+            "join_declined": {
+                "description": "Wenn deine Anfrage, einer Veranstaltung beizutreten, abgelehnt wurde",
+                "name": "Beitrittsanfrage abgelehnt"
+            },
+            "join_requested": {
+                "description": "Wenn jemand einer Veranstaltung beitreten möchte, die du verwaltest",
+                "name": "Beitrittsanfrage"
+            },
             "published": {
-                "description": "Wenn eine neue Veranstaltungsgruppe veröffentlicht wird",
-                "name": "Veranstaltungsgruppe veröffentlicht"
+                "description": "Wenn eine neue Veranstaltung veröffentlicht wird",
+                "name": "Veranstaltung veröffentlicht"
+            },
+            "role_changed": {
+                "description": "Wenn sich deine Rolle in einer Veranstaltung ändert",
+                "name": "Rolle geändert"
             }
         },
         "shift": {
@@ -208,16 +232,24 @@
         },
         "user": {
             "approved": {
-                "description": "Wenn dein Konto freigegeben wurde",
+                "description": "Wenn eine Administratorin oder ein Administrator dein Konto freigibt",
                 "name": "Konto freigegeben"
             },
             "registered": {
-                "description": "Wenn sich ein neuer Nutzer anmeldet und auf Freigabe wartet",
+                "description": "Wenn sich jemand registriert und auf Freigabe wartet",
                 "name": "Neue Registrierung"
             },
+            "reinstated": {
+                "description": "Wenn ein gesperrtes Konto wieder freigegeben wird",
+                "name": "Konto wiederhergestellt"
+            },
             "rejected": {
-                "description": "Wenn dein Konto abgelehnt wurde",
-                "name": "Konto abgelehnt"
+                "description": "Wenn deine Registrierung nicht freigegeben wird",
+                "name": "Registrierung abgelehnt"
+            },
+            "suspended": {
+                "description": "Wenn ein Administrator dein Konto sperrt",
+                "name": "Konto gesperrt"
             }
         }
     },

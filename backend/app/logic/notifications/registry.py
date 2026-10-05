@@ -242,6 +242,43 @@ USER_SUSPENDED = NotificationTypeDef(
     default_channels=["email"],
 )
 
+# ── Registration approval (REGISTRATION_MODE=approval only) ───────
+#
+# Only ever sent on a deployment that runs the approval queue, and hidden from
+# the preference screens everywhere else (see ``APPROVAL_TYPE_CODES``).
+
+USER_REGISTERED = NotificationTypeDef(
+    code="user.registered",
+    name="New User Registered",
+    description="Alert when a new user signs up and is waiting for approval",
+    category="admin",
+    classification="announcement",
+    is_admin_only=True,
+    default_channels=["email", "push"],
+)
+
+USER_APPROVED = NotificationTypeDef(
+    code="user.approved",
+    name="Account Approved",
+    description="Notification when an administrator approves your account",
+    category="user",
+    classification="change",
+    default_channels=["email", "push"],
+)
+
+USER_REJECTED = NotificationTypeDef(
+    code="user.rejected",
+    name="Account Rejected",
+    description="Notification when an administrator rejects your registration",
+    category="user",
+    classification="change",
+    default_channels=["email"],
+)
+
+APPROVAL_TYPE_CODES = frozenset(
+    {USER_REGISTERED.code, USER_APPROVED.code, USER_REJECTED.code}
+)
+
 # ── All types registry ────────────────────────────────────────────
 
 ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
@@ -263,6 +300,9 @@ ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
     EVENT_ROLE_CHANGED,
     USER_REINSTATED,
     USER_SUSPENDED,
+    USER_REGISTERED,
+    USER_APPROVED,
+    USER_REJECTED,
     EVENT_CLONED,
 ]
 

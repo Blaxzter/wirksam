@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
+from app.schemas.user import ApprovalStatus
+
 TimeFormat = Literal["locale", "h12", "h24"]
 Theme = Literal["default", "classic"]
 
@@ -48,8 +50,13 @@ class UserProfile(BaseModel):
         default=False, description="Whether user is a platform superadmin"
     )
     is_active: bool = Field(default=True, description="Whether user is active")
+    approval_status: ApprovalStatus = Field(
+        default="approved",
+        description="Registration approval: approved, pending or rejected",
+    )
     rejection_reason: str | None = Field(
-        default=None, description="Reason the account was suspended"
+        default=None,
+        description="Reason the account was suspended or its registration rejected",
     )
     event_roles: dict[str, str] = Field(
         default_factory=dict,

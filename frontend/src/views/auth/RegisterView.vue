@@ -2,6 +2,10 @@
 /**
  * Create an account.
  *
+ * What the deployment allows (open signup, an approval queue, invitations
+ * only, a domain list) comes from `useRegistrationPolicy` and is shown above
+ * the form; the server enforces it either way.
+ *
  * Registration signs you straight in — the response carries an access token, so
  * there is no "now go and confirm your address" wall in the way. The
  * verification mail is a nudge, announced as a toast on the way out rather than
@@ -21,8 +25,10 @@ import { z } from 'zod'
 
 import { useAppConfig } from '@/composables/useAppConfig'
 import { useAuth } from '@/composables/useAuth'
+import { useRegistrationPolicy } from '@/composables/useRegistrationPolicy'
 
 import AuthShell from '@/components/auth/AuthShell.vue'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import PasswordRequirement from '@/components/auth/PasswordRequirement.vue'
 import TurnstileWidget from '@/components/auth/TurnstileWidget.vue'
 import { Button } from '@/components/ui/button'
@@ -86,6 +92,51 @@ const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
 
 /** True while the challenge is configured but not yet solved. */
 const awaitingChallenge = computed(() => Boolean(turnstileSiteKey) && !turnstileToken.value)
+
+const { policy } = useRegistrationPolicy()
+
+/**
+ * The invitation this visitor arrived with, if any.
+ *
+ * The invite page hands it over as `?invite=`; a visitor who went through the
+ * sign-in screen first still carries it inside `?redirect=/invite/<token>`.
+ * It is what lets a signup through on an invitation-only deployment, so it is
+ * worth finding either way.
+ */
+const invitationToken = computed<string | null>(() => {
+  if (typeof route.query.invite === 'string' && route.query.invite) return route.query.invite
+  const target = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+  return /^\/invite\/([^/?#]+)/.exec(target)?.[1] ?? null
+})
+
+/**
+ * What to tell the visitor about this deployment's door before they type.
+ *
+ * An invitation they arrived through clears the approval and domain notes when
+ * the deployment lets invitations bypass them. An invitation sent to their
+ * address without a link is not known here, so they may see a note that turns
+ * out not to apply to them; the server decides either way.
+ */
+const policyNotices = computed<string[]>(() => {
+  const current = policy.value
+  if (!current) return []
+  const bypassed = Boolean(invitationToken.value) && current.invite_bypass
+  const notices: string[] = []
+  if (current.mode === 'invite' && !invitationToken.value) {
+    notices.push(t('auth.register.policy.inviteOnly'))
+  }
+  if (current.mode === 'approval' && !bypassed) {
+    notices.push(t('auth.register.policy.approval'))
+  }
+  if (current.allowed_domains?.length && !bypassed) {
+    notices.push(
+      t('auth.register.policy.domains', {
+        domains: current.allowed_domains.map((domain) => `@${domain}`).join(', '),
+      }),
+    )
+  }
+  return notices
+})
 
 /** Same-origin paths only — see the note in `LoginView.vue`. */
 const redirectTarget = computed<RouteLocationRaw>(() => {
@@ -168,7 +219,7 @@ const onSubmit = handleSubmit(
   async (formValues) => {
     busy.value = true
     try {
-      await register({
+      const profile = await register({
         email: formValues.email,
         password: formValues.password,
         name: formValues.name,
@@ -179,8 +230,15 @@ const onSubmit = handleSubmit(
         // Omitted rather than sent as null when there is no challenge, so the
         // request looks exactly as it did before Turnstile existed.
         ...(turnstileToken.value ? { turnstile_token: turnstileToken.value } : {}),
+        ...(invitationToken.value ? { invitation_token: invitationToken.value } : {}),
       })
-      toast.success(t('auth.register.success'))
+      // A queued account is signed in but cannot use the app yet; the router
+      // guard sends it to the waiting screen, which does the explaining.
+      if (profile.approval_status === 'pending') {
+        toast.info(t('auth.register.pendingApproval'))
+      } else {
+        toast.success(t('auth.register.success'))
+      }
       toast.info(t('auth.register.verificationSent', { email: formValues.email }))
       await router.replace(redirectTarget.value)
     } catch (error) {
@@ -208,6 +266,12 @@ const onSubmit = handleSubmit(
     :title="t('auth.register.title')"
     :description="t('auth.register.description')"
   >
+    <Alert v-if="policyNotices.length" class="mb-4" data-testid="register-policy">
+      <AlertDescription class="space-y-1">
+        <p v-for="notice in policyNotices" :key="notice">{{ notice }}</p>
+      </AlertDescription>
+    </Alert>
+
     <form ref="formRef" class="space-y-4" data-testid="register-form" @submit="onSubmit">
       <FormField
         v-slot="{ componentField }"
@@ -366,7 +430,7 @@ const onSubmit = handleSubmit(
       <RouterLink
         class="font-medium text-primary underline-offset-4 hover:underline"
         data-testid="link-login"
-        :to="{ name: 'login' }"
+        :to="{ name: 'login', query: route.query }"
       >
         {{ t('auth.register.loginPrompt.action') }}
       </RouterLink>

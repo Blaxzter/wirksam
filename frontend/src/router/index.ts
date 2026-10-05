@@ -373,6 +373,13 @@ const router = createRouter({
           name: 'account-suspended',
           component: () => import('@/views/AccountSuspendedView.vue'),
         },
+        // Same screen, other reason: the account is waiting in (or was turned
+        // away from) the approval queue. The view reads which from the store.
+        {
+          path: 'account-pending',
+          name: 'account-pending',
+          component: () => import('@/views/AccountSuspendedView.vue'),
+        },
       ],
     },
     // The five public auth screens. They have their own frame rather than
@@ -464,6 +471,7 @@ const SELECTED_EVENT_EXEMPT_ROUTES = new Set<string>([
   // An invite link has to work before you belong to anything.
   'invite-accept',
   'account-suspended',
+  'account-pending',
   'changelog',
   'preauth-changelog',
   // The auth screens, for the same reason: an account that was created a second
@@ -521,13 +529,18 @@ router.beforeEach(async (to) => {
       }
     }
 
-    // Suspension is still a moderation tool even though the approval queue is
-    // gone, so a suspended account gets told rather than left on a page where
-    // every request comes back 403.
-    if (!authStore.isActive && to.name !== 'account-suspended') {
-      return { name: 'account-suspended' }
+    // An account that may sign in but not use the app gets told why rather
+    // than left on a page where every request comes back 403: suspended by a
+    // moderator, or waiting in (or rejected from) the approval queue.
+    const blockedRoute = !authStore.isActive
+      ? 'account-suspended'
+      : !authStore.isApproved
+        ? 'account-pending'
+        : null
+    if (blockedRoute && routeName !== blockedRoute) {
+      return { name: blockedRoute }
     }
-    if (authStore.isActive && to.name === 'account-suspended') {
+    if (!blockedRoute && (routeName === 'account-suspended' || routeName === 'account-pending')) {
       return { name: 'home' }
     }
 

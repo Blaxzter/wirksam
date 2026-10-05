@@ -92,9 +92,10 @@ DisplayName = Annotated[
 class RegisterRequest(BaseModel):
     """Everything an account needs, in one round trip.
 
-    Registration is open — anyone who signs up gets an active account, and that
-    account grants nothing on its own until an event admits them. So there is no
-    approval field here and nothing that hints at one.
+    What happens to the account afterwards is the deployment's call, not the
+    caller's: ``REGISTRATION_MODE`` decides whether it works immediately, waits
+    for a superadmin, or is refused without an invitation. So there is no
+    approval field here, only the invitation that can stand in for one.
     """
 
     email: EmailStr = Field(
@@ -124,6 +125,39 @@ class RegisterRequest(BaseModel):
             "form. Required when the deployment has Turnstile configured; "
             "ignored when it does not."
         ),
+    )
+
+    invitation_token: str | None = Field(
+        default=None,
+        max_length=128,
+        description=(
+            "Token of the event invitation the visitor arrived through. Needed "
+            "to sign up on an invitation-only deployment, and lets an invited "
+            "address past the approval queue and the domain list where "
+            "REGISTRATION_INVITE_BYPASS allows it. Not redeemed here; accepting "
+            "the invitation is still its own step."
+        ),
+    )
+
+
+class RegistrationPolicy(BaseModel):
+    """What the registration form needs to know before anyone fills it in.
+
+    Public, because the visitor reading it has no account yet. Everything in it
+    is also discoverable by simply trying to register, so it gives nothing away.
+    """
+
+    mode: Literal["open", "approval", "invite"] = Field(
+        ...,
+        description="open, approval (a superadmin approves) or invite (invitation only)",
+    )
+    allowed_domains: list[str] = Field(
+        default_factory=list,
+        description="Email domains self-signup is limited to; empty means any",
+    )
+    invite_bypass: bool = Field(
+        ...,
+        description="Whether an invitation skips the approval queue and domain list",
     )
 
 

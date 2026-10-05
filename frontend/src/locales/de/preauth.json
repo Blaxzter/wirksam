@@ -38,51 +38,51 @@
         "about": {
             "cards": {
                 "data": {
-                    "description": "Deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Mehr nicht. Kein Tracking, keine Analyse-Dienste und nur die Cookies, die dich angemeldet halten.",
+                    "description": "Deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Wir nutzen kein Tracking und keine Analyse-Dienste, und Cookies nur, damit du angemeldet bleibst.",
                     "title": "Wir speichern sehr wenig"
                 },
                 "free": {
-                    "description": "Keine kostenpflichtige Stufe, keine Werbung, nichts, was dir verkauft werden soll. Ein privates, nicht kommerzielles Projekt, bereitgestellt wie es ist — ohne Zusage auf durchgehende Verfügbarkeit.",
+                    "description": "Es gibt keine Bezahlversion und keine Werbung. WirkSam ist ein privates, nicht kommerzielles Projekt und wird so bereitgestellt, wie es ist, ohne Zusage, dass es jederzeit erreichbar ist.",
                     "title": "Kostenlos, und ehrlich dabei"
                 },
                 "gdpr": {
-                    "description": "Betrieben aus Deutschland nach deutschem und europäischem Recht. Fordere eine Kopie deiner Daten an, lass sie berichtigen oder lösche dein Konto — damit sind deine persönlichen Daten endgültig weg.",
+                    "description": "Betrieben aus Deutschland nach deutschem und europäischem Recht. Du kannst eine Kopie deiner Daten anfordern, sie berichtigen lassen oder dein Konto löschen. Dann sind deine persönlichen Daten endgültig weg.",
                     "title": "Datenschutz, ernst gemeint"
                 },
                 "private": {
-                    "description": "Eine neue Veranstaltung sehen nur die Leute, die du einlädst. Sie öffentlich zu stellen ist eine bewusste Entscheidung — und auch dann entscheidet ihr, wer wirklich hineinkommt.",
+                    "description": "Eine neue Veranstaltung sehen nur die Leute, die du einlädst. Du kannst sie öffentlich stellen, wenn du willst, und auch dann entscheidet ihr, wer mitmachen darf.",
                     "title": "Standardmäßig privat"
                 }
             },
             "eyebrow": "Über WirkSam",
-            "lede": "WirkSam ist für kirchliche Veranstaltungen und Gemeindearbeit entstanden — dort, wo der Dienstplan meist eine Tabelle ist, die so lange per E-Mail herumgereicht wird, bis niemand mehr weiß, welche Fassung gilt.",
+            "lede": "WirkSam ist für kirchliche Veranstaltungen und Gemeindearbeit entstanden. Dort ist der Dienstplan meist eine Tabelle, die so lange per E-Mail herumgereicht wird, bis niemand mehr weiß, welche Fassung gilt.",
             "legalIntro": "Alles Weitere steht im Kleingedruckten:",
-            "nameExplainer": "Der Name ist ein Wortspiel: „wirksam“ und „zusammen“. Ehrenamt funktioniert am besten, wenn wir gemeinsam anpacken — daher WirkSam.",
-            "title": "Ein kleines Projekt, offen gemacht"
+            "nameExplainer": "Der Name ist ein Wortspiel aus „wirksam“ und „zusammen“. Ehrenamt funktioniert am besten, wenn wir gemeinsam anpacken, daher WirkSam.",
+            "title": "Ein kleines Projekt, offen betrieben"
         },
         "audience": {
             "eyebrow": "Für wen",
-            "lede": "Jemand muss den Plan bauen, und jemand muss am Tag selbst da sein. WirkSam ist der Ort, an dem sich beide treffen.",
+            "lede": "Jemand muss den Plan machen, und jemand muss am Tag selbst da sein. WirkSam ist für beide da.",
             "organiser": {
-                "description": "Alles, was sonst in einer Tabelle steht und per E-Mail hinterhergetragen wird — wer welchen Dienst übernimmt und welche Plätze noch frei sind.",
+                "description": "Alles, was sonst in einer Tabelle steht und per E-Mail hinterhergetragen wird: wer welchen Dienst übernimmt und welche Plätze noch frei sind.",
                 "label": "Für Organisierende",
                 "points": {
-                    "0": "Leg deine Veranstaltung selbst an — niemand muss sie freigeben.",
+                    "0": "Leg deine Veranstaltung selbst an. Niemand muss sie freigeben.",
                     "1": "Lade dein Team per E-Mail oder mit einem Link ein.",
-                    "2": "Beschreibe eine Aufgabe einmal; alle Schichten entstehen daraus.",
+                    "2": "Beschreibe eine Aufgabe einmal, und alle ihre Schichten entstehen daraus.",
                     "3": "Sieh auf einen Blick, wo noch Leute fehlen."
                 },
                 "title": "Du machst den Plan"
             },
             "title": "Zwei Seiten desselben Dienstplans",
             "volunteer": {
-                "description": "Keine Tabelle zum Entziffern, kein Antwort-an-alle. Deine Schichten in einer Liste, mit einer Erinnerung vor jeder einzelnen.",
+                "description": "Deine Schichten stehen in einer Liste statt in einer Tabelle oder einer Mail an alle, und vor jeder bekommst du eine Erinnerung.",
                 "label": "Für Helfende",
                 "points": {
                     "0": "Einladung öffnen, anmelden, dabei.",
-                    "1": "Sag vorher, wann du kannst — bevor verteilt wird.",
+                    "1": "Sag, wann du kannst, bevor die Schichten verteilt werden.",
                     "2": "Buche, was passt, und sag rechtzeitig ab, wenn nötig.",
-                    "3": "Vor jeder Schicht eine Erinnerung, auf deinem Weg."
+                    "3": "Vor jeder Schicht eine Erinnerung, über den Weg, den du nutzt."
                 },
                 "title": "Du packst mit an"
             }
@@ -93,23 +93,23 @@
             "more": {
                 "items": {
                     "availability": {
-                        "description": "Sammle ein, wer wann kann, und sieh die Verfügbarkeit des ganzen Teams als Heatmap, bevor du anfängst zu verteilen.",
+                        "description": "Sammle ein, wer wann kann, und sieh die Verfügbarkeit des ganzen Teams auf einen Blick, bevor du Schichten verteilst.",
                         "title": "Verfügbarkeit vorab"
                     },
                     "calendarFeed": {
-                        "description": "Eine private Feed-Adresse bringt deine gebuchten Schichten in Google Kalender, Apple Kalender oder Outlook — und hält sie aktuell.",
+                        "description": "Ein privater Link bringt deine gebuchten Schichten in Google Kalender, Apple Kalender oder Outlook und hält sie aktuell.",
                         "title": "Kalender-Abo"
                     },
                     "discover": {
-                        "description": "Lass deine Veranstaltung privat oder stell sie öffentlich, damit Angemeldete anfragen können — wer hineinkommt, entscheidet weiterhin ihr.",
+                        "description": "Lass deine Veranstaltung privat oder stell sie öffentlich, damit alle Angemeldeten anfragen können. Wer mitmachen darf, entscheidet weiterhin ihr.",
                         "title": "Öffentlich, wenn du magst"
                     },
                     "languages": {
-                        "description": "Die ganze App in beiden Sprachen, in zwei Farbwelten, auf dem Handy genauso wie am Rechner.",
+                        "description": "Die ganze App gibt es in beiden Sprachen, hell und dunkel, und sie funktioniert auf dem Handy genauso wie am Rechner.",
                         "title": "Deutsch und Englisch, hell und dunkel"
                     },
                     "people": {
-                        "description": "Eigentümer:in, Organisator:in und Mitglied — pro Veranstaltung. Befördere jemanden, gib die Veranstaltung weiter oder tritt kürzer; ganz ohne Verantwortliche bleibt sie nie zurück.",
+                        "description": "Jede Veranstaltung hat eine:n Eigentümer:in, Organisator:innen und Mitglieder. Du kannst jemanden befördern, die Veranstaltung weitergeben oder kürzertreten. Ohne Verantwortliche bleibt sie dabei nie.",
                         "title": "Rollen, die zur Wirklichkeit passen"
                     },
                     "reports": {
@@ -124,48 +124,48 @@
                     "description": "Alles, wofür du dich eingetragen hast, das Nächste zuerst. Absagen können nur du oder die Organisation.",
                     "points": {
                         "0": "Filtere nach demnächst, diesem Monat oder allem.",
-                        "1": "Mit zwei Klicks absagen — der Platz wird wieder frei.",
+                        "1": "Mit zwei Klicks absagen, und der Platz wird wieder frei.",
                         "2": "Im eigenen Kalender abonnieren, dann stehen die Schichten neben dem Rest der Woche."
                     },
                     "screenshotAlt": "Die Seite „Meine Buchungen“ mit den bestätigten Schichten samt Datum, Uhrzeit und Ort.",
                     "title": "Deine Zusagen an einem Ort"
                 },
                 "clone": {
-                    "description": "Kopiere eine Veranstaltung, die es schon gab, auf neue Termine. Aufgaben, Schichten und Zeiten kommen mit — das Original bleibt genau so, wie es war.",
+                    "description": "Kopiere eine Veranstaltung, die es schon gab, auf neue Termine. Aufgaben, Schichten und Zeiten kommen mit, und das Original bleibt, wie es war.",
                     "points": {
                         "0": "Die neuen Termine einmal setzen: Alles rückt mit und landet auf demselben Wochentag wie beim letzten Mal.",
-                        "1": "Nur die Aufgaben anhaken, die wieder dabei sind — der Rest bleibt zurück.",
-                        "2": "Die Eintragungen von damals kommen nicht mit: Die Kopie startet mit leeren Schichten."
+                        "1": "Nur die Aufgaben anhaken, die wieder dabei sind. Der Rest bleibt zurück.",
+                        "2": "Die Eintragungen vom letzten Mal kommen nicht mit, die Kopie startet mit leeren Schichten."
                     },
                     "screenshotAlt": "Die Seite zum Kopieren einer Veranstaltung: die Aufgaben vom letzten Mal mit ihrer Schichtzahl, alle angehakt für die neuen Termine.",
                     "title": "Nächstes Jahr nicht wieder von vorn"
                 },
                 "overview": {
-                    "description": "Die Aufgaben deiner Veranstaltung als Liste, als Karten oder im Kalender — mit den freien Plätzen an jeder Schicht.",
+                    "description": "Die Aufgaben deiner Veranstaltung als Liste, als Karten oder im Kalender, mit den freien Plätzen an jeder Schicht.",
                     "points": {
                         "0": "Suchen und filtern nach Kategorie, Ort oder Datum.",
                         "1": "Volle Schichten ausblenden und nur sehen, was noch fehlt.",
-                        "2": "Die App arbeitet immer mit einer Veranstaltung — niemand liest im falschen Plan."
+                        "2": "Die App zeigt immer nur eine Veranstaltung, so liest niemand im falschen Plan."
                     },
                     "screenshotAlt": "Die Aufgabenliste mit einer Wochenansicht der Schichten daneben, jeweils mit gebuchten und freien Plätzen.",
                     "title": "Ein Plan, den alle gleich sehen"
                 },
                 "reminders": {
-                    "description": "Ein Dienstplan funktioniert nur, wenn Leute daran denken. WirkSam erinnert vor jeder Schicht — auf dem Weg, den du wirklich liest.",
+                    "description": "Ein Dienstplan funktioniert nur, wenn die Leute ihre Schichten nicht vergessen. WirkSam erinnert vor jeder Schicht, auf dem Weg, den du wirklich liest.",
                     "points": {
-                        "0": "E-Mail, Browser-Push oder Telegram — pro Art einzeln wählbar.",
+                        "0": "E-Mail, Browser-Push oder Telegram, für jede Art von Benachrichtigung einzeln wählbar.",
                         "1": "Alles landet zusätzlich im Posteingang in der App.",
-                        "2": "Du kannst alles abschalten. Erinnerungen sind ein Angebot, keine Belästigung."
+                        "2": "Du kannst alles abschalten."
                     },
                     "screenshotAlt": "Die Benachrichtigungseinstellungen: pro Art eine Zeile, mit Schaltern für E-Mail, Push und Telegram.",
                     "title": "Erinnerungen, die ankommen"
                 },
                 "shifts": {
-                    "description": "Du gibst einer Aufgabe ihre Form — die Tage, die täglichen Zeiten, die Schichtlänge, die Personenzahl — und die Schichten entstehen daraus.",
+                    "description": "Du legst die Tage, die täglichen Zeiten, die Schichtlänge und die Personenzahl fest, und die Schichten entstehen daraus.",
                     "points": {
-                        "0": "Ungerade Tage bewusst geregelt: Restzeit weglassen, letzte Schicht kürzen oder verlängern.",
+                        "0": "Wenn die Zeit nicht aufgeht, wählst du: Rest weglassen, letzte Schicht kürzen oder verlängern.",
                         "1": "An einem Tag andere Zeiten? Eine Ausnahme anlegen, ohne den Rest anzufassen.",
-                        "2": "Die Vorschau listet jede Schicht, bevor es sie gibt — einzelne wegklicken."
+                        "2": "Die Vorschau zeigt jede Schicht, bevor sie angelegt wird. Klick eine an, um sie wegzulassen."
                     },
                     "screenshotAlt": "Das Formular für den Zeitplan neben einer Vorschau aller Schichten, die daraus entstünden.",
                     "title": "Das Muster einmal beschreiben"
@@ -193,7 +193,7 @@
                     "partial": "Eine Person fehlt"
                 },
                 "openCount": "{count} Platz frei | {count} Plätze frei",
-                "summary": "Ein Dienstplan: drei Tage nebeneinander, pro Tag vier Schichten, jede mit der Zahl der belegten Plätze — die meisten besetzt, einige noch frei, und eine als deine markiert.",
+                "summary": "Ein Dienstplan mit drei Tagen nebeneinander und vier Schichten pro Tag. Jede Schicht zeigt, wie viele Plätze belegt sind: die meisten sind besetzt, einige noch frei, und eine ist als deine markiert.",
                 "taskName": "Empfang",
                 "you": "Du"
             },
@@ -206,21 +206,21 @@
                 "noInstall": "Nichts zu installieren",
                 "privacy": "Kein Tracking, keine Werbung"
             },
-            "subtitle": "Leg deine Veranstaltung an, lade dein Team ein und beschreibe die Schichten einmal. Alle buchen, was ihnen passt — und werden vor jeder Schicht erinnert.",
-            "title": "Plant den Dienstplan für eure nächste Veranstaltung — gemeinsam."
+            "subtitle": "Leg deine Veranstaltung an, lade dein Team ein und beschreibe die Schichten einmal. Alle buchen, was ihnen passt, und werden vor jeder Schicht erinnert.",
+            "title": "Plant den Dienstplan für eure nächste Veranstaltung gemeinsam."
         },
         "journey": {
             "eyebrow": "Der Ablauf",
-            "lede": "Vier Schritte — auf welcher Seite du auch stehst.",
+            "lede": "Vier Schritte, egal auf welcher Seite du stehst.",
             "organiser": {
                 "footnote": "Danach den Dienstplan drucken oder auswerten, wie sich die Arbeit verteilt.",
                 "steps": {
                     "create": {
-                        "description": "Ein Name und die Tage. Sie gehört dir — und bleibt privat, bis du etwas anderes sagst.",
+                        "description": "Ein Name und die Tage. Sie gehört dir und bleibt privat, bis du etwas anderes entscheidest.",
                         "title": "Veranstaltung anlegen"
                     },
                     "generate": {
-                        "description": "Beschreibe eine Aufgabe einmal — Tage, Zeiten, Länge, Personenzahl — und alle Schichten entstehen daraus.",
+                        "description": "Beschreibe eine Aufgabe einmal (Tage, Zeiten, Länge, Personenzahl), und alle Schichten werden für dich berechnet.",
                         "title": "Schichten erzeugen"
                     },
                     "invite": {
@@ -236,10 +236,10 @@
             },
             "title": "Vom leeren Kalender zur besetzten Veranstaltung",
             "volunteer": {
-                "footnote": "Etwas dazwischengekommen? Unter „Meine Buchungen“ absagen — der Platz wird wieder frei.",
+                "footnote": "Etwas dazwischengekommen? Sag unter „Meine Buchungen“ ab, dann wird der Platz wieder frei.",
                 "steps": {
                     "accept": {
-                        "description": "Du siehst die Veranstaltung, wer dich eingeladen hat und deine Rolle — und entscheidest dann.",
+                        "description": "Du siehst die Veranstaltung, wer dich eingeladen hat und deine Rolle, bevor du entscheidest.",
                         "title": "Einladung annehmen"
                     },
                     "availability": {
@@ -251,7 +251,7 @@
                         "title": "Schichten buchen"
                     },
                     "reminders": {
-                        "description": "Vor jeder Schicht ein Hinweis per E-Mail, Push oder Telegram — wie du magst.",
+                        "description": "Vor jeder Schicht eine Erinnerung per E-Mail, Push oder Telegram, ganz wie du magst.",
                         "title": "Erinnert werden"
                     }
                 },
@@ -312,7 +312,7 @@
             "intro": "Wenn Sie ein Konto erstellen und WirkSam nutzen, verarbeiten wir folgende personenbezogene Daten:",
             "items": {
                 "bookings": "Buchungsdaten (welche Dienstschichten Sie gebucht haben)",
-                "credentials": "Ihr Passwort, gespeichert ausschließlich als gesalzener Hash – niemals im Klartext – sowie die Anmeldesitzungen Ihrer Geräte",
+                "credentials": "Ihr Passwort, ausschließlich als gesalzener Hash und niemals im Klartext gespeichert, sowie die Anmeldesitzungen Ihrer Geräte",
                 "email": "E-Mail-Adresse",
                 "name": "Name (wie Sie ihn bei der Registrierung angeben)",
                 "picture": "Profilbild (falls Sie eines hochladen)"
@@ -342,12 +342,12 @@
             "contact": "Um eines dieser Rechte auszuüben, kontaktieren Sie uns unter der oben genannten E-Mail-Adresse. Sie haben außerdem das Recht, eine Beschwerde bei einer Aufsichtsbehörde einzureichen.",
             "intro": "Nach der DSGVO stehen Ihnen folgende Rechte zu:",
             "items": {
-                "access": "Auskunftsrecht — Kopie Ihrer personenbezogenen Daten anfordern",
-                "erasure": "Recht auf Löschung — Löschung Ihrer Daten verlangen",
-                "objection": "Widerspruchsrecht — der Verarbeitung aufgrund berechtigter Interessen widersprechen",
-                "portability": "Recht auf Datenübertragbarkeit — Ihre Daten in strukturiertem Format erhalten",
-                "rectification": "Recht auf Berichtigung — unrichtige Daten korrigieren lassen",
-                "restriction": "Recht auf Einschränkung — die Verarbeitung Ihrer Daten einschränken"
+                "access": "Auskunftsrecht: eine Kopie Ihrer personenbezogenen Daten anfordern",
+                "erasure": "Recht auf Löschung: die Löschung Ihrer Daten verlangen",
+                "objection": "Widerspruchsrecht: der Verarbeitung aufgrund berechtigter Interessen widersprechen",
+                "portability": "Recht auf Datenübertragbarkeit: Ihre Daten in einem strukturierten Format erhalten",
+                "rectification": "Recht auf Berichtigung: unrichtige Daten korrigieren lassen",
+                "restriction": "Recht auf Einschränkung: die Verarbeitung Ihrer Daten einschränken"
             },
             "title": "Ihre Rechte"
         },
@@ -363,8 +363,8 @@
     "terms": {
         "account": {
             "items": {
+                "access": "Je nach Einrichtung dieser Seite braucht ein neues Konto eine Einladung oder die Freigabe durch eine Administratorin oder einen Administrator, bevor es genutzt werden kann. Ein Konto allein gibt noch keinen Zugang zu einer Veranstaltung: Die Organisatoren laden Sie ein, oder Sie bitten bei einer öffentlichen Veranstaltung um Aufnahme. Wir behalten uns das Recht vor, Konten zu sperren oder zu entfernen, die gegen diese Bedingungen verstoßen.",
                 "accuracy": "Sie sind dafür verantwortlich, Ihre Kontoinformationen korrekt und aktuell zu halten.",
-                "approval": "Der Kontozugang kann eine Genehmigung durch einen Administrator erfordern. Wir behalten uns das Recht vor, Konten abzulehnen oder zu deaktivieren.",
                 "registration": "Sie benötigen ein Konto mit Ihrer E-Mail-Adresse und einem Passwort, um WirkSam zu nutzen.",
                 "security": "Sie sind für die Sicherheit Ihrer Zugangsdaten verantwortlich."
             },
@@ -383,7 +383,7 @@
             "description": "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren. Die aktuelle Fassung ist stets auf dieser Seite verfügbar. Die weitere Nutzung von WirkSam nach Änderungen gilt als Zustimmung zu den aktualisierten Bedingungen.",
             "title": "Änderungen dieser Bedingungen"
         },
-        "lastUpdated": "Letzte Aktualisierung: März 2026",
+        "lastUpdated": "Letzte Aktualisierung: Oktober 2026",
         "law": {
             "description": "Diese Bedingungen unterliegen dem Recht der Bundesrepublik Deutschland.",
             "title": "Anwendbares Recht"

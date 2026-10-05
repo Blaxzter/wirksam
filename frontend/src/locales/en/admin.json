@@ -9,7 +9,7 @@
         "delete": {
             "button": "Delete All Demo Data",
             "description": "Remove all demo data from the system.",
-            "info": "This will delete all entities tagged with [DEMO] — tasks, events, duty shifts, bookings, and demo users.",
+            "info": "This deletes everything tagged [DEMO]: tasks, events, duty shifts, bookings, and demo users.",
             "title": "Delete Demo Data"
         },
         "deleteSuccess": "Deleted {tasks} tasks, {events} groups, {users} users, {shifts} shifts, and {bookings} bookings.",
@@ -20,7 +20,7 @@
             "numUsers": "Number of Demo Users",
             "publishTasks": "Publish tasks immediately"
         },
-        "subtitle": "Generate or remove demo data for testing purposes.",
+        "subtitle": "Create or remove demo data for testing.",
         "title": "Demo Data"
     },
     "events": {
@@ -32,7 +32,7 @@
             "showAll": "Show all"
         },
         "noExpired": "No expired events.",
-        "subtitle": "Create, edit, and manage all events across the system.",
+        "subtitle": "Create, edit, and manage every event on the platform.",
         "title": "Manage Events"
     },
     "reporting": {
@@ -88,7 +88,7 @@
             "totalVolunteers": "Total Volunteers"
         },
         "reset": "Reset",
-        "subtitle": "View statistics and usage reports across your organization.",
+        "subtitle": "Statistics and usage reports for your organisation.",
         "title": "Reports",
         "to": "To",
         "topVolunteers": {
@@ -107,6 +107,7 @@
         "activated": "Activated account for {name}.",
         "active": "Active",
         "approve": "Approve",
+        "approvedToast": "Approved {name}. They can use WirkSam now.",
         "columns": {
             "actions": "Actions",
             "email": "Email",
@@ -120,14 +121,15 @@
         "delete": "Delete User",
         "deleteDialogDescription": "Are you sure you want to permanently delete {name}'s account? This action cannot be undone.",
         "deleteDialogTitle": "Delete User",
-        "deleteTransferDescription": "{name} still has events or tasks they created. Choose who should take them over — afterwards the account will be permanently deleted.",
+        "deleteTransferDescription": "{name} still has events or tasks they created. Choose who should take them over. After that, the account is permanently deleted.",
         "deletedToast": "Deleted account for {name}.",
         "empty": "No users to show.",
         "filters": {
             "active": "Active",
             "all": "All",
             "pending": "Pending",
-            "rejected": "Rejected"
+            "rejected": "Rejected",
+            "suspended": "Suspended"
         },
         "grantedAdmin": "Granted admin role to {name}.",
         "grantedTaskManager": "Granted task manager role to {name}.",
@@ -138,7 +140,7 @@
         "ownedTasks": "Tasks: {count}",
         "pending": "Pending",
         "reject": "Reject",
-        "rejectDialogDescription": "Provide an optional reason for rejecting {name}'s account request. The user will see this message.",
+        "rejectDialogDescription": "You can give {name} a reason for turning down their registration. They see it when they sign in.",
         "rejectDialogTitle": "Reject User",
         "rejectReasonPlaceholder": "Reason for rejection (optional)...",
         "rejected": "Rejected",
@@ -152,10 +154,17 @@
             "active": "Active Members",
             "all": "Members",
             "pending": "Pending Approval",
-            "rejected": "Rejected"
+            "rejected": "Rejected",
+            "suspended": "Suspended"
         },
         "statsTotal": "Total Users",
-        "subtitle": "View and manage platform users and their roles.",
+        "subtitle": "See everyone on the platform and manage their roles.",
+        "suspendDialogDescription": "Tell {name} why their account was suspended. They see this message when they sign in, and we send it to them.",
+        "suspendDialogTitle": "Why was this account suspended?",
+        "suspendReason": "Give a reason",
+        "suspendReasonPlaceholder": "Reason for the suspension (optional)…",
+        "suspendReasonSaved": "Saved the reason and let {name} know.",
+        "suspended": "Suspended",
         "title": "User Management",
         "transferAndDelete": "Reassign and delete",
         "transferNoResults": "No members found.",

@@ -43,14 +43,14 @@ Not yet covered, and not currently tracked by an issue:
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
-| `auth`       | 4          | 14      |
-| `chromium`   | 24         | 216     |
+| `auth`       | 5          | 20      |
+| `chromium`   | 24         | 219     |
 | `member`     | 2          | 18      |
 | `mobile`     | 1          | 6       |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 27      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **48**     | **364** |
+| **Total**    | **49**     | **373** |
 
 ## Inventory
 
@@ -107,7 +107,7 @@ Not yet covered, and not currently tracked by an issue:
   - privacy page has no serious or critical violations
   - the screenshot viewer has no serious or critical violations
 
-### Project `auth` — 4 files, 14 tests
+### Project `auth` — 5 files, 20 tests
 
 #### `frontend/e2e/tests/auth/forgot-password.spec.ts` — 2 tests
 
@@ -133,13 +133,26 @@ Not yet covered, and not currently tracked by an issue:
   - a wrong password is refused and the visitor stays on the form
   - an address with no account is refused the same way
 
-#### `frontend/e2e/tests/auth/register.spec.ts` — 2 tests
+#### `frontend/e2e/tests/auth/register.spec.ts` — 3 tests
 
 - **Auth – registration** (2)
   - a new account signs straight in and lands in the app
   - registering twice with the same address is refused
+- **Auth – registration from an invitation** (1)
+  - a signed-out visitor is offered an account and lands back on the invite
 
-### Project `chromium` — 24 files, 216 tests
+#### `frontend/e2e/tests/auth/registration-modes.spec.ts` — 5 tests
+
+- **Registration modes – approval queue** (2)
+  - a new account waits, and gets in once a superadmin approves it
+  - a rejected registration is told so, with the reason
+- **Registration modes – invitation only** (2)
+  - without an invitation the form says so and the signup is refused
+  - the invitation link lets the signup through
+- **Registration modes – allowed domains** (1)
+  - the form names the domains and refuses any other address
+
+### Project `chromium` — 24 files, 219 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -166,21 +179,25 @@ Not yet covered, and not currently tracked by an issue:
   - user table is visible with data
   - shows stat cards for filtering
 
-#### `frontend/e2e/tests/authenticated/admin-users.spec.ts` — 10 tests
+#### `frontend/e2e/tests/authenticated/admin-users.spec.ts` — 13 tests
 
 - **Admin Users – navigation** (3)
   - sidebar shows User Management link for admin
   - clicking sidebar link navigates to /app/admin/users
   - direct navigation to /app/admin/users works
-- **Admin Users – page structure** (6)
+- **Admin Users – page structure** (7)
   - shows heading
   - shows stats section
   - shows individual stat cards
+  - hides the approval queue when signup is open
   - shows user table
   - current admin user appears in the list
   - no longer offers an approval password
 - **Admin Users – member RBAC** (1)
   - member cannot access admin users page
+- **Admin Users – approval queue** (2)
+  - approving lets the account in
+  - rejecting asks for a reason and keeps the account
 
 #### `frontend/e2e/tests/authenticated/availability.spec.ts` — 11 tests
 

@@ -25,7 +25,7 @@ const MENU = {
 
 const STATUS = {
   active: 'Active',
-  pending: 'Pending',
+  suspended: 'Suspended',
 } as const
 
 /** `src/locales/en/user.json` → `settings.deleteAccount.*` */
@@ -109,7 +109,7 @@ test.describe('Destructive – deactivate and reactivate', () => {
     const row = await findUserRow(adminPage, disposableUser.email)
     await expect(row).toContainText(STATUS.active)
     await runRowAction(adminPage, row, MENU.deactivate)
-    await expect(row).toContainText(STATUS.pending)
+    await expect(row).toContainText(STATUS.suspended)
 
     // The blocked user is bounced to the suspended-account screen…
     await disposablePage.goto('/app/home')

@@ -49,6 +49,12 @@ export const useAuthStore = defineStore('auth', () => {
   const isEventManager = computed(() => managedEventIds.value.length > 0)
   const isManager = computed(() => isAdmin.value || isEventManager.value)
   const isActive = computed(() => profile.value?.is_active ?? true)
+  /**
+   * Where the account stands in the registration queue. Only ever not
+   * "approved" on a deployment running `REGISTRATION_MODE=approval`.
+   */
+  const approvalStatus = computed(() => profile.value?.approval_status ?? 'approved')
+  const isApproved = computed(() => approvalStatus.value === 'approved')
   const selectedEventId = computed(() => profile.value?.selected_event_id ?? null)
   const selectedEvent = ref<EventRead | null>(null)
 
@@ -229,6 +235,8 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   return {
+    approvalStatus,
+    isApproved,
     session,
     isAuthenticated,
     user,

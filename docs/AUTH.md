@@ -327,6 +327,9 @@ is enough to boot.
 | `EMAIL_VERIFY_TOKEN_EXPIRE_HOURS` | `48` | |
 | `SUPERADMIN_EMAILS` | `[]` | See below. |
 | `TURNSTILE_SECRET_KEY` | `None` | Unset disables the registration bot check entirely. See above. |
+| `REGISTRATION_MODE` | `"open"` | `open`, `approval` or `invite`. See "Who may register" below. |
+| `REGISTRATION_ALLOWED_DOMAINS` | `[]` | Email domains signup is limited to, comma-separated. Empty means any. |
+| `REGISTRATION_INVITE_BYPASS` | `True` | A valid invitation skips the approval queue and the domain list. |
 
 `SECRET_KEY` deliberately does **not** default to a freshly minted random value.
 The image runs four workers, so a per-process random default would hand them
@@ -336,6 +339,51 @@ verification — intermittently, in production only.
 Rotating `SECRET_KEY` invalidates every outstanding access token (at most 15
 minutes of disruption); refresh cookies survive it, because they are opaque and
 validated against the database rather than a signature.
+
+## Who may register
+
+Open signup is the default, and it is what the hosted instance runs: an account
+grants nothing until an event admits it, so there is nothing to approve. A
+self-hosted deployment can put a door on it with three settings. Every rule
+lives in `app/logic/auth/registration.py`, which `register_user` calls before
+it writes a row.
+
+| Mode | Who can sign up | What the new account is |
+|---|---|---|
+| `open` | anyone | approved |
+| `approval` | anyone | `pending` until a superadmin approves it |
+| `invite` | only someone holding a usable invitation | approved |
+
+"Holding an invitation" means either the link the visitor arrived through
+(`invitation_token` on `POST /auth/register`; the invite page hands it to the
+form) or an open invitation addressed to their email. A revoked, used or
+expired invitation does not count, nor does one for a different address, nor
+one to a demo event, since anyone can start a demo.
+
+`REGISTRATION_ALLOWED_DOMAINS` applies on top of any mode and refuses addresses
+outside the list with `auth.email_domain_not_allowed`. With
+`REGISTRATION_INVITE_BYPASS` on (the default), an invited address skips both
+the domain list and the approval queue: an event admin who invited someone by
+name has already made the decision the queue exists for.
+
+Two exemptions keep a deployment from locking itself out: an address in
+`SUPERADMIN_EMAILS` always gets in, approved, and `sync_superadmin_role`
+approves a listed account on sign-in if it was waiting.
+
+**The queue.** Approval is tracked in `users.approval_status` (`approved`,
+`pending`, `rejected`), separate from `is_active`, which stays the moderation
+switch. A pending or rejected account can sign in and read or delete its own
+profile (`AnyUser`); every `CurrentUser` route refuses it with
+`auth.account_pending` or `auth.account_rejected`, and the router guard shows
+the waiting screen. Superadmins are notified of each new signup
+(`user.registered`) and decide with `POST /users/{id}/approve` or
+`POST /users/{id}/reject`, which notify the person (`user.approved`,
+`user.rejected`). Those three notification types are only listed in the
+preference screens while the mode is `approval`.
+
+`GET /auth/registration-policy` is public and returns the three settings, so
+the registration form can say "by invitation only" or "an administrator
+approves new accounts" before anyone types.
 
 ## Bootstrapping the first administrator
 
@@ -366,3 +414,13 @@ and `VITE_API_URL=http://backend:8787` are genuinely cross-site: a `SameSite=Lax
 refresh cookie is silently dropped, and `SameSite=None` requires `Secure`
 requires HTTPS. Real-login E2E would pass locally and fail in CI. Replacing the
 bypass with real logins is a separate change, not a leftover to tidy away.
+
+A second header, `X-Test-Registration-Policy`, carries a JSON registration
+policy (`{"mode": "approval", "allowed_domains": [], "invite_bypass": true}`)
+that replaces the configured one for that request
+(`app/logic/auth/registration.py::policy_for_request`). It exists because the
+E2E backend runs four worker processes: a test cannot switch
+`REGISTRATION_MODE` at runtime, since only the process that served the call
+would see it. The header keeps the override per request, so specs for different
+modes run in parallel. Like the user bypass, it is ignored unless `TESTING` is
+on; a malformed one is a 400 so a spec cannot pass against the wrong mode.

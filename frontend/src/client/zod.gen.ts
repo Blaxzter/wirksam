@@ -943,9 +943,10 @@ export const zRefreshResponse = z
  *
  * Everything an account needs, in one round trip.
  *
- * Registration is open — anyone who signs up gets an active account, and that
- * account grants nothing on its own until an event admits them. So there is no
- * approval field here and nothing that hints at one.
+ * What happens to the account afterwards is the deployment's call, not the
+ * caller's: ``REGISTRATION_MODE`` decides whether it works immediately, waits
+ * for a superadmin, or is refused without an invitation. So there is no
+ * approval field here, only the invitation that can stand in for one.
  */
 export const zRegisterRequest = z
   .object({
@@ -967,11 +968,47 @@ export const zRegisterRequest = z
       .optional()
       .default('en'),
     turnstile_token: z.string().nullish(),
+    invitation_token: z.string().max(128).nullish(),
   })
   .register(z.globalRegistry, {
     description:
-      'Everything an account needs, in one round trip.\n\nRegistration is open — anyone who signs up gets an active account, and that\naccount grants nothing on its own until an event admits them. So there is no\napproval field here and nothing that hints at one.',
+      "Everything an account needs, in one round trip.\n\nWhat happens to the account afterwards is the deployment's call, not the\ncaller's: ``REGISTRATION_MODE`` decides whether it works immediately, waits\nfor a superadmin, or is refused without an invitation. So there is no\napproval field here, only the invitation that can stand in for one.",
   })
+
+/**
+ * RegistrationPolicy
+ *
+ * What the registration form needs to know before anyone fills it in.
+ *
+ * Public, because the visitor reading it has no account yet. Everything in it
+ * is also discoverable by simply trying to register, so it gives nothing away.
+ */
+export const zRegistrationPolicy = z
+  .object({
+    mode: z.enum(['open', 'approval', 'invite']).register(z.globalRegistry, {
+      description: 'open, approval (a superadmin approves) or invite (invitation only)',
+    }),
+    allowed_domains: z
+      .array(z.string())
+      .register(z.globalRegistry, {
+        description: 'Email domains self-signup is limited to; empty means any',
+      })
+      .optional(),
+    invite_bypass: z.boolean().register(z.globalRegistry, {
+      description: 'Whether an invitation skips the approval queue and domain list',
+    }),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'What the registration form needs to know before anyone fills it in.\n\nPublic, because the visitor reading it has no account yet. Everything in it\nis also discoverable by simply trying to register, so it gives nothing away.',
+  })
+
+/**
+ * RejectRegistrationRequest
+ */
+export const zRejectRegistrationRequest = z.object({
+  reason: z.string().max(1000).nullish(),
+})
 
 /**
  * ReminderOffsetEntry
@@ -1715,6 +1752,7 @@ export const zUserCounts = z.object({
   active: z.int(),
   pending: z.int(),
   rejected: z.int(),
+  suspended: z.int(),
 })
 
 /**
@@ -1746,6 +1784,13 @@ export const zUserCreate = z.object({
     })
     .optional()
     .default(true),
+  approval_status: z
+    .enum(['approved', 'pending', 'rejected'])
+    .register(z.globalRegistry, {
+      description: 'Registration approval status',
+    })
+    .optional()
+    .default('approved'),
   preferred_language: z
     .string()
     .register(z.globalRegistry, {
@@ -1827,6 +1872,13 @@ export const zUserProfile = z.object({
     })
     .optional()
     .default(true),
+  approval_status: z
+    .enum(['approved', 'pending', 'rejected'])
+    .register(z.globalRegistry, {
+      description: 'Registration approval: approved, pending or rejected',
+    })
+    .optional()
+    .default('approved'),
   rejection_reason: z.string().nullish(),
   event_roles: z
     .record(z.string(), z.string())
@@ -1955,6 +2007,7 @@ export const zUserRead = z.object({
   theme: z.string().optional().default('default'),
   roles: z.array(z.string()),
   is_active: z.boolean(),
+  approval_status: z.enum(['approved', 'pending', 'rejected']).optional().default('approved'),
   rejection_reason: z.string().nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
@@ -2069,6 +2122,11 @@ export const zTaskCreateWithShiftsResponseWritable = z.object({
   shifts_created: z.int(),
   event: zEventReadWritable.nullish(),
 })
+
+/**
+ * Successful Response
+ */
+export const zAuthGetRegistrationPolicyResponse = zRegistrationPolicy
 
 export const zAuthRegisterBody = zRegisterRequest
 
@@ -2187,7 +2245,10 @@ export const zUsersUpdateSelectedEventResponse = zUserProfile
 
 export const zUsersListUsersQuery = z.object({
   q: z.string().nullish(),
-  status_filter: z.enum(['all', 'active', 'pending', 'rejected']).optional().default('all'),
+  status_filter: z
+    .enum(['all', 'active', 'pending', 'rejected', 'suspended'])
+    .optional()
+    .default('all'),
   skip: z.int().optional().default(0),
   limit: z.int().optional().default(20),
 })
@@ -2236,6 +2297,26 @@ export const zUsersUpdateUserPath = z.object({
  * Successful Response
  */
 export const zUsersUpdateUserResponse = zUserRead
+
+export const zUsersApproveUserPath = z.object({
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zUsersApproveUserResponse = zUserRead
+
+export const zUsersRejectUserBody = zRejectRegistrationRequest
+
+export const zUsersRejectUserPath = z.object({
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zUsersRejectUserResponse = zUserRead
 
 /**
  * Response Users-Export User Data

@@ -37,6 +37,7 @@ from app.crud.event_membership import event_membership as crud_membership
 from app.crud.user import user as crud_user
 from app.crud.user_token import user_token as crud_user_token
 from app.logic.auth.passwords import hash_new_password
+from app.logic.auth.registration import admit_registration, registration_policy
 from app.logic.auth.tokens import (
     consume_user_token,
     issue_refresh_session,
@@ -48,7 +49,12 @@ from app.logic.auth.tokens import (
 from app.models.auth_session import AuthSession
 from app.models.event import Event
 from app.models.user import User
-from app.schemas.auth import ChangePasswordRequest, LoginRequest, RegisterRequest
+from app.schemas.auth import (
+    ChangePasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    RegistrationPolicy,
+)
 from app.schemas.user import UserCreate
 from app.schemas.users import UserProfile
 
@@ -161,6 +167,12 @@ def sync_superadmin_role(user: User) -> bool:
     if not user.is_active:
         user.is_active = True
         changed = True
+    # Same reasoning for the registration queue: the superadmin is the person
+    # who would approve it, so they cannot be left waiting in it.
+    if user.approval_status != "approved":
+        user.approval_status = "approved"
+        user.rejection_reason = None
+        changed = True
     return changed
 
 
@@ -247,12 +259,19 @@ async def register_user(
     data: RegisterRequest,
     user_agent: str | None = None,
     ip_address: str | None = None,
+    policy: RegistrationPolicy | None = None,
 ) -> RegisteredAccount:
     """Create an account, sign it in, and mint its verification token.
 
-    Signup is open: the new account is active immediately and grants nothing on
-    its own — every permission in this application is per-event membership, so
-    an account with no memberships can see nothing but its own profile.
+    Whether the signup is allowed at all, and whether the account works at once
+    or waits for a superadmin, is ``logic.auth.registration``'s decision. An
+    account that is let in still grants nothing on its own: every permission in
+    this application is per-event membership, so an account with no memberships
+    can see nothing but its own profile.
+
+    A pending account is signed in all the same. It needs a session to be told
+    it is waiting, and every route behind ``CurrentUser`` refuses it until a
+    superadmin approves it.
 
     The address is checked for uniqueness *and* the insert is guarded, because
     the check and the insert are not atomic. A double-clicked submit button
@@ -267,6 +286,15 @@ async def register_user(
             code="auth.email_taken",
             detail="An account with this email address already exists.",
         )
+
+    # After the duplicate check, so an existing account is told it exists
+    # rather than that it needs an invitation it does not need.
+    approval_status = await admit_registration(
+        db,
+        email=email,
+        invitation_token=data.invitation_token,
+        policy=policy or registration_policy(),
+    )
 
     # Hashed before the row is written, so a password the policy rejects costs
     # an INSERT that has to be rolled back. bcrypt takes roughly a quarter of a
@@ -283,6 +311,7 @@ async def register_user(
                 name=data.name,
                 email_verified=False,
                 is_active=True,
+                approval_status=approval_status,
                 preferred_language=data.preferred_language,
             ),
         )

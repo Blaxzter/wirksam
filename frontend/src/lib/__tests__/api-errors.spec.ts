@@ -17,14 +17,14 @@ vi.mock('vue-sonner', () => ({
  * shows when the API fails.
  */
 const EN = {
-  default: 'An unexpected error occurred. Please try again.',
-  unauthorized: 'Authentication failed. Please log in again.',
-  forbidden: 'You do not have permission to access this resource.',
-  notFound: 'The requested resource was not found',
+  default: 'Something went wrong. Please try again.',
+  unauthorized: 'Your sign-in is no longer valid. Please log in again.',
+  forbidden: 'You do not have permission to see this.',
+  notFound: 'We could not find what you were looking for.',
   rateLimited: 'Too many requests. Please try again later.',
-  server: 'Unexpected error occurred on the server.',
-  network: 'Network error. Please check your internet connection.',
-  timeout: 'Request timeout. The server is taking too long to respond.',
+  server: 'Something went wrong on our end.',
+  network: 'No connection. Please check your internet connection.',
+  timeout: 'The server is taking too long to respond.',
 }
 
 type AxiosLikeResponse = { status?: number; data?: unknown }
@@ -74,7 +74,7 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Validation error: name: Field required, page: must be >= 1')
+      expect(result.message).toBe('Please check your entry: name: Field required, page: must be >= 1')
       expect(result.status).toBe(422)
       expect(result.code).toBe('validation_error')
       expect(result.title).toBe('Validation Error')
@@ -97,7 +97,7 @@ describe('normalizeApiError', () => {
       )
 
       expect(result.message).toBe(
-        'Validation error: items.0.name: too short, header: missing header',
+        'Please check your entry: items.0.name: too short, header: missing header',
       )
     })
 
@@ -113,7 +113,7 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Validation error: Invalid payload')
+      expect(result.message).toBe('Please check your entry: Invalid payload')
     })
 
     it('prefers an explicit error code over the detail text', () => {
@@ -130,7 +130,7 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('The requested user was not found')
+      expect(result.message).toBe('That user could not be found.')
       expect(result.code).toBe('user.not_found')
       expect(result.detail).toBe('User 42 does not exist')
       expect(result.status).toBe(404)
@@ -259,7 +259,7 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Validation error: body.email: invalid email address')
+      expect(result.message).toBe('Please check your entry: body.email: invalid email address')
       expect(result.status).toBe(422)
     })
 
@@ -271,7 +271,7 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Validation error: only msg')
+      expect(result.message).toBe('Please check your entry: only msg')
     })
 
     it('falls through to a top-level message when the legacy list yields nothing', () => {
@@ -477,13 +477,13 @@ describe('normalizeApiError', () => {
 
     it('translates the generic fallback', () => {
       expect(normalizeApiError(null).message).toBe(
-        'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+        'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
       )
     })
 
     it('translates status messages', () => {
       expect(normalizeApiError(axiosError({ status: 401 })).message).toBe(
-        'Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.',
+        'Ihre Anmeldung ist nicht mehr gültig. Bitte melden Sie sich erneut an.',
       )
       expect(normalizeApiError(axiosError({ status: 418 })).message).toBe(
         'Anfrage fehlgeschlagen mit Status 418',
@@ -498,7 +498,7 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Der angeforderte Benutzer wurde nicht gefunden')
+      expect(result.message).toBe('Dieser Benutzer wurde nicht gefunden.')
     })
 
     it('translates the validation wrapper', () => {
@@ -513,12 +513,12 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Validierungsfehler: name: Field required')
+      expect(result.message).toBe('Bitte prüfen Sie Ihre Eingabe: name: Field required')
     })
 
     it('translates network errors', () => {
       expect(normalizeApiError(new Error('Network Error')).message).toBe(
-        'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.',
+        'Keine Verbindung. Bitte überprüfen Sie Ihre Internetverbindung.',
       )
     })
   })

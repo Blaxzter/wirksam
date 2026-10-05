@@ -6,7 +6,7 @@
             "description": "Aufgaben, Schichten und Buchungen beziehen sich auf die ausgewählte Veranstaltung.",
             "none": "Keine Veranstaltung gewählt",
             "sidebarToggle": {
-                "description": "Zeige in der Seitenleiste einen schnellen Wechsler, um die Veranstaltung von überall zu ändern.",
+                "description": "Zeigt in der Seitenleiste eine Auswahl, mit der du die Veranstaltung von überall aus wechseln kannst.",
                 "label": "Veranstaltungswechsler in der Seitenleiste anzeigen"
             },
             "title": "Aktive Veranstaltung",
@@ -41,7 +41,7 @@
             "copied": "URL in die Zwischenablage kopiert",
             "copyFailed": "URL konnte nicht kopiert werden",
             "copyUrl": "Kalender-URL kopieren",
-            "description": "Abonniere deine Dienstbuchungen in deiner Kalender-App.",
+            "description": "Abonniere deine gebuchten Schichten in der Kalender-App, die du ohnehin nutzt.",
             "disabled": "Kalender-Synchronisation deaktiviert",
             "disabledMessage": "Die Kalender-Synchronisation ist derzeit pausiert. Aktiviere sie, um deine Buchungen in deiner Kalender-App zu abonnieren.",
             "enableButton": "Kalender-Synchronisation aktivieren",
@@ -64,7 +64,7 @@
             "neverSynced": "Noch von keiner Kalender-App synchronisiert",
             "regenerate": "URL erneuern",
             "regenerateConfirmButton": "Erneuern",
-            "regenerateConfirmDescription": "Deine aktuelle Kalender-URL funktioniert dann nicht mehr. Du musst dich mit der neuen URL in allen Kalender-Apps erneut anmelden.",
+            "regenerateConfirmDescription": "Deine aktuelle Kalender-URL funktioniert dann nicht mehr. Du musst den Kalender in allen Kalender-Apps mit der neuen URL neu abonnieren.",
             "regenerateConfirmTitle": "Kalender-URL erneuern?",
             "regenerateError": "URL konnte nicht erneuert werden. Bitte versuche es erneut.",
             "regenerated": "Neue Kalender-URL wurde erstellt",
@@ -72,32 +72,32 @@
         },
         "dataExport": {
             "button": "Daten herunterladen",
-            "description": "Laden Sie eine Kopie aller persönlichen Daten herunter, die wir über Sie speichern, einschließlich Ihres Profils, Ihrer Buchungen, Verfügbarkeiten und Benachrichtigungseinstellungen. Dies ist Ihr Recht gemäß DSGVO Art. 20 (Datenübertragbarkeit).",
-            "error": "Fehler beim Exportieren der Daten. Bitte versuchen Sie es später erneut.",
+            "description": "Lade eine Kopie aller persönlichen Daten herunter, die wir über dich speichern: dein Profil, deine Buchungen, Verfügbarkeiten und Benachrichtigungseinstellungen. Das ist dein Recht nach Art. 20 DSGVO (Datenübertragbarkeit).",
+            "error": "Deine Daten konnten nicht exportiert werden. Bitte versuch es später noch einmal.",
             "exporting": "Wird exportiert...",
-            "subtitle": "Exportieren Sie Ihre persönlichen Daten als JSON-Datei.",
+            "subtitle": "Exportiere deine persönlichen Daten als JSON-Datei.",
             "title": "Meine Daten herunterladen"
         },
         "deleteAccount": {
             "button": "Mein Konto löschen",
             "cancelButton": "Abbrechen",
             "confirmButton": "Ja, mein Konto löschen",
-            "confirmDescription": "Dadurch werden Ihr Konto, alle Ihre Projekte, Aufgaben und Ihre Authentifizierung dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-            "confirmTitle": "Sind Sie absolut sicher?",
+            "confirmDescription": "Damit werden dein Konto und alles, was dazu gespeichert ist, dauerhaft gelöscht. Das lässt sich nicht rückgängig machen.",
+            "confirmTitle": "Bist du ganz sicher?",
             "confirmWord": "LÖSCHEN",
             "deleting": "Wird gelöscht...",
-            "error": "Fehler beim Löschen des Kontos. Bitte versuchen Sie es später erneut.",
-            "subtitle": "Löschen Sie Ihr Konto und alle zugehörigen Daten dauerhaft.",
-            "success": "Ihr Konto wurde erfolgreich gelöscht.",
+            "error": "Dein Konto konnte nicht gelöscht werden. Bitte versuch es später noch einmal.",
+            "subtitle": "Lösche dein Konto und alle zugehörigen Daten dauerhaft.",
+            "success": "Dein Konto wurde gelöscht.",
             "title": "Konto löschen",
-            "typeToConfirm": "Geben Sie {confirmWord} ein, um zu bestätigen",
-            "warning": "Diese Aktion ist unwiderruflich. Alle Ihre Projekte, Aufgaben und Profildaten werden dauerhaft gelöscht."
+            "typeToConfirm": "Gib {confirmWord} ein, um zu bestätigen",
+            "warning": "Das lässt sich nicht rückgängig machen. Dein Profil und alle deine Daten werden dauerhaft gelöscht."
         },
         "language": {
             "current": "Aktuelle Sprache",
-            "currentDescription": "Wählen Sie Ihre bevorzugte Sprache für die Anwendungsoberfläche.",
-            "description": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche.",
-            "notificationHint": "Diese Einstellung gilt auch für E-Mail-Benachrichtigungen und andere Mitteilungen, die Sie erhalten.",
+            "currentDescription": "Wähle die Sprache der App.",
+            "description": "Wähle, in welcher Sprache die App angezeigt wird.",
+            "notificationHint": "Auch E-Mails und andere Nachrichten an dich kommen in dieser Sprache.",
             "title": "Sprache & Region"
         },
         "nav": {
@@ -156,7 +156,7 @@
                 "messages": {
                     "verificationSent": "Wir haben einen neuen Bestätigungslink an {email} geschickt."
                 },
-                "subtitle": "Ihre aktuellen Profilinformationen.",
+                "subtitle": "Deine aktuellen Profilangaben.",
                 "title": "Aktuelles Profil"
             },
             "edit": {
@@ -165,39 +165,39 @@
                     "update": "Profil aktualisieren",
                     "updating": "Wird aktualisiert..."
                 },
-                "authError": "Benutzer nicht authentifiziert",
-                "error": "Fehler beim Aktualisieren des Profils. Bitte versuchen Sie es erneut.",
+                "authError": "Du bist nicht angemeldet.",
+                "error": "Dein Profil konnte nicht aktualisiert werden. Bitte versuch es noch einmal.",
                 "fields": {
                     "bio": {
-                        "description": "Eine kurze Biografie oder Beschreibung über sich selbst (optional).",
+                        "description": "Ein paar Worte über dich (optional).",
                         "label": "Biografie",
-                        "placeholder": "Erzählen Sie uns etwas über sich"
+                        "placeholder": "Erzähl uns ein wenig über dich"
                     },
                     "displayName": {
-                        "description": "Dies ist Ihr Anzeigename, den andere sehen werden.",
+                        "description": "Der Name, den andere sehen.",
                         "label": "Anzeigename",
-                        "placeholder": "Geben Sie Ihren Anzeigenamen ein"
+                        "placeholder": "Gib deinen Anzeigenamen ein"
                     },
                     "nickname": {
-                        "description": "Ein kürzerer Name oder Alias für Ihr Profil.",
+                        "description": "Ein kürzerer Name für dein Profil.",
                         "label": "Spitzname",
-                        "placeholder": "Geben Sie Ihren Spitznamen ein"
+                        "placeholder": "Gib deinen Spitznamen ein"
                     },
                     "phoneNumber": {
-                        "description": "Ihre Telefonnummer, damit Organisatoren Sie bei Bedarf erreichen können.",
+                        "description": "Damit Organisatoren dich bei Bedarf erreichen können.",
                         "label": "Telefonnummer",
                         "placeholder": "+49 123 456789"
                     },
                     "picture": {
                         "cropper": {
                             "confirm": "Diesen Ausschnitt verwenden",
-                            "description": "Ziehen und skalieren Sie das Quadrat, um den gewünschten Bereich zu wählen. Mit den Schaltflächen darunter können Sie drehen.",
+                            "description": "Zieh das Quadrat zurecht und ändere seine Größe, um den gewünschten Ausschnitt zu wählen. Mit den Schaltflächen darunter kannst du das Bild drehen.",
                             "reset": "Zurücksetzen",
                             "rotateLeft": "Nach links drehen",
                             "rotateRight": "Nach rechts drehen",
                             "title": "Profilbild anpassen"
                         },
-                        "description": "PNG, JPEG, WebP oder GIF (erstes Bild) bis 20 MB. Wir skalieren und speichern lokal ein kleines WebP.",
+                        "description": "PNG, JPEG, WebP oder GIF (erstes Bild) bis 20 MB. Wir verkleinern das Bild und speichern eine kleine Kopie.",
                         "label": "Profilbild",
                         "remove": "Entfernen",
                         "removeSuccess": "Profilbild entfernt.",
@@ -206,8 +206,8 @@
                         "uploading": "Wird hochgeladen..."
                     }
                 },
-                "subtitle": "Aktualisieren Sie Ihre Profilinformationen.",
-                "success": "Profil erfolgreich aktualisiert!",
+                "subtitle": "Aktualisiere deine Profilangaben.",
+                "success": "Profil aktualisiert.",
                 "title": "Profil aktualisieren"
             }
         },
@@ -235,9 +235,9 @@
             "subtitle": "Überall, wo dieses Konto gerade angemeldet ist. Unbekannte Geräte hier abmelden.",
             "title": "Angemeldete Geräte"
         },
-        "subtitle": "Verwalten Sie Ihre Kontoeinstellungen und Profilinformationen.",
+        "subtitle": "Verwalte deine Kontoeinstellungen und Profilangaben.",
         "timeFormat": {
-            "description": "Legen Sie fest, wie Uhrzeiten in der App angezeigt werden.",
+            "description": "Lege fest, wie Uhrzeiten in der App angezeigt werden.",
             "error": "Zeitformat konnte nicht gespeichert werden. Bitte erneut versuchen.",
             "h12": "12-Stunden",
             "h24": "24-Stunden",

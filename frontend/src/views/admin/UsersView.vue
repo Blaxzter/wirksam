@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useRegistrationPolicy } from '@/composables/useRegistrationPolicy'
 
 import DeleteUserDialog from '@/components/admin/users/DeleteUserDialog.vue'
 import RejectUserDialog from '@/components/admin/users/RejectUserDialog.vue'
@@ -29,18 +30,19 @@ import {
 import type { UserCounts, UserListResponse, UserRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
-type StatusFilter = 'all' | 'pending' | 'active' | 'rejected'
+type StatusFilter = 'all' | 'pending' | 'active' | 'rejected' | 'suspended'
 
 const PAGE_SIZE = 20
 const SEARCH_DEBOUNCE_MS = 300
 
 const { t } = useI18n()
-const { get, patch, delete: del } = useAuthenticatedClient()
+const { get, patch, post, delete: del } = useAuthenticatedClient()
+const { policy } = useRegistrationPolicy()
 
 const isDesktop = useMediaQuery('(min-width: 768px)')
 
 const users = ref<UserRead[]>([])
-const counts = ref<UserCounts>({ all: 0, active: 0, pending: 0, rejected: 0 })
+const counts = ref<UserCounts>({ all: 0, active: 0, pending: 0, rejected: 0, suspended: 0 })
 const loading = ref(false)
 const updatingId = ref<string | null>(null)
 
@@ -52,6 +54,19 @@ const currentPage = ref(1)
 const showRejectDialog = ref(false)
 const rejectingUser = ref<UserRead | null>(null)
 const isRejecting = ref(false)
+/** Whether the reason dialog turns a signup away or explains a suspension. */
+const reasonMode = ref<'registration' | 'suspension'>('registration')
+
+/**
+ * The approval queue only exists on a deployment running
+ * `REGISTRATION_MODE=approval`. Elsewhere its filters and cards would always
+ * read zero, so they are left out — unless someone is still in it from a time
+ * the mode was on, in which case they must stay reachable.
+ */
+const showQueue = computed(
+  () =>
+    policy.value?.mode === 'approval' || counts.value.pending > 0 || counts.value.rejected > 0,
+)
 
 const showDeleteDialog = ref(false)
 const deletingUser = ref<UserRead | null>(null)
@@ -67,6 +82,7 @@ const currentSectionLabel = computed(() => {
     pending: 'admin.users.sections.pending',
     active: 'admin.users.sections.active',
     rejected: 'admin.users.sections.rejected',
+    suspended: 'admin.users.sections.suspended',
   }
   return t(keys[statusFilter.value])
 })
@@ -74,20 +90,33 @@ const currentSectionLabel = computed(() => {
 const statusOptions = computed<Array<{ value: StatusFilter; label: string; count: number }>>(
   () => [
     { value: 'all', label: t('admin.users.filters.all'), count: counts.value.all },
-    {
-      value: 'pending',
-      label: t('admin.users.filters.pending'),
-      count: counts.value.pending,
-    },
+    ...(showQueue.value
+      ? [
+          {
+            value: 'pending' as const,
+            label: t('admin.users.filters.pending'),
+            count: counts.value.pending,
+          },
+        ]
+      : []),
     {
       value: 'active',
       label: t('admin.users.filters.active'),
       count: counts.value.active,
     },
+    ...(showQueue.value
+      ? [
+          {
+            value: 'rejected' as const,
+            label: t('admin.users.filters.rejected'),
+            count: counts.value.rejected,
+          },
+        ]
+      : []),
     {
-      value: 'rejected',
-      label: t('admin.users.filters.rejected'),
-      count: counts.value.rejected,
+      value: 'suspended',
+      label: t('admin.users.filters.suspended'),
+      count: counts.value.suspended,
     },
   ],
 )
@@ -192,24 +221,55 @@ const toggleActive = async (user: UserRead) => {
   }
 }
 
+const approveUser = async (user: UserRead) => {
+  updatingId.value = user.id
+  try {
+    const response = await post<{ data: UserRead }>({ url: `/users/${user.id}/approve` })
+    replaceUser(response.data)
+    toast.success(t('admin.users.approvedToast', { name: user.name ?? user.email }))
+    await loadUsers()
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    updatingId.value = null
+  }
+}
+
 const openRejectDialog = (user: UserRead) => {
   rejectingUser.value = user
+  reasonMode.value = 'registration'
+  showRejectDialog.value = true
+}
+
+const openSuspendReasonDialog = (user: UserRead) => {
+  rejectingUser.value = user
+  reasonMode.value = 'suspension'
   showRejectDialog.value = true
 }
 
 const submitRejection = async (reason: string) => {
   if (!rejectingUser.value) return
   isRejecting.value = true
+  const name = rejectingUser.value.name ?? rejectingUser.value.email
   try {
-    const response = await patch<{ data: UserRead }>({
-      url: `/users/${rejectingUser.value.id}`,
-      body: { is_active: false, rejection_reason: reason || null },
-    })
+    // A waiting signup is rejected through the queue endpoint; a suspended
+    // account only gets its reason recorded, which is also what sends the
+    // "your account was suspended" notification.
+    const response =
+      reasonMode.value === 'registration'
+        ? await post<{ data: UserRead }>({
+            url: `/users/${rejectingUser.value.id}/reject`,
+            body: { reason: reason || null },
+          })
+        : await patch<{ data: UserRead }>({
+            url: `/users/${rejectingUser.value.id}`,
+            body: { is_active: false, rejection_reason: reason || null },
+          })
     replaceUser(response.data)
     toast.success(
-      t('admin.users.rejectedToast', {
-        name: rejectingUser.value.name ?? rejectingUser.value.email,
-      }),
+      reasonMode.value === 'registration'
+        ? t('admin.users.rejectedToast', { name })
+        : t('admin.users.suspendReasonSaved', { name }),
     )
     showRejectDialog.value = false
     await loadUsers()
@@ -264,6 +324,8 @@ onMounted(loadUsers)
       :active="counts.active"
       :pending="counts.pending"
       :rejected="counts.rejected"
+      :suspended="counts.suspended"
+      :show-queue="showQueue"
     />
 
 
@@ -320,8 +382,10 @@ onMounted(loadUsers)
         v-if="isDesktop"
         :users="users"
         :updating-id="updatingId"
-        @toggle-active="toggleActive"
+        @approve="approveUser"
         @reject="openRejectDialog"
+        @toggle-active="toggleActive"
+        @suspend-reason="openSuspendReasonDialog"
         @toggle-admin="toggleAdmin"
         @toggle-task-manager="toggleTaskManager"
         @delete="openDeleteDialog"
@@ -330,8 +394,10 @@ onMounted(loadUsers)
         v-else
         :users="users"
         :updating-id="updatingId"
-        @toggle-active="toggleActive"
+        @approve="approveUser"
         @reject="openRejectDialog"
+        @toggle-active="toggleActive"
+        @suspend-reason="openSuspendReasonDialog"
         @toggle-admin="toggleAdmin"
         @toggle-task-manager="toggleTaskManager"
         @delete="openDeleteDialog"
@@ -380,6 +446,7 @@ onMounted(loadUsers)
       v-model:open="showRejectDialog"
       :user="rejectingUser"
       :loading="isRejecting"
+      :mode="reasonMode"
       @confirm="submitRejection"
     />
 

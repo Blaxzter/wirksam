@@ -1,9 +1,13 @@
 {
     "auth": {
-        "captcha_failed": "The security check did not go through. Please try again — reload the page if it keeps happening.",
+        "account_pending": "Your account is still waiting for approval.",
+        "account_rejected": "Your registration was not approved.",
+        "captcha_failed": "The security check did not go through. Please try again, and reload the page if it keeps happening.",
+        "email_domain_not_allowed": "This email address cannot be used to sign up here.",
         "email_taken": "An account already exists for this email address.",
         "invalid_credentials": "That email address and password do not match.",
         "invalid_token": "This link is not valid any more. Please request a new one.",
+        "invitation_required": "You need an invitation to sign up here. Use the link in your invitation, or sign up with the address it was sent to.",
         "no_password_set": "This account has no password yet. Use “Forgot your password?” to choose one.",
         "rate_limited": "Too many attempts. Please wait a few minutes and try again.",
         "session_not_found": "That session no longer exists.",
@@ -22,7 +26,7 @@
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
-    "not_found": "The requested resource was not found",
+    "not_found": "We could not find what you were looking for.",
     "project": {
         "not_found": "The requested project was not found"
     },
@@ -31,17 +35,18 @@
         "clone_disabled": "A demo event cannot be turned into a real one. Copy one of your own events instead.",
         "disabled": "Demo events are switched off on this site.",
         "forbidden": "This is not a demo account, so there is no demo to end.",
-        "invitations_disabled": "A demo event cannot invite anyone — everybody in it is made up.",
+        "invitations_disabled": "A demo event cannot invite anyone, because everybody in it is made up.",
         "not_available": "That is not available in a demo. Create a real account to use it."
     },
     "shift": {
-        "not_found": "Duty shift not found"
+        "not_found": "That shift could not be found."
     },
     "task": {
-        "not_found": "The requested task was not found"
+        "not_found": "That task could not be found."
     },
     "user": {
-        "not_found": "The requested user was not found",
+        "not_found": "That user could not be found.",
+        "not_pending": "This registration is no longer waiting for approval.",
         "owns_content": "This member still has events or tasks they created. Choose who should take them over first.",
         "transfer_same_user": "Please choose a different member to take over.",
         "transfer_target_inactive": "The chosen member's account is not active.",

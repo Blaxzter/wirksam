@@ -17,8 +17,7 @@ import {
 import UserRowActions from './UserRowActions.vue'
 
 import type { UserRead } from '@/client/types.gen'
-
-type UserStatus = 'active' | 'rejected' | 'pending'
+import { userStatus, userStatusBadgeVariant } from '@/lib/user-status'
 
 defineProps<{
   users: UserRead[]
@@ -26,26 +25,16 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggleActive: [user: UserRead]
+  approve: [user: UserRead]
   reject: [user: UserRead]
+  toggleActive: [user: UserRead]
+  suspendReason: [user: UserRead]
   toggleAdmin: [user: UserRead]
   toggleTaskManager: [user: UserRead]
   delete: [user: UserRead]
 }>()
 
 const { t } = useI18n()
-
-const getUserStatus = (user: UserRead): UserStatus => {
-  if (user.is_active) return 'active'
-  if (user.rejection_reason) return 'rejected'
-  return 'pending'
-}
-
-const getStatusVariant = (status: UserStatus) => {
-  if (status === 'active') return 'default' as const
-  if (status === 'rejected') return 'destructive' as const
-  return 'secondary' as const
-}
 
 const getInitials = (user: UserRead) => {
   if (user.name) {
@@ -108,8 +97,8 @@ const formatDate = (iso: string) =>
             </div>
           </TableCell>
           <TableCell>
-            <Badge :variant="getStatusVariant(getUserStatus(user))">
-              {{ t(`admin.users.${getUserStatus(user)}`) }}
+            <Badge :variant="userStatusBadgeVariant(userStatus(user))">
+              {{ t(`admin.users.${userStatus(user)}`) }}
             </Badge>
           </TableCell>
           <TableCell class="text-muted-foreground">
@@ -119,8 +108,10 @@ const formatDate = (iso: string) =>
             <UserRowActions
               :user="user"
               :disabled="updatingId === user.id"
-              @toggle-active="emit('toggleActive', $event)"
+              @approve="emit('approve', $event)"
               @reject="emit('reject', $event)"
+              @toggle-active="emit('toggleActive', $event)"
+              @suspend-reason="emit('suspendReason', $event)"
               @toggle-admin="emit('toggleAdmin', $event)"
               @toggle-task-manager="emit('toggleTaskManager', $event)"
               @delete="emit('delete', $event)"

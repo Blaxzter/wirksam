@@ -1,9 +1,13 @@
 {
     "auth": {
-        "captcha_failed": "Die Sicherheitsprüfung ist fehlgeschlagen. Bitte noch einmal versuchen — und die Seite neu laden, falls es weiter nicht klappt.",
+        "account_pending": "Dein Konto wartet noch auf Freigabe.",
+        "account_rejected": "Deine Registrierung wurde nicht freigegeben.",
+        "captcha_failed": "Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuch es noch einmal und lade die Seite neu, falls es weiter nicht klappt.",
+        "email_domain_not_allowed": "Mit dieser E-Mail-Adresse kannst du dich hier nicht registrieren.",
         "email_taken": "Für diese E-Mail-Adresse gibt es bereits ein Konto.",
         "invalid_credentials": "E-Mail-Adresse und Passwort passen nicht zusammen.",
         "invalid_token": "Dieser Link ist nicht mehr gültig. Bitte einen neuen anfordern.",
+        "invitation_required": "Hier kannst du dich nur mit einer Einladung registrieren. Nutze den Link aus deiner Einladung oder die Adresse, an die sie geschickt wurde.",
         "no_password_set": "Für dieses Konto ist noch kein Passwort gesetzt. Über „Passwort vergessen?“ lässt sich eines wählen.",
         "rate_limited": "Zu viele Versuche. Bitte in ein paar Minuten erneut versuchen.",
         "session_not_found": "Diese Sitzung gibt es nicht mehr.",
@@ -12,38 +16,39 @@
         "weak_password": "Dieses Passwort ist zu kurz. Bitte ein längeres wählen."
     },
     "booking": {
-        "already_exists": "Sie haben bereits eine Buchung für diese Schicht",
-        "forbidden": "Sie können nur Ihre eigenen Buchungen verwalten",
+        "already_exists": "Du hast bereits eine Buchung für diese Schicht",
+        "forbidden": "Du kannst nur deine eigenen Buchungen verwalten",
         "slot_full": "Diese Dienstschicht ist ausgebucht"
     },
     "event": {
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
-        "forbidden": "Sie haben in dieser Veranstaltung keine Berechtigung dafür.",
+        "forbidden": "Dafür hast du in dieser Veranstaltung keine Berechtigung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
-    "not_found": "Die angeforderte Ressource wurde nicht gefunden",
+    "not_found": "Wir konnten das Gesuchte nicht finden.",
     "project": {
         "not_found": "Das angeforderte Projekt wurde nicht gefunden"
     },
     "sandbox": {
         "capacity_reached": "Gerade laufen zu viele Demos. Bitte in ein paar Minuten noch einmal versuchen.",
-        "clone_disabled": "Aus einer Demo-Veranstaltung lässt sich keine echte machen. Nehmen Sie dafür eine Ihrer eigenen Veranstaltungen als Vorlage.",
+        "clone_disabled": "Aus einer Demo-Veranstaltung lässt sich keine echte machen. Nimm dafür eine deiner eigenen Veranstaltungen als Vorlage.",
         "disabled": "Demo-Veranstaltungen sind auf dieser Seite abgeschaltet.",
-        "forbidden": "Das ist kein Demo-Konto — es gibt also keine Demo zu beenden.",
-        "invitations_disabled": "Eine Demo-Veranstaltung kann niemanden einladen — alle darin sind erfunden.",
+        "forbidden": "Das ist kein Demo-Konto, es gibt also keine Demo zu beenden.",
+        "invitations_disabled": "Eine Demo-Veranstaltung kann niemanden einladen, weil alle darin erfunden sind.",
         "not_available": "Das geht in der Demo nicht. Lege dafür ein richtiges Konto an."
     },
     "shift": {
-        "not_found": "Dienstschicht nicht gefunden"
+        "not_found": "Diese Schicht wurde nicht gefunden."
     },
     "task": {
-        "not_found": "Die angeforderte Aufgabe wurde nicht gefunden"
+        "not_found": "Diese Aufgabe wurde nicht gefunden."
     },
     "user": {
-        "not_found": "Der angeforderte Benutzer wurde nicht gefunden",
-        "owns_content": "Dieses Mitglied hat noch Veranstaltungen oder Aufgaben erstellt. Wählen Sie zuerst, wer diese übernehmen soll.",
-        "transfer_same_user": "Bitte wählen Sie ein anderes Mitglied für die Übernahme aus.",
+        "not_found": "Dieser Benutzer wurde nicht gefunden.",
+        "not_pending": "Diese Registrierung wartet nicht mehr auf Freigabe.",
+        "owns_content": "Dieses Mitglied hat noch selbst erstellte Veranstaltungen oder Aufgaben. Wähle zuerst, wer sie übernehmen soll.",
+        "transfer_same_user": "Bitte wähle ein anderes Mitglied für die Übernahme aus.",
         "transfer_target_inactive": "Das Konto des ausgewählten Mitglieds ist nicht aktiv.",
         "transfer_target_not_found": "Das ausgewählte Mitglied wurde nicht gefunden."
     }

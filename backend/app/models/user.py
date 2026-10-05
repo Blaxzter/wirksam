@@ -107,6 +107,20 @@ class User(Base, table=True):
         description="List of role identifiers",
     )
     is_active: bool = Field(default=True, description="Whether the user is active")
+    # Separate from ``is_active`` on purpose. ``is_active`` is the moderation
+    # switch (suspend / reinstate); this is where the account stands in the
+    # registration queue that ``REGISTRATION_MODE=approval`` puts in front of
+    # signup. Folding the two into one flag is what the old queue did, and it
+    # left "suspended" and "not yet approved" indistinguishable to everyone,
+    # including the person waiting. Existing and open-mode accounts are
+    # "approved", which is also the server default the migration backfills.
+    approval_status: str = Field(
+        default="approved",
+        sa_column=sa.Column(
+            sa.String(16), nullable=False, server_default="approved", index=True
+        ),
+        description="Registration approval: approved, pending or rejected",
+    )
     rejection_reason: str | None = Field(
         default=None,
         sa_column=sa.Column(sa.String, nullable=True),

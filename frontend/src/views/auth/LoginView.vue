@@ -218,7 +218,7 @@ const onSubmit = handleSubmit(
       <RouterLink
         class="font-medium text-primary underline-offset-4 hover:underline"
         data-testid="link-register"
-        :to="{ name: 'register' }"
+        :to="{ name: 'register', query: route.query }"
       >
         {{ t('auth.login.registerPrompt.action') }}
       </RouterLink>

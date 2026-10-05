@@ -2,6 +2,7 @@
 import {
   Ban,
   EllipsisVertical,
+  MessageSquareWarning,
   Shield,
   ShieldCheck,
   ShieldOff,
@@ -23,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 import type { UserRead } from '@/client/types.gen'
+import { userStatus } from '@/lib/user-status'
 
 const props = defineProps<{
   user: UserRead
@@ -30,8 +32,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggleActive: [user: UserRead]
+  approve: [user: UserRead]
   reject: [user: UserRead]
+  toggleActive: [user: UserRead]
+  suspendReason: [user: UserRead]
   toggleAdmin: [user: UserRead]
   toggleTaskManager: [user: UserRead]
   delete: [user: UserRead]
@@ -41,6 +45,8 @@ const { t } = useI18n()
 
 /** Name the row's action menu after its user, so the menus aren't 20 identical "button"s. */
 const displayName = computed(() => props.user.name || props.user.email || '')
+
+const status = computed(() => userStatus(props.user))
 </script>
 
 <template>
@@ -57,15 +63,37 @@ const displayName = computed(() => props.user.name || props.user.email || '')
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuItem @click="emit('toggleActive', props.user)">
-        <UserX v-if="props.user.is_active" class="mr-2 h-4 w-4 text-destructive" />
-        <UserCheck v-else class="mr-2 h-4 w-4" />
-        {{ props.user.is_active ? t('admin.users.deactivate') : t('admin.users.activate') }}
-      </DropdownMenuItem>
-      <DropdownMenuItem v-if="!props.user.is_active" @click="emit('reject', props.user)">
-        <Ban class="mr-2 h-4 w-4 text-destructive" />
-        {{ t('admin.users.reject') }}
-      </DropdownMenuItem>
+      <!-- The registration queue: decide, or change your mind about a rejection. -->
+      <template v-if="status === 'pending' || status === 'rejected'">
+        <DropdownMenuItem data-testid="action-approve" @click="emit('approve', props.user)">
+          <UserCheck class="mr-2 h-4 w-4" />
+          {{ t('admin.users.approve') }}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="status === 'pending'"
+          data-testid="action-reject"
+          @click="emit('reject', props.user)"
+        >
+          <Ban class="mr-2 h-4 w-4 text-destructive" />
+          {{ t('admin.users.reject') }}
+        </DropdownMenuItem>
+      </template>
+      <!-- Moderation of an account that was let in. -->
+      <template v-else>
+        <DropdownMenuItem @click="emit('toggleActive', props.user)">
+          <UserX v-if="props.user.is_active" class="mr-2 h-4 w-4 text-destructive" />
+          <UserCheck v-else class="mr-2 h-4 w-4" />
+          {{ props.user.is_active ? t('admin.users.deactivate') : t('admin.users.activate') }}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="!props.user.is_active"
+          data-testid="action-suspend-reason"
+          @click="emit('suspendReason', props.user)"
+        >
+          <MessageSquareWarning class="mr-2 h-4 w-4 text-destructive" />
+          {{ t('admin.users.suspendReason') }}
+        </DropdownMenuItem>
+      </template>
       <DropdownMenuSeparator />
       <DropdownMenuItem @click="emit('toggleAdmin', props.user)">
         <ShieldOff

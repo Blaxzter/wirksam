@@ -17,7 +17,7 @@
         },
         "country": "Germany",
         "disclaimer": {
-            "content": "This is a private, non-commercial project for coordinating volunteer duty schedules at church tasks and community service. It is operated by a private individual.",
+            "content": "This is a private, non-commercial project for coordinating volunteer rosters for church events and community service. It is run by a private individual.",
             "title": "Disclaimer"
         },
         "liability": {
@@ -38,45 +38,45 @@
         "about": {
             "cards": {
                 "data": {
-                    "description": "Your name, email address, profile picture, and which shifts you booked. That's it. No tracking, no analytics, and only the cookies needed to keep you signed in.",
+                    "description": "Your name, email address, profile picture, and the shifts you booked. There is no tracking or analytics, and the only cookies are the ones that keep you signed in.",
                     "title": "We store very little"
                 },
                 "free": {
-                    "description": "No paid tier, no ads, nothing to upsell. It's a private, non-commercial project provided as-is, without a guarantee of uninterrupted service.",
+                    "description": "There is no paid plan and no advertising. WirkSam is a private, non-commercial project, provided as is, with no guarantee that it is always available.",
                     "title": "Free, and honest about it"
                 },
                 "gdpr": {
-                    "description": "Operated from Germany under German and EU law. Request a copy of your data, correct it, or delete your account — which removes your personal data for good.",
+                    "description": "Run from Germany under German and EU law. You can request a copy of your data, have it corrected, or delete your account, which removes your personal data for good.",
                     "title": "GDPR, properly"
                 },
                 "private": {
-                    "description": "A new event is visible only to the people you invite. Making it public is a deliberate choice, and even then your organisers decide who actually gets in.",
+                    "description": "A new event is visible only to the people you invite. You can make it public if you want, and even then your organisers decide who gets in.",
                     "title": "Private by default"
                 }
             },
             "eyebrow": "About",
-            "lede": "WirkSam was built for church events and community service, where the roster is usually a spreadsheet passed around by email until nobody knows which copy is real.",
+            "lede": "WirkSam was built for church events and community service, where the roster is usually a spreadsheet passed around by email until nobody knows which copy is current.",
             "legalIntro": "The full detail is in the small print:",
-            "nameExplainer": "The name is a German pun: “wirksam” means effective, and “zusammen” means together. Volunteering works best when we work together — hence WirkSam.",
+            "nameExplainer": "The name is a German pun: “wirksam” means effective, and “zusammen” means together. Volunteering works best when people work together, hence WirkSam.",
             "title": "A small project, run in the open"
         },
         "audience": {
             "eyebrow": "Who it's for",
-            "lede": "Somebody has to build the plan, and somebody has to show up on the day. WirkSam is the one place where those two meet.",
+            "lede": "Someone has to make the plan, and someone has to show up on the day. WirkSam is for both.",
             "organiser": {
-                "description": "Everything you would otherwise keep in a spreadsheet and chase over email — who is covering what, and which slots are still empty.",
+                "description": "Everything you would otherwise keep in a spreadsheet and chase over email: who is covering what, and which slots are still empty.",
                 "label": "For organisers",
                 "points": {
-                    "0": "Set up an event yourself — nobody has to approve it.",
+                    "0": "Set up an event yourself. Nobody has to approve it.",
                     "1": "Invite your team by email or with one share link.",
-                    "2": "Describe a task once; every shift is generated from it.",
+                    "2": "Describe a task once and all its shifts are created from it.",
                     "3": "See at a glance which shifts are still short of people."
                 },
                 "title": "You run the event"
             },
             "title": "Two sides of the same roster",
             "volunteer": {
-                "description": "No spreadsheet to decipher and no reply-all thread. Your shifts, in one list, with a reminder before each one.",
+                "description": "Your shifts are in one list instead of a spreadsheet or a reply-all thread, and you get a reminder before each one.",
                 "label": "For volunteers",
                 "points": {
                     "0": "Open the invitation, sign in, and you're in.",
@@ -93,23 +93,23 @@
             "more": {
                 "items": {
                     "availability": {
-                        "description": "Collect who can be there when, and see the whole team's availability as a heatmap before you start assigning.",
+                        "description": "Collect who can be there when, and see the whole team's availability at a glance before you start assigning shifts.",
                         "title": "Availability up front"
                     },
                     "calendarFeed": {
-                        "description": "A private feed URL puts your booked shifts into Google Calendar, Apple Calendar, or Outlook and keeps them up to date.",
+                        "description": "A private link puts your booked shifts into Google Calendar, Apple Calendar, or Outlook and keeps them up to date.",
                         "title": "Calendar subscription"
                     },
                     "discover": {
-                        "description": "Leave an event private, or make it public so anyone signed in can ask to join — and your organisers decide who gets in.",
+                        "description": "Keep an event private, or make it public so anyone signed in can ask to join. Your organisers still decide who gets in.",
                         "title": "Public events, if you want them"
                     },
                     "languages": {
-                        "description": "The whole app in both languages, in two colour palettes, on a phone as readily as a laptop.",
+                        "description": "The whole app is available in both languages, with a light and a dark theme, and works on a phone as well as on a laptop.",
                         "title": "German and English, light and dark"
                     },
                     "people": {
-                        "description": "Owner, organiser, and member per event. Promote someone, hand the event over, or step back — an event can never end up with nobody in charge.",
+                        "description": "Each event has an owner, organisers, and members. You can promote someone, hand the event over, or step back, and the event is never left without someone in charge.",
                         "title": "Roles that match reality"
                     },
                     "reports": {
@@ -131,41 +131,41 @@
                     "title": "Your commitments in one list"
                 },
                 "clone": {
-                    "description": "Copy an event you have already run onto new dates. The tasks, the shifts and the times all come across, and the original is left exactly as it was.",
+                    "description": "Copy an event you have already run onto new dates. The tasks, shifts, and times come across, and the original stays as it was.",
                     "points": {
                         "0": "Set the new dates once and everything moves with them, landing on the same weekday as last time.",
                         "1": "Tick only the tasks that are coming back and leave the rest behind.",
-                        "2": "Last year's sign-ups stay with last year — the copy starts with empty shifts."
+                        "2": "Last year's sign-ups don't carry over, so the copy starts with empty shifts."
                     },
                     "screenshotAlt": "The copy-event screen listing last year's tasks with their shift counts, each ticked to come across to the new dates.",
                     "title": "Next year, not from scratch"
                 },
                 "overview": {
-                    "description": "Your event's tasks as a list, as cards, or on a calendar — with the open places showing on every shift.",
+                    "description": "Your event's tasks as a list, as cards, or on a calendar, with the open places shown on every shift.",
                     "points": {
                         "0": "Search and filter by category, location, or date.",
                         "1": "Hide the shifts that are already full to see what still needs covering.",
-                        "2": "The whole app works on one event at a time, so nobody reads the wrong roster."
+                        "2": "The app shows one event at a time, so nobody reads the wrong roster."
                     },
                     "screenshotAlt": "The task list with a week of shifts beside each entry, showing booked and open places per slot.",
                     "title": "One plan, and everyone sees the same one"
                 },
                 "reminders": {
-                    "description": "A roster only works if people remember. WirkSam nudges before each shift, on whichever channel you actually read.",
+                    "description": "A roster only works if people remember their shifts. WirkSam sends a reminder before each one, on the channel you actually read.",
                     "points": {
-                        "0": "Email, browser push, or Telegram — chosen per notification type.",
+                        "0": "Email, browser push, or Telegram, chosen separately for each kind of notification.",
                         "1": "Everything also lands in an inbox inside the app.",
-                        "2": "Turn any of it off. Reminders are an offer, not a nuisance."
+                        "2": "You can turn any of it off."
                     },
                     "screenshotAlt": "Notification settings with a row per notification type and per-channel switches for email, push, and Telegram.",
                     "title": "Reminders that actually reach people"
                 },
                 "shifts": {
-                    "description": "You give a task its shape — the days, the daily hours, how long a shift runs, how many people it needs — and the shifts are generated from it.",
+                    "description": "You set the days, the daily hours, how long a shift runs, and how many people it needs, and the shifts are created from that.",
                     "points": {
-                        "0": "Uneven days handled on purpose: drop the remainder, shorten the last shift, or stretch it.",
+                        "0": "If the hours don't divide evenly, choose whether to drop the remainder, shorten the last shift, or stretch it.",
                         "1": "Different hours on one date? Add an override without touching the rest.",
-                        "2": "A live preview lists every shift before it exists — click one to leave it out."
+                        "2": "A live preview lists every shift before it's created. Click one to leave it out."
                     },
                     "screenshotAlt": "The shift schedule form beside a live preview of every shift it would create.",
                     "title": "Describe the pattern once"
@@ -193,7 +193,7 @@
                     "partial": "One more needed"
                 },
                 "openCount": "{count} place open | {count} places open",
-                "summary": "A roster board: three days across, four shifts down each day, each showing how many of its places are taken — most covered, a few still open, and one marked as yours.",
+                "summary": "A roster board with three days across and four shifts per day. Each shift shows how many of its places are taken: most are covered, a few are still open, and one is marked as yours.",
                 "taskName": "Welcome Desk",
                 "you": "You"
             },
@@ -206,8 +206,8 @@
                 "noInstall": "Nothing to install",
                 "privacy": "No tracking, no ads"
             },
-            "subtitle": "Set up your event, invite your team, and describe the shifts once. Everyone books the slots that suit them — and gets a reminder before each one.",
-            "title": "Plan the roster for your next event — together."
+            "subtitle": "Set up your event, invite your team, and describe the shifts once. Everyone books the slots that suit them and gets a reminder before each one.",
+            "title": "Plan the roster for your next event together."
         },
         "journey": {
             "eyebrow": "How it works",
@@ -216,11 +216,11 @@
                 "footnote": "Then print the roster, or pull a report on how the work is spread.",
                 "steps": {
                     "create": {
-                        "description": "A name and the dates it runs. It's yours, and private until you say otherwise.",
+                        "description": "A name and the dates it runs. It's yours, and it stays private until you decide otherwise.",
                         "title": "Create the event"
                     },
                     "generate": {
-                        "description": "Describe a task once — days, hours, length, headcount — and every shift is worked out for you.",
+                        "description": "Describe a task once (days, hours, length, headcount) and every shift is worked out for you.",
                         "title": "Generate the shifts"
                     },
                     "invite": {
@@ -239,7 +239,7 @@
                 "footnote": "Plans changed? Cancel from My Bookings and the place reopens for somebody else.",
                 "steps": {
                     "accept": {
-                        "description": "See the event, who invited you, and your role — before you decide.",
+                        "description": "See the event, who invited you, and your role before you decide.",
                         "title": "Accept the invitation"
                     },
                     "availability": {
@@ -251,7 +251,7 @@
                         "title": "Book your shifts"
                     },
                     "reminders": {
-                        "description": "A nudge before each shift by email, push, or Telegram — your choice.",
+                        "description": "A reminder before each shift by email, push, or Telegram, whichever you prefer.",
                         "title": "Get reminded"
                     }
                 },
@@ -312,7 +312,7 @@
             "intro": "When you create an account and use WirkSam, we process the following personal data:",
             "items": {
                 "bookings": "Booking data (which duty shifts you signed up for)",
-                "credentials": "Your password, stored only as a salted hash — never in readable form — together with the sign-in sessions on your devices",
+                "credentials": "Your password, stored only as a salted hash and never in readable form, together with the sign-in sessions on your devices",
                 "email": "Email address",
                 "name": "Name (as you enter it when you register)",
                 "picture": "Profile picture (if you upload one)"
@@ -342,12 +342,12 @@
             "contact": "To exercise any of these rights, contact us at the email address listed above. You also have the right to lodge a complaint with a supervisory authority.",
             "intro": "Under the GDPR, you have the following rights:",
             "items": {
-                "access": "Right of access — request a copy of your personal data",
-                "erasure": "Right to erasure — request deletion of your data",
-                "objection": "Right to object — object to processing based on legitimate interest",
-                "portability": "Right to data portability — receive your data in a structured format",
-                "rectification": "Right to rectification — correct inaccurate data",
-                "restriction": "Right to restriction — limit how we process your data"
+                "access": "Right of access: request a copy of your personal data",
+                "erasure": "Right to erasure: request deletion of your data",
+                "objection": "Right to object: object to processing based on legitimate interest",
+                "portability": "Right to data portability: receive your data in a structured format",
+                "rectification": "Right to rectification: correct inaccurate data",
+                "restriction": "Right to restriction: limit how we process your data"
             },
             "title": "Your Rights"
         },
@@ -363,8 +363,8 @@
     "terms": {
         "account": {
             "items": {
+                "access": "Depending on how this site is set up, a new account may need an invitation or an administrator's approval before it can be used. An account on its own does not give access to any event: an event's organisers invite you, or you ask to join a public event. We reserve the right to suspend or remove accounts that break these terms.",
                 "accuracy": "You are responsible for keeping your account information accurate and up to date.",
-                "approval": "Account access may require approval by an administrator. We reserve the right to reject or deactivate accounts.",
                 "registration": "You need to create an account with your email address and a password to use WirkSam.",
                 "security": "You are responsible for the security of your account credentials."
             },
@@ -376,14 +376,14 @@
         },
         "backToHome": "Back to Home",
         "bookings": {
-            "description": "When you book a duty shift, you commit to being available at the scheduled time and place. If you can no longer attend, please cancel your booking as early as possible so the shift can be filled by someone else. Organizers and administrators may cancel or reassign bookings if necessary.",
+            "description": "When you book a duty shift, you commit to being available at the scheduled time and place. If you can no longer attend, please cancel your booking as early as possible so the shift can be filled by someone else. Organisers and administrators may cancel or reassign bookings if necessary.",
             "title": "Bookings & Cancellations"
         },
         "changes": {
             "description": "We may update these terms from time to time. The current version is always available on this page. Continued use of WirkSam after changes constitutes acceptance of the updated terms.",
             "title": "Changes to These Terms"
         },
-        "lastUpdated": "Last updated: March 2026",
+        "lastUpdated": "Last updated: October 2026",
         "law": {
             "description": "These terms are governed by the laws of the Federal Republic of Germany.",
             "title": "Governing Law"
@@ -393,7 +393,7 @@
             "title": "Limitation of Liability"
         },
         "scope": {
-            "description": "WirkSam is a free, non-commercial platform for coordinating volunteer duty schedules at church tasks and community service. By creating an account and using the platform, you agree to these terms.",
+            "description": "WirkSam is a free, non-commercial platform for coordinating volunteer rosters for church events and community service. By creating an account and using the platform, you agree to these terms.",
             "title": "Scope of Service"
         },
         "termination": {
@@ -407,7 +407,7 @@
                 "lawful": "Use the platform only for its intended purpose of volunteer duty scheduling.",
                 "noAbuse": "Not attempt to manipulate, overload, or exploit the platform.",
                 "reliable": "Honor your booked duty shifts or cancel in a timely manner if you cannot attend.",
-                "respectful": "Be respectful to other users and organizers."
+                "respectful": "Be respectful to other users and organisers."
             },
             "title": "Acceptable Use"
         }

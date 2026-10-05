@@ -193,12 +193,12 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         name_en="Closing tidy-up",
         name_de="Aufräumen",
         description_en=(
-            "The unglamorous one. Chairs stacked, bins out, floor swept — an "
-            "hour with enough hands, an evening without."
+            "The unglamorous one: stacking chairs, taking the bins out and "
+            "sweeping the floor. An hour with enough hands, a whole evening without."
         ),
         description_de=(
-            "Die undankbare Schicht. Stühle stapeln, Müll rausbringen, fegen — "
-            "mit genug Händen eine Stunde, ohne einen ganzen Abend."
+            "Die undankbare Schicht: Stühle stapeln, Müll rausbringen, fegen. "
+            "Mit genug Händen dauert das eine Stunde, sonst einen ganzen Abend."
         ),
         location_en="Whole venue",
         location_de="Gesamtes Gelände",
@@ -232,7 +232,7 @@ _EVENT_DESCRIPTION = {
     ),
     "de": (
         "Ein Dorffest über drei Wochenenden, komplett ehrenamtlich gestemmt. "
-        "Dies ist ein Demo-Event: alles darin ist erfunden und verschwindet, "
+        "Das ist eine Demo-Veranstaltung: Alles darin ist erfunden und verschwindet, "
         "sobald du gehst."
     ),
 }

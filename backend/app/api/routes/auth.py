@@ -44,6 +44,8 @@ from app.core.security import AuthTokenError, decode_access_token
 from app.core.turnstile import verify_turnstile
 from app.logic.auth import service
 from app.logic.auth.emails import send_password_reset_email, send_verify_email
+from app.logic.auth.registration import policy_for_request
+from app.logic.notifications.triggers import dispatch_user_registered
 from app.logic.sandbox import service as sandbox_service
 from app.models.auth_session import AuthSession
 from app.schemas.auth import (
@@ -53,6 +55,7 @@ from app.schemas.auth import (
     LoginRequest,
     RefreshResponse,
     RegisterRequest,
+    RegistrationPolicy,
     ResetPasswordRequest,
     TokenResponse,
     VerifyEmailRequest,
@@ -164,6 +167,17 @@ def _to_session_read(
 # ── Registration and sign-in ──────────────────────────────────────
 
 
+@router.get("/registration-policy", response_model=RegistrationPolicy)
+async def get_registration_policy(request: Request) -> RegistrationPolicy:
+    """Who may sign up on this deployment, for the registration form to render.
+
+    Public: the visitor asking has no account yet. The form uses it to say
+    "by invitation only" instead of offering fields the server would refuse,
+    and to warn about the approval queue and the domain list up front.
+    """
+    return policy_for_request(request)
+
+
 @router.post("/register", response_model=TokenResponse, status_code=201)
 async def register(
     body: RegisterRequest,
@@ -174,9 +188,10 @@ async def register(
 ) -> TokenResponse:
     """Create an account and sign it straight in.
 
-    Signup is open and the new account is active immediately — it simply grants
-    nothing until an event admits it, so there is no approval step to wait
-    through and no reason to make someone sign in twice in a row.
+    ``REGISTRATION_MODE`` decides whether the signup is allowed and whether the
+    account works at once (see ``app.logic.auth.registration``). Either way the
+    caller is signed in: a pending account needs a session to be told it is
+    waiting, and the superadmins are alerted that someone is.
 
     The verification mail is scheduled rather than awaited. It carries a live
     token, so it must not be sent from inside the transaction that creates the
@@ -194,7 +209,11 @@ async def register(
 
     user_agent, ip_address = _client_labels(request)
     registered = await service.register_user(
-        session, data=body, user_agent=user_agent, ip_address=ip_address
+        session,
+        data=body,
+        user_agent=user_agent,
+        ip_address=ip_address,
+        policy=policy_for_request(request),
     )
 
     background_tasks.add_task(
@@ -204,6 +223,14 @@ async def register(
         token=registered.verification_token,
         language=body.preferred_language,
     )
+    new_user = registered.session.user
+    if new_user.approval_status == "pending":
+        background_tasks.add_task(
+            dispatch_user_registered,
+            user_id=new_user.id,
+            user_name=new_user.name,
+            user_email=new_user.email,
+        )
 
     _set_refresh_cookie(response, registered.session.refresh_token)
     return TokenResponse(

@@ -1991,9 +1991,10 @@ export type RefreshResponse = {
  *
  * Everything an account needs, in one round trip.
  *
- * Registration is open — anyone who signs up gets an active account, and that
- * account grants nothing on its own until an event admits them. So there is no
- * approval field here and nothing that hints at one.
+ * What happens to the account afterwards is the deployment's call, not the
+ * caller's: ``REGISTRATION_MODE`` decides whether it works immediately, waits
+ * for a superadmin, or is refused without an invitation. So there is no
+ * approval field here, only the invitation that can stand in for one.
  */
 export type RegisterRequest = {
   /**
@@ -2026,6 +2027,53 @@ export type RegisterRequest = {
    * Token from the Cloudflare Turnstile challenge on the registration form. Required when the deployment has Turnstile configured; ignored when it does not.
    */
   turnstile_token?: string | null
+  /**
+   * Invitation Token
+   *
+   * Token of the event invitation the visitor arrived through. Needed to sign up on an invitation-only deployment, and lets an invited address past the approval queue and the domain list where REGISTRATION_INVITE_BYPASS allows it. Not redeemed here; accepting the invitation is still its own step.
+   */
+  invitation_token?: string | null
+}
+
+/**
+ * RegistrationPolicy
+ *
+ * What the registration form needs to know before anyone fills it in.
+ *
+ * Public, because the visitor reading it has no account yet. Everything in it
+ * is also discoverable by simply trying to register, so it gives nothing away.
+ */
+export type RegistrationPolicy = {
+  /**
+   * Mode
+   *
+   * open, approval (a superadmin approves) or invite (invitation only)
+   */
+  mode: 'open' | 'approval' | 'invite'
+  /**
+   * Allowed Domains
+   *
+   * Email domains self-signup is limited to; empty means any
+   */
+  allowed_domains?: Array<string>
+  /**
+   * Invite Bypass
+   *
+   * Whether an invitation skips the approval queue and domain list
+   */
+  invite_bypass: boolean
+}
+
+/**
+ * RejectRegistrationRequest
+ */
+export type RejectRegistrationRequest = {
+  /**
+   * Reason
+   *
+   * Shown to the person whose registration was rejected
+   */
+  reason?: string | null
 }
 
 /**
@@ -3522,6 +3570,10 @@ export type UserCounts = {
    * Rejected
    */
   rejected: number
+  /**
+   * Suspended
+   */
+  suspended: number
 }
 
 /**
@@ -3564,6 +3616,12 @@ export type UserCreate = {
    * Whether the user is active
    */
   is_active?: boolean
+  /**
+   * Approval Status
+   *
+   * Registration approval status
+   */
+  approval_status?: 'approved' | 'pending' | 'rejected'
   /**
    * Preferred Language
    *
@@ -3704,9 +3762,15 @@ export type UserProfile = {
    */
   is_active?: boolean
   /**
+   * Approval Status
+   *
+   * Registration approval: approved, pending or rejected
+   */
+  approval_status?: 'approved' | 'pending' | 'rejected'
+  /**
    * Rejection Reason
    *
-   * Reason the account was suspended
+   * Reason the account was suspended or its registration rejected
    */
   rejection_reason?: string | null
   /**
@@ -3839,6 +3903,10 @@ export type UserRead = {
    * Is Active
    */
   is_active: boolean
+  /**
+   * Approval Status
+   */
+  approval_status?: 'approved' | 'pending' | 'rejected'
   /**
    * Rejection Reason
    */
@@ -4177,6 +4245,61 @@ export type HealthReadinessCheckResponses = {
    */
   200: unknown
 }
+
+export type AuthGetRegistrationPolicyData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/auth/registration-policy'
+}
+
+export type AuthGetRegistrationPolicyErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type AuthGetRegistrationPolicyError =
+  AuthGetRegistrationPolicyErrors[keyof AuthGetRegistrationPolicyErrors]
+
+export type AuthGetRegistrationPolicyResponses = {
+  /**
+   * Successful Response
+   */
+  200: RegistrationPolicy
+}
+
+export type AuthGetRegistrationPolicyResponse =
+  AuthGetRegistrationPolicyResponses[keyof AuthGetRegistrationPolicyResponses]
 
 export type AuthRegisterData = {
   body: RegisterRequest
@@ -5103,7 +5226,7 @@ export type UsersListUsersData = {
     /**
      * Status Filter
      */
-    status_filter?: 'all' | 'active' | 'pending' | 'rejected'
+    status_filter?: 'all' | 'active' | 'pending' | 'rejected' | 'suspended'
     /**
      * Skip
      */
@@ -5393,6 +5516,122 @@ export type UsersUpdateUserResponses = {
 }
 
 export type UsersUpdateUserResponse = UsersUpdateUserResponses[keyof UsersUpdateUserResponses]
+
+export type UsersApproveUserData = {
+  body?: never
+  path: {
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/users/{user_id}/approve'
+}
+
+export type UsersApproveUserErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type UsersApproveUserError = UsersApproveUserErrors[keyof UsersApproveUserErrors]
+
+export type UsersApproveUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserRead
+}
+
+export type UsersApproveUserResponse = UsersApproveUserResponses[keyof UsersApproveUserResponses]
+
+export type UsersRejectUserData = {
+  body: RejectRegistrationRequest
+  path: {
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/users/{user_id}/reject'
+}
+
+export type UsersRejectUserErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type UsersRejectUserError = UsersRejectUserErrors[keyof UsersRejectUserErrors]
+
+export type UsersRejectUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserRead
+}
+
+export type UsersRejectUserResponse = UsersRejectUserResponses[keyof UsersRejectUserResponses]
 
 export type UsersExportUserDataData = {
   body?: never

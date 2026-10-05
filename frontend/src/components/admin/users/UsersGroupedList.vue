@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import UserRowActions from './UserRowActions.vue'
 
 import type { UserRead } from '@/client/types.gen'
+import { userStatus, userStatusBadgeVariant } from '@/lib/user-status'
 
 const props = defineProps<{
   users: UserRead[]
@@ -21,8 +22,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  toggleActive: [user: UserRead]
+  approve: [user: UserRead]
   reject: [user: UserRead]
+  toggleActive: [user: UserRead]
+  suspendReason: [user: UserRead]
   toggleAdmin: [user: UserRead]
   toggleTaskManager: [user: UserRead]
   delete: [user: UserRead]
@@ -30,12 +33,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const pendingUsers = computed(() =>
-  props.users.filter((u) => !u.is_active && !u.rejection_reason),
-)
-const activeUsers = computed(() => props.users.filter((u) => u.is_active))
+const pendingUsers = computed(() => props.users.filter((u) => userStatus(u) === 'pending'))
+const activeUsers = computed(() => props.users.filter((u) => userStatus(u) === 'active'))
+/** Rejected registrations and suspended accounts: both turned away, both may have a reason. */
 const rejectedUsers = computed(() =>
-  props.users.filter((u) => !u.is_active && u.rejection_reason),
+  props.users.filter((u) => ['rejected', 'suspended'].includes(userStatus(u))),
 )
 
 const getInitials = (user: UserRead) => {
@@ -85,7 +87,7 @@ const formatDate = (iso: string) =>
             <Button
               class="flex-1"
               :disabled="updatingId === user.id"
-              @click="emit('toggleActive', user)"
+              @click="emit('approve', user)"
             >
               <UserCheck class="mr-2 h-4 w-4" />
               {{ t('admin.users.approve') }}
@@ -131,8 +133,10 @@ const formatDate = (iso: string) =>
           <UserRowActions
             :user="user"
             :disabled="updatingId === user.id"
-            @toggle-active="emit('toggleActive', $event)"
+            @approve="emit('approve', $event)"
             @reject="emit('reject', $event)"
+            @toggle-active="emit('toggleActive', $event)"
+            @suspend-reason="emit('suspendReason', $event)"
             @toggle-admin="emit('toggleAdmin', $event)"
             @toggle-task-manager="emit('toggleTaskManager', $event)"
             @delete="emit('delete', $event)"
@@ -159,6 +163,12 @@ const formatDate = (iso: string) =>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium">{{ user.name ?? '—' }}</p>
             <p class="truncate text-xs text-muted-foreground">{{ user.email ?? '—' }}</p>
+            <Badge
+              :variant="userStatusBadgeVariant(userStatus(user))"
+              class="mt-1 text-[10px]"
+            >
+              {{ t(`admin.users.${userStatus(user)}`) }}
+            </Badge>
             <p
               v-if="user.rejection_reason"
               class="mt-1 text-xs italic text-muted-foreground"
@@ -169,8 +179,10 @@ const formatDate = (iso: string) =>
           <UserRowActions
             :user="user"
             :disabled="updatingId === user.id"
-            @toggle-active="emit('toggleActive', $event)"
+            @approve="emit('approve', $event)"
             @reject="emit('reject', $event)"
+            @toggle-active="emit('toggleActive', $event)"
+            @suspend-reason="emit('suspendReason', $event)"
             @toggle-admin="emit('toggleAdmin', $event)"
             @toggle-task-manager="emit('toggleTaskManager', $event)"
             @delete="emit('delete', $event)"

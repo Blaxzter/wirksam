@@ -9,7 +9,7 @@ from app.crud.base import CRUDBase
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
-UserStatus = Literal["all", "active", "pending", "rejected"]
+UserStatus = Literal["all", "active", "pending", "rejected", "suspended"]
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
@@ -53,18 +53,18 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     @staticmethod
     def _status_clauses(status: UserStatus) -> list[ColumnElement[bool]]:
+        # "pending" and "rejected" are the registration queue; "suspended" is
+        # moderation. An account still in the queue is listed there rather than
+        # under "suspended", whatever its ``is_active`` says.
+        approved = col(User.approval_status) == "approved"
         if status == "active":
-            return [col(User.is_active).is_(True)]
+            return [col(User.is_active).is_(True), approved]
         if status == "pending":
-            return [
-                col(User.is_active).is_(False),
-                col(User.rejection_reason).is_(None),
-            ]
+            return [col(User.approval_status) == "pending"]
         if status == "rejected":
-            return [
-                col(User.is_active).is_(False),
-                col(User.rejection_reason).is_not(None),
-            ]
+            return [col(User.approval_status) == "rejected"]
+        if status == "suspended":
+            return [col(User.is_active).is_(False), approved]
         return []
 
     async def search(
@@ -92,20 +92,11 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             .limit(limit)
         )
 
-        pending_case = case(
-            (
-                col(User.is_active).is_(False) & col(User.rejection_reason).is_(None),
-                1,
-            )
-        )
-        rejected_case = case(
-            (
-                col(User.is_active).is_(False)
-                & col(User.rejection_reason).is_not(None),
-                1,
-            )
-        )
-        active_case = case((col(User.is_active).is_(True), 1))
+        approved = col(User.approval_status) == "approved"
+        pending_case = case((col(User.approval_status) == "pending", 1))
+        rejected_case = case((col(User.approval_status) == "rejected", 1))
+        active_case = case((col(User.is_active).is_(True) & approved, 1))
+        suspended_case = case((col(User.is_active).is_(False) & approved, 1))
 
         counts_query = (
             select(
@@ -113,6 +104,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
                 func.count(active_case).label("active"),
                 func.count(pending_case).label("pending"),
                 func.count(rejected_case).label("rejected"),
+                func.count(suspended_case).label("suspended"),
             )
             .select_from(User)
             .where(*q_clauses)
@@ -127,6 +119,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
             "active": int(counts_row.active or 0),
             "pending": int(counts_row.pending or 0),
             "rejected": int(counts_row.rejected or 0),
+            "suspended": int(counts_row.suspended or 0),
         }
         return items_result.scalars().all(), counts
 

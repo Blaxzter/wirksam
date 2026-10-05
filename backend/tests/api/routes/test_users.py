@@ -40,43 +40,73 @@ class TestUserRoutes:
         db_session: AsyncSession,
         as_admin: None,
     ):
+        # "pending" and "rejected" are the registration queue; "suspended" is
+        # moderation of an approved account. The four never overlap.
         pending = User(
             subject="local|pending_filter_test",
             email="pending-filter@example.com",
             name="Pending Filter",
-            is_active=False,
-            rejection_reason=None,
+            approval_status="pending",
         )
         rejected = User(
             subject="local|rejected_filter_test",
             email="rejected-filter@example.com",
             name="Rejected Filter",
-            is_active=False,
+            approval_status="rejected",
             rejection_reason="spam",
         )
-        db_session.add_all([pending, rejected])
+        suspended = User(
+            subject="local|suspended_filter_test",
+            email="suspended-filter@example.com",
+            name="Suspended Filter",
+            is_active=False,
+            rejection_reason="abuse",
+        )
+        db_session.add_all([pending, rejected, suspended])
         await db_session.commit()
+
+        async def ids_for(status_filter: str) -> set[str]:
+            response = await async_client.get(
+                f"/api/v1/users/?status_filter={status_filter}&limit=100"
+            )
+            assert response.status_code == 200
+            return {item["id"] for item in response.json()["items"]}
 
         r_pending = await async_client.get("/api/v1/users/?status_filter=pending")
         assert r_pending.status_code == 200
-        pending_body = r_pending.json()
-        pending_ids = {item["id"] for item in pending_body["items"]}
-        assert str(pending.id) in pending_ids
-        assert str(rejected.id) not in pending_ids
+        counts = r_pending.json()["counts"]
         # counts ignore status_filter — they reflect all statuses
-        assert pending_body["counts"]["pending"] >= 1
-        assert pending_body["counts"]["rejected"] >= 1
-        assert pending_body["counts"]["active"] >= 1
-        assert pending_body["counts"]["all"] == (
-            pending_body["counts"]["active"]
-            + pending_body["counts"]["pending"]
-            + pending_body["counts"]["rejected"]
+        assert counts["pending"] >= 1
+        assert counts["rejected"] >= 1
+        assert counts["suspended"] >= 1
+        assert counts["active"] >= 1
+        assert counts["all"] == (
+            counts["active"]
+            + counts["pending"]
+            + counts["rejected"]
+            + counts["suspended"]
         )
 
-        r_rejected = await async_client.get("/api/v1/users/?status_filter=rejected")
-        rejected_ids = {item["id"] for item in r_rejected.json()["items"]}
-        assert str(rejected.id) in rejected_ids
-        assert str(pending.id) not in rejected_ids
+        assert await ids_for("pending") & {
+            str(pending.id),
+            str(rejected.id),
+            str(suspended.id),
+        } == {str(pending.id)}
+        assert await ids_for("rejected") & {
+            str(pending.id),
+            str(rejected.id),
+            str(suspended.id),
+        } == {str(rejected.id)}
+        assert await ids_for("suspended") & {
+            str(pending.id),
+            str(rejected.id),
+            str(suspended.id),
+        } == {str(suspended.id)}
+        assert not await ids_for("active") & {
+            str(pending.id),
+            str(rejected.id),
+            str(suspended.id),
+        }
 
         # "active" is the third branch of the same filter and the one the
         # moderation screen opens on, so it is asserted rather than assumed.

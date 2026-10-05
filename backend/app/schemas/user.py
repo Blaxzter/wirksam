@@ -1,7 +1,12 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+# Where an account stands in the queue ``REGISTRATION_MODE=approval`` puts in
+# front of signup. Every account outside that mode is "approved".
+ApprovalStatus = Literal["approved", "pending", "rejected"]
 
 
 class UserCreate(BaseModel):
@@ -15,6 +20,9 @@ class UserCreate(BaseModel):
         default_factory=list, description="List of role identifiers"
     )
     is_active: bool = Field(default=True, description="Whether the user is active")
+    approval_status: ApprovalStatus = Field(
+        default="approved", description="Registration approval status"
+    )
     preferred_language: str = Field(default="en", description="Preferred language")
     time_format: str = Field(
         default="locale", description="Display preference for times"
@@ -57,6 +65,7 @@ class UserRead(BaseModel):
     theme: str = "default"
     roles: list[str]
     is_active: bool
+    approval_status: ApprovalStatus = "approved"
     rejection_reason: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -67,6 +76,15 @@ class UserCounts(BaseModel):
     active: int
     pending: int
     rejected: int
+    suspended: int
+
+
+class RejectRegistrationRequest(BaseModel):
+    reason: str | None = Field(
+        default=None,
+        max_length=1000,
+        description="Shown to the person whose registration was rejected",
+    )
 
 
 class UserOwnedContent(BaseModel):

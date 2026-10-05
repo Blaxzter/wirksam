@@ -1,16 +1,19 @@
 <script setup lang="ts">
 /**
- * Shown when an account is suspended.
+ * Shown when an account may sign in but not use the app.
  *
- * Signup is open, so nobody waits for approval any more — but `is_active`
- * survives as a moderation switch, and someone who has been suspended still
- * needs to be told rather than left staring at a home page where every request
- * comes back 403.
+ * Three reasons, one screen: a moderator suspended the account (`is_active`),
+ * or, on a deployment running `REGISTRATION_MODE=approval`, it is waiting for
+ * a superadmin or was turned away. Each needs to be told rather than left on a
+ * home page where every request comes back 403, and each can still sign out or
+ * delete the account. The router guard picks the route; the text comes from
+ * the store, so both routes render whatever is actually true.
  */
 import { computed, ref } from 'vue'
 
-import { Ban, LogOut } from '@lucide/vue'
+import { Ban, Hourglass, LogOut, RefreshCw } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -30,10 +33,46 @@ import {
 import LanguageSwitch from '@/components/utils/LanguageSwitch.vue'
 
 const { t } = useI18n()
+const router = useRouter()
 const authStore = useAuthStore()
 const { delete: del } = useAuthenticatedClient()
 
-const reason = computed(() => authStore.profile?.rejection_reason)
+type BlockedState = 'suspended' | 'pending' | 'rejected'
+
+const state = computed<BlockedState>(() => {
+  if (!authStore.isActive) return 'suspended'
+  return authStore.approvalStatus === 'pending' ? 'pending' : 'rejected'
+})
+
+const reason = computed(() =>
+  state.value === 'pending' ? null : authStore.profile?.rejection_reason,
+)
+
+const title = computed(() =>
+  state.value === 'suspended'
+    ? t('common.accountSuspended.title')
+    : t(`common.accountApproval.${state.value}.title`),
+)
+const description = computed(() =>
+  state.value === 'suspended'
+    ? t('common.accountSuspended.description')
+    : t(`common.accountApproval.${state.value}.description`),
+)
+
+const checking = ref(false)
+
+/** Ask again whether the account was approved, without signing out and in. */
+const checkAgain = async () => {
+  checking.value = true
+  try {
+    await authStore.loadProfile()
+    if (authStore.isApproved && authStore.isActive) {
+      await router.replace({ name: 'home' })
+    }
+  } finally {
+    checking.value = false
+  }
+}
 
 const showDeleteDialog = ref(false)
 const isDeleting = ref(false)
@@ -59,16 +98,19 @@ const handleDeleteAccount = async () => {
   <div class="flex items-center justify-center">
     <div class="mx-auto max-w-md text-center">
       <div class="mb-6 flex justify-center">
-        <div class="rounded-full bg-destructive/10 p-4">
+        <div v-if="state === 'pending'" class="rounded-full bg-primary/10 p-4">
+          <Hourglass class="h-12 w-12 text-primary" />
+        </div>
+        <div v-else class="rounded-full bg-destructive/10 p-4">
           <Ban class="h-12 w-12 text-destructive" />
         </div>
       </div>
 
       <h1 data-testid="page-heading" class="text-2xl font-bold sm:text-3xl">
-        {{ t('common.accountSuspended.title') }}
+        {{ title }}
       </h1>
       <p class="mt-3 text-muted-foreground">
-        {{ t('common.accountSuspended.description') }}
+        {{ description }}
       </p>
 
       <div
@@ -82,7 +124,16 @@ const handleDeleteAccount = async () => {
         <p class="text-sm text-destructive-foreground">{{ reason }}</p>
       </div>
 
-      <div class="mt-8 flex items-center justify-center gap-3">
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Button
+          v-if="state === 'pending'"
+          data-testid="btn-check-approval"
+          :disabled="checking"
+          @click="checkAgain"
+        >
+          <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': checking }" />
+          {{ t('common.accountApproval.pending.checkAgain') }}
+        </Button>
         <Button data-testid="btn-logout" variant="outline" @click="authStore.logout()">
           {{ t('common.accountSuspended.logout') }}
           <LogOut class="ml-2 h-4 w-4" />

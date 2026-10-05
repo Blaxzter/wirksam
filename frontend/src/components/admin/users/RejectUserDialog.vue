@@ -17,11 +17,20 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import type { UserRead } from '@/client/types.gen'
 
-const props = defineProps<{
-  open: boolean
-  user: UserRead | null
-  loading: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    user: UserRead | null
+    loading: boolean
+    /**
+     * `registration` turns a waiting signup away; `suspension` records why an
+     * already suspended account was suspended. Same shape, different words:
+     * the person reads the reason either way.
+     */
+    mode?: 'registration' | 'suspension'
+  }>(),
+  { mode: 'registration' },
+)
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -43,19 +52,30 @@ watch(
   <ResponsiveDialog :open="props.open" @update:open="emit('update:open', $event)">
     <ResponsiveDialogContent>
       <ResponsiveDialogHeader>
-        <ResponsiveDialogTitle>{{ t('admin.users.rejectDialogTitle') }}</ResponsiveDialogTitle>
+        <ResponsiveDialogTitle>{{
+          props.mode === 'registration'
+            ? t('admin.users.rejectDialogTitle')
+            : t('admin.users.suspendDialogTitle')
+        }}</ResponsiveDialogTitle>
         <ResponsiveDialogDescription>
           {{
-            t('admin.users.rejectDialogDescription', {
-              name: props.user?.name ?? props.user?.email,
-            })
+            t(
+              props.mode === 'registration'
+                ? 'admin.users.rejectDialogDescription'
+                : 'admin.users.suspendDialogDescription',
+              { name: props.user?.name ?? props.user?.email },
+            )
           }}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
       <ResponsiveDialogBody class="pb-2">
         <Textarea
           v-model="reason"
-          :placeholder="t('admin.users.rejectReasonPlaceholder')"
+          :placeholder="
+            props.mode === 'registration'
+              ? t('admin.users.rejectReasonPlaceholder')
+              : t('admin.users.suspendReasonPlaceholder')
+          "
           rows="3"
         />
       </ResponsiveDialogBody>
@@ -64,7 +84,7 @@ watch(
           {{ t('common.actions.cancel') }}
         </Button>
         <Button variant="destructive" :disabled="props.loading" @click="emit('confirm', reason)">
-          {{ t('admin.users.reject') }}
+          {{ props.mode === 'registration' ? t('admin.users.reject') : t('common.actions.save') }}
         </Button>
       </ResponsiveDialogFooter>
     </ResponsiveDialogContent>

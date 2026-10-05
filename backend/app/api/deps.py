@@ -151,6 +151,33 @@ def _normalize_required_roles(
     return list(required_roles)
 
 
+def _refuse_unusable(user: User) -> None:
+    """Turn away an account that may sign in but not use the app.
+
+    Two different reasons, kept apart because the person needs to hear which
+    one applies: a moderator suspended the account (``is_active``), or it is
+    still in, or was turned away from, the registration queue that
+    ``REGISTRATION_MODE=approval`` puts in front of signup.
+    """
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Inactive user",
+        )
+    if user.approval_status == "pending":
+        raise_problem(
+            status.HTTP_403_FORBIDDEN,
+            code="auth.account_pending",
+            detail="This account is waiting for an administrator's approval.",
+        )
+    if user.approval_status != "approved":
+        raise_problem(
+            status.HTTP_403_FORBIDDEN,
+            code="auth.account_rejected",
+            detail="The registration for this account was not approved.",
+        )
+
+
 def current_user(
     required_roles: str | Iterable[str] | None = None,
     *,
@@ -203,11 +230,8 @@ def current_user(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail=f"Test user not found: {test_email}",
                     )
-                if require_active and not user.is_active:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Inactive user",
-                    )
+                if require_active:
+                    _refuse_unusable(user)
                 await _check_roles(session, user)
                 return user
 
@@ -227,11 +251,8 @@ def current_user(
                 headers=_WWW_AUTHENTICATE,
             )
 
-        if require_active and not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Inactive user",
-            )
+        if require_active:
+            _refuse_unusable(user)
 
         await _check_roles(session, user)
 

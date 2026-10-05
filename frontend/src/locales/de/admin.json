@@ -9,7 +9,7 @@
         "delete": {
             "button": "Alle Demodaten löschen",
             "description": "Alle Demodaten aus dem System entfernen.",
-            "info": "Dies löscht alle mit [DEMO] gekennzeichneten Einträge — Aufgaben, Veranstaltungen, Dienstschichten, Buchungen und Demobenutzer.",
+            "info": "Dies löscht alles, was mit [DEMO] gekennzeichnet ist: Aufgaben, Veranstaltungen, Dienstschichten, Buchungen und Demobenutzer.",
             "title": "Demodaten löschen"
         },
         "deleteSuccess": "{tasks} Aufgaben, {events} Gruppen, {users} Benutzer, {shifts} Schichten und {bookings} Buchungen gelöscht.",
@@ -20,7 +20,7 @@
             "numUsers": "Anzahl Demobenutzer",
             "publishTasks": "Aufgaben sofort veröffentlichen"
         },
-        "subtitle": "Demodaten zu Testzwecken generieren oder entfernen.",
+        "subtitle": "Demodaten zum Testen erstellen oder entfernen.",
         "title": "Demodaten"
     },
     "events": {
@@ -32,7 +32,7 @@
             "showAll": "Alle anzeigen"
         },
         "noExpired": "Keine abgelaufenen Veranstaltungen.",
-        "subtitle": "Veranstaltungen systemweit erstellen, bearbeiten und verwalten.",
+        "subtitle": "Alle Veranstaltungen der Plattform erstellen, bearbeiten und verwalten.",
         "title": "Veranstaltungen verwalten"
     },
     "reporting": {
@@ -88,7 +88,7 @@
             "totalVolunteers": "Freiwillige gesamt"
         },
         "reset": "Zurücksetzen",
-        "subtitle": "Statistiken und Nutzungsberichte Ihrer Organisation einsehen.",
+        "subtitle": "Statistiken und Nutzungsberichte für Ihre Organisation.",
         "title": "Berichte",
         "to": "Bis",
         "topVolunteers": {
@@ -107,6 +107,7 @@
         "activated": "Konto für {name} aktiviert.",
         "active": "Aktiv",
         "approve": "Freigeben",
+        "approvedToast": "{name} wurde freigegeben und kann WirkSam jetzt nutzen.",
         "columns": {
             "actions": "Aktionen",
             "email": "E-Mail",
@@ -120,14 +121,15 @@
         "delete": "Benutzer löschen",
         "deleteDialogDescription": "Möchten Sie das Konto von {name} wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "deleteDialogTitle": "Benutzer löschen",
-        "deleteTransferDescription": "{name} hat noch Veranstaltungen oder Aufgaben erstellt. Wählen Sie, wer diese übernehmen soll – danach wird das Konto dauerhaft gelöscht.",
+        "deleteTransferDescription": "{name} hat noch Veranstaltungen oder Aufgaben erstellt. Wählen Sie, wer diese übernehmen soll. Danach wird das Konto dauerhaft gelöscht.",
         "deletedToast": "Konto für {name} gelöscht.",
         "empty": "Keine Benutzer vorhanden.",
         "filters": {
             "active": "Aktiv",
             "all": "Alle",
             "pending": "Ausstehend",
-            "rejected": "Abgelehnt"
+            "rejected": "Abgelehnt",
+            "suspended": "Gesperrt"
         },
         "grantedAdmin": "Adminrolle an {name} vergeben.",
         "grantedTaskManager": "Task-Manager-Rolle an {name} vergeben.",
@@ -138,7 +140,7 @@
         "ownedTasks": "Aufgaben: {count}",
         "pending": "Ausstehend",
         "reject": "Ablehnen",
-        "rejectDialogDescription": "Geben Sie optional einen Grund für die Ablehnung der Kontoanfrage von {name} an. Der Benutzer sieht diese Nachricht.",
+        "rejectDialogDescription": "Sie können {name} einen Grund nennen, warum die Registrierung abgelehnt wird. Er wird bei der Anmeldung angezeigt.",
         "rejectDialogTitle": "Benutzer ablehnen",
         "rejectReasonPlaceholder": "Grund für die Ablehnung (optional)...",
         "rejected": "Abgelehnt",
@@ -152,10 +154,17 @@
             "active": "Aktive Mitglieder",
             "all": "Mitglieder",
             "pending": "Wartet auf Freigabe",
-            "rejected": "Abgelehnt"
+            "rejected": "Abgelehnt",
+            "suspended": "Gesperrt"
         },
         "statsTotal": "Benutzer gesamt",
-        "subtitle": "Plattformbenutzer und deren Rollen anzeigen und verwalten.",
+        "subtitle": "Alle Benutzer der Plattform sehen und ihre Rollen verwalten.",
+        "suspendDialogDescription": "Teilen Sie {name} mit, warum das Konto gesperrt wurde. Die Nachricht erscheint bei der Anmeldung und wird zusätzlich zugestellt.",
+        "suspendDialogTitle": "Warum wurde dieses Konto gesperrt?",
+        "suspendReason": "Grund angeben",
+        "suspendReasonPlaceholder": "Grund für die Sperre (optional)…",
+        "suspendReasonSaved": "Grund gespeichert, {name} wurde benachrichtigt.",
+        "suspended": "Gesperrt",
         "title": "Benutzerverwaltung",
         "transferAndDelete": "Übertragen und löschen",
         "transferNoResults": "Keine Mitglieder gefunden.",

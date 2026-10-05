@@ -63,7 +63,7 @@ class TestGetMessage:
         """Test message templating with kwargs."""
         # Use all placeholders the booking.confirmed template expects
         title, body = get_message(
-            "user.approved",
+            "user.suspended",
             "en",
         )
 

@@ -1,6 +1,6 @@
 {
     "availability": {
-        "adminEmpty": "Noch keine Mitglieder haben Verfügbarkeit registriert.",
+        "adminEmpty": "Bisher hat noch kein Mitglied seine Verfügbarkeit eingetragen.",
         "adminTitle": "Verfügbarkeiten der Mitglieder",
         "clearAll": "Zurücksetzen",
         "collapseToEventHours": "Auf Veranstaltungszeit reduzieren",
@@ -19,11 +19,11 @@
             "setTimes": "Uhrzeiten angeben",
             "startTime": "Von",
             "timeRange": "Zeitraum",
-            "timeRangeHint": "Tägliches Zeitfenster festlegen. Leer lassen für offen (z.B. nur 'Von' = ab dieser Uhrzeit).",
+            "timeRangeHint": "Tägliches Zeitfenster festlegen. Ein leeres Feld bleibt offen: Ist nur 'Von' ausgefüllt, gilt die Verfügbarkeit ab dieser Uhrzeit.",
             "type": "Verfügbarkeitstyp"
         },
-        "fullyAvailableDays": "Voll verfügbar — alle {count} Tage",
-        "fullyAvailableHint": "Du wirst für jede passende Schicht in Betracht gezogen.",
+        "fullyAvailableDays": "Voll verfügbar an allen {count} Tagen",
+        "fullyAvailableHint": "Du kannst für jede passende Schicht im Programm eingeplant werden.",
         "fullyAvailableShort": "Alle Programmtage",
         "heatLegendFull": "voll",
         "heatLegendLow": "wenig",
@@ -41,8 +41,8 @@
         "modeSpecificSub": "Pro Tag malen",
         "modeTimeRange": "Tägliches Fenster",
         "modeTimeRangeSub": "Gleiche Stunden täglich",
-        "notRegistered": "Sie haben noch keine Verfügbarkeit registriert.",
-        "paintHint": "Klicken & ziehen, um zu malen. Tag-Header tippt für ganzen Tag.",
+        "notRegistered": "Sie haben noch keine Verfügbarkeit eingetragen.",
+        "paintHint": "Zum Markieren klicken und ziehen. Auf den Tageskopf tippen, um den ganzen Tag zu wählen.",
         "people": "Personen",
         "presetWeekday": "Vorlage: 9–17",
         "presetWeekend": "Wochenenden",
@@ -51,11 +51,11 @@
         "removeConfirm": "Möchten Sie Ihre Verfügbarkeit wirklich entfernen?",
         "saveChanges": "Speichern",
         "showOutsideEventHours": "Stunden außerhalb des Veranstaltungsfensters anzeigen",
-        "subtitle": "Verfügbarkeit für dieses Programm registrieren",
+        "subtitle": "Verfügbarkeit für dieses Programm eintragen",
         "summary": "Zusammenfassung",
-        "summaryHint": "Sichtbar für Koordinator",
-        "teamEmpty": "Noch keine Teammitglieder haben Verfügbarkeit registriert.",
-        "teamHint": "Wer ist wann da. Tippe zum Anzeigen.",
+        "summaryHint": "Für die Organisation sichtbar",
+        "teamEmpty": "Bisher hat noch niemand aus dem Team seine Verfügbarkeit eingetragen.",
+        "teamHint": "Wer wann da ist. Zum Anzeigen tippen.",
         "teamTab": "Team ({count})",
         "teamTitle": "Verfügbarkeiten der Mitglieder",
         "title": "Meine Verfügbarkeit",
@@ -72,7 +72,7 @@
     },
     "bookings": {
         "bookConfirm": "Möchten Sie diese Schicht buchen?",
-        "bookSuccess": "Dienstschicht erfolgreich gebucht!",
+        "bookSuccess": "Schicht gebucht.",
         "cancel": "Buchung stornieren",
         "cancelConfirm": "Sind Sie sicher, dass Sie diese Buchung stornieren möchten?",
         "cancelSuccess": "Buchung storniert.",
@@ -108,7 +108,7 @@
             "cancelled": "Storniert",
             "confirmed": "Bestätigt"
         },
-        "subtitle": "Ihre Dienstschicht-Reservierungen",
+        "subtitle": "Ihre gebuchten Schichten",
         "title": "Meine Buchungen",
         "today": "Heute",
         "tomorrow": "Morgen",
@@ -116,9 +116,9 @@
         "yesterday": "Gestern"
     },
     "deleteDialog": {
-        "activeBookings": "Dies storniert {count} aktive Buchung(en). Betroffene Benutzer sehen die Stornierung in ihren Buchungen.",
-        "activeBookingsWarning": "Falls aktive Buchungen vorhanden sind, werden diese storniert. Betroffene Benutzer sehen die Stornierung in ihren Buchungen.",
-        "reasonHint": "Dieser Grund wird den Benutzern angezeigt, deren Buchungen storniert werden.",
+        "activeBookings": "Dadurch werden {count} aktive Buchung(en) storniert. Die Betroffenen sehen die Stornierung in ihren Buchungen.",
+        "activeBookingsWarning": "Aktive Buchungen werden dabei storniert. Die Betroffenen sehen die Stornierung in ihren Buchungen.",
+        "reasonHint": "Diesen Grund sehen alle, deren Buchungen storniert werden.",
         "reasonLabel": "Stornierungsgrund (optional)",
         "reasonPlaceholder": "z.B. Aufgabe verschoben, nicht mehr benötigt..."
     },
@@ -126,7 +126,7 @@
         "clone": {
             "action": "Veranstaltung kopieren",
             "adjust": {
-                "copyKeepsOldLabels": "Kopierte Schichten behalten Namen und Ort von damals — nur die Aufgabe selbst bekommt die neuen.",
+                "copyKeepsOldLabels": "Kopierte Schichten behalten Namen und Ort von damals. Nur die Aufgabe selbst bekommt die neuen.",
                 "errors": {
                     "batchOutside": "Ein Schichtblock dieser Aufgabe reicht bis {date} und liegt damit außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder erweitern Sie den Zeitraum.",
                     "name": "Bitte geben Sie dieser Aufgabe einen Namen.",
@@ -140,7 +140,7 @@
                 "estimateNote": "Ein Richtwert: Die neuen Schichten werden über die ganze Aufgabe verteilt. Deckten die Schichten von damals nur einen Teil davon ab, werden es weniger.",
                 "mode": {
                     "copy": {
-                        "hint": "Jede Schicht kommt genau so mit, wie sie heute ist — nur an den neuen Terminen.",
+                        "hint": "Jede Schicht wird genau so übernommen, wie sie heute ist, nur an den neuen Terminen.",
                         "label": "Schichten von damals übernehmen",
                         "short": "Gleiche Schichten"
                     },
@@ -151,10 +151,10 @@
                     }
                 },
                 "modeLabel": "Schichten dieser Aufgabe",
-                "none": "Keine Aufgaben ausgewählt — es gibt nichts anzupassen.",
+                "none": "Keine Aufgaben ausgewählt, also gibt es nichts anzupassen.",
                 "problemBadge": "Bitte prüfen",
                 "problemStrip": "Eine Aufgabe unten muss noch geprüft werden, bevor es weitergeht. | {count} Aufgaben unten müssen noch geprüft werden, bevor es weitergeht.",
-                "rangeCheckUnavailable": "Die Schichten dieser Aufgabe konnten nicht geladen werden — deshalb ließ sich nicht prüfen, ob ihre Termine in die neue Veranstaltung passen. Falls nicht, schlägt das Anlegen der Kopie fehl und nennt das Datum, das im Weg ist.",
+                "rangeCheckUnavailable": "Die Schichten dieser Aufgabe konnten nicht geladen werden. Deshalb ließ sich nicht prüfen, ob ihre Termine in die neue Veranstaltung passen. Falls nicht, schlägt das Anlegen der Kopie fehl und nennt das Datum, das im Weg ist.",
                 "readOnlyNote": "Nur eine Vorschau. Einzelne Schichten lassen sich ändern, sobald die neue Veranstaltung angelegt ist.",
                 "shiftsUnknown": "Diese Schichten konnten nicht geladen werden, daher gibt es keine Anzahl. Kopiert werden sie trotzdem alle.",
                 "showShifts": "Schichten anzeigen",
@@ -175,10 +175,10 @@
             },
             "announce": {
                 "noRoster": "Niemand erfährt davon. Sie übernehmen die Personen nicht, also sind Sie allein in der neuen Veranstaltung.",
-                "nobodyElse": "Sie sind die einzige Person auf dieser Liste — es gibt niemanden zu benachrichtigen.",
+                "nobodyElse": "Sie sind die einzige Person auf dieser Liste, es gibt also niemanden zu benachrichtigen.",
                 "note": "Ein paar Worte dazu",
                 "noteCounter": "{used} von {max} Zeichen",
-                "notePlaceholder": "z. B. Gleiches Wochenende wie letztes Jahr — Eintragen ab Mai.",
+                "notePlaceholder": "z. B. Gleiches Wochenende wie letztes Jahr. Eintragen ab Mai.",
                 "toggle": "Alle benachrichtigen",
                 "toggleHint": "Es ist noch niemand sonst dabei | Geht an die 1 weitere Person, die Sie übernehmen | Geht an die {count} weiteren Personen, die Sie übernehmen"
             },
@@ -188,7 +188,7 @@
                 "earlier": "Die Kopie liegt {days} Tag früher | Die Kopie liegt {days} Tage früher",
                 "later": "Die Kopie liegt {days} Tag später | Die Kopie liegt {days} Tage später",
                 "same": "Die Kopie liegt auf denselben Terminen wie das Original.",
-                "sameWeekday": "Volle Wochen — jede Aufgabe fällt wieder auf denselben Wochentag."
+                "sameWeekday": "Volle Wochen: Jede Aufgabe fällt wieder auf denselben Wochentag wie beim letzten Mal."
             },
             "review": {
                 "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen können Sie sie in den Einstellungen der Veranstaltung.",
@@ -201,11 +201,11 @@
                 "shifts": "Schichten",
                 "shiftsUnknown": "Einige Schichten konnten nicht geladen werden, daher sind diese Zahlen unvollständig. Kopiert wird trotzdem jede Schicht des Originals.",
                 "spots": "Zu besetzende Plätze",
-                "taskStatusAllDraft": "Alle Aufgaben werden als Entwurf übernommen. Die Veranstaltung zu veröffentlichen genügt dafür nicht — öffnen Sie jede Aufgabe in der neuen Veranstaltung und veröffentlichen Sie sie dort, sonst kann niemand eine Schicht buchen.",
+                "taskStatusAllDraft": "Alle Aufgaben werden als Entwurf übernommen. Wenn Sie die Veranstaltung veröffentlichen, bleiben die Aufgaben trotzdem Entwürfe. Öffnen Sie deshalb jede Aufgabe in der neuen Veranstaltung und veröffentlichen Sie sie dort. Bis dahin kann niemand eine Schicht buchen.",
                 "taskStatusAllOpen": "Alle Aufgaben sind sofort buchbar, die übernommenen Personen können sich also eintragen, sobald die Kopie existiert.",
-                "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Die Veranstaltung zu veröffentlichen genügt dafür nicht — öffnen Sie jede dieser Aufgaben in der neuen Veranstaltung und veröffentlichen Sie sie dort. Die übrigen sind sofort buchbar.",
+                "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Wenn Sie die Veranstaltung veröffentlichen, bleiben diese trotzdem Entwürfe. Öffnen Sie deshalb jede davon in der neuen Veranstaltung und veröffentlichen Sie sie dort. Die übrigen sind sofort buchbar.",
                 "tasks": "Aufgaben",
-                "untouched": "{name} bleibt genau so, wie es ist. Am Original ändert sich nichts.",
+                "untouched": "{name} bleibt genau so, wie es ist.",
                 "visibilityPrivate": "Wie das Original ist die Kopie privat: Nur übernommene oder eingeladene Personen sehen sie.",
                 "visibilityPublic": "Wie das Original ist die Kopie öffentlich: Sobald Sie sie veröffentlichen, kann jede Person sie finden und um Aufnahme bitten.",
                 "willNotTell": "Es wird niemand benachrichtigt.",
@@ -241,13 +241,13 @@
             "subtitle": "Alles aus einer früheren Veranstaltung, an neuen Terminen. Das Original bleibt genau so, wie es ist; Eintragungen bleiben zurück.",
             "success": "Neue Veranstaltung mit {tasks} Aufgaben und {shifts} Schichten angelegt",
             "successMembers": "Es wurde niemand übernommen. | 1 Person wurde übernommen. | {count} Personen wurden übernommen.",
-            "successNotNotified": "Es wurde niemand benachrichtigt — es war niemand mehr da.",
+            "successNotNotified": "Es wurde niemand benachrichtigt, weil niemand mehr übrig war.",
             "successNotified": "Sie wurden benachrichtigt.",
             "taskCount": "keine Aufgaben | 1 Aufgabe | {count} Aufgaben",
             "tasks": {
                 "copyMembers": "Dieselben Personen übernehmen",
                 "copyMembersHint": "Bei dieser Veranstaltung ist noch niemand dabei | Übernimmt die 1 Person aus der alten Veranstaltung | Übernimmt die {count} Personen aus der alten Veranstaltung",
-                "none": "Diese Veranstaltung hat keine Aufgaben — es wird nur die Veranstaltung selbst kopiert.",
+                "none": "Diese Veranstaltung hat keine Aufgaben, daher wird nur die Veranstaltung selbst kopiert.",
                 "notCopied": "Was nie mitkommt",
                 "notCopiedItems": {
                     "availability": "Wer wann Zeit hatte",
@@ -278,18 +278,18 @@
                 "visibilityHint": "Sie können das später in den Einstellungen der Veranstaltung ändern."
             },
             "submit": "Veranstaltung erstellen",
-            "subtitle": "Ein Name und ein Zeitraum genügen — alles andere lässt sich später ändern.",
-            "timesEmpty": "Nicht gesetzt — die Verfügbarkeit umfasst den ganzen Tag",
+            "subtitle": "Ein Name und ein Zeitraum genügen. Alles andere lässt sich später ändern.",
+            "timesEmpty": "Nicht festgelegt, die Verfügbarkeit umfasst also den ganzen Tag",
             "timesSummary": "{start} bis {end}",
             "title": "Veranstaltung erstellen"
         },
         "created": "Veranstaltung erstellt",
-        "delete": "Veranstaltungsgruppe löschen",
-        "deleteConfirm": "Sind Sie sicher, dass Sie diese Veranstaltungsgruppe löschen möchten? Alle Verfügbarkeitsdaten gehen verloren.",
+        "delete": "Veranstaltung löschen",
+        "deleteConfirm": "Möchten Sie diese Veranstaltung wirklich löschen? Alle zugehörigen Verfügbarkeiten gehen verloren.",
         "detail": {
-            "dateConstraintHint": "Der Zeitraum ist durch vorhandene Aufgaben eingeschränkt. Verwenden Sie \"Termine verschieben\", um alles gleichzeitig zu verschieben.",
+            "dateConstraintHint": "Vorhandene Aufgaben schränken den Zeitraum ein. Um alles auf einmal zu verschieben, nutzen Sie unten „Termine verschieben“.",
             "earliestTask": "Früheste Aufgabe: {date}",
-            "editDescription": "Name, Beschreibung und Zeitraum dieser Veranstaltungsgruppe bearbeiten.",
+            "editDescription": "Name, Beschreibung und Zeitraum dieser Veranstaltung bearbeiten.",
             "latestTask": "Späteste Aufgabe: {date}",
             "legend": {
                 "eventDay": "Aufgabentag",
@@ -308,19 +308,19 @@
             "shiftApply": "Alle Termine verschieben",
             "shiftBackward": "zurück",
             "shiftDates": "Termine verschieben",
-            "shiftDescription": "Das gesamte Programm auf ein neues Datum verschieben. Alle Aufgaben, Dienstschichten und Verfügbarkeiten werden um denselben Zeitraum verschoben.",
+            "shiftDescription": "Das gesamte Programm auf ein neues Startdatum verschieben. Alle Aufgaben, Schichten und Verfügbarkeiten rücken um gleich viele Tage mit.",
             "shiftForward": "vorwärts",
             "shiftNewStart": "Neues Startdatum",
             "shiftPreview": "{days} Tage {direction}",
-            "shiftSuccess": "Alle Termine erfolgreich verschoben.",
+            "shiftSuccess": "Alle Termine verschoben.",
             "tasks": "Aufgaben in dieser Gruppe",
             "tasksEmpty": "Noch keine Aufgaben dieser Gruppe zugeordnet.",
-            "title": "Veranstaltungsgruppendetails",
-            "updated": "Veranstaltungsgruppe aktualisiert."
+            "title": "Veranstaltungsdetails",
+            "updated": "Veranstaltung aktualisiert."
         },
-        "draftBanner": "Diese Veranstaltungsgruppe ist ein Entwurf und für reguläre Benutzer nicht sichtbar. Ändern Sie den Status auf „Veröffentlicht\", um sie verfügbar zu machen.",
-        "edit": "Veranstaltungsgruppe bearbeiten",
-        "empty": "Keine Veranstaltungsgruppen gefunden.",
+        "draftBanner": "Diese Veranstaltung ist ein Entwurf, Mitglieder sehen sie noch nicht. Setzen Sie den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
+        "edit": "Veranstaltung bearbeiten",
+        "empty": "Keine Veranstaltungen gefunden.",
         "expired": "Abgelaufen",
         "featured": {
             "badge": "Empfohlen",
@@ -332,8 +332,8 @@
         },
         "fields": {
             "defaultTimes": "Standard-Zeitfenster",
-            "defaultTimesHint": "Optional. Begrenzt das Verfügbarkeitsraster standardmäßig auf diese Stunden. Aufgaben können trotzdem außerhalb dieses Fensters geplant werden. Bei Veranstaltungen, die bis in den nächsten Morgen gehen, lassen Sie beide Felder leer und legen Sie die Zeiten stattdessen bei den einzelnen Aufgaben fest.",
-            "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich — lassen Sie für solche Veranstaltungen beide Felder leer.",
+            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lassen Sie beide Felder leer und legen Sie die Zeiten bei den einzelnen Aufgaben fest.",
+            "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lassen Sie für Veranstaltungen über Nacht beide Felder leer.",
             "description": "Beschreibung",
             "endDate": "Enddatum",
             "endTime": "Endzeit",
@@ -369,6 +369,7 @@
             "accept": "Annehmen und mitmachen",
             "alreadyMember": "Du machst bei dieser Veranstaltung schon mit.",
             "asRole": "Du machst mit als",
+            "createAccount": "Konto anlegen",
             "decline": "Jetzt nicht",
             "from": "Du wurdest eingeladen mitzumachen.",
             "fromNamed": "{name} hat dich eingeladen mitzumachen.",
@@ -382,11 +383,14 @@
             "joined": "Willkommen bei {name}",
             "notFoundBody": "Die Einladung wurde vielleicht zurückgezogen oder der Link ist falsch.",
             "notFoundTitle": "Dieser Link funktioniert nicht",
-            "openEvent": "Veranstaltung öffnen"
+            "openEvent": "Veranstaltung öffnen",
+            "signIn": "Ich habe schon ein Konto",
+            "signedOutBody": "Melde dich an oder lege ein Konto an, um die Einladung zu sehen und anzunehmen.",
+            "signedOutTitle": "Du wurdest eingeladen"
         },
         "join": {
             "request": "Mitmachen anfragen",
-            "requestSent": "Anfrage gesendet — die Organisation meldet sich bei dir",
+            "requestSent": "Anfrage gesendet. Die Organisation meldet sich bei dir.",
             "requested": "Anfrage gestellt"
         },
         "joinRequests": {
@@ -409,7 +413,7 @@
             "remove": "{name} entfernen",
             "removed": "Aus der Veranstaltung entfernt",
             "roleChanged": "Rolle geändert",
-            "subtitle": "Alle, die mitmachen — und was sie tun dürfen.",
+            "subtitle": "Alle, die mitmachen, und was sie tun dürfen.",
             "title": "Personen",
             "transferAction": "Übergeben",
             "transferHint": "Die neue Person übernimmt die Veranstaltung. Du bleibst Organisator:in.",
@@ -432,7 +436,7 @@
             "published": "Veröffentlicht"
         },
         "subtitle": "Anstehende Programme durchsuchen",
-        "title": "Veranstaltungsgruppen",
+        "title": "Veranstaltungen",
         "visibility": {
             "private": {
                 "hint": "Nur eingeladene Personen finden die Veranstaltung und können mitmachen.",
@@ -447,7 +451,7 @@
     "selectEvent": {
         "changeEvent": "Veranstaltung wechseln",
         "discover": {
-            "emptyBody": "Aktuell sind keine öffentlichen Veranstaltungen offen — du kannst deine eigene starten.",
+            "emptyBody": "Gerade sind keine öffentlichen Veranstaltungen offen. Du kannst aber deine eigene starten.",
             "emptyTitle": "Gerade nichts zu entdecken",
             "featuredTitle": "Empfohlen",
             "hint": "Öffentliche Veranstaltungen, bei denen du anfragen kannst. Die Organisation entscheidet.",
@@ -464,7 +468,7 @@
         },
         "notifications": {
             "finish": "Einrichtung abschließen",
-            "phoneHint": "Wird von Organisatoren genutzt, um Sie zu Schichten zu erreichen.",
+            "phoneHint": "Damit kann die Organisation Sie wegen Ihrer Schichten erreichen.",
             "phoneLabel": "Telefonnummer",
             "phonePlaceholder": "z.B. +49 151 23456789",
             "phoneTitle": "Telefonnummer",
@@ -489,30 +493,30 @@
             "mine": "Meine Veranstaltungen"
         },
         "visual": {
-            "expiredHeadline": "Lassen Sie uns zur nächsten Veranstaltung übergehen.",
+            "expiredHeadline": "Weiter zur nächsten Veranstaltung.",
             "features": {
-                "coordBody": "Verwalter, Helfer und Teilnehmer bleiben auf dem gleichen Stand.",
+                "coordBody": "Organisation, Helfende und Teilnehmende sehen denselben Plan.",
                 "coordTitle": "Gemeinsam koordinieren",
                 "scopedBody": "Aufgaben, Schichten und Buchungen bleiben in der gewählten Veranstaltung.",
                 "scopedTitle": "Fokus auf eine Veranstaltung"
             },
-            "footer": "Eine Gemeinschaft, ein Fokus — wählen Sie die Veranstaltung, WirkSam erledigt den Rest.",
+            "footer": "Wählen Sie die Veranstaltung, WirkSam erledigt den Rest.",
             "mobileContinue": "Veranstaltung wählen",
             "onboardingHeadline": "Willkommen. Wählen Sie die Veranstaltung, für die Sie hier sind.",
             "step2": {
                 "features": {
-                    "controlBody": "Alles, was Sie nicht möchten, lässt sich pro Kanal global stummschalten.",
+                    "controlBody": "Was Sie nicht möchten, schalten Sie stumm. Jeden Kanal können Sie jederzeit ganz abschalten.",
                     "controlTitle": "Sie behalten die Kontrolle",
-                    "remindersBody": "Wir erinnern Sie vor jeder Schicht, damit nichts untergeht.",
+                    "remindersBody": "Wir erinnern Sie vor jeder Schicht.",
                     "remindersTitle": "Schicht-Erinnerungen",
-                    "updatesBody": "Erfahren Sie von neu veröffentlichten Schichten, Planänderungen und Absagen, die Sie betreffen.",
+                    "updatesBody": "Erfahren Sie von neuen Schichten, Planänderungen und Absagen, die Sie betreffen.",
                     "updatesTitle": "Planungs-Updates"
                 },
                 "headline": "Wählen Sie, wie wir Sie erreichen.",
                 "mobileContinue": "Benachrichtigungen einrichten",
-                "subhead": "Benachrichtigungen halten Sie über Ihre Schichten auf dem Laufenden und ermöglichen es Organisatoren, Sie im Zweifel zu erreichen. Wählen Sie beliebige Kombinationen — E-Mail, Push, Telegram oder Telefon."
+                "subhead": "Benachrichtigungen halten Sie über Ihre Schichten auf dem Laufenden, und die Organisation kann Sie erreichen. Kombinieren Sie beliebig: E-Mail, Push, Telegram und Telefon."
             },
-            "subhead": "WirkSam richtet Ihre Ansicht auf eine einzelne Veranstaltung aus, damit Sie nicht die richtige Liste suchen müssen.",
+            "subhead": "WirkSam zeigt Ihnen immer nur eine Veranstaltung, damit Sie nicht nach der richtigen Liste suchen müssen.",
             "switchHeadline": "Zu einer anderen Veranstaltung wechseln."
         }
     },
@@ -537,7 +541,7 @@
             "location": "Ort",
             "myNotes": "Meine Anmerkungen",
             "noBookings": "Noch keine Buchungen.",
-            "noNotes": "Füge eine Notiz hinzu, die für den Organisator sichtbar ist — z.B. Fragen, Einschränkungen oder besondere Wünsche.",
+            "noNotes": "Füge eine Notiz für die Organisation hinzu, z. B. Fragen, Einschränkungen bei deiner Zeit oder besondere Wünsche.",
             "notesPlaceholder": "z.B. komme später, brauche Ausrüstung, Ernährungshinweise...",
             "notesSaved": "Anmerkungen gespeichert.",
             "openBookingDetails": "Buchungsdetails öffnen",
@@ -568,11 +572,11 @@
     "tasks": {
         "addShiftsView": {
             "sections": {
-                "batch": "Batch-Details",
+                "batch": "Details der Serie",
                 "batchDesc": "Optionaler Ort und Kategorie für diese Schichten"
             },
             "submit": "Schichten hinzufügen",
-            "subtitle": "Neue Dienstschichten zu dieser Aufgabe hinzufügen",
+            "subtitle": "Weitere Schichten zu dieser Aufgabe hinzufügen",
             "success": "{count} Dienstschichten hinzugefügt!",
             "title": "Schichten hinzufügen"
         },
@@ -607,8 +611,8 @@
             "groupDateHint": "Termine sind auf den Zeitraum der Veranstaltung beschränkt ({start} – {end})",
             "noDatesSelected": "Noch keine Termine ausgewählt",
             "preview": {
-                "clickToExclude": "Klicken Sie auf eine Schicht, um sie von der Erstellung auszuschließen.",
-                "noShifts": "Mit der aktuellen Konfiguration werden keine Schichten generiert. Bitte füllen Sie den Zeitplan aus.",
+                "clickToExclude": "Klicken Sie auf eine Schicht, um sie auszulassen.",
+                "noShifts": "Mit diesen Einstellungen würden keine Schichten entstehen. Füllen Sie den Zeitplan aus.",
                 "shiftsOnDate": "{count} Schichten",
                 "summary": "{shifts} Schichten über {days} Tage"
             },
@@ -623,7 +627,7 @@
                 "overridesDesc": "Zeiten für bestimmte Tage anpassen",
                 "peoplePerShift": "Personen pro Schicht",
                 "remainder": "Restzeit",
-                "remainderDesc": "Wie mit übrig gebliebener Zeit umgegangen wird, wenn Schichten nicht gleichmäßig aufgehen",
+                "remainderDesc": "Was mit übriger Zeit passiert, wenn die Schichten nicht genau aufgehen",
                 "remainderMode": {
                     "drop": "Restzeit ignorieren",
                     "extend": "Letzte Schicht verlängern",
@@ -641,12 +645,12 @@
                 "event": "Veranstaltung",
                 "eventDesc": "Diese Aufgabe optional einer Veranstaltung zuordnen",
                 "preview": "Vorschau",
-                "previewDesc": "Überprüfen Sie die Schichten, die generiert werden",
+                "previewDesc": "Prüfen Sie die Schichten, die angelegt werden",
                 "schedule": "Zeitplan & Schichten",
-                "scheduleDesc": "Konfigurieren, wann Dienstschichten erstellt werden sollen"
+                "scheduleDesc": "Legen Sie fest, wann die Schichten stattfinden"
             },
             "submit": "Aufgabe erstellen",
-            "subtitle": "Neue Aufgabe mit automatisch generierten Dienstschichten einrichten",
+            "subtitle": "Neue Aufgabe anlegen, die Schichten werden automatisch erstellt",
             "success": "Aufgabe mit {count} Dienstschichten erstellt!",
             "title": "Aufgabe erstellen",
             "tourExample": {
@@ -659,15 +663,15 @@
         "deleteConfirm": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Alle Dienstschichten und Buchungen gehen verloren.",
         "detail": {
             "addShift": "Dienstschicht hinzufügen",
-            "addShiftBatch": "Schicht-Batch generieren",
+            "addShiftBatch": "Schichtserie erzeugen",
             "addShifts": "Schichten hinzufügen",
             "addSingleShift": "Einzelne Schicht hinzufügen",
             "allCategories": "Alle Kategorien",
             "allLocations": "Alle Orte",
             "booked": "Gebucht",
             "deleteBatch": "Schichtserie löschen",
-            "deleteBatchConfirm": "Sind Sie sicher, dass Sie diesen Batch löschen möchten? Alle zugehörigen Schichten und Buchungen werden entfernt.",
-            "deleteBatchSuccess": "Batch erfolgreich gelöscht.",
+            "deleteBatchConfirm": "Möchten Sie diese Schichtserie wirklich löschen? Alle zugehörigen Schichten und Buchungen werden entfernt.",
+            "deleteBatchSuccess": "Schichtserie gelöscht.",
             "hiddenShifts": "{count} Schichten durch Filter ausgeblendet",
             "myBookings": "Meine Buchungen",
             "myBookingsCount": "{count} gebucht",
@@ -678,19 +682,19 @@
             "title": "Aufgabendetails",
             "unbatchedShifts": "Weitere Schichten"
         },
-        "draftBanner": "Diese Aufgabe ist ein Entwurf und für reguläre Benutzer nicht sichtbar. Ändern Sie den Status auf „Veröffentlicht\", um sie verfügbar zu machen.",
+        "draftBanner": "Diese Aufgabe ist ein Entwurf, Mitglieder sehen sie noch nicht. Setzen Sie den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
         "edit": "Aufgabe bearbeiten",
         "editView": {
             "affectedBookings": {
                 "cancel": "Abbrechen",
                 "confirm": "Trotzdem fortfahren",
-                "description": "Die folgenden bestätigten Buchungen werden storniert, da ihre Schichten nach der Neugenerierung nicht mehr existieren. Die Benutzer wurden noch nicht benachrichtigt — dies ist derzeit ein manueller Prozess.",
+                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, Sie müssen ihnen selbst Bescheid geben.",
                 "shift": "Schicht",
                 "title": "Betroffene Buchungen",
                 "user": "Benutzer"
             },
-            "editBatch": "Batch bearbeiten",
-            "editBatchSubtitle": "Batch-Zeitplan ändern und Schichten neu generieren",
+            "editBatch": "Schichtserie bearbeiten",
+            "editBatchSubtitle": "Zeitplan der Serie ändern und ihre Schichten neu erstellen",
             "preview": {
                 "added": "{count} neu",
                 "booked": "{count} gebucht",
@@ -698,9 +702,9 @@
                 "removed": "{count} entfernt"
             },
             "regenerate": "Schichten neu generieren",
-            "saveSuccess": "Aufgabe erfolgreich aktualisiert!",
+            "saveSuccess": "Aufgabe gespeichert.",
             "saving": "Wird gespeichert...",
-            "subtitle": "Aufgabendetails ändern und Dienstschichten neu generieren",
+            "subtitle": "Aufgabendetails ändern und Schichten neu erstellen",
             "title": "Aufgabe bearbeiten"
         },
         "empty": "Keine Aufgaben gefunden.",

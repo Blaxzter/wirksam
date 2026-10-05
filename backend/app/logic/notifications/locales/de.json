@@ -103,5 +103,17 @@
   "user.suspended": {
     "title": "Konto gesperrt",
     "body": "Dein Konto wurde gesperrt.{detail}"
+  },
+  "user.registered": {
+    "title": "Neue Registrierung",
+    "body": "{name} hat sich registriert und wartet auf deine Freigabe."
+  },
+  "user.approved": {
+    "title": "Konto freigegeben",
+    "body": "Dein Konto wurde freigegeben. Du kannst jetzt alles nutzen."
+  },
+  "user.rejected": {
+    "title": "Registrierung abgelehnt",
+    "body": "Deine Registrierung wurde nicht freigegeben.{detail}"
   }
 }

@@ -28,8 +28,8 @@
         "reminders": "Reminders"
     },
     "deleteAll": "Delete all",
-    "deleteAllConfirm": "This will permanently delete all your notifications. This cannot be undone.",
-    "deleteAllFailed": "Failed to delete notifications",
+    "deleteAllConfirm": "All your notifications will be permanently deleted. You cannot undo this.",
+    "deleteAllFailed": "Could not delete notifications",
     "deleteAllTitle": "Delete all notifications?",
     "deletedAll": "All notifications deleted",
     "detail": {
@@ -44,7 +44,7 @@
     },
     "empty": "No notifications yet",
     "globalToggle": {
-        "description": "Disable a channel entirely to stop all notifications through it, regardless of individual preferences below.",
+        "description": "Turn a channel off to stop every notification sent through it, whatever you set below.",
         "emailDescription": "Receive notifications via email",
         "emailLabel": "Email notifications",
         "pushDescription": "Receive push notifications in your browser",
@@ -62,23 +62,23 @@
         "autoSaving": "Saving…",
         "perTypeTitle": "Per-notification Preferences",
         "save": "Save preferences",
-        "saveFailed": "Failed to save notification preferences",
+        "saveFailed": "Could not save notification preferences",
         "saved": "Notification preferences saved",
         "subtitle": "Choose which notifications you want to receive and how they are delivered.",
         "title": "Notification Preferences"
     },
     "push": {
         "denied": "Push notifications are blocked. Please enable them in your browser settings.",
-        "description": "Receive push notifications in your browser when important tasks occur.",
+        "description": "Get notifications in your browser when something important happens.",
         "disable": "Disable",
-        "disableFailed": "Failed to disable push notifications",
+        "disableFailed": "Could not turn off push notifications",
         "disabled": "Push notifications disabled",
         "enable": "Enable push notifications",
         "enabled": "Push notifications enabled",
-        "failed": "Failed to enable push notifications",
-        "notConfigured": "Push notifications are not configured on the server.",
+        "failed": "Could not turn on push notifications",
+        "notConfigured": "Push notifications are not set up on this site.",
         "testButton": "Send test notification",
-        "testError": "Failed to send test notification. Please try again.",
+        "testError": "Could not send the test notification. Please try again.",
         "testSending": "Sending...",
         "testSuccess": "Test notification sent! Check your device.",
         "title": "Push Notifications"
@@ -86,9 +86,9 @@
     "reminders": {
         "addReminder": "Add reminder",
         "channelActiveHint": "You'll be notified via {channel} {offset}",
-        "description": "Automatically add reminders when you book a shift. You can also adjust reminders individually per booking.",
+        "description": "These reminders are added automatically whenever you book a shift. You can still change them for each booking.",
         "lastChannelHint": "At least one channel must stay enabled",
-        "noDefaults": "No default reminders set. You can add them below.",
+        "noDefaults": "No default reminders yet. Add one below.",
         "offset": {
             "15": "15 minutes before",
             "30": "30 minutes before",
@@ -102,35 +102,35 @@
         },
         "perBooking": {
             "add": "Add reminder",
-            "addFailed": "Failed to add reminder",
+            "addFailed": "Could not add reminder",
             "cancelled": "Cancelled",
             "empty": "No reminders set",
             "expired": "Expired",
             "pending": "Scheduled",
-            "removeFailed": "Failed to remove reminder",
+            "removeFailed": "Could not remove reminder",
             "sent": "Sent",
             "title": "Reminders"
         },
         "remove": "Remove",
         "removeConfirm": "Remove?",
-        "saveFailed": "Failed to save reminder settings",
+        "saveFailed": "Could not save reminder settings",
         "title": "Default Booking Reminders"
     },
     "settings": {
-        "description": "Configure how and when you receive notifications.",
+        "description": "Choose how and when you get notifications.",
         "manage": "Manage notification preferences",
         "title": "Notifications"
     },
     "telegram": {
-        "authFailed": "Telegram authentication failed. Please try again.",
-        "bindFailed": "Failed to start Telegram connection",
+        "authFailed": "Signing in with Telegram did not work. Please try again.",
+        "bindFailed": "Could not start connecting Telegram",
         "connect": "Connect Telegram",
         "connectManually": "Connect manually",
         "connected": "Connected",
         "connecting": "Connecting your Telegram account...",
         "description": "Connect your Telegram account to receive notifications via the WirkSam bot.",
         "disconnect": "Disconnect",
-        "loginDescription": "Click the button below to connect your Telegram account instantly.",
+        "loginDescription": "Use the button below to connect your Telegram account.",
         "manualCode": "Connect manually instead",
         "manualFallback": "Having trouble? Connect manually instead",
         "notConnectedShort": "Not connected",
@@ -140,7 +140,7 @@
         "sendTo": "Send it to",
         "startBotHint": "To receive messages, make sure you have started the bot:",
         "title": "Telegram",
-        "unbindFailed": "Failed to disconnect Telegram",
+        "unbindFailed": "Could not disconnect Telegram",
         "unbound": "Telegram disconnected",
         "waitingForVerification": "Click the button above, then press Start in Telegram. This page will update automatically."
     },
@@ -175,7 +175,7 @@
                 "description": "Reminder before a booked shift starts",
                 "name": "Booking Reminder"
             },
-            "slot_cobooked": {
+            "shift_cobooked": {
                 "description": "When someone else books a shift you are on",
                 "name": "Shift Co-booked"
             }
@@ -185,9 +185,33 @@
                 "description": "When someone sets up a new event as a copy of an earlier one and adds you to it",
                 "name": "Event Copied"
             },
+            "invitation": {
+                "description": "When someone invites you to an event",
+                "name": "Event Invitation"
+            },
+            "invitation_accepted": {
+                "description": "When someone you invited joins your event",
+                "name": "Invitation Accepted"
+            },
+            "join_approved": {
+                "description": "When your request to join an event is approved",
+                "name": "Join Request Approved"
+            },
+            "join_declined": {
+                "description": "When your request to join an event is declined",
+                "name": "Join Request Declined"
+            },
+            "join_requested": {
+                "description": "When someone asks to join an event you manage",
+                "name": "Join Request"
+            },
             "published": {
                 "description": "When a new event is published",
                 "name": "Event Published"
+            },
+            "role_changed": {
+                "description": "When your role in an event changes",
+                "name": "Role Changed"
             }
         },
         "shift": {
@@ -208,16 +232,24 @@
         },
         "user": {
             "approved": {
-                "description": "When your account is approved",
+                "description": "When an administrator approves your account",
                 "name": "Account Approved"
             },
             "registered": {
-                "description": "When a new user signs up and is pending approval",
-                "name": "New User Registered"
+                "description": "When someone signs up and is waiting for approval",
+                "name": "New Registration"
+            },
+            "reinstated": {
+                "description": "When a suspended account is restored",
+                "name": "Account Reinstated"
             },
             "rejected": {
-                "description": "When your account is rejected",
-                "name": "Account Rejected"
+                "description": "When an administrator turns down your registration",
+                "name": "Registration Rejected"
+            },
+            "suspended": {
+                "description": "When an administrator suspends your account",
+                "name": "Account Suspended"
             }
         }
     },

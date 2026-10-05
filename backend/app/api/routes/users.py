@@ -27,6 +27,7 @@ from app.models.user_availability import UserAvailability, UserAvailabilityDate
 from app.schemas.user import (
     OwnershipTransferRequest,
     OwnershipTransferResult,
+    RejectRegistrationRequest,
     UserCounts,
     UserCreate,
     UserListResponse,
@@ -152,7 +153,7 @@ async def list_users(
     session: DBDep,
     _: CurrentSuperuser,
     q: str | None = None,
-    status_filter: Literal["all", "active", "pending", "rejected"] = "all",
+    status_filter: Literal["all", "active", "pending", "rejected", "suspended"] = "all",
     skip: int = 0,
     limit: int = 20,
 ) -> UserListResponse:
@@ -215,6 +216,71 @@ async def update_user(
         )
 
     return updated
+
+
+@router.post("/{user_id}/approve", response_model=UserRead)
+async def approve_user(
+    user_id: uuid.UUID,
+    session: DBDep,
+    _: CurrentSuperuser,
+    background_tasks: BackgroundTasks,
+) -> User:
+    """Let a registration out of the approval queue.
+
+    Also the way back for a rejected one: a superadmin who changes their mind
+    approves it like any other. Approving an account that is already approved
+    does nothing and sends nothing.
+    """
+    from app.logic.notifications.triggers import dispatch_user_approved
+
+    user = await crud_user.get(session, id=user_id, raise_404_error=True)
+    if user.approval_status == "approved":
+        return user
+    user.approval_status = "approved"
+    user.rejection_reason = None
+    session.add(user)
+    # Flushed, not committed: ``get_db`` commits before the response goes out,
+    # and the notification task scheduled below runs after that.
+    await session.flush()
+    await session.refresh(user)
+    background_tasks.add_task(dispatch_user_approved, user_id=user.id)
+    return user
+
+
+@router.post("/{user_id}/reject", response_model=UserRead)
+async def reject_user(
+    user_id: uuid.UUID,
+    body: RejectRegistrationRequest,
+    session: DBDep,
+    _: CurrentSuperuser,
+    background_tasks: BackgroundTasks,
+) -> User:
+    """Turn a registration away, optionally saying why.
+
+    The account is kept rather than deleted, so its owner can sign in and read
+    the reason, and delete the account themselves if they want it gone. Only an
+    account still in the queue can be rejected: an approved one is suspended
+    instead, which is a different decision with its own message.
+    """
+    from app.logic.notifications.triggers import dispatch_user_rejected
+
+    user = await crud_user.get(session, id=user_id, raise_404_error=True)
+    if user.approval_status != "pending":
+        raise_problem(
+            status.HTTP_409_CONFLICT,
+            code="user.not_pending",
+            detail="Only a registration that is waiting for approval can be rejected.",
+        )
+    reason = (body.reason or "").strip() or None
+    user.approval_status = "rejected"
+    user.rejection_reason = reason
+    session.add(user)
+    # Flushed, not committed: ``get_db`` commits before the response goes out,
+    # and the notification task scheduled below runs after that.
+    await session.flush()
+    await session.refresh(user)
+    background_tasks.add_task(dispatch_user_rejected, user_id=user.id, reason=reason)
+    return user
 
 
 @router.get("/me/export")

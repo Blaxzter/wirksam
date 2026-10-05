@@ -97,17 +97,21 @@ When adding a feature: model → schema → CRUD → route → register in `api/
 
 ### Auth Pattern
 
-Signup is open: anyone who authenticates gets an active account, and that
-account grants nothing on its own. **Authorisation lives on the event**, not on
+Signup is open by default: anyone who registers gets an active account, and
+that account grants nothing on its own. A self-hosted deployment can restrict it
+with `REGISTRATION_MODE` (`open` / `approval` / `invite`),
+`REGISTRATION_ALLOWED_DOMAINS` and `REGISTRATION_INVITE_BYPASS`; the rules live
+in `app/logic/auth/registration.py` and are described in
+[`docs/AUTH.md`](docs/AUTH.md#who-may-register). **Authorisation lives on the event**, not on
 the user — every event is its own tenancy with an `EventMembership` row per
 participant (`owner` > `admin` > `member`). The single remaining global role is
 `admin`, the platform superadmin, who passes every check.
 
 Identity, from `backend/app/api/deps.py`:
 
-- `CurrentUser` — validates the bearer JWT, loads the DB user, requires `is_active`; use for all protected endpoints
+- `CurrentUser` — validates the bearer JWT, loads the DB user, requires `is_active` and an approved registration; use for all protected endpoints
 - `CurrentSuperuser` — platform superadmin only (user management, featuring events)
-- `AnyUser` — same, minus the `is_active` check, so a suspended account can still read or delete its own profile
+- `AnyUser` — same, minus those two checks, so a suspended or still-pending account can still read or delete its own profile
 - `QueryTokenUser` — SSE only (`EventSource` cannot send headers, so the token arrives as `?token=…`)
 - `AccessClaimsDep` — token claims without a DB hit, for the rare case where the *session* matters and the user row does not
 
@@ -192,6 +196,7 @@ Two layouts: `PreAuthLayout` (public pages) and `PostAuthLayout` (authenticated 
 - `frontend/.env` — Vite env vars (copy from `frontend/.env.example`)
 - `SECRET_KEY` in root `.env` signs the access tokens. It defaults to `changethis`, which is fine locally (a warning) and refuses to boot in every other environment. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 - `SUPERADMIN_EMAILS` in root `.env` decides who gets the platform `admin` role on register or sign-in — set it before you expect to reach the admin screens
+- `REGISTRATION_MODE` (`open`, `approval`, `invite`), `REGISTRATION_ALLOWED_DOMAINS` and `REGISTRATION_INVITE_BYPASS` in root `.env` decide who may sign up. `SUPERADMIN_EMAILS` always get in, so set those first before closing signup
 - `TURNSTILE_SECRET_KEY` in root `.env` turns on the Cloudflare Turnstile bot check in front of
   registration; unset (the default) disables it, which is what local dev and the E2E suite run with.
   The matching public site key is `TURNSTILE_SITE_KEY`, served to the browser as runtime config —

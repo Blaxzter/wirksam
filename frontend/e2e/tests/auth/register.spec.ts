@@ -5,7 +5,8 @@
  * This is the one place that watches somebody arrive with nothing — no cookie,
  * no session, no account — and end up inside the app.
  */
-import { expect, serverApiRaw, test } from '../../fixtures.js'
+import { expect, serverApi, serverApiRaw, test } from '../../fixtures.js'
+import { futureDate, uniqueName } from '../../helpers/api.js'
 import {
   AUTH_TEST_PASSWORD,
   authTestEmail,
@@ -88,5 +89,57 @@ test.describe('Auth – registration', () => {
       'An account already exists for this email address.',
     )
     await expect(page).toHaveURL(/\/register/)
+  })
+})
+
+test.describe('Auth – registration from an invitation', () => {
+  test('a signed-out visitor is offered an account and lands back on the invite', async ({
+    adminUser,
+    page,
+  }, testInfo) => {
+    const email = authTestEmail(testInfo)
+    const event = await serverApi<{ id: string; name: string }>(
+      'POST',
+      '/events/',
+      adminUser.email,
+      {
+        name: uniqueName('E2E Invite Signup'),
+        status: 'published',
+        visibility: 'private',
+        start_date: futureDate(30),
+        end_date: futureDate(34),
+      },
+    )
+    try {
+      const invitation = await serverApi<{ token: string }>(
+        'POST',
+        `/events/${event.id}/invitations`,
+        adminUser.email,
+        { role: 'member' },
+      )
+
+      // The preview needs an account, so a visitor without one is offered the
+      // two ways in instead of a "not found" for a perfectly good link.
+      await pinBrowserPreferences(page)
+      await page.goto(`/invite/${invitation.token}`)
+      await expect(page.getByTestId('invite-signed-out')).toBeVisible()
+      await page.getByTestId('btn-invite-register').click()
+
+      // The invitation travels with them, which is what an invitation-only
+      // deployment needs to accept the signup.
+      await expect(page).toHaveURL(
+        (url) => url.pathname === '/register' && url.searchParams.get('invite') === invitation.token,
+      )
+      await page.getByTestId('input-name').fill('Invited Newcomer')
+      await page.getByTestId('input-email').fill(email)
+      await page.getByTestId('input-password').fill(AUTH_TEST_PASSWORD)
+      await page.getByTestId('input-confirm-password').fill(AUTH_TEST_PASSWORD)
+      await page.getByTestId('btn-register').click()
+
+      await page.waitForURL(`**/invite/${invitation.token}`)
+      await expect(page.getByTestId('invite-event-name')).toContainText(event.name)
+    } finally {
+      await serverApiRaw('DELETE', `/events/${event.id}`, adminUser.email).catch(() => {})
+    }
   })
 })

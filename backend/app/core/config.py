@@ -1,6 +1,7 @@
+import json
 import warnings
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, cast
 
 from pydantic import (
     AnyUrl,
@@ -25,6 +26,19 @@ def parse_cors(v: Any) -> list[str] | str:
     elif isinstance(v, str):
         return v
     raise ValueError(v)
+
+
+def parse_domains(v: Any) -> list[str]:
+    """Normalise an email-domain list: "@Example.org, b.org" -> ["example.org", "b.org"]."""
+    items: list[Any]
+    if isinstance(v, str):
+        items = json.loads(v) if v.startswith("[") else v.split(",")
+    elif isinstance(v, list):
+        items = cast(list[Any], v)
+    else:
+        raise ValueError(v)
+    cleaned = (str(item).strip().lstrip("@").lower() for item in items)
+    return [domain for domain in cleaned if domain]
 
 
 class Settings(BaseSettings):
@@ -183,6 +197,43 @@ class Settings(BaseSettings):
     @property
     def turnstile_enabled(self) -> bool:
         return bool(self.TURNSTILE_SECRET_KEY)
+
+    # Who may create an account. The hosted instance runs open signup, but a
+    # church or a club hosting its own copy usually wants a door on it. Three
+    # settings, which combine:
+    #
+    # * REGISTRATION_MODE
+    #   - "open": anyone may sign up and the account works immediately.
+    #   - "approval": anyone may sign up, but the account waits in a queue until
+    #     a superadmin approves or rejects it.
+    #   - "invite": nobody may sign up without an event invitation, either the
+    #     link they arrived through or an open invitation sent to their address.
+    # * REGISTRATION_ALLOWED_DOMAINS limits self-signup to these email domains
+    #   (an exact match on the part after the "@"). Empty means any domain.
+    # * REGISTRATION_INVITE_BYPASS lets a valid invitation through both of the
+    #   other restrictions: an invited address skips the approval queue and the
+    #   domain list. An event admin who invites someone by name has already made
+    #   the decision the queue exists for. In "invite" mode an invitation is
+    #   required anyway, so there it only decides whether the domain list
+    #   still applies to invited addresses.
+    #
+    # SUPERADMIN_EMAILS always get in, whatever the mode. Without that, an
+    # "invite" or "approval" deployment would have no way to create the very
+    # first administrator, who is the only one who could approve anyone.
+    REGISTRATION_MODE: Literal["open", "approval", "invite"] = "open"
+    # Typed ``list | str`` for the same reason as BACKEND_CORS_ORIGINS: a plain
+    # ``list`` makes pydantic-settings JSON-decode the variable, and the
+    # comma-separated form an operator actually writes is not JSON.
+    REGISTRATION_ALLOWED_DOMAINS: Annotated[
+        list[str] | str, BeforeValidator(parse_domains)
+    ] = []
+    REGISTRATION_INVITE_BYPASS: bool = True
+
+    @property
+    def registration_domains(self) -> list[str]:
+        """The parsed domain list; ``parse_domains`` never leaves it a string."""
+        domains = self.REGISTRATION_ALLOWED_DOMAINS
+        return domains if isinstance(domains, list) else parse_domains(domains)
 
     # Sandbox demo — the "check out a test event" button.
     #

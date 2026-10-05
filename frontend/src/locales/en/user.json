@@ -3,7 +3,7 @@
         "activeEvent": {
             "change": "Change",
             "currentLabel": "Current event",
-            "description": "Tasks, shifts, and bookings are scoped to the event you have selected.",
+            "description": "You see the tasks, shifts, and bookings of the event you have selected.",
             "none": "No event selected",
             "sidebarToggle": {
                 "description": "Add a quick switcher to the sidebar so you can change events from anywhere.",
@@ -13,7 +13,7 @@
             "toggleError": "Could not save preference. Please try again."
         },
         "appearance": {
-            "description": "Choose a theme and color mode for the app. Changes apply instantly and are saved on this device.",
+            "description": "Choose a theme and colour mode for the app. Changes apply instantly and are saved on this device.",
             "mode": {
                 "dark": "Dark",
                 "light": "Light",
@@ -41,7 +41,7 @@
             "copied": "URL copied to clipboard",
             "copyFailed": "Could not copy URL",
             "copyUrl": "Copy calendar URL",
-            "description": "Subscribe to your duty bookings in your favourite calendar app.",
+            "description": "Subscribe to your booked shifts in the calendar app you already use.",
             "disabled": "Calendar sync disabled",
             "disabledMessage": "Calendar sync is currently paused. Turn it on to subscribe to your bookings in your calendar app.",
             "enableButton": "Enable calendar sync",
@@ -73,7 +73,7 @@
         "dataExport": {
             "button": "Download Data",
             "description": "Download a copy of all personal data we store about you, including your profile, bookings, availability, and notification preferences. This is your right under GDPR Art. 20 (data portability).",
-            "error": "Failed to export data. Please try again later.",
+            "error": "Could not export your data. Please try again later.",
             "exporting": "Exporting...",
             "subtitle": "Export your personal data as a JSON file.",
             "title": "Download My Data"
@@ -82,22 +82,22 @@
             "button": "Delete My Account",
             "cancelButton": "Cancel",
             "confirmButton": "Yes, delete my account",
-            "confirmDescription": "This will permanently delete your account, all your projects, tasks, and remove your authentication. This action cannot be undone.",
+            "confirmDescription": "This permanently deletes your account and everything stored with it. You cannot undo this.",
             "confirmTitle": "Are you absolutely sure?",
             "confirmWord": "DELETE",
             "deleting": "Deleting...",
-            "error": "Failed to delete account. Please try again later.",
+            "error": "Could not delete your account. Please try again later.",
             "subtitle": "Permanently delete your account and all associated data.",
-            "success": "Your account has been deleted successfully.",
+            "success": "Your account has been deleted.",
             "title": "Delete Account",
             "typeToConfirm": "Type {confirmWord} to confirm",
-            "warning": "This action is irreversible. All your projects, tasks, and profile data will be permanently deleted."
+            "warning": "This cannot be undone. Your profile and all your data will be permanently deleted."
         },
         "language": {
             "current": "Current Language",
-            "currentDescription": "Select your preferred language for the application interface.",
-            "description": "Choose your preferred language for the interface.",
-            "notificationHint": "This setting also applies to email notifications and other messages you receive.",
+            "currentDescription": "Choose the language the app uses.",
+            "description": "Choose which language the app is shown in.",
+            "notificationHint": "Emails and other messages you receive use this language too.",
             "title": "Language & Region"
         },
         "nav": {
@@ -165,26 +165,26 @@
                     "update": "Update Profile",
                     "updating": "Updating..."
                 },
-                "authError": "User not authenticated",
-                "error": "Failed to update profile. Please try again.",
+                "authError": "You are not signed in.",
+                "error": "Could not update your profile. Please try again.",
                 "fields": {
                     "bio": {
-                        "description": "A short biography or description about yourself (optional).",
+                        "description": "A few words about yourself (optional).",
                         "label": "Bio",
                         "placeholder": "Tell us a little about yourself"
                     },
                     "displayName": {
-                        "description": "This is your display name that others will see.",
+                        "description": "The name other people see.",
                         "label": "Display Name",
                         "placeholder": "Enter your display name"
                     },
                     "nickname": {
-                        "description": "A shorter name or alias for your profile.",
+                        "description": "A shorter name for your profile.",
                         "label": "Nickname",
                         "placeholder": "Enter your nickname"
                     },
                     "phoneNumber": {
-                        "description": "Your phone number so organizers can reach you if needed.",
+                        "description": "So organisers can reach you if needed.",
                         "label": "Phone Number",
                         "placeholder": "+49 123 456789"
                     },
@@ -197,7 +197,7 @@
                             "rotateRight": "Rotate right",
                             "title": "Adjust your profile picture"
                         },
-                        "description": "PNG, JPEG, WebP, or GIF (first frame) up to 20 MB. We resize and store a small WebP locally.",
+                        "description": "PNG, JPEG, WebP, or GIF (first frame) up to 20 MB. We shrink the picture and store a small copy.",
                         "label": "Profile Picture",
                         "remove": "Remove",
                         "removeSuccess": "Profile picture removed.",
@@ -207,7 +207,7 @@
                     }
                 },
                 "subtitle": "Update your profile information.",
-                "success": "Profile updated successfully!",
+                "success": "Profile updated.",
                 "title": "Update Profile"
             }
         },

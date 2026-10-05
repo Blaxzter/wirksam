@@ -415,6 +415,74 @@ async def dispatch_user_suspended(
         logger.exception("Failed to dispatch user.suspended notification")
 
 
+# ── Registration approval ─────────────────────────────────────────
+
+
+async def dispatch_user_registered(
+    *,
+    user_id: uuid.UUID,
+    user_name: str | None,
+    user_email: str | None,
+) -> None:
+    """Tell the superadmins a new account is waiting in the approval queue."""
+    try:
+        async with async_session() as db:
+            svc = NotificationService(db)
+            name = user_name or user_email or "Unknown"
+            await svc.notify_admins(
+                type_code="user.registered",
+                message_factory=lambda lang, _name=name: get_message(
+                    "user.registered", lang, name=_name
+                ),
+                data={"user_id": str(user_id)},
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch user.registered notification")
+
+
+async def dispatch_user_approved(*, user_id: uuid.UUID) -> None:
+    """Tell someone their account was approved and now works."""
+    try:
+        async with async_session() as db:
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=[user_id],
+                type_code="user.approved",
+                message_factory=lambda lang: get_message("user.approved", lang),
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch user.approved notification")
+
+
+async def dispatch_user_rejected(
+    *,
+    user_id: uuid.UUID,
+    reason: str | None = None,
+) -> None:
+    """Tell someone their registration was not approved, and why if we know."""
+    try:
+        async with async_session() as db:
+            svc = NotificationService(db)
+
+            def _factory(lang: str) -> tuple[str, str]:
+                if lang == "de":
+                    detail = f" Grund: {reason}" if reason else ""
+                else:
+                    detail = f" Reason: {reason}" if reason else ""
+                return get_message("user.rejected", lang, detail=detail)
+
+            await svc.notify(
+                recipient_ids=[user_id],
+                type_code="user.rejected",
+                message_factory=_factory,
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch user.rejected notification")
+
+
 # ── Event membership ──────────────────────────────────────────────
 
 

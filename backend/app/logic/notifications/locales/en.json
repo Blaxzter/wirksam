@@ -103,5 +103,17 @@
   "user.suspended": {
     "title": "Account Suspended",
     "body": "Your account has been suspended.{detail}"
+  },
+  "user.registered": {
+    "title": "New User Registered",
+    "body": "{name} has signed up and is waiting for your approval."
+  },
+  "user.approved": {
+    "title": "Account Approved",
+    "body": "Your account has been approved. You can now use everything."
+  },
+  "user.rejected": {
+    "title": "Account Rejected",
+    "body": "Your registration was not approved.{detail}"
   }
 }

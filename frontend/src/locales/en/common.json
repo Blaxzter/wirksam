@@ -1,4 +1,15 @@
 {
+    "accountApproval": {
+        "pending": {
+            "checkAgain": "Check again",
+            "description": "An administrator of this site checks every new account before it can be used. You will get a message as soon as yours is approved.",
+            "title": "Your account is waiting for approval"
+        },
+        "rejected": {
+            "description": "An administrator of this site decided not to approve this account. If you think this is a mistake, get in touch with them.",
+            "title": "Your registration was not approved"
+        }
+    },
     "accountSuspended": {
         "cancel": "Cancel",
         "confirmDelete": "Delete account",
@@ -53,28 +64,28 @@
         "api": {
             "createProject": "Failed to create project",
             "createTask": "Failed to create task",
-            "default": "An unexpected error occurred. Please try again.",
+            "default": "Something went wrong. Please try again.",
             "deleteProject": "Failed to delete project",
             "deleteTask": "Failed to delete task",
-            "forbidden": "You do not have permission to access this resource.",
+            "forbidden": "You do not have permission to see this.",
             "loadProject": "Failed to load project",
             "loadProjects": "Failed to load projects",
             "loadTasks": "Failed to load tasks",
-            "network": "Network error. Please check your internet connection.",
-            "notFoundResource": "The requested resource was not found",
+            "network": "No connection. Please check your internet connection.",
+            "notFoundResource": "We could not find what you were looking for.",
             "projectNameRequired": "Project name is required",
             "rateLimited": "Too many requests. Please try again later.",
-            "server": "Unexpected error occurred on the server.",
+            "server": "Something went wrong on our end.",
             "statusFallback": "Request failed with status {status}",
             "taskTitleRequired": "Task title is required",
-            "timeout": "Request timeout. The server is taking too long to respond.",
-            "unauthorized": "Authentication failed. Please log in again.",
+            "timeout": "The server is taking too long to respond.",
+            "unauthorized": "Your sign-in is no longer valid. Please log in again.",
             "updateProject": "Failed to update project",
             "updateTask": "Failed to update task",
-            "validation": "Validation error: {message}"
+            "validation": "Please check your entry: {message}"
         },
         "boundary": {
-            "description": "An unexpected error occurred while rendering this page.",
+            "description": "This page could not be displayed because of an unexpected error.",
             "goHome": "Go home",
             "title": "Something went wrong",
             "tryAgain": "Try again"
@@ -108,8 +119,8 @@
         "numberMax": "Pick {max} or less.",
         "numberMin": "Pick {min} or more.",
         "required": "Please fill this in.",
-        "tooLong": "A little too long — {max} characters at most.",
-        "tooShort": "A little short — at least {min} characters.",
+        "tooLong": "A little too long: {max} characters at most.",
+        "tooShort": "A little short: at least {min} characters.",
         "url": "That does not look like a web address yet."
     }
 }

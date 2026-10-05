@@ -23,7 +23,7 @@
     },
     "expired": {
         "createAccount": "Richtiges Konto anlegen",
-        "message": "Demo-Veranstaltungen leben nur eine Stunde, und deine wurde gerade mit allem darin gelöscht. Du kannst dir eine neue ansehen oder ein richtiges Konto anlegen und behalten, was du planst.",
+        "message": "Demo-Veranstaltungen gibt es nur für eine Stunde, und deine wurde gerade mit allem darin gelöscht. Du kannst dir eine neue ansehen oder ein richtiges Konto anlegen und behalten, was du planst.",
         "startAnother": "Neue Demo starten",
         "title": "Deine Demo ist beendet"
     },
@@ -33,13 +33,13 @@
             "description": "Trag dich in Schichten ein, sag, wann du kannst, und sieh, wofür du dich gemeldet hast.",
             "title": "Als Helfer:in"
         },
-        "intro": "Wir legen dir eine Beispielveranstaltung an — Aufgaben, Schichten, ein paar Teamleute — und bringen dich direkt hinein. Nichts davon ist echt, und nach einer Stunde wird alles wieder gelöscht.",
+        "intro": "Wir legen dir eine Beispielveranstaltung mit Aufgaben, Schichten und ein paar Teamleuten an und bringen dich direkt hinein. Nichts davon ist echt, und nach einer Stunde wird alles wieder gelöscht.",
         "manager": {
             "description": "Plane Aufgaben und Schichten, sieh, welche Plätze noch frei sind, und kümmere dich um Einladungen und Beitrittsanfragen.",
             "title": "Als Organisator:in"
         },
         "question": "Welche Seite möchtest du sehen?",
-        "signedInWarning": "Mit der Demo wirst du aus deinem Konto abgemeldet. Deine eigenen Veranstaltungen bleiben unberührt — du kannst dich jederzeit wieder anmelden.",
+        "signedInWarning": "Mit der Demo wirst du aus deinem Konto abgemeldet. Deine eigenen Veranstaltungen bleiben unberührt, und du kannst dich jederzeit wieder anmelden.",
         "start": "Demo starten",
         "starting": "Demo wird vorbereitet …",
         "title": "Demo-Veranstaltung ansehen"
@@ -47,12 +47,12 @@
     "welcome": {
         "explore": "Danke, ich schau mich selbst um",
         "helper": {
-            "body": "Du bist beim Sommerfest am Fluss — einem Dorffest über drei Wochenenden, das komplett von Freiwilligen gestemmt wird. Du bist eine der Helfenden: Du kannst dich in Schichten eintragen, sie wieder abgeben und hinterlegen, wann du Zeit hast."
+            "body": "Du bist beim Sommerfest am Fluss, einem Dorffest über drei Wochenenden, das komplett von Freiwilligen gestemmt wird. Du bist eine der Helfenden: Du kannst dich in Schichten eintragen, sie wieder abgeben und hinterlegen, wann du Zeit hast."
         },
         "manager": {
-            "body": "Du organisierst das Sommerfest am Fluss — ein Dorffest über drei Wochenenden, das komplett von Freiwilligen gestemmt wird. Du legst die Aufgaben an, lässt daraus Schichten entstehen und siehst, wo noch Leute fehlen."
+            "body": "Du organisierst das Sommerfest am Fluss, ein Dorffest über drei Wochenenden, das komplett von Freiwilligen gestemmt wird. Du legst die Aufgaben an, wirksam macht daraus Schichten, und du siehst, wo noch Leute fehlen."
         },
-        "playground": "Probier ruhig alles aus. Die Veranstaltung gehört dir allein, niemand sonst bekommt etwas davon mit — und wenn die Zeit oben abgelaufen ist, verschwindet sie mit allem, was du darin angestellt hast.",
+        "playground": "Probier ruhig alles aus. Die Veranstaltung gehört dir allein, und niemand sonst sieht sie. Wenn die Zeit oben abgelaufen ist, wird sie mit allem, was du darin gemacht hast, gelöscht.",
         "question": "Soll ich dir kurz zeigen, wie das hier funktioniert?",
         "title": "Willkommen in deiner Demo",
         "tour": "Ja, zeig es mir"

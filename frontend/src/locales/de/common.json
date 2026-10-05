@@ -1,4 +1,15 @@
 {
+    "accountApproval": {
+        "pending": {
+            "checkAgain": "Erneut prüfen",
+            "description": "Eine Administratorin oder ein Administrator dieser Seite prüft jedes neue Konto, bevor es genutzt werden kann. Du bekommst eine Nachricht, sobald deins freigegeben ist.",
+            "title": "Dein Konto wartet auf Freigabe"
+        },
+        "rejected": {
+            "description": "Eine Administratorin oder ein Administrator dieser Seite hat entschieden, dieses Konto nicht freizugeben. Wenn das ein Versehen ist, melde dich bei ihnen.",
+            "title": "Deine Registrierung wurde nicht freigegeben"
+        }
+    },
     "accountSuspended": {
         "cancel": "Abbrechen",
         "confirmDelete": "Konto löschen",
@@ -53,28 +64,28 @@
         "api": {
             "createProject": "Projekt konnte nicht erstellt werden",
             "createTask": "Aufgabe konnte nicht erstellt werden",
-            "default": "Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+            "default": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
             "deleteProject": "Projekt konnte nicht gelöscht werden",
             "deleteTask": "Aufgabe konnte nicht gelöscht werden",
-            "forbidden": "Sie haben keine Berechtigung, auf diese Ressource zuzugreifen.",
+            "forbidden": "Sie haben keine Berechtigung, das zu sehen.",
             "loadProject": "Projekt konnte nicht geladen werden",
             "loadProjects": "Projekte konnten nicht geladen werden",
             "loadTasks": "Aufgaben konnten nicht geladen werden",
-            "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.",
-            "notFoundResource": "Die angeforderte Ressource wurde nicht gefunden",
+            "network": "Keine Verbindung. Bitte überprüfen Sie Ihre Internetverbindung.",
+            "notFoundResource": "Das Gesuchte wurde nicht gefunden.",
             "projectNameRequired": "Projektname ist erforderlich",
             "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
-            "server": "Unerwarteter Fehler auf dem Server.",
+            "server": "Bei uns ist etwas schiefgelaufen.",
             "statusFallback": "Anfrage fehlgeschlagen mit Status {status}",
             "taskTitleRequired": "Aufgabentitel ist erforderlich",
-            "timeout": "Zeitüberschreitung der Anfrage. Der Server antwortet zu langsam.",
-            "unauthorized": "Authentifizierung fehlgeschlagen. Bitte melden Sie sich erneut an.",
+            "timeout": "Der Server braucht zu lange für eine Antwort.",
+            "unauthorized": "Ihre Anmeldung ist nicht mehr gültig. Bitte melden Sie sich erneut an.",
             "updateProject": "Projekt konnte nicht aktualisiert werden",
             "updateTask": "Aufgabe konnte nicht aktualisiert werden",
-            "validation": "Validierungsfehler: {message}"
+            "validation": "Bitte prüfen Sie Ihre Eingabe: {message}"
         },
         "boundary": {
-            "description": "Beim Rendern dieser Seite ist ein unerwarteter Fehler aufgetreten.",
+            "description": "Diese Seite konnte wegen eines unerwarteten Fehlers nicht angezeigt werden.",
             "goHome": "Zur Startseite",
             "title": "Etwas ist schiefgelaufen",
             "tryAgain": "Erneut versuchen"
@@ -108,8 +119,8 @@
         "numberMax": "Höchstens {max}, bitte.",
         "numberMin": "Mindestens {min}, bitte.",
         "required": "Bitte noch ausfüllen.",
-        "tooLong": "Etwas zu lang — höchstens {max} Zeichen.",
-        "tooShort": "Etwas kurz — mindestens {min} Zeichen.",
+        "tooLong": "Etwas zu lang: höchstens {max} Zeichen.",
+        "tooShort": "Etwas kurz: mindestens {min} Zeichen.",
         "url": "Das sieht noch nicht nach einer Webadresse aus."
     }
 }

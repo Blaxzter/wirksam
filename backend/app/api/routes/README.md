@@ -47,11 +47,13 @@ single primary-key lookup answers the whole identity question.
 Take identity through the aliases in `app/api/deps.py` and nowhere else:
 
 - **`CurrentUser`** — the default. Validates the bearer token, loads the row,
-  requires `is_active`.
+  requires `is_active` and `approval_status == "approved"` (the latter only ever
+  differs under `REGISTRATION_MODE=approval`).
 - **`CurrentSuperuser`** — additionally requires the platform `admin` role. For
   user management and other install-wide operations only.
-- **`AnyUser`** — same as `CurrentUser` but does *not* require `is_active`, so a
-  suspended account can still read or delete its own profile.
+- **`AnyUser`** — same as `CurrentUser` but does *not* require `is_active` or an
+  approved registration, so a suspended or still-pending account can still read
+  or delete its own profile.
 - **`QueryTokenUser`** — for SSE endpoints only. `EventSource` cannot send
   headers, so the token arrives as `?token=…`.
 - **`AccessClaimsDep`** — claims without a database hit, for the rare case where

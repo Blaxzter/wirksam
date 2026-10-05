@@ -44,7 +44,21 @@ const invalidMessage = computed(() => {
   return t(`duties.events.invite.invalid.${reason}`)
 })
 
+/**
+ * The preview needs a signed-in user, so a visitor without an account would
+ * only ever see "invitation not found". Offer them the two ways in instead,
+ * carrying the invitation along: back here after signing in, and to the
+ * registration form, where it is what lets an invitation-only deployment
+ * accept the signup.
+ */
+const signedOut = computed(() => !authStore.isAuthenticated)
+const returnPath = computed(() => `/invite/${encodeURIComponent(token.value)}`)
+
 async function loadPreview() {
+  if (signedOut.value) {
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const res = await get<{ data: EventInvitationPreview }>({
@@ -92,6 +106,38 @@ onMounted(loadPreview)
       <template v-if="loading">
         <CardContent class="py-12 text-center text-muted-foreground">
           {{ t('common.states.loading') }}
+        </CardContent>
+      </template>
+
+      <template v-else-if="signedOut">
+        <CardHeader class="text-center">
+          <CheckCircle2 class="mx-auto h-10 w-10 text-primary" />
+          <CardTitle data-testid="invite-signed-out">
+            {{ t('duties.events.invite.signedOutTitle') }}
+          </CardTitle>
+          <CardDescription>{{ t('duties.events.invite.signedOutBody') }}</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-2">
+          <Button
+            class="w-full"
+            data-testid="btn-invite-register"
+            @click="
+              router.push({
+                name: 'register',
+                query: { invite: token, redirect: returnPath },
+              })
+            "
+          >
+            {{ t('duties.events.invite.createAccount') }}
+          </Button>
+          <Button
+            class="w-full"
+            variant="outline"
+            data-testid="btn-invite-login"
+            @click="router.push({ name: 'login', query: { redirect: returnPath } })"
+          >
+            {{ t('duties.events.invite.signIn') }}
+          </Button>
         </CardContent>
       </template>
 

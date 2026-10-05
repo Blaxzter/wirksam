@@ -40,7 +40,7 @@ const goBackToHome = () => {
           <li>{{ $t('preauth.terms.account.items.registration') }}</li>
           <li>{{ $t('preauth.terms.account.items.accuracy') }}</li>
           <li>{{ $t('preauth.terms.account.items.security') }}</li>
-          <li>{{ $t('preauth.terms.account.items.approval') }}</li>
+          <li>{{ $t('preauth.terms.account.items.access') }}</li>
         </ul>
       </section>
 

@@ -19,19 +19,19 @@
             "setTimes": "Set times",
             "startTime": "From",
             "timeRange": "Time Range",
-            "timeRangeHint": "Set a daily time window. Leave either empty for open-ended (e.g. only 'from' = after that time).",
+            "timeRangeHint": "Set the hours you're free each day. Leave a field empty to keep that end open: with only 'From' filled in, you're available any time after it.",
             "type": "Availability Type"
         },
-        "fullyAvailableDays": "Fully available — all {count} days",
-        "fullyAvailableHint": "You'll be considered for any matching shift across the program.",
-        "fullyAvailableShort": "All program days",
+        "fullyAvailableDays": "Fully available on all {count} days",
+        "fullyAvailableHint": "You can be scheduled for any matching shift in the programme.",
+        "fullyAvailableShort": "All programme days",
         "heatLegendFull": "full",
         "heatLegendLow": "less",
         "hours": "hours",
         "hoursSummary": "{count}h",
         "meTab": "Me",
         "modeFull": "Fully available",
-        "modeFullSub": "Entire program",
+        "modeFullSub": "Entire programme",
         "modeShort": {
             "full": "Full",
             "specific": "Specific",
@@ -42,7 +42,7 @@
         "modeTimeRange": "Daily window",
         "modeTimeRangeSub": "Same hours each day",
         "notRegistered": "You haven't registered availability yet.",
-        "paintHint": "Click and drag to paint. Tap day header for whole day.",
+        "paintHint": "Click and drag to paint. Tap a day's header to fill the whole day.",
         "people": "people",
         "presetWeekday": "Preset: 9–17",
         "presetWeekend": "Weekends only",
@@ -55,7 +55,7 @@
         "summary": "Summary",
         "summaryHint": "Visible to coordinators",
         "teamEmpty": "No teammates have registered availability yet.",
-        "teamHint": "Who's around when. Tap to view.",
+        "teamHint": "Who's free when. Tap to view.",
         "teamTab": "Team ({count})",
         "teamTitle": "Team availability",
         "title": "My Availability",
@@ -72,7 +72,7 @@
     },
     "bookings": {
         "bookConfirm": "Do you want to book this shift?",
-        "bookSuccess": "Shift booked successfully!",
+        "bookSuccess": "Shift booked.",
         "cancel": "Cancel Booking",
         "cancelConfirm": "Are you sure you want to cancel this booking?",
         "cancelSuccess": "Booking cancelled.",
@@ -108,7 +108,7 @@
             "cancelled": "Cancelled",
             "confirmed": "Confirmed"
         },
-        "subtitle": "Your duty shift reservations",
+        "subtitle": "The shifts you have booked",
         "title": "My Bookings",
         "today": "Today",
         "tomorrow": "Tomorrow",
@@ -116,9 +116,9 @@
         "yesterday": "Yesterday"
     },
     "deleteDialog": {
-        "activeBookings": "This will cancel {count} active booking(s). Affected users will see the cancellation in their bookings.",
-        "activeBookingsWarning": "If there are any active bookings, they will be cancelled. Affected users will see the cancellation in their bookings.",
-        "reasonHint": "This reason will be visible to users whose bookings are cancelled.",
+        "activeBookings": "This cancels {count} active booking(s). The people affected will see the cancellation in their bookings.",
+        "activeBookingsWarning": "Any active bookings will be cancelled. The people affected will see the cancellation in their bookings.",
+        "reasonHint": "People whose bookings are cancelled will see this reason.",
         "reasonLabel": "Cancellation reason (optional)",
         "reasonPlaceholder": "e.g. Task rescheduled, no longer needed..."
     },
@@ -126,7 +126,7 @@
         "clone": {
             "action": "Copy this event",
             "adjust": {
-                "copyKeepsOldLabels": "Copied shifts keep the name and place they had last time — only the task itself gets the new ones.",
+                "copyKeepsOldLabels": "Copied shifts keep the name and place they had last time. Only the task itself gets the new ones.",
                 "errors": {
                     "batchOutside": "One of this task's blocks of shifts reaches {date}, which is outside the new event. Move the task, or widen the event.",
                     "name": "Please give this task a name.",
@@ -178,7 +178,7 @@
                 "nobodyElse": "You are the only person on this list, so there is nobody to write to.",
                 "note": "Add a few words",
                 "noteCounter": "{used} of {max} characters",
-                "notePlaceholder": "e.g. Same weekend as last year — sign-up opens in May.",
+                "notePlaceholder": "e.g. Same weekend as last year. Sign-up opens in May.",
                 "toggle": "Let everyone know",
                 "toggleHint": "Nobody else is in the event yet | Writes to the 1 other person you are bringing across | Writes to the {count} other people you are bringing across"
             },
@@ -201,11 +201,11 @@
                 "shifts": "Shifts",
                 "shiftsUnknown": "Some shifts could not be loaded, so these totals are incomplete. Every shift from the original is still copied.",
                 "spots": "Places to fill",
-                "taskStatusAllDraft": "Every task comes across as a draft. Publishing the event does not publish them — open each task in the new event and publish it there, otherwise nobody can book a shift.",
+                "taskStatusAllDraft": "Every task comes across as a draft. Publishing the event does not publish them, so open each task in the new event and publish it there. Until then, nobody can book a shift.",
                 "taskStatusAllOpen": "Every task is open for booking straight away, so the people you bring across can sign up as soon as the copy exists.",
-                "taskStatusMixed": "{draft} of the {total} tasks come across as drafts. Publishing the event does not publish them — open each of those in the new event and publish it there. The rest are open for booking straight away.",
+                "taskStatusMixed": "{draft} of the {total} tasks come across as drafts. Publishing the event does not publish them, so open each of those in the new event and publish it there. The rest are open for booking straight away.",
                 "tasks": "Tasks",
-                "untouched": "{name} stays exactly as it is. Nothing about the original changes.",
+                "untouched": "{name} stays exactly as it is.",
                 "visibilityPrivate": "Like the original, the copy is private: only the people you bring across or invite can see it.",
                 "visibilityPublic": "Like the original, the copy is public: once you publish it, anyone can find it and ask to join.",
                 "willNotTell": "Nobody will be written to.",
@@ -241,7 +241,7 @@
             "subtitle": "Everything from an earlier event, on new dates. The original is left exactly as it is, and bookings stay behind.",
             "success": "New event created with {tasks} tasks and {shifts} shifts",
             "successMembers": "Nobody was brought across. | 1 person was brought across. | {count} people were brought across.",
-            "successNotNotified": "Nobody was written to — there was no one left to tell.",
+            "successNotNotified": "Nobody was written to, as there was no one left to tell.",
             "successNotified": "They have been told about it.",
             "taskCount": "no tasks | 1 task | {count} tasks",
             "tasks": {
@@ -278,8 +278,8 @@
                 "visibilityHint": "You can change this later in the event settings."
             },
             "submit": "Create event",
-            "subtitle": "A name and a date range is all it takes — everything else can change later.",
-            "timesEmpty": "Not set — availability covers the whole day",
+            "subtitle": "All you need is a name and a date range. You can change everything else later.",
+            "timesEmpty": "Not set, so availability covers the whole day",
             "timesSummary": "{start} until {end}",
             "title": "Create an event"
         },
@@ -287,7 +287,7 @@
         "delete": "Delete Event",
         "deleteConfirm": "Are you sure you want to delete this event? All related availability data will be lost.",
         "detail": {
-            "dateConstraintHint": "Date range is limited by existing tasks. Use \"Shift Dates\" below to move everything at once.",
+            "dateConstraintHint": "Existing tasks limit the date range. To move everything at once, use \"Shift Dates\" below.",
             "earliestTask": "Earliest task: {date}",
             "editDescription": "Update the name, description, and date range for this event.",
             "latestTask": "Latest task: {date}",
@@ -308,17 +308,17 @@
             "shiftApply": "Shift all dates",
             "shiftBackward": "backward",
             "shiftDates": "Shift Dates",
-            "shiftDescription": "Move the entire programme to a new date. All tasks, duty shifts, and availability entries will be shifted by the same offset.",
+            "shiftDescription": "Move the whole programme to a new start date. Every task, shift and availability entry moves by the same number of days.",
             "shiftForward": "forward",
             "shiftNewStart": "New start date",
             "shiftPreview": "{days} days {direction}",
-            "shiftSuccess": "All dates shifted successfully.",
+            "shiftSuccess": "All dates moved.",
             "tasks": "Tasks in this Group",
             "tasksEmpty": "No tasks assigned to this group yet.",
             "title": "Event Details",
-            "updated": "Task group updated."
+            "updated": "Event updated."
         },
-        "draftBanner": "This event is a draft and is not visible to regular users. Change the status to \"Published\" to make it available.",
+        "draftBanner": "This event is a draft, so members can't see it yet. Set the status to \"Published\" to make it visible.",
         "edit": "Edit Event",
         "empty": "No events found.",
         "expired": "Expired",
@@ -332,8 +332,8 @@
         },
         "fields": {
             "defaultTimes": "Default time window",
-            "defaultTimesHint": "Optional. Bounds the availability grid to these hours by default. Tasks may still be scheduled outside the window. For events running into the next morning, leave both fields empty and set the times on each task instead.",
-            "defaultTimesInvalid": "End time must be after start time. Time windows past midnight aren't supported yet — leave both fields empty for events that run overnight.",
+            "defaultTimesHint": "Optional. The availability grid shows only these hours by default. Tasks can still be scheduled outside them. For events that run into the next morning, leave both fields empty and set the times on each task instead.",
+            "defaultTimesInvalid": "The end time must be after the start time. Time windows past midnight aren't supported yet, so leave both fields empty for events that run overnight.",
             "description": "Description",
             "endDate": "End Date",
             "endTime": "End time",
@@ -369,6 +369,7 @@
             "accept": "Accept and join",
             "alreadyMember": "You are already taking part in this event.",
             "asRole": "You will join as",
+            "createAccount": "Create an account",
             "decline": "Not now",
             "from": "You have been invited to take part.",
             "fromNamed": "{name} invited you to take part.",
@@ -382,11 +383,14 @@
             "joined": "Welcome to {name}",
             "notFoundBody": "The invitation may have been withdrawn, or the link was mistyped.",
             "notFoundTitle": "This link does not work",
-            "openEvent": "Open event"
+            "openEvent": "Open event",
+            "signIn": "I already have an account",
+            "signedOutBody": "Sign in or create an account to see the invitation and accept it.",
+            "signedOutTitle": "You have been invited"
         },
         "join": {
             "request": "Ask to join",
-            "requestSent": "Request sent — the organisers will get back to you",
+            "requestSent": "Request sent. The organisers will get back to you.",
             "requested": "Asked to join"
         },
         "joinRequests": {
@@ -447,13 +451,13 @@
     "selectEvent": {
         "changeEvent": "Change event",
         "discover": {
-            "emptyBody": "There are no public events open at the moment — you can start your own.",
+            "emptyBody": "There are no public events open at the moment. You can start your own.",
             "emptyTitle": "Nothing to discover right now",
             "featuredTitle": "Recommended",
             "hint": "Public events you can ask to join. The organisers decide.",
             "moreTitle": "More public events"
         },
-        "empty": "No upcoming events are available. Please check back later or contact an organizer.",
+        "empty": "No upcoming events are available. Please check back later or contact an organiser.",
         "emptyMine": {
             "body": "Start your own, or look for one you can join.",
             "title": "You are not part of an event yet"
@@ -464,7 +468,7 @@
         },
         "notifications": {
             "finish": "Finish setup",
-            "phoneHint": "Used by organizers to reach you about your shifts.",
+            "phoneHint": "Organisers use this to reach you about your shifts.",
             "phoneLabel": "Phone number",
             "phonePlaceholder": "e.g. +49 151 23456789",
             "phoneTitle": "Phone number",
@@ -489,30 +493,30 @@
             "mine": "My events"
         },
         "visual": {
-            "expiredHeadline": "Let's get you into the next event.",
+            "expiredHeadline": "On to the next event.",
             "features": {
-                "coordBody": "Managers, helpers, and attendees stay on the same page.",
+                "coordBody": "Organisers, helpers and attendees all see the same plan.",
                 "coordTitle": "Coordinate together",
                 "scopedBody": "Tasks, shifts, and bookings all stay in the event you pick.",
                 "scopedTitle": "Focused on one event"
             },
-            "footer": "One community, one focus — pick the event and WirkSam handles the rest.",
+            "footer": "Pick the event and WirkSam handles the rest.",
             "mobileContinue": "Pick your event",
             "onboardingHeadline": "Welcome. Pick the event you're here for.",
             "step2": {
                 "features": {
-                    "controlBody": "Mute anything you don't want — global kill-switches per channel are always available.",
+                    "controlBody": "Mute anything you don't want. You can switch off each channel entirely at any time.",
                     "controlTitle": "You stay in control",
-                    "remindersBody": "We'll ping you before each shift starts so nothing slips past.",
+                    "remindersBody": "We'll remind you before each shift starts.",
                     "remindersTitle": "Shift reminders",
-                    "updatesBody": "Hear about newly published shifts, schedule shifts, and cancellations that affect you.",
+                    "updatesBody": "Hear about new shifts, schedule changes and cancellations that affect you.",
                     "updatesTitle": "Schedule updates"
                 },
                 "headline": "Choose how you want to hear from us.",
                 "mobileContinue": "Set up notifications",
-                "subhead": "Notifications keep you on top of your shifts and let organizers reach you when it matters. Pick any combination — email, push, Telegram, or phone."
+                "subhead": "Notifications keep you up to date on your shifts and let organisers reach you. Use any mix of email, push, Telegram and phone."
             },
-            "subhead": "WirkSam centers your experience around a single event so you don't have to hunt for the right list.",
+            "subhead": "WirkSam shows you one event at a time, so you don't have to hunt for the right list.",
             "switchHeadline": "Switch to a different event."
         }
     },
@@ -537,7 +541,7 @@
             "location": "Location",
             "myNotes": "My Notes",
             "noBookings": "No bookings yet.",
-            "noNotes": "Add a note visible to the organizer — e.g. questions, availability constraints, or special requests.",
+            "noNotes": "Add a note for the organiser, for example questions, limits on when you can help, or special requests.",
             "notesPlaceholder": "e.g. arriving late, need equipment, dietary requirements...",
             "notesSaved": "Notes saved.",
             "openBookingDetails": "Open booking details",
@@ -572,7 +576,7 @@
                 "batchDesc": "Optional location and category for this batch of shifts"
             },
             "submit": "Add Shifts",
-            "subtitle": "Add a new batch of duty shifts to this task",
+            "subtitle": "Add another set of shifts to this task",
             "success": "{count} duty shifts added!",
             "title": "Add Shifts"
         },
@@ -607,8 +611,8 @@
             "groupDateHint": "Dates are restricted to the selected event ({start} – {end})",
             "noDatesSelected": "No dates selected yet",
             "preview": {
-                "clickToExclude": "Click on any shift to exclude it from being created.",
-                "noShifts": "No shifts will be generated with the current configuration. Please fill in the schedule section.",
+                "clickToExclude": "Click a shift to leave it out.",
+                "noShifts": "With these settings, no shifts would be created. Fill in the schedule section.",
                 "shiftsOnDate": "{count} shifts",
                 "summary": "{shifts} shifts across {days} days"
             },
@@ -623,7 +627,7 @@
                 "overridesDesc": "Override times for specific dates",
                 "peoplePerShift": "People per Shift",
                 "remainder": "Remaining time",
-                "remainderDesc": "How to handle time left over when shifts don't divide evenly",
+                "remainderDesc": "What to do with leftover time when the shifts don't divide evenly",
                 "remainderMode": {
                     "drop": "Ignore remaining time",
                     "extend": "Extend the last shift",
@@ -641,12 +645,12 @@
                 "event": "Event",
                 "eventDesc": "Optionally assign this task to a group",
                 "preview": "Preview",
-                "previewDesc": "Review the shifts that will be generated",
+                "previewDesc": "Check the shifts that will be created",
                 "schedule": "Schedule & Shifts",
-                "scheduleDesc": "Configure when duty shifts should be created"
+                "scheduleDesc": "Set when the shifts take place"
             },
             "submit": "Create Task",
-            "subtitle": "Set up a new task with auto-generated duty shifts",
+            "subtitle": "Set up a new task and have its shifts created for you",
             "success": "Task created with {count} duty shifts!",
             "title": "Create Task",
             "tourExample": {
@@ -667,7 +671,7 @@
             "booked": "Booked",
             "deleteBatch": "Delete shift series",
             "deleteBatchConfirm": "Are you sure you want to delete this batch? All its duty shifts and bookings will be removed.",
-            "deleteBatchSuccess": "Batch deleted successfully.",
+            "deleteBatchSuccess": "Shift series deleted.",
             "hiddenShifts": "{count} shifts hidden by filter",
             "myBookings": "My Bookings",
             "myBookingsCount": "{count} booked",
@@ -678,19 +682,19 @@
             "title": "Task Details",
             "unbatchedShifts": "Other Shifts"
         },
-        "draftBanner": "This task is a draft and is not visible to regular users. Change the status to \"Published\" to make it available.",
+        "draftBanner": "This task is a draft, so members can't see it yet. Set the status to \"Published\" to make it visible.",
         "edit": "Edit Task",
         "editView": {
             "affectedBookings": {
                 "cancel": "Cancel",
                 "confirm": "Proceed anyway",
-                "description": "The following confirmed bookings will be cancelled because their shifts no longer exist after regeneration. Users have not been notified yet — this is a manual process for now.",
+                "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. The people affected are not notified automatically, so you need to tell them yourself.",
                 "shift": "Shift",
                 "title": "Affected Bookings",
                 "user": "User"
             },
             "editBatch": "Edit Batch",
-            "editBatchSubtitle": "Modify batch schedule and regenerate its duty shifts",
+            "editBatchSubtitle": "Change this batch's schedule and recreate its shifts",
             "preview": {
                 "added": "{count} new",
                 "booked": "{count} booked",
@@ -698,9 +702,9 @@
                 "removed": "{count} removed"
             },
             "regenerate": "Regenerate Shifts",
-            "saveSuccess": "Task updated successfully!",
+            "saveSuccess": "Task updated.",
             "saving": "Saving...",
-            "subtitle": "Modify task details and regenerate duty shifts",
+            "subtitle": "Change the task details and recreate its shifts",
             "title": "Edit Task"
         },
         "empty": "No tasks found.",
@@ -722,7 +726,7 @@
         },
         "focusMode": {
             "firstAvailable": "Jump to first available",
-            "today": "Center on today"
+            "today": "Centre on today"
         },
         "hideFullShifts": "Hide fully booked",
         "myBookingsFilter": "My bookings only",
