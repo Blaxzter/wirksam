@@ -64,25 +64,25 @@
         "api": {
             "createProject": "Projekt konnte nicht erstellt werden",
             "createTask": "Aufgabe konnte nicht erstellt werden",
-            "default": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+            "default": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
             "deleteProject": "Projekt konnte nicht gelöscht werden",
             "deleteTask": "Aufgabe konnte nicht gelöscht werden",
-            "forbidden": "Sie haben keine Berechtigung, das zu sehen.",
+            "forbidden": "Du hast keine Berechtigung, das zu sehen.",
             "loadProject": "Projekt konnte nicht geladen werden",
             "loadProjects": "Projekte konnten nicht geladen werden",
             "loadTasks": "Aufgaben konnten nicht geladen werden",
-            "network": "Keine Verbindung. Bitte überprüfen Sie Ihre Internetverbindung.",
+            "network": "Keine Verbindung. Bitte prüfe deine Internetverbindung.",
             "notFoundResource": "Das Gesuchte wurde nicht gefunden.",
             "projectNameRequired": "Projektname ist erforderlich",
-            "rateLimited": "Zu viele Anfragen. Bitte versuchen Sie es später erneut.",
+            "rateLimited": "Zu viele Anfragen. Bitte versuche es später noch einmal.",
             "server": "Bei uns ist etwas schiefgelaufen.",
             "statusFallback": "Anfrage fehlgeschlagen mit Status {status}",
             "taskTitleRequired": "Aufgabentitel ist erforderlich",
             "timeout": "Der Server braucht zu lange für eine Antwort.",
-            "unauthorized": "Ihre Anmeldung ist nicht mehr gültig. Bitte melden Sie sich erneut an.",
+            "unauthorized": "Deine Anmeldung ist nicht mehr gültig. Bitte melde dich erneut an.",
             "updateProject": "Projekt konnte nicht aktualisiert werden",
             "updateTask": "Aufgabe konnte nicht aktualisiert werden",
-            "validation": "Bitte prüfen Sie Ihre Eingabe: {message}"
+            "validation": "Bitte prüfe deine Eingabe: {message}"
         },
         "boundary": {
             "description": "Diese Seite konnte wegen eines unerwarteten Fehlers nicht angezeigt werden.",
@@ -91,7 +91,7 @@
             "tryAgain": "Erneut versuchen"
         },
         "notFound": {
-            "description": "Die Seite, die Sie suchen, existiert nicht.",
+            "description": "Die Seite, die du suchst, gibt es nicht.",
             "goHome": "Zurück zur Startseite",
             "subtitle": "Seite nicht gefunden",
             "title": "404"

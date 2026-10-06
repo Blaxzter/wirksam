@@ -620,7 +620,7 @@ class TestSeededNotifications:
         english = await make_sandbox(language="en")
 
         assert any(
-            n.title == "Shift-Zeit geändert" for n in await _inbox(db_session, german)
+            n.title == "Schichtzeit geändert" for n in await _inbox(db_session, german)
         )
         assert any(
             n.title == "Shift Time Changed" for n in await _inbox(db_session, english)

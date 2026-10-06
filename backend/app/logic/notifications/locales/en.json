@@ -29,7 +29,7 @@
   },
   "event.published": {
     "title": "New Event Published",
-    "body": "Task group \"{event_name}\" has been published."
+    "body": "Event \"{event_name}\" has been published."
   },
   "event.cloned": {
     "title": "Event Set Up",
@@ -45,7 +45,7 @@
   },
   "auth.reset_password": {
     "title": "Reset your password",
-    "body": "Someone asked to set a new password for your {project_name} account.\n\nThe link expires in {expires_in}. If that wasn't you, ignore this email — your current password stays valid."
+    "body": "Someone asked to set a new password for your {project_name} account.\n\nThe link expires in {expires_in}. If that wasn't you, ignore this email. Your current password stays valid."
   },
   "email": {
     "view_details": "View Details",

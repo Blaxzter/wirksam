@@ -477,13 +477,13 @@ describe('normalizeApiError', () => {
 
     it('translates the generic fallback', () => {
       expect(normalizeApiError(null).message).toBe(
-        'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
+        'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
       )
     })
 
     it('translates status messages', () => {
       expect(normalizeApiError(axiosError({ status: 401 })).message).toBe(
-        'Ihre Anmeldung ist nicht mehr gültig. Bitte melden Sie sich erneut an.',
+        'Deine Anmeldung ist nicht mehr gültig. Bitte melde dich erneut an.',
       )
       expect(normalizeApiError(axiosError({ status: 418 })).message).toBe(
         'Anfrage fehlgeschlagen mit Status 418',
@@ -513,12 +513,12 @@ describe('normalizeApiError', () => {
         }),
       )
 
-      expect(result.message).toBe('Bitte prüfen Sie Ihre Eingabe: name: Field required')
+      expect(result.message).toBe('Bitte prüfe deine Eingabe: name: Field required')
     })
 
     it('translates network errors', () => {
       expect(normalizeApiError(new Error('Network Error')).message).toBe(
-        'Keine Verbindung. Bitte überprüfen Sie Ihre Internetverbindung.',
+        'Keine Verbindung. Bitte prüfe deine Internetverbindung.',
       )
     })
   })

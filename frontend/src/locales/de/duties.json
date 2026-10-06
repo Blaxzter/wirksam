@@ -41,14 +41,14 @@
         "modeSpecificSub": "Pro Tag malen",
         "modeTimeRange": "Tägliches Fenster",
         "modeTimeRangeSub": "Gleiche Stunden täglich",
-        "notRegistered": "Sie haben noch keine Verfügbarkeit eingetragen.",
+        "notRegistered": "Du hast noch keine Verfügbarkeit eingetragen.",
         "paintHint": "Zum Markieren klicken und ziehen. Auf den Tageskopf tippen, um den ganzen Tag zu wählen.",
         "people": "Personen",
         "presetWeekday": "Vorlage: 9–17",
         "presetWeekend": "Wochenenden",
         "register": "Verfügbarkeit registrieren",
         "remove": "Verfügbarkeit entfernen",
-        "removeConfirm": "Möchten Sie Ihre Verfügbarkeit wirklich entfernen?",
+        "removeConfirm": "Möchtest du deine Verfügbarkeit wirklich entfernen?",
         "saveChanges": "Speichern",
         "showOutsideEventHours": "Stunden außerhalb des Veranstaltungsfensters anzeigen",
         "subtitle": "Verfügbarkeit für dieses Programm eintragen",
@@ -71,10 +71,10 @@
         "yourSummary": "Deine Zusammenfassung"
     },
     "bookings": {
-        "bookConfirm": "Möchten Sie diese Schicht buchen?",
+        "bookConfirm": "Möchtest du diese Schicht buchen?",
         "bookSuccess": "Schicht gebucht.",
         "cancel": "Buchung stornieren",
-        "cancelConfirm": "Sind Sie sicher, dass Sie diese Buchung stornieren möchten?",
+        "cancelConfirm": "Möchtest du diese Buchung wirklich stornieren?",
         "cancelSuccess": "Buchung storniert.",
         "cancellationReason": "Grund der Stornierung",
         "detail": {
@@ -84,8 +84,8 @@
             "viewBooking": "Buchung anzeigen"
         },
         "dismiss": "Entfernen",
-        "dismissSuccess": "Buchung aus Ihrer Liste entfernt.",
-        "empty": "Sie haben noch keine Buchungen.",
+        "dismissSuccess": "Buchung aus deiner Liste entfernt.",
+        "empty": "Du hast noch keine Buchungen.",
         "filters": {
             "all": "Alle",
             "allDates": "Alle Termine",
@@ -108,7 +108,7 @@
             "cancelled": "Storniert",
             "confirmed": "Bestätigt"
         },
-        "subtitle": "Ihre gebuchten Schichten",
+        "subtitle": "Deine gebuchten Schichten",
         "title": "Meine Buchungen",
         "today": "Heute",
         "tomorrow": "Morgen",
@@ -128,13 +128,13 @@
             "adjust": {
                 "copyKeepsOldLabels": "Kopierte Schichten behalten Namen und Ort von damals. Nur die Aufgabe selbst bekommt die neuen.",
                 "errors": {
-                    "batchOutside": "Ein Schichtblock dieser Aufgabe reicht bis {date} und liegt damit außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder erweitern Sie den Zeitraum.",
-                    "name": "Bitte geben Sie dieser Aufgabe einen Namen.",
+                    "batchOutside": "Ein Schichtblock dieser Aufgabe reicht bis {date} und liegt damit außerhalb der neuen Veranstaltung. Verschiebe die Aufgabe oder erweitere den Zeitraum.",
+                    "name": "Bitte gib dieser Aufgabe einen Namen.",
                     "numbers": "Schichtdauer und Personenzahl müssen jeweils mindestens 1 betragen.",
                     "order": "Diese Aufgabe würde enden, bevor sie beginnt.",
-                    "outside": "Diese Termine liegen außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder verlängern Sie die Veranstaltung.",
-                    "shiftOutside": "Eine Schicht am {date} läge außerhalb der neuen Veranstaltung. Verschieben Sie die Aufgabe oder verlängern Sie die Veranstaltung.",
-                    "timeFormat": "Bitte geben Sie beide Zeiten zweistellig an, zum Beispiel 09:30.",
+                    "outside": "Diese Termine liegen außerhalb der neuen Veranstaltung. Verschiebe die Aufgabe oder verlängere die Veranstaltung.",
+                    "shiftOutside": "Eine Schicht am {date} läge außerhalb der neuen Veranstaltung. Verschiebe die Aufgabe oder verlängere die Veranstaltung.",
+                    "timeFormat": "Bitte gib beide Zeiten zweistellig an, zum Beispiel 09:30.",
                     "times": "Die Endzeit muss nach der Startzeit liegen."
                 },
                 "estimateNote": "Ein Richtwert: Die neuen Schichten werden über die ganze Aufgabe verteilt. Deckten die Schichten von damals nur einen Teil davon ab, werden es weniger.",
@@ -160,7 +160,7 @@
                 "showShifts": "Schichten anzeigen",
                 "status": {
                     "draft": {
-                        "hint": "Bleibt verborgen, bis Sie diese Aufgabe in der Aufgabenliste veröffentlichen. Vorher kann niemand eine Schicht buchen.",
+                        "hint": "Bleibt verborgen, bis du diese Aufgabe in der Aufgabenliste veröffentlichst. Vorher kann niemand eine Schicht buchen.",
                         "label": "Entwurf",
                         "short": "Entwurf"
                     },
@@ -174,13 +174,13 @@
                 "willCreate": "keine Schichten | 1 Schicht | {count} Schichten"
             },
             "announce": {
-                "noRoster": "Niemand erfährt davon. Sie übernehmen die Personen nicht, also sind Sie allein in der neuen Veranstaltung.",
-                "nobodyElse": "Sie sind die einzige Person auf dieser Liste, es gibt also niemanden zu benachrichtigen.",
+                "noRoster": "Niemand erfährt davon. Du übernimmst die Personen nicht, also bist du allein in der neuen Veranstaltung.",
+                "nobodyElse": "Du bist die einzige Person auf dieser Liste, es gibt also niemanden zu benachrichtigen.",
                 "note": "Ein paar Worte dazu",
                 "noteCounter": "{used} von {max} Zeichen",
                 "notePlaceholder": "z. B. Gleiches Wochenende wie letztes Jahr. Eintragen ab Mai.",
                 "toggle": "Alle benachrichtigen",
-                "toggleHint": "Es ist noch niemand sonst dabei | Geht an die 1 weitere Person, die Sie übernehmen | Geht an die {count} weiteren Personen, die Sie übernehmen"
+                "toggleHint": "Es ist noch niemand sonst dabei | Geht an die 1 weitere Person, die du übernimmst | Geht an die {count} weiteren Personen, die du übernimmst"
             },
             "lengthHint": "{days} Tag lang | {days} Tage lang",
             "namePrefill": "{name} (Kopie)",
@@ -191,23 +191,23 @@
                 "sameWeekday": "Volle Wochen: Jede Aufgabe fällt wieder auf denselben Wochentag wie beim letzten Mal."
             },
             "review": {
-                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen können Sie sie in den Einstellungen der Veranstaltung.",
+                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen kannst du sie in den Einstellungen der Veranstaltung.",
                 "people": "Übernommene Personen",
                 "perTask": "Aufgabe für Aufgabe",
                 "problemItem": "{task}: {problem}",
                 "problemNote": "Der Text ist länger als erlaubt.",
-                "problemWhen": "Bitte prüfen Sie Namen und Termine im ersten Schritt.",
+                "problemWhen": "Bitte prüfe Namen und Termine im ersten Schritt.",
                 "shiftCount": "keine Schichten | 1 Schicht | {count} Schichten",
                 "shifts": "Schichten",
                 "shiftsUnknown": "Einige Schichten konnten nicht geladen werden, daher sind diese Zahlen unvollständig. Kopiert wird trotzdem jede Schicht des Originals.",
                 "spots": "Zu besetzende Plätze",
-                "taskStatusAllDraft": "Alle Aufgaben werden als Entwurf übernommen. Wenn Sie die Veranstaltung veröffentlichen, bleiben die Aufgaben trotzdem Entwürfe. Öffnen Sie deshalb jede Aufgabe in der neuen Veranstaltung und veröffentlichen Sie sie dort. Bis dahin kann niemand eine Schicht buchen.",
+                "taskStatusAllDraft": "Alle Aufgaben werden als Entwurf übernommen. Wenn du die Veranstaltung veröffentlichst, bleiben die Aufgaben trotzdem Entwürfe. Öffne deshalb jede Aufgabe in der neuen Veranstaltung und veröffentliche sie dort. Bis dahin kann niemand eine Schicht buchen.",
                 "taskStatusAllOpen": "Alle Aufgaben sind sofort buchbar, die übernommenen Personen können sich also eintragen, sobald die Kopie existiert.",
-                "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Wenn Sie die Veranstaltung veröffentlichen, bleiben diese trotzdem Entwürfe. Öffnen Sie deshalb jede davon in der neuen Veranstaltung und veröffentlichen Sie sie dort. Die übrigen sind sofort buchbar.",
+                "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Wenn du die Veranstaltung veröffentlichst, bleiben diese trotzdem Entwürfe. Öffne deshalb jede davon in der neuen Veranstaltung und veröffentliche sie dort. Die übrigen sind sofort buchbar.",
                 "tasks": "Aufgaben",
                 "untouched": "{name} bleibt genau so, wie es ist.",
                 "visibilityPrivate": "Wie das Original ist die Kopie privat: Nur übernommene oder eingeladene Personen sehen sie.",
-                "visibilityPublic": "Wie das Original ist die Kopie öffentlich: Sobald Sie sie veröffentlichen, kann jede Person sie finden und um Aufnahme bitten.",
+                "visibilityPublic": "Wie das Original ist die Kopie öffentlich: Sobald du sie veröffentlichst, kann jede Person sie finden und um Aufnahme bitten.",
                 "willNotTell": "Es wird niemand benachrichtigt.",
                 "willTell": "1 Person wird benachrichtigt | {count} Personen werden benachrichtigt"
             },
@@ -260,7 +260,7 @@
                 "selectAll": "Alle Aufgaben auswählen",
                 "shiftCount": "heute keine Schichten | heute 1 Schicht | heute {count} Schichten",
                 "shiftCountUnknown": "Die Schichten dieser Aufgabe konnten nicht geladen werden",
-                "tooMany": "Wählen Sie höchstens {max} Aufgaben auf einmal. Den Rest kopieren Sie danach mit einem weiteren Durchgang."
+                "tooMany": "Wähle höchstens {max} Aufgaben auf einmal. Den Rest kopierst du danach in einem weiteren Durchgang."
             },
             "title": "Veranstaltung kopieren"
         },
@@ -275,7 +275,7 @@
                 "basicsHint": "Was andere sehen, wenn sie diese Veranstaltung suchen.",
                 "dates": "Zeitraum",
                 "datesHint": "Die Tage, an denen die Veranstaltung läuft. Aufgaben lassen sich nur innerhalb dieses Zeitraums planen.",
-                "visibilityHint": "Sie können das später in den Einstellungen der Veranstaltung ändern."
+                "visibilityHint": "Du kannst das später in den Einstellungen der Veranstaltung ändern."
             },
             "submit": "Veranstaltung erstellen",
             "subtitle": "Ein Name und ein Zeitraum genügen. Alles andere lässt sich später ändern.",
@@ -285,9 +285,9 @@
         },
         "created": "Veranstaltung erstellt",
         "delete": "Veranstaltung löschen",
-        "deleteConfirm": "Möchten Sie diese Veranstaltung wirklich löschen? Alle zugehörigen Verfügbarkeiten gehen verloren.",
+        "deleteConfirm": "Möchtest du diese Veranstaltung wirklich löschen? Alle zugehörigen Verfügbarkeiten gehen verloren.",
         "detail": {
-            "dateConstraintHint": "Vorhandene Aufgaben schränken den Zeitraum ein. Um alles auf einmal zu verschieben, nutzen Sie unten „Termine verschieben“.",
+            "dateConstraintHint": "Vorhandene Aufgaben schränken den Zeitraum ein. Um alles auf einmal zu verschieben, nutze unten „Termine verschieben“.",
             "earliestTask": "Früheste Aufgabe: {date}",
             "editDescription": "Name, Beschreibung und Zeitraum dieser Veranstaltung bearbeiten.",
             "latestTask": "Späteste Aufgabe: {date}",
@@ -318,7 +318,7 @@
             "title": "Veranstaltungsdetails",
             "updated": "Veranstaltung aktualisiert."
         },
-        "draftBanner": "Diese Veranstaltung ist ein Entwurf, Mitglieder sehen sie noch nicht. Setzen Sie den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
+        "draftBanner": "Diese Veranstaltung ist ein Entwurf, Mitglieder sehen sie noch nicht. Setze den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
         "edit": "Veranstaltung bearbeiten",
         "empty": "Keine Veranstaltungen gefunden.",
         "expired": "Abgelaufen",
@@ -332,8 +332,8 @@
         },
         "fields": {
             "defaultTimes": "Standard-Zeitfenster",
-            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lassen Sie beide Felder leer und legen Sie die Zeiten bei den einzelnen Aufgaben fest.",
-            "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lassen Sie für Veranstaltungen über Nacht beide Felder leer.",
+            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lass beide Felder leer und lege die Zeiten bei den einzelnen Aufgaben fest.",
+            "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lass für Veranstaltungen über Nacht beide Felder leer.",
             "description": "Beschreibung",
             "endDate": "Enddatum",
             "endTime": "Endzeit",
@@ -457,22 +457,22 @@
             "hint": "Öffentliche Veranstaltungen, bei denen du anfragen kannst. Die Organisation entscheidet.",
             "moreTitle": "Weitere öffentliche Veranstaltungen"
         },
-        "empty": "Keine anstehenden Veranstaltungen verfügbar. Bitte schauen Sie später wieder vorbei oder wenden Sie sich an eine organisierende Person.",
+        "empty": "Keine anstehenden Veranstaltungen. Schau später wieder vorbei oder wende dich an eine organisierende Person.",
         "emptyMine": {
             "body": "Starte deine eigene oder suche eine zum Mitmachen.",
             "title": "Du bist noch bei keiner Veranstaltung dabei"
         },
         "expired": {
-            "body": "Die Veranstaltung, mit der Sie zuletzt gearbeitet haben, ist beendet. Wählen Sie eine andere, um fortzufahren.",
-            "title": "Ihre Veranstaltung ist beendet"
+            "body": "Die Veranstaltung, mit der du zuletzt gearbeitet hast, ist beendet. Wähle eine andere, um weiterzumachen.",
+            "title": "Deine Veranstaltung ist beendet"
         },
         "notifications": {
             "finish": "Einrichtung abschließen",
-            "phoneHint": "Damit kann die Organisation Sie wegen Ihrer Schichten erreichen.",
+            "phoneHint": "Damit kann die Organisation dich wegen deiner Schichten erreichen.",
             "phoneLabel": "Telefonnummer",
             "phonePlaceholder": "z.B. +49 151 23456789",
             "phoneTitle": "Telefonnummer",
-            "subtitle": "Wählen Sie, wie Sie von uns hören möchten.",
+            "subtitle": "Wähle, wie du von uns hören möchtest.",
             "title": "Benachrichtigungseinstellungen"
         },
         "pick": {
@@ -483,7 +483,7 @@
             "current": "Aktuell",
             "selectAction": "Diese Veranstaltung auswählen",
             "stats": "{tasks} Aufgabe und {shifts} Schicht brauchen dich | {tasks} Aufgaben und {shifts} Schichten brauchen dich",
-            "subtitle": "Wählen Sie die Veranstaltung, mit der Sie arbeiten möchten.",
+            "subtitle": "Wähle die Veranstaltung, mit der du arbeiten möchtest.",
             "title": "Veranstaltung auswählen",
             "upcomingTasks": "Anstehende Aufgaben"
         },
@@ -500,23 +500,23 @@
                 "scopedBody": "Aufgaben, Schichten und Buchungen bleiben in der gewählten Veranstaltung.",
                 "scopedTitle": "Fokus auf eine Veranstaltung"
             },
-            "footer": "Wählen Sie die Veranstaltung, WirkSam erledigt den Rest.",
+            "footer": "Wähle die Veranstaltung, WirkSam erledigt den Rest.",
             "mobileContinue": "Veranstaltung wählen",
-            "onboardingHeadline": "Willkommen. Wählen Sie die Veranstaltung, für die Sie hier sind.",
+            "onboardingHeadline": "Willkommen. Wähle die Veranstaltung, für die du hier bist.",
             "step2": {
                 "features": {
-                    "controlBody": "Was Sie nicht möchten, schalten Sie stumm. Jeden Kanal können Sie jederzeit ganz abschalten.",
-                    "controlTitle": "Sie behalten die Kontrolle",
-                    "remindersBody": "Wir erinnern Sie vor jeder Schicht.",
+                    "controlBody": "Was du nicht möchtest, schaltest du stumm. Jeden Kanal kannst du jederzeit ganz abschalten.",
+                    "controlTitle": "Du behältst die Kontrolle",
+                    "remindersBody": "Wir erinnern dich vor jeder Schicht.",
                     "remindersTitle": "Schicht-Erinnerungen",
-                    "updatesBody": "Erfahren Sie von neuen Schichten, Planänderungen und Absagen, die Sie betreffen.",
+                    "updatesBody": "Erfahre von neuen Schichten, Planänderungen und Absagen, die dich betreffen.",
                     "updatesTitle": "Planungs-Updates"
                 },
-                "headline": "Wählen Sie, wie wir Sie erreichen.",
+                "headline": "Wähle, wie wir dich erreichen.",
                 "mobileContinue": "Benachrichtigungen einrichten",
-                "subhead": "Benachrichtigungen halten Sie über Ihre Schichten auf dem Laufenden, und die Organisation kann Sie erreichen. Kombinieren Sie beliebig: E-Mail, Push, Telegram und Telefon."
+                "subhead": "Benachrichtigungen halten dich über deine Schichten auf dem Laufenden, und die Organisation kann dich erreichen. Kombiniere beliebig: E-Mail, Push, Telegram und Telefon."
             },
-            "subhead": "WirkSam zeigt Ihnen immer nur eine Veranstaltung, damit Sie nicht nach der richtigen Liste suchen müssen.",
+            "subhead": "WirkSam zeigt dir immer nur eine Veranstaltung, damit du nicht nach der richtigen Liste suchen musst.",
             "switchHeadline": "Zu einer anderen Veranstaltung wechseln."
         }
     },
@@ -526,7 +526,7 @@
         "book": "Dienstschicht buchen",
         "create": "Dienstschicht erstellen",
         "delete": "Dienstschicht löschen",
-        "deleteConfirm": "Sind Sie sicher, dass Sie diese Dienstschicht löschen möchten?",
+        "deleteConfirm": "Möchtest du diese Schicht wirklich löschen?",
         "detail": {
             "booked": "Gebucht",
             "bookedAt": "Gebucht am",
@@ -611,8 +611,8 @@
             "groupDateHint": "Termine sind auf den Zeitraum der Veranstaltung beschränkt ({start} – {end})",
             "noDatesSelected": "Noch keine Termine ausgewählt",
             "preview": {
-                "clickToExclude": "Klicken Sie auf eine Schicht, um sie auszulassen.",
-                "noShifts": "Mit diesen Einstellungen würden keine Schichten entstehen. Füllen Sie den Zeitplan aus.",
+                "clickToExclude": "Klicke auf eine Schicht, um sie auszulassen.",
+                "noShifts": "Mit diesen Einstellungen würden keine Schichten entstehen. Fülle den Zeitplan aus.",
                 "shiftsOnDate": "{count} Schichten",
                 "summary": "{shifts} Schichten über {days} Tage"
             },
@@ -639,15 +639,15 @@
             },
             "sections": {
                 "dates": "Termine der Aufgabe",
-                "datesDesc": "Wählen Sie, wann die Aufgabe stattfindet",
+                "datesDesc": "Wähle, wann die Aufgabe stattfindet",
                 "details": "Aufgabendetails",
                 "detailsDesc": "Grundlegende Informationen zur Aufgabe",
                 "event": "Veranstaltung",
                 "eventDesc": "Diese Aufgabe optional einer Veranstaltung zuordnen",
                 "preview": "Vorschau",
-                "previewDesc": "Prüfen Sie die Schichten, die angelegt werden",
+                "previewDesc": "Prüfe die Schichten, die angelegt werden",
                 "schedule": "Zeitplan & Schichten",
-                "scheduleDesc": "Legen Sie fest, wann die Schichten stattfinden"
+                "scheduleDesc": "Lege fest, wann die Schichten stattfinden"
             },
             "submit": "Aufgabe erstellen",
             "subtitle": "Neue Aufgabe anlegen, die Schichten werden automatisch erstellt",
@@ -660,7 +660,7 @@
             }
         },
         "delete": "Aufgabe löschen",
-        "deleteConfirm": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Alle Dienstschichten und Buchungen gehen verloren.",
+        "deleteConfirm": "Möchtest du diese Aufgabe wirklich löschen? Alle Schichten und Buchungen gehen verloren.",
         "detail": {
             "addShift": "Dienstschicht hinzufügen",
             "addShiftBatch": "Schichtserie erzeugen",
@@ -670,25 +670,25 @@
             "allLocations": "Alle Orte",
             "booked": "Gebucht",
             "deleteBatch": "Schichtserie löschen",
-            "deleteBatchConfirm": "Möchten Sie diese Schichtserie wirklich löschen? Alle zugehörigen Schichten und Buchungen werden entfernt.",
+            "deleteBatchConfirm": "Möchtest du diese Schichtserie wirklich löschen? Alle zugehörigen Schichten und Buchungen werden entfernt.",
             "deleteBatchSuccess": "Schichtserie gelöscht.",
             "hiddenShifts": "{count} Schichten durch Filter ausgeblendet",
             "myBookings": "Meine Buchungen",
             "myBookingsCount": "{count} gebucht",
-            "noBookingsYet": "Klicken Sie auf eine Schicht, um sie zu buchen.",
+            "noBookingsYet": "Klicke auf eine Schicht, um sie zu buchen.",
             "noShiftsMatch": "Keine Schichten entsprechen den aktuellen Filtern.",
             "shifts": "Dienstschichten",
             "shiftsCount": "{count} Schichten",
             "title": "Aufgabendetails",
             "unbatchedShifts": "Weitere Schichten"
         },
-        "draftBanner": "Diese Aufgabe ist ein Entwurf, Mitglieder sehen sie noch nicht. Setzen Sie den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
+        "draftBanner": "Diese Aufgabe ist ein Entwurf, Mitglieder sehen sie noch nicht. Setze den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
         "edit": "Aufgabe bearbeiten",
         "editView": {
             "affectedBookings": {
                 "cancel": "Abbrechen",
                 "confirm": "Trotzdem fortfahren",
-                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, Sie müssen ihnen selbst Bescheid geben.",
+                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, du musst ihnen selbst Bescheid geben.",
                 "shift": "Schicht",
                 "title": "Betroffene Buchungen",
                 "user": "Benutzer"

@@ -432,7 +432,7 @@ class TestDispatchBookingConfirmed:
 
         notif = await _single(db_session, "booking.confirmed", german.id)
         assert "Buchung best" in notif.title
-        assert "Ihre Buchung wurde" in notif.body
+        assert "Deine Buchung ist" in notif.body
 
     async def test_optional_details_render_as_blanks(
         self,

@@ -88,7 +88,7 @@
             "totalVolunteers": "Freiwillige gesamt"
         },
         "reset": "Zurücksetzen",
-        "subtitle": "Statistiken und Nutzungsberichte für Ihre Organisation.",
+        "subtitle": "Statistiken und Nutzungsberichte für deine Organisation.",
         "title": "Berichte",
         "to": "Bis",
         "topVolunteers": {
@@ -119,9 +119,9 @@
         "deactivate": "Deaktivieren",
         "deactivated": "Konto für {name} deaktiviert.",
         "delete": "Benutzer löschen",
-        "deleteDialogDescription": "Möchten Sie das Konto von {name} wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "deleteDialogDescription": "Möchtest du das Konto von {name} wirklich dauerhaft löschen? Das lässt sich nicht rückgängig machen.",
         "deleteDialogTitle": "Benutzer löschen",
-        "deleteTransferDescription": "{name} hat noch Veranstaltungen oder Aufgaben erstellt. Wählen Sie, wer diese übernehmen soll. Danach wird das Konto dauerhaft gelöscht.",
+        "deleteTransferDescription": "{name} hat noch Veranstaltungen oder Aufgaben erstellt. Wähle, wer diese übernehmen soll. Danach wird das Konto dauerhaft gelöscht.",
         "deletedToast": "Konto für {name} gelöscht.",
         "empty": "Keine Benutzer vorhanden.",
         "filters": {
@@ -140,7 +140,7 @@
         "ownedTasks": "Aufgaben: {count}",
         "pending": "Ausstehend",
         "reject": "Ablehnen",
-        "rejectDialogDescription": "Sie können {name} einen Grund nennen, warum die Registrierung abgelehnt wird. Er wird bei der Anmeldung angezeigt.",
+        "rejectDialogDescription": "Du kannst {name} einen Grund nennen, warum die Registrierung abgelehnt wird. Er wird bei der Anmeldung angezeigt.",
         "rejectDialogTitle": "Benutzer ablehnen",
         "rejectReasonPlaceholder": "Grund für die Ablehnung (optional)...",
         "rejected": "Abgelehnt",
@@ -159,7 +159,7 @@
         },
         "statsTotal": "Benutzer gesamt",
         "subtitle": "Alle Benutzer der Plattform sehen und ihre Rollen verwalten.",
-        "suspendDialogDescription": "Teilen Sie {name} mit, warum das Konto gesperrt wurde. Die Nachricht erscheint bei der Anmeldung und wird zusätzlich zugestellt.",
+        "suspendDialogDescription": "Teile {name} mit, warum das Konto gesperrt wurde. Die Nachricht erscheint bei der Anmeldung und wird zusätzlich zugestellt.",
         "suspendDialogTitle": "Warum wurde dieses Konto gesperrt?",
         "suspendReason": "Grund angeben",
         "suspendReasonPlaceholder": "Grund für die Sperre (optional)…",

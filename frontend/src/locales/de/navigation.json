@@ -15,8 +15,8 @@
     },
     "sidebar": {
         "badges": {
-            "managersOnly": "Nur für Verwalter sichtbar",
-            "openShifts": "{count} offener Platz | {count} offene Plätze"
+            "managersOnly": "Nur für Organisator:innen sichtbar",
+            "openShifts": "{count} offene Schicht | {count} offene Schichten"
         },
         "eventSwitcher": {
             "empty": "Keine Veranstaltung gewählt",
@@ -24,7 +24,7 @@
         },
         "items": {
             "availability": {
-                "description": "Ihre Verfügbarkeit für die ausgewählte Veranstaltung",
+                "description": "Deine Verfügbarkeit für die ausgewählte Veranstaltung",
                 "label": "Verfügbarkeit"
             },
             "home": {
@@ -34,7 +34,7 @@
                 "label": "Verwaltung"
             },
             "myBookings": {
-                "description": "Ihre Reservierungen",
+                "description": "Deine Buchungen",
                 "label": "Meine Buchungen"
             },
             "settings": "Einstellungen",
@@ -53,9 +53,9 @@
             "landingPage": "Startseite",
             "logout": "Abmelden",
             "notifications": "Benachrichtigungen",
-            "switchToDark": "Zu Dunkel wechseln",
-            "switchToLight": "Zu Hell wechseln"
+            "switchToDark": "Zum dunklen Design wechseln",
+            "switchToLight": "Zum hellen Design wechseln"
         },
-        "loginPrompt": "Bitte melden Sie sich an, um auf Ihr Konto zuzugreifen."
+        "loginPrompt": "Melde dich an, um dein Konto zu sehen."
     }
 }

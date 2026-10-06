@@ -1,35 +1,35 @@
 {
   "booking.confirmed": {
     "title": "✅ Buchung bestätigt",
-    "body": "Ihre Buchung wurde bestätigt!\n\n📌 {slot_title}\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}\n🎫 {task_name}"
+    "body": "Deine Buchung ist bestätigt.\n\n📌 {slot_title}\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}\n🎫 {task_name}"
   },
   "booking.shift_cobooked": {
     "title": "Neue Mitbuchung",
-    "body": "{name} hat ebenfalls den Shift „{slot_title}“ gebucht."
+    "body": "{name} hat die Schicht „{slot_title}“ ebenfalls gebucht."
   },
   "booking.cancelled_by_user": {
     "title": "Buchung storniert",
-    "body": "Ihre Buchung für „{slot_title}“ wurde storniert."
+    "body": "Deine Buchung für „{slot_title}“ wurde storniert."
   },
   "booking.reminder": {
     "title": "Bevorstehende Buchung",
-    "body": "Ihre Buchung „{slot_title}“ beginnt {time_until}.\n\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}"
+    "body": "Deine Buchung „{slot_title}“ beginnt {time_until}.\n\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}"
   },
   "booking.cancelled_by_admin": {
     "title": "Buchung durch Admin storniert",
-    "body": "Ihre Buchung für „{slot_title}“{task_label} wurde von einem Administrator storniert.{detail}"
+    "body": "Deine Buchung für „{slot_title}“{task_label} wurde von einem Administrator storniert.{detail}"
   },
   "shift.time_changed": {
-    "title": "Shift-Zeit geändert",
-    "body": "Die Zeit für den Shift „{slot_title}“ wurde aktualisiert. Bitte prüfen Sie den neuen Zeitplan."
+    "title": "Schichtzeit geändert",
+    "body": "Die Schicht „{slot_title}“ hat eine neue Zeit. Bitte prüfe den neuen Zeitplan."
   },
   "task.published": {
-    "title": "Neues Task veröffentlicht",
-    "body": "Ein neues Task „{task_name}“ wurde veröffentlicht. Schauen Sie es sich an!"
+    "title": "Neue Aufgabe veröffentlicht",
+    "body": "Die Aufgabe „{task_name}“ wurde veröffentlicht. Schau sie dir an."
   },
   "event.published": {
-    "title": "Neue Taskgruppe veröffentlicht",
-    "body": "Die Taskgruppe „{event_name}“ wurde veröffentlicht."
+    "title": "Neue Veranstaltung veröffentlicht",
+    "body": "Die Veranstaltung „{event_name}“ wurde veröffentlicht."
   },
   "event.cloned": {
     "title": "Veranstaltung eingerichtet",
@@ -45,11 +45,11 @@
   },
   "auth.reset_password": {
     "title": "Passwort zurücksetzen",
-    "body": "für dein {project_name}-Konto wurde ein neues Passwort angefordert.\n\nDer Link ist {expires_in} gültig. Falls du das nicht warst, ignoriere diese E-Mail — dein aktuelles Passwort bleibt gültig."
+    "body": "für dein {project_name}-Konto wurde ein neues Passwort angefordert.\n\nDer Link ist {expires_in} gültig. Falls du das nicht warst, ignoriere diese E-Mail. Dein aktuelles Passwort bleibt gültig."
   },
   "email": {
     "view_details": "Details anzeigen",
-    "footer_text": "Sie haben diese Nachricht aufgrund Ihrer Benachrichtigungseinstellungen erhalten.",
+    "footer_text": "Du erhältst diese Nachricht wegen deiner Benachrichtigungseinstellungen.",
     "manage_preferences": "Einstellungen verwalten",
     "greeting": "Hallo {name},",
     "greeting_no_name": "Hallo,",
@@ -61,7 +61,7 @@
     "transactional_footer": "Du erhältst diese E-Mail, weil sie für diese Adresse angefordert wurde. Falls du das nicht warst, musst du nichts tun."
   },
   "event.invitation": {
-    "title": "Einladung zu einem Event",
+    "title": "Einladung zu einer Veranstaltung",
     "body": "Du wurdest zu „{event_name}“ eingeladen."
   },
   "event.invitation_accepted": {

@@ -15,7 +15,7 @@
     },
     "sidebar": {
         "badges": {
-            "managersOnly": "Only visible to managers",
+            "managersOnly": "Only visible to organisers",
             "openShifts": "{count} open shift | {count} open shifts"
         },
         "eventSwitcher": {
@@ -34,12 +34,12 @@
                 "label": "Management"
             },
             "myBookings": {
-                "description": "Your reservations",
+                "description": "Your bookings",
                 "label": "My Bookings"
             },
             "settings": "Settings",
             "tasks": {
-                "description": "Browse duty tasks",
+                "description": "Browse tasks",
                 "label": "Tasks"
             }
         },
@@ -50,12 +50,12 @@
     "user": {
         "actions": {
             "account": "Account",
-            "landingPage": "Landing Page",
+            "landingPage": "Landing page",
             "logout": "Log out",
             "notifications": "Notifications",
-            "switchToDark": "Switch to Dark",
-            "switchToLight": "Switch to Light"
+            "switchToDark": "Switch to dark mode",
+            "switchToLight": "Switch to light mode"
         },
-        "loginPrompt": "Please log in to access your account."
+        "loginPrompt": "Log in to see your account."
     }
 }
