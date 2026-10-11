@@ -11,13 +11,14 @@ default:
 
 # ── Development ───────────────────────────────────────────────
 
-# Start dev environment (respects DEV_MODE env var, default: "docker")
+# Start the whole dev environment in one terminal (mode defaults to dev_mode).
+# local: DB + Adminer in Docker, migrations, then backend and frontend side by side.
 dev mode=dev_mode:
-    if [ "{{mode}}" = "docker" ]; then docker compose watch; elif [ "{{mode}}" = "local" ]; then docker compose up db adminer -d && echo "" && echo "DB + Adminer started. Open two terminals and run:" && echo "  just dev-backend" && echo "  just dev-frontend"; else echo "Unknown mode '{{mode}}'. Use 'docker' or 'local'." && exit 1; fi
+    if [ "{{mode}}" = "docker" ]; then docker compose watch; elif [ "{{mode}}" = "local" ]; then node scripts/dev.mjs; else echo "Unknown mode '{{mode}}'. Use 'docker' or 'local'." && exit 1; fi
 
 # Start backend dev server directly (no Docker)
 dev-backend:
-    cd backend && uv run fastapi dev app/main.py --port 8787 --reload-exclude .venv
+    PYTHONIOENCODING=utf-8 uv run --directory backend uvicorn app.main:app --host 127.0.0.1 --port 8787 --reload --reload-dir app
 
 # Start frontend dev server directly (no Docker)
 dev-frontend:
