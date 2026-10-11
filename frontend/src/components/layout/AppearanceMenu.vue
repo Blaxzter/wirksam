@@ -65,8 +65,11 @@ const previewMode = computed<'light' | 'dark'>(() => {
         :size="size"
         :aria-label="t('preauth.layout.navigation.appearance')"
       >
-        <Sun v-if="previewMode === 'light'" class="h-4 w-4" />
-        <Moon v-else class="h-4 w-4" />
+        <!-- Picked by CSS from the `dark` class, not by `previewMode`: the
+             prerendered page cannot know the visitor's theme, and the inline
+             script in index.html sets that class before the first paint. -->
+        <Sun class="h-4 w-4 dark:hidden" />
+        <Moon class="hidden h-4 w-4 dark:block" />
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-72 p-4" align="end" :side-offset="8">

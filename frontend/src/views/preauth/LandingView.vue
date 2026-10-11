@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { InfoIcon, LayoutGridIcon, UsersIcon, WorkflowIcon } from '@lucide/vue'
+import { CircleHelpIcon, InfoIcon, LayoutGridIcon, UsersIcon, WorkflowIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ import { useSandboxStore } from '@/stores/sandbox'
 import LandingAbout from '@/components/landing/LandingAbout.vue'
 import LandingAudience from '@/components/landing/LandingAudience.vue'
 import LandingCta from '@/components/landing/LandingCta.vue'
+import LandingFaq from '@/components/landing/LandingFaq.vue'
 import LandingFeatures from '@/components/landing/LandingFeatures.vue'
 import LandingHero from '@/components/landing/LandingHero.vue'
 import LandingJourney from '@/components/landing/LandingJourney.vue'
@@ -37,6 +38,7 @@ const sections = computed(() => [
   { id: 'how-it-works', label: t('preauth.landing.nav.howItWorks'), icon: WorkflowIcon },
   { id: 'features', label: t('preauth.landing.nav.features'), icon: LayoutGridIcon },
   { id: 'about', label: t('preauth.landing.nav.about'), icon: InfoIcon },
+  { id: 'faq', label: t('preauth.landing.nav.faq'), icon: CircleHelpIcon },
 ])
 
 function signIn() {
@@ -68,6 +70,7 @@ function openDemo() {
     <LandingJourney />
     <LandingFeatures />
     <LandingAbout />
+    <LandingFaq :demo-enabled="sandboxStore.enabled" />
 
     <LandingCta
       :is-authenticated="authStore.isAuthenticated"

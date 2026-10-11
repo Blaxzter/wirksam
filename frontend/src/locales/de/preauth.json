@@ -87,6 +87,61 @@
                 "title": "Du packst mit an"
             }
         },
+        "faq": {
+            "eyebrow": "Fragen",
+            "items": {
+                "account": {
+                    "answer": "Ja, ein kostenloses, damit jede Buchung zu einer Person gehört und die Erinnerung auch ankommt. Für die Anmeldung reichen E-Mail-Adresse und Passwort. Wer eingeladen wurde, öffnet den Link, meldet sich an und ist dabei.",
+                    "question": "Brauchen Helfende ein Konto?"
+                },
+                "audience": {
+                    "answer": "Für alle, die eine Veranstaltung mit Ehrenamtlichen besetzen müssen: Gemeinden, kirchliche Feste wie Pfingsten oder den Kirchentag, Jugendgruppen, Vereine und Verbände. Die Organisation plant die Schichten und behält den Überblick, die Helfenden tragen sich ein und sehen ihre eigenen Schichten an einem Ort.",
+                    "question": "Für wen ist WirkSam?"
+                },
+                "calendar": {
+                    "answer": "Ja. Ein privater Abo-Link bringt deine gebuchten Schichten in Google Kalender, Apple Kalender oder Outlook und hält sie aktuell, wenn sich etwas ändert.",
+                    "question": "Kann ich meine Schichten in meinem eigenen Kalender sehen?"
+                },
+                "cost": {
+                    "answer": "Nichts. Es gibt keine Bezahlversion und keine Werbung. WirkSam ist ein privates, nicht kommerzielles Projekt.",
+                    "question": "Was kostet WirkSam?"
+                },
+                "data": {
+                    "answer": "WirkSam speichert deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Es gibt kein Tracking und keine Analyse-Dienste, und Cookies nur, damit du angemeldet bleibst. Betrieben wird WirkSam aus Deutschland nach der DSGVO: Du kannst eine Kopie deiner Daten anfordern, sie berichtigen lassen oder dein Konto endgültig löschen.",
+                    "question": "Was passiert mit meinen Daten?"
+                },
+                "demo": {
+                    "answer": "Ja. Die Demo legt eine Beispielveranstaltung mit Aufgaben, Schichten und ein paar Teammitgliedern an, wahlweise aus Sicht der Organisation oder der Helfenden. Eine E-Mail-Adresse brauchst du dafür nicht, und nach einer Stunde wird die Demo gelöscht.",
+                    "question": "Kann ich WirkSam ohne Anmeldung ausprobieren?"
+                },
+                "languages": {
+                    "answer": "Auf Deutsch und Englisch. Die ganze App gibt es in beiden Sprachen, hell und dunkel, und sie funktioniert auf dem Handy genauso wie am Rechner.",
+                    "question": "In welchen Sprachen gibt es WirkSam?"
+                },
+                "reminders": {
+                    "answer": "WirkSam erinnert vor jeder Schicht per E-Mail, Push-Benachrichtigung im Browser oder Telegram. Jede Person wählt den Kanal für jede Art von Benachrichtigung selbst und kann alles abschalten. Zusätzlich landet alles im Posteingang in der App.",
+                    "question": "Wie funktionieren die Erinnerungen?"
+                },
+                "reuse": {
+                    "answer": "Ja. Kopiere eine Veranstaltung auf neue Termine, dann kommen Aufgaben, Schichten und Zeiten mit und landen auf denselben Wochentagen wie zuvor. Die Eintragungen kommen nicht mit, die Kopie startet also mit leeren Schichten.",
+                    "question": "Kann ich die Veranstaltung vom letzten Jahr wiederverwenden?"
+                },
+                "selfHost": {
+                    "answer": "Ja. WirkSam ist Open Source unter der MIT-Lizenz, der Code liegt auf GitHub unter github.com/Blaxzter/wirksam. Es läuft mit Docker Compose, und auf deiner eigenen Installation entscheidest du, wer sich registrieren darf.",
+                    "question": "Kann ich WirkSam selbst betreiben?"
+                },
+                "visibility": {
+                    "answer": "Nur die Leute, die du einlädst. Eine neue Veranstaltung ist privat: Du fügst Leute per E-Mail oder über einen Einladungslink hinzu. Stellst du sie öffentlich, können alle Angemeldeten anfragen, und ihr entscheidet weiterhin, wer mitmachen darf.",
+                    "question": "Wer kann meine Veranstaltung sehen?"
+                },
+                "what": {
+                    "answer": "WirkSam ist eine kostenlose Web-App, mit der ihr Schichten für Ehrenamtliche plant. Du legst eine Veranstaltung an und beschreibst die Aufgaben, und die Schichten werden daraus erzeugt. Die Helfenden buchen die Plätze, die ihnen passen, und bekommen vor jeder Schicht eine Erinnerung. Entstanden ist WirkSam für kirchliche Veranstaltungen und Gemeindearbeit, es passt aber zu jeder Veranstaltung, die von Ehrenamtlichen getragen wird.",
+                    "question": "Was ist WirkSam?"
+                }
+            },
+            "lede": "Die kurzen Antworten auf das, was die meisten vor dem Start wissen wollen.",
+            "title": "Häufige Fragen"
+        },
         "features": {
             "eyebrow": "Funktionen",
             "lede": "Schichten erzeugen, einen gemeinsamen Plan teilen, den Überblick behalten und rechtzeitig erinnern.",
@@ -270,6 +325,7 @@
         "nav": {
             "about": "Über WirkSam",
             "audience": "Für wen",
+            "faq": "FAQ",
             "features": "Funktionen",
             "howItWorks": "Der Ablauf",
             "label": "Abschnitte dieser Seite"
@@ -359,6 +415,28 @@
             "title": "Drittanbieter"
         },
         "title": "Datenschutzerklärung"
+    },
+    "seo": {
+        "changelog": {
+            "description": "Was ist neu in WirkSam: jede Version der Schichtplanung für Ehrenamtliche, mit ihren Funktionen und Korrekturen.",
+            "title": "Änderungsprotokoll · WirkSam"
+        },
+        "impressum": {
+            "description": "Wer WirkSam betreibt und wie du Kontakt aufnimmst.",
+            "title": "Impressum · WirkSam"
+        },
+        "landing": {
+            "description": "Plant eure Schichten gemeinsam: Veranstaltung anlegen, Schichten erzeugen, Team einladen, und alle buchen ihre Plätze selbst, mit Erinnerung per E-Mail, Push oder Telegram. Kostenlos, ohne Tracking, nach DSGVO.",
+            "title": "WirkSam: kostenlose Schichtplanung für Ehrenamtliche in Kirche und Gemeinde"
+        },
+        "privacy": {
+            "description": "Welche Daten WirkSam speichert, wozu, und wie du sie einsehen, berichtigen oder löschen kannst.",
+            "title": "Datenschutzerklärung · WirkSam"
+        },
+        "terms": {
+            "description": "Die Nutzungsbedingungen von WirkSam, der kostenlosen Schichtplanung für Ehrenamtliche.",
+            "title": "Nutzungsbedingungen · WirkSam"
+        }
     },
     "terms": {
         "account": {

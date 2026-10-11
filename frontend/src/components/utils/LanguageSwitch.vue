@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import { ChevronDownIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -15,6 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+import { isLocalizedRoute, localeParam } from '@/lib/page-head'
 
 interface Props {
   variant?: 'default' | 'ghost' | 'outline'
@@ -31,6 +34,8 @@ withDefaults(defineProps<Props>(), {
 const { locale } = useI18n()
 const authStore = useAuthStore()
 const { patch } = useAuthenticatedClient()
+const route = useRoute()
+const router = useRouter()
 
 const languages = [
   {
@@ -54,6 +59,18 @@ const currentLanguage = computed(() => {
 const changeLanguage = async (languageCode: string) => {
   locale.value = languageCode
   localStorage.setItem('locale', languageCode)
+
+  // A public page has one URL per language, so switching moves to the other
+  // one instead of translating this one in place. The preference is stored
+  // first: leaving `/de/…` falls back to it.
+  if (isLocalizedRoute(route)) {
+    void router.replace({
+      name: route.name!,
+      params: { ...route.params, locale: localeParam(languageCode) },
+      query: route.query,
+      hash: route.hash,
+    })
+  }
 
   // Sync to backend if logged in
   if (authStore.isAuthenticated && authStore.profile) {

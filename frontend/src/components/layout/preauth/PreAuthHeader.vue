@@ -5,6 +5,8 @@ import logo from '@/assets/logo/logo.svg'
 
 import { useAuthStore } from '@/stores/auth'
 
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
+
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
@@ -32,6 +34,9 @@ const sections = [
   { hash: 'features', label: 'preauth.layout.navigation.features' },
   { hash: 'about', label: 'preauth.layout.navigation.about' },
 ] as const
+
+/** Without a landing page (`LANDING_ENABLED=false`) there are no sections to link to. */
+const landingEnabled = isSwitchOn(useAppConfig().LANDING_ENABLED)
 
 function goToSection(hash: string) {
   // Already on the landing page: scroll rather than route, so re-picking the
@@ -81,7 +86,7 @@ function handleGetStarted() {
              Tailwind emits `hidden` after the `md:` media block — so
              `hidden md:inline-flex` on a Button is `display: none` at every
              width, which silently removed these links from the desktop header. -->
-        <div class="hidden items-center gap-1 md:flex">
+        <div v-if="landingEnabled" class="hidden items-center gap-1 md:flex">
           <Button
             v-for="section in sections"
             :key="section.hash"
@@ -93,7 +98,7 @@ function handleGetStarted() {
           </Button>
         </div>
 
-        <Separator orientation="vertical" class="mx-2 hidden h-6 md:block" />
+        <Separator v-if="landingEnabled" orientation="vertical" class="mx-2 hidden h-6 md:block" />
 
         <LanguageSwitch variant="ghost" size="sm" :show-text="false" />
         <AppearanceMenu />

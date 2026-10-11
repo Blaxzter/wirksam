@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
-import { useAppConfig } from '@/composables/useAppConfig'
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import { client } from '@/client/client.gen'
@@ -55,12 +55,7 @@ export const useSandboxStore = defineStore('sandbox', () => {
    * explicit act in both halves — this only hides the entry points, the
    * backend's own `SANDBOX_ENABLED` is what actually refuses (404).
    */
-  const enabled = computed(
-    // `String(…)` because `config.js` is hand-editable in development and a
-    // real boolean `false` there should mean what it looks like, not throw on
-    // `.trim()`.
-    () => String(useAppConfig().SANDBOX_ENABLED).trim().toLowerCase() !== 'false',
-  )
+  const enabled = computed(() => isSwitchOn(useAppConfig().SANDBOX_ENABLED))
 
   /** True while a demo account is the one signed in. */
   const isSandbox = computed(() => authStore.profile?.is_sandbox === true)

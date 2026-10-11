@@ -23,12 +23,16 @@ ENV NODE_ENV=${NODE_ENV}
 ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION}
 
-RUN pnpm exec vite build
+# `build-only` is `vite build` followed by the prerender of the public pages
+# (scripts/prerender.mjs), which also writes sitemap.xml, robots.txt and llms.txt.
+RUN pnpm build-only
 
 FROM cgr.dev/chainguard/nginx:latest-dev AS production-stage
 
 USER root
-COPY --from=build-stage /app/dist /usr/share/nginx/html
+# Owned by nginx: docker-entrypoint.sh rewrites the prerendered pages in every
+# subdirectory, not just the top-level config.js.
+COPY --from=build-stage --chown=nginx:nginx /app/dist /usr/share/nginx/html
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh && chmod 777 /usr/share/nginx/html

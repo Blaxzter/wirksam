@@ -48,9 +48,9 @@ Not yet covered, and not currently tracked by an issue:
 | `member`     | 2          | 18      |
 | `mobile`     | 1          | 6       |
 | `multi-user` | 4          | 54      |
-| `public`     | 7          | 27      |
+| `public`     | 7          | 32      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **49**     | **373** |
+| **Total**    | **49**     | **378** |
 
 ## Inventory
 
@@ -645,7 +645,7 @@ Not yet covered, and not currently tracked by an issue:
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
 
-### Project `public` — 7 files, 27 tests
+### Project `public` — 7 files, 32 tests
 
 #### `frontend/e2e/tests/public/how-it-works.spec.ts` — 2 tests
 
@@ -653,13 +653,20 @@ Not yet covered, and not currently tracked by an issue:
   - the old /how-it-works path redirects to the landing section
   - shows both the organiser and volunteer journeys
 
-#### `frontend/e2e/tests/public/landing.spec.ts` — 4 tests
+#### `frontend/e2e/tests/public/landing.spec.ts` — 9 tests
 
-- **landing page** (4)
+- **landing page** (5)
   - renders main hero and auth actions
   - every section the in-page nav links to actually exists
   - the old /about path redirects into the landing page
   - a screenshot opens in the viewer and pages through the gallery
+  - a FAQ answer opens from its question
+- **public pages per language** (2)
+  - /de serves the landing page in German
+  - switching language on a public page moves to its other URL
+- **a deployment without the landing page** (2)
+  - / leads to the sign-in screen
+  - the legal pages stay, without links into the missing landing page
 
 #### `frontend/e2e/tests/public/pages.spec.ts` — 2 tests
 

@@ -16,12 +16,20 @@ interface AppConfig {
    * leaves it on, matching the backend's own `SANDBOX_ENABLED` default.
    */
   SANDBOX_ENABLED: string
+  /**
+   * Whether `/` shows the landing page. A self-hosted deployment that only
+   * wants the app switches it off, and `/` then leads to sign-in or the
+   * dashboard; the legal pages and the changelog stay. Read like
+   * `SANDBOX_ENABLED`, see `isSwitchOn`.
+   */
+  LANDING_ENABLED: string
 }
 
 declare global {
-  interface Window {
-    __APP_CONFIG__?: Partial<AppConfig>
-  }
+  // A global rather than a `Window` property: in the browser `config.js` sets
+  // it on `window`, which is the global object, and the build-time prerender
+  // sets it on Node's global object to render the page each deployment would.
+  var __APP_CONFIG__: Partial<AppConfig> | undefined
 }
 
 /**
@@ -52,8 +60,27 @@ const DEFAULTS: AppConfig = {
   LEGAL_PHONE: '',
   TURNSTILE_SITE_KEY: '',
   SANDBOX_ENABLED: 'true',
+  LANDING_ENABLED: 'true',
+}
+
+export type { AppConfig }
+
+/**
+ * How an on/off switch in `config.js` is read: on unless it says `'false'`,
+ * ignoring case and spaces. `config.js` is written by a shell script from
+ * environment variables, so an unset variable arrives as the `'true'` default
+ * and a deploy predating a switch answers `undefined` — both stay on. `String()`
+ * because the development copy is hand-edited, and a real boolean `false` there
+ * should mean what it looks like. `docker-entrypoint.sh` reads them the same way.
+ */
+export function isSwitchOn(value: unknown): boolean {
+  return (
+    String(value ?? 'true')
+      .trim()
+      .toLowerCase() !== 'false'
+  )
 }
 
 export function useAppConfig(): AppConfig {
-  return { ...DEFAULTS, ...window.__APP_CONFIG__ }
+  return { ...DEFAULTS, ...globalThis.__APP_CONFIG__ }
 }

@@ -1,4 +1,5 @@
 import { watch } from 'vue'
+
 import { createI18n } from 'vue-i18n'
 
 import { installZodI18n } from '@/lib/zod-i18n'
@@ -43,16 +44,34 @@ const deMessages: Messages = createMessagesFromModules(deModules)
 
 const supportedLocales = ['en', 'de']
 
-function detectLocale(): string {
+/**
+ * The visitor's own choice: what they picked before, else the browser's
+ * language. A public page under a locale prefix (`/de/…`) overrides this while
+ * it is open, see `lib/page-head.ts`, which comes back here on the way out.
+ *
+ * Outside a browser, which is where the build-time prerender runs, there is no
+ * choice to read and the prerender sets the locale itself.
+ */
+export function detectLocale(): string {
+  if (typeof window === 'undefined') return 'en'
   const stored = localStorage.getItem('locale')
   if (stored) return stored
   const browserLang = navigator.language.split('-')[0]
   return supportedLocales.includes(browserLang) ? browserLang : 'en'
 }
 
+/** The locale prefix of the URL the app was opened on, if it has one. */
+function urlLocale(): string | null {
+  if (typeof window === 'undefined') return null
+  const prefix = window.location.pathname.split('/')[1]
+  return supportedLocales.includes(prefix) ? prefix : null
+}
+
 const i18n = createI18n({
   legacy: false,
-  locale: detectLocale(),
+  // Read once here so the very first render of `/de/…` is already German; the
+  // router keeps it in step after that.
+  locale: urlLocale() ?? detectLocale(),
   fallbackLocale: 'en',
   messages: {
     en: enMessages,
@@ -75,7 +94,7 @@ const i18n = createI18n({
 watch(
   i18n.global.locale,
   (locale) => {
-    document.documentElement.lang = locale
+    if (typeof document !== 'undefined') document.documentElement.lang = locale
   },
   { immediate: true },
 )

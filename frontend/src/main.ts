@@ -1,10 +1,11 @@
-import { createApp } from 'vue'
+import { createApp, nextTick } from 'vue'
 
 import { createPinia } from 'pinia'
 
 import { client } from '@/client/client.gen'
 import { authSession } from '@/lib/auth-session'
-import i18n from '@/locales/i18n.ts'
+import { installPageHead } from '@/lib/page-head'
+import i18n, { detectLocale } from '@/locales/i18n.ts'
 import { installFakeSession } from '@/testing/fake-session'
 import { installTour } from '@/tour/install'
 
@@ -43,6 +44,9 @@ app.use(createPinia())
 app.use(router)
 app.use(i18n)
 
+// Public pages carry their language in the URL (`/de/…`) and their own title.
+installPageHead(router, i18n.global, detectLocale)
+
 // The guided tour hangs off `router.afterEach` and a window event, so it has to
 // be wired after the router exists and before the first navigation settles.
 // Deliberately after i18n as well: the popover reads its copy from the same
@@ -50,7 +54,33 @@ app.use(i18n)
 // `sessionStorage` by a reload.
 installTour(router)
 
-app.mount('#app')
+// A public page arrives prerendered (scripts/prerender.mjs) and is readable
+// before any of this has run. Mounting straight onto it would swap that page
+// for the session spinner and then back, so the static copy moves aside and
+// stays on screen until the app has routed and rendered the same page.
+const root = document.getElementById('app')!
+if (root.hasAttribute('data-prerendered')) {
+  const prerendered = document.createElement('div')
+  prerendered.append(...root.childNodes)
+  // Nothing in it works until the app takes over, so it is inert, hidden from
+  // assistive tech, and stripped of test ids — a click or a locator that lands
+  // here would otherwise hit a dead copy of the button it was looking for.
+  prerendered.inert = true
+  prerendered.setAttribute('aria-hidden', 'true')
+  prerendered.querySelectorAll('[data-testid]').forEach((el) => el.removeAttribute('data-testid'))
+  root.before(prerendered)
+  root.removeAttribute('data-prerendered')
+  root.hidden = true
+  void router
+    .isReady()
+    .then(() => nextTick())
+    .finally(() => {
+      prerendered.remove()
+      root.hidden = false
+    })
+}
+
+app.mount(root)
 
 // Register service worker for push notifications
 if ('serviceWorker' in navigator) {

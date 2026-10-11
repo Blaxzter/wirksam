@@ -17,6 +17,7 @@ import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import { Badge } from '@/components/ui/badge'
@@ -34,6 +35,7 @@ import { toastApiError } from '@/lib/api-errors'
 
 const { t, locale } = useI18n()
 const router = useRouter()
+const landingEnabled = isSwitchOn(useAppConfig().LANDING_ENABLED)
 const authStore = useAuthStore()
 const { get } = useAuthenticatedClient()
 
@@ -290,7 +292,9 @@ onMounted(loadFeed)
             <BookCheck class="mr-2 h-4 w-4" />
             {{ t('dashboard.home.quickActions.myBookings') }}
           </Button>
+          <!-- The walkthrough lives on the landing page, which a deployment can switch off. -->
           <Button
+            v-if="landingEnabled"
             variant="outline"
             @click="router.push({ name: 'landing', hash: '#how-it-works' })"
           >

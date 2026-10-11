@@ -18,14 +18,23 @@ Two modes, controlled by `dev_mode` at the top of `justfile` (default: `"local"`
 ```bash
 just dev               # Uses dev_mode default
 just dev docker        # Full stack via Docker Compose watch (hot reload)
-just dev local         # Starts DB+Adminer in Docker; run backend/frontend manually:
-just dev-backend       #   terminal 1
-just dev-frontend      #   terminal 2
+just dev local         # DB+Adminer in Docker, migrations, then backend + frontend in one terminal
+just dev-backend       # or start either one on its own
+just dev-frontend
 ```
+
+Local mode runs `scripts/dev.mjs`: Ctrl+C stops backend and frontend (the DB
+container keeps running), and if either one dies the other is stopped too;
+`node scripts/dev.mjs --no-migrate` skips the migration step.
 
 `just test-e2e` also respects `dev_mode`: docker runs Playwright in a container, local runs `pnpm test:e2e` directly.
 
-Local URLs: frontend `http://localhost:5555`, backend `http://localhost:8787`, OpenAPI docs `http://localhost:8787/docs`
+`just dev` URLs: frontend `http://wirksam.localhost:47300`, backend
+`http://wirksam.localhost:47301`, OpenAPI docs `http://wirksam.localhost:47301/docs`.
+Both share one host so the refresh cookie stays same-site; the launcher passes
+`FRONTEND_HOST` and `VITE_API_URL` to match, so `.env` needs no change. Browsers
+resolve `*.localhost` themselves, but Node on Windows cannot, so the Docker
+stack, `just dev-backend`/`dev-frontend` and E2E keep `http://localhost:5555` / `:8787`.
 
 ### Linting & Formatting
 
@@ -171,6 +180,12 @@ frontend/src/
 
 Two layouts: `PreAuthLayout` (public pages) and `PostAuthLayout` (authenticated pages, wraps with `authGuard`).
 
+The public pages are **prerendered at build time** (`frontend/scripts/prerender.mjs`,
+run by `pnpm build-only`) in English at `/` and German at `/de/…`, together with
+`sitemap.xml`, `robots.txt` and `llms.txt`. `src/lib/seo.ts` is the single list of
+public pages and FAQ keys. Anything those pages render must survive Node: no
+`window`/`document`/`localStorage` at module scope or in `setup()`.
+
 ### Frontend–Backend Connection
 
 - API base path: `/api/v1`
@@ -205,6 +220,8 @@ Two layouts: `PreAuthLayout` (public pages) and `PostAuthLayout` (authenticated 
   `SANDBOX_MAX_ACTIVE` (25) tune the "check out a test event" demo. The first is
   also served to the browser as runtime config, so the landing page never shows
   a button the backend would refuse — see [`docs/SANDBOX.md`](docs/SANDBOX.md)
+- `LANDING_ENABLED=false` in root `.env` drops the landing page for an app-only deployment: `/` redirects to sign-in or the dashboard (guard in `router/index.ts`), the prerender writes the empty shell there instead, and the legal pages and changelog stay. Runtime switches are read with `isSwitchOn()` from `composables/useAppConfig.ts`; one that changes a prerendered page also goes into `TOGGLES` in `scripts/prerender.mjs` and the matching `is_off` line in `frontend/docker-entrypoint.sh`
+- `SEARCH_INDEXING=false` in root `.env` makes the frontend container serve a `robots.txt` that disallows everything (for private deployments). `FRONTEND_HOST` also sets the absolute URLs in the prerendered pages and sitemap
 - Local mail (verification, password reset) goes to the mailcatcher container on port 1025; its inbox is at `http://localhost:1080`. With no SMTP configured at all, the link is written to the backend log instead
 - E2E tests authenticate through the `X-Test-User-Email` bypass, enabled by `VITE_E2E_AUTH_BYPASS` in `frontend/.env` and gated server-side on `TESTING`
 

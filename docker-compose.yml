@@ -155,6 +155,13 @@ services:
             # Reaches the browser through docker-entrypoint.sh; must match the
             # backend's copy above, which is what actually enforces it.
             - SANDBOX_ENABLED=${SANDBOX_ENABLED:-true}
+            # Absolute URLs in the prerendered pages, sitemap.xml and llms.txt
+            # are rewritten to this host by docker-entrypoint.sh.
+            - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
+            # 'false' tells every crawler to stay away (robots.txt: Disallow: /).
+            - SEARCH_INDEXING=${SEARCH_INDEXING:-true}
+            # 'false' drops the landing page: / leads to sign-in or the dashboard.
+            - LANDING_ENABLED=${LANDING_ENABLED:-true}
         networks:
             - traefik-net
             - default

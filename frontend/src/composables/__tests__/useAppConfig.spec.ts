@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { useAppConfig } from '@/composables/useAppConfig'
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 
 /**
  * `window.__APP_CONFIG__` is injected at deploy time, so it is absent in dev and
@@ -19,6 +19,7 @@ const DEFAULTS = {
   LEGAL_PHONE: '',
   TURNSTILE_SITE_KEY: '',
   SANDBOX_ENABLED: 'true',
+  LANDING_ENABLED: 'true',
 }
 
 afterEach(() => {
@@ -39,6 +40,7 @@ describe('useAppConfig', () => {
       LEGAL_PHONE: '+49 123 456789',
       TURNSTILE_SITE_KEY: '0x4AAAAAAA',
       SANDBOX_ENABLED: 'false',
+      LANDING_ENABLED: 'false',
     }
     window.__APP_CONFIG__ = injected
 
@@ -68,5 +70,20 @@ describe('useAppConfig', () => {
     window.__APP_CONFIG__ = { ...DEFAULTS, LEGAL_NAME: 'Set later' }
 
     expect(useAppConfig().LEGAL_NAME).toBe('Set later')
+  })
+})
+
+describe('isSwitchOn', () => {
+  it('is off only for the word false, in any case and with stray spaces', () => {
+    expect(isSwitchOn('false')).toBe(false)
+    expect(isSwitchOn(' FALSE ')).toBe(false)
+    expect(isSwitchOn(false)).toBe(false)
+  })
+
+  it('stays on for anything else, including a switch that was never set', () => {
+    expect(isSwitchOn('true')).toBe(true)
+    expect(isSwitchOn('yes')).toBe(true)
+    expect(isSwitchOn('')).toBe(true)
+    expect(isSwitchOn(undefined)).toBe(true)
   })
 })

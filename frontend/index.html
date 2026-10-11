@@ -5,6 +5,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Theme before the first paint. The prerendered pages are on screen long
+         before the app runs `useColorMode()` and `usePalette()`, so without this
+         a dark-mode visitor sees them light first. Reads the same storage keys
+         with the same defaults: vueuse's `vueuse-color-scheme` (auto, light or
+         dark, auto following the system) and `wirksam-palette`. -->
+    <script>
+      ;(function () {
+        try {
+          var root = document.documentElement
+          var mode = localStorage.getItem('vueuse-color-scheme') || 'auto'
+          var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          if (mode === 'dark' || (mode === 'auto' && systemDark)) root.classList.add('dark')
+          if (localStorage.getItem('wirksam-palette') === 'classic') {
+            root.classList.add('palette-classic')
+          }
+        } catch (e) {
+          // Storage blocked: the app picks the theme once it runs.
+        }
+      })()
+    </script>
     <!-- `sizes="any"` is to fix Chrome bug -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -20,7 +40,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="WirkSam — Volunteer Scheduling Platform" />
     <meta property="og:description" content="The volunteer scheduling platform for church tasks and community service. Book your shifts for Pfingsten, Kirchentag, and more — effective together." />
-    <meta property="og:image" content="https://wirksam.fabraham.dev/screenshots/en/dashboard.png" />
+    <meta property="og:image" content="https://wirksam.fabraham.dev/screenshots/en/dashboard-light.png" />
     <meta property="og:url" content="https://wirksam.fabraham.dev" />
     <meta property="og:site_name" content="WirkSam" />
 
@@ -28,7 +48,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="WirkSam — Volunteer Scheduling Platform" />
     <meta name="twitter:description" content="The volunteer scheduling platform for church tasks and community service. Book your shifts for Pfingsten, Kirchentag, and more — effective together." />
-    <meta name="twitter:image" content="https://wirksam.fabraham.dev/screenshots/en/dashboard.png" />
+    <meta name="twitter:image" content="https://wirksam.fabraham.dev/screenshots/en/dashboard-light.png" />
   </head>
   <body>
     <script src="/config.js"></script>

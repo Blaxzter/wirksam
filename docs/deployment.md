@@ -140,6 +140,25 @@ You can set several variables, like:
 - `POSTGRES_USER`: The Postgres user, you can leave the default.
 - `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
 - `SENTRY_DSN`: The DSN for Sentry, if you are using it.
+- `FRONTEND_HOST`: The public URL of the frontend. Besides the links in emails, the frontend container uses it to rewrite the absolute URLs in its prerendered pages, `sitemap.xml`, `robots.txt` and `llms.txt` (see below).
+- `SEARCH_INDEXING`: `true` by default. Set it to `false` for a private deployment and `robots.txt` tells every crawler to stay away.
+- `LANDING_ENABLED`: `true` by default. Set it to `false` if the deployment only needs the app: `/` then leads to sign-in, or to the dashboard for someone signed in, and the header drops its links into the landing page. Privacy, terms, impressum and the changelog stay reachable.
+
+### Search engines and LLM crawlers
+
+The public pages (landing, changelog, terms) are prerendered at build time by
+`frontend/scripts/prerender.mjs` in English at `/` and German at `/de/…`, so a
+crawler that does not run JavaScript still reads the full page, its FAQ and its
+structured data. The build also writes `sitemap.xml`, `robots.txt` and
+`llms.txt`. Every other URL is served the empty app shell, `spa.html`. The list
+of public pages lives in `frontend/src/lib/seo.ts`; a page added there shows up
+in the prerender, the sitemap and `llms.txt` together.
+
+The runtime switches that change those pages (`SANDBOX_ENABLED`,
+`LANDING_ENABLED`) are prerendered in every combination. The container's
+entrypoint copies the set matching its environment into place at start, so the
+static HTML, the FAQ structured data, the sitemap and `llms.txt` always show
+what the running app shows.
 
 ## GitHub Actions Environment Variables
 

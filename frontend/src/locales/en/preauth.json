@@ -87,6 +87,61 @@
                 "title": "You lend a hand"
             }
         },
+        "faq": {
+            "eyebrow": "Questions",
+            "items": {
+                "account": {
+                    "answer": "Yes, a free one, so that each booking belongs to a person and the reminders reach them. Signing up takes an email address and a password. Somebody who was invited opens the link, signs in, and is part of the event.",
+                    "question": "Do volunteers need an account?"
+                },
+                "audience": {
+                    "answer": "For anyone who has to staff an event with volunteers: congregations, church festivals such as Pfingsten or Kirchentag, youth groups, clubs and associations. Organisers plan the shifts and keep track of them, helpers sign up and see their own shifts in one place.",
+                    "question": "Who is WirkSam for?"
+                },
+                "calendar": {
+                    "answer": "Yes. A private subscription link puts your booked shifts into Google Calendar, Apple Calendar, or Outlook and keeps them up to date when something changes.",
+                    "question": "Can I see my shifts in my own calendar?"
+                },
+                "cost": {
+                    "answer": "Nothing. There is no paid plan and no advertising. WirkSam is a private, non-commercial project.",
+                    "question": "What does it cost?"
+                },
+                "data": {
+                    "answer": "WirkSam stores your name, email address, profile picture, and the shifts you booked. There is no tracking and no analytics, and the only cookies are the ones that keep you signed in. It is run from Germany under the GDPR: you can request a copy of your data, have it corrected, or delete your account for good.",
+                    "question": "What happens to my data?"
+                },
+                "demo": {
+                    "answer": "\"Try a demo event\" sets up an example event with tasks, shifts, and a few teammates, seen either as an organiser or as a helper. You need no email address for it, and the demo is deleted after an hour.",
+                    "question": "Can I try it without signing up?"
+                },
+                "languages": {
+                    "answer": "German and English. The whole app is available in both, in a light and a dark theme, and works on a phone as well as on a computer.",
+                    "question": "Which languages does WirkSam support?"
+                },
+                "reminders": {
+                    "answer": "WirkSam sends a reminder before every shift by email, browser push notification, or Telegram. Each person picks the channel for each kind of notification and can turn any of them off. Everything also lands in an inbox inside the app.",
+                    "question": "How do reminders work?"
+                },
+                "reuse": {
+                    "answer": "Yes. Copy an event onto new dates and its tasks, shifts, and times come along, landing on the same weekdays as before. The sign-ups do not carry over, so the copy starts with empty shifts.",
+                    "question": "Can I reuse last year's event?"
+                },
+                "selfHost": {
+                    "answer": "Yes. WirkSam is open source under the MIT licence, and the code is on GitHub at github.com/Blaxzter/wirksam. It runs with Docker Compose, and on your own installation you decide who may register.",
+                    "question": "Can I run WirkSam myself?"
+                },
+                "visibility": {
+                    "answer": "Only the people you invite. A new event is private: you add people by email or with a share link. If you make it public, anyone signed in can ask to join, and your organisers still decide who gets in.",
+                    "question": "Who can see my event?"
+                },
+                "what": {
+                    "answer": "WirkSam is a free web app for planning volunteer shifts. Organisers set up an event and describe the tasks, and the shifts are created from that. Volunteers book the slots that suit them and get a reminder before each one. It was built for church events and community service, but works for any event run by volunteers.",
+                    "question": "What is WirkSam?"
+                }
+            },
+            "lede": "The short answers to what people usually ask before they start.",
+            "title": "Frequently asked questions"
+        },
         "features": {
             "eyebrow": "Features",
             "lede": "Generate the shifts, share one plan, keep track of who is coming, and remind them in time.",
@@ -270,6 +325,7 @@
         "nav": {
             "about": "About",
             "audience": "Who it's for",
+            "faq": "FAQ",
             "features": "Features",
             "howItWorks": "How it works",
             "label": "Page sections"
@@ -359,6 +415,28 @@
             "title": "Third-Party Services"
         },
         "title": "Privacy Policy"
+    },
+    "seo": {
+        "changelog": {
+            "description": "What is new in WirkSam: every release of the volunteer shift planner, with its features and fixes.",
+            "title": "Changelog · WirkSam"
+        },
+        "impressum": {
+            "description": "Who runs WirkSam and how to get in touch.",
+            "title": "Legal notice · WirkSam"
+        },
+        "landing": {
+            "description": "Plan volunteer shifts together: create an event, generate the shifts, invite your team, and let everyone book their own slots, with reminders by email, push, or Telegram. Free, no tracking, GDPR-compliant.",
+            "title": "WirkSam: free volunteer shift planning for church events and community service"
+        },
+        "privacy": {
+            "description": "Which data WirkSam stores, why, and how you can see, correct, or delete it.",
+            "title": "Privacy policy · WirkSam"
+        },
+        "terms": {
+            "description": "The terms of use for WirkSam, the free volunteer shift planner.",
+            "title": "Terms of use · WirkSam"
+        }
     },
     "terms": {
         "account": {
