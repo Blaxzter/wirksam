@@ -39,7 +39,7 @@ rm -rf "$HTML_DIR/_prerender"
 # The prerendered public pages, sitemap.xml, robots.txt and llms.txt are built
 # with absolute URLs for the public instance (scripts/prerender.mjs). Point them
 # at this deployment instead.
-BUILT_SITE_URL='https://wirksam.fabraham.dev'
+BUILT_SITE_URL='https://wirksam.app'
 SITE_URL="${FRONTEND_HOST%/}"
 if [ -n "$SITE_URL" ] && [ "$SITE_URL" != "$BUILT_SITE_URL" ]; then
   find "$HTML_DIR" -maxdepth 3 -type f \( -name '*.html' -o -name '*.xml' -o -name '*.txt' \) \

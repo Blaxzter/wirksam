@@ -36,7 +36,7 @@ import { build } from 'vite'
 const ROOT = resolve(import.meta.dirname, '..')
 const DIST = join(ROOT, 'dist')
 const SSR_OUT = join(ROOT, 'node_modules/.prerender')
-const SITE_URL = (process.env.SITE_URL ?? 'https://wirksam.fabraham.dev').replace(/\/+$/, '')
+const SITE_URL = (process.env.SITE_URL ?? 'https://wirksam.app').replace(/\/+$/, '')
 const REPOSITORY = 'https://github.com/Blaxzter/wirksam'
 
 /**
