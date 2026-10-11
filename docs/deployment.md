@@ -154,6 +154,10 @@ structured data. The build also writes `sitemap.xml`, `robots.txt` and
 of public pages lives in `frontend/src/lib/seo.ts`; a page added there shows up
 in the prerender, the sitemap and `llms.txt` together.
 
+Link previews use `frontend/public/og/wirksam-{en,de}.png`, 1200×630 cards
+rendered from the live hero by `pnpm --prefix frontend generate-og-images`.
+They are committed; re-run the script after changing the hero copy or theme.
+
 The runtime switches that change those pages (`SANDBOX_ENABLED`,
 `LANDING_ENABLED`) are prerendered in every combination. The container's
 entrypoint copies the set matching its environment into place at start, so the

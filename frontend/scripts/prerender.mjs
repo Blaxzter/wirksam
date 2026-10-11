@@ -138,6 +138,11 @@ function setMeta(html, attr, key, content) {
   return html.replace(pattern, tag)
 }
 
+/** The link-preview card, rendered by scripts/generate-og-images.mjs. */
+function ogImage(locale) {
+  return `${SITE_URL}/og/wirksam-${locale}.png`
+}
+
 function screenshot(locale) {
   return `${SITE_URL}/screenshots/${locale}/dashboard-light.png`
 }
@@ -207,10 +212,13 @@ function documentFor(template, page, locale, body, config) {
   html = setMeta(html, 'property', 'og:title', title)
   html = setMeta(html, 'property', 'og:description', description)
   html = setMeta(html, 'property', 'og:url', url)
-  html = setMeta(html, 'property', 'og:image', screenshot(locale))
+  const imageAlt = `WirkSam: ${t(locale, 'preauth.landing.hero.title')}`
+  html = setMeta(html, 'property', 'og:image', ogImage(locale))
+  html = setMeta(html, 'property', 'og:image:alt', imageAlt)
   html = setMeta(html, 'name', 'twitter:title', title)
   html = setMeta(html, 'name', 'twitter:description', description)
-  html = setMeta(html, 'name', 'twitter:image', screenshot(locale))
+  html = setMeta(html, 'name', 'twitter:image', ogImage(locale))
+  html = setMeta(html, 'name', 'twitter:image:alt', imageAlt)
 
   const head = [
     `<link rel="canonical" href="${url}" />`,
