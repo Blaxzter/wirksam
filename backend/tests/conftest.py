@@ -7,6 +7,7 @@ Fixtures are organized by domain for better maintainability:
 - auth.py: Access-token and Authorization-header factories
 - client.py: FastAPI app and HTTP client fixtures
 - sandbox.py: Seeded "try a test event" demos
+- locations.py: Locations, venue plans and markers
 """
 
 # Import all fixtures so they are available to tests
@@ -35,6 +36,11 @@ from tests.fixtures.events import (
     test_private_event,
     test_user_availability,
     test_user_availability_with_dates,
+)
+from tests.fixtures.locations import (
+    test_location,
+    test_location_marker,
+    test_venue_plan,
 )
 from tests.fixtures.sandbox import (
     SandboxFactory,

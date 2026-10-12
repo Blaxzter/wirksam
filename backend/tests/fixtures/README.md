@@ -47,6 +47,17 @@ Event-related fixtures (each seeds the memberships its tests rely on):
 - `test_shift`
 - `test_booking`
 
+### `locations.py`
+
+Locations (#182) and the venue map (#185), all on `test_event`:
+
+- `test_location` - "Foyer", with a markdown description, address, map link and contact
+- `test_venue_plan` - "Ground floor", with an 800x600 image row stored and
+  `image_etag` / `image_width` / `image_height` set on the plan
+- `test_location_marker` - `test_location` placed on `test_venue_plan`
+- `make_png(width, height, color=...)` - module helper (not a fixture) that
+  builds a PNG in-process; import it from `tests.fixtures.locations`
+
 ### `sandbox.py`
 
 The throwaway demo behind the "try a test event" button, minted through

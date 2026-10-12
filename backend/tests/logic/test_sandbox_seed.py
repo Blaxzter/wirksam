@@ -36,18 +36,23 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic.notifications.registry import classification_for_code
 from app.logic.sandbox.seed import guest_display_name
+from app.logic.sandbox.venue_plan_art import render_demo_plan
+from app.logic.venue_map import PLAN_MAX_BYTES, PLAN_MAX_DIM
 from app.models.booking import Booking
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
+from app.models.location import Location
 from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 from app.schemas.sandbox import SandboxRole
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
 
@@ -625,6 +630,127 @@ class TestSeededNotifications:
         assert any(
             n.title == "Shift Time Changed" for n in await _inbox(db_session, english)
         )
+
+
+# ── Locations and the venue map ───────────────────────────────────
+
+
+async def _locations(db: AsyncSession, sandbox: SandboxSetup) -> list[Location]:
+    rows = await db.execute(
+        select(Location).where(col(Location.event_id) == sandbox.event.id)
+    )
+    return list(rows.scalars())
+
+
+async def _plans(db: AsyncSession, sandbox: SandboxSetup) -> list[VenuePlan]:
+    rows = await db.execute(
+        select(VenuePlan).where(col(VenuePlan.event_id) == sandbox.event.id)
+    )
+    return list(rows.scalars())
+
+
+@pytest.mark.asyncio
+class TestSeededVenueMap:
+    """A sandbox cannot upload a plan image, so the demo has to bring its own:
+    without it the map is an empty state the visitor can do nothing about."""
+
+    async def test_every_task_batch_and_shift_points_at_a_location(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        locations = {loc.id: loc for loc in await _locations(db_session, test_sandbox)}
+        assert len(locations) == 4
+        assert all(loc.description for loc in locations.values())
+
+        tasks = await _tasks(db_session, test_sandbox)
+        batches = (
+            (
+                await db_session.execute(
+                    select(ShiftBatch).where(
+                        col(ShiftBatch.task_id).in_([t.id for t in tasks])
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        shifts = await _shifts(db_session, test_sandbox)
+        rows: list[Task | ShiftBatch | Shift] = [*tasks, *batches, *shifts]
+        assert shifts and batches
+        for row in rows:
+            assert row.location_id is not None
+            # The denormalised text is what every read path shows.
+            assert row.location == locations[row.location_id].name
+
+    async def test_one_plan_with_an_image_and_markers(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        [plan] = await _plans(db_session, test_sandbox)
+        assert plan.name == "Venue"
+        assert plan.image_etag is not None
+        assert (plan.image_width, plan.image_height) == (1600, 1000)
+
+        image = (
+            await db_session.execute(
+                select(VenuePlanImage).where(col(VenuePlanImage.plan_id) == plan.id)
+            )
+        ).scalar_one()
+        assert image.etag == plan.image_etag
+        assert image.content_type == "image/webp"
+        assert image.data.startswith(b"RIFF")
+
+        markers = list(
+            (
+                await db_session.execute(
+                    select(VenueMarker).where(col(VenueMarker.plan_id) == plan.id)
+                )
+            ).scalars()
+        )
+        assert all(0 <= m.x <= 1 and 0 <= m.y <= 1 for m in markers)
+        placed = {m.location_id for m in markers if m.kind == "location"}
+        locations = {
+            loc.name: loc.id for loc in await _locations(db_session, test_sandbox)
+        }
+        # Every location with a place on the plan, and not the "whole venue".
+        assert placed == {
+            locations["Main entrance"],
+            locations["Foyer café"],
+            locations["Main hall"],
+        }
+        generic = {m.kind for m in markers if m.location_id is None}
+        assert generic == {"entrance", "first_aid", "toilets", "parking"}
+
+    async def test_the_map_counts_on_the_event_read(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """The nav item hangs off ``venue_plan_count``; the demo must show it."""
+        counts = await crud_venue_map.count_plans_with_image_by_event(
+            db_session, event_ids=[test_sandbox.event.id]
+        )
+        assert counts == {test_sandbox.event.id: 1}
+
+    async def test_it_is_drawn_in_the_language_the_visitor_clicked(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        german = await make_sandbox(language="de")
+        english = await make_sandbox(language="en")
+
+        [de_plan] = await _plans(db_session, german)
+        [en_plan] = await _plans(db_session, english)
+        assert de_plan.name == "Gelände"
+        # Different labels drawn into the picture, so different bytes.
+        assert de_plan.image_etag != en_plan.image_etag
+        assert "Große Halle" in {
+            loc.name for loc in await _locations(db_session, german)
+        }
+
+
+def test_the_drawing_is_rendered_once_per_language() -> None:
+    """Every demo click reuses the normalised image rather than redrawing it."""
+    assert render_demo_plan("en") is render_demo_plan("en")
+    assert render_demo_plan("de") is not render_demo_plan("en")
+    image = render_demo_plan("de")
+    assert len(image.data) <= PLAN_MAX_BYTES
+    assert max(image.width, image.height) <= PLAN_MAX_DIM
 
 
 # ── The two tracks ────────────────────────────────────────────────

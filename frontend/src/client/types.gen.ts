@@ -32,6 +32,10 @@ export type AddShiftsToTask = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -134,6 +138,16 @@ export type AvatarUploadResponse = {
  * Body_users-upload_my_avatar
  */
 export type BodyUsersUploadMyAvatar = {
+  /**
+   * File
+   */
+  file: Blob | File
+}
+
+/**
+ * Body_venue-map-upload_venue_plan_image
+ */
+export type BodyVenueMapUploadVenuePlanImage = {
   /**
    * File
    */
@@ -837,6 +851,14 @@ export type EventCloneResponse = {
    * Notified
    */
   notified: boolean
+  /**
+   * Locations Created
+   */
+  locations_created?: number
+  /**
+   * Plans Created
+   */
+  plans_created?: number
 }
 
 /**
@@ -868,6 +890,10 @@ export type EventCloneTask = {
    * Location
    */
   location?: string | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
   /**
    * Category
    */
@@ -1332,6 +1358,10 @@ export type EventRead = {
    */
   pending_request_count?: number
   /**
+   * Venue Plan Count
+   */
+  venue_plan_count?: number
+  /**
    * Can Manage
    */
   readonly can_manage: boolean
@@ -1482,6 +1512,10 @@ export type FeedTaskItem = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -1588,6 +1622,256 @@ export type GlobalChannelSettingsUpdate = {
    * Notify Telegram
    */
   notify_telegram?: boolean | null
+}
+
+/**
+ * LocationCreate
+ */
+export type LocationCreate = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   *
+   * Markdown
+   */
+  description?: string | null
+  /**
+   * Address
+   */
+  address?: string | null
+  /**
+   * Map Url
+   *
+   * External map link (http or https only)
+   */
+  map_url?: string | null
+  /**
+   * Contact
+   *
+   * Free text, e.g. name and phone
+   */
+  contact?: string | null
+}
+
+/**
+ * LocationDetailRead
+ */
+export type LocationDetailRead = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   *
+   * Markdown
+   */
+  description?: string | null
+  /**
+   * Address
+   */
+  address?: string | null
+  /**
+   * Map Url
+   */
+  map_url?: string | null
+  /**
+   * Contact
+   *
+   * Free text, e.g. name and phone
+   */
+  contact?: string | null
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Pins
+   *
+   * Placements on the event's venue plans; empty for non-members
+   */
+  pins?: Array<LocationPin>
+}
+
+/**
+ * LocationPin
+ *
+ * Where a location sits on one venue plan.
+ */
+export type LocationPin = {
+  /**
+   * Plan Id
+   */
+  plan_id: string
+  /**
+   * Plan Name
+   */
+  plan_name: string
+  /**
+   * Marker Id
+   */
+  marker_id: string
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * X
+   */
+  x: number
+  /**
+   * Y
+   */
+  y: number
+}
+
+/**
+ * LocationRead
+ */
+export type LocationRead = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   *
+   * Markdown
+   */
+  description?: string | null
+  /**
+   * Address
+   */
+  address?: string | null
+  /**
+   * Map Url
+   */
+  map_url?: string | null
+  /**
+   * Contact
+   *
+   * Free text, e.g. name and phone
+   */
+  contact?: string | null
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+}
+
+/**
+ * LocationShiftRead
+ *
+ * A shift at a location on one day, as listed in the map's location sheet.
+ */
+export type LocationShiftRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Max Bookings
+   */
+  max_bookings: number
+  /**
+   * Current Bookings
+   */
+  current_bookings?: number
+  /**
+   * Is Booked By Me
+   */
+  is_booked_by_me?: boolean
+  /**
+   * My Booking Id
+   */
+  my_booking_id?: string | null
+}
+
+/**
+ * LocationUpdate
+ *
+ * Partial update; apply with ``model_dump(exclude_unset=True)``.
+ */
+export type LocationUpdate = {
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Address
+   */
+  address?: string | null
+  /**
+   * Map Url
+   */
+  map_url?: string | null
+  /**
+   * Contact
+   */
+  contact?: string | null
 }
 
 /**
@@ -2322,6 +2606,10 @@ export type ShiftBatchRead = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -2438,6 +2726,10 @@ export type ShiftCreate = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -2553,6 +2845,10 @@ export type ShiftRead = {
    * Location
    */
   location?: string | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
   /**
    * Category
    */
@@ -2682,6 +2978,10 @@ export type ShiftUpdate = {
    * Location
    */
   location?: string | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
   /**
    * Category
    */
@@ -2869,6 +3169,10 @@ export type TaskCreate = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -2902,6 +3206,10 @@ export type TaskCreateWithShifts = {
    * Location
    */
   location?: string | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
   /**
    * Category
    */
@@ -3033,6 +3341,10 @@ export type TaskRead = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -3105,6 +3417,10 @@ export type TaskUpdate = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Category
    */
   category?: string | null
@@ -3134,6 +3450,10 @@ export type TaskUpdateWithShifts = {
    * Location
    */
   location?: string | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
   /**
    * Category
    */
@@ -3976,6 +4296,203 @@ export type UserUpdate = {
 }
 
 /**
+ * VenueMapRead
+ */
+export type VenueMapRead = {
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * On
+   *
+   * The day ``my_location_ids`` refers to
+   */
+  on: string
+  /**
+   * Plans
+   */
+  plans: Array<VenuePlanRead>
+  /**
+   * Locations
+   */
+  locations: Array<LocationRead>
+  /**
+   * My Location Ids
+   *
+   * Locations of the caller's active bookings on ``on``
+   */
+  my_location_ids?: Array<string>
+}
+
+/**
+ * VenueMarkerCreate
+ */
+export type VenueMarkerCreate = {
+  /**
+   * Kind
+   */
+  kind: 'location' | 'entrance' | 'info_desk' | 'first_aid' | 'toilets' | 'parking' | 'kitchen'
+  /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * X
+   */
+  x: number
+  /**
+   * Y
+   */
+  y: number
+}
+
+/**
+ * VenueMarkerRead
+ */
+export type VenueMarkerRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Plan Id
+   */
+  plan_id: string
+  /**
+   * Kind
+   */
+  kind: 'location' | 'entrance' | 'info_desk' | 'first_aid' | 'toilets' | 'parking' | 'kitchen'
+  /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * X
+   */
+  x: number
+  /**
+   * Y
+   */
+  y: number
+}
+
+/**
+ * VenueMarkerUpdate
+ *
+ * Partial update. The kind/location pairing is checked on the merged row.
+ */
+export type VenueMarkerUpdate = {
+  /**
+   * Kind
+   */
+  kind?:
+    'location' | 'entrance' | 'info_desk' | 'first_aid' | 'toilets' | 'parking' | 'kitchen' | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * X
+   */
+  x?: number | null
+  /**
+   * Y
+   */
+  y?: number | null
+}
+
+/**
+ * VenuePlanCreate
+ */
+export type VenuePlanCreate = {
+  /**
+   * Name
+   */
+  name: string
+}
+
+/**
+ * VenuePlanOrder
+ */
+export type VenuePlanOrder = {
+  /**
+   * Plan Ids
+   *
+   * Every plan of the event, exactly once, in the new order
+   */
+  plan_ids: Array<string>
+}
+
+/**
+ * VenuePlanRead
+ */
+export type VenuePlanRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Sort Order
+   */
+  sort_order: number
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Markers
+   */
+  markers?: Array<VenueMarkerRead>
+}
+
+/**
+ * VenuePlanUpdate
+ */
+export type VenuePlanUpdate = {
+  /**
+   * Name
+   */
+  name?: string | null
+}
+
+/**
  * VerifyEmailRequest
  *
  * Redeem a verification link.
@@ -4026,6 +4543,14 @@ export type EventCloneResponseWritable = {
    * Notified
    */
   notified: boolean
+  /**
+   * Locations Created
+   */
+  locations_created?: number
+  /**
+   * Plans Created
+   */
+  plans_created?: number
 }
 
 /**
@@ -4130,6 +4655,10 @@ export type EventReadWritable = {
    * Pending Request Count
    */
   pending_request_count?: number
+  /**
+   * Venue Plan Count
+   */
+  venue_plan_count?: number
 }
 
 /**
@@ -6023,6 +6552,12 @@ export type TasksTaskFeedData = {
      * All Events
      */
     all_events?: boolean
+    /**
+     * Location Id
+     *
+     * Only tasks at this location, or with a shift there
+     */
+    location_id?: string | null
   }
   url: '/api/v1/tasks/feed'
 }
@@ -9893,6 +10428,979 @@ export type InvitationsAcceptInvitationResponses = {
 
 export type InvitationsAcceptInvitationResponse =
   InvitationsAcceptInvitationResponses[keyof InvitationsAcceptInvitationResponses]
+
+export type LocationsListEventLocationsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/locations'
+}
+
+export type LocationsListEventLocationsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type LocationsListEventLocationsError =
+  LocationsListEventLocationsErrors[keyof LocationsListEventLocationsErrors]
+
+export type LocationsListEventLocationsResponses = {
+  /**
+   * Response Locations-List Event Locations
+   *
+   * Successful Response
+   */
+  200: Array<LocationRead>
+}
+
+export type LocationsListEventLocationsResponse =
+  LocationsListEventLocationsResponses[keyof LocationsListEventLocationsResponses]
+
+export type LocationsCreateEventLocationData = {
+  body: LocationCreate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/locations'
+}
+
+export type LocationsCreateEventLocationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type LocationsCreateEventLocationError =
+  LocationsCreateEventLocationErrors[keyof LocationsCreateEventLocationErrors]
+
+export type LocationsCreateEventLocationResponses = {
+  /**
+   * Successful Response
+   */
+  201: LocationRead
+}
+
+export type LocationsCreateEventLocationResponse =
+  LocationsCreateEventLocationResponses[keyof LocationsCreateEventLocationResponses]
+
+export type LocationsDeleteLocationData = {
+  body?: never
+  path: {
+    /**
+     * Location Id
+     */
+    location_id: string
+  }
+  query?: never
+  url: '/api/v1/locations/{location_id}'
+}
+
+export type LocationsDeleteLocationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type LocationsDeleteLocationError =
+  LocationsDeleteLocationErrors[keyof LocationsDeleteLocationErrors]
+
+export type LocationsDeleteLocationResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type LocationsDeleteLocationResponse =
+  LocationsDeleteLocationResponses[keyof LocationsDeleteLocationResponses]
+
+export type LocationsGetLocationData = {
+  body?: never
+  path: {
+    /**
+     * Location Id
+     */
+    location_id: string
+  }
+  query?: never
+  url: '/api/v1/locations/{location_id}'
+}
+
+export type LocationsGetLocationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type LocationsGetLocationError = LocationsGetLocationErrors[keyof LocationsGetLocationErrors]
+
+export type LocationsGetLocationResponses = {
+  /**
+   * Successful Response
+   */
+  200: LocationDetailRead
+}
+
+export type LocationsGetLocationResponse =
+  LocationsGetLocationResponses[keyof LocationsGetLocationResponses]
+
+export type LocationsUpdateLocationData = {
+  body: LocationUpdate
+  path: {
+    /**
+     * Location Id
+     */
+    location_id: string
+  }
+  query?: never
+  url: '/api/v1/locations/{location_id}'
+}
+
+export type LocationsUpdateLocationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type LocationsUpdateLocationError =
+  LocationsUpdateLocationErrors[keyof LocationsUpdateLocationErrors]
+
+export type LocationsUpdateLocationResponses = {
+  /**
+   * Successful Response
+   */
+  200: LocationRead
+}
+
+export type LocationsUpdateLocationResponse =
+  LocationsUpdateLocationResponses[keyof LocationsUpdateLocationResponses]
+
+export type LocationsListLocationShiftsData = {
+  body?: never
+  path: {
+    /**
+     * Location Id
+     */
+    location_id: string
+  }
+  query?: {
+    /**
+     * On
+     *
+     * Day to list; defaults to today
+     */
+    on?: string | null
+  }
+  url: '/api/v1/locations/{location_id}/shifts'
+}
+
+export type LocationsListLocationShiftsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type LocationsListLocationShiftsError =
+  LocationsListLocationShiftsErrors[keyof LocationsListLocationShiftsErrors]
+
+export type LocationsListLocationShiftsResponses = {
+  /**
+   * Response Locations-List Location Shifts
+   *
+   * Successful Response
+   */
+  200: Array<LocationShiftRead>
+}
+
+export type LocationsListLocationShiftsResponse =
+  LocationsListLocationShiftsResponses[keyof LocationsListLocationShiftsResponses]
+
+export type VenueMapGetVenueMapData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: {
+    /**
+     * On
+     */
+    on?: string | null
+  }
+  url: '/api/v1/events/{event_id}/venue-map'
+}
+
+export type VenueMapGetVenueMapErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapGetVenueMapError = VenueMapGetVenueMapErrors[keyof VenueMapGetVenueMapErrors]
+
+export type VenueMapGetVenueMapResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenueMapRead
+}
+
+export type VenueMapGetVenueMapResponse =
+  VenueMapGetVenueMapResponses[keyof VenueMapGetVenueMapResponses]
+
+export type VenueMapCreateVenuePlanData = {
+  body: VenuePlanCreate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/venue-plans'
+}
+
+export type VenueMapCreateVenuePlanErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapCreateVenuePlanError =
+  VenueMapCreateVenuePlanErrors[keyof VenueMapCreateVenuePlanErrors]
+
+export type VenueMapCreateVenuePlanResponses = {
+  /**
+   * Successful Response
+   */
+  201: VenuePlanRead
+}
+
+export type VenueMapCreateVenuePlanResponse =
+  VenueMapCreateVenuePlanResponses[keyof VenueMapCreateVenuePlanResponses]
+
+export type VenueMapReorderVenuePlansData = {
+  body: VenuePlanOrder
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/venue-plans/order'
+}
+
+export type VenueMapReorderVenuePlansErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapReorderVenuePlansError =
+  VenueMapReorderVenuePlansErrors[keyof VenueMapReorderVenuePlansErrors]
+
+export type VenueMapReorderVenuePlansResponses = {
+  /**
+   * Response Venue-Map-Reorder Venue Plans
+   *
+   * Successful Response
+   */
+  200: Array<VenuePlanRead>
+}
+
+export type VenueMapReorderVenuePlansResponse =
+  VenueMapReorderVenuePlansResponses[keyof VenueMapReorderVenuePlansResponses]
+
+export type VenueMapDeleteVenuePlanData = {
+  body?: never
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}'
+}
+
+export type VenueMapDeleteVenuePlanErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapDeleteVenuePlanError =
+  VenueMapDeleteVenuePlanErrors[keyof VenueMapDeleteVenuePlanErrors]
+
+export type VenueMapDeleteVenuePlanResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type VenueMapDeleteVenuePlanResponse =
+  VenueMapDeleteVenuePlanResponses[keyof VenueMapDeleteVenuePlanResponses]
+
+export type VenueMapUpdateVenuePlanData = {
+  body: VenuePlanUpdate
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}'
+}
+
+export type VenueMapUpdateVenuePlanErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapUpdateVenuePlanError =
+  VenueMapUpdateVenuePlanErrors[keyof VenueMapUpdateVenuePlanErrors]
+
+export type VenueMapUpdateVenuePlanResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenuePlanRead
+}
+
+export type VenueMapUpdateVenuePlanResponse =
+  VenueMapUpdateVenuePlanResponses[keyof VenueMapUpdateVenuePlanResponses]
+
+export type VenueMapGetVenuePlanImageData = {
+  body?: never
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/image'
+}
+
+export type VenueMapGetVenuePlanImageErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapGetVenuePlanImageError =
+  VenueMapGetVenuePlanImageErrors[keyof VenueMapGetVenuePlanImageErrors]
+
+export type VenueMapGetVenuePlanImageResponses = {
+  /**
+   * The plan image
+   */
+  200: unknown
+}
+
+export type VenueMapUploadVenuePlanImageData = {
+  body: BodyVenueMapUploadVenuePlanImage
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/image'
+}
+
+export type VenueMapUploadVenuePlanImageErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapUploadVenuePlanImageError =
+  VenueMapUploadVenuePlanImageErrors[keyof VenueMapUploadVenuePlanImageErrors]
+
+export type VenueMapUploadVenuePlanImageResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenuePlanRead
+}
+
+export type VenueMapUploadVenuePlanImageResponse =
+  VenueMapUploadVenuePlanImageResponses[keyof VenueMapUploadVenuePlanImageResponses]
+
+export type VenueMapCreateVenueMarkerData = {
+  body: VenueMarkerCreate
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/markers'
+}
+
+export type VenueMapCreateVenueMarkerErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapCreateVenueMarkerError =
+  VenueMapCreateVenueMarkerErrors[keyof VenueMapCreateVenueMarkerErrors]
+
+export type VenueMapCreateVenueMarkerResponses = {
+  /**
+   * Successful Response
+   */
+  201: VenueMarkerRead
+}
+
+export type VenueMapCreateVenueMarkerResponse =
+  VenueMapCreateVenueMarkerResponses[keyof VenueMapCreateVenueMarkerResponses]
+
+export type VenueMapDeleteVenueMarkerData = {
+  body?: never
+  path: {
+    /**
+     * Marker Id
+     */
+    marker_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-markers/{marker_id}'
+}
+
+export type VenueMapDeleteVenueMarkerErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapDeleteVenueMarkerError =
+  VenueMapDeleteVenueMarkerErrors[keyof VenueMapDeleteVenueMarkerErrors]
+
+export type VenueMapDeleteVenueMarkerResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type VenueMapDeleteVenueMarkerResponse =
+  VenueMapDeleteVenueMarkerResponses[keyof VenueMapDeleteVenueMarkerResponses]
+
+export type VenueMapUpdateVenueMarkerData = {
+  body: VenueMarkerUpdate
+  path: {
+    /**
+     * Marker Id
+     */
+    marker_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-markers/{marker_id}'
+}
+
+export type VenueMapUpdateVenueMarkerErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapUpdateVenueMarkerError =
+  VenueMapUpdateVenueMarkerErrors[keyof VenueMapUpdateVenueMarkerErrors]
+
+export type VenueMapUpdateVenueMarkerResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenueMarkerRead
+}
+
+export type VenueMapUpdateVenueMarkerResponse =
+  VenueMapUpdateVenueMarkerResponses[keyof VenueMapUpdateVenueMarkerResponses]
 
 export type NotificationsListNotificationTypesData = {
   body?: never

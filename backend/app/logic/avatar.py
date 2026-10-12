@@ -1,34 +1,30 @@
 """Avatar image normalization: validate, resize, re-encode as WebP.
 
-The output is bounded by both pixel dimensions and final byte size so an
-attacker can't blow up the database with a single request.
+The pipeline itself lives in :mod:`app.logic.images`; this module pins the
+avatar limits (256 px, 64 KB) and keeps the historic three-tuple return.
 """
 
-import hashlib
-import io
 import logging
 from typing import Final
 
 import httpx
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image
+
+from app.logic.images import MAX_INPUT_BYTES as MAX_INPUT_BYTES
+from app.logic.images import ImageProcessingError, encode_webp, normalize_image
 
 logger = logging.getLogger(__name__)
 
-# Pre-decode upload size cap. Anything larger is rejected before we hand
-# bytes to Pillow (defense against decompression bombs).
-MAX_INPUT_BYTES: Final = 20 * 1024 * 1024  # 20 MB
 MAX_DIM: Final = 256
 MAX_OUTPUT_BYTES: Final = 64 * 1024  # 64 KB
+QUALITIES: Final = (80, 60)
 
-
-class AvatarProcessingError(ValueError):
-    """Raised when an avatar image is invalid or exceeds limits."""
+# Kept under its old name so routes and tests that catch it stay unchanged.
+AvatarProcessingError = ImageProcessingError
 
 
 def _encode_webp(img: Image.Image, quality: int) -> bytes:
-    out = io.BytesIO()
-    img.save(out, format="WEBP", quality=quality, method=6)
-    return out.getvalue()
+    return encode_webp(img, quality)
 
 
 def normalize_avatar(raw: bytes) -> tuple[bytes, str, str]:
@@ -36,35 +32,15 @@ def normalize_avatar(raw: bytes) -> tuple[bytes, str, str]:
 
     Returns ``(data, content_type, etag)``.
     """
-    if len(raw) == 0:
-        raise AvatarProcessingError("Empty file")
-    if len(raw) > MAX_INPUT_BYTES:
-        raise AvatarProcessingError("Image exceeds 20 MB upload limit")
-
-    try:
-        with Image.open(io.BytesIO(raw)) as probe:
-            probe.verify()
-    except (UnidentifiedImageError, OSError) as exc:
-        raise AvatarProcessingError("File is not a valid image") from exc
-
-    # verify() consumes the file; reopen for actual processing.
-    try:
-        with Image.open(io.BytesIO(raw)) as src:
-            oriented = ImageOps.exif_transpose(src) or src
-            if oriented.mode not in ("RGB", "RGBA"):
-                oriented = oriented.convert("RGBA" if "A" in oriented.mode else "RGB")
-            oriented.thumbnail((MAX_DIM, MAX_DIM), Image.Resampling.LANCZOS)
-            data = _encode_webp(oriented, quality=80)
-            if len(data) > MAX_OUTPUT_BYTES:
-                data = _encode_webp(oriented, quality=60)
-    except (UnidentifiedImageError, OSError) as exc:
-        raise AvatarProcessingError("Failed to decode image") from exc
-
-    if len(data) > MAX_OUTPUT_BYTES:
-        raise AvatarProcessingError("Image too large after compression")
-
-    etag = hashlib.sha256(data).hexdigest()
-    return data, "image/webp", etag
+    result = normalize_image(
+        raw,
+        max_dim=MAX_DIM,
+        max_output_bytes=MAX_OUTPUT_BYTES,
+        qualities=QUALITIES,
+        # Looked up at call time so ``_encode_webp`` stays patchable here.
+        encoder=lambda img, quality: _encode_webp(img, quality=quality),
+    )
+    return result.data, result.content_type, result.etag
 
 
 async def fetch_remote_avatar(url: str) -> bytes | None:

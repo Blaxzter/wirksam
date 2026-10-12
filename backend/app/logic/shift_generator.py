@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import date, datetime, time, timedelta
+from typing import Any
 
 from app.schemas.shift import ShiftCreate
 from app.schemas.task import ExcludedShift, ScheduleOverride
@@ -19,6 +20,7 @@ def generate_shifts(
     people_per_shift: int = 1,
     remainder_mode: str = "drop",
     location: str | None = None,
+    location_id: uuid.UUID | None = None,
     category: str | None = None,
     overrides: list[ScheduleOverride] | None = None,
     excluded_shifts: list[ExcludedShift] | None = None,
@@ -72,6 +74,7 @@ def generate_shifts(
                 people_per_shift=people_per_shift,
                 remainder_mode=remainder_mode,
                 location=location,
+                location_id=location_id,
                 category=category,
             )
         )
@@ -97,9 +100,18 @@ def _generate_shifts_for_day(
     people_per_shift: int,
     remainder_mode: str = "drop",
     location: str | None,
+    location_id: uuid.UUID | None = None,
     category: str | None,
 ) -> list[ShiftCreate]:
     """Generate shifts for a single day."""
+    # Copied onto every shift of the day, exactly like the task/batch values.
+    shared: dict[str, Any] = {
+        "task_id": task_id,
+        "location": location,
+        "location_id": location_id,
+        "category": category,
+        "max_bookings": people_per_shift,
+    }
     # Use a reference date to do time arithmetic
     ref = date(2000, 1, 1)
     start_dt = _combine(ref, day_start)
@@ -117,14 +129,11 @@ def _generate_shifts_for_day(
 
         shifts.append(
             ShiftCreate(
-                task_id=task_id,
                 title=title,
                 date=slot_date,
                 start_time=slot_start_time,
                 end_time=slot_end_time,
-                location=location,
-                category=category,
-                max_bookings=people_per_shift,
+                **shared,
             )
         )
         current = slot_end
@@ -138,14 +147,11 @@ def _generate_shifts_for_day(
             title = f"{task_name} {slot_start_time.strftime('%H:%M')}-{slot_end_time.strftime('%H:%M')}"
             shifts.append(
                 ShiftCreate(
-                    task_id=task_id,
                     title=title,
                     date=slot_date,
                     start_time=slot_start_time,
                     end_time=slot_end_time,
-                    location=location,
-                    category=category,
-                    max_bookings=people_per_shift,
+                    **shared,
                 )
             )
         elif remainder_mode == "extend" and shifts:

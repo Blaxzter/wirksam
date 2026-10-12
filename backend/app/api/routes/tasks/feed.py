@@ -295,6 +295,10 @@ async def task_feed(
     days: int = Query(default=5, ge=1, le=31),
     event_id: uuid.UUID | None = Query(default=None),
     all_events: bool = Query(default=False),
+    location_id: uuid.UUID | None = Query(
+        default=None,
+        description="Only tasks at this location, or with a shift there",
+    ),
 ) -> TaskFeedResponse:
     """Unified feed endpoint — returns tasks with view-specific embedded data.
 
@@ -340,6 +344,7 @@ async def task_feed(
         also_include_group_ids=also_include_group_ids,
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
+        location_id=location_id,
     )
     total = await crud_task.get_count_filtered(
         session,
@@ -352,6 +357,7 @@ async def task_feed(
         also_include_group_ids=also_include_group_ids,
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
+        location_id=location_id,
     )
 
     if not tasks:

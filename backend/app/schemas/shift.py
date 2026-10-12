@@ -12,6 +12,7 @@ class ShiftBase(BaseModel):
     start_time: dt.time | None = None
     end_time: dt.time | None = None
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     max_bookings: int = 1
     batch_id: uuid.UUID | None = None
@@ -28,6 +29,7 @@ class ShiftUpdate(BaseModel):
     start_time: dt.time | None = None
     end_time: dt.time | None = None
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     max_bookings: int | None = None
 

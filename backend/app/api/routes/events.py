@@ -19,10 +19,12 @@ from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
+from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic.permissions import require_event_role, require_event_visible
 from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
@@ -78,9 +80,10 @@ async def decorate_events(
 ) -> list[EventRead]:
     """Attach viewer-relative context to a page of events.
 
-    Member counts, the caller's own role and any pending join request are all
-    fetched in one query each rather than per row, so a long Discover list
-    costs a constant number of round trips.
+    Member counts, the caller's own role, any pending join request and the
+    number of venue plans with an image are all fetched in one query each
+    rather than per row, so a long Discover list costs a constant number of
+    round trips.
     """
     event_ids = [e.id for e in events]
     if not event_ids:
@@ -101,6 +104,12 @@ async def decorate_events(
     pending_counts = await crud_join_request.count_pending_by_event(
         session, event_ids=manageable
     )
+    # The venue map is for members only; a non-member must not even learn a
+    # public event has one (the "Map" link would only lead to a 404).
+    member_of = [e.id for e in events if user.is_admin or e.id in my_roles]
+    plan_counts = await crud_venue_map.count_plans_with_image_by_event(
+        session, event_ids=member_of
+    )
 
     out: list[EventRead] = []
     for e in events:
@@ -109,6 +118,7 @@ async def decorate_events(
         read.member_count = member_counts.get(e.id, 0)
         read.join_request_status = request_statuses.get(e.id)
         read.pending_request_count = pending_counts.get(e.id, 0)
+        read.venue_plan_count = plan_counts.get(e.id, 0)
         out.append(read)
     return out
 
@@ -550,12 +560,75 @@ def _pick(override: _Pickable | None, fallback: _Pickable | None) -> _Pickable |
     return fallback if override is None else override
 
 
+#: A cloned row's ``(location_id, location)`` pair, or ``None`` for "derive it
+#: from the source row". See ``_location_override``.
+_LocationPair = tuple[uuid.UUID | None, str | None]
+
+
+async def _location_override(
+    session: DBDep,
+    *,
+    entry: EventCloneTask,
+    location_map: dict[uuid.UUID, uuid.UUID],
+) -> _LocationPair | None:
+    """The caller's per-task location override, already remapped to the clone.
+
+    ``entry.location_id`` names a location of the *source* event (the clone's
+    copies have no ids the client could know); it wins over the text and puts
+    the copy's name in the text column. Anything else, an id from another
+    event or a stale one, is a 422 and never a silent drop. ``None`` means the
+    caller overrode nothing.
+    """
+    if entry.location_id is None:
+        if entry.location is None:
+            return None
+        # A text-only override; whether it keeps the link is decided per row
+        # in ``_remap_location``, against that row's own source text.
+        return (None, entry.location)
+    new_id = location_map.get(entry.location_id)
+    if new_id is None:
+        raise_problem(
+            422,
+            code="location.wrong_event",
+            detail="That location does not belong to the event being cloned",
+        )
+    # Flushed by ``copy_for_clone``, so this is an identity-map hit.
+    copy = await session.get(Location, new_id)
+    assert copy is not None
+    return (new_id, copy.name)
+
+
+def _remap_location(
+    src_location_id: uuid.UUID | None,
+    src_location: str | None,
+    *,
+    location_map: dict[uuid.UUID, uuid.UUID],
+    override: _LocationPair | None,
+) -> _LocationPair:
+    """``(location_id, location)`` for a cloned task or batch.
+
+    Without an override the source pair is kept with the id remapped. An id
+    override is taken as is. A text-only override keeps the remapped link
+    only while the text still reads the same as the source; a different text
+    is free text, and a link would contradict it.
+    """
+    remapped = location_map.get(src_location_id) if src_location_id else None
+    if override is None:
+        return remapped, src_location
+    override_id, override_text = override
+    if override_id is not None:
+        return override
+    return (remapped if override_text == src_location else None), override_text
+
+
 def _clone_batch(
     src: ShiftBatch,
     *,
     task_id: uuid.UUID,
     delta: dt.timedelta,
     entry: EventCloneTask,
+    location_map: dict[uuid.UUID, uuid.UUID],
+    location_override: _LocationPair | None,
 ) -> ShiftBatch:
     """A copy of ``src`` on another task, moved by ``delta``.
 
@@ -568,14 +641,22 @@ def _clone_batch(
     the task row. Every batch written by the normal creation paths fills in all
     six of these columns, and both the generator and the edit screen read the
     batch before the task — so a batch left holding the source values would
-    make the override a no-op and leave the two rows disagreeing.
+    make the override a no-op and leave the two rows disagreeing. The location
+    override follows the same rule, as an ``(id, text)`` pair.
     """
+    location_id, location = _remap_location(
+        src.location_id,
+        src.location,
+        location_map=location_map,
+        override=location_override,
+    )
     return ShiftBatch(
         task_id=task_id,
         label=src.label,
         start_date=src.start_date + delta,
         end_date=src.end_date + delta,
-        location=_pick(entry.location, src.location),
+        location=location,
+        location_id=location_id,
         category=_pick(entry.category, src.category),
         default_start_time=_pick(entry.default_start_time, src.default_start_time),
         default_end_time=_pick(entry.default_end_time, src.default_end_time),
@@ -606,6 +687,12 @@ def _regenerate_batch_shifts(batch: ShiftBatch, task: Task) -> list[Shift]:
     duration = batch.shift_duration_minutes or task.shift_duration_minutes
     if start_time is None or end_time is None or not duration:
         return []
+    # Text and id come from the same row, so a free-text batch on a linked
+    # task does not end up with a link that contradicts its text.
+    if batch.location:
+        location, location_id = batch.location, batch.location_id
+    else:
+        location, location_id = task.location, task.location_id
 
     generated = generate_shifts(
         task_id=task.id,
@@ -617,14 +704,19 @@ def _regenerate_batch_shifts(batch: ShiftBatch, task: Task) -> list[Shift]:
         shift_duration_minutes=duration,
         people_per_shift=batch.people_per_shift or task.people_per_shift or 1,
         remainder_mode=batch.remainder_mode or "drop",
-        location=batch.location or task.location,
+        location=location,
+        location_id=location_id,
         category=batch.category or task.category,
         overrides=_resolve_overrides(batch.schedule_overrides),
     )
     out: list[Shift] = []
     for slot_in in generated:
         slot_in.batch_id = batch.id
-        out.append(Shift(**slot_in.model_dump()))
+        shift = Shift(**slot_in.model_dump())
+        # Set on the row as well, so it does not depend on whether the schema
+        # the generator returns carries the field.
+        shift.location_id = location_id
+        out.append(shift)
     return out
 
 
@@ -775,6 +867,13 @@ async def clone_event(
             members_copied += 1
         session.add_all(copied_rows)
 
+    # Before the tasks: their ``location_id`` values are remapped through
+    # ``location_map``. Always copied, because a plan is part of "the same
+    # event again"; the image bytes never leave the database.
+    location_map, plans_created = await crud_venue_map.copy_for_clone(
+        session, source_event_id=source.id, new_event_id=new_event.id
+    )
+
     new_shifts: list[Shift] = []
     tasks_created = 0
     for entry in body.tasks:
@@ -785,6 +884,7 @@ async def clone_event(
             new_event=new_event,
             delta=delta,
             current_user_id=current_user.id,
+            location_map=location_map,
         )
         tasks_created += 1
         new_shifts.extend(task_shifts)
@@ -817,6 +917,8 @@ async def clone_event(
         shifts_created=len(new_shifts),
         members_copied=members_copied,
         notified=notified,
+        locations_created=len(location_map),
+        plans_created=plans_created,
     )
 
 
@@ -828,6 +930,7 @@ async def _clone_task(
     new_event: Event,
     delta: dt.timedelta,
     current_user_id: uuid.UUID,
+    location_map: dict[uuid.UUID, uuid.UUID],
 ) -> list[Shift]:
     """Reproduce one source task, its batches and its shifts in ``new_event``.
 
@@ -884,13 +987,24 @@ async def _clone_task(
     # reading that keeps a re-dated task's batches and shifts inside it.
     task_delta = start_date - src.start_date
 
+    location_override = await _location_override(
+        session, entry=entry, location_map=location_map
+    )
+    task_location_id, task_location = _remap_location(
+        src.location_id,
+        src.location,
+        location_map=location_map,
+        override=location_override,
+    )
+
     new_task = Task(
         name=entry.name or src.name,
         description=src.description,
         start_date=start_date,
         end_date=end_date,
         status=entry.status or src.status,
-        location=_pick(entry.location, src.location),
+        location=task_location,
+        location_id=task_location_id,
         category=_pick(entry.category, src.category),
         shift_duration_minutes=_pick(
             entry.shift_duration_minutes, src.shift_duration_minutes
@@ -924,7 +1038,12 @@ async def _clone_task(
     new_batches: list[ShiftBatch] = []
     for src_batch in source_batches:
         new_batch = _clone_batch(
-            src_batch, task_id=new_task.id, delta=task_delta, entry=entry
+            src_batch,
+            task_id=new_task.id,
+            delta=task_delta,
+            entry=entry,
+            location_map=location_map,
+            location_override=location_override,
         )
         session.add(new_batch)
         batch_map[src_batch.id] = new_batch.id
@@ -941,6 +1060,7 @@ async def _clone_task(
                 start_date=new_task.start_date,
                 end_date=new_task.end_date,
                 location=new_task.location,
+                location_id=new_task.location_id,
                 category=new_task.category,
                 default_start_time=new_task.default_start_time,
                 default_end_time=new_task.default_end_time,
@@ -980,6 +1100,7 @@ async def _clone_task(
             start_time=s.start_time,
             end_time=s.end_time,
             location=s.location,
+            location_id=location_map.get(s.location_id) if s.location_id else None,
             category=s.category,
             max_bookings=s.max_bookings,
         )

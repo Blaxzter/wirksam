@@ -18,6 +18,7 @@ class TaskBase(BaseModel):
     created_by_id: uuid.UUID | None = None
     event_id: uuid.UUID | None = None
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
 
     @field_validator("end_date")
@@ -42,6 +43,7 @@ class TaskUpdate(BaseModel):
     status: TaskStatus | None = None
     event_id: uuid.UUID | None = None
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
 
 
@@ -138,6 +140,7 @@ class TaskCreateWithShifts(BaseModel):
     end_date: dt.date
     status: TaskStatus = "draft"
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     event_id: uuid.UUID | None = None
     new_event: EventCreate | None = None
@@ -175,6 +178,7 @@ class TaskUpdateWithShifts(BaseModel):
     start_date: dt.date | None = None
     end_date: dt.date | None = None
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     schedule: ShiftGenerationConfig
 
@@ -183,6 +187,7 @@ class AddShiftsToTask(BaseModel):
     start_date: dt.date
     end_date: dt.date
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     schedule: ShiftGenerationConfig
 

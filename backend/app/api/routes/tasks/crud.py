@@ -10,6 +10,12 @@ from app.crud.booking import booking as crud_booking
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
 from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
+from app.logic.location_assignment import location_patch
+from app.logic.locations import (
+    apply_location,
+    resolve_location,
+    unlink_task_children,
+)
 from app.logic.permissions import get_event_role, require_event_role
 from app.models.shift import Shift
 from app.models.task import Task
@@ -121,6 +127,10 @@ async def create_task(
     current_user: CurrentUser,
 ) -> Task:
     await require_event_role(current_user, session, task_in.event_id)
+    loc = await resolve_location(
+        session, event_id=task_in.event_id, location_id=task_in.location_id
+    )
+    apply_location(task_in, loc, task_in.location)
     task_in.created_by_id = current_user.id
     return await crud_task.create(session, obj_in=task_in)
 
@@ -136,7 +146,21 @@ async def update_task(
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
     await require_event_role(current_user, session, db_task.event_id)
     old_status = db_task.status
-    updated = await crud_task.update(session, db_obj=db_task, obj_in=task_in)
+    update_data = task_in.model_dump(exclude_unset=True)
+    target_event_id = update_data.get("event_id", db_task.event_id)
+    moving = target_event_id != db_task.event_id
+    if moving:
+        # Moving a task is a write into the target event as well.
+        await require_event_role(current_user, session, target_event_id)
+        # A location belongs to one event; moving the task drops the link on
+        # it and on its batches and shifts, keeping the names as free text.
+        await unlink_task_children(session, db_task.id)
+        if "location_id" not in update_data:
+            update_data["location_id"] = None
+    update_data.update(
+        await location_patch(session, db_task, update_data, event_id=target_event_id)
+    )
+    updated = await crud_task.update(session, db_obj=db_task, obj_in=update_data)
 
     # Notify when task is published
     if old_status != "published" and updated.status == "published":

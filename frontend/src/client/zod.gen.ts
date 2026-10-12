@@ -62,6 +62,13 @@ export const zBodyUsersUploadMyAvatar = z.object({
 })
 
 /**
+ * Body_venue-map-upload_venue_plan_image
+ */
+export const zBodyVenueMapUploadVenuePlanImage = z.object({
+  file: z.string(),
+})
+
+/**
  * BookingCreate
  *
  * User only provides the shift and optional notes. user_id is set server-side.
@@ -375,6 +382,7 @@ export const zEventCloneTask = z
     name: z.string().nullish(),
     status: z.enum(['draft', 'published', 'archived']).nullish(),
     location: z.string().nullish(),
+    location_id: z.uuid().nullish(),
     category: z.string().nullish(),
     start_date: z.iso.date().nullish(),
     end_date: z.iso.date().nullish(),
@@ -595,6 +603,7 @@ export const zEventRead = z.object({
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
   pending_request_count: z.int().optional().default(0),
+  venue_plan_count: z.int().optional().default(0),
   can_manage: z.boolean().readonly(),
   is_expired: z.boolean().readonly(),
 })
@@ -608,6 +617,8 @@ export const zEventCloneResponse = z.object({
   shifts_created: z.int(),
   members_copied: z.int(),
   notified: z.boolean(),
+  locations_created: z.int().optional().default(0),
+  plans_created: z.int().optional().default(0),
 })
 
 /**
@@ -684,6 +695,7 @@ export const zFeedTaskItem = z
     created_by_id: z.uuid().nullish(),
     event_id: z.uuid().nullish(),
     location: z.string().nullish(),
+    location_id: z.uuid().nullish(),
     category: z.string().nullish(),
     id: z.uuid(),
     created_at: z.iso.datetime(),
@@ -738,6 +750,113 @@ export const zGlobalChannelSettingsUpdate = z.object({
   notify_push: z.boolean().nullish(),
   notify_telegram: z.boolean().nullish(),
 })
+
+/**
+ * LocationCreate
+ */
+export const zLocationCreate = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(10000).nullish(),
+  address: z.string().max(255).nullish(),
+  map_url: z.string().max(2048).nullish(),
+  contact: z.string().max(255).nullish(),
+})
+
+/**
+ * LocationPin
+ *
+ * Where a location sits on one venue plan.
+ */
+export const zLocationPin = z
+  .object({
+    plan_id: z.uuid(),
+    plan_name: z.string(),
+    marker_id: z.uuid(),
+    image_etag: z.string().nullish(),
+    image_width: z.int().nullish(),
+    image_height: z.int().nullish(),
+    x: z.number(),
+    y: z.number(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Where a location sits on one venue plan.',
+  })
+
+/**
+ * LocationDetailRead
+ */
+export const zLocationDetailRead = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(10000).nullish(),
+  address: z.string().max(255).nullish(),
+  map_url: z.string().nullish(),
+  contact: z.string().max(255).nullish(),
+  id: z.uuid(),
+  event_id: z.uuid(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+  pins: z
+    .array(zLocationPin)
+    .register(z.globalRegistry, {
+      description: "Placements on the event's venue plans; empty for non-members",
+    })
+    .optional(),
+})
+
+/**
+ * LocationRead
+ */
+export const zLocationRead = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(10000).nullish(),
+  address: z.string().max(255).nullish(),
+  map_url: z.string().nullish(),
+  contact: z.string().max(255).nullish(),
+  id: z.uuid(),
+  event_id: z.uuid(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+})
+
+/**
+ * LocationShiftRead
+ *
+ * A shift at a location on one day, as listed in the map's location sheet.
+ */
+export const zLocationShiftRead = z
+  .object({
+    id: z.uuid(),
+    task_id: z.uuid(),
+    task_name: z.string(),
+    title: z.string(),
+    date: z.iso.date(),
+    start_time: z.iso.time().nullish(),
+    end_time: z.iso.time().nullish(),
+    max_bookings: z.int(),
+    current_bookings: z.int().optional().default(0),
+    is_booked_by_me: z.boolean().optional().default(false),
+    my_booking_id: z.uuid().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: "A shift at a location on one day, as listed in the map's location sheet.",
+  })
+
+/**
+ * LocationUpdate
+ *
+ * Partial update; apply with ``model_dump(exclude_unset=True)``.
+ */
+export const zLocationUpdate = z
+  .object({
+    name: z.string().min(1).max(120).nullish(),
+    description: z.string().max(10000).nullish(),
+    address: z.string().max(255).nullish(),
+    map_url: z.string().max(2048).nullish(),
+    contact: z.string().max(255).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Partial update; apply with ``model_dump(exclude_unset=True)``.',
+  })
 
 /**
  * LoginRequest
@@ -1151,6 +1270,7 @@ export const zShiftBatchRead = z.object({
   start_date: z.iso.date(),
   end_date: z.iso.date(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   default_start_time: z.iso.time().nullish(),
   default_end_time: z.iso.time().nullish(),
@@ -1194,6 +1314,7 @@ export const zShiftCreate = z.object({
   start_time: z.iso.time().nullish(),
   end_time: z.iso.time().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   max_bookings: z.int().optional().default(1),
   batch_id: z.uuid().nullish(),
@@ -1227,6 +1348,7 @@ export const zAddShiftsToTask = z.object({
   start_date: z.iso.date(),
   end_date: z.iso.date(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   schedule: zShiftGenerationConfig,
 })
@@ -1242,6 +1364,7 @@ export const zShiftRead = z.object({
   start_time: z.iso.time().nullish(),
   end_time: z.iso.time().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   max_bookings: z.int().optional().default(1),
   batch_id: z.uuid().nullish(),
@@ -1329,6 +1452,7 @@ export const zShiftUpdate = z.object({
   start_time: z.iso.time().nullish(),
   end_time: z.iso.time().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   max_bookings: z.int().nullish(),
 })
@@ -1418,6 +1542,7 @@ export const zTaskCreate = z.object({
   created_by_id: z.uuid().nullish(),
   event_id: z.uuid().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
 })
 
@@ -1431,6 +1556,7 @@ export const zTaskCreateWithShifts = z.object({
   end_date: z.iso.date(),
   status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   event_id: z.uuid().nullish(),
   new_event: zEventCreate.nullish(),
@@ -1470,6 +1596,7 @@ export const zTaskRead = z.object({
   created_by_id: z.uuid().nullish(),
   event_id: z.uuid().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   id: z.uuid(),
   created_at: z.iso.datetime(),
@@ -1530,6 +1657,7 @@ export const zTaskUpdate = z.object({
   status: z.enum(['draft', 'published', 'archived']).nullish(),
   event_id: z.uuid().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
 })
 
@@ -1542,6 +1670,7 @@ export const zTaskUpdateWithShifts = z.object({
   start_date: z.iso.date().nullish(),
   end_date: z.iso.date().nullish(),
   location: z.string().nullish(),
+  location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   schedule: zShiftGenerationConfig,
 })
@@ -2038,6 +2167,106 @@ export const zUserUpdate = z.object({
 })
 
 /**
+ * VenueMarkerCreate
+ */
+export const zVenueMarkerCreate = z.object({
+  kind: z.enum(['location', 'entrance', 'info_desk', 'first_aid', 'toilets', 'parking', 'kitchen']),
+  location_id: z.uuid().nullish(),
+  label: z.string().max(120).nullish(),
+  x: z.number().gte(0).lte(1),
+  y: z.number().gte(0).lte(1),
+})
+
+/**
+ * VenueMarkerRead
+ */
+export const zVenueMarkerRead = z.object({
+  id: z.uuid(),
+  plan_id: z.uuid(),
+  kind: z.enum(['location', 'entrance', 'info_desk', 'first_aid', 'toilets', 'parking', 'kitchen']),
+  location_id: z.uuid().nullish(),
+  label: z.string().nullish(),
+  x: z.number(),
+  y: z.number(),
+})
+
+/**
+ * VenueMarkerUpdate
+ *
+ * Partial update. The kind/location pairing is checked on the merged row.
+ */
+export const zVenueMarkerUpdate = z
+  .object({
+    kind: z
+      .enum(['location', 'entrance', 'info_desk', 'first_aid', 'toilets', 'parking', 'kitchen'])
+      .nullish(),
+    location_id: z.uuid().nullish(),
+    label: z.string().max(120).nullish(),
+    x: z.number().gte(0).lte(1).nullish(),
+    y: z.number().gte(0).lte(1).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Partial update. The kind/location pairing is checked on the merged row.',
+  })
+
+/**
+ * VenuePlanCreate
+ */
+export const zVenuePlanCreate = z.object({
+  name: z.string().min(1).max(120),
+})
+
+/**
+ * VenuePlanOrder
+ */
+export const zVenuePlanOrder = z.object({
+  plan_ids: z.array(z.uuid()).register(z.globalRegistry, {
+    description: 'Every plan of the event, exactly once, in the new order',
+  }),
+})
+
+/**
+ * VenuePlanRead
+ */
+export const zVenuePlanRead = z.object({
+  id: z.uuid(),
+  event_id: z.uuid(),
+  name: z.string(),
+  sort_order: z.int(),
+  image_etag: z.string().nullish(),
+  image_width: z.int().nullish(),
+  image_height: z.int().nullish(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+  markers: z.array(zVenueMarkerRead).optional(),
+})
+
+/**
+ * VenueMapRead
+ */
+export const zVenueMapRead = z.object({
+  event_id: z.uuid(),
+  on: z.iso.date().register(z.globalRegistry, {
+    description: 'The day ``my_location_ids`` refers to',
+  }),
+  plans: z.array(zVenuePlanRead),
+  locations: z.array(zLocationRead),
+  my_location_ids: z
+    .array(z.uuid())
+    .register(z.globalRegistry, {
+      description: "Locations of the caller's active bookings on ``on``",
+    })
+    .optional(),
+})
+
+/**
+ * VenuePlanUpdate
+ */
+export const zVenuePlanUpdate = z.object({
+  name: z.string().min(1).max(120).nullish(),
+})
+
+/**
  * VerifyEmailRequest
  *
  * Redeem a verification link.
@@ -2091,6 +2320,7 @@ export const zEventReadWritable = z.object({
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
   pending_request_count: z.int().optional().default(0),
+  venue_plan_count: z.int().optional().default(0),
 })
 
 /**
@@ -2102,6 +2332,8 @@ export const zEventCloneResponseWritable = z.object({
   shifts_created: z.int(),
   members_copied: z.int(),
   notified: z.boolean(),
+  locations_created: z.int().optional().default(0),
+  plans_created: z.int().optional().default(0),
 })
 
 /**
@@ -2379,6 +2611,7 @@ export const zTasksTaskFeedQuery = z.object({
   days: z.int().gte(1).lte(31).optional().default(5),
   event_id: z.uuid().nullish(),
   all_events: z.boolean().optional().default(false),
+  location_id: z.uuid().nullish(),
 })
 
 /**
@@ -3100,6 +3333,193 @@ export const zInvitationsAcceptInvitationPath = z.object({
  * Successful Response
  */
 export const zInvitationsAcceptInvitationResponse = zEventRead
+
+export const zLocationsListEventLocationsPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Locations-List Event Locations
+ *
+ * Successful Response
+ */
+export const zLocationsListEventLocationsResponse = z
+  .array(zLocationRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zLocationsCreateEventLocationBody = zLocationCreate
+
+export const zLocationsCreateEventLocationPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zLocationsCreateEventLocationResponse = zLocationRead
+
+export const zLocationsDeleteLocationPath = z.object({
+  location_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zLocationsDeleteLocationResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zLocationsGetLocationPath = z.object({
+  location_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zLocationsGetLocationResponse = zLocationDetailRead
+
+export const zLocationsUpdateLocationBody = zLocationUpdate
+
+export const zLocationsUpdateLocationPath = z.object({
+  location_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zLocationsUpdateLocationResponse = zLocationRead
+
+export const zLocationsListLocationShiftsPath = z.object({
+  location_id: z.uuid(),
+})
+
+export const zLocationsListLocationShiftsQuery = z.object({
+  on: z.iso.date().nullish(),
+})
+
+/**
+ * Response Locations-List Location Shifts
+ *
+ * Successful Response
+ */
+export const zLocationsListLocationShiftsResponse = z
+  .array(zLocationShiftRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zVenueMapGetVenueMapPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zVenueMapGetVenueMapQuery = z.object({
+  on: z.iso.date().nullish(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapGetVenueMapResponse = zVenueMapRead
+
+export const zVenueMapCreateVenuePlanBody = zVenuePlanCreate
+
+export const zVenueMapCreateVenuePlanPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapCreateVenuePlanResponse = zVenuePlanRead
+
+export const zVenueMapReorderVenuePlansBody = zVenuePlanOrder
+
+export const zVenueMapReorderVenuePlansPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Venue-Map-Reorder Venue Plans
+ *
+ * Successful Response
+ */
+export const zVenueMapReorderVenuePlansResponse = z
+  .array(zVenuePlanRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zVenueMapDeleteVenuePlanPath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapDeleteVenuePlanResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zVenueMapUpdateVenuePlanBody = zVenuePlanUpdate
+
+export const zVenueMapUpdateVenuePlanPath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapUpdateVenuePlanResponse = zVenuePlanRead
+
+export const zVenueMapGetVenuePlanImagePath = z.object({
+  plan_id: z.uuid(),
+})
+
+export const zVenueMapUploadVenuePlanImageBody = zBodyVenueMapUploadVenuePlanImage
+
+export const zVenueMapUploadVenuePlanImagePath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapUploadVenuePlanImageResponse = zVenuePlanRead
+
+export const zVenueMapCreateVenueMarkerBody = zVenueMarkerCreate
+
+export const zVenueMapCreateVenueMarkerPath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapCreateVenueMarkerResponse = zVenueMarkerRead
+
+export const zVenueMapDeleteVenueMarkerPath = z.object({
+  marker_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapDeleteVenueMarkerResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zVenueMapUpdateVenueMarkerBody = zVenueMarkerUpdate
+
+export const zVenueMapUpdateVenueMarkerPath = z.object({
+  marker_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapUpdateVenueMarkerResponse = zVenueMarkerRead
 
 /**
  * Response Notifications-List Notification Types

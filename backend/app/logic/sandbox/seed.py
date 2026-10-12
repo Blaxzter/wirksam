@@ -18,7 +18,10 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
 * the notification bell carries a badge and the inbox behind it has an entry
   under every classification tab, because nothing the visitor does during the
   tour can produce one — ``NotificationService`` skips a sandbox recipient
-  before it writes a row, so a demo inbox is seeded or it is empty forever.
+  before it writes a row, so a demo inbox is seeded or it is empty forever;
+* the tasks point at real locations with a venue plan behind them, because a
+  sandbox cannot upload an image (``sandbox.upload_disabled``) and the map
+  would otherwise be an empty state the visitor can do nothing about.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -40,17 +43,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.user_availability import user_availability as crud_user_availability
 from app.logic.notifications.messages import format_time_until, get_message
+from app.logic.sandbox.venue_plan_art import render_demo_plan
 from app.logic.shift_generator import generate_shifts
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
+from app.models.location import Location
 from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 from app.schemas.sandbox import SandboxRole
 from app.schemas.user_availability import (
     UserAvailabilityCreate,
@@ -101,6 +107,11 @@ class _TaskSpec:
     description_de: str
     location_en: str
     location_de: str
+    location_desc_en: str
+    location_desc_de: str
+    #: Where the location's marker sits on the demo plan, as fractions of the
+    #: image (see ``venue_plan_art``); ``None`` keeps it off the map.
+    marker_at: tuple[float, float] | None
     category_en: str
     category_de: str
     day_offsets: tuple[int, ...]
@@ -117,6 +128,9 @@ class _TaskSpec:
 
     def location(self, lang: str) -> str:
         return self.location_de if lang == "de" else self.location_en
+
+    def location_desc(self, lang: str) -> str:
+        return self.location_desc_de if lang == "de" else self.location_desc_en
 
     def category(self, lang: str) -> str:
         return self.category_de if lang == "de" else self.category_en
@@ -139,6 +153,15 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         ),
         location_en="Main entrance",
         location_de="Haupteingang",
+        location_desc_en=(
+            "The glass doors facing the **car park**. The desk is just inside "
+            "on the left."
+        ),
+        location_desc_de=(
+            "Die Glastüren zum **Parkplatz**. Der Tisch steht gleich links "
+            "hinter dem Eingang."
+        ),
+        marker_at=(0.22, 0.70),
         category_en="Front of house",
         category_de="Empfang",
         day_offsets=(-2, 0, 1, 3, 5),
@@ -160,6 +183,15 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         ),
         location_en="Foyer café",
         location_de="Foyer-Café",
+        location_desc_en=(
+            "Counter along the back wall of the foyer. Aprons and the till key "
+            "are in the cupboard under the coffee machine."
+        ),
+        location_desc_de=(
+            "Theke an der Rückwand des Foyers. Schürzen und der Kassenschlüssel "
+            "liegen im Schrank unter der Kaffeemaschine."
+        ),
+        marker_at=(0.22, 0.52),
         category_en="Catering",
         category_de="Verpflegung",
         day_offsets=(-1, 0, 2, 4, 6),
@@ -181,6 +213,15 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         ),
         location_en="Main hall",
         location_de="Große Halle",
+        location_desc_en=(
+            "Through the foyer and straight on. Crew meet **at the side of the "
+            "stage**, not in front of it."
+        ),
+        location_desc_de=(
+            "Durch das Foyer und geradeaus. Treffpunkt ist **seitlich der "
+            "Bühne**, nicht davor."
+        ),
+        marker_at=(0.66, 0.32),
         category_en="Technical",
         category_de="Technik",
         day_offsets=(1, 4, 7, 9),
@@ -202,6 +243,9 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         ),
         location_en="Whole venue",
         location_de="Gesamtes Gelände",
+        location_desc_en="Everywhere at once. Start in the main hall and work outwards.",
+        location_desc_de="Überall gleichzeitig. Am besten in der Halle anfangen.",
+        marker_at=None,
         category_en="Logistics",
         category_de="Logistik",
         day_offsets=(0, 3, 6, 8, 10),
@@ -210,6 +254,16 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=90,
         people_per_shift=4,
     ),
+)
+
+_PLAN_NAME = {"en": "Venue", "de": "Gelände"}
+
+# The generic markers on the demo plan: (kind, (x, y), label by language).
+_GENERIC_MARKERS: tuple[tuple[str, tuple[float, float], dict[str, str] | None], ...] = (
+    ("entrance", (0.94, 0.53), {"en": "Side entrance", "de": "Seiteneingang"}),
+    ("first_aid", (0.30, 0.18), None),
+    ("toilets", (0.14, 0.18), None),
+    ("parking", (0.12, 0.87), None),
 )
 
 _TEAMMATE_NAMES: tuple[tuple[str, str], ...] = (
@@ -347,7 +401,24 @@ async def _seed_tasks_and_shifts(
     lang: str,
     today: dt.date,
 ) -> tuple[list[Task], list[Shift]]:
-    """Create each task with a real batch, so the regenerate screen works."""
+    """Create each task with a real batch, so the regenerate screen works.
+
+    Each distinct location becomes a ``Location`` row first, and every task,
+    batch and shift points at it, exactly as the task forms would leave them.
+    The venue plan is seeded from the same specs afterwards.
+    """
+    locations: dict[str, Location] = {}
+    for spec in _TASK_SPECS:
+        name = spec.location(lang)
+        if name not in locations:
+            locations[name] = Location(
+                event_id=event.id,
+                name=name,
+                description=spec.location_desc(lang),
+            )
+            db.add(locations[name])
+    await db.flush()
+
     tasks: list[Task] = []
     for spec in _TASK_SPECS:
         dates = [today + dt.timedelta(days=offset) for offset in spec.day_offsets]
@@ -361,6 +432,7 @@ async def _seed_tasks_and_shifts(
             event_id=event.id,
             is_sandbox=True,
             location=spec.location(lang),
+            location_id=locations[spec.location(lang)].id,
             category=spec.category(lang),
             shift_duration_minutes=spec.duration_minutes,
             default_start_time=dt.time(hour=spec.start_hour),
@@ -375,12 +447,14 @@ async def _seed_tasks_and_shifts(
     shifts: list[Shift] = []
     for spec, task in zip(_TASK_SPECS, tasks, strict=True):
         dates = [today + dt.timedelta(days=offset) for offset in spec.day_offsets]
+        location = locations[spec.location(lang)]
         batch = ShiftBatch(
             task_id=task.id,
             label=None,
             start_date=min(dates),
             end_date=max(dates),
-            location=spec.location(lang),
+            location=location.name,
+            location_id=location.id,
             category=spec.category(lang),
             default_start_time=dt.time(hour=spec.start_hour),
             default_end_time=dt.time(hour=spec.end_hour),
@@ -402,7 +476,8 @@ async def _seed_tasks_and_shifts(
             shift_duration_minutes=spec.duration_minutes,
             people_per_shift=spec.people_per_shift,
             remainder_mode="drop",
-            location=spec.location(lang),
+            location=location.name,
+            location_id=location.id,
             category=spec.category(lang),
             specific_dates=dates,
         )
@@ -416,13 +491,78 @@ async def _seed_tasks_and_shifts(
                 start_time=shift_in.start_time,
                 end_time=shift_in.end_time,
                 location=shift_in.location,
+                location_id=location.id,
                 category=shift_in.category,
                 max_bookings=shift_in.max_bookings,
             )
             db.add(shift)
             shifts.append(shift)
     await db.flush()
+
+    await _seed_venue_plan(db, event=event, locations=locations, lang=lang)
     return tasks, shifts
+
+
+async def _seed_venue_plan(
+    db: AsyncSession,
+    *,
+    event: Event,
+    locations: dict[str, Location],
+    lang: str,
+) -> None:
+    """One drawn plan with every placeable location and a few generic pins.
+
+    The image is rendered once per language and process (``render_demo_plan``
+    is cached), so the cost per demo is a single ``bytea`` insert.
+    """
+    image = render_demo_plan(lang)
+    plan = VenuePlan(
+        event_id=event.id,
+        name=_PLAN_NAME[lang],
+        sort_order=0,
+        image_etag=image.etag,
+        image_width=image.width,
+        image_height=image.height,
+    )
+    db.add(plan)
+    # No ORM relationship ties the children to the plan, so the plan row goes
+    # in first rather than relying on the flush to order the inserts.
+    await db.flush()
+    db.add(
+        VenuePlanImage(
+            plan_id=plan.id,
+            data=image.data,
+            content_type=image.content_type,
+            etag=image.etag,
+        )
+    )
+    placed: set[str] = set()
+    for spec in _TASK_SPECS:
+        name = spec.location(lang)
+        if spec.marker_at is None or name in placed:
+            continue
+        placed.add(name)
+        x, y = spec.marker_at
+        db.add(
+            VenueMarker(
+                plan_id=plan.id,
+                location_id=locations[name].id,
+                kind="location",
+                x=x,
+                y=y,
+            )
+        )
+    for kind, (x, y), labels in _GENERIC_MARKERS:
+        db.add(
+            VenueMarker(
+                plan_id=plan.id,
+                kind=kind,
+                label=labels[lang] if labels else None,
+                x=x,
+                y=y,
+            )
+        )
+    await db.flush()
 
 
 async def _seed_bookings(

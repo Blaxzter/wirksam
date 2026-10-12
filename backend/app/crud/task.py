@@ -2,7 +2,7 @@ import datetime as dt
 import uuid
 from typing import Any, Literal, cast
 
-from sqlalchemy import CursorResult, and_, func, or_, select, update
+from sqlalchemy import CursorResult, and_, exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 from sqlmodel import col
@@ -31,6 +31,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         also_include_group_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
+        location_id: uuid.UUID | None = None,
     ) -> Select[Any]:
         if restrict_to_event_ids is not None:
             # A hard AND, unlike also_include_group_ids which widens the status
@@ -45,6 +46,20 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query = query.where(col(Task.is_sandbox).is_(False))
         if event_id is not None:
             query = query.where(col(Task.event_id) == event_id)
+        if location_id is not None:
+            # The task itself, or any one of its shifts: a task held in the
+            # foyer with one shift at the entrance shows up for both.
+            query = query.where(
+                or_(
+                    col(Task.location_id) == location_id,
+                    exists(
+                        select(col(Shift.id)).where(
+                            col(Shift.task_id) == col(Task.id),
+                            col(Shift.location_id) == location_id,
+                        )
+                    ),
+                )
+            )
         if search:
             query = query.where(
                 col(Task.name).ilike(f"%{search}%")
@@ -142,6 +157,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         also_include_group_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
+        location_id: uuid.UUID | None = None,
     ) -> list[Task]:
         query = select(Task)
         query = self._apply_common_filters(
@@ -156,6 +172,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             also_include_group_ids=also_include_group_ids,
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
+            location_id=location_id,
         )
         order_col = getattr(Task, sort_by)
         query = query.order_by(
@@ -179,6 +196,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         also_include_group_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
+        location_id: uuid.UUID | None = None,
     ) -> int:
         query = select(func.count()).select_from(Task)
         query = self._apply_common_filters(
@@ -193,6 +211,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             also_include_group_ids=also_include_group_ids,
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
+            location_id=location_id,
         )
         result = await db.execute(query)
         return result.scalar_one()

@@ -5,11 +5,12 @@ surface: an event's own owner and admins run it, and the platform superadmin
 is only involved in curating the home screen.
 """
 
+import datetime
 import uuid
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.event_invitation import event_invitation as crud_invitation
@@ -17,7 +18,12 @@ from app.crud.event_membership import event_membership as crud_membership
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
+from app.models.location import Location
+from app.models.shift import Shift
+from app.models.shift_batch import ShiftBatch
+from app.models.task import Task
 from app.models.user import User
+from app.models.venue_plan import VenueMarker, VenuePlan
 
 
 @pytest.mark.asyncio
@@ -853,3 +859,76 @@ class TestUserDeletionCascades:
             select(func.count()).select_from(EventJoinRequest)
         )
         assert remaining.scalar_one() == 0
+
+    async def test_deleting_the_owner_of_an_event_with_a_location_graph(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_admin_user: User,
+        test_user: User,
+        test_location: Location,
+        test_location_marker: VenueMarker,
+    ) -> None:
+        """Regression for the SET NULL on ``tasks.location_id``.
+
+        The user delete cascades to the event in the database, and the event's
+        SET NULL on ``tasks.event_id`` re-checks the task row — including its
+        ``location_id``, whose location the same statement is removing.
+        """
+        task = Task(
+            name="Garderobe",
+            start_date=datetime.date(2026, 6, 11),
+            end_date=datetime.date(2026, 6, 11),
+            status="published",
+            created_by_id=test_user.id,
+            event_id=test_event.id,
+            location=test_location.name,
+            location_id=test_location.id,
+        )
+        db_session.add(task)
+        await db_session.flush()
+        batch = ShiftBatch(
+            task_id=task.id,
+            start_date=task.start_date,
+            end_date=task.end_date,
+            location=test_location.name,
+            location_id=test_location.id,
+        )
+        db_session.add(batch)
+        await db_session.flush()
+        shift = Shift(
+            task_id=task.id,
+            batch_id=batch.id,
+            title="Garderobe 18-20",
+            date=task.start_date,
+            start_time=datetime.time(18, 0),
+            end_time=datetime.time(20, 0),
+            location=test_location.name,
+            location_id=test_location.id,
+        )
+        db_session.add(shift)
+        await db_session.flush()
+        plan_id = test_location_marker.plan_id
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        # The tasks.location_id check is deferred to commit, which the test
+        # transaction never reaches; run the deferred checks now.
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert (
+            await db_session.get(Event, test_event.id, populate_existing=True) is None
+        )
+        survivor = await db_session.get(Task, task.id, populate_existing=True)
+        assert survivor is not None
+        assert (survivor.event_id, survivor.location_id) == (None, None)
+        assert survivor.location == "Foyer"
+        for row in (batch, shift):
+            await db_session.refresh(row)
+            assert (row.location_id, row.location) == (None, "Foyer")
+        for model, row_id in (
+            (Location, test_location.id),
+            (VenuePlan, plan_id),
+            (VenueMarker, test_location_marker.id),
+        ):
+            assert await db_session.get(model, row_id, populate_existing=True) is None

@@ -11,11 +11,13 @@ from app.api.routes import (
     events,
     health,
     invitations,
+    locations,
     notifications,
     reporting,
     shifts,
     tasks,
     users,
+    venue_map,
 )
 from app.core.config import settings
 
@@ -35,6 +37,8 @@ api_router.include_router(booking_reminders.router)
 api_router.include_router(calendar_feed.router)
 api_router.include_router(events.router)
 api_router.include_router(invitations.router)
+api_router.include_router(locations.router)
+api_router.include_router(venue_map.router)
 api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(reporting.router)

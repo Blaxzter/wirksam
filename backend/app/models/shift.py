@@ -50,6 +50,20 @@ class Shift(Base, table=True):
     location: str | None = Field(
         default=None, sa_column=sa.Column(sa.String, nullable=True)
     )
+    location_id: uuid.UUID | None = Field(
+        default=None,
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("locations.id", ondelete="SET NULL"),
+            nullable=True,
+            index=True,
+        ),
+        description=(
+            "The Location this row points at. ``location`` keeps the name as a "
+            "denormalised display string, so deleting the location leaves it "
+            "behind as free text."
+        ),
+    )
     category: str | None = Field(
         default=None, sa_column=sa.Column(sa.String, nullable=True, index=True)
     )

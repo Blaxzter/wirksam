@@ -17,6 +17,7 @@ from app.crud.user_availability import user_availability as crud_user_availabili
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -176,6 +177,18 @@ async def create_demo_data(
             )
         await db.flush()
 
+    # One Location per (event, name) actually used, so demo tasks show up in
+    # the location picker and filter like real ones. Tasks without an event
+    # keep the name as plain text, which is all an event-less task can have.
+    demo_locations: dict[tuple[uuid.UUID, str], Location] = {}
+
+    def _demo_location(event: Event, name: str) -> Location:
+        key = (event.id, name)
+        if key not in demo_locations:
+            demo_locations[key] = Location(event_id=event.id, name=name)
+            db.add(demo_locations[key])
+        return demo_locations[key]
+
     # --- Tasks — distribute roughly equally across groups ---
     for i in range(params.num_tasks):
         task_name = rng.choice(DEMO_TASK_NAMES)
@@ -188,6 +201,8 @@ async def create_demo_data(
 
         # Round-robin group assignment (equal distribution)
         group = created_groups[i % len(created_groups)] if created_groups else None
+        location_name = rng.choice(DEMO_LOCATIONS)
+        location = _demo_location(group, location_name) if group else None
 
         task = Task(
             name=f"{DEMO_PREFIX} {task_name}",
@@ -197,7 +212,8 @@ async def create_demo_data(
             status="published" if params.publish_tasks else "draft",
             created_by_id=_current_user.id,
             event_id=group.id if group else None,
-            location=rng.choice(DEMO_LOCATIONS),
+            location=location_name,
+            location_id=location.id if location else None,
             category="demo",
         )
         db.add(task)
@@ -230,6 +246,7 @@ async def create_demo_data(
                     start_time=slot_start,
                     end_time=slot_end,
                     location=task.location,
+                    location_id=task.location_id,
                     category="demo",
                     max_bookings=rng.choice([1, 2, 2, 3]),
                 )

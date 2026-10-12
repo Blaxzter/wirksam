@@ -15,6 +15,7 @@ from .event import Event
 from .event_invitation import EventInvitation
 from .event_join_request import EventJoinRequest
 from .event_membership import EventMembership
+from .location import Location
 from .notification import (
     Notification,
     NotificationSubscription,
@@ -29,6 +30,7 @@ from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
 from .user_avatar import UserAvatar
 from .user_token import UserToken
+from .venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 
 __all__ = [
     "SQLModel",
@@ -43,6 +45,7 @@ __all__ = [
     "EventInvitation",
     "EventJoinRequest",
     "EventMembership",
+    "Location",
     "Notification",
     "NotificationSubscription",
     "NotificationType",
@@ -54,4 +57,7 @@ __all__ = [
     "UserAvailabilityDate",
     "UserAvatar",
     "UserToken",
+    "VenueMarker",
+    "VenuePlan",
+    "VenuePlanImage",
 ]

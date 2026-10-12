@@ -20,10 +20,12 @@ from app.logic.notifications import triggers as triggers_module
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 
 # ``test_event`` runs 2026-06-10 → 2026-06-14. Cloning it to 2027-06-09 is a
 # whole-year move that is deliberately *not* a round number of weeks, so an
@@ -1143,19 +1145,25 @@ class TestCloneCopyFidelity:
         async_client: AsyncClient,
         db_session: AsyncSession,
         source_event: SourceFixture,
+        test_location: Location,
         as_event_admin: None,
     ):
         """Title, description, end time, location, category and headcount.
 
         Dropping ``title`` and ``description`` from the copy would leave every
         date assertion green while destroying the exact thing copy mode is for.
+        ``location_id`` is reproduced *remapped*, onto the clone's own copy of
+        the location.
         """
+        await _link_source_to(db_session, source_event, test_location)
         r = await async_client.post(
             f"/api/v1/events/{source_event['event'].id}/clone",
             json=_body(source_event),
         )
         assert r.status_code == 201, r.text
-        task = (await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"])))[0]
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        task = (await _tasks_of(db_session, new_event_id))[0]
+        [location_copy] = await _locations_of(db_session, new_event_id)
 
         cloned = await _shifts_of(db_session, task.id)
         # The fixture's shifts are already in (date, start_time) order.
@@ -1168,6 +1176,8 @@ class TestCloneCopyFidelity:
             assert new.start_time == old.start_time
             assert new.end_time == old.end_time
             assert new.location == old.location
+            assert old.location_id == test_location.id
+            assert new.location_id == location_copy.id
             assert new.category == old.category
             assert new.max_bookings == old.max_bookings
             assert new.date == old.date + DELTA
@@ -1641,3 +1651,388 @@ class TestCloneRowsOutsideWindow:
         assert [s.date for s in await _shifts_of(db_session, late.id)] == [
             datetime.date(2026, 6, 14)
         ]
+
+
+# ── Locations and the venue map travel with the clone ───────────────────────
+
+
+async def _link_source_to(
+    db: AsyncSession, source: SourceFixture, location: Location
+) -> None:
+    """Point the fixture's task, batch and shifts at ``location``."""
+    rows: list[Task | ShiftBatch | Shift] = [
+        source["task"],
+        source["batch"],
+        *source["shifts"],
+    ]
+    for row in rows:
+        row.location_id = location.id
+        row.location = location.name
+        db.add(row)
+    await db.flush()
+
+
+async def _locations_of(db: AsyncSession, event_id: uuid.UUID) -> list[Location]:
+    result = await db.execute(
+        select(Location)
+        .where(col(Location.event_id) == event_id)
+        .order_by(col(Location.name))
+    )
+    return list(result.scalars().all())
+
+
+@pytest.mark.asyncio
+class TestCloneLocationsAndVenueMap:
+    """Locations, plans (with their image bytes) and markers are always copied,
+    and every ``location_id`` under the cloned tasks points at the copies."""
+
+    async def test_locations_plans_images_and_markers_are_copied(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        test_venue_plan: VenuePlan,
+        test_location_marker: VenueMarker,
+        as_event_admin: None,
+    ):
+        db_session.add(
+            VenueMarker(
+                plan_id=test_venue_plan.id,
+                kind="first_aid",
+                label="Erste Hilfe",
+                x=0.5,
+                y=0.1,
+            )
+        )
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event, tasks=[]),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["locations_created"] == 1
+        assert r.json()["plans_created"] == 1
+        # The clone's own read already counts the copied plan with its image.
+        assert r.json()["event"]["venue_plan_count"] == 1
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+
+        [copy] = await _locations_of(db_session, new_event_id)
+        assert copy.id != test_location.id
+        for field in ("name", "description", "address", "map_url", "contact"):
+            assert getattr(copy, field) == getattr(test_location, field)
+
+        [plan] = (
+            (
+                await db_session.execute(
+                    select(VenuePlan).where(col(VenuePlan.event_id) == new_event_id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert plan.id != test_venue_plan.id
+        assert plan.name == test_venue_plan.name
+        assert plan.sort_order == test_venue_plan.sort_order
+        assert plan.image_etag == test_venue_plan.image_etag
+        assert (plan.image_width, plan.image_height) == (800, 600)
+
+        images = (
+            (
+                await db_session.execute(
+                    select(VenuePlanImage).where(
+                        col(VenuePlanImage.plan_id).in_([plan.id, test_venue_plan.id])
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        by_plan = {img.plan_id: img for img in images}
+        assert by_plan[plan.id].data == by_plan[test_venue_plan.id].data
+        assert by_plan[plan.id].etag == by_plan[test_venue_plan.id].etag
+        assert by_plan[plan.id].content_type == "image/png"
+
+        markers = (
+            (
+                await db_session.execute(
+                    select(VenueMarker)
+                    .where(col(VenueMarker.plan_id) == plan.id)
+                    .order_by(col(VenueMarker.kind))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert [(m.kind, m.location_id, m.label, m.x, m.y) for m in markers] == [
+            ("first_aid", None, "Erste Hilfe", 0.5, 0.1),
+            ("location", copy.id, None, 0.25, 0.75),
+        ]
+
+        # The source keeps its own rows, untouched.
+        source_locations = await _locations_of(db_session, source_event["event"].id)
+        assert [loc.id for loc in source_locations] == [test_location.id]
+        await db_session.refresh(test_location_marker)
+        assert test_location_marker.location_id == test_location.id
+
+    async def test_event_without_locations_reports_zero(
+        self,
+        async_client: AsyncClient,
+        source_event: SourceFixture,
+        as_event_admin: None,
+    ):
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["locations_created"] == 0
+        assert r.json()["plans_created"] == 0
+        assert r.json()["event"]["venue_plan_count"] == 0
+
+    async def test_copy_mode_remaps_task_batch_and_shifts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        as_event_admin: None,
+    ):
+        await _link_source_to(db_session, source_event, test_location)
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event),
+        )
+        assert r.status_code == 201, r.text
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        [copy] = await _locations_of(db_session, new_event_id)
+        [task] = await _tasks_of(db_session, new_event_id)
+        [batch] = await _batches_of(db_session, task.id)
+        shifts = await _shifts_of(db_session, task.id)
+
+        assert (task.location_id, task.location) == (copy.id, "Foyer")
+        assert (batch.location_id, batch.location) == (copy.id, "Foyer")
+        assert len(shifts) == 3
+        assert all((s.location_id, s.location) == (copy.id, "Foyer") for s in shifts)
+
+    async def test_regenerate_mode_remaps_batch_and_generated_shifts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        as_event_admin: None,
+    ):
+        await _link_source_to(db_session, source_event, test_location)
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[
+                    {
+                        "source_task_id": str(source_event["task"].id),
+                        "mode": "regenerate",
+                    }
+                ],
+            ),
+        )
+        assert r.status_code == 201, r.text
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        [copy] = await _locations_of(db_session, new_event_id)
+        [task] = await _tasks_of(db_session, new_event_id)
+        [batch] = await _batches_of(db_session, task.id)
+        shifts = await _shifts_of(db_session, task.id)
+
+        assert batch.location_id == copy.id
+        assert shifts
+        assert all((s.location_id, s.location) == (copy.id, "Foyer") for s in shifts)
+
+    async def test_regenerate_free_text_batch_does_not_inherit_the_task_link(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        as_event_admin: None,
+    ):
+        """Text and id are taken from the same row: a batch with its own free
+        text must not pick up the task's link, which names something else."""
+        await _link_source_to(db_session, source_event, test_location)
+        batch = source_event["batch"]
+        batch.location_id = None
+        batch.location = "Zelt hinten"
+        db_session.add(batch)
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[
+                    {
+                        "source_task_id": str(source_event["task"].id),
+                        "mode": "regenerate",
+                    }
+                ],
+            ),
+        )
+        assert r.status_code == 201, r.text
+        [task] = await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"]))
+        shifts = await _shifts_of(db_session, task.id)
+        assert shifts
+        assert all((s.location_id, s.location) == (None, "Zelt hinten") for s in shifts)
+
+    async def test_regenerate_synthetic_batch_carries_the_task_link(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        test_user: User,
+        as_event_admin: None,
+    ):
+        task = await _add_source_task(
+            db_session,
+            event=source_event["event"],
+            creator=test_user,
+            name="Ohne Block",
+            location=test_location.name,
+            location_id=test_location.id,
+            default_start_time=datetime.time(8, 0),
+            default_end_time=datetime.time(10, 0),
+            shift_duration_minutes=120,
+        )
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[{"source_task_id": str(task.id), "mode": "regenerate"}],
+            ),
+        )
+        assert r.status_code == 201, r.text
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        [copy] = await _locations_of(db_session, new_event_id)
+        [new_task] = await _tasks_of(db_session, new_event_id)
+        [batch] = await _batches_of(db_session, new_task.id)
+        shifts = await _shifts_of(db_session, new_task.id)
+        assert batch.location_id == copy.id
+        assert shifts
+        assert all(s.location_id == copy.id for s in shifts)
+
+    async def test_location_id_override_is_remapped_from_the_source(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        as_event_admin: None,
+    ):
+        await _link_source_to(db_session, source_event, test_location)
+        garden = Location(event_id=source_event["event"].id, name="Garten")
+        db_session.add(garden)
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[
+                    {
+                        "source_task_id": str(source_event["task"].id),
+                        # The id wins over a stale text sent alongside it.
+                        "location_id": str(garden.id),
+                        "location": "something else",
+                    }
+                ],
+            ),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["locations_created"] == 2
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        copies = {
+            loc.name: loc for loc in await _locations_of(db_session, new_event_id)
+        }
+        [task] = await _tasks_of(db_session, new_event_id)
+        [batch] = await _batches_of(db_session, task.id)
+
+        assert (task.location_id, task.location) == (copies["Garten"].id, "Garten")
+        assert (batch.location_id, batch.location) == (copies["Garten"].id, "Garten")
+        # Copied shifts reproduce their source rows, as they do for the text.
+        shifts = await _shifts_of(db_session, task.id)
+        assert all(s.location_id == copies["Foyer"].id for s in shifts)
+
+    async def test_foreign_location_id_override_is_422(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_draft_event: Event,
+        as_event_admin: None,
+    ):
+        foreign = Location(event_id=test_draft_event.id, name="Anderswo")
+        db_session.add(foreign)
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[
+                    {
+                        "source_task_id": str(source_event["task"].id),
+                        "location_id": str(foreign.id),
+                    }
+                ],
+            ),
+        )
+        assert r.status_code == 422, r.text
+        assert r.json()["code"] == "location.wrong_event"
+
+    async def test_text_override_drops_the_link_unless_it_is_unchanged(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        test_user: User,
+        as_event_admin: None,
+    ):
+        await _link_source_to(db_session, source_event, test_location)
+        twin = await _add_source_task(
+            db_session,
+            event=source_event["event"],
+            creator=test_user,
+            name="Zwilling",
+            location=test_location.name,
+            location_id=test_location.id,
+        )
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[
+                    {
+                        "source_task_id": str(source_event["task"].id),
+                        "location": "Garten",
+                    },
+                    # The form sends the text back unchanged: keep the link.
+                    {"source_task_id": str(twin.id), "location": "Foyer"},
+                ],
+            ),
+        )
+        assert r.status_code == 201, r.text
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        [copy] = await _locations_of(db_session, new_event_id)
+        by_name = {t.name: t for t in await _tasks_of(db_session, new_event_id)}
+
+        moved = by_name["Kuchentheke"]
+        assert (moved.location_id, moved.location) == (None, "Garten")
+        [batch] = await _batches_of(db_session, moved.id)
+        assert (batch.location_id, batch.location) == (None, "Garten")
+
+        kept = by_name["Zwilling"]
+        assert (kept.location_id, kept.location) == (copy.id, "Foyer")

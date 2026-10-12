@@ -10,6 +10,8 @@ from app.crud.event import event as crud_event
 from app.crud.shift import shift as crud_shift
 from app.crud.task import task as crud_task
 from app.logic.event_scope import get_visible_event_ids
+from app.logic.location_assignment import location_patch
+from app.logic.locations import apply_location, resolve_location
 from app.logic.permissions import (
     get_event_role,
     require_event_role,
@@ -122,6 +124,10 @@ async def create_shift(
 ) -> ShiftRead:
     db_task = await crud_task.get(session, str(slot_in.task_id), raise_404_error=True)
     await require_event_role(current_user, session, db_task.event_id)
+    loc = await resolve_location(
+        session, event_id=db_task.event_id, location_id=slot_in.location_id
+    )
+    apply_location(slot_in, loc, slot_in.location)
     shift = await crud_shift.create(session, obj_in=slot_in)
     return await _enrich_shift(session, shift)
 
@@ -140,7 +146,11 @@ async def update_shift(
     old_start = db_shift.start_time
     old_end = db_shift.end_time
     old_date = db_shift.date
-    updated = await crud_shift.update(session, db_obj=db_shift, obj_in=slot_in)
+    update_data = slot_in.model_dump(exclude_unset=True)
+    update_data.update(
+        await location_patch(session, db_shift, update_data, event_id=db_task.event_id)
+    )
+    updated = await crud_shift.update(session, db_obj=db_shift, obj_in=update_data)
 
     # Notify bookers if time changed
     time_changed = (

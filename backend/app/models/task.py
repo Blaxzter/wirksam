@@ -66,6 +66,32 @@ class Task(Base, table=True):
     location: str | None = Field(
         default=None, sa_column=sa.Column(sa.String, nullable=True)
     )
+    # SET NULL next to an event FK is the shape app/models/CLAUDE.md warns
+    # about: a user delete cascades to the event, the events->tasks SET NULL
+    # rewrites this row, and Postgres queues a re-check of location_id that
+    # would fire after the events->locations CASCADE removed the location.
+    # Deferring the *check* (the SET NULL action itself still runs at once)
+    # lets the locations->tasks SET NULL supersede the row first. Pinned by
+    # tests/crud/test_venue_map.py::TestEventDeleteWithLocations.
+    location_id: uuid.UUID | None = Field(
+        default=None,
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey(
+                "locations.id",
+                ondelete="SET NULL",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            nullable=True,
+            index=True,
+        ),
+        description=(
+            "The Location this row points at. ``location`` keeps the name as a "
+            "denormalised display string, so deleting the location leaves it "
+            "behind as free text."
+        ),
+    )
     category: str | None = Field(
         default=None, sa_column=sa.Column(sa.String, nullable=True)
     )

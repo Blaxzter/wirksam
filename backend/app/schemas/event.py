@@ -77,6 +77,9 @@ class EventRead(EventBase):
     member_count: int = 0
     join_request_status: str | None = None
     pending_request_count: int = 0
+    #: Plans with an uploaded image. A plan without one is unfinished editor
+    #: state, so this is what decides whether members see the map at all.
+    venue_plan_count: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
     @property

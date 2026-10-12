@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -40,12 +40,14 @@ from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
+from app.models.location import Location
 from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
 
 # ── Counting helpers ──────────────────────────────────────────────
@@ -77,12 +79,18 @@ class _Inventory:
     guest_ids: list[uuid.UUID]
     availability_ids: list[uuid.UUID]
     notification_ids: list[uuid.UUID]
+    location_ids: list[uuid.UUID]
+    plan_ids: list[uuid.UUID]
 
 
 async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
     task_ids = await _ids(db, col(Task.id), col(Task.event_id) == event_id)
     shift_ids = await _ids(db, col(Shift.id), col(Shift.task_id).in_(task_ids))
     return _Inventory(
+        location_ids=await _ids(
+            db, col(Location.id), col(Location.event_id) == event_id
+        ),
+        plan_ids=await _ids(db, col(VenuePlan.id), col(VenuePlan.event_id) == event_id),
         event_id=event_id,
         task_ids=task_ids,
         shift_ids=shift_ids,
@@ -153,6 +161,18 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
             db, AuthSession, col(AuthSession.user_id).in_(inv.guest_ids)
         ),
         "users": await _count(db, User, col(User.id).in_(inv.guest_ids)),
+        "locations": await _count(db, Location, col(Location.id).in_(inv.location_ids)),
+        "venue_plans": await _count(db, VenuePlan, col(VenuePlan.id).in_(inv.plan_ids)),
+        "venue_plan_images": await _count(
+            db, VenuePlanImage, col(VenuePlanImage.plan_id).in_(inv.plan_ids)
+        ),
+        # By plan *and* by location: a marker must not outlive either parent.
+        "venue_markers": await _count(
+            db,
+            VenueMarker,
+            col(VenueMarker.plan_id).in_(inv.plan_ids)
+            | col(VenueMarker.location_id).in_(inv.location_ids),
+        ),
     }
 
 
@@ -170,6 +190,14 @@ async def _orphans(db: AsyncSession) -> dict[str, int]:
         ),
         "reminders with no shift": await _count(
             db, BookingReminder, col(BookingReminder.shift_id).is_(None)
+        ),
+        # A location marker whose location went away without it. The FK
+        # cascades, so this guards against someone loosening it to SET NULL.
+        "location markers with no location": await _count(
+            db,
+            VenueMarker,
+            col(VenueMarker.kind) == "location",
+            col(VenueMarker.location_id).is_(None),
         ),
     }
 
@@ -263,8 +291,8 @@ class TestPurgeSandbox:
         """Test that every table a demo writes into comes back to zero.
 
         The invitation, the join request and the booking reminder are added on
-        top of the seed so that the census covers all fourteen tables rather
-        than the eleven a freshly seeded helper demo happens to populate. Every
+        top of the seed so that the census covers all eighteen tables rather
+        than the fifteen a freshly seeded helper demo happens to populate. Every
         line of it starts non-zero and must end at zero — a count that was
         never anything but zero proves nothing.
         """
@@ -279,11 +307,16 @@ class TestPurgeSandbox:
         assert len(inv.guest_ids) > 1, "the seeder must have produced teammates"
         assert inv.availability_ids, "the seeder must have produced availabilities"
         assert inv.notification_ids, "the seeder must have produced an inbox"
+        assert inv.location_ids, "the seeder must have produced locations"
+        assert inv.plan_ids, "the seeder must have produced a venue plan"
 
         before = await _remaining(db_session, inv)
         assert all(count > 0 for count in before.values()), before
 
         await purge_sandbox(db_session, event_id=inv.event_id)
+        # ``tasks.location_id`` is a deferred FK, checked at commit, which the
+        # test transaction never reaches. Check it here instead.
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
 
         after = await _remaining(db_session, inv)
         assert after == dict.fromkeys(after, 0)

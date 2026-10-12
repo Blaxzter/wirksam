@@ -18,7 +18,8 @@ from sqlalchemy.ext.asyncio import (
 from app.core.config import settings
 
 # Use separate test database
-TEST_DB_NAME = "app_test"
+# Overridable so parallel runs (e.g. several worktrees) don't drop each other's DB
+TEST_DB_NAME = os.environ.get("TEST_DB_NAME", "app_test")
 
 
 def run_alembic_migrations():

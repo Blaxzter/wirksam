@@ -11,6 +11,7 @@ from app.crud.event import event as crud_event
 from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
+from app.logic.locations import resolve_location
 from app.logic.permissions import require_event_role
 from app.logic.shift_generator import generate_shifts
 from app.models.shift import Shift
@@ -44,6 +45,14 @@ async def create_task_with_shifts(
     """Create a task with auto-generated duty shifts in a single transaction."""
     # Check access for the target event (if any)
     await require_event_role(current_user, session, payload.event_id)
+    # A location belongs to an existing event. Resolved before anything is
+    # written, against ``payload.event_id`` only: an event created by this
+    # very request has no locations yet, so any id is foreign to it.
+    loc = await resolve_location(
+        session, event_id=payload.event_id, location_id=payload.location_id
+    )
+    location_text = loc.name if loc else payload.location
+    location_id = loc.id if loc else None
     # 1. Optionally create a new event
     event_read: EventRead | None = None
     event_id = payload.event_id
@@ -61,7 +70,8 @@ async def create_task_with_shifts(
         start_date=payload.start_date,
         end_date=payload.end_date,
         status=payload.status,
-        location=payload.location,
+        location=location_text,
+        location_id=location_id,
         category=payload.category,
         event_id=event_id,
         created_by_id=current_user.id,
@@ -85,7 +95,8 @@ async def create_task_with_shifts(
         label=payload.name,
         start_date=payload.start_date,
         end_date=payload.end_date,
-        location=payload.location,
+        location=location_text,
+        location_id=location_id,
         category=payload.category,
         default_start_time=payload.schedule.default_start_time,
         default_end_time=payload.schedule.default_end_time,
@@ -109,7 +120,8 @@ async def create_task_with_shifts(
         shift_duration_minutes=payload.schedule.shift_duration_minutes,
         people_per_shift=payload.schedule.people_per_shift,
         remainder_mode=payload.schedule.remainder_mode,
-        location=payload.location,
+        location=location_text,
+        location_id=location_id,
         category=payload.category,
         overrides=payload.schedule.overrides,
         excluded_shifts=payload.schedule.excluded_shifts,
@@ -157,13 +169,20 @@ async def add_shifts_to_task(
                 ),
             )
 
+    loc = await resolve_location(
+        session, event_id=db_task.event_id, location_id=payload.location_id
+    )
+    location_text = loc.name if loc else payload.location
+    location_id = loc.id if loc else None
+
     # Create a ShiftBatch record
     batch_in = ShiftBatchCreate(
         task_id=db_task.id,
-        label=payload.location or payload.category or db_task.name,
+        label=location_text or payload.category or db_task.name,
         start_date=payload.start_date,
         end_date=payload.end_date,
-        location=payload.location,
+        location=location_text,
+        location_id=location_id,
         category=payload.category,
         default_start_time=payload.schedule.default_start_time,
         default_end_time=payload.schedule.default_end_time,
@@ -186,7 +205,8 @@ async def add_shifts_to_task(
         shift_duration_minutes=payload.schedule.shift_duration_minutes,
         people_per_shift=payload.schedule.people_per_shift,
         remainder_mode=payload.schedule.remainder_mode,
-        location=payload.location,
+        location=location_text,
+        location_id=location_id,
         category=payload.category,
         overrides=payload.schedule.overrides,
         excluded_shifts=payload.schedule.excluded_shifts,
@@ -240,24 +260,32 @@ async def regenerate_task_shifts(
 
     # Determine effective task fields (use payload overrides or existing/batch values)
     effective_name = payload.name or db_task.name
-    if db_batch:
-        effective_start_date = payload.start_date or db_batch.start_date
-        effective_end_date = payload.end_date or db_batch.end_date
-        effective_location = (
-            payload.location if payload.location is not None else db_batch.location
+    # The batch's own values when scoped to one, otherwise the task's.
+    source = db_batch if db_batch else db_task
+    effective_start_date = payload.start_date or source.start_date
+    effective_end_date = payload.end_date or source.end_date
+    effective_location = (
+        payload.location if payload.location is not None else source.location
+    )
+    effective_category = (
+        payload.category if payload.category is not None else source.category
+    )
+    location_changed = payload.location is not None
+    if "location_id" in payload.model_fields_set:
+        # Sent explicitly, so it wins - ``null`` included, which unlinks and
+        # keeps the text.
+        loc = await resolve_location(
+            session, event_id=db_task.event_id, location_id=payload.location_id
         )
-        effective_category = (
-            payload.category if payload.category is not None else db_batch.category
-        )
+        effective_location_id = loc.id if loc else None
+        if loc:
+            effective_location = loc.name
+        location_changed = True
+    elif payload.location is not None and payload.location != source.location:
+        # New free text without an id: the old link no longer matches it.
+        effective_location_id = None
     else:
-        effective_start_date = payload.start_date or db_task.start_date
-        effective_end_date = payload.end_date or db_task.end_date
-        effective_location = (
-            payload.location if payload.location is not None else db_task.location
-        )
-        effective_category = (
-            payload.category if payload.category is not None else db_task.category
-        )
+        effective_location_id = source.location_id
 
     # 1. Generate new shift definitions
     new_shift_defs = generate_shifts(
@@ -271,6 +299,7 @@ async def regenerate_task_shifts(
         people_per_shift=payload.schedule.people_per_shift,
         remainder_mode=payload.schedule.remainder_mode,
         location=effective_location,
+        location_id=effective_location_id,
         category=effective_category,
         overrides=payload.schedule.overrides,
         excluded_shifts=payload.schedule.excluded_shifts,
@@ -306,6 +335,7 @@ async def regenerate_task_shifts(
             existing.title = new_shift.title
             existing.max_bookings = new_shift.max_bookings
             existing.location = new_shift.location
+            existing.location_id = new_shift.location_id
             existing.category = new_shift.category
         else:
             shifts_to_create.append(new_shift)
@@ -340,8 +370,9 @@ async def regenerate_task_shifts(
                 db_task.start_date = payload.start_date
             if payload.end_date is not None:
                 db_task.end_date = payload.end_date
-            if payload.location is not None:
-                db_task.location = payload.location
+            if location_changed:
+                db_task.location = effective_location
+                db_task.location_id = effective_location_id
             if payload.category is not None:
                 db_task.category = payload.category
 
@@ -360,6 +391,7 @@ async def regenerate_task_shifts(
             db_batch.start_date = effective_start_date
             db_batch.end_date = effective_end_date
             db_batch.location = effective_location
+            db_batch.location_id = effective_location_id
             db_batch.category = effective_category
             db_batch.default_start_time = payload.schedule.default_start_time
             db_batch.default_end_time = payload.schedule.default_end_time

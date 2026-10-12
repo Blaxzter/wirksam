@@ -42,6 +42,10 @@ class EventCloneTask(BaseModel):
     name: str | None = None
     status: TaskStatus | None = None
     location: str | None = None
+    #: A location of the *source* event; the clone remaps it to that
+    #: location's copy and writes its name as the task's ``location`` text.
+    #: The new event's ids do not exist yet when the request is sent.
+    location_id: uuid.UUID | None = None
     category: str | None = None
 
     #: Default: the source task's dates moved by the clone's offset. Setting
@@ -94,3 +98,5 @@ class EventCloneResponse(BaseModel):
     shifts_created: int
     members_copied: int
     notified: bool
+    locations_created: int = 0
+    plans_created: int = 0

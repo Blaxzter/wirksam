@@ -1,16 +1,24 @@
 """Route tests for Event and UserAvailability endpoints."""
 
+import datetime
 import uuid
 from typing import Any
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.crud.event_membership import event_membership as crud_membership
 from app.models.event import Event
+from app.models.location import Location
+from app.models.shift import Shift
+from app.models.shift_batch import ShiftBatch
+from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 
 
 @pytest.mark.asyncio
@@ -490,3 +498,136 @@ class TestEventSelfService:
         r = await async_client.get(f"/api/v1/events/{test_event.id}/availabilities")
 
         assert r.status_code == 403
+
+
+async def _location_graph(
+    db: AsyncSession, *, event: Event, location: Location, creator: User
+) -> tuple[Task, ShiftBatch, Shift]:
+    """A task, batch and shift on ``event`` that all point at ``location``."""
+    task = Task(
+        name="Garderobe",
+        start_date=datetime.date(2026, 6, 11),
+        end_date=datetime.date(2026, 6, 11),
+        status="published",
+        created_by_id=creator.id,
+        event_id=event.id,
+        location=location.name,
+        location_id=location.id,
+    )
+    db.add(task)
+    await db.flush()
+    batch = ShiftBatch(
+        task_id=task.id,
+        start_date=task.start_date,
+        end_date=task.end_date,
+        location=location.name,
+        location_id=location.id,
+    )
+    db.add(batch)
+    await db.flush()
+    shift = Shift(
+        task_id=task.id,
+        batch_id=batch.id,
+        title="Garderobe 18-20",
+        date=task.start_date,
+        start_time=datetime.time(18, 0),
+        end_time=datetime.time(20, 0),
+        location=location.name,
+        location_id=location.id,
+    )
+    db.add(shift)
+    await db.flush()
+    return task, batch, shift
+
+
+@pytest.mark.asyncio
+class TestEventVenueMap:
+    """What the venue map adds to the event read, and to deleting an event."""
+
+    async def test_venue_plan_count_counts_only_plans_with_an_image(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_venue_plan: VenuePlan,
+    ):
+        # A plan still waiting for its image is editor state, not a map.
+        db_session.add(VenuePlan(event_id=test_event.id, name="Draft", sort_order=1))
+        await db_session.flush()
+
+        r = await async_client.get(f"/api/v1/events/{test_event.id}")
+        assert r.status_code == 200
+        assert r.json()["venue_plan_count"] == 1
+
+        r = await async_client.get("/api/v1/events/")
+        assert r.status_code == 200
+        by_id = {e["id"]: e for e in r.json()["items"]}
+        assert by_id[str(test_event.id)]["venue_plan_count"] == 1
+
+    async def test_venue_plan_count_is_hidden_from_non_members(
+        self,
+        async_client: AsyncClient,
+        test_event: Event,
+        test_venue_plan: VenuePlan,
+        as_outsider: None,
+    ):
+        """The map is member-only, so a visitor of a public event must not be
+        told there is one (the nav link would lead to a 404)."""
+        r = await async_client.get(f"/api/v1/events/{test_event.id}")
+        assert r.status_code == 200
+        assert r.json()["venue_plan_count"] == 0
+
+    async def test_venue_plan_count_is_zero_without_plans(
+        self,
+        async_client: AsyncClient,
+        test_event: Event,
+    ):
+        r = await async_client.get(f"/api/v1/events/{test_event.id}")
+        assert r.status_code == 200
+        assert r.json()["venue_plan_count"] == 0
+
+    async def test_delete_event_with_a_location_graph(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+        test_location: Location,
+        test_location_marker: VenueMarker,
+        as_admin: None,
+    ):
+        """Regression for the SET NULL next to the event FK on ``tasks``.
+
+        The task survives with neither an event nor a location, its text
+        intact; the locations, plans, image and markers go with the event.
+        """
+        task, batch, shift = await _location_graph(
+            db_session, event=test_event, location=test_location, creator=test_user
+        )
+        plan_id = test_location_marker.plan_id
+
+        r = await async_client.delete(f"/api/v1/events/{test_event.id}")
+        assert r.status_code == 204, r.text
+        # ``tasks.location_id`` is checked at commit, which the test transaction
+        # never reaches; run the deferred checks now.
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        survivor = await db_session.get(Task, task.id, populate_existing=True)
+        assert survivor is not None
+        assert (survivor.event_id, survivor.location_id) == (None, None)
+        assert survivor.location == "Foyer"
+        for row in (batch, shift):
+            await db_session.refresh(row)
+            assert (row.location_id, row.location) == (None, "Foyer")
+        for model, row_id in (
+            (Location, test_location.id),
+            (VenuePlan, plan_id),
+            (VenueMarker, test_location_marker.id),
+        ):
+            assert await db_session.get(model, row_id, populate_existing=True) is None
+        images = await db_session.execute(
+            select(func.count())
+            .select_from(VenuePlanImage)
+            .where(col(VenuePlanImage.plan_id) == plan_id)
+        )
+        assert images.scalar_one() == 0

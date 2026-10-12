@@ -6,6 +6,7 @@ from datetime import date, time
 import pytest
 
 from app.logic.shift_generator import generate_shifts
+from app.schemas.shift import ShiftCreate
 from app.schemas.task import ExcludedShift, ScheduleOverride
 
 
@@ -38,6 +39,47 @@ class TestShiftGenerator:
         assert shifts[0].location == "Halle A"
         assert shifts[0].category == "Bar"
         assert shifts[3].title == "Bierstand 11:30-12:00"
+
+    @pytest.mark.skipif(
+        "location_id" not in ShiftCreate.model_fields,
+        reason="ShiftCreate.location_id is added with the schema changes (WP-B2)",
+    )
+    def test_location_id_is_copied_onto_every_shift(self):
+        """The location id travels with the text, on full and remainder shifts."""
+        location_id = uuid.uuid4()
+        shifts = generate_shifts(
+            task_id=self._task_id(),
+            task_name="Garderobe",
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 2),
+            default_start_time=time(10, 0),
+            default_end_time=time(11, 15),
+            shift_duration_minutes=30,
+            remainder_mode="short",
+            location="Foyer",
+            location_id=location_id,
+        )
+
+        assert len(shifts) == 6
+        assert all(s.location == "Foyer" for s in shifts)
+        assert all(s.model_dump()["location_id"] == location_id for s in shifts)
+
+    def test_location_id_defaults_to_none(self):
+        """Free-text callers that pass no id get shifts without one."""
+        shifts = generate_shifts(
+            task_id=self._task_id(),
+            task_name="Garderobe",
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 1),
+            default_start_time=time(10, 0),
+            default_end_time=time(11, 0),
+            shift_duration_minutes=60,
+            location="Foyer",
+        )
+
+        assert len(shifts) == 1
+        assert shifts[0].location == "Foyer"
+        assert shifts[0].model_dump().get("location_id") is None
 
     def test_multi_day(self):
         """3 days, 2 hours each, 60min shifts = 6 shifts."""

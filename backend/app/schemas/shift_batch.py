@@ -13,6 +13,7 @@ class ShiftBatchBase(BaseModel):
     start_date: dt.date
     end_date: dt.date
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     default_start_time: dt.time | None = None
     default_end_time: dt.time | None = None
@@ -31,6 +32,7 @@ class ShiftBatchUpdate(BaseModel):
     start_date: dt.date | None = None
     end_date: dt.date | None = None
     location: str | None = None
+    location_id: uuid.UUID | None = None
     category: str | None = None
     default_start_time: dt.time | None = None
     default_end_time: dt.time | None = None
