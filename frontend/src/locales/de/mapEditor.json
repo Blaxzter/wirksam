@@ -1,0 +1,62 @@
+{
+    "marker": {
+        "close": "Fertig",
+        "delete": "Markierung entfernen",
+        "deleteConfirm": "Die Markierung „{name}“ von diesem Plan entfernen?",
+        "kind": "Art",
+        "label": "Beschriftung",
+        "labelPlaceholder": "z. B. Nordtor",
+        "locationHint": "Name und Beschreibung änderst du im Reiter „Orte“.",
+        "nudgeHint": "Zieh die Markierung an eine neue Stelle oder verschieb sie mit den Pfeiltasten (mit Umschalt in größeren Schritten).",
+        "title": "Ausgewählte Markierung"
+    },
+    "palette": {
+        "allPlaced": "Alle Orte sind auf diesem Plan.",
+        "generic": "Weitere Punkte",
+        "hint": "Wähl etwas aus und tipp dann auf die Stelle im Plan.",
+        "locations": "Orte",
+        "noLocations": "Noch keine Orte. Leg sie im Reiter „Orte“ an.",
+        "title": "Markierungen setzen",
+        "unplaced": "Noch nicht auf diesem Plan"
+    },
+    "place": {
+        "added": "Markierung gesetzt",
+        "banner": "Tipp auf die Stelle, wo „{name}“ ist.",
+        "cancel": "Abbrechen",
+        "centre": "In die Mitte setzen"
+    },
+    "plans": {
+        "actions": "Plan-Optionen",
+        "add": "Plan hinzufügen",
+        "addTitle": "Neuer Plan",
+        "created": "Plan hinzugefügt",
+        "delete": "Plan löschen",
+        "deleteConfirm": "Den Plan „{name}“ mit allen Markierungen löschen? Die Orte selbst bleiben erhalten.",
+        "deleted": "Plan gelöscht",
+        "empty": "Noch kein Plan",
+        "emptyHint": "Fang mit einem Plan an, zum Beispiel vom ganzen Gelände. Weitere kannst du später hinzufügen, etwa einen pro Stockwerk.",
+        "loadError": "Die Pläne konnten nicht geladen werden.",
+        "moveDown": "Nach rechts schieben",
+        "moveUp": "Nach links schieben",
+        "name": "Name",
+        "namePlaceholder": "z. B. Gelände oder Halle, Erdgeschoss",
+        "rename": "Umbenennen",
+        "renameTitle": "Plan umbenennen",
+        "saved": "Plan gespeichert"
+    },
+    "settings": {
+        "description": "Lade einen Plan deines Veranstaltungsorts hoch und markiere, wo was ist. Helfende finden ihn unter „Lageplan“ und wenn sie eine Schicht öffnen.",
+        "tab": "Lageplan",
+        "title": "Lageplan"
+    },
+    "upload": {
+        "choose": "Bild auswählen",
+        "dropHere": "Bild hier ablegen",
+        "hint": "PNG, JPG oder WebP. PDFs bitte vorher als Bild exportieren.",
+        "replace": "Bild ersetzen",
+        "replaceHint": "Die Markierungen bleiben, wo sie sind.",
+        "success": "Bild gespeichert",
+        "title": "Bild vom Veranstaltungsort hinzufügen",
+        "uploading": "Wird hochgeladen…"
+    }
+}

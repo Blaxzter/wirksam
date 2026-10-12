@@ -107,6 +107,17 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           },
         },
         {
+          // `:eventId?` falls back to the selected event, like event-settings.
+          // One view key, so `?plan=` / `?location=` updates don't remount the map.
+          path: 'map/:eventId?',
+          name: 'event-map',
+          component: () => import('@/views/events/VenueMapView.vue'),
+          meta: {
+            routerViewKey: 'event-map',
+            breadcrumbs: [{ title: 'Map', titleKey: 'venueMap.title' }],
+          },
+        },
+        {
           path: 'print',
           name: 'event-print',
           component: () => import('@/views/events/PrintView.vue'),

@@ -41,6 +41,8 @@ class EventCloneTask(BaseModel):
 
     name: str | None = None
     status: TaskStatus | None = None
+    #: Omitted keeps the source text; an explicit ``null`` (without
+    #: ``location_id``) clears the task's location and its link.
     location: str | None = None
     #: A location of the *source* event; the clone remaps it to that
     #: location's copy and writes its name as the task's ``location`` text.

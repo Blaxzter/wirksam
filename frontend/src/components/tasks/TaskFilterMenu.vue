@@ -4,21 +4,39 @@ import { computed, ref } from 'vue'
 import { Filter, RotateCcw } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
+import { useAuthStore } from '@/stores/auth'
 import { useTaskFiltersStore } from '@/stores/eventFilters'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useLocations } from '@/composables/useLocations'
 
 import { Badge } from '@/components/ui/badge'
 import Button from '@/components/ui/button/Button.vue'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 
 const { t } = useI18n()
 const { get } = useAuthenticatedClient()
 const filters = useTaskFiltersStore()
+const authStore = useAuthStore()
+
+// Only offered when the selected event has locations to choose from.
+const { locations } = useLocations(() => authStore.selectedEventId)
+const ALL_LOCATIONS = '__all'
+const locationValue = computed({
+  get: () => filters.locationId ?? ALL_LOCATIONS,
+  set: (v: string) => (filters.locationId = v === ALL_LOCATIONS ? null : v),
+})
 
 const showHideFullShifts = computed(() => filters.viewMode === 'list')
 
@@ -106,6 +124,34 @@ async function handleVisibleMonth(range: { from: string; to: string }) {
                 :model-value="filters.hideFullShifts"
                 @update:model-value="filters.hideFullShifts = $event"
               />
+            </div>
+
+            <!-- Location -->
+            <div v-if="locations.length > 0" class="space-y-1.5">
+              <Label for="filter-location" class="text-sm font-normal">
+                {{ t('locations.filter.label') }}
+              </Label>
+              <Select v-model="locationValue">
+                <SelectTrigger
+                  id="filter-location"
+                  size="sm"
+                  class="w-full"
+                  data-testid="filter-location"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem :value="ALL_LOCATIONS">{{ t('locations.filter.all') }}</SelectItem>
+                  <SelectItem
+                    v-for="location in locations"
+                    :key="location.id"
+                    :value="location.id"
+                    :data-testid="`filter-location-option-${location.id}`"
+                  >
+                    {{ location.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

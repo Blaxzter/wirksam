@@ -577,10 +577,13 @@ async def _location_override(
     copies have no ids the client could know); it wins over the text and puts
     the copy's name in the text column. Anything else, an id from another
     event or a stale one, is a 422 and never a silent drop. ``None`` means the
-    caller overrode nothing.
+    caller overrode nothing; an explicit ``"location": null`` (no id) clears
+    both columns, which is how the form's "no location" choice arrives.
     """
     if entry.location_id is None:
         if entry.location is None:
+            if "location" in entry.model_fields_set:
+                return (None, None)
             return None
         # A text-only override; whether it keeps the link is decided per row
         # in ``_remap_location``, against that row's own source text.
@@ -608,7 +611,7 @@ def _remap_location(
     """``(location_id, location)`` for a cloned task or batch.
 
     Without an override the source pair is kept with the id remapped. An id
-    override is taken as is. A text-only override keeps the remapped link
+    override, or the ``(None, None)`` clear, is taken as is. A text-only override keeps the remapped link
     only while the text still reads the same as the source; a different text
     is free text, and a link would contradict it.
     """
@@ -616,7 +619,7 @@ def _remap_location(
     if override is None:
         return remapped, src_location
     override_id, override_text = override
-    if override_id is not None:
+    if override_id is not None or override_text is None:
         return override
     return (remapped if override_text == src_location else None), override_text
 

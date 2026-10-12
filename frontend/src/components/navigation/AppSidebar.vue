@@ -12,6 +12,7 @@ import {
   ChevronsUpDown,
   Database,
   House,
+  Map as MapIcon,
   Users,
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -176,6 +177,17 @@ const navMain = computed(() => {
       icon: CalendarCheck,
       routeName: 'availability',
     },
+    // Only once the event has a plan with a picture — an empty map is no help.
+    ...((authStore.selectedEvent?.venue_plan_count ?? 0) > 0
+      ? [
+          {
+            title: 'Map',
+            titleKey: 'navigation.sidebar.items.venueMap.label',
+            icon: MapIcon,
+            routeName: 'event-map',
+          },
+        ]
+      : []),
   ]
 })
 

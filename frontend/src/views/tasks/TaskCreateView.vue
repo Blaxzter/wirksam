@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
+import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 
@@ -60,15 +61,12 @@ const prefillGroupId = route.query.eventId as string | undefined
 const name = ref('')
 const description = ref('')
 const location = ref('')
+const locationId = ref<string | null>(null)
 const category = ref('')
 
 // Task event
-const isScopedManagerOnly = computed(
-  () => !authStore.isAdmin && authStore.isEventManager,
-)
-const eventMode = ref<'none' | 'existing' | 'new'>(
-  isScopedManagerOnly.value ? 'existing' : 'none',
-)
+const isScopedManagerOnly = computed(() => !authStore.isAdmin && authStore.isEventManager)
+const eventMode = ref<'none' | 'existing' | 'new'>(isScopedManagerOnly.value ? 'existing' : 'none')
 const selectedEventId = ref<string>('')
 const events = ref<EventRead[]>([])
 const newEventName = ref('')
@@ -159,6 +157,16 @@ watch(dateMode, () => {
   specificDates.value = []
   specificDatePicker.value = undefined
   overrides.value = []
+})
+
+// Locations belong to one event, so the picker only offers them once an
+// existing event is chosen.
+const locationEventId = computed(() =>
+  eventMode.value === 'existing' && selectedEventId.value ? selectedEventId.value : null,
+)
+// A location of the previous event would be refused; keep its name as text.
+watch(locationEventId, () => {
+  locationId.value = null
 })
 
 // Clear dates when event changes (constraints may have changed)
@@ -384,6 +392,7 @@ const handleSubmit = async () => {
       description: description.value || null,
       start_date: startDate.value!.toString(),
       end_date: endDate.value!.toString(),
+      location_id: locationEventId.value ? locationId.value : null,
       location: location.value || null,
       category: category.value || null,
       schedule: {
@@ -427,9 +436,7 @@ const handleSubmit = async () => {
       body,
     })
 
-    toast.success(
-      t('duties.tasks.createView.success', { count: response.data.shifts_created }),
-    )
+    toast.success(t('duties.tasks.createView.success', { count: response.data.shifts_created }))
     router.push({ name: 'task-detail', params: { eventId: response.data.task.id } })
   } catch (error) {
     toastApiError(error)
@@ -483,10 +490,16 @@ const handleSubmit = async () => {
               <Label for="task-description">{{ t('duties.tasks.fields.description') }}</Label>
               <Textarea id="task-description" v-model="description" :rows="3" />
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid items-start gap-4 sm:grid-cols-2">
               <div class="space-y-2">
                 <Label for="task-location">{{ t('duties.tasks.fields.location') }}</Label>
-                <Input id="task-location" v-model="location" />
+                <LocationPicker
+                  v-model:location-id="locationId"
+                  v-model:text="location"
+                  :event-id="locationEventId"
+                  :hide-no-event-hint="eventMode === 'new'"
+                  input-id="task-location"
+                />
               </div>
               <div class="space-y-2">
                 <Label for="task-category">{{ t('duties.tasks.fields.category') }}</Label>
@@ -537,9 +550,7 @@ const handleSubmit = async () => {
           <div v-if="eventMode === 'existing'" class="mt-4">
             <Select v-model="selectedEventId">
               <SelectTrigger>
-                <SelectValue
-                  :placeholder="t('duties.tasks.createView.eventOption.existing')"
-                />
+                <SelectValue :placeholder="t('duties.tasks.createView.eventOption.existing')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem v-for="event in events" :key="event.id" :value="event.id">
@@ -556,9 +567,7 @@ const handleSubmit = async () => {
               <Input id="new-event-name" v-model="newEventName" />
             </div>
             <div class="space-y-2">
-              <Label for="new-event-description">{{
-                t('duties.events.fields.description')
-              }}</Label>
+              <Label for="new-event-description">{{ t('duties.events.fields.description') }}</Label>
               <Input id="new-event-description" v-model="newEventDescription" />
             </div>
             <div class="grid grid-cols-2 gap-4">

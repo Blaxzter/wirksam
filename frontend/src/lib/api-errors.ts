@@ -75,7 +75,18 @@ const messageFromCode = (code?: string | null): string | null => {
   return te(key) ? t(key) : null
 }
 
+/**
+ * A model validator can raise one of our own dotted codes (e.g.
+ * `venue_marker.location_required`); it then arrives as `errors[].type` of a
+ * 422 instead of a top-level `code`. Returns the first such code that has a
+ * translation, so the toast can say it in words.
+ */
+const codeFromValidationErrors = (errors?: ValidationErrorItem[]): string | undefined =>
+  errors?.find((item) => item.type?.includes('.') && messageFromCode(item.type))?.type
+
 const messageFromProblemDetails = (problem: ProblemDetailsWithCode): string => {
+  const validationCodeMessage = messageFromCode(codeFromValidationErrors(problem.errors))
+  if (validationCodeMessage) return validationCodeMessage
   if (Array.isArray(problem.errors) && problem.errors.length > 0) {
     return t('common.errors.api.validation', {
       message: formatValidationErrors(problem.errors),
@@ -116,7 +127,7 @@ export const normalizeApiError = (error: unknown, fallbackMessage?: string): Nor
     const data = response?.data
 
     if (isProblemDetails(data)) {
-      const code = data.code ?? codeFromType(data.type)
+      const code = data.code ?? codeFromType(data.type) ?? codeFromValidationErrors(data.errors)
       return {
         message: messageFromProblemDetails(data),
         status: typeof data.status === 'number' ? data.status : status,

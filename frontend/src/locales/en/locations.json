@@ -1,0 +1,53 @@
+{
+    "details": {
+        "loadError": "Could not load the details for this place.",
+        "openForm": "Location details",
+        "title": "About this place"
+    },
+    "filter": {
+        "all": "All locations",
+        "label": "Location"
+    },
+    "form": {
+        "address": "Address",
+        "addressPlaceholder": "Street, number, town",
+        "contact": "Contact",
+        "contactPlaceholder": "Who to ask on site, e.g. name and phone",
+        "description": "Description",
+        "descriptionHint": "How to get there, what to bring, what to look out for. You can use **bold**, lists and links.",
+        "mapUrl": "Map link",
+        "mapUrlHint": "A link to the place in an online map, starting with https://",
+        "mapUrlInvalid": "The link has to start with http:// or https://",
+        "name": "Name",
+        "namePlaceholder": "e.g. Main stage",
+        "save": "Save",
+        "titleCreate": "New location",
+        "titleEdit": "Edit location"
+    },
+    "picker": {
+        "createNew": "New location…",
+        "custom": "Other (type it in)…",
+        "customPlaceholder": "Where does it take place?",
+        "label": "Location",
+        "noEvent": "Pick an event for this task to choose one of its places.",
+        "none": "No location"
+    },
+    "settings": {
+        "add": "Add location",
+        "delete": "Delete",
+        "deleteConfirm": "Delete “{name}”?",
+        "deleteHint": "Tasks and shifts keep the name as plain text, and the place disappears from the map.",
+        "description": "Places where tasks and shifts happen. Helpers see the description, address and contact when they open a shift.",
+        "edit": "Edit",
+        "empty": "No locations yet. Add the places where your helpers will work, like the entrance, the kitchen or the main stage.",
+        "loadError": "The locations could not be loaded.",
+        "retry": "Try again",
+        "tab": "Locations",
+        "title": "Locations"
+    },
+    "toast": {
+        "created": "Location added",
+        "deleted": "Location deleted",
+        "updated": "Location saved"
+    }
+}

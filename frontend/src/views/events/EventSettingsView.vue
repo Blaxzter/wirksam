@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Pencil, Users } from '@lucide/vue'
+import { Map as MapIcon, MapPin, Pencil, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -15,6 +15,8 @@ import EventEditForm from '@/components/events/EventEditForm.vue'
 import EventInvitations from '@/components/events/EventInvitations.vue'
 import EventJoinRequests from '@/components/events/EventJoinRequests.vue'
 import EventMembers from '@/components/events/EventMembers.vue'
+import EventLocations from '@/components/locations/EventLocations.vue'
+import VenueMapEditor from '@/components/venue-map/VenueMapEditor.vue'
 
 import type {
   EventInvitationRead,
@@ -38,13 +40,14 @@ const targetEventId = computed<string | null>(() => {
   return authStore.selectedEventId ?? null
 })
 
-type Tab = 'details' | 'people'
+type Tab = 'details' | 'people' | 'locations' | 'map'
 const activeTab = ref<Tab>('details')
 
 function readTabFromQuery() {
   const qTab = route.query.tab
   // "managers" is the old name for this tab; keep old links working.
   if (qTab === 'people' || qTab === 'managers') activeTab.value = 'people'
+  else if (qTab === 'locations' || qTab === 'map') activeTab.value = qTab
   else activeTab.value = 'details'
 }
 readTabFromQuery()
@@ -76,6 +79,30 @@ const isOwner = computed(() =>
 /** Anyone in the event can see the roster; only admins get the rest. */
 const isMember = computed(() =>
   targetEventId.value ? authStore.isEventMember(targetEventId.value) : false,
+)
+
+/**
+ * The tab actually shown: "locations" and "map" are for event admins, so a
+ * shared `?tab=map` link falls back to the details for everyone else.
+ */
+const shownTab = computed<Tab>(() =>
+  (activeTab.value === 'locations' || activeTab.value === 'map') && !canManage.value
+    ? 'details'
+    : activeTab.value,
+)
+
+// On a phone the tab row scrolls sideways: keep the chosen tab in view, so a
+// `?tab=map` link does not open with its tab cut off at the edge.
+const tabRow = ref<HTMLElement | null>(null)
+watch(
+  shownTab,
+  async (tab) => {
+    await nextTick()
+    tabRow.value
+      ?.querySelector<HTMLElement>(`[data-testid="tab-${tab}"]`)
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  },
+  { immediate: true },
 )
 
 async function loadMembers() {
@@ -163,7 +190,7 @@ onMounted(loadEvent)
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl space-y-6">
+  <div class="mx-auto space-y-6" :class="shownTab === 'map' ? 'max-w-6xl' : 'max-w-4xl'">
     <div class="space-y-2">
       <h1 data-testid="page-heading" class="text-2xl sm:text-3xl font-bold">
         {{ t('duties.events.detail.title') }}
@@ -171,12 +198,18 @@ onMounted(loadEvent)
       <p v-if="event" class="text-muted-foreground">{{ event.name }}</p>
     </div>
 
-    <div class="flex items-center gap-2 border-b">
+    <!-- Scrolls sideways on a phone rather than wrapping onto a second row.
+         The rule is an inset shadow, not a border: a scroll container would
+         clip tabs pulled over a border with a negative margin. -->
+    <div
+      ref="tabRow"
+      class="flex items-center gap-2 overflow-x-auto shadow-[inset_0_-1px_0_var(--border)]"
+    >
       <Button
         variant="ghost"
         :class="[
-          'rounded-none border-b-2 -mb-px',
-          activeTab === 'details' ? 'border-primary text-primary' : 'border-transparent',
+          'shrink-0 rounded-none border-b-2',
+          shownTab === 'details' ? 'border-primary text-primary' : 'border-transparent',
         ]"
         data-testid="tab-details"
         @click="setTab('details')"
@@ -188,8 +221,8 @@ onMounted(loadEvent)
         v-if="isMember"
         variant="ghost"
         :class="[
-          'rounded-none border-b-2 -mb-px',
-          activeTab === 'people' ? 'border-primary text-primary' : 'border-transparent',
+          'shrink-0 rounded-none border-b-2',
+          shownTab === 'people' ? 'border-primary text-primary' : 'border-transparent',
         ]"
         data-testid="tab-people"
         @click="setTab('people')"
@@ -204,6 +237,32 @@ onMounted(loadEvent)
           {{ joinRequests.length }}
         </span>
       </Button>
+      <template v-if="canManage">
+        <Button
+          variant="ghost"
+          :class="[
+            'shrink-0 rounded-none border-b-2',
+            shownTab === 'locations' ? 'border-primary text-primary' : 'border-transparent',
+          ]"
+          data-testid="tab-locations"
+          @click="setTab('locations')"
+        >
+          <MapPin class="mr-2 h-4 w-4" />
+          {{ t('locations.settings.tab') }}
+        </Button>
+        <Button
+          variant="ghost"
+          :class="[
+            'shrink-0 rounded-none border-b-2',
+            shownTab === 'map' ? 'border-primary text-primary' : 'border-transparent',
+          ]"
+          data-testid="tab-map"
+          @click="setTab('map')"
+        >
+          <MapIcon class="mr-2 h-4 w-4" />
+          {{ t('mapEditor.settings.tab') }}
+        </Button>
+      </template>
     </div>
 
     <div v-if="loading" class="py-12 text-center text-muted-foreground">
@@ -212,14 +271,14 @@ onMounted(loadEvent)
 
     <template v-else-if="event && targetEventId">
       <EventEditForm
-        v-if="activeTab === 'details'"
+        v-if="shownTab === 'details'"
         :event="event"
         :event-id="targetEventId"
         :tasks="tasks"
         @updated="handleUpdated"
         @cancel="router.back()"
       />
-      <div v-else-if="activeTab === 'people'" class="space-y-6">
+      <div v-else-if="shownTab === 'people'" class="space-y-6">
         <EventJoinRequests
           v-if="canManage"
           :event-id="targetEventId"
@@ -241,6 +300,8 @@ onMounted(loadEvent)
           @updated="loadInvitations"
         />
       </div>
+      <EventLocations v-else-if="shownTab === 'locations'" :event-id="targetEventId" />
+      <VenueMapEditor v-else-if="shownTab === 'map'" :event-id="targetEventId" />
     </template>
   </div>
 </template>

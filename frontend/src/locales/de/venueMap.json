@@ -1,0 +1,60 @@
+{
+    "canvas": {
+        "error": "Das Bild des Plans konnte nicht geladen werden.",
+        "loading": "Plan wird geladen…",
+        "reset": "Ganzen Plan zeigen",
+        "zoomIn": "Vergrößern",
+        "zoomOut": "Verkleinern"
+    },
+    "locationDetails": {
+        "address": "Adresse",
+        "contact": "Ansprechperson",
+        "openInMaps": "In Karten öffnen"
+    },
+    "markerKinds": {
+        "entrance": "Eingang",
+        "firstAid": "Erste Hilfe",
+        "infoDesk": "Info-Stand",
+        "kitchen": "Küche",
+        "location": "Ort",
+        "parking": "Parkplatz",
+        "toilets": "Toiletten"
+    },
+    "miniMap": {
+        "alt": "Wo es auf dem Plan „{plan}“ liegt",
+        "open": "Plan öffnen"
+    },
+    "planSwitcher": {
+        "label": "Plan auswählen"
+    },
+    "sheet": {
+        "book": "Buchen",
+        "bookShift": "{time} buchen",
+        "booked": "Gebucht",
+        "booking": "Wird gebucht…",
+        "full": "Ausgebucht",
+        "loadError": "Die Schichten konnten nicht geladen werden.",
+        "noShifts": "Hier gibt es an diesem Tag keine Schichten",
+        "shiftsOn": "Schichten am {day}"
+    },
+    "title": "Lageplan",
+    "view": {
+        "close": "Schließen",
+        "day": {
+            "label": "Angezeigter Tag",
+            "next": "Nächster Tag",
+            "prev": "Vorheriger Tag"
+        },
+        "empty": "Noch kein Lageplan",
+        "emptyAdmin": "Lade ein Bild vom Gelände hoch, damit alle sehen, wo was ist.",
+        "emptyHint": "Sobald das Orga-Team einen Plan hochlädt, findest du ihn hier.",
+        "goToEditor": "Lageplan einrichten",
+        "mapControls": "Plan-Steuerung",
+        "myShifts": "Meine Schichten",
+        "myShiftsHint": "Hebt die Orte hervor, an denen du an diesem Tag eine Schicht hast",
+        "notFound": "Der Lageplan konnte nicht geladen werden.",
+        "retry": "Nochmal versuchen",
+        "search": "Ort suchen",
+        "searchEmpty": "Nichts gefunden"
+    }
+}

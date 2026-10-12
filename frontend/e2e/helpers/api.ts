@@ -2,16 +2,32 @@
  * Shared E2E API helpers — used by both single-user and multi-user test files.
  */
 import type { Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import type {
   BookingRead,
   EventRead,
+  LocationCreate,
+  LocationRead,
   ShiftRead,
   TaskCreateWithShiftsResponse,
   TaskRead,
+  VenueMarkerCreate,
+  VenueMarkerRead,
+  VenuePlanRead,
 } from '../../src/client/types.gen.js'
 
-export type { BookingRead, ShiftRead, EventRead, TaskRead }
+export type {
+  BookingRead,
+  ShiftRead,
+  EventRead,
+  TaskRead,
+  LocationRead,
+  VenueMarkerRead,
+  VenuePlanRead,
+}
 export type TaskWithShifts = TaskCreateWithShiftsResponse
 
 export const API = process.env.VITE_API_URL ?? 'http://localhost:8787/api/v1'
@@ -103,13 +119,15 @@ export async function createEvent(
   name: string,
   status: 'draft' | 'published' = 'published',
   visibility: 'public' | 'private' = 'public',
+  /** ISO dates; defaults to a five-day event a month from now. */
+  dates: { start: string; end: string } = { start: futureDate(30), end: futureDate(34) },
 ): Promise<EventRead> {
   return api<EventRead>(page, 'POST', '/events/', {
     name,
     status,
     visibility,
-    start_date: futureDate(30),
-    end_date: futureDate(34),
+    start_date: dates.start,
+    end_date: dates.end,
   })
 }
 
@@ -186,6 +204,8 @@ export async function createTaskWithShifts(
     endDate?: string
     status?: 'draft' | 'published' | 'archived'
     location?: string
+    /** Link a location of the event; the server fills `location` with its name. */
+    locationId?: string | null
     category?: string
     eventId?: string | null
     startTime?: string
@@ -214,6 +234,7 @@ export async function createTaskWithShifts(
     end_date: endDate,
     status: opts.status ?? 'draft',
     location: opts.location ?? null,
+    location_id: opts.locationId ?? null,
     category: opts.category ?? null,
     event_id: eventId,
     schedule: {
@@ -257,4 +278,128 @@ export async function bookShift(page: Page, slotId: string): Promise<BookingRead
 /** Cancel a booking. */
 export async function cancelBooking(page: Page, bookingId: string): Promise<void> {
   await api(page, 'DELETE', `/bookings/${bookingId}`)
+}
+
+// ── Location and venue map helpers ──────────────────────────────────────────
+
+/** A small committed floor plan (800×500 PNG) for the venue map specs. */
+export const FLOORPLAN_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../fixtures/floorplan.png',
+)
+
+/** Create a location in an event. Event admin required. */
+export async function createLocation(
+  page: Page,
+  eventId: string,
+  body: LocationCreate,
+): Promise<LocationRead> {
+  return api<LocationRead>(page, 'POST', `/events/${eventId}/locations`, body)
+}
+
+/** Create an (image-less) venue plan in an event. Event admin required. */
+export async function createVenuePlan(
+  page: Page,
+  eventId: string,
+  name: string,
+): Promise<VenuePlanRead> {
+  return api<VenuePlanRead>(page, 'POST', `/events/${eventId}/venue-plans`, { name })
+}
+
+/**
+ * Upload a picture for a venue plan (multipart), `floorplan.png` by default.
+ *
+ * Sent from inside the page, like `api()`, so the fixture's header bypass
+ * names the caller. The bytes travel as base64 because `page.evaluate` only
+ * carries JSON.
+ */
+export async function uploadPlanImage(
+  page: Page,
+  planId: string,
+  filePath: string = FLOORPLAN_PATH,
+): Promise<VenuePlanRead> {
+  const base64 = readFileSync(filePath).toString('base64')
+  const result = await page.evaluate(
+    async ({ url, base64 }) => {
+      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      const form = new FormData()
+      form.append('file', new Blob([bytes], { type: 'image/png' }), 'floorplan.png')
+      const res = await fetch(url, { method: 'PUT', body: form })
+      return { status: res.status, ok: res.ok, body: await res.json().catch(() => null) }
+    },
+    { url: `${API}/venue-plans/${planId}/image`, base64 },
+  )
+  if (!result.ok) {
+    throw new Error(
+      `API PUT /venue-plans/${planId}/image failed with ${result.status}: ` +
+        JSON.stringify(result.body),
+    )
+  }
+  return result.body as VenuePlanRead
+}
+
+/** Put a marker on a venue plan. Event admin required. */
+export async function createMarker(
+  page: Page,
+  planId: string,
+  body: VenueMarkerCreate,
+): Promise<VenueMarkerRead> {
+  return api<VenueMarkerRead>(page, 'POST', `/venue-plans/${planId}/markers`, body)
+}
+
+export interface MappedEvent {
+  event: EventRead
+  location: LocationRead
+  plan: VenuePlanRead
+  marker: VenueMarkerRead
+  task: TaskRead
+  shift: ShiftRead
+}
+
+/**
+ * Seed an event with everything the venue map shows: a location with a
+ * Markdown description, a plan with `floorplan.png`, a pin for the location and
+ * a published task with one shift there.
+ *
+ * The event starts tomorrow, so the map opens on that day (its first) and the
+ * shift is never cut off as already past, whatever the time of day the suite
+ * runs. Delete the task before the event: tasks outlive their event.
+ */
+export async function seedMappedEvent(
+  page: Page,
+  opts: { name?: string; visibility?: 'public' | 'private' } = {},
+): Promise<MappedEvent> {
+  const event = await createEvent(
+    page,
+    opts.name ?? uniqueName('E2E Venue Map'),
+    'published',
+    opts.visibility ?? 'private',
+    { start: futureDate(1), end: futureDate(3) },
+  )
+  const location = await createLocation(page, event.id, {
+    name: uniqueName('Kitchen Tent'),
+    description: 'Enter through the **back door**.',
+  })
+  const created = await createVenuePlan(page, event.id, 'Grounds')
+  const plan = await uploadPlanImage(page, created.id)
+  const marker = await createMarker(page, plan.id, {
+    kind: 'location',
+    location_id: location.id,
+    x: 0.4,
+    y: 0.5,
+  })
+  const { task } = await createTaskWithShifts(page, {
+    name: uniqueName('E2E Map Task'),
+    eventId: event.id,
+    status: 'published',
+    locationId: location.id,
+    startDate: futureDate(1),
+    endDate: futureDate(1),
+    startTime: '10:00',
+    endTime: '11:00',
+    slotDuration: 60,
+    peoplePerShift: 2,
+  })
+  const [shift] = await listShifts(page, task.id)
+  return { event, location, plan, marker, task, shift }
 }

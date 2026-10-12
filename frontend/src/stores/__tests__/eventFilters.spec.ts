@@ -35,6 +35,7 @@ describe('useTaskFiltersStore', () => {
       expect(store.hideFullShifts).toBe(false)
       expect(store.dateFrom).toBeNull()
       expect(store.dateTo).toBeNull()
+      expect(store.locationId).toBeNull()
     })
 
     it('hydrates every persisted field', () => {
@@ -174,8 +175,9 @@ describe('useTaskFiltersStore', () => {
       store.hideFullShifts = true
       store.dateFrom = '2026-08-01'
       store.searchQuery = 'bar'
+      store.locationId = 'loc-1'
 
-      expect(store.activeFilterCount).toBe(4)
+      expect(store.activeFilterCount).toBe(5)
     })
 
     it('ignores a whitespace-only search query', () => {
@@ -206,9 +208,11 @@ describe('useTaskFiltersStore', () => {
       store.hideFullShifts = true
       store.dateFrom = '2026-08-01'
       store.dateTo = '2026-08-31'
+      store.locationId = 'loc-1'
 
       store.resetFilters()
 
+      expect(store.locationId).toBeNull()
       expect(store.searchQuery).toBe('')
       expect(store.myBookingsOnly).toBe(false)
       expect(store.hideFullShifts).toBe(false)
@@ -225,6 +229,61 @@ describe('useTaskFiltersStore', () => {
       store.resetFilters()
 
       expect(store.activeFilterCount).toBe(0)
+    })
+  })
+
+  describe('locationId', () => {
+    it('is never persisted', async () => {
+      const store = useTaskFiltersStore()
+
+      store.locationId = 'loc-1'
+      store.myBookingsOnly = true
+      await nextTick()
+
+      expect(readPersisted()).not.toHaveProperty('locationId')
+      setActivePinia(createPinia())
+      expect(useTaskFiltersStore().locationId).toBeNull()
+    })
+
+    it('survives the first setLocationEvent, so a URL-seeded filter sticks', () => {
+      const store = useTaskFiltersStore()
+      store.locationId = 'loc-1'
+
+      store.setLocationEvent('event-a')
+
+      expect(store.locationId).toBe('loc-1')
+    })
+
+    it('stays when the same event is reported again', () => {
+      const store = useTaskFiltersStore()
+      store.setLocationEvent('event-a')
+      store.locationId = 'loc-1'
+
+      store.setLocationEvent('event-a')
+
+      expect(store.locationId).toBe('loc-1')
+    })
+
+    it('is cleared when the selected event changes', () => {
+      const store = useTaskFiltersStore()
+      store.setLocationEvent('event-a')
+      store.locationId = 'loc-1'
+      store.myBookingsOnly = true
+
+      store.setLocationEvent('event-b')
+
+      expect(store.locationId).toBeNull()
+      expect(store.myBookingsOnly).toBe(true)
+    })
+
+    it('is cleared when the event selection goes away', () => {
+      const store = useTaskFiltersStore()
+      store.setLocationEvent('event-a')
+      store.locationId = 'loc-1'
+
+      store.setLocationEvent(null)
+
+      expect(store.locationId).toBeNull()
     })
   })
 

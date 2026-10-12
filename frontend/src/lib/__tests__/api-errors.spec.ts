@@ -116,6 +116,43 @@ describe('normalizeApiError', () => {
       expect(result.message).toBe('Please check your entry: Invalid payload')
     })
 
+    it('translates a domain code raised inside the validation error list', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 422,
+          data: {
+            title: 'Validation Error',
+            status: 422,
+            errors: [
+              { loc: ['body'], msg: 'Value error, raw text', type: 'venue_marker.location_required' },
+            ],
+          },
+        }),
+      )
+
+      expect(result.code).toBe('venue_marker.location_required')
+      expect(result.message).not.toContain('raw text')
+      expect(result.message).toBe(
+        i18n.global.t('errorCodes.venue_marker.location_required') as string,
+      )
+    })
+
+    it('keeps the raw list when a dotted type has no translation', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 422,
+          data: {
+            title: 'Validation Error',
+            status: 422,
+            errors: [{ loc: ['body'], msg: 'Odd', type: 'nobody.knows' }],
+          },
+        }),
+      )
+
+      expect(result.code).toBeUndefined()
+      expect(result.message).toBe('Please check your entry: Odd')
+    })
+
     it('prefers an explicit error code over the detail text', () => {
       const result = normalizeApiError(
         axiosError({

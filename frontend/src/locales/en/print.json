@@ -16,6 +16,7 @@
         "open": "Open print options",
         "repeatHeader": "Repeat header on each page",
         "showLocation": "Show location column",
+        "showMap": "Show location map",
         "showTitle": "Show title column",
         "title": "Display options"
     }

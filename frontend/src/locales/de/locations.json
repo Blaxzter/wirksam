@@ -1,0 +1,53 @@
+{
+    "details": {
+        "loadError": "Die Angaben zu diesem Ort konnten nicht geladen werden.",
+        "openForm": "Ort bearbeiten",
+        "title": "Über diesen Ort"
+    },
+    "filter": {
+        "all": "Alle Orte",
+        "label": "Ort"
+    },
+    "form": {
+        "address": "Adresse",
+        "addressPlaceholder": "Straße, Hausnummer, Ort",
+        "contact": "Ansprechperson",
+        "contactPlaceholder": "Wen man vor Ort fragen kann, z. B. Name und Telefon",
+        "description": "Beschreibung",
+        "descriptionHint": "Wie man hinkommt, was man mitbringen soll, worauf man achten muss. Du kannst **fett**, Listen und Links verwenden.",
+        "mapUrl": "Kartenlink",
+        "mapUrlHint": "Ein Link zum Ort in einer Online-Karte, beginnend mit https://",
+        "mapUrlInvalid": "Der Link muss mit http:// oder https:// beginnen",
+        "name": "Name",
+        "namePlaceholder": "z. B. Hauptbühne",
+        "save": "Speichern",
+        "titleCreate": "Neuer Ort",
+        "titleEdit": "Ort bearbeiten"
+    },
+    "picker": {
+        "createNew": "Neuer Ort…",
+        "custom": "Anderer (selbst eingeben)…",
+        "customPlaceholder": "Wo findet es statt?",
+        "label": "Ort",
+        "noEvent": "Wähle eine Veranstaltung für diese Aufgabe, dann kannst du einen ihrer Orte auswählen.",
+        "none": "Kein Ort"
+    },
+    "settings": {
+        "add": "Ort hinzufügen",
+        "delete": "Löschen",
+        "deleteConfirm": "„{name}“ löschen?",
+        "deleteHint": "Aufgaben und Schichten behalten den Namen als Text, und der Ort verschwindet vom Lageplan.",
+        "description": "Orte, an denen Aufgaben und Schichten stattfinden. Helfende sehen Beschreibung, Adresse und Ansprechperson, wenn sie eine Schicht öffnen.",
+        "edit": "Bearbeiten",
+        "empty": "Noch keine Orte. Leg die Orte an, an denen deine Helfenden arbeiten, zum Beispiel Eingang, Küche oder Hauptbühne.",
+        "loadError": "Die Orte konnten nicht geladen werden.",
+        "retry": "Nochmal versuchen",
+        "tab": "Orte",
+        "title": "Orte"
+    },
+    "toast": {
+        "created": "Ort hinzugefügt",
+        "deleted": "Ort gelöscht",
+        "updated": "Ort gespeichert"
+    }
+}

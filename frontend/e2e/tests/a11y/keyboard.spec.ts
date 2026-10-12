@@ -35,8 +35,9 @@ test.describe('a11y – task create wizard keyboard support', () => {
 
     const name = page.getByTestId('input-task-name')
     const description = details.locator('textarea')
-    const location = details.locator('input').nth(1)
-    const category = details.locator('input').nth(2)
+    // The location is a picker (a select trigger), not a text field.
+    const location = details.getByTestId('location-picker')
+    const category = details.locator('#task-category')
     // The Next button is disabled — and therefore unfocusable — until the
     // section is valid, so give it a name first.
     const next = details.getByRole('button', { name: /next|weiter/i })

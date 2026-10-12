@@ -1,0 +1,60 @@
+{
+    "canvas": {
+        "error": "The map picture could not be loaded.",
+        "loading": "Loading map…",
+        "reset": "Show whole map",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out"
+    },
+    "locationDetails": {
+        "address": "Address",
+        "contact": "Contact",
+        "openInMaps": "Open in maps"
+    },
+    "markerKinds": {
+        "entrance": "Entrance",
+        "firstAid": "First aid",
+        "infoDesk": "Info desk",
+        "kitchen": "Kitchen",
+        "location": "Location",
+        "parking": "Parking",
+        "toilets": "Toilets"
+    },
+    "miniMap": {
+        "alt": "Where it is on the map “{plan}”",
+        "open": "Open map"
+    },
+    "planSwitcher": {
+        "label": "Choose a map"
+    },
+    "sheet": {
+        "book": "Book",
+        "bookShift": "Book {time}",
+        "booked": "Booked",
+        "booking": "Booking…",
+        "full": "Fully booked",
+        "loadError": "The shifts could not be loaded.",
+        "noShifts": "No shifts here on this day",
+        "shiftsOn": "Shifts on {day}"
+    },
+    "title": "Map",
+    "view": {
+        "close": "Close",
+        "day": {
+            "label": "Day shown",
+            "next": "Next day",
+            "prev": "Previous day"
+        },
+        "empty": "No venue map yet",
+        "emptyAdmin": "Add a picture of the venue so helpers can see where everything is.",
+        "emptyHint": "Once the organisers add a map of the venue, you can find it here.",
+        "goToEditor": "Set up the map",
+        "mapControls": "Map controls",
+        "myShifts": "My shifts",
+        "myShiftsHint": "Highlights the places where you have a shift that day",
+        "notFound": "This map could not be loaded.",
+        "retry": "Try again",
+        "search": "Find a place",
+        "searchEmpty": "Nothing found"
+    }
+}

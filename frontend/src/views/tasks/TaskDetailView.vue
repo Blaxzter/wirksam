@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
 import {
@@ -55,12 +55,17 @@ import {
 import Separator from '@/components/ui/separator/Separator.vue'
 import { TimePicker } from '@/components/ui/time-picker'
 
+import LocationFormDialog from '@/components/locations/LocationFormDialog.vue'
+import LocationPicker from '@/components/locations/LocationPicker.vue'
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
+import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
 import type {
   BookingRead,
+  LocationDetailRead,
+  LocationRead,
   MyBookingsListResponse,
   ShiftBatchRead,
   ShiftListResponse,
@@ -69,6 +74,7 @@ import type {
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { formatDate } from '@/lib/format'
+import { sharedLocationId as sharedLocationIdOf } from '@/lib/venue-map'
 
 const { t } = useI18n()
 const { formatTime, formatDateLabel } = useFormatters()
@@ -97,6 +103,7 @@ const slotForm = ref({
   start_time: '',
   end_time: '',
   location: '',
+  location_id: null as string | null,
   category: '',
   max_bookings: 5,
 })
@@ -201,6 +208,40 @@ const sharedCategory = computed(() => {
   if (uniqueCategories.value.length === 1) return uniqueCategories.value[0]
   return null
 })
+
+// The one location every shift shares (or the task's own, before it has
+// shifts). Only then is "where is it" a single answer worth a mini map.
+const sharedLocationId = computed<string | null>(() =>
+  sharedLocationIdOf(shifts.value, task.value?.location_id),
+)
+
+const sharedLocationDetail = ref<LocationDetailRead | null>(null)
+const miniMapPin = computed(() => sharedLocationDetail.value?.pins?.[0] ?? null)
+const locationFormOpen = ref(false)
+
+const loadSharedLocation = async () => {
+  const id = sharedLocationId.value
+  if (!id) {
+    sharedLocationDetail.value = null
+    return
+  }
+  try {
+    const res = await get<{ data: LocationDetailRead }>({ url: `/locations/${id}` })
+    if (sharedLocationId.value === id) sharedLocationDetail.value = res.data
+  } catch {
+    // Non-critical — the header still shows the name.
+    sharedLocationDetail.value = null
+  }
+}
+
+watch(sharedLocationId, loadSharedLocation)
+
+// A rename rewrites the location text on the task and its shifts. Patched in
+// place rather than via `loadTask`, which would blank the page while loading.
+const onLocationSaved = async (saved: LocationRead) => {
+  if (task.value?.location_id === saved.id) task.value = { ...task.value, location: saved.name }
+  await Promise.all([loadShifts(), loadSharedLocation()])
+}
 
 // Filter shifts within a event
 const filterShifts = (shifts: ShiftRead[]) => {
@@ -469,6 +510,7 @@ const handleCreateShift = async () => {
         date: slotDate.value.toString(),
         start_time: slotForm.value.start_time || undefined,
         end_time: slotForm.value.end_time || undefined,
+        location_id: slotForm.value.location_id,
         location: slotForm.value.location || undefined,
         category: slotForm.value.category || undefined,
         max_bookings: slotForm.value.max_bookings,
@@ -481,6 +523,7 @@ const handleCreateShift = async () => {
       start_time: '',
       end_time: '',
       location: '',
+      location_id: null,
       category: '',
       max_bookings: 5,
     }
@@ -677,6 +720,31 @@ onMounted(async () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        </div>
+
+        <!-- Where it happens: mini map of the shared location -->
+        <div
+          v-if="sharedLocationDetail && (miniMapPin || canManage)"
+          class="space-y-1.5 sm:max-w-md"
+          data-testid="task-mini-map"
+        >
+          <VenueMiniMap
+            v-if="miniMapPin"
+            :event-id="sharedLocationDetail.event_id"
+            :pin="miniMapPin"
+            :location-id="sharedLocationDetail.id"
+          />
+          <Button
+            v-if="canManage"
+            variant="link"
+            size="sm"
+            class="h-auto px-0"
+            data-testid="btn-task-location-details"
+            @click="locationFormOpen = true"
+          >
+            <MapPin class="mr-1 h-3.5 w-3.5" />
+            {{ t('locations.details.openForm') }}
+          </Button>
         </div>
       </div>
 
@@ -1026,10 +1094,16 @@ onMounted(async () => {
                 <TimePicker v-model="slotForm.end_time" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid items-start gap-4 sm:grid-cols-2">
               <div class="space-y-2">
-                <Label>{{ t('duties.shifts.fields.location') }}</Label>
-                <Input v-model="slotForm.location" />
+                <Label for="shift-location">{{ t('duties.shifts.fields.location') }}</Label>
+                <LocationPicker
+                  v-model:location-id="slotForm.location_id"
+                  v-model:text="slotForm.location"
+                  :event-id="task?.event_id"
+                  input-id="shift-location"
+                  priority
+                />
               </div>
               <div class="space-y-2">
                 <Label>{{ t('duties.shifts.fields.category') }}</Label>
@@ -1050,6 +1124,14 @@ onMounted(async () => {
         </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
+
+    <LocationFormDialog
+      v-if="sharedLocationDetail && task?.event_id"
+      v-model:open="locationFormOpen"
+      :event-id="task.event_id"
+      :location="sharedLocationDetail"
+      @saved="onLocationSaved"
+    />
 
     <!-- Shift Detail Dialog -->
     <ShiftDetailDialog

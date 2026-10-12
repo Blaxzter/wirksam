@@ -12,15 +12,18 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 import PrintToolbar from '@/components/print/PrintToolbar.vue'
 import QrCode from '@/components/print/QrCode.vue'
+import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
 import type {
+  LocationDetailRead,
+  ShiftBatchRead,
   ShiftListResponse,
   ShiftRead,
   TaskBookingEntry,
   TaskRead,
-  ShiftBatchRead,
 } from '@/client/types.gen'
 import { formatDate } from '@/lib/format'
+import { sharedLocationId } from '@/lib/venue-map'
 
 const { t } = useI18n()
 const { formatTime, formatDateLabel } = useFormatters()
@@ -43,6 +46,25 @@ const showLocation = ref(true)
 const repeatHeader = ref(true)
 const includeNames = ref(false)
 const selectedDates = ref<Set<string>>(new Set())
+const showMap = ref(true)
+
+// === Venue map pin ===
+// Same rule as the task details page: one location shared by every shift (or
+// the task's own when it has no shifts yet). Several locations: no map.
+const location = ref<LocationDetailRead | null>(null)
+const miniMap = ref<InstanceType<typeof VenueMiniMap> | null>(null)
+const pin = computed(() => location.value?.pins?.[0] ?? null)
+
+const loadLocation = async () => {
+  const locationId = sharedLocationId(allShifts.value, task.value?.location_id)
+  if (!locationId) return
+  try {
+    const res = await get<{ data: LocationDetailRead }>({ url: `/locations/${locationId}` })
+    location.value = res.data
+  } catch {
+    // Non-critical: the page prints without the map
+  }
+}
 
 // All unique dates from shifts
 const allDates = computed(() => [...new Set(allShifts.value.map((s) => s.date))].sort())
@@ -171,6 +193,10 @@ const onQrReady = () => resolveQr()
 const handlePrint = async () => {
   if (includeNames.value) await loadBookings()
   await qrReady
+  if (pin.value && showMap.value) {
+    await nextTick()
+    await miniMap.value?.ready()
+  }
   await nextTick()
   await new Promise((r) => setTimeout(r, 300))
   window.print()
@@ -218,6 +244,8 @@ onMounted(async () => {
     } catch {
       // Non-critical
     }
+
+    await loadLocation()
   } finally {
     loading.value = false
   }
@@ -244,6 +272,10 @@ onMounted(async () => {
       <label class="flex items-center gap-2 cursor-pointer">
         <Checkbox v-model="repeatHeader" />
         <span class="text-sm">{{ t('print.toolbar.repeatHeader') }}</span>
+      </label>
+      <label v-if="pin" class="flex items-center gap-2 cursor-pointer">
+        <Checkbox v-model="showMap" data-testid="print-toggle-map" />
+        <span class="text-sm">{{ t('print.toolbar.showMap') }}</span>
       </label>
 
       <!-- Include names -->
@@ -330,6 +362,23 @@ onMounted(async () => {
         <tbody>
           <tr>
             <td class="p-0">
+              <!--
+                Where it is. Below the header rather than in it, so a repeated
+                header does not print the map again on every page.
+              -->
+              <div
+                v-if="pin && showMap && task.event_id"
+                class="mb-4 max-w-md print-keep-together"
+                data-testid="print-mini-map"
+              >
+                <VenueMiniMap
+                  ref="miniMap"
+                  :event-id="task.event_id"
+                  :pin="pin"
+                  :link-to-map="false"
+                  static
+                />
+              </div>
               <!-- Duty Shifts -->
               <div v-if="shifts.length > 0" class="space-y-4">
                 <div

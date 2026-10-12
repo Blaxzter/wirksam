@@ -44,13 +44,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 24         | 219     |
-| `member`     | 2          | 18      |
-| `mobile`     | 1          | 6       |
+| `chromium`   | 26         | 227     |
+| `member`     | 3          | 23      |
+| `mobile`     | 2          | 8       |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 32      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **49**     | **378** |
+| **Total**    | **53**     | **393** |
 
 ## Inventory
 
@@ -152,7 +152,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 24 files, 219 tests
+### Project `chromium` — 26 files, 227 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -337,6 +337,16 @@ Not yet covered, and not currently tracked by an issue:
   - a non-member cannot see the event settings content
   - member cannot shift dates via API
 
+#### `frontend/e2e/tests/authenticated/locations.spec.ts` — 5 tests
+
+- **Locations – event settings** (2)
+  - an organiser adds a location with a Markdown description
+  - the task form offers the event’s locations
+- **Locations – where they show up** (3)
+  - task details show the linked location
+  - the feed filter narrows the list to one location
+  - shift details render the location’s description
+
 #### `frontend/e2e/tests/authenticated/navigation.spec.ts` — 26 tests
 
 - **Sidebar – links** (8)
@@ -387,7 +397,7 @@ Not yet covered, and not currently tracked by an issue:
   - shows default reminders section
   - can toggle a global channel switch
 
-#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 7 tests
+#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 9 tests
 
 - **Print Task – smoke** (4)
   - print task page loads
@@ -398,6 +408,9 @@ Not yet covered, and not currently tracked by an issue:
   - print event page loads
   - shows print toolbar for event
   - shows event name in print content
+- **Print Task – venue mini-map** (2)
+  - a task whose location has a pin prints the mini-map
+  - a task without a located pin prints no map
 
 #### `frontend/e2e/tests/authenticated/reporting.spec.ts` — 7 tests
 
@@ -518,7 +531,12 @@ Not yet covered, and not currently tracked by an issue:
   - Create button is visible for admin
   - Create button navigates to create page
 
-### Project `member` — 2 files, 18 tests
+#### `frontend/e2e/tests/authenticated/venue-map-editor.spec.ts` — 1 test
+
+- **Venue map editor** (1)
+  - add a plan, upload a picture, place and drag pins
+
+### Project `member` — 3 files, 23 tests
 
 #### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
 
@@ -549,7 +567,17 @@ Not yet covered, and not currently tracked by an issue:
   - member can view task detail
   - member can book a shift
 
-### Project `mobile` — 1 file, 6 tests
+#### `frontend/e2e/tests/member/venue-map.spec.ts` — 5 tests
+
+- **Venue map – helper view** (3)
+  - tap a pin, read the place, book a shift there
+  - search finds a place and zooms to it
+  - a deep link opens the place’s sheet
+- **Venue map – nothing to show** (2)
+  - an event without plans shows the empty state and no nav entry
+  - someone outside the event cannot read its map
+
+### Project `mobile` — 2 files, 8 tests
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 
@@ -561,6 +589,12 @@ Not yet covered, and not currently tracked by an issue:
   - booking from the drawer takes the shift
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
+
+#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 2 tests
+
+- **Venue map – on a phone** (2)
+  - the user menu leads to the map
+  - a tapped place opens as a bottom sheet
 
 ### Project `multi-user` — 4 files, 54 tests
 

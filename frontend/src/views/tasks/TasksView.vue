@@ -67,12 +67,20 @@ function readUrlIntoStore() {
   if (q.date_from && /^\d{4}-\d{2}-\d{2}$/.test(String(q.date_from)))
     filters.dateFrom = String(q.date_from)
   if (q.date_to && /^\d{4}-\d{2}-\d{2}$/.test(String(q.date_to))) filters.dateTo = String(q.date_to)
+  if (q.location && typeof q.location === 'string') filters.locationId = q.location
   if (q.cal_view && CAL_VIEW_MODES.includes(q.cal_view as CalViewMode))
     calViewMode.value = q.cal_view as CalViewMode
   if (q.cal_date && /^\d{4}-\d{2}-\d{2}$/.test(String(q.cal_date)))
     calDate.value = String(q.cal_date)
 }
 readUrlIntoStore()
+
+// A location filter only makes sense within one event; switching drops it.
+watch(
+  () => authStore.selectedEventId,
+  (id) => filters.setLocationEvent(id),
+  { immediate: true },
+)
 
 // Mirror store → URL (replace, not push, to avoid polluting history)
 const urlQuery = computed(() => {
@@ -84,6 +92,7 @@ const urlQuery = computed(() => {
   if (filters.hideFullShifts) q.hide_full = 'true'
   if (filters.dateFrom) q.date_from = filters.dateFrom
   if (filters.dateTo) q.date_to = filters.dateTo
+  if (filters.locationId) q.location = filters.locationId
   // Calendar-specific params (only when in calendar view)
   if (filters.viewMode === 'calendar') {
     if (calViewMode.value && calViewMode.value !== 'month') q.cal_view = calViewMode.value
@@ -131,6 +140,7 @@ const loadTasks = async () => {
     if (filters.dateFrom) query.date_from = filters.dateFrom
     if (filters.dateTo) query.date_to = filters.dateTo
     if (filters.searchQuery.trim()) query.search = filters.searchQuery.trim()
+    if (filters.locationId) query.location_id = filters.locationId
 
     // Calendar view: scope to visible date range (overrides dateFrom)
     if (filters.viewMode === 'calendar' && calendarRange.value) {
@@ -166,6 +176,7 @@ watch(
     filters.focusMode,
     filters.dateFrom,
     filters.dateTo,
+    filters.locationId,
   ],
   () => loadTasks(),
 )

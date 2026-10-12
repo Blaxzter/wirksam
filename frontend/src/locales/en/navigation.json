@@ -41,6 +41,10 @@
             "tasks": {
                 "description": "Browse tasks",
                 "label": "Tasks"
+            },
+            "venueMap": {
+                "description": "Where things are at the event",
+                "label": "Map"
             }
         },
         "platform": "Platform",
@@ -55,7 +59,8 @@
             "logout": "Log out",
             "notifications": "Notifications",
             "switchToDark": "Switch to dark mode",
-            "switchToLight": "Switch to light mode"
+            "switchToLight": "Switch to light mode",
+            "venueMap": "Map"
         },
         "install": {
             "iosSteps": "In Safari, tap the Share button, then choose “Add to Home Screen”. WirkSam then opens like an app, without the browser around it.",

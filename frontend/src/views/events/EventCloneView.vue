@@ -60,6 +60,7 @@ import { Switch } from '@/components/ui/switch'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { TimePicker } from '@/components/ui/time-picker'
 
+import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 
 import type {
@@ -306,6 +307,8 @@ interface TaskConfig {
   status: 'draft' | 'published'
   name: string
   location: string
+  /** A location of the *source* event; the server maps it to its copy. */
+  locationId: string | null
   /** ISO strings, never DateValue: an array of DateValue loses class identity. */
   startDate: string
   endDate: string
@@ -332,6 +335,7 @@ function buildTaskConfig(task: TaskRead, offset: number): TaskConfig {
     status: 'draft',
     name: task.name,
     location: task.location ?? '',
+    locationId: task.location_id ?? null,
     startDate: addDays(task.start_date, offset),
     endDate: addDays(task.end_date, offset),
     datesTouched: false,
@@ -383,7 +387,11 @@ function durationOptions(taskId: string): number[] {
 function copyKeepsOldLabels(task: TaskRead): boolean {
   const cfg = taskConfigs.value[task.id]
   if (!cfg || cfg.mode !== 'copy') return false
-  return cfg.name.trim() !== task.name || cfg.location.trim() !== (task.location ?? '')
+  return (
+    cfg.name.trim() !== task.name ||
+    cfg.location.trim() !== (task.location ?? '') ||
+    cfg.locationId !== (task.location_id ?? null)
+  )
 }
 
 // --- Shift preview ------------------------------------------------------
@@ -1067,8 +1075,17 @@ async function handleSubmit() {
       }
       // Omitted means "keep the source value", so only send what was changed.
       if (cfg.name.trim() !== task.name) entry.name = cfg.name.trim()
-      if (cfg.location.trim() !== (task.location ?? '')) {
-        // `_pick` only falls back on null; '' would be written to the column.
+      if (cfg.locationId && cfg.locationId !== (task.location_id ?? null)) {
+        // Another location of the source event: the server remaps the id and
+        // takes the name from the copy.
+        entry.location_id = cfg.locationId
+      } else if (
+        cfg.location.trim() !== (task.location ?? '') ||
+        (cfg.locationId === null && task.location_id)
+      ) {
+        // Free text. Sent without an id, a changed text drops the link. An
+        // explicit null ("No location", or the text cleared) clears both;
+        // '' would be written to the column.
         entry.location = cfg.location.trim() || null
       }
       if (cfg.mode === 'regenerate') {
@@ -1546,9 +1563,13 @@ async function handleSubmit() {
                       <Label :for="`clone-task-location-${task.id}`">
                         {{ t('duties.tasks.fields.location') }}
                       </Label>
-                      <Input
-                        :id="`clone-task-location-${task.id}`"
-                        v-model="taskConfigs[task.id].location"
+                      <!-- The source event's locations: clone copies them all. -->
+                      <LocationPicker
+                        v-model:location-id="taskConfigs[task.id].locationId"
+                        v-model:text="taskConfigs[task.id].location"
+                        :event-id="sourceId"
+                        :input-id="`clone-task-location-${task.id}`"
+                        :allow-create="false"
                         :data-testid="`input-task-location-${task.id}`"
                       />
                     </div>

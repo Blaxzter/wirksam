@@ -120,6 +120,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Re-read the selected event (e.g. after a change to its venue plans moved
+   * `venue_plan_count`). A no-op for any other event, so a caller editing a
+   * different event can never swap it into `selectedEvent`.
+   */
+  const refreshSelectedEvent = async (eventId: string) => {
+    if (!eventId || eventId !== selectedEventId.value) return
+    try {
+      const res = await get<{ data: EventRead }>({ url: `/events/${eventId}` })
+      if (selectedEventId.value === eventId) selectedEvent.value = res.data
+    } catch {
+      // Keep the current copy; it catches up on the next full load.
+    }
+  }
+
   const setSelectedEvent = async (id: string | null) => {
     const response = await put<{ data: UserProfile }>({
       url: '/users/me/selected-event',
@@ -265,6 +280,7 @@ export const useAuthStore = defineStore('auth', () => {
     loadProfile,
     ensureProfile,
     setSelectedEvent,
+    refreshSelectedEvent,
     callProtectedAPI,
   }
 })

@@ -8,6 +8,7 @@ import {
   CalendarRange,
   Globe,
   LogOut,
+  Map as MapIcon,
   Moon,
   Sun,
 } from '@lucide/vue'
@@ -35,6 +36,8 @@ useI18n()
 
 const user = computed(() => authStore.user)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+// Same rule as the sidebar: only once the event has a plan with a picture.
+const hasVenueMap = computed(() => (authStore.selectedEvent?.venue_plan_count ?? 0) > 0)
 
 const displayName = computed(
   () => user.value?.name || user.value?.nickname || user.value?.email || 'User',
@@ -112,6 +115,14 @@ const initials = computed(() => {
         >
           <Bell />
           {{ $t('navigation.user.actions.notifications') }}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          v-if="hasVenueMap"
+          data-testid="mobile-user-venue-map"
+          @click="$router.push({ name: 'event-map' })"
+        >
+          <MapIcon />
+          {{ $t('navigation.user.actions.venueMap') }}
         </DropdownMenuItem>
         <DropdownMenuItem
           data-testid="mobile-user-change-event"

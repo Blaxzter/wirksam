@@ -1,0 +1,62 @@
+{
+    "marker": {
+        "close": "Done",
+        "delete": "Remove pin",
+        "deleteConfirm": "Remove the pin “{name}” from this map?",
+        "kind": "Type",
+        "label": "Label",
+        "labelPlaceholder": "e.g. North gate",
+        "locationHint": "Its name and details are edited in the “Locations” tab.",
+        "nudgeHint": "Drag the pin to move it, or use the arrow keys (hold Shift for bigger steps).",
+        "title": "Selected pin"
+    },
+    "palette": {
+        "allPlaced": "All locations are on this map.",
+        "generic": "Other points",
+        "hint": "Pick something, then tap the map where it is.",
+        "locations": "Locations",
+        "noLocations": "No locations yet. Add them in the Locations tab.",
+        "title": "Add pins",
+        "unplaced": "Not on this map yet"
+    },
+    "place": {
+        "added": "Pin added",
+        "banner": "Tap the map where “{name}” is.",
+        "cancel": "Cancel",
+        "centre": "Put it in the middle"
+    },
+    "plans": {
+        "actions": "Map options",
+        "add": "Add map",
+        "addTitle": "New map",
+        "created": "Map added",
+        "delete": "Delete map",
+        "deleteConfirm": "Delete the map “{name}” with all its pins? The locations themselves stay.",
+        "deleted": "Map deleted",
+        "empty": "No map yet",
+        "emptyHint": "Start with one map, for example of the whole grounds. You can add more later, like one per floor of a building.",
+        "loadError": "The maps could not be loaded.",
+        "moveDown": "Move to the right",
+        "moveUp": "Move to the left",
+        "name": "Name",
+        "namePlaceholder": "e.g. Grounds or Hall, ground floor",
+        "rename": "Rename",
+        "renameTitle": "Rename map",
+        "saved": "Map saved"
+    },
+    "settings": {
+        "description": "Upload a plan of your venue and pin where everything is. Helpers find it under “Map” and when they open a shift.",
+        "tab": "Map",
+        "title": "Venue map"
+    },
+    "upload": {
+        "choose": "Choose picture",
+        "dropHere": "Drop the picture here",
+        "hint": "PNG, JPG or WebP. PDFs: export as image first.",
+        "replace": "Replace picture",
+        "replaceHint": "The pins stay where they are.",
+        "success": "Picture saved",
+        "title": "Add a picture of the venue",
+        "uploading": "Uploading…"
+    }
+}

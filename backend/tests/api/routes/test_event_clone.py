@@ -2036,3 +2036,33 @@ class TestCloneLocationsAndVenueMap:
 
         kept = by_name["Zwilling"]
         assert (kept.location_id, kept.location) == (copy.id, "Foyer")
+
+    async def test_explicit_null_location_clears_text_and_link(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        as_event_admin: None,
+    ):
+        """The form's "no location" sends ``location: null``; omitted keeps it."""
+        await _link_source_to(db_session, source_event, test_location)
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(
+                source_event,
+                tasks=[
+                    {
+                        "source_task_id": str(source_event["task"].id),
+                        "location": None,
+                    }
+                ],
+            ),
+        )
+        assert r.status_code == 201, r.text
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        [task] = await _tasks_of(db_session, new_event_id)
+        [batch] = await _batches_of(db_session, task.id)
+        assert (task.location_id, task.location) == (None, None)
+        assert (batch.location_id, batch.location) == (None, None)

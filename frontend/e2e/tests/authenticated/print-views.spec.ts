@@ -4,11 +4,13 @@
 import { expect, test } from '../../fixtures.js'
 import {
   type EventRead,
+  type MappedEvent,
   type TaskWithShifts,
-  createTaskWithShifts,
   createEvent,
-  deleteTask,
+  createTaskWithShifts,
   deleteEvent,
+  deleteTask,
+  seedMappedEvent,
   uniqueName,
 } from '../../helpers/api.js'
 
@@ -72,5 +74,37 @@ test.describe('Print Task Event – smoke', () => {
     await page.goto(`/print/events/${event.id}`)
     // Dynamic event name from fixture
     await expect(page.getByText(event.name)).toBeVisible()
+  })
+})
+
+test.describe('Print Task – venue mini-map', () => {
+  let mapped: MappedEvent
+
+  test.beforeEach(async ({ adminPage: page }) => {
+    mapped = await seedMappedEvent(page, { name: uniqueName('E2E Print Map Event') })
+  })
+
+  test.afterEach(async ({ adminPage: page }) => {
+    await deleteTask(page, mapped.task.id).catch(() => {})
+    await deleteEvent(page, mapped.event.id).catch(() => {})
+  })
+
+  test('a task whose location has a pin prints the mini-map', async ({ adminPage: page }) => {
+    await page.goto(`/print/tasks/${mapped.task.id}`)
+    const miniMap = page.getByTestId('print-mini-map')
+    await expect(miniMap).toBeVisible()
+    await expect(miniMap.locator('image')).toHaveAttribute('href', /^blob:/)
+    // A static map for paper: no "open map" link.
+    await expect(miniMap.getByRole('link')).toHaveCount(0)
+
+    await page.getByTestId('print-toggle-map').click()
+    await expect(miniMap).toHaveCount(0)
+  })
+
+  test('a task without a located pin prints no map', async ({ adminPage: page }) => {
+    await page.goto(`/print/tasks/${created.task.id}`)
+    await expect(page.getByTestId('print-content')).toBeVisible()
+    await expect(page.getByTestId('print-mini-map')).toHaveCount(0)
+    await expect(page.getByTestId('print-toggle-map')).toHaveCount(0)
   })
 })

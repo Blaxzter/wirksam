@@ -37,6 +37,13 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
   const dateFrom = ref<string | null>(saved.dateFrom ?? null)
   /** Custom end date for task filtering. null = no upper bound. */
   const dateTo = ref<string | null>(saved.dateTo ?? null)
+  /**
+   * Only tasks at this location. Not persisted: a location belongs to one
+   * event, so a remembered id would silently empty the feed of the next one.
+   */
+  const locationId = ref<string | null>(null)
+  // The event `locationId` belongs to; `undefined` until first told.
+  let locationEventId: string | null | undefined = undefined
 
   // Persist filter state to localStorage
   const persistable = computed<PersistedFilters>(() => ({
@@ -60,6 +67,7 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     if (hideFullShifts.value) count++
     if (hasCustomDateRange.value) count++
     if (searchQuery.value.trim()) count++
+    if (locationId.value) count++
     return count
   })
 
@@ -69,6 +77,17 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     hideFullShifts.value = false
     dateFrom.value = null
     dateTo.value = null
+    locationId.value = null
+  }
+
+  /**
+   * Tell the store which event the feed shows. Switching to another event
+   * drops the location filter; the first call only records the event, so a
+   * location seeded from the URL survives page load.
+   */
+  function setLocationEvent(eventId: string | null) {
+    if (locationEventId !== undefined && locationEventId !== eventId) locationId.value = null
+    locationEventId = eventId
   }
 
   function clearDateRange() {
@@ -84,9 +103,11 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     hideFullShifts,
     dateFrom,
     dateTo,
+    locationId,
     hasCustomDateRange,
     activeFilterCount,
     resetFilters,
+    setLocationEvent,
     clearDateRange,
   }
 })

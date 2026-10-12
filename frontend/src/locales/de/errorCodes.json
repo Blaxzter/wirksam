@@ -26,6 +26,11 @@
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
+    "location": {
+        "name_taken": "In dieser Veranstaltung gibt es schon einen Ort mit diesem Namen.",
+        "not_found": "Dieser Ort wurde nicht gefunden.",
+        "wrong_event": "Dieser Ort gehört zu einer anderen Veranstaltung. Bitte wähle einen Ort aus dieser Veranstaltung."
+    },
     "not_found": "Wir konnten das Gesuchte nicht finden.",
     "project": {
         "not_found": "Das angeforderte Projekt wurde nicht gefunden"
@@ -36,7 +41,8 @@
         "disabled": "Demo-Veranstaltungen sind auf dieser Seite abgeschaltet.",
         "forbidden": "Das ist kein Demo-Konto, es gibt also keine Demo zu beenden.",
         "invitations_disabled": "Eine Demo-Veranstaltung kann niemanden einladen, weil alle darin erfunden sind.",
-        "not_available": "Das geht in der Demo nicht. Lege dafür ein richtiges Konto an."
+        "not_available": "Das geht in der Demo nicht. Lege dafür ein richtiges Konto an.",
+        "upload_disabled": "In der Demo kannst du keine Bilder hochladen. Lege dafür ein richtiges Konto an."
     },
     "shift": {
         "not_found": "Diese Schicht wurde nicht gefunden."
@@ -51,5 +57,16 @@
         "transfer_same_user": "Bitte wähle ein anderes Mitglied für die Übernahme aus.",
         "transfer_target_inactive": "Das Konto des ausgewählten Mitglieds ist nicht aktiv.",
         "transfer_target_not_found": "Das ausgewählte Mitglied wurde nicht gefunden."
+    },
+    "venue_marker": {
+        "duplicate_location": "Dieser Ort hat auf diesem Plan schon eine Markierung.",
+        "location_required": "Eine Ort-Markierung braucht einen Ort, die anderen Markierungen dürfen keinen haben.",
+        "not_found": "Diese Markierung wurde nicht gefunden."
+    },
+    "venue_plan": {
+        "image_not_found": "Dieser Plan hat noch kein Bild.",
+        "invalid_image": "Diese Datei lässt sich nicht als Plan verwenden. Bitte nimm ein PNG-, JPG- oder WebP-Bild unter 20 MB.",
+        "not_found": "Dieser Plan wurde nicht gefunden.",
+        "order_mismatch": "Die Pläne haben sich inzwischen geändert. Bitte lade die Seite neu und versuch es noch einmal."
     }
 }

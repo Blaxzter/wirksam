@@ -29,6 +29,7 @@ import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
+import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 
@@ -59,6 +60,7 @@ const eventMaxDate = computed(() =>
 
 // --- Batch-specific fields ---
 const location = ref('')
+const locationId = ref<string | null>(null)
 const category = ref('')
 
 // --- Dates ---
@@ -223,6 +225,7 @@ const loadTask = async () => {
 
     // Pre-fill from task defaults
     location.value = ev.location ?? ''
+    locationId.value = ev.location_id ?? null
     category.value = ev.category ?? ''
     if (ev.default_start_time) defaultStartTime.value = formatTime(ev.default_start_time)
     if (ev.default_end_time) defaultEndTime.value = formatTime(ev.default_end_time)
@@ -253,6 +256,7 @@ const handleSubmit = async () => {
       body: {
         start_date: startDate.value!.toString(),
         end_date: endDate.value!.toString(),
+        location_id: locationId.value,
         location: location.value || null,
         category: category.value || null,
         schedule: {
@@ -331,10 +335,15 @@ onMounted(loadTask)
           }}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid items-start gap-4 sm:grid-cols-2">
             <div class="space-y-2">
-              <Label>{{ t('duties.tasks.fields.location') }}</Label>
-              <Input v-model="location" />
+              <Label for="batch-location">{{ t('duties.tasks.fields.location') }}</Label>
+              <LocationPicker
+                v-model:location-id="locationId"
+                v-model:text="location"
+                :event-id="task?.event_id"
+                input-id="batch-location"
+              />
             </div>
             <div class="space-y-2">
               <Label>{{ t('duties.tasks.fields.category') }}</Label>

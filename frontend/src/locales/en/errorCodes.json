@@ -26,6 +26,11 @@
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
+    "location": {
+        "name_taken": "There is already a location with this name in this event.",
+        "not_found": "That location could not be found.",
+        "wrong_event": "That location belongs to a different event. Please pick one from this event."
+    },
     "not_found": "We could not find what you were looking for.",
     "project": {
         "not_found": "The requested project was not found"
@@ -36,7 +41,8 @@
         "disabled": "Demo events are switched off on this site.",
         "forbidden": "This is not a demo account, so there is no demo to end.",
         "invitations_disabled": "A demo event cannot invite anyone, because everybody in it is made up.",
-        "not_available": "That is not available in a demo. Create a real account to use it."
+        "not_available": "That is not available in a demo. Create a real account to use it.",
+        "upload_disabled": "Pictures cannot be uploaded in a demo. Create a real account to add your own."
     },
     "shift": {
         "not_found": "That shift could not be found."
@@ -51,5 +57,16 @@
         "transfer_same_user": "Please choose a different member to take over.",
         "transfer_target_inactive": "The chosen member's account is not active.",
         "transfer_target_not_found": "The chosen member could not be found."
+    },
+    "venue_marker": {
+        "duplicate_location": "This location already has a pin on this map.",
+        "location_required": "A location pin needs a location, and the other pin types must not have one.",
+        "not_found": "That pin could not be found."
+    },
+    "venue_plan": {
+        "image_not_found": "This map has no picture yet.",
+        "invalid_image": "That file could not be used as a map. Please use a PNG, JPG or WebP picture under 20 MB.",
+        "not_found": "That map could not be found.",
+        "order_mismatch": "The maps changed in the meantime. Please reload the page and try again."
     }
 }

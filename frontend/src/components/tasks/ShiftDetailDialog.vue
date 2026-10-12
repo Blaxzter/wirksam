@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { EllipsisVertical, ExternalLink, MapPin, Tag, Users } from '@lucide/vue'
+import { ChevronRight, EllipsisVertical, ExternalLink, MapPin, Tag, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -14,6 +14,7 @@ import { useFormatters } from '@/composables/useFormatters'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,9 +32,16 @@ import {
 } from '@/components/ui/responsive-dialog'
 import Separator from '@/components/ui/separator/Separator.vue'
 
+import LocationDescription from '@/components/locations/LocationDescription.vue'
 import ShiftRoster from '@/components/tasks/ShiftRoster.vue'
+import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
-import type { BookingRead, ShiftBookingEntry, ShiftRead } from '@/client/types.gen'
+import type {
+  BookingRead,
+  LocationDetailRead,
+  ShiftBookingEntry,
+  ShiftRead,
+} from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const props = withDefaults(
@@ -47,9 +55,11 @@ const props = withDefaults(
     myBooking?: BookingRead | null
     /** Whether to show the "View Task" navigation link (hide when already on task page) */
     showTaskLink?: boolean
+    /** Stack above another open dialog (e.g. the map's location sheet). */
+    priority?: boolean
     open: boolean
   }>(),
-  { showTaskLink: true },
+  { showTaskLink: true, priority: false },
 )
 
 const emit = defineEmits<{
@@ -137,6 +147,42 @@ watch(
       }
     }
   },
+)
+
+// --- Location details ---
+// Descriptions up to this length start expanded; longer ones would push the
+// roster out of view, so they start folded.
+const SHORT_DESCRIPTION = 280
+
+const locationDetail = ref<LocationDetailRead | null>(null)
+const locationDetailsOpen = ref(false)
+
+const locationHasDetails = computed(() => {
+  const l = locationDetail.value
+  return !!(l && (l.description?.trim() || l.address || l.map_url || l.contact))
+})
+const locationPin = computed(() => locationDetail.value?.pins?.[0] ?? null)
+
+watch(
+  () => (props.open ? (resolvedShift.value?.location_id ?? null) : null),
+  async (locationId) => {
+    if (!locationId) {
+      locationDetail.value = null
+      return
+    }
+    if (locationDetail.value?.id === locationId) return
+    try {
+      const res = await get<{ data: LocationDetailRead }>({ url: `/locations/${locationId}` })
+      // The dialog may have moved on to another shift meanwhile.
+      if ((resolvedShift.value?.location_id ?? null) !== locationId) return
+      locationDetail.value = res.data
+      locationDetailsOpen.value = (res.data.description?.length ?? 0) < SHORT_DESCRIPTION
+    } catch {
+      // Non-critical — the name is still shown above.
+      locationDetail.value = null
+    }
+  },
+  { immediate: true },
 )
 
 /**
@@ -242,7 +288,11 @@ const navigateToBooking = () => {
 
 <template>
   <ResponsiveDialog v-model:open="dialogOpen">
-    <ResponsiveDialogContent data-testid="dialog-shift-detail" dialog-class="sm:max-w-lg">
+    <ResponsiveDialogContent
+      data-testid="dialog-shift-detail"
+      dialog-class="sm:max-w-lg"
+      :priority="priority"
+    >
       <ResponsiveDialogHeader>
         <div class="flex items-start justify-between gap-3">
           <ResponsiveDialogTitle data-testid="shift-detail-title">{{
@@ -284,6 +334,45 @@ const navigateToBooking = () => {
           <p v-if="resolvedShift.description" class="text-sm whitespace-pre-line">
             {{ resolvedShift.description }}
           </p>
+
+          <!-- The place itself: how to get there, who to ask, where on the map -->
+          <Collapsible
+            v-if="locationDetail && locationHasDetails"
+            v-model:open="locationDetailsOpen"
+            class="rounded-md border"
+            data-testid="shift-location-details"
+          >
+            <CollapsibleTrigger as-child>
+              <button
+                type="button"
+                class="hover:bg-muted/50 focus-visible:ring-ring/50 flex w-full items-center gap-1.5 rounded-md px-3 py-2 text-left text-sm font-medium outline-none focus-visible:ring-[3px]"
+              >
+                <ChevronRight
+                  class="text-muted-foreground size-4 shrink-0 transition-transform"
+                  :class="{ 'rotate-90': locationDetailsOpen }"
+                />
+                {{ t('locations.details.title') }}
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div class="px-3 pb-3">
+                <LocationDescription :location="locationDetail" />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <!-- Following the link leaves this dialog behind, so close it. -->
+          <div
+            v-if="locationDetail && locationPin"
+            data-testid="shift-mini-map"
+            @click="dialogOpen = false"
+          >
+            <VenueMiniMap
+              :event-id="locationDetail.event_id"
+              :pin="locationPin"
+              :location-id="locationDetail.id"
+            />
+          </div>
 
           <!-- Extensibility shift: future fields (materials, protection, etc.) go here -->
           <slot name="extra-details" />

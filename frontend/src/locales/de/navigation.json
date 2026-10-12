@@ -41,6 +41,10 @@
             "tasks": {
                 "description": "Aufgaben durchsuchen",
                 "label": "Aufgaben"
+            },
+            "venueMap": {
+                "description": "Wo was auf der Veranstaltung ist",
+                "label": "Lageplan"
             }
         },
         "platform": "Plattform",
@@ -55,7 +59,8 @@
             "logout": "Abmelden",
             "notifications": "Benachrichtigungen",
             "switchToDark": "Zum dunklen Design wechseln",
-            "switchToLight": "Zum hellen Design wechseln"
+            "switchToLight": "Zum hellen Design wechseln",
+            "venueMap": "Lageplan"
         },
         "install": {
             "iosSteps": "Tippe in Safari auf „Teilen“ und wähle dann „Zum Home-Bildschirm“. WirkSam öffnet sich danach wie eine App, ohne den Browser drumherum.",

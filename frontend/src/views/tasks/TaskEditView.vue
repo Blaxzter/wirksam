@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/responsive-dialog'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
+import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 
@@ -65,6 +66,7 @@ const parentEvent = ref<EventRead | null>(null)
 const name = ref('')
 const description = ref('')
 const location = ref('')
+const locationId = ref<string | null>(null)
 const category = ref('')
 const startDate = ref<DateValue>()
 const endDate = ref<DateValue>()
@@ -260,6 +262,7 @@ const loadTask = async () => {
     const src = batch.value
     if (src) {
       location.value = src.location ?? ''
+      locationId.value = src.location_id ?? null
       category.value = src.category ?? ''
       startDate.value = parseDate(src.start_date)
       endDate.value = parseDate(src.end_date)
@@ -279,6 +282,7 @@ const loadTask = async () => {
       }
     } else {
       location.value = ev.location ?? ''
+      locationId.value = ev.location_id ?? null
       category.value = ev.category ?? ''
       startDate.value = parseDate(ev.start_date)
       endDate.value = parseDate(ev.end_date)
@@ -373,6 +377,8 @@ const buildPayload = () => {
     description: description.value || null,
     start_date: startDate.value!.toString(),
     end_date: endDate.value!.toString(),
+    // Always together: text without the id would unlink the location.
+    location_id: locationId.value,
     location: location.value || null,
     category: category.value || null,
     schedule: {
@@ -409,6 +415,7 @@ const handleSubmit = async () => {
         body: {
           name: name.value,
           description: description.value || null,
+          location_id: locationId.value,
           location: location.value || null,
           category: category.value || null,
         },
@@ -523,10 +530,15 @@ onMounted(loadTask)
             <Label>{{ t('duties.tasks.fields.description') }}</Label>
             <Textarea v-model="description" :rows="3" class="max-h-[150px]" />
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid items-start gap-4 sm:grid-cols-2">
             <div class="space-y-2">
-              <Label>{{ t('duties.tasks.fields.location') }}</Label>
-              <Input v-model="location" />
+              <Label for="task-location">{{ t('duties.tasks.fields.location') }}</Label>
+              <LocationPicker
+                v-model:location-id="locationId"
+                v-model:text="location"
+                :event-id="task?.event_id"
+                input-id="task-location"
+              />
             </div>
             <div class="space-y-2">
               <Label>{{ t('duties.tasks.fields.category') }}</Label>
@@ -545,10 +557,15 @@ onMounted(loadTask)
           }}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid items-start gap-4 sm:grid-cols-2">
             <div class="space-y-2">
-              <Label>{{ t('duties.tasks.fields.location') }}</Label>
-              <Input v-model="location" />
+              <Label for="batch-location">{{ t('duties.tasks.fields.location') }}</Label>
+              <LocationPicker
+                v-model:location-id="locationId"
+                v-model:text="location"
+                :event-id="task?.event_id"
+                input-id="batch-location"
+              />
             </div>
             <div class="space-y-2">
               <Label>{{ t('duties.tasks.fields.category') }}</Label>
