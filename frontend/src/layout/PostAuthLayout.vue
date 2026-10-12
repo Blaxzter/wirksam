@@ -67,7 +67,7 @@ function goToChangelog() {
 <template>
   <SidebarProvider v-model:open="open">
     <AppSidebar :open="open" />
-    <SidebarInset class="flex flex-col pb-16 md:pb-0">
+    <SidebarInset class="flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       <PostAuthHeader />
 
       <div class="flex-1 p-4 pt-0" data-testid="main-content">

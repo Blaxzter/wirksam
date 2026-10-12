@@ -11,6 +11,8 @@
     "mobileBottomNav": {
         "bookings": "Buchungen",
         "inbox": "Posteingang",
+        "more": "Mehr",
+        "moreDescription": "Alles Weitere in WirkSam",
         "tasks": "Aufgaben"
     },
     "sidebar": {

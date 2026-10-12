@@ -4,6 +4,7 @@ import { type HTMLAttributes, type Ref, computed, ref } from 'vue'
 import { useEventListener, useMediaQuery, useVModel } from '@vueuse/core'
 import { TooltipProvider } from 'reka-ui'
 
+import { RESPONSIVE_DIALOG_MOBILE_QUERY } from '@/components/ui/responsive-dialog/utils'
 import { cn } from '@/lib/utils'
 
 import {
@@ -31,7 +32,9 @@ const emits = defineEmits<{
   'update:open': [open: boolean]
 }>()
 
-const isMobile = useMediaQuery('(max-width: 768px)')
+// Not stock shadcn (`max-width: 768px`): that includes 768 itself, where
+// `md:hidden` already hides the bottom nav, so the app had no navigation at all.
+const isMobile = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
 const openMobile = ref(false)
 
 const open = useVModel(props, 'open', emits, {
