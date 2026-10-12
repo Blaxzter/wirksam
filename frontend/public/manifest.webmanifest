@@ -1,14 +1,70 @@
 {
+  "id": "/app/home",
+  "name": "WirkSam",
+  "short_name": "WirkSam",
+  "description": "Volunteer scheduling for church events and community service: plan shifts, book them, and see who helps when.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/app/home",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3ece0",
+  "theme_color": "#f3ece0",
+  "categories": ["productivity", "social"],
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/android-chrome-512x512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/en/dashboard-light.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard with your next shifts"
+    },
+    {
+      "src": "/screenshots/en/tasks-light.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tasks and open shifts of an event"
+    },
+    {
+      "src": "/screenshots/en/my-bookings-light.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Your booked shifts"
     }
   ]
 }

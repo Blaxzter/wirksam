@@ -9,6 +9,7 @@ import { useAvatarUrl } from '@/composables/useAvatarUrl'
 
 import { useAuthStore } from '@/stores/auth'
 
+import InstallAppMenuItem from '@/components/navigation/InstallAppMenuItem.vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -135,6 +136,7 @@ const initials = computed(() => {
               <Bell />
               {{ $t('navigation.user.actions.notifications') }}
             </DropdownMenuItem>
+            <InstallAppMenuItem />
             <DropdownMenuItem @click="$router.push({ name: 'landing' })">
               <Globe />
               {{ $t('navigation.user.actions.landingPage') }}

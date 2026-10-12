@@ -2,6 +2,8 @@ import { createApp, nextTick } from 'vue'
 
 import { createPinia } from 'pinia'
 
+import { listenForInstallPrompt } from '@/composables/useInstallPrompt'
+
 import { client } from '@/client/client.gen'
 import { authSession } from '@/lib/auth-session'
 import { installPageHead } from '@/lib/page-head'
@@ -80,9 +82,13 @@ if (root.hasAttribute('data-prerendered')) {
     })
 }
 
+// Before mounting: the browser may offer the install prompt straight away, and
+// the user menus that show it are not on screen yet.
+listenForInstallPrompt()
+
 app.mount(root)
 
-// Register service worker for push notifications
+// Service worker: push notifications and the offline page (public/sw.js).
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch((error) => {
     console.warn('Service worker registration failed:', error)

@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- Served by sw.js when a page cannot be loaded because the device is offline.
+     It is precached on its own, so everything it needs is inline; it cannot
+     load the app's stylesheet or i18n files. Both languages, picked by the
+     browser's language before the first paint. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3ece0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c110d" media="(prefers-color-scheme: dark)" />
+    <title>WirkSam – Offline</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f3ece0;
+        --fg: #232c3a;
+        --muted: #5b6270;
+        --primary: #2d522f;
+        --primary-fg: #f6f2ea;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0c110d;
+          --fg: #ecebe6;
+          --muted: #a3a8a4;
+          --primary: #7fae80;
+          --primary-fg: #0c110d;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 28rem;
+      }
+      img {
+        width: 72px;
+        height: 72px;
+      }
+      h1 {
+        margin: 20px 0 8px;
+        font-size: 1.5rem;
+      }
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font: inherit;
+        font-weight: 600;
+        background: var(--primary);
+        color: var(--primary-fg);
+        cursor: pointer;
+      }
+      [lang='de'] [data-lang='en'],
+      [lang='en'] [data-lang='de'] {
+        display: none;
+      }
+    </style>
+    <script>
+      if ((navigator.language || '').toLowerCase().startsWith('de')) {
+        document.documentElement.lang = 'de'
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <img src="/icon.svg" alt="" />
+      <h1>
+        <span data-lang="en">You are offline</span>
+        <span data-lang="de">Keine Internetverbindung</span>
+      </h1>
+      <p>
+        <span data-lang="en">WirkSam needs a connection to load your shifts. Check your network and try again.</span>
+        <span data-lang="de">WirkSam braucht eine Verbindung, um deine Schichten zu laden. Prüfe dein Netzwerk und versuche es erneut.</span>
+      </p>
+      <button type="button" onclick="location.reload()">
+        <span data-lang="en">Try again</span>
+        <span data-lang="de">Erneut versuchen</span>
+      </button>
+    </main>
+    <script>
+      // Back as soon as the connection is.
+      window.addEventListener('online', () => location.reload())
+    </script>
+  </body>
+</html>

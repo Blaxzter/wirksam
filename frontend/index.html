@@ -25,11 +25,26 @@
         }
       })()
     </script>
+    <!-- Icons are rendered from public/icon.svg with LogoLab's `pwa` preset:
+         transparent for the favicons and public/icons/icon-*.png, on the
+         --background colour (#f3ece0) for apple-touch-icon.png (12% padding;
+         iOS needs it opaque) and public/icons/maskable-*.png. -->
     <!-- `sizes="any"` is to fix Chrome bug -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Installed app: title-bar / status-bar colour, matching --background in
+         src/index.css for each scheme. The manifest's theme_color is the
+         light one, for browsers that ignore the media queries. -->
+    <meta name="theme-color" content="#f3ece0" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c110d" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="WirkSam" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WirkSam - Fabraham</title>
 
