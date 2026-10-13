@@ -16,6 +16,7 @@ from app.api.routes import (
     shifts,
     tasks,
     users,
+    work_hours,
 )
 from app.core.config import settings
 
@@ -34,6 +35,7 @@ api_router.include_router(bookings.router)
 api_router.include_router(booking_reminders.router)
 api_router.include_router(calendar_feed.router)
 api_router.include_router(events.router)
+api_router.include_router(work_hours.router)
 api_router.include_router(invitations.router)
 api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)

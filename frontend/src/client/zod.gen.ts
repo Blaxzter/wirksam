@@ -2001,6 +2001,95 @@ export const zVerifyEmailRequest = z
     description: 'Redeem a verification link.',
   })
 
+/**
+ * VolunteerHours
+ *
+ * One person's hours in one event.
+ *
+ * ``shift_minutes`` counts confirmed bookings on shifts that have already
+ * ended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes
+ * into ``total_minutes`` — hours are what someone *has* worked.
+ */
+export const zVolunteerHours = z
+  .object({
+    user_id: z.uuid(),
+    name: z.string().nullish(),
+    email: z.string().nullish(),
+    avatar_etag: z.string().nullish(),
+    role: z.enum(['owner', 'admin', 'member']).nullish(),
+    shift_count: z.int(),
+    shift_minutes: z.int(),
+    upcoming_shift_count: z.int(),
+    upcoming_shift_minutes: z.int(),
+    untimed_shift_count: z.int().register(z.globalRegistry, {
+      description: 'Worked shifts with no start or end time, counted as 0 minutes',
+    }),
+    manual_minutes: z.int(),
+    total_minutes: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "One person's hours in one event.\n\n``shift_minutes`` counts confirmed bookings on shifts that have already\nended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes\ninto ``total_minutes`` — hours are what someone *has* worked.",
+  })
+
+/**
+ * WorkLogCreate
+ */
+export const zWorkLogCreate = z.object({
+  user_id: z.uuid(),
+  date: z.iso.date(),
+  minutes: z.int().gt(0).lte(1440),
+  description: z.string().min(1).max(500),
+})
+
+/**
+ * WorkLogRead
+ */
+export const zWorkLogRead = z.object({
+  id: z.uuid(),
+  event_id: z.uuid(),
+  user_id: z.uuid(),
+  date: z.iso.date(),
+  minutes: z.int(),
+  description: z.string(),
+  created_by_id: z.uuid().nullish(),
+  created_by_name: z.string().nullish(),
+  created_at: z.iso.datetime(),
+})
+
+/**
+ * WorkLogUpdate
+ */
+export const zWorkLogUpdate = z.object({
+  date: z.iso.date().nullish(),
+  minutes: z.int().gt(0).lte(1440).nullish(),
+  description: z.string().min(1).max(500).nullish(),
+})
+
+/**
+ * WorkedShift
+ */
+export const zWorkedShift = z.object({
+  booking_id: z.uuid(),
+  shift_id: z.uuid(),
+  task_name: z.string(),
+  title: z.string(),
+  date: z.iso.date(),
+  start_time: z.iso.time().nullish(),
+  end_time: z.iso.time().nullish(),
+  minutes: z.int(),
+  completed: z.boolean(),
+})
+
+/**
+ * VolunteerHoursDetail
+ */
+export const zVolunteerHoursDetail = z.object({
+  summary: zVolunteerHours,
+  shifts: z.array(zWorkedShift),
+  work_logs: z.array(zWorkLogRead),
+})
+
 export const zValidationErrorItem = z.object({
   loc: z.array(z.union([z.string(), z.int()])),
   msg: z.string(),
@@ -3003,6 +3092,70 @@ export const zEventsDecideJoinRequestPath = z.object({
  * Successful Response
  */
 export const zEventsDecideJoinRequestResponse = zEventJoinRequestRead
+
+export const zWorkHoursListEventHoursPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Work-Hours-List Event Hours
+ *
+ * Successful Response
+ */
+export const zWorkHoursListEventHoursResponse = z
+  .array(zVolunteerHours)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zWorkHoursExportEventHoursPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zWorkHoursGetVolunteerHoursPath = z.object({
+  event_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zWorkHoursGetVolunteerHoursResponse = zVolunteerHoursDetail
+
+export const zWorkHoursCreateWorkLogBody = zWorkLogCreate
+
+export const zWorkHoursCreateWorkLogPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zWorkHoursCreateWorkLogResponse = zWorkLogRead
+
+export const zWorkHoursDeleteWorkLogPath = z.object({
+  event_id: z.uuid(),
+  work_log_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zWorkHoursDeleteWorkLogResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zWorkHoursUpdateWorkLogBody = zWorkLogUpdate
+
+export const zWorkHoursUpdateWorkLogPath = z.object({
+  event_id: z.uuid(),
+  work_log_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zWorkHoursUpdateWorkLogResponse = zWorkLogRead
 
 export const zInvitationsPreviewInvitationPath = z.object({
   token: z.string(),

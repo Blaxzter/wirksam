@@ -748,5 +748,67 @@
             "calendar": "Calendar",
             "list": "List"
         }
+    },
+    "hours": {
+        "unit": "{value} h",
+        "my": {
+            "title": "My hours",
+            "subtitle": "Time you have worked in this event",
+            "total": "Total",
+            "fromShifts": "From shifts",
+            "manual": "Additional",
+            "upcoming": "Still ahead",
+            "shiftCount": "{count} shift | {count} shifts",
+            "empty": "No hours yet. They show up here once your first shift is over.",
+            "showDetails": "Show breakdown",
+            "hideDetails": "Hide breakdown"
+        },
+        "event": {
+            "title": "Worked hours",
+            "subtitle": "Completed shifts plus hours added by hand. Shifts that have not ended yet are not counted.",
+            "export": "Export CSV",
+            "add": "Add hours",
+            "volunteer": "Volunteer",
+            "shifts": "Shifts",
+            "shiftHours": "Shift hours",
+            "manual": "Additional",
+            "total": "Total",
+            "formerMember": "no longer in the event",
+            "untimed": "{count} shift without start or end time counts as 0 h | {count} shifts without start or end time count as 0 h",
+            "empty": "Nobody has worked a shift in this event yet.",
+            "openDetails": "Show hours of {name}"
+        },
+        "detail": {
+            "title": "Hours of {name}",
+            "description": "{total} in total — {shifts} from shifts, {manual} added by hand.",
+            "shiftsHeading": "Shifts",
+            "entriesHeading": "Additional hours",
+            "noShifts": "No booked shifts in this event.",
+            "noEntries": "No hours added by hand.",
+            "upcoming": "Upcoming",
+            "noTimes": "no times",
+            "addedBy": "added by {name}",
+            "edit": "Edit entry",
+            "delete": "Delete entry",
+            "deleteConfirm": "Delete this entry? The hours are removed from the total.",
+            "deleted": "Entry deleted"
+        },
+        "form": {
+            "createTitle": "Add hours",
+            "editTitle": "Edit entry",
+            "description": "For work no shift covers — setting up the day before, an errand, a shift someone covered without booking it.",
+            "member": "Volunteer",
+            "memberPlaceholder": "Choose a volunteer",
+            "date": "Date",
+            "hours": "Hours",
+            "hoursHint": "Decimal hours, e.g. 1.5 for an hour and a half. At most 24.",
+            "note": "What was done",
+            "notePlaceholder": "e.g. Setting up chairs the day before",
+            "save": "Save",
+            "created": "Hours added",
+            "updated": "Entry updated",
+            "invalid": "Please choose a volunteer, a date, between 0 and 24 hours and a short description."
+        },
+        "memberBadge": "Worked hours"
     }
 }

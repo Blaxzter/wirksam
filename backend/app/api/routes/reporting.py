@@ -15,6 +15,7 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.logic.event_scope import get_manageable_event_ids
+from app.logic.work_hours import shift_minutes
 from app.models.booking import Booking
 from app.models.shift import Shift
 from app.models.task import Task
@@ -121,6 +122,7 @@ async def reporting_export(
             "Shift Date",
             "Start Time",
             "End Time",
+            "Hours",
             "Location",
             "Category",
             "Task Name",
@@ -139,6 +141,7 @@ async def reporting_export(
                 str(row.slot_date) if row.slot_date else "",
                 str(row.slot_start_time) if row.slot_start_time else "",
                 str(row.slot_end_time) if row.slot_end_time else "",
+                _csv_hours(row.slot_start_time, row.slot_end_time),
                 row.slot_location or "",
                 row.slot_category or "",
                 row.task_name or "",
@@ -156,6 +159,13 @@ async def reporting_export(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _csv_hours(start: dt.time | None, end: dt.time | None) -> str:
+    """Shift length as decimal hours; blank when the shift has no times."""
+    if start is None or end is None:
+        return ""
+    return f"{shift_minutes(start, end) / 60:.2f}"
 
 
 def _apply_shift_date_filters(query, date_from, date_to):  # noqa: ANN001, ANN202

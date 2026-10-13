@@ -29,6 +29,7 @@ from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
 from .user_avatar import UserAvatar
 from .user_token import UserToken
+from .work_log import WorkLog
 
 __all__ = [
     "SQLModel",
@@ -54,4 +55,5 @@ __all__ = [
     "UserAvailabilityDate",
     "UserAvatar",
     "UserToken",
+    "WorkLog",
 ]

@@ -10,6 +10,7 @@ from app.crud.task import task
 from app.crud.user import user
 from app.crud.user_availability import user_availability
 from app.crud.user_token import user_token
+from app.crud.work_log import work_log
 
 __all__ = [
     "auth_session",
@@ -24,4 +25,5 @@ __all__ = [
     "user",
     "user_availability",
     "user_token",
+    "work_log",
 ]
