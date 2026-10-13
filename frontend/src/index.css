@@ -45,6 +45,18 @@
   --color-map-canvas: var(--map-canvas);
   --color-map-dot: var(--map-dot);
   --color-map-pill: var(--map-pill);
+  --color-map-ink: var(--map-ink);
+  --color-map-ink-soft: var(--map-ink-soft);
+  --color-map-pill-ink: var(--map-pill-ink);
+  --color-map-pill-ink-soft: var(--map-pill-ink-soft);
+  --color-map-highlight: var(--map-highlight);
+  --color-map-select: var(--map-select);
+  --color-map-canvas-edge: var(--map-canvas-edge);
+  --color-map-marker-ring: var(--map-marker-ring);
+  --color-staff-full-ink: var(--staff-full-ink);
+  --color-staff-partial-ink: var(--staff-partial-ink);
+  --color-staff-short-ink: var(--staff-short-ink);
+  --color-staff-none-ink: var(--staff-none-ink);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -64,6 +76,167 @@
   background-color: var(--map-canvas);
   background-image: radial-gradient(var(--map-dot) 1px, transparent 1.2px);
   background-size: 18px 18px;
+}
+
+/* ── Drawn venue shapes (`VenueShapeLayer.vue`) ───────────────────────────
+   One class per style maps the theme tokens onto three local variables; the
+   rules below only ever read those. Outlines and highlights are
+   non-scaling, so they keep their screen width at every zoom. A path's width
+   is real plan units (set inline), and it is stroked in the style's fill. */
+.vs-building {
+  --vs-fill: var(--map-shape-building-fill);
+  --vs-stroke: var(--map-shape-building-stroke);
+  --vs-ink: var(--map-shape-building-ink);
+}
+.vs-room {
+  --vs-fill: var(--map-shape-room-fill);
+  --vs-stroke: var(--map-shape-room-stroke);
+  --vs-ink: var(--map-shape-room-ink);
+}
+.vs-area {
+  --vs-fill: var(--map-shape-area-fill);
+  --vs-stroke: var(--map-shape-area-stroke);
+  --vs-ink: var(--map-shape-area-ink);
+}
+.vs-stage {
+  --vs-fill: var(--map-shape-stage-fill);
+  --vs-stroke: var(--map-shape-stage-stroke);
+  --vs-ink: var(--map-shape-stage-ink);
+}
+.vs-furniture {
+  --vs-fill: var(--map-shape-furniture-fill);
+  --vs-stroke: var(--map-shape-furniture-stroke);
+  --vs-ink: var(--map-shape-furniture-ink);
+}
+.vs-green {
+  --vs-fill: var(--map-shape-green-fill);
+  --vs-stroke: var(--map-shape-green-stroke);
+  --vs-ink: var(--map-shape-green-ink);
+}
+.vs-water {
+  --vs-fill: var(--map-shape-water-fill);
+  --vs-stroke: var(--map-shape-water-stroke);
+  --vs-ink: var(--map-shape-water-ink);
+}
+.vs-parking {
+  --vs-fill: var(--map-shape-parking-fill);
+  --vs-stroke: var(--map-shape-parking-stroke);
+  --vs-ink: var(--map-shape-parking-ink);
+}
+.vs-path {
+  --vs-fill: var(--map-shape-path-fill);
+  --vs-stroke: var(--map-shape-path-stroke);
+  --vs-ink: var(--map-shape-path-ink);
+}
+.vs-wall {
+  --vs-fill: var(--map-shape-wall-fill);
+  --vs-stroke: var(--map-shape-wall-stroke);
+  --vs-ink: var(--map-shape-wall-ink);
+}
+
+.venue-shape,
+.venue-shape-label {
+  --vs-halo: var(--vs-fill);
+}
+
+/* A free caption sits on the ground, not on a shape of its own. */
+.vs-label-kind {
+  --vs-halo: var(--map-canvas);
+}
+
+.vs-wall.vs-label-kind {
+  --vs-ink: var(--map-ink);
+}
+
+.venue-shape .vs-body {
+  fill: var(--vs-fill);
+  stroke: var(--vs-stroke);
+  stroke-width: 1.25px;
+  vector-effect: non-scaling-stroke;
+}
+
+.venue-shape[data-kind='path'] .vs-body {
+  fill: none;
+  stroke: var(--vs-fill);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: none;
+}
+
+.vs-area:not([data-kind='path']) > .vs-body {
+  stroke-dasharray: 6 4;
+}
+
+.vs-tappable {
+  cursor: pointer;
+}
+
+.vs-hover,
+.vs-hl-selected,
+.vs-hl-mine,
+.vs-sel-outer,
+.vs-sel-inner {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.vs-hover {
+  fill: var(--map-ink);
+  fill-opacity: 0;
+  stroke: none;
+  transition: fill-opacity 120ms ease-out;
+}
+
+.vs-tappable:hover > .vs-hover {
+  fill-opacity: 0.08;
+}
+
+.vs-hl-selected {
+  fill: var(--map-highlight);
+  fill-opacity: 0.14;
+  stroke: var(--map-highlight);
+  stroke-width: 3px;
+}
+
+.vs-hl-mine {
+  fill: none;
+  stroke: var(--map-highlight);
+  stroke-width: 2px;
+  stroke-dasharray: 6 4;
+}
+
+.vs-sel-outer {
+  fill: none;
+  stroke: var(--map-select);
+  stroke-width: 3px;
+}
+
+.vs-sel-inner {
+  fill: none;
+  stroke: var(--map-pill);
+  stroke-width: 1px;
+}
+
+.vs-label-hit {
+  fill: transparent;
+}
+
+.venue-shape:focus {
+  outline: none;
+}
+
+.venue-shape:focus-visible > .vs-body,
+.venue-shape:focus-visible > .vs-label-hit {
+  stroke: var(--map-select);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
+}
+
+.venue-shape-label {
+  fill: var(--vs-ink);
+  stroke: var(--vs-halo);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -238,17 +411,8 @@
   --sidebar-accent-foreground: oklch(0.27 0.012 60);
   --sidebar-border: oklch(0.87 0.025 80);
   --sidebar-ring: oklch(0.55 0.06 145);
-  /* Venue map: staffing of a place (full / partial / short / no shifts), the
-     text on those fills, the warm dotted ground behind a plan and the pills.
-     Every fill keeps >= 4.5:1 against --staff-foreground (small pill text). */
-  --staff-full: oklch(0.47 0.085 145);
-  --staff-partial: oklch(0.55 0.13 60);
-  --staff-short: oklch(0.49 0.15 12);
-  --staff-none: oklch(0.54 0.02 70);
-  --staff-foreground: oklch(0.985 0.008 80);
-  --map-canvas: oklch(0.925 0.026 80);
-  --map-dot: oklch(0.80 0.035 75);
-  --map-pill: oklch(0.99 0.006 80);
+  /* Venue map tokens (staffing, ground, pills, drawn shapes) live in their
+     own block below, "Venue map", because `.map-light` re-declares them. */
 }
 
 /* Default palette — dark (forest-cast)
@@ -302,15 +466,131 @@
   --sidebar-accent-foreground: oklch(0.93 0.010 155);
   --sidebar-border: oklch(0.29 0.014 155);
   --sidebar-ring: oklch(0.55 0.06 145);
-  /* Lighter fills on a dark ground, so the text on them turns dark. */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Venue map (#185)
+   The staffing colours, the dotted ground a plan lies on, the pills, and the
+   drawn shapes (`--map-shape-<style>-{fill,stroke,ink}`, used through the
+   `.vs-<style>` classes further down). Every text pair here keeps >= 4.5:1 and
+   every non-text indicator >= 3:1 against what it sits on; the unit spec
+   `src/lib/__tests__/map-contrast.spec.ts` recomputes that from this file.
+
+   Declared three times: light on `:root`, dark on `.dark`, and light again on
+   `.map-light`. A plan with an uploaded picture renders its canvas under
+   `.map-light` (`planSurfaceClass`): we cannot recolour someone's floor plan,
+   and those are nearly always light, so the overlays on it stay light too.
+   Print forces the light set (see `@media print`).
+
+   The classic palette inherits all of it; the map is not palette-specific.
+   ───────────────────────────────────────────────────────────────────────── */
+:root,
+.map-light {
+  --staff-full: oklch(0.47 0.085 145);
+  --staff-partial: oklch(0.55 0.13 60);
+  --staff-short: oklch(0.49 0.15 12);
+  --staff-none: oklch(0.54 0.02 70);
+  --staff-foreground: oklch(0.985 0.008 80);
+  --staff-full-ink: oklch(0.42 0.09 145);
+  --staff-partial-ink: oklch(0.45 0.11 60);
+  --staff-short-ink: oklch(0.45 0.15 15);
+  --staff-none-ink: var(--muted-foreground);
+  --map-canvas: oklch(0.925 0.026 80);
+  --map-dot: oklch(0.80 0.035 75);
+  --map-ink: oklch(0.30 0.02 65);
+  --map-ink-soft: oklch(0.44 0.02 65);
+  --map-pill: oklch(0.995 0.004 80);
+  --map-pill-ink: oklch(0.27 0.012 60);
+  --map-pill-ink-soft: oklch(0.47 0.015 65);
+  --map-highlight: oklch(0.40 0.072 145);
+  --map-select: oklch(0.50 0.16 255);
+  --map-canvas-edge: oklch(0.70 0.03 75);
+  --map-marker-ring: oklch(0.995 0.004 80);
+  --map-shadow: rgb(0 0 0 / 0.14);
+  --map-shape-building-fill: oklch(0.965 0.012 80);
+  --map-shape-building-stroke: oklch(0.74 0.04 75);
+  --map-shape-building-ink: oklch(0.40 0.03 70);
+  --map-shape-room-fill: oklch(0.875 0.034 78);
+  --map-shape-room-stroke: oklch(0.70 0.045 75);
+  --map-shape-room-ink: oklch(0.38 0.035 70);
+  --map-shape-area-fill: oklch(0.895 0.035 88);
+  --map-shape-area-stroke: oklch(0.62 0.06 85);
+  --map-shape-area-ink: oklch(0.38 0.04 80);
+  --map-shape-stage-fill: oklch(0.80 0.045 75);
+  --map-shape-stage-stroke: oklch(0.68 0.05 70);
+  --map-shape-stage-ink: oklch(0.30 0.03 65);
+  --map-shape-furniture-fill: oklch(0.83 0.04 75);
+  --map-shape-furniture-stroke: transparent;
+  --map-shape-furniture-ink: oklch(0.32 0.03 65);
+  --map-shape-green-fill: oklch(0.88 0.055 125);
+  --map-shape-green-stroke: oklch(0.74 0.07 125);
+  --map-shape-green-ink: oklch(0.36 0.07 135);
+  --map-shape-water-fill: oklch(0.86 0.045 225);
+  --map-shape-water-stroke: oklch(0.72 0.06 225);
+  --map-shape-water-ink: oklch(0.38 0.07 235);
+  --map-shape-parking-fill: oklch(0.875 0.012 80);
+  --map-shape-parking-stroke: oklch(0.72 0.015 80);
+  --map-shape-parking-ink: oklch(0.38 0.015 80);
+  --map-shape-path-fill: oklch(0.865 0.035 78);
+  --map-shape-path-stroke: transparent;
+  --map-shape-path-ink: oklch(0.38 0.03 70);
+  --map-shape-wall-fill: oklch(0.48 0.02 70);
+  --map-shape-wall-stroke: transparent;
+  --map-shape-wall-ink: oklch(0.97 0.01 80);
+}
+
+.dark {
   --staff-full: oklch(0.70 0.11 145);
   --staff-partial: oklch(0.80 0.13 78);
   --staff-short: oklch(0.68 0.16 17);
   --staff-none: oklch(0.60 0.015 155);
   --staff-foreground: oklch(0.17 0.010 155);
-  --map-canvas: oklch(0.205 0.014 80);
-  --map-dot: oklch(0.32 0.02 78);
-  --map-pill: oklch(0.25 0.012 155);
+  --staff-full-ink: oklch(0.80 0.12 145);
+  --staff-partial-ink: oklch(0.86 0.12 85);
+  --staff-short-ink: oklch(0.78 0.13 17);
+  --staff-none-ink: var(--muted-foreground);
+  --map-canvas: oklch(0.205 0.010 155);
+  --map-dot: oklch(0.30 0.012 155);
+  --map-ink: oklch(0.90 0.01 155);
+  --map-ink-soft: oklch(0.74 0.014 155);
+  --map-pill: oklch(0.27 0.012 155);
+  --map-pill-ink: oklch(0.94 0.01 155);
+  --map-pill-ink-soft: oklch(0.78 0.014 155);
+  --map-highlight: oklch(0.65 0.10 145);
+  --map-select: oklch(0.72 0.13 250);
+  --map-canvas-edge: oklch(0.42 0.012 155);
+  --map-marker-ring: oklch(0.27 0.012 155);
+  --map-shadow: rgb(0 0 0 / 0.5);
+  --map-shape-building-fill: oklch(0.25 0.012 155);
+  --map-shape-building-stroke: oklch(0.38 0.014 155);
+  --map-shape-building-ink: oklch(0.84 0.012 155);
+  --map-shape-room-fill: oklch(0.30 0.014 155);
+  --map-shape-room-stroke: oklch(0.44 0.016 155);
+  --map-shape-room-ink: oklch(0.88 0.012 155);
+  --map-shape-area-fill: oklch(0.27 0.022 150);
+  --map-shape-area-stroke: oklch(0.50 0.03 150);
+  --map-shape-area-ink: oklch(0.86 0.02 150);
+  --map-shape-stage-fill: oklch(0.38 0.035 75);
+  --map-shape-stage-stroke: oklch(0.50 0.04 75);
+  --map-shape-stage-ink: oklch(0.93 0.02 80);
+  --map-shape-furniture-fill: oklch(0.36 0.014 155);
+  --map-shape-furniture-stroke: transparent;
+  --map-shape-furniture-ink: oklch(0.90 0.01 155);
+  --map-shape-green-fill: oklch(0.31 0.05 140);
+  --map-shape-green-stroke: oklch(0.42 0.06 140);
+  --map-shape-green-ink: oklch(0.86 0.07 140);
+  --map-shape-water-fill: oklch(0.31 0.05 235);
+  --map-shape-water-stroke: oklch(0.44 0.06 235);
+  --map-shape-water-ink: oklch(0.86 0.06 230);
+  --map-shape-parking-fill: oklch(0.29 0.008 250);
+  --map-shape-parking-stroke: oklch(0.42 0.01 250);
+  --map-shape-parking-ink: oklch(0.88 0.01 250);
+  --map-shape-path-fill: oklch(0.34 0.012 155);
+  --map-shape-path-stroke: transparent;
+  --map-shape-path-ink: oklch(0.90 0.01 155);
+  --map-shape-wall-fill: oklch(0.62 0.012 155);
+  --map-shape-wall-stroke: transparent;
+  --map-shape-wall-ink: oklch(0.17 0.01 155);
 }
 
 /* Classic palette — light (monochrome, original shadcn look) */
@@ -454,6 +734,58 @@
     --accent-foreground: oklch(0.205 0 0) !important;
     --warning: oklch(0.50 0.13 45) !important;
     --input: oklch(0.922 0 0) !important;
+    /* The venue map in its light set (see "Venue map"). */
+    --staff-full: oklch(0.47 0.085 145) !important;
+    --staff-partial: oklch(0.55 0.13 60) !important;
+    --staff-short: oklch(0.49 0.15 12) !important;
+    --staff-none: oklch(0.54 0.02 70) !important;
+    --staff-foreground: oklch(0.985 0.008 80) !important;
+    --staff-full-ink: oklch(0.42 0.09 145) !important;
+    --staff-partial-ink: oklch(0.45 0.11 60) !important;
+    --staff-short-ink: oklch(0.45 0.15 15) !important;
+    --staff-none-ink: var(--muted-foreground) !important;
+    --map-canvas: oklch(0.925 0.026 80) !important;
+    --map-dot: oklch(0.80 0.035 75) !important;
+    --map-ink: oklch(0.30 0.02 65) !important;
+    --map-ink-soft: oklch(0.44 0.02 65) !important;
+    --map-pill: oklch(0.995 0.004 80) !important;
+    --map-pill-ink: oklch(0.27 0.012 60) !important;
+    --map-pill-ink-soft: oklch(0.47 0.015 65) !important;
+    --map-highlight: oklch(0.40 0.072 145) !important;
+    --map-select: oklch(0.50 0.16 255) !important;
+    --map-canvas-edge: oklch(0.70 0.03 75) !important;
+    --map-marker-ring: oklch(0.995 0.004 80) !important;
+    --map-shadow: rgb(0 0 0 / 0.14) !important;
+    --map-shape-building-fill: oklch(0.965 0.012 80) !important;
+    --map-shape-building-stroke: oklch(0.74 0.04 75) !important;
+    --map-shape-building-ink: oklch(0.40 0.03 70) !important;
+    --map-shape-room-fill: oklch(0.875 0.034 78) !important;
+    --map-shape-room-stroke: oklch(0.70 0.045 75) !important;
+    --map-shape-room-ink: oklch(0.38 0.035 70) !important;
+    --map-shape-area-fill: oklch(0.895 0.035 88) !important;
+    --map-shape-area-stroke: oklch(0.62 0.06 85) !important;
+    --map-shape-area-ink: oklch(0.38 0.04 80) !important;
+    --map-shape-stage-fill: oklch(0.80 0.045 75) !important;
+    --map-shape-stage-stroke: oklch(0.68 0.05 70) !important;
+    --map-shape-stage-ink: oklch(0.30 0.03 65) !important;
+    --map-shape-furniture-fill: oklch(0.83 0.04 75) !important;
+    --map-shape-furniture-stroke: transparent !important;
+    --map-shape-furniture-ink: oklch(0.32 0.03 65) !important;
+    --map-shape-green-fill: oklch(0.88 0.055 125) !important;
+    --map-shape-green-stroke: oklch(0.74 0.07 125) !important;
+    --map-shape-green-ink: oklch(0.36 0.07 135) !important;
+    --map-shape-water-fill: oklch(0.86 0.045 225) !important;
+    --map-shape-water-stroke: oklch(0.72 0.06 225) !important;
+    --map-shape-water-ink: oklch(0.38 0.07 235) !important;
+    --map-shape-parking-fill: oklch(0.875 0.012 80) !important;
+    --map-shape-parking-stroke: oklch(0.72 0.015 80) !important;
+    --map-shape-parking-ink: oklch(0.38 0.015 80) !important;
+    --map-shape-path-fill: oklch(0.865 0.035 78) !important;
+    --map-shape-path-stroke: transparent !important;
+    --map-shape-path-ink: oklch(0.38 0.03 70) !important;
+    --map-shape-wall-fill: oklch(0.48 0.02 70) !important;
+    --map-shape-wall-stroke: transparent !important;
+    --map-shape-wall-ink: oklch(0.97 0.01 80) !important;
   }
 
   @page {

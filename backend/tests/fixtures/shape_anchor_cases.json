@@ -1,0 +1,17 @@
+{
+  "description": "Where a venue shape's pill or caption sits (normalised plan coordinates). Shared by backend tests/logic/test_venue_shapes.py (shape_anchor) and the frontend's venue-shapes spec (shapeAnchor); both must agree to within 1e-9.",
+  "cases": [
+    { "name": "rect: centre", "kind": "rect", "points": [[0.1, 0.2], [0.5, 0.6]], "expected": [0.3, 0.4] },
+    { "name": "rect: corners in any order", "kind": "rect", "points": [[0.5, 0.6], [0.1, 0.2]], "expected": [0.3, 0.4] },
+    { "name": "polygon: triangle centroid", "kind": "polygon", "points": [[0, 0], [1, 0], [0, 1]], "expected": [0.3333333333333333, 0.3333333333333333] },
+    { "name": "polygon: square", "kind": "polygon", "points": [[0.2, 0.2], [0.6, 0.2], [0.6, 0.6], [0.2, 0.6]], "expected": [0.4, 0.4] },
+    { "name": "polygon: clockwise winding gives the same centroid", "kind": "polygon", "points": [[0.2, 0.6], [0.6, 0.6], [0.6, 0.2], [0.2, 0.2]], "expected": [0.4, 0.4] },
+    { "name": "polygon: concave L uses the area centroid, not the bbox centre", "kind": "polygon", "points": [[0, 0], [0.6, 0], [0.6, 0.2], [0.2, 0.2], [0.2, 0.6], [0, 0.6]], "expected": [0.22, 0.22] },
+    { "name": "polygon: degenerate (collinear) falls back to the bbox centre", "kind": "polygon", "points": [[0.1, 0.1], [0.5, 0.5], [0.3, 0.3]], "expected": [0.3, 0.3] },
+    { "name": "path: midpoint of a single segment", "kind": "path", "points": [[0, 0], [1, 0]], "expected": [0.5, 0] },
+    { "name": "path: halfway by length lands in the first segment", "kind": "path", "points": [[0, 0], [0.6, 0], [0.6, 0.2]], "expected": [0.4, 0] },
+    { "name": "path: halfway by length lands in the second segment", "kind": "path", "points": [[0, 0], [0.2, 0], [0.2, 0.6]], "expected": [0.2, 0.2] },
+    { "name": "path: zero length gives its first point", "kind": "path", "points": [[0.3, 0.3], [0.3, 0.3]], "expected": [0.3, 0.3] },
+    { "name": "label: its point", "kind": "label", "points": [[0.7, 0.8]], "expected": [0.7, 0.8] }
+  ]
+}

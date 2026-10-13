@@ -10,8 +10,11 @@ import { STAFFING_CLASSES, type StaffingStatus, estimateTextWidth } from '@/lib/
  *
  * Like `VenueMarkerGlyph`, `scale` is the current image units per CSS pixel,
  * so the pill keeps its screen size whatever the zoom. The badge and the stem
- * take the colour of the place's staffing status; a selected pill is filled
- * with it. `compact` leaves only the badge on its stem (a crowded small
+ * take the colour of the place's staffing status, and so does the outline, at
+ * full strength so the status reads on any ground; a selected pill is filled
+ * with it. Text uses the map's own pill ink (`--map-pill-ink`), not the page
+ * foreground, so a pill on a picture plan (`.map-light`) stays dark-on-light
+ * in dark mode. `compact` leaves only the badge on its stem (a crowded small
  * screen), and the name moves into the tooltip.
  *
  * Attributes fall through to the root `<g>`, so the parent makes it a button.
@@ -50,8 +53,8 @@ const props = withDefaults(
 const STEM = 9
 const H = 24
 const BADGE_R = 8.5
-const NAME_SIZE = 12
-const COUNT_SIZE = 11
+const NAME_SIZE = 12.5
+const COUNT_SIZE = 11.5
 const PAD_LEFT = 4
 const GAP = 6
 const PAD_RIGHT = 10
@@ -138,7 +141,7 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
       :height="H + 8"
       :rx="H / 2 + 4"
       fill="none"
-      class="stroke-primary motion-safe:animate-pulse print:animate-none"
+      class="stroke-map-highlight motion-safe:animate-pulse print:animate-none"
       stroke-width="2.5"
       data-testid="marker-highlight"
     />
@@ -149,7 +152,7 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
       :height="H + 6"
       :rx="H / 2 + 3"
       fill="none"
-      class="venue-marker-focus stroke-ring"
+      class="venue-marker-focus stroke-map-highlight"
       stroke-width="2.5"
     />
     <rect
@@ -159,12 +162,8 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
       :height="H"
       :rx="H / 2"
       class="venue-pill-body"
-      :class="
-        selected
-          ? [colours.fill, 'stroke-map-pill']
-          : ['fill-map-pill', colours.stroke, 'stroke-opacity-60']
-      "
-      :stroke-width="selected ? 1.5 : 1.25"
+      :class="selected ? [colours.fill, 'stroke-map-pill'] : ['fill-map-pill', colours.stroke]"
+      stroke-width="1.5"
     />
 
     <circle
@@ -179,7 +178,7 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
       :y="midY"
       text-anchor="middle"
       dominant-baseline="central"
-      class="text-[10px] font-bold tabular-nums"
+      class="text-[10.5px] font-bold tabular-nums"
       :class="selected ? colours.fill : 'fill-staff-foreground'"
     >
       {{ badge }}
@@ -191,8 +190,9 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
         :x="nameX"
         :y="midY"
         dominant-baseline="central"
-        class="text-[12px] font-semibold"
-        :class="selected ? 'fill-staff-foreground' : 'fill-foreground'"
+        class="text-[12.5px] font-semibold"
+        :class="selected ? 'fill-staff-foreground' : 'fill-map-pill-ink'"
+        data-testid="marker-name"
       >
         {{ name }}
       </text>
@@ -202,8 +202,8 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
         :x="countX"
         :y="midY"
         dominant-baseline="central"
-        class="text-[11px] font-medium tabular-nums"
-        :class="selected ? 'fill-staff-foreground' : 'fill-muted-foreground'"
+        class="text-[11.5px] font-semibold tabular-nums"
+        :class="selected ? 'fill-staff-foreground' : 'fill-map-pill-ink-soft'"
         data-testid="marker-count"
       >
         {{ count }}
@@ -214,10 +214,7 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
 
 <style scoped>
 .venue-pill-body {
-  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.18));
-}
-.stroke-opacity-60 {
-  stroke-opacity: 0.6;
+  filter: drop-shadow(0 1px 2px var(--map-shadow));
 }
 .venue-marker-focus {
   opacity: 0;

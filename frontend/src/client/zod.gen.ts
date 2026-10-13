@@ -603,7 +603,13 @@ export const zEventRead = z.object({
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
   pending_request_count: z.int().optional().default(0),
-  venue_plan_count: z.int().optional().default(0),
+  venue_plan_count: z
+    .int()
+    .register(z.globalRegistry, {
+      description: 'plans with an image or at least one shape',
+    })
+    .optional()
+    .default(0),
   can_manage: z.boolean().readonly(),
   is_expired: z.boolean().readonly(),
 })
@@ -766,20 +772,47 @@ export const zLocationCreate = z.object({
  * LocationPin
  *
  * Where a location sits on one venue plan.
+ *
+ * A marker, or the centroid of a linked area when the plan has no marker for
+ * this location (then ``marker_id`` is null and ``shape_id`` names the area).
  */
 export const zLocationPin = z
   .object({
     plan_id: z.uuid(),
     plan_name: z.string(),
-    marker_id: z.uuid(),
+    marker_id: z.uuid().nullish(),
+    shape_id: z.uuid().nullish(),
     image_etag: z.string().nullish(),
     image_width: z.int().nullish(),
     image_height: z.int().nullish(),
+    canvas_width: z.int(),
+    canvas_height: z.int(),
+    shapes_revision: z.int(),
+    shape_count: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'Shapes drawn on the plan',
+      })
+      .optional()
+      .default(0),
     x: z.number(),
     y: z.number(),
+    width: z
+      .int()
+      .register(z.globalRegistry, {
+        description: "Effective plan width: the image's, else the canvas's",
+      })
+      .readonly(),
+    height: z
+      .int()
+      .register(z.globalRegistry, {
+        description: "Effective plan height: the image's, else the canvas's",
+      })
+      .readonly(),
   })
   .register(z.globalRegistry, {
-    description: 'Where a location sits on one venue plan.',
+    description:
+      'Where a location sits on one venue plan.\n\nA marker, or the centroid of a linked area when the plan has no marker for\nthis location (then ``marker_id`` is null and ``shape_id`` names the area).',
   })
 
 /**
@@ -1260,6 +1293,14 @@ export const zSelectedEventUpdate = z
   .register(z.globalRegistry, {
     description: 'Request body for PUT /users/me/selected-event.',
   })
+
+/**
+ * ShapeDeleteOp
+ */
+export const zShapeDeleteOp = z.object({
+  op: z.literal('delete'),
+  id: z.uuid(),
+})
 
 /**
  * ShiftBatchRead
@@ -2239,6 +2280,13 @@ export const zVenueMarkerUpdate = z
  */
 export const zVenuePlanCreate = z.object({
   name: z.string().min(1).max(120),
+  canvas: z
+    .enum(['landscape', 'portrait', 'square'])
+    .register(z.globalRegistry, {
+      description: 'Aspect of the blank canvas; it cannot be changed later',
+    })
+    .optional()
+    .default('landscape'),
 })
 
 /**
@@ -2248,6 +2296,87 @@ export const zVenuePlanOrder = z.object({
   plan_ids: z.array(z.uuid()).register(z.globalRegistry, {
     description: 'Every plan of the event, exactly once, in the new order',
   }),
+})
+
+/**
+ * VenuePlanUpdate
+ */
+export const zVenuePlanUpdate = z.object({
+  name: z.string().min(1).max(120).nullish(),
+})
+
+/**
+ * VenueShapeCreate
+ *
+ * A new shape. The whole geometry is checked by ``validate_geometry``.
+ */
+export const zVenueShapeCreate = z
+  .object({
+    id: z.uuid().nullish(),
+    kind: z.enum(['rect', 'polygon', 'path', 'label']),
+    style: z.enum([
+      'building',
+      'room',
+      'area',
+      'stage',
+      'furniture',
+      'green',
+      'water',
+      'parking',
+      'path',
+      'wall',
+    ]),
+    points: z
+      .array(z.tuple([z.number().gte(0).lte(1), z.number().gte(0).lte(1)]))
+      .min(1)
+      .max(500),
+    label: z.string().max(120).nullish(),
+    label_size: z.enum(['sm', 'md', 'lg']).optional().default('md'),
+    label_x: z.number().gte(0).lte(1).nullish(),
+    label_y: z.number().gte(0).lte(1).nullish(),
+    stroke_width: z.number().nullish(),
+    location_id: z.uuid().nullish(),
+    sort_order: z.int().gte(-1000000).lte(1000000).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A new shape. The whole geometry is checked by ``validate_geometry``.',
+  })
+
+/**
+ * ShapeCreateOp
+ */
+export const zShapeCreateOp = z.object({
+  op: z.literal('create'),
+  shape: zVenueShapeCreate,
+})
+
+/**
+ * VenueShapeRead
+ */
+export const zVenueShapeRead = z.object({
+  id: z.uuid(),
+  plan_id: z.uuid(),
+  kind: z.enum(['rect', 'polygon', 'path', 'label']),
+  style: z.enum([
+    'building',
+    'room',
+    'area',
+    'stage',
+    'furniture',
+    'green',
+    'water',
+    'parking',
+    'path',
+    'wall',
+  ]),
+  points: z.array(z.array(z.number())),
+  label: z.string().nullish(),
+  label_size: z.enum(['sm', 'md', 'lg']),
+  label_x: z.number().nullish(),
+  label_y: z.number().nullish(),
+  stroke_width: z.number().nullish(),
+  location_id: z.uuid().nullish(),
+  sort_order: z.int(),
 })
 
 /**
@@ -2261,9 +2390,30 @@ export const zVenuePlanRead = z.object({
   image_etag: z.string().nullish(),
   image_width: z.int().nullish(),
   image_height: z.int().nullish(),
+  canvas_width: z.int(),
+  canvas_height: z.int(),
+  shapes_revision: z.int(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
   markers: z.array(zVenueMarkerRead).optional(),
+  shapes: z
+    .array(zVenueShapeRead)
+    .register(z.globalRegistry, {
+      description: 'In drawing order (``sort_order``)',
+    })
+    .optional(),
+  width: z
+    .int()
+    .register(z.globalRegistry, {
+      description: "Effective width: the image's, else the canvas's",
+    })
+    .readonly(),
+  height: z
+    .int()
+    .register(z.globalRegistry, {
+      description: "Effective height: the image's, else the canvas's",
+    })
+    .readonly(),
 })
 
 /**
@@ -2292,11 +2442,86 @@ export const zVenueMapRead = z.object({
 })
 
 /**
- * VenuePlanUpdate
+ * VenuePlanShapesRead
  */
-export const zVenuePlanUpdate = z.object({
-  name: z.string().min(1).max(120).nullish(),
+export const zVenuePlanShapesRead = z.object({
+  plan_id: z.uuid(),
+  revision: z.int().register(z.globalRegistry, {
+    description: "The plan's ``shapes_revision``",
+  }),
+  shapes: z.array(zVenueShapeRead).register(z.globalRegistry, {
+    description: 'In drawing order',
+  }),
 })
+
+/**
+ * VenueShapeUpdate
+ *
+ * Partial update; the merged shape is re-validated as a whole.
+ *
+ * ``kind`` cannot change (delete and re-create instead). An explicit ``null``
+ * for ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as
+ * those cannot be cleared.
+ */
+export const zVenueShapeUpdate = z
+  .object({
+    style: z
+      .enum([
+        'building',
+        'room',
+        'area',
+        'stage',
+        'furniture',
+        'green',
+        'water',
+        'parking',
+        'path',
+        'wall',
+      ])
+      .nullish(),
+    points: z
+      .array(z.tuple([z.number().gte(0).lte(1), z.number().gte(0).lte(1)]))
+      .min(1)
+      .max(500)
+      .nullish(),
+    label: z.string().max(120).nullish(),
+    label_size: z.enum(['sm', 'md', 'lg']).nullish(),
+    label_x: z.number().gte(0).lte(1).nullish(),
+    label_y: z.number().gte(0).lte(1).nullish(),
+    stroke_width: z.number().nullish(),
+    location_id: z.uuid().nullish(),
+    sort_order: z.int().gte(-1000000).lte(1000000).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Partial update; the merged shape is re-validated as a whole.\n\n``kind`` cannot change (delete and re-create instead). An explicit ``null``\nfor ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as\nthose cannot be cleared.',
+  })
+
+/**
+ * ShapeUpdateOp
+ */
+export const zShapeUpdateOp = z.object({
+  op: z.literal('update'),
+  id: z.uuid(),
+  patch: zVenueShapeUpdate,
+})
+
+/**
+ * VenueShapeBatch
+ *
+ * Shape edits, applied in order and all or nothing.
+ */
+export const zVenueShapeBatch = z
+  .object({
+    ops: z
+      .array(z.union([zShapeCreateOp, zShapeUpdateOp, zShapeDeleteOp]))
+      .min(1)
+      .max(200),
+    expected_revision: z.int().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Shape edits, applied in order and all or nothing.',
+  })
 
 /**
  * VerifyEmailRequest
@@ -2352,7 +2577,13 @@ export const zEventReadWritable = z.object({
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
   pending_request_count: z.int().optional().default(0),
-  venue_plan_count: z.int().optional().default(0),
+  venue_plan_count: z
+    .int()
+    .register(z.globalRegistry, {
+      description: 'plans with an image or at least one shape',
+    })
+    .optional()
+    .default(0),
 })
 
 /**
@@ -2379,12 +2610,118 @@ export const zEventListResponseWritable = z.object({
 })
 
 /**
+ * LocationPin
+ *
+ * Where a location sits on one venue plan.
+ *
+ * A marker, or the centroid of a linked area when the plan has no marker for
+ * this location (then ``marker_id`` is null and ``shape_id`` names the area).
+ */
+export const zLocationPinWritable = z
+  .object({
+    plan_id: z.uuid(),
+    plan_name: z.string(),
+    marker_id: z.uuid().nullish(),
+    shape_id: z.uuid().nullish(),
+    image_etag: z.string().nullish(),
+    image_width: z.int().nullish(),
+    image_height: z.int().nullish(),
+    canvas_width: z.int(),
+    canvas_height: z.int(),
+    shapes_revision: z.int(),
+    shape_count: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'Shapes drawn on the plan',
+      })
+      .optional()
+      .default(0),
+    x: z.number(),
+    y: z.number(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Where a location sits on one venue plan.\n\nA marker, or the centroid of a linked area when the plan has no marker for\nthis location (then ``marker_id`` is null and ``shape_id`` names the area).',
+  })
+
+/**
+ * LocationDetailRead
+ */
+export const zLocationDetailReadWritable = z.object({
+  name: z.string().min(1).max(120),
+  description: z.string().max(10000).nullish(),
+  address: z.string().max(255).nullish(),
+  map_url: z.string().nullish(),
+  contact: z.string().max(255).nullish(),
+  id: z.uuid(),
+  event_id: z.uuid(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+  pins: z
+    .array(zLocationPinWritable)
+    .register(z.globalRegistry, {
+      description: "Placements on the event's venue plans; empty for non-members",
+    })
+    .optional(),
+})
+
+/**
  * TaskCreateWithShiftsResponse
  */
 export const zTaskCreateWithShiftsResponseWritable = z.object({
   task: zTaskRead,
   shifts_created: z.int(),
   event: zEventReadWritable.nullish(),
+})
+
+/**
+ * VenuePlanRead
+ */
+export const zVenuePlanReadWritable = z.object({
+  id: z.uuid(),
+  event_id: z.uuid(),
+  name: z.string(),
+  sort_order: z.int(),
+  image_etag: z.string().nullish(),
+  image_width: z.int().nullish(),
+  image_height: z.int().nullish(),
+  canvas_width: z.int(),
+  canvas_height: z.int(),
+  shapes_revision: z.int(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+  markers: z.array(zVenueMarkerRead).optional(),
+  shapes: z
+    .array(zVenueShapeRead)
+    .register(z.globalRegistry, {
+      description: 'In drawing order (``sort_order``)',
+    })
+    .optional(),
+})
+
+/**
+ * VenueMapRead
+ */
+export const zVenueMapReadWritable = z.object({
+  event_id: z.uuid(),
+  on: z.iso.date().register(z.globalRegistry, {
+    description: 'The day ``my_location_ids`` and ``location_stats`` refer to',
+  }),
+  plans: z.array(zVenuePlanReadWritable),
+  locations: z.array(zLocationRead),
+  my_location_ids: z
+    .array(z.uuid())
+    .register(z.globalRegistry, {
+      description: "Locations of the caller's active bookings on ``on``",
+    })
+    .optional(),
+  location_stats: z
+    .array(zVenueLocationStat)
+    .register(z.globalRegistry, {
+      description:
+        'Per-location staffing on ``on``. Only locations with at least one shift that day are listed; for non-admins, shifts of unpublished tasks are left out, matching ``GET /locations/{id}/shifts``.',
+    })
+    .optional(),
 })
 
 /**
@@ -3505,6 +3842,15 @@ export const zVenueMapUpdateVenuePlanPath = z.object({
  */
 export const zVenueMapUpdateVenuePlanResponse = zVenuePlanRead
 
+export const zVenueMapDeleteVenuePlanImagePath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapDeleteVenuePlanImageResponse = zVenuePlanRead
+
 export const zVenueMapGetVenuePlanImagePath = z.object({
   plan_id: z.uuid(),
 })
@@ -3552,6 +3898,26 @@ export const zVenueMapUpdateVenueMarkerPath = z.object({
  * Successful Response
  */
 export const zVenueMapUpdateVenueMarkerResponse = zVenueMarkerRead
+
+export const zVenueMapGetVenuePlanShapesPath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapGetVenuePlanShapesResponse = zVenuePlanShapesRead
+
+export const zVenueMapBatchVenuePlanShapesBody = zVenueShapeBatch
+
+export const zVenueMapBatchVenuePlanShapesPath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapBatchVenuePlanShapesResponse = zVenuePlanShapesRead
 
 /**
  * Response Notifications-List Notification Types

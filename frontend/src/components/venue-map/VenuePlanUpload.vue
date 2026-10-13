@@ -17,15 +17,20 @@ import { toastApiError } from '@/lib/api-errors'
  * plan should keep its full extent; the server rotates, shrinks and re-encodes.
  *
  * Two looks: the default is a drop zone that fills its parent (a plan without
- * a picture yet), `compact` is a single "Replace picture" button. Either way
+ * a picture yet), `compact` is a single button ("Replace picture", or what
+ * `label` says). Either way
  * the markers keep their place, because they are stored relative to the image.
  */
 const props = withDefaults(
   defineProps<{
     planId: string
     compact?: boolean
+    /** The compact button's text; default "Replace picture". */
+    label?: string
+    /** The line under the compact button; default "The pins stay where they are." */
+    hint?: string
   }>(),
-  { compact: false },
+  { compact: false, label: undefined, hint: undefined },
 )
 
 const emit = defineEmits<{
@@ -163,9 +168,9 @@ defineExpose({ pick })
     >
       <LoaderIcon v-if="uploading" class="animate-spin" />
       <UploadIcon v-else />
-      {{ uploading ? t('mapEditor.upload.uploading') : t('mapEditor.upload.replace') }}
+      {{ uploading ? t('mapEditor.upload.uploading') : (label ?? t('mapEditor.upload.replace')) }}
     </Button>
-    <p class="text-muted-foreground text-xs">{{ t('mapEditor.upload.replaceHint') }}</p>
+    <p class="text-muted-foreground text-xs">{{ hint ?? t('mapEditor.upload.replaceHint') }}</p>
   </div>
 
   <div

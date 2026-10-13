@@ -22,7 +22,18 @@ export interface PanZoomOptions {
   maxZoom?: number
   /** `false` switches all gesture handling off (a static mini-map). Default `true`. */
   enabled?: MaybeRefOrGetter<boolean>
+  /**
+   * Whether a press may pan. Default: any touch or pen, and the primary mouse
+   * button. A rejected press is still tracked, so a second finger landing
+   * next to it still pinches (a drawing tool rejects the first finger, which
+   * draws, but two fingers zoom).
+   */
+  panFilter?: (event: PointerEvent) => boolean
+  /** Zoom in on a double click or double tap. Default `true`. */
+  dblclickZoom?: MaybeRefOrGetter<boolean>
 }
+
+const defaultPanFilter = (e: PointerEvent) => e.pointerType !== 'mouse' || e.button === 0
 
 /** Movement (CSS px) after which a press counts as a drag, not a tap. */
 const DRAG_THRESHOLD = 4
@@ -61,6 +72,8 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
   const W = () => toValue(options.width)
   const H = () => toValue(options.height)
   const enabled = () => toValue(options.enabled ?? true)
+  const panFilter = options.panFilter ?? defaultPanFilter
+  const dblclickZoom = () => toValue(options.dblclickZoom ?? true)
 
   const viewBox = ref<ViewBox>(fitViewBox(W(), H()))
   const viewBoxAttr = computed(() => viewBoxToString(viewBox.value))
@@ -113,6 +126,10 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
 
   // ── Pointer handling ───────────────────────────────────────────────────
   const pointers = new Map<number, Point>()
+  /** Pointers whose press `panFilter` rejected: tracked for a pinch, never panned by. */
+  const passive = new Set<number>()
+  /** How many pointers are down on the plan right now. */
+  const pointerCount = ref(0)
   let pressStart: Point | null = null
   let lastTap: { time: number; point: Point } | null = null
 
@@ -126,15 +143,22 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
 
   function onPointerDown(e: PointerEvent) {
     if (!enabled()) return
-    if (e.pointerType === 'mouse' && e.button !== 0) return
+    const accepted = panFilter(e)
+    // A rejected mouse press is no gesture at all (a mouse has one pointer).
+    if (!accepted && e.pointerType === 'mouse') return
     const point = { x: e.clientX, y: e.clientY }
     pointers.set(e.pointerId, point)
+    if (accepted) passive.delete(e.pointerId)
+    else passive.add(e.pointerId)
+    pointerCount.value = pointers.size
     if (pointers.size === 1) {
       pressStart = point
       isGesturing.value = false
     } else {
-      // A second finger is always a gesture, never a tap.
+      // A second finger is always a gesture, never a tap — and from now on
+      // every finger down belongs to it, a rejected first one included.
       isGesturing.value = true
+      passive.clear()
       for (const id of pointers.keys()) capture(id)
     }
   }
@@ -145,6 +169,7 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
     const cur = { x: e.clientX, y: e.clientY }
 
     if (pointers.size === 1) {
+      if (passive.has(e.pointerId)) return
       if (!isGesturing.value) {
         if (!pressStart || distance(cur, pressStart) <= DRAG_THRESHOLD) return
         isGesturing.value = true
@@ -179,10 +204,14 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
   function onPointerEnd(e: PointerEvent) {
     if (!pointers.has(e.pointerId)) return
     const wasTap = pointers.size === 1 && !isGesturing.value
+    const wasPassive = passive.has(e.pointerId)
     pointers.delete(e.pointerId)
+    passive.delete(e.pointerId)
+    pointerCount.value = pointers.size
     if (pointers.size === 0) pressStart = null
 
-    if (!wasTap || e.type !== 'pointerup' || e.pointerType === 'mouse') return
+    if (!wasTap || wasPassive || !dblclickZoom()) return
+    if (e.type !== 'pointerup' || e.pointerType === 'mouse') return
     // Double tap — touch and pen only; a mouse gets the native `dblclick`.
     const point = { x: e.clientX, y: e.clientY }
     const now = Date.now()
@@ -206,7 +235,7 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
   }
 
   function onDoubleClick(e: MouseEvent) {
-    if (!enabled()) return
+    if (!enabled() || !dblclickZoom()) return
     zoomAround(DOUBLE_STEP, clientToSvg(e.clientX, e.clientY))
   }
 
@@ -222,6 +251,7 @@ export function usePanZoom(svgRef: Ref<SVGSVGElement | null | undefined>, option
     viewBoxAttr,
     unitsPerPixel,
     isGesturing,
+    pointerCount,
     clientToSvg,
     reset,
     focus,

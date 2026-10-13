@@ -27,7 +27,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from tests.fixtures.locations import PLAN_HEIGHT, PLAN_WIDTH, make_png
 
 API = "/api/v1"
@@ -1353,3 +1353,147 @@ class TestVenueMapLocationStats:
         )
         assert r.status_code == 200
         assert r.json()["location_stats"] == []
+
+
+# ── Blank canvases and the drawing ─────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestCanvas:
+    async def test_new_plan_is_a_landscape_canvas_by_default(
+        self, async_client: AsyncClient, as_event_admin: None, test_event: Event
+    ) -> None:
+        r = await async_client.post(
+            f"{API}/events/{test_event.id}/venue-plans", json={"name": "Hall"}
+        )
+        assert r.status_code == 201, r.text
+        body = r.json()
+        assert (body["canvas_width"], body["canvas_height"]) == (1600, 1000)
+        assert (body["width"], body["height"]) == (1600, 1000)
+        assert body["shapes"] == []
+        assert body["shapes_revision"] == 0
+
+    @pytest.mark.parametrize(
+        ("canvas", "size"), [("portrait", (1000, 1600)), ("square", (1200, 1200))]
+    )
+    async def test_canvas_presets(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        test_event: Event,
+        canvas: str,
+        size: tuple[int, int],
+    ) -> None:
+        r = await async_client.post(
+            f"{API}/events/{test_event.id}/venue-plans",
+            json={"name": "Hall", "canvas": canvas},
+        )
+        assert r.status_code == 201, r.text
+        assert (r.json()["width"], r.json()["height"]) == size
+
+    async def test_unknown_canvas_422(
+        self, async_client: AsyncClient, as_event_admin: None, test_event: Event
+    ) -> None:
+        r = await async_client.post(
+            f"{API}/events/{test_event.id}/venue-plans",
+            json={"name": "Hall", "canvas": "panorama"},
+        )
+        assert r.status_code == 422
+
+    async def test_an_image_sets_the_effective_size(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        test_venue_plan: VenuePlan,
+    ) -> None:
+        r = await async_client.patch(
+            f"{API}/venue-plans/{test_venue_plan.id}", json={"name": "Hall"}
+        )
+        assert r.status_code == 200
+        assert (r.json()["width"], r.json()["height"]) == (PLAN_WIDTH, PLAN_HEIGHT)
+        assert (r.json()["canvas_width"], r.json()["canvas_height"]) == (1600, 1000)
+
+
+@pytest.mark.asyncio
+class TestDeleteImage:
+    async def test_removing_the_picture_keeps_its_aspect(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        db_session: AsyncSession,
+        test_venue_plan: VenuePlan,
+        test_venue_shapes: list[VenueShape],
+    ) -> None:
+        r = await async_client.delete(f"{API}/venue-plans/{test_venue_plan.id}/image")
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["image_etag"] is None
+        assert body["image_width"] is None
+        # 800x600 scaled so the longer side is 1600.
+        assert (body["width"], body["height"]) == (1600, 1200)
+        assert len(body["shapes"]) == len(test_venue_shapes)
+
+        images = await db_session.execute(
+            select(VenuePlanImage).where(
+                col(VenuePlanImage.plan_id) == test_venue_plan.id
+            )
+        )
+        assert images.scalars().first() is None
+        r = await async_client.get(f"{API}/venue-plans/{test_venue_plan.id}/image")
+        assert r.status_code == 404
+
+        r = await async_client.delete(f"{API}/venue-plans/{test_venue_plan.id}/image")
+        assert r.status_code == 404
+        assert r.json()["code"] == "venue_plan.image_not_found"
+
+    async def test_member_gets_403(
+        self, async_client: AsyncClient, test_venue_plan: VenuePlan
+    ) -> None:
+        r = await async_client.delete(f"{API}/venue-plans/{test_venue_plan.id}/image")
+        assert r.status_code == 403
+
+    async def test_dangling_etag_without_size_keeps_the_canvas(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        db_session: AsyncSession,
+        blank_plan: VenuePlan,
+    ) -> None:
+        """A plan row that claims an image it has no size or bytes for is
+        cleaned up rather than left stuck."""
+        blank_plan.image_etag = "a" * 64
+        db_session.add(blank_plan)
+        await db_session.flush()
+
+        r = await async_client.delete(f"{API}/venue-plans/{blank_plan.id}/image")
+        assert r.status_code == 200, r.text
+        assert r.json()["image_etag"] is None
+        assert (r.json()["width"], r.json()["height"]) == (1600, 1000)
+
+
+@pytest.mark.asyncio
+class TestVenueMapShapes:
+    async def test_shapes_nested_in_drawing_order(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_venue_plan: VenuePlan,
+        test_venue_shapes: list[VenueShape],
+        blank_plan: VenuePlan,
+    ) -> None:
+        # Out of insertion order on purpose.
+        test_venue_shapes[0].sort_order = 10
+        db_session.add(test_venue_shapes[0])
+        await db_session.flush()
+
+        r = await async_client.get(f"{API}/events/{test_event.id}/venue-map")
+        assert r.status_code == 200, r.text
+        ground, garden = r.json()["plans"]
+        assert [s["id"] for s in ground["shapes"]] == [
+            str(s.id) for s in [*test_venue_shapes[1:], test_venue_shapes[0]]
+        ]
+        assert ground["shapes_revision"] == 1
+        assert garden["id"] == str(blank_plan.id)
+        assert garden["shapes"] == []
+        assert (garden["width"], garden["height"]) == (1600, 1000)

@@ -68,5 +68,18 @@
         "invalid_image": "That file could not be used as a map. Please use a PNG, JPG or WebP picture under 20 MB.",
         "not_found": "That map could not be found.",
         "order_mismatch": "The maps changed in the meantime. Please reload the page and try again."
+    },
+    "venue_shape": {
+        "id_taken": "That drawing already exists. Please reload the page.",
+        "label_anchor": "The label position could not be saved. Please try again.",
+        "label_required": "A text needs at least one character.",
+        "link_not_allowed": "Only rectangles and shapes can be linked to a place.",
+        "not_found": "That drawing could not be found. It may have been deleted in the meantime.",
+        "points_count": "This drawing has too few or too many points.",
+        "revision_conflict": "Someone else changed this map in the meantime. We loaded the latest version.",
+        "stroke_width": "That line width is not possible.",
+        "too_many": "This map has reached the limit of 500 drawings.",
+        "too_many_points": "This map has too many points in its drawings. Simplify them or delete a few.",
+        "too_small": "This rectangle is too small. Drag a bit further."
     }
 }

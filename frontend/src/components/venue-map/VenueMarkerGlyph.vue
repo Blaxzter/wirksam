@@ -10,7 +10,7 @@ import { type MarkerKind, markerIcon } from '@/lib/venue-map'
  * `x`/`y` are image units (normalised × image size). `scale` is the current
  * image units per CSS pixel (`usePanZoom().unitsPerPixel`), so the marker is
  * drawn at a constant screen size whatever the zoom: the glyph is designed at
- * 28 px across and its centre sits exactly on the point.
+ * 26 px across (plus a 2px ring in the map's pill colour) and its centre sits exactly on the point.
  *
  * Attributes fall through to the `<g>`, so a parent makes it interactive with
  * `role="button" tabindex="0" :aria-label @click @keydown`. Keyboard focus
@@ -35,15 +35,16 @@ const props = withDefaults(
 const icon = computed(() => markerIcon(props.kind))
 
 // Literal class names so Tailwind's scanner emits them. Locations use the
-// theme colour; facilities get the colours people expect on a site plan.
+// map's highlight colour; facilities get the colours people expect on a site
+// plan, each dark enough that the white icon keeps >= 4.5:1 on it.
 const KIND_CLASSES: Record<string, { body: string; icon: string }> = {
-  location: { body: 'fill-primary', icon: 'text-primary-foreground' },
-  entrance: { body: 'fill-emerald-600', icon: 'text-white' },
-  info_desk: { body: 'fill-sky-600', icon: 'text-white' },
+  location: { body: 'fill-map-highlight', icon: 'text-map-pill' },
+  entrance: { body: 'fill-emerald-700', icon: 'text-white' },
+  info_desk: { body: 'fill-sky-700', icon: 'text-white' },
   first_aid: { body: 'fill-red-600', icon: 'text-white' },
   toilets: { body: 'fill-slate-600', icon: 'text-white' },
   parking: { body: 'fill-blue-700', icon: 'text-white' },
-  kitchen: { body: 'fill-amber-600', icon: 'text-white' },
+  kitchen: { body: 'fill-amber-700', icon: 'text-white' },
 }
 const colours = computed(() => KIND_CLASSES[props.kind] ?? KIND_CLASSES.location!)
 
@@ -61,17 +62,17 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
     <title v-if="label">{{ label }}</title>
     <circle
       v-if="highlighted"
-      r="21"
+      r="20"
       fill="none"
-      class="stroke-primary motion-safe:animate-pulse print:animate-none"
+      class="stroke-map-highlight motion-safe:animate-pulse print:animate-none"
       stroke-width="3"
       data-testid="marker-highlight"
     />
-    <circle r="19" fill="none" class="venue-marker-focus stroke-ring" stroke-width="2.5" />
+    <circle r="18" fill="none" class="venue-marker-focus stroke-map-highlight" stroke-width="2.5" />
     <circle
-      :r="selected ? 16 : 14"
-      :class="[colours.body, selected ? 'stroke-foreground' : 'stroke-background']"
-      :stroke-width="selected ? 3 : 2"
+      :r="selected ? 15 : 13"
+      :class="[colours.body, selected ? 'stroke-map-ink' : 'stroke-map-marker-ring']"
+      :stroke-width="selected ? 2.5 : 2"
       class="venue-marker-body transition-[r]"
     />
     <component
@@ -85,9 +86,9 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
     />
     <text
       v-if="showLabel && label"
-      y="32"
+      y="30"
       text-anchor="middle"
-      class="fill-foreground stroke-background text-[11px] font-medium"
+      class="fill-map-ink stroke-map-canvas text-[11px] font-semibold"
       stroke-width="3"
       paint-order="stroke"
     >
@@ -98,7 +99,7 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
 
 <style scoped>
 .venue-marker-body {
-  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35));
+  filter: drop-shadow(0 1px 2px var(--map-shadow));
 }
 .venue-marker-focus {
   opacity: 0;

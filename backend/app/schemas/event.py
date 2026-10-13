@@ -2,7 +2,7 @@ import datetime as dt
 import uuid
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from app.schemas.event_membership import EventRole
 
@@ -77,9 +77,12 @@ class EventRead(EventBase):
     member_count: int = 0
     join_request_status: str | None = None
     pending_request_count: int = 0
-    #: Plans with an uploaded image. A plan without one is unfinished editor
-    #: state, so this is what decides whether members see the map at all.
-    venue_plan_count: int = 0
+    #: Plans with an image or at least one shape. A plan with neither (even
+    #: one with pins on it) is unfinished editor state, so this is what
+    #: decides whether members see the map at all.
+    venue_plan_count: int = Field(
+        default=0, description="plans with an image or at least one shape"
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property

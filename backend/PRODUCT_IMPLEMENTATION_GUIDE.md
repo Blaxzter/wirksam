@@ -30,6 +30,7 @@ from sqlmodel import Field, Relationship
 from app.models.base import Base, SoftDeleteBase
 import uuid
 
+
 class Product(Base, table=True):
     __tablename__ = "products"
 
@@ -42,22 +43,22 @@ class Product(Base, table=True):
 
     # Relationships
     categories: list["Category"] = Relationship(
-        back_populates="products",
-        link_table="product_categories"
+        back_populates="products", link_table="product_categories"
     )
+
 
 class ProductCategory(Base, table=True):
     __tablename__ = "product_categories"
     product_id: uuid.UUID = Field(foreign_key="products.id", primary_key=True)
     category_id: uuid.UUID = Field(foreign_key="categories.id", primary_key=True)
 
+
 class Category(Base, table=True):
     __tablename__ = "categories"
     name: str = Field(unique=True, index=True)
     description: str | None = None
     products: list[Product] = Relationship(
-        back_populates="categories",
-        link_table="product_categories"
+        back_populates="categories", link_table="product_categories"
     )
 ```
 
@@ -77,6 +78,7 @@ class Category(Base, table=True):
 from pydantic import BaseModel, Field, validator
 import uuid
 
+
 class ProductBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: str | None = Field(None, max_length=1000)
@@ -85,12 +87,15 @@ class ProductBase(BaseModel):
     stock_quantity: int = Field(0, ge=0)
     is_active: bool = True
 
+
 class ProductCreate(ProductBase):
     category_ids: list[uuid.UUID] = Field(default_factory=list)
+
 
 class ProductUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
     # ... other optional fields
+
 
 class ProductResponse(ProductBase):
     id: uuid.UUID
@@ -100,6 +105,7 @@ class ProductResponse(ProductBase):
 
     class Config:
         from_attributes = True
+
 
 class ProductListResponse(BaseModel):
     items: list[ProductResponse]
@@ -119,6 +125,7 @@ from app.crud.base import CRUDBase
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 
+
 class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
     async def get_by_sku(self, session: AsyncSession, *, sku: str) -> Product | None:
         result = await session.execute(
@@ -126,9 +133,11 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
         )
         return result.scalars().first()
 
-    async def create_with_categories(self, session: AsyncSession, *, obj_in: ProductCreate) -> Product:
+    async def create_with_categories(
+        self, session: AsyncSession, *, obj_in: ProductCreate
+    ) -> Product:
         # Create product and handle category associations
-        product_data = obj_in.model_dump(exclude={'category_ids'})
+        product_data = obj_in.model_dump(exclude={"category_ids"})
         product = Product(**product_data)
         session.add(product)
         await session.flush()
@@ -136,6 +145,7 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
         # Add category links...
         await session.commit()
         return product
+
 
 product = CRUDProduct(Product)
 ```
@@ -174,6 +184,7 @@ async def create_product(
 
 ```python
 from app.api.routes import products
+
 api_router.include_router(products.router, prefix="/api/v1")
 ```
 
@@ -192,8 +203,8 @@ alembic upgrade head
 
 ```python
 # Common Auth0 claim fields
-user_id = claims.get("sub")          # Unique Auth0 user ID
-user_email = claims.get("email")     # User email address
+user_id = claims.get("sub")  # Unique Auth0 user ID
+user_email = claims.get("email")  # User email address
 user_roles = claims.get("https://your-domain.com/roles", [])  # Custom roles
 ```
 
@@ -235,7 +246,9 @@ async def test_create_product(session):
 # tests/api/test_products.py
 @pytest.mark.asyncio
 async def test_create_product(client: AsyncClient, auth_headers):
-    response = await client.post("/api/v1/products/", json=product_data, headers=auth_headers)
+    response = await client.post(
+        "/api/v1/products/", json=product_data, headers=auth_headers
+    )
     assert response.status_code == 201
 ```
 

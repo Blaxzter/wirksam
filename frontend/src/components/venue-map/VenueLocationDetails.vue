@@ -181,7 +181,7 @@ function onBookingUpdated() {
           {{ t('venueMap.panel.staffedOn', { day: dayLabel }) }}
         </p>
         <span
-          class="rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums"
+          class="rounded-full border px-2 py-0.5 text-[13px] font-semibold tabular-nums"
           :class="statusClasses.chip"
           data-testid="location-summary-count"
         >
@@ -202,7 +202,7 @@ function onBookingUpdated() {
           :style="{ width: `${fillPercent}%` }"
         />
       </div>
-      <p class="text-muted-foreground text-xs">
+      <p class="text-foreground/75 text-[13px]">
         {{
           openSlots > 0
             ? t('venueMap.panel.openSlots', { count: openSlots }, openSlots)
@@ -252,7 +252,7 @@ function onBookingUpdated() {
               <span class="block text-sm font-medium tabular-nums">
                 {{ formatTimeRange(shift.start_time, shift.end_time) }}
               </span>
-              <span class="text-muted-foreground block truncate text-xs">
+              <span class="text-foreground/75 block truncate text-[13px]">
                 {{ shift.task_name
                 }}<template v-if="shift.title && shift.title !== shift.task_name">
                   · {{ shift.title }}</template
@@ -260,7 +260,7 @@ function onBookingUpdated() {
               </span>
             </span>
             <span
-              class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums"
+              class="shrink-0 rounded-full border px-2 py-0.5 text-[13px] font-semibold tabular-nums"
               :class="shiftChipClass(shift)"
               :aria-label="
                 t('venueMap.panel.bookedOf', {
@@ -283,7 +283,7 @@ function onBookingUpdated() {
             <Check />
             {{ t('venueMap.sheet.booked') }}
           </Badge>
-          <span v-else-if="isFull(shift)" class="text-muted-foreground shrink-0 text-xs">
+          <span v-else-if="isFull(shift)" class="text-foreground/75 shrink-0 text-[13px]">
             {{ t('venueMap.sheet.full') }}
           </span>
           <Button

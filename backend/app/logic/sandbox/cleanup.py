@@ -46,7 +46,7 @@ from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 
 logger = get_logger(__name__)
 
@@ -140,17 +140,20 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
     await db.execute(
         delete(EventMembership).where(col(EventMembership.event_id) == event_id)
     )
-    #    The venue map: markers, image bytes, plans, then the locations. All of
-    #    it cascades from the event too; spelled out so the largest rows a demo
-    #    owns (the plan image) visibly go, and so the locations are gone before
-    #    the event rather than in the middle of its cascade. Markers are
-    #    matched by plan *and* by location, so none can outlive either parent.
+    #    The venue map: markers, shapes, image bytes, plans, then the
+    #    locations. All of it cascades from the event too; spelled out so the
+    #    largest rows a demo owns (the drawing, an image if any) visibly go,
+    #    and so the locations are gone before the event rather than in the
+    #    middle of its cascade. Markers are matched by plan *and* by location,
+    #    so none can outlive either parent; shapes only point at a location
+    #    with SET NULL, so going by plan is enough.
     plan_ids = select(col(VenuePlan.id)).where(col(VenuePlan.event_id) == event_id)
     location_ids = select(col(Location.id)).where(col(Location.event_id) == event_id)
     await db.execute(delete(VenueMarker).where(col(VenueMarker.plan_id).in_(plan_ids)))
     await db.execute(
         delete(VenueMarker).where(col(VenueMarker.location_id).in_(location_ids))
     )
+    await db.execute(delete(VenueShape).where(col(VenueShape.plan_id).in_(plan_ids)))
     await db.execute(
         delete(VenuePlanImage).where(col(VenuePlanImage.plan_id).in_(plan_ids))
     )

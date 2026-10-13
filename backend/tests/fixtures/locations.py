@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event
 from app.models.location import Location
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 
 PLAN_WIDTH = 800
 PLAN_HEIGHT = 600
@@ -83,3 +83,61 @@ async def test_location_marker(
     await db_session.flush()
     await db_session.refresh(marker)
     return marker
+
+
+@pytest_asyncio.fixture
+async def blank_plan(db_session: AsyncSession, test_event: Event) -> VenuePlan:
+    """A second plan on ``test_event`` with no image: a 1600x1000 blank canvas."""
+    plan = VenuePlan(event_id=test_event.id, name="Garden", sort_order=1)
+    db_session.add(plan)
+    await db_session.flush()
+    await db_session.refresh(plan)
+    return plan
+
+
+@pytest_asyncio.fixture
+async def test_venue_shapes(
+    db_session: AsyncSession, test_venue_plan: VenuePlan, test_location: Location
+) -> list[VenueShape]:
+    """One shape of each kind on ``test_venue_plan``, in drawing order: a rect
+    linked to ``test_location``, a polygon, a path and a text label."""
+    shapes = [
+        VenueShape(
+            plan_id=test_venue_plan.id,
+            location_id=test_location.id,
+            kind="rect",
+            style="room",
+            points=[[0.1, 0.1], [0.4, 0.5]],
+            label="Foyer",
+            sort_order=0,
+        ),
+        VenueShape(
+            plan_id=test_venue_plan.id,
+            kind="polygon",
+            style="green",
+            points=[[0.5, 0.1], [0.9, 0.1], [0.7, 0.4]],
+            sort_order=1,
+        ),
+        VenueShape(
+            plan_id=test_venue_plan.id,
+            kind="path",
+            style="path",
+            points=[[0.1, 0.8], [0.9, 0.8]],
+            stroke_width=0.02,
+            sort_order=2,
+        ),
+        VenueShape(
+            plan_id=test_venue_plan.id,
+            kind="label",
+            style="water",
+            points=[[0.95, 0.5]],
+            label="River",
+            label_size="sm",
+            sort_order=3,
+        ),
+    ]
+    db_session.add_all(shapes)
+    test_venue_plan.shapes_revision = 1
+    db_session.add(test_venue_plan)
+    await db_session.flush()
+    return shapes

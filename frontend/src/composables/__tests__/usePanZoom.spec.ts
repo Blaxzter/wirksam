@@ -16,7 +16,14 @@ let svg: SVGSVGElement
 let scope: ReturnType<typeof effectScope>
 
 function mount(
-  opts: { width?: number; height?: number; enabled?: boolean; maxZoom?: number } = {},
+  opts: {
+    width?: number
+    height?: number
+    enabled?: boolean
+    maxZoom?: number
+    panFilter?: (e: PointerEvent) => boolean
+    dblclickZoom?: boolean
+  } = {},
 ) {
   svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.getBoundingClientRect = () =>
@@ -27,7 +34,16 @@ function mount(
   const height = ref(opts.height ?? H)
   const enabled = ref(opts.enabled ?? true)
   scope = effectScope()
-  const pz = scope.run(() => usePanZoom(svgRef, { width, height, enabled, maxZoom: opts.maxZoom }))!
+  const pz = scope.run(() =>
+    usePanZoom(svgRef, {
+      width,
+      height,
+      enabled,
+      maxZoom: opts.maxZoom,
+      panFilter: opts.panFilter,
+      dblclickZoom: opts.dblclickZoom,
+    }),
+  )!
   return { pz, width, height, enabled }
 }
 
@@ -269,5 +285,68 @@ describe('usePanZoom', () => {
     scope = effectScope()
     const pz = scope.run(() => usePanZoom(svgRef, { width: W, height: H }))!
     expect(pz.clientToSvg(10, 20)).toEqual({ x: 10, y: 20 })
+  })
+
+  it('counts the pointers that are down', () => {
+    const { pz } = mount()
+    expect(pz.pointerCount.value).toBe(0)
+    pointer('pointerdown', { id: 1, x: 10, y: 10 })
+    pointer('pointerdown', { id: 2, x: 20, y: 10 })
+    expect(pz.pointerCount.value).toBe(2)
+    pointer('pointerup', { id: 1, x: 10, y: 10 })
+    pointer('pointercancel', { id: 2, x: 20, y: 10 })
+    expect(pz.pointerCount.value).toBe(0)
+  })
+
+  it('does not pan with a press the filter rejects, but pinches once a second finger lands', () => {
+    // A drawing tool: single touches draw, they do not pan.
+    const { pz } = mount({ panFilter: () => false })
+    pointer('pointerdown', { id: 1, x: 200, y: 125 })
+    pointer('pointermove', { id: 1, x: 100, y: 125 })
+    expect(pz.viewBox.value.x).toBe(0)
+    expect(pz.isGesturing.value).toBe(false)
+    expect(pz.pointerCount.value).toBe(1)
+
+    pointer('pointermove', { id: 1, x: 200, y: 125 })
+    pointer('pointerdown', { id: 2, x: 300, y: 125 })
+    expect(pz.isGesturing.value).toBe(true)
+    pointer('pointermove', { id: 2, x: 400, y: 125 })
+    expect(pz.viewBox.value.w).toBeCloseTo(500)
+    // After the pinch the remaining finger pans like any other.
+    pointer('pointerup', { id: 2, x: 400, y: 125 })
+    const x = pz.viewBox.value.x
+    pointer('pointermove', { id: 1, x: 190, y: 125 })
+    expect(pz.viewBox.value.x).toBeCloseTo(x + 10)
+    pointer('pointerup', { id: 1, x: 190, y: 125 })
+  })
+
+  it('ignores a rejected mouse press entirely, and pans with an accepted middle button', () => {
+    const { pz } = mount({ panFilter: (e) => e.button === 1 })
+    pointer('pointerdown', { x: 100, y: 100, pointerType: 'mouse', button: 0 })
+    expect(pz.pointerCount.value).toBe(0)
+    pointer('pointermove', { x: 0, y: 100, pointerType: 'mouse' })
+    expect(pz.viewBox.value.x).toBe(0)
+    pointer('pointerdown', { x: 100, y: 100, pointerType: 'mouse', button: 1 })
+    pointer('pointermove', { x: 50, y: 100, pointerType: 'mouse' })
+    expect(pz.viewBox.value.x).toBe(100)
+  })
+
+  it('a rejected tap is not half of a double tap', () => {
+    const { pz } = mount({ panFilter: () => false })
+    for (let i = 0; i < 2; i++) {
+      pointer('pointerdown', { x: 250, y: 125 })
+      pointer('pointerup', { x: 250, y: 125 })
+    }
+    expect(pz.viewBox.value.w).toBe(W)
+  })
+
+  it('can switch double-click and double-tap zoom off', () => {
+    const { pz } = mount({ dblclickZoom: false })
+    svg.dispatchEvent(new MouseEvent('dblclick', { clientX: 0, clientY: 0 }))
+    for (let i = 0; i < 2; i++) {
+      pointer('pointerdown', { x: 250, y: 125 })
+      pointer('pointerup', { x: 250, y: 125 })
+    }
+    expect(pz.viewBox.value.w).toBe(W)
   })
 })

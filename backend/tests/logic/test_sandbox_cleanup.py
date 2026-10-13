@@ -47,7 +47,7 @@ from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
 
 # ── Counting helpers ──────────────────────────────────────────────
@@ -81,6 +81,7 @@ class _Inventory:
     notification_ids: list[uuid.UUID]
     location_ids: list[uuid.UUID]
     plan_ids: list[uuid.UUID]
+    shape_ids: list[uuid.UUID]
 
 
 async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
@@ -90,7 +91,14 @@ async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
         location_ids=await _ids(
             db, col(Location.id), col(Location.event_id) == event_id
         ),
-        plan_ids=await _ids(db, col(VenuePlan.id), col(VenuePlan.event_id) == event_id),
+        plan_ids=(
+            plan_ids := await _ids(
+                db, col(VenuePlan.id), col(VenuePlan.event_id) == event_id
+            )
+        ),
+        shape_ids=await _ids(
+            db, col(VenueShape.id), col(VenueShape.plan_id).in_(plan_ids)
+        ),
         event_id=event_id,
         task_ids=task_ids,
         shift_ids=shift_ids,
@@ -166,6 +174,9 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
         "venue_plan_images": await _count(
             db, VenuePlanImage, col(VenuePlanImage.plan_id).in_(inv.plan_ids)
         ),
+        "venue_shapes": await _count(
+            db, VenueShape, col(VenueShape.id).in_(inv.shape_ids)
+        ),
         # By plan *and* by location: a marker must not outlive either parent.
         "venue_markers": await _count(
             db,
@@ -200,6 +211,20 @@ async def _orphans(db: AsyncSession) -> dict[str, int]:
             col(VenueMarker.location_id).is_(None),
         ),
     }
+
+
+async def _add_plan_image(db: AsyncSession, *, plan_id: uuid.UUID) -> None:
+    """Give a demo plan a picture.
+
+    The seeder draws its plans and stores no image, so without this the
+    ``venue_plan_images`` column of the census is vacuously zero.
+    """
+    db.add(
+        VenuePlanImage(
+            plan_id=plan_id, data=b"img", content_type="image/webp", etag="e" * 64
+        )
+    )
+    await db.flush()
 
 
 async def _expire(db: AsyncSession, sandbox: SandboxSetup, *, minutes: int = 5) -> None:
@@ -310,6 +335,11 @@ class TestPurgeSandbox:
         assert inv.location_ids, "the seeder must have produced locations"
         # Both drawn plans, so the sweep is shown to take more than one.
         assert len(inv.plan_ids) == 2, "the seeder must have produced two venue plans"
+        assert inv.shape_ids, "the seeder must have drawn the plans"
+        # The demo plans are drawn, not pictures; give one an image anyway, as
+        # nothing stops a demo row from having one, so the census below is
+        # not vacuously zero for it.
+        await _add_plan_image(db_session, plan_id=inv.plan_ids[0])
 
         before = await _remaining(db_session, inv)
         assert all(count > 0 for count in before.values()), before
@@ -453,6 +483,7 @@ class TestPurgeSandbox:
         await _add_pending_decisions(db_session, second)
         keep = await _inventory(db_session, second.event.id)
         await _add_booking_reminder(db_session, booking_id=keep.booking_ids[0])
+        await _add_plan_image(db_session, plan_id=keep.plan_ids[0])
 
         await purge_sandbox(db_session, event_id=first.event.id)
 

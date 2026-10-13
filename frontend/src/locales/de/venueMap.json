@@ -44,6 +44,24 @@
     "planSwitcher": {
         "label": "Plan auswählen"
     },
+    "shapeKinds": {
+        "label": "Text",
+        "path": "Linie",
+        "polygon": "Form",
+        "rect": "Rechteck"
+    },
+    "shapeStyles": {
+        "area": "Fläche",
+        "building": "Gebäude",
+        "furniture": "Möbel",
+        "green": "Grünfläche",
+        "parking": "Parken",
+        "path": "Weg",
+        "room": "Raum",
+        "stage": "Bühne",
+        "wall": "Wand",
+        "water": "Wasser"
+    },
     "sheet": {
         "book": "Buchen",
         "bookShift": "{time} buchen",
@@ -71,8 +89,8 @@
         "done": "Fertig",
         "edit": "Bearbeiten",
         "empty": "Noch kein Lageplan",
-        "emptyAdmin": "Lade ein Bild vom Gelände hoch, damit alle sehen, wo was ist.",
-        "emptyHint": "Sobald das Orga-Team einen Plan hochlädt, findest du ihn hier.",
+        "emptyAdmin": "Zeichne das Gelände oder lade ein Bild davon hoch, damit alle sehen, wo was ist.",
+        "emptyHint": "Sobald das Orga-Team einen Plan zeichnet oder hochlädt, findest du ihn hier.",
         "goToEditor": "Lageplan einrichten",
         "mapControls": "Plan-Steuerung",
         "more": "Weitere Optionen",

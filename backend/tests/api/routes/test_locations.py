@@ -21,7 +21,7 @@ from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
-from app.models.venue_plan import VenueMarker, VenuePlan
+from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 
 DAY = dt.date(2026, 6, 11)
 
@@ -447,7 +447,100 @@ class TestLocationDetail:
         assert pin["marker_id"] == str(test_location_marker.id)
         assert pin["image_etag"] == test_venue_plan.image_etag
         assert (pin["image_width"], pin["image_height"]) == (800, 600)
+        assert (pin["width"], pin["height"]) == (800, 600)
+        assert pin["shape_id"] is None
         assert (pin["x"], pin["y"]) == (0.25, 0.75)
+
+    async def test_a_drawn_room_gives_a_pin_where_there_is_no_marker(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_location: Location,
+        test_venue_shapes: list[VenueShape],
+        blank_plan: VenuePlan,
+    ):
+        """Linked only through an area: a pin at its centre, so the mini-map
+        shows drawn rooms too. The first area by ``sort_order`` wins."""
+        later = VenueShape(
+            plan_id=blank_plan.id,
+            location_id=test_location.id,
+            kind="polygon",
+            style="area",
+            points=[[0, 0], [0.6, 0], [0.6, 0.2], [0.2, 0.2], [0.2, 0.6], [0, 0.6]],
+            sort_order=2,
+        )
+        first = VenueShape(
+            plan_id=blank_plan.id,
+            location_id=test_location.id,
+            kind="rect",
+            style="room",
+            points=[[0.5, 0.5], [0.7, 0.9]],
+            sort_order=1,
+        )
+        db_session.add_all([later, first])
+        blank_plan.shapes_revision = 4
+        db_session.add(blank_plan)
+        await db_session.flush()
+
+        r = await async_client.get(f"/api/v1/locations/{test_location.id}")
+
+        assert r.status_code == 200
+        ground, garden = r.json()["pins"]
+        # The image plan has the area but no marker either.
+        assert ground["shape_id"] == str(test_venue_shapes[0].id)
+        assert ground["marker_id"] is None
+        assert (ground["x"], ground["y"]) == pytest.approx((0.25, 0.3))
+        assert ground["shape_count"] == 4
+        assert garden["plan_id"] == str(blank_plan.id)
+        assert garden["shape_id"] == str(first.id)
+        assert (garden["x"], garden["y"]) == pytest.approx((0.6, 0.7))
+        assert garden["image_etag"] is None
+        assert (garden["width"], garden["height"]) == (1600, 1000)
+        assert garden["shapes_revision"] == 4
+        assert garden["shape_count"] == 2
+
+    async def test_an_unplaced_location_has_no_pins(
+        self,
+        async_client: AsyncClient,
+        test_location: Location,
+        test_venue_plan: VenuePlan,
+    ):
+        r = await async_client.get(f"/api/v1/locations/{test_location.id}")
+
+        assert r.status_code == 200
+        assert r.json()["pins"] == []
+
+    async def test_a_marker_wins_over_a_linked_room(
+        self,
+        async_client: AsyncClient,
+        test_location: Location,
+        test_location_marker: VenueMarker,
+        test_venue_shapes: list[VenueShape],
+    ):
+        r = await async_client.get(f"/api/v1/locations/{test_location.id}")
+
+        assert r.status_code == 200
+        (pin,) = r.json()["pins"]
+        assert pin["marker_id"] == str(test_location_marker.id)
+        assert pin["shape_id"] is None
+        assert pin["shape_count"] == 4
+
+    async def test_deleting_the_location_keeps_its_room(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_location: Location,
+        test_venue_shapes: list[VenueShape],
+        as_event_admin: None,
+    ):
+        r = await async_client.delete(f"/api/v1/locations/{test_location.id}")
+        assert r.status_code == 204
+
+        room = await db_session.get(
+            VenueShape, test_venue_shapes[0].id, populate_existing=True
+        )
+        assert room is not None
+        assert room.location_id is None
 
     async def test_public_visitor_gets_no_pins(
         self,

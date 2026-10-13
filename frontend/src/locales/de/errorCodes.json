@@ -68,5 +68,18 @@
         "invalid_image": "Diese Datei lässt sich nicht als Plan verwenden. Bitte nimm ein PNG-, JPG- oder WebP-Bild unter 20 MB.",
         "not_found": "Dieser Plan wurde nicht gefunden.",
         "order_mismatch": "Die Pläne haben sich inzwischen geändert. Bitte lade die Seite neu und versuch es noch einmal."
+    },
+    "venue_shape": {
+        "id_taken": "Diese Zeichnung gibt es schon. Bitte lade die Seite neu.",
+        "label_anchor": "Die Position der Beschriftung konnte nicht gespeichert werden. Bitte versuch es noch einmal.",
+        "label_required": "Ein Text braucht mindestens ein Zeichen.",
+        "link_not_allowed": "Nur Rechtecke und Flächen können mit einem Ort verknüpft werden.",
+        "not_found": "Diese Zeichnung wurde nicht gefunden. Vielleicht wurde sie inzwischen gelöscht.",
+        "points_count": "Diese Zeichnung hat zu wenige oder zu viele Punkte.",
+        "revision_conflict": "Jemand anderes hat diesen Plan inzwischen geändert. Wir haben den neuesten Stand geladen.",
+        "stroke_width": "Diese Linienbreite geht nicht.",
+        "too_many": "Dieser Plan hat die Grenze von 500 Zeichnungen erreicht.",
+        "too_many_points": "Die Zeichnungen auf diesem Plan haben zu viele Punkte. Vereinfache sie oder lösche ein paar davon.",
+        "too_small": "Dieses Rechteck ist zu klein. Zieh es etwas größer auf."
     }
 }

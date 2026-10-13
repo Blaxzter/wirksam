@@ -44,13 +44,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 26         | 227     |
-| `member`     | 3          | 23      |
-| `mobile`     | 2          | 8       |
+| `chromium`   | 27         | 230     |
+| `member`     | 3          | 25      |
+| `mobile`     | 2          | 9       |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 32      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **53**     | **393** |
+| **Total**    | **54**     | **399** |
 
 ## Inventory
 
@@ -152,7 +152,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 26 files, 227 tests
+### Project `chromium` — 27 files, 230 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -397,7 +397,7 @@ Not yet covered, and not currently tracked by an issue:
   - shows default reminders section
   - can toggle a global channel switch
 
-#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 9 tests
+#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 10 tests
 
 - **Print Task – smoke** (4)
   - print task page loads
@@ -408,8 +408,9 @@ Not yet covered, and not currently tracked by an issue:
   - print event page loads
   - shows print toolbar for event
   - shows event name in print content
-- **Print Task – venue mini-map** (2)
+- **Print Task – venue mini-map** (3)
   - a task whose location has a pin prints the mini-map
+  - a place drawn on a blank plan prints its drawing
   - a task without a located pin prints no map
 
 #### `frontend/e2e/tests/authenticated/reporting.spec.ts` — 7 tests
@@ -531,12 +532,18 @@ Not yet covered, and not currently tracked by an issue:
   - Create button is visible for admin
   - Create button navigates to create page
 
+#### `frontend/e2e/tests/authenticated/venue-map-draw.spec.ts` — 2 tests
+
+- **Drawing a venue map** (2)
+  - draw, label, link, undo, redo, delete — and it persists
+  - edit in place on the map page: the second plan, a new corner, back to the map
+
 #### `frontend/e2e/tests/authenticated/venue-map-editor.spec.ts` — 1 test
 
 - **Venue map editor** (1)
   - add a plan, upload a picture, place and drag pins
 
-### Project `member` — 3 files, 23 tests
+### Project `member` — 3 files, 25 tests
 
 #### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
 
@@ -567,7 +574,7 @@ Not yet covered, and not currently tracked by an issue:
   - member can view task detail
   - member can book a shift
 
-#### `frontend/e2e/tests/member/venue-map.spec.ts` — 5 tests
+#### `frontend/e2e/tests/member/venue-map.spec.ts` — 7 tests
 
 - **Venue map – helper view** (3)
   - tap a pin, read the place, book a shift there
@@ -576,8 +583,11 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue map – nothing to show** (2)
   - an event without plans shows the empty state and no nav entry
   - someone outside the event cannot read its map
+- **Venue map – a drawn plan** (2)
+  - a room drawn for a place gets a pill and opens the place
+  - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 2 files, 8 tests
+### Project `mobile` — 2 files, 9 tests
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 
@@ -590,11 +600,12 @@ Not yet covered, and not currently tracked by an issue:
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
 
-#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 2 tests
+#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 3 tests
 
-- **Venue map – on a phone** (2)
+- **Venue map – on a phone** (3)
   - the user menu leads to the map
   - a tapped place opens as a bottom sheet
+  - an organiser draws a shape by tapping, finished with "Close shape"
 
 ### Project `multi-user` — 4 files, 54 tests
 

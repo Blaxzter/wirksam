@@ -7,7 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VenueMapEditor from '@/components/venue-map/VenueMapEditor.vue'
 import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
 
-import type { LocationRead, VenueMarkerRead, VenuePlanRead } from '@/client/types.gen'
+import type {
+  LocationRead,
+  VenueMarkerRead,
+  VenuePlanRead,
+  VenueShapeRead,
+} from '@/client/types.gen'
+import { type ShapeOp, applyOps } from '@/lib/venue-shape-edit'
 import i18n from '@/locales/i18n'
 
 /**
@@ -57,13 +63,63 @@ function makePlan(overrides: Partial<VenuePlanRead> = {}): VenuePlanRead {
     image_etag: 'etag1',
     image_width: 1000,
     image_height: 500,
+    canvas_width: 1600,
+    canvas_height: 1000,
+    shapes_revision: 0,
+    width: 1000,
+    height: 500,
     created_at: stamp,
     updated_at: stamp,
     markers: [
       { id: 'm1', plan_id: 'plan-1', kind: 'location', location_id: 'loc-foyer', x: 0.5, y: 0.5 },
     ],
+    shapes: [],
     ...overrides,
   }
+}
+
+/** A plan without a picture: a 1000×500 blank canvas. */
+function blankPlan(overrides: Partial<VenuePlanRead> = {}): VenuePlanRead {
+  return makePlan({
+    image_etag: null,
+    image_width: null,
+    image_height: null,
+    canvas_width: 1000,
+    canvas_height: 500,
+    markers: [],
+    ...overrides,
+  })
+}
+
+function rectShape(overrides: Partial<VenueShapeRead> = {}): VenueShapeRead {
+  return {
+    id: 'shape-1',
+    plan_id: 'plan-1',
+    kind: 'rect',
+    style: 'room',
+    points: [
+      [0.1, 0.1],
+      [0.3, 0.3],
+    ],
+    label: 'Hall',
+    label_size: 'md',
+    label_x: null,
+    label_y: null,
+    stroke_width: null,
+    location_id: null,
+    sort_order: 0,
+    ...overrides,
+  }
+}
+
+/** The server side of the batch endpoint: apply the ops for real. */
+let serverShapes: VenueShapeRead[] = []
+let serverRevision = 0
+
+function batchCalls() {
+  return api.post.mock.calls
+    .map((c) => c[0] as { url: string; body: { ops: ShapeOp[]; expected_revision: number } })
+    .filter((c) => c.url.endsWith('/shapes/batch'))
 }
 
 let plans: VenuePlanRead[]
@@ -73,6 +129,21 @@ beforeEach(() => {
   i18n.global.locale.value = 'en'
   Element.prototype.scrollIntoView = () => {}
   plans = [makePlan()]
+  serverShapes = []
+  serverRevision = 0
+  api.post.mockImplementation(
+    async ({ url, body }: { url: string; body: { ops: ShapeOp[]; name?: string } }) => {
+      if (url.endsWith('/shapes/batch')) {
+        serverShapes = applyOps(serverShapes, body.ops, 'plan-1')
+        serverRevision += 1
+        return { data: { plan_id: 'plan-1', revision: serverRevision, shapes: serverShapes } }
+      }
+      if (url.endsWith('/venue-plans')) {
+        return { data: blankPlan({ id: 'plan-new', name: body.name! }) }
+      }
+      throw new Error(`unexpected POST ${url}`)
+    },
+  )
   api.get.mockImplementation(async ({ url }: { url: string }) => {
     if (url.endsWith('/venue-map')) {
       return {
@@ -90,7 +161,11 @@ beforeEach(() => {
   )
 })
 
+const mounted: { unmount: () => void }[] = []
+
 afterEach(() => {
+  // Unmount for real: a still-mounted editor keeps its document key listeners.
+  for (const w of mounted.splice(0)) w.unmount()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
   document.body.innerHTML = ''
@@ -102,6 +177,7 @@ async function mountEditor() {
     global: { plugins: [i18n] },
     attachTo: document.body,
   })
+  mounted.push(wrapper)
   await flushPromises()
   return wrapper
 }
@@ -128,11 +204,17 @@ describe('VenueMapEditor', () => {
     expect(wrapper.find('[data-testid="editor-canvas"]').exists()).toBe(false)
   })
 
-  it('asks for a picture while the plan has none', async () => {
-    plans = [makePlan({ image_etag: null, image_width: null, image_height: null, markers: [] })]
+  it('opens a plan without a picture onto the canvas, ready to draw or add a picture', async () => {
+    plans = [blankPlan()]
     const wrapper = await mountEditor()
-    expect(wrapper.find('[data-testid="plan-upload-zone"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="editor-canvas"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="editor-canvas"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="editor-canvas-bounds"]').attributes('width')).toBe('1000')
+    expect(wrapper.find('[data-testid="draw-hint"]').text()).toContain('Draw your venue')
+    expect(wrapper.find('[data-testid="plan-upload-replace"]').text()).toContain(
+      'Put a picture underneath',
+    )
+    // No image to load.
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('offers only the locations that are not on the plan yet', async () => {
@@ -288,6 +370,299 @@ describe('VenueMapEditor', () => {
       url: '/venue-markers/g1',
       body: { label: 'North gate' },
     })
+  })
+})
+
+function q<T extends Element = HTMLElement>(testid: string): T {
+  const el = document.querySelector<T>(`[data-testid="${testid}"]`)
+  if (!el) throw new Error(`missing ${testid}`)
+  return el
+}
+
+async function typeInto(testid: string, value: string) {
+  const input = q<HTMLInputElement>(testid)
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  await flushPromises()
+}
+
+describe('VenueMapEditor: creating plans', () => {
+  it('creates a blank plan in the chosen aspect and opens it with the rectangle tool', async () => {
+    plans = []
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="plan-add"]').trigger('click')
+    await flushPromises()
+    await typeInto('plan-name-input', '  Halle ')
+    q('plan-aspect-portrait').querySelector('input')!.click()
+    await flushPromises()
+    q('plan-name-save').click()
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith({
+      url: '/events/e1/venue-plans',
+      body: { name: 'Halle', canvas: 'portrait' },
+    })
+    expect(q('tool-rect').getAttribute('aria-pressed')).toBe('true')
+    expect(wrapper.emitted('changed')).toBeTruthy()
+  })
+
+  it('offers the picture upload big after "Use a picture"', async () => {
+    plans = []
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="plan-add"]').trigger('click')
+    await flushPromises()
+    await typeInto('plan-name-input', 'Gelände')
+    q('plan-create-picture').querySelector('input')!.click()
+    await flushPromises()
+    // Pictures have no aspect to choose.
+    expect(document.querySelector('[data-testid="plan-aspect-square"]')).toBeNull()
+    q('plan-name-save').click()
+    await flushPromises()
+    expect(
+      wrapper.find('[data-testid="picture-card"] [data-testid="plan-upload-zone"]').exists(),
+    ).toBe(true)
+    expect(q('tool-select').getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('cannot pick a picture in the demo, but can draw', async () => {
+    plans = [blankPlan()]
+    const wrapper = mount(VenueMapEditor, {
+      props: { eventId: 'e1', sandbox: true },
+      global: { plugins: [i18n] },
+      attachTo: document.body,
+    })
+    mounted.push(wrapper)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="plan-upload-sandbox"]').text()).toContain('Not in the demo')
+    await wrapper.find('[data-testid="plan-add"]').trigger('click')
+    await flushPromises()
+    expect(q('plan-create-picture').querySelector('input')!.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="draw-toolbar"]').exists()).toBe(true)
+  })
+})
+
+describe('VenueMapEditor: drawing', () => {
+  it('draws a rectangle by dragging and saves it as one batch', async () => {
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="tool-rect"]').trigger('click')
+    const svg = wrapper.find('[data-testid="editor-canvas"]').element
+    pointer(svg, 'pointerdown', 100, 100)
+    pointer(svg, 'pointermove', 200, 180)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="draw-rubber-band"]').exists()).toBe(true)
+    pointer(svg, 'pointermove', 300, 250)
+    pointer(svg, 'pointerup', 300, 250)
+    await flushPromises()
+
+    const [call] = batchCalls()
+    expect(call!.url).toBe('/venue-plans/plan-1/shapes/batch')
+    expect(call!.body.expected_revision).toBe(0)
+    expect(call!.body.ops[0]).toMatchObject({
+      op: 'create',
+      shape: {
+        kind: 'rect',
+        style: 'room',
+        points: [
+          [0.1, 0.2],
+          [0.3, 0.5],
+        ],
+      },
+    })
+    const id = (call!.body.ops[0] as { shape: { id: string } }).shape.id
+    expect(wrapper.find(`[data-testid="venue-shape-${id}"]`).exists()).toBe(true)
+    // Selected, with the inspector open.
+    expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
+    expect(wrapper.emitted('changed')).toBeTruthy()
+    expect(wrapper.find('[data-testid="draw-save-state"]').text()).toContain('All changes saved')
+
+    // Undo removes it again, by the same id.
+    await wrapper.find('[data-testid="tool-undo"]').trigger('click')
+    await flushPromises()
+    expect(batchCalls()[1]!.body).toEqual({ ops: [{ op: 'delete', id }], expected_revision: 1 })
+    expect(wrapper.find(`[data-testid="venue-shape-${id}"]`).exists()).toBe(false)
+    // …and Ctrl+Shift+Z brings it back.
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Z', ctrlKey: true, shiftKey: true }),
+    )
+    await flushPromises()
+    expect(batchCalls()[2]!.body.ops[0]).toMatchObject({ op: 'create', shape: { id } })
+  })
+
+  it('draws a polygon by taps and the "Close shape" button', async () => {
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' }))
+    await flushPromises()
+    const svg = wrapper.find('[data-testid="editor-canvas"]').element
+    for (const [x, y] of [
+      [100, 100],
+      [300, 100],
+      [300, 300],
+    ]) {
+      pointer(svg, 'pointerdown', x!, y!)
+      pointer(svg, 'pointerup', x!, y!)
+    }
+    await flushPromises()
+    expect(wrapper.find('[data-testid="draw-bar"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="draw-close"]').trigger('click')
+    await flushPromises()
+    expect(batchCalls()[0]!.body.ops[0]).toMatchObject({
+      shape: {
+        kind: 'polygon',
+        style: 'area',
+        points: [
+          [0.1, 0.2],
+          [0.3, 0.2],
+          [0.3, 0.6],
+        ],
+      },
+    })
+  })
+
+  it('selects a shape by pressing it, links it to a place and deletes it with Delete', async () => {
+    plans = [blankPlan({ shapes: [rectShape()], shapes_revision: 4 })]
+    serverShapes = [rectShape()]
+    serverRevision = 4
+    const wrapper = await mountEditor()
+    const shape = wrapper.find('[data-testid="venue-shape-shape-1"] .vs-body').element
+    pointer(shape, 'pointerdown', 200, 100)
+    pointer(shape, 'pointerup', 200, 100)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="handle-resize-se"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="shape-link"]').setValue('loc-kitchen')
+    await flushPromises()
+    expect(batchCalls()[0]!.body).toEqual({
+      ops: [{ op: 'update', id: 'shape-1', patch: { location_id: 'loc-kitchen' } }],
+      expected_revision: 4,
+    })
+
+    await wrapper.find('[data-testid="style-stage"]').trigger('click')
+    await flushPromises()
+    expect(batchCalls()[1]!.body.ops[0]).toEqual({
+      op: 'update',
+      id: 'shape-1',
+      patch: { style: 'stage' },
+    })
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+    await flushPromises()
+    expect(batchCalls()[2]!.body.ops).toEqual([{ op: 'delete', id: 'shape-1' }])
+    expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(false)
+  })
+
+  it('keeps its shortcuts to itself: not behind a dialog, not from the rest of the page', async () => {
+    plans = [blankPlan({ shapes: [rectShape()], shapes_revision: 4 })]
+    serverShapes = [rectShape()]
+    serverRevision = 4
+    const wrapper = await mountEditor()
+    const shape = wrapper.find('[data-testid="venue-shape-shape-1"] .vs-body').element
+    pointer(shape, 'pointerdown', 200, 100)
+    pointer(shape, 'pointerup', 200, 100)
+    await flushPromises()
+
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    const dialog = document.createElement('div')
+    dialog.setAttribute('role', 'alertdialog')
+    const inDialog = document.createElement('button')
+    dialog.appendChild(inDialog)
+    try {
+      outside.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+      outside.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', bubbles: true }))
+      document.body.appendChild(dialog)
+      inDialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }))
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+      await flushPromises()
+      expect(batchCalls()).toHaveLength(0)
+      expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
+
+      dialog.remove()
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+      await flushPromises()
+      expect(batchCalls()[0]!.body.ops).toEqual([{ op: 'delete', id: 'shape-1' }])
+    } finally {
+      outside.remove()
+      dialog.remove()
+    }
+  })
+
+  it('places a text and creates it once it has words', async () => {
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="tool-label"]').trigger('click')
+    const svg = wrapper.find('[data-testid="editor-canvas"]').element
+    pointer(svg, 'pointerdown', 500, 250)
+    pointer(svg, 'pointerup', 500, 250)
+    await flushPromises()
+    const input = wrapper.find('[data-testid="label-draft-input"]')
+    // Nothing was selected before, so the field only just mounted: it still gets focus.
+    expect(document.activeElement).toBe(input.element)
+    await input.setValue('Bühne')
+    await input.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(batchCalls()[0]!.body.ops[0]).toMatchObject({
+      shape: { kind: 'label', label: 'Bühne', points: [[0.5, 0.5]] },
+    })
+  })
+
+  it('rolls a failed save back and says why', async () => {
+    plans = [blankPlan({ shapes: [rectShape()] })]
+    api.post.mockRejectedValueOnce(
+      Object.assign(new Error('fail'), {
+        isAxiosError: true,
+        response: { status: 422, data: { status: 422, title: 'x', code: 'venue_shape.too_small' } },
+      }),
+    )
+    const wrapper = await mountEditor()
+    const shape = wrapper.find('[data-testid="venue-shape-shape-1"] .vs-body').element
+    pointer(shape, 'pointerdown', 200, 100)
+    pointer(shape, 'pointerup', 200, 100)
+    await flushPromises()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="venue-shape-shape-1"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tool-undo"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('reloads the plan when someone else saved in between', async () => {
+    plans = [blankPlan({ shapes: [rectShape()] })]
+    api.post.mockRejectedValueOnce(
+      Object.assign(new Error('fail'), {
+        isAxiosError: true,
+        response: {
+          status: 409,
+          data: { status: 409, title: 'x', code: 'venue_shape.revision_conflict' },
+        },
+      }),
+    )
+    const wrapper = await mountEditor()
+    const loads = api.get.mock.calls.filter((c) => String(c[0].url).endsWith('/venue-map')).length
+    const shape = wrapper.find('[data-testid="venue-shape-shape-1"] .vs-body').element
+    pointer(shape, 'pointerdown', 200, 100)
+    pointer(shape, 'pointerup', 200, 100)
+    await flushPromises()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+    await flushPromises()
+    expect(api.get.mock.calls.filter((c) => String(c[0].url).endsWith('/venue-map')).length).toBe(
+      loads + 1,
+    )
+    expect(wrapper.find('[data-testid="venue-shape-shape-1"]').exists()).toBe(true)
+  })
+
+  it('removes the picture after confirming, keeping the drawing', async () => {
+    plans = [makePlan({ shapes: [rectShape()] })]
+    api.delete.mockResolvedValue({ data: blankPlan({ shapes: [rectShape()] }) })
+    const wrapper = await mountEditor()
+    expect(wrapper.find('[data-testid="picture-stretch-hint"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="picture-remove"]').trigger('click')
+    await flushPromises()
+    expect(confirmDestructive).toHaveBeenCalled()
+    expect(api.delete).toHaveBeenCalledWith({ url: '/venue-plans/plan-1/image' })
+    expect(wrapper.find('[data-testid="picture-remove"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="venue-shape-shape-1"]').exists()).toBe(true)
   })
 })
 

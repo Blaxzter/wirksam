@@ -23,7 +23,7 @@ from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
-from app.models.venue_plan import VenueMarker, VenuePlan
+from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 
 
 @pytest.mark.asyncio
@@ -868,8 +868,10 @@ class TestUserDeletionCascades:
         test_user: User,
         test_location: Location,
         test_location_marker: VenueMarker,
+        test_venue_shapes: list[VenueShape],
     ) -> None:
-        """Regression for the SET NULL on ``tasks.location_id``.
+        """Regression for the SET NULL on ``tasks.location_id`` (and on
+        ``venue_shapes.location_id``, whose rect is linked to the location).
 
         The user delete cascades to the event in the database, and the event's
         SET NULL on ``tasks.event_id`` re-checks the task row — including its
@@ -930,5 +932,6 @@ class TestUserDeletionCascades:
             (Location, test_location.id),
             (VenuePlan, plan_id),
             (VenueMarker, test_location_marker.id),
+            *((VenueShape, shape.id) for shape in test_venue_shapes),
         ):
             assert await db_session.get(model, row_id, populate_existing=True) is None

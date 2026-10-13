@@ -5,14 +5,15 @@ import {
   ArrowLeft,
   ArrowRight,
   EllipsisVertical,
+  ImageMinus,
   ImageOff,
-  ImageUp,
   Map as MapIcon,
   Maximize,
   Minus,
   Pencil,
   Plus,
   Trash2,
+  Undo2,
   X,
 } from '@lucide/vue'
 import { useEventListener } from '@vueuse/core'
@@ -26,6 +27,9 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { useLocations } from '@/composables/useLocations'
 import { usePanZoom } from '@/composables/usePanZoom'
+import { invalidatePlanShapes } from '@/composables/usePlanShapes'
+import { type PressTarget, useShapeEditor } from '@/composables/useShapeEditor'
+import { useShapeHistory } from '@/composables/useShapeHistory'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -42,6 +46,7 @@ import {
   ResponsiveDialog,
   ResponsiveDialogBody,
   ResponsiveDialogContent,
+  ResponsiveDialogDescription,
   ResponsiveDialogFooter,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
@@ -53,8 +58,23 @@ import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
 import VenueMarkerPill from '@/components/venue-map/VenueMarkerPill.vue'
 import VenuePlanSwitcher from '@/components/venue-map/VenuePlanSwitcher.vue'
 import VenuePlanUpload from '@/components/venue-map/VenuePlanUpload.vue'
+import VenueShapeLayer from '@/components/venue-map/VenueShapeLayer.vue'
+import VenueDrawPreview from '@/components/venue-map/editor/VenueDrawPreview.vue'
+import VenueEditHandles from '@/components/venue-map/editor/VenueEditHandles.vue'
+import VenueEditorToolbar from '@/components/venue-map/editor/VenueEditorToolbar.vue'
+import VenuePlanCreateDialog, {
+  type PlanAspect,
+  type PlanCreateMode,
+} from '@/components/venue-map/editor/VenuePlanCreateDialog.vue'
+import VenueShapeInspector from '@/components/venue-map/editor/VenueShapeInspector.vue'
 
-import type { LocationRead, VenueMapRead, VenueMarkerRead, VenuePlanRead } from '@/client/types.gen'
+import type {
+  LocationRead,
+  VenueMapRead,
+  VenueMarkerRead,
+  VenuePlanRead,
+  VenuePlanShapesRead,
+} from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import {
   GENERIC_MARKER_KINDS,
@@ -65,23 +85,31 @@ import {
   planImageUrl,
   toNormalised,
 } from '@/lib/venue-map'
+import { RECT_HANDLES, type RectHandle } from '@/lib/venue-shape-edit'
+import { planSize, planSurfaceClass, sortShapes } from '@/lib/venue-shapes'
 
 /**
- * The venue map editor (event settings → "Map" tab).
+ * The venue map editor (event settings → "Map" tab, and the map page's edit
+ * mode).
  *
- * An event has any number of plans (the grounds, one per floor, …), each with
- * one picture and the pins on it. Here an event admin adds, renames, reorders
- * and deletes plans, uploads or replaces the picture, and places, drags,
- * relabels and removes pins.
+ * An event has any number of plans (the grounds, one per floor, …). A plan is
+ * drawn here — rooms, areas, paths and texts on a blank area — or starts from
+ * an uploaded picture, and can be drawn on either way. On top go the pins.
+ *
+ * Drawing (`useShapeEditor` + `useShapeHistory`): tools for select,
+ * rectangle, shape, line and text; snapping to a grid and to corners; every
+ * step is one undoable command (Ctrl+Z / Ctrl+Shift+Z), saved optimistically
+ * through the batch endpoint and rolled back if the server says no. Pins keep
+ * their own endpoints and are not part of the undo history.
  *
  * Works with every input:
- * - mouse: drag the plan to pan, wheel to zoom, drag a pin to move it;
- * - touch: one finger pans, two pinch, a pin follows the finger that holds it;
- * - keyboard: pins are buttons — arrows nudge the focused pin (Shift: bigger
- *   steps), Delete removes it, Escape leaves placement mode; "Put it in the
- *   middle" places a new pin without pointing.
- *
- * Pins are stored normalised (0..1), so replacing the picture keeps them.
+ * - mouse: draw with the primary button; drag the ground (select tool), the
+ *   middle button or Space+drag pans; the wheel zooms;
+ * - touch: one finger draws or drags, two pinch; polygons and lines get a
+ *   bar with "Undo point", "Close shape"/"Finish" and "Cancel";
+ * - keyboard: tools by letter (V R P L T, G for snapping), shapes are buttons
+ *   (Tab, Enter), arrows nudge, Delete removes, `[`/`]` reorder; pins as
+ *   before.
  *
  * Two homes: the "Map" tab of the event settings, and the map page itself,
  * where an admin flips into editing in place. `embedded` is the latter: no
@@ -89,20 +117,24 @@ import {
  * page's "Done" button) sits at the end of the plan row.
  *
  * In a demo (`sandbox`) the server refuses picture uploads, so the editor says
- * so instead of offering an upload that can only fail.
+ * so instead of offering an upload that can only fail. Drawing is allowed.
  */
 const props = withDefaults(
   defineProps<{
     eventId: string
     embedded?: boolean
     sandbox?: boolean
+    /** The plan to open first (the one the map was showing), if it exists. */
+    initialPlanId?: string | null
   }>(),
-  { embedded: false, sandbox: false },
+  { embedded: false, sandbox: false, initialPlanId: null },
 )
 
 const emit = defineEmits<{
-  /** Something was saved: plans, pins or a picture. */
+  /** Something was saved: plans, pins, drawings or a picture. */
   changed: []
+  /** The plan being edited changed (picked, created or deleted). */
+  'plan-change': [planId: string | null]
 }>()
 
 const { t } = useI18n()
@@ -120,6 +152,7 @@ const loading = ref(true)
 const loadError = ref(false)
 const selectedPlanId = ref<string | null>(null)
 const plan = computed(() => plans.value.find((p) => p.id === selectedPlanId.value) ?? null)
+watch(selectedPlanId, (id) => emit('plan-change', id))
 const planIndex = computed(() => plans.value.findIndex((p) => p.id === selectedPlanId.value))
 
 async function load() {
@@ -131,7 +164,8 @@ async function load() {
     })
     plans.value = res.data.plans
     if (!plans.value.some((p) => p.id === selectedPlanId.value)) {
-      selectedPlanId.value = plans.value[0]?.id ?? null
+      const initial = plans.value.find((p) => p.id === props.initialPlanId)
+      selectedPlanId.value = (initial ?? plans.value[0])?.id ?? null
     }
   } catch (error) {
     plans.value = []
@@ -140,15 +174,17 @@ async function load() {
     toastApiError(error)
   } finally {
     loading.value = false
+    resetHistory()
   }
 }
 
 watch(() => props.eventId, load, { immediate: true })
 
 /**
- * The nav shows "Map" only while the event has a plan with a picture
- * (`venue_plan_count`), so refresh the selected event after anything that can
- * change that count. The store ignores any event other than the selected one.
+ * The nav shows "Map" only while the event has a plan with a picture or a
+ * drawing (`venue_plan_count`), so refresh the selected event after anything
+ * that can change that count. The store ignores any event other than the
+ * selected one.
  */
 function refreshEventCounts() {
   return authStore.refreshSelectedEvent(props.eventId)
@@ -159,49 +195,75 @@ function replacePlan(updated: VenuePlanRead) {
   if (index >= 0) plans.value[index] = updated
 }
 
-// Name dialog, shared by "add map" and "rename".
-const nameDialog = ref<{ open: boolean; mode: 'create' | 'rename'; name: string }>({
-  open: false,
-  mode: 'create',
-  name: '',
+/** Switch plans only once every drawing step of the current one is saved. */
+async function selectPlan(id: string | null) {
+  if (id === selectedPlanId.value) return
+  editor.flushNudge()
+  await history.flush()
+  selectedPlanId.value = id
+}
+
+const planModel = computed({
+  get: () => selectedPlanId.value,
+  set: (id: string | null) => void selectPlan(id),
 })
-const savingName = ref(false)
-const trimmedName = computed(() => nameDialog.value.name.trim())
+
+// "Add map": name, and blank canvas or picture.
+const createOpen = ref(false)
+const creating = ref(false)
+/** Plans created with "Use a picture": the side panel offers the upload big. */
+const wantsPicture = ref(new Set<string>())
 
 function openCreate() {
-  nameDialog.value = { open: true, mode: 'create', name: '' }
+  createOpen.value = true
 }
+
+async function createPlan(value: { name: string; mode: PlanCreateMode; canvas: PlanAspect }) {
+  if (creating.value) return
+  creating.value = true
+  try {
+    const res = await post<{ data: VenuePlanRead }>({
+      url: `/events/${props.eventId}/venue-plans`,
+      body: { name: value.name, canvas: value.canvas },
+    })
+    plans.value.push(res.data)
+    if (value.mode === 'picture') wantsPicture.value.add(res.data.id)
+    await selectPlan(res.data.id)
+    createOpen.value = false
+    toast.success(t('mapEditor.plans.created'))
+    emit('changed')
+    // A blank plan opens ready to draw.
+    if (value.mode === 'blank') editor.setTool('rect')
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    creating.value = false
+  }
+}
+
+// Rename dialog.
+const renameDialog = ref<{ open: boolean; name: string }>({ open: false, name: '' })
+const savingName = ref(false)
+const trimmedName = computed(() => renameDialog.value.name.trim())
 
 function openRename() {
   if (!plan.value) return
-  nameDialog.value = { open: true, mode: 'rename', name: plan.value.name }
+  renameDialog.value = { open: true, name: plan.value.name }
 }
 
-async function submitName() {
+async function submitRename() {
   const name = trimmedName.value
-  if (!name || savingName.value) return
+  if (!name || savingName.value || !plan.value) return
   savingName.value = true
   try {
-    if (nameDialog.value.mode === 'create') {
-      const res = await post<{ data: VenuePlanRead }>({
-        url: `/events/${props.eventId}/venue-plans`,
-        body: { name },
-      })
-      plans.value.push(res.data)
-      selectedPlanId.value = res.data.id
-      toast.success(t('mapEditor.plans.created'))
-      emit('changed')
-      void refreshEventCounts()
-    } else if (plan.value) {
-      const res = await patch<{ data: VenuePlanRead }>({
-        url: `/venue-plans/${plan.value.id}`,
-        body: { name },
-      })
-      replacePlan(res.data)
-      emit('changed')
-      toast.success(t('mapEditor.plans.saved'))
-    }
-    nameDialog.value.open = false
+    const res = await patch<{ data: VenuePlanRead }>({
+      url: `/venue-plans/${plan.value.id}`,
+      body: { name },
+    })
+    replacePlan(res.data)
+    emit('changed')
+    toast.success(t('mapEditor.plans.saved'))
+    renameDialog.value.open = false
   } catch (error) {
     toastApiError(error)
   } finally {
@@ -218,6 +280,7 @@ async function deletePlan() {
   })
   if (!confirmed) return
   try {
+    await history.flush()
     await del({ url: `/venue-plans/${current.id}` })
     const index = plans.value.findIndex((p) => p.id === current.id)
     plans.value = plans.value.filter((p) => p.id !== current.id)
@@ -241,7 +304,12 @@ async function movePlan(offset: -1 | 1) {
       url: `/events/${props.eventId}/venue-plans/order`,
       body: { plan_ids: ids },
     })
-    plans.value = res.data
+    // The order endpoint answers with plans as stored; keep the drawings we
+    // already hold (they may be newer than a concurrent answer).
+    plans.value = res.data.map((p) => {
+      const known = plans.value.find((q) => q.id === p.id)
+      return known ? { ...p, shapes: known.shapes, shapes_revision: known.shapes_revision } : p
+    })
     emit('changed')
   } catch (error) {
     toastApiError(error)
@@ -250,19 +318,144 @@ async function movePlan(offset: -1 | 1) {
 
 function onUploaded(updated: VenuePlanRead) {
   replacePlan(updated)
+  wantsPicture.value.delete(updated.id)
   emit('changed')
   void refreshEventCounts()
 }
 
+async function removePicture() {
+  const current = plan.value
+  if (!current?.image_etag) return
+  const confirmed = await confirmDestructive({
+    text: t('mapEditor.picture.removeConfirm', { name: current.name }),
+    confirmText: t('mapEditor.picture.remove'),
+  })
+  if (!confirmed) return
+  try {
+    const res = await del<{ data: VenuePlanRead }>({ url: `/venue-plans/${current.id}/image` })
+    replacePlan(res.data)
+    toast.success(t('mapEditor.picture.removed'))
+    emit('changed')
+    void refreshEventCounts()
+  } catch (error) {
+    toastApiError(error)
+  }
+}
+
+// ── Drawing history ───────────────────────────────────────────────────────
+const history = useShapeHistory({
+  send: async (planId, ops, expectedRevision) => {
+    const res = await post<{ data: VenuePlanShapesRead }>({
+      url: `/venue-plans/${planId}/shapes/batch`,
+      body: { ops, expected_revision: expectedRevision },
+    })
+    return res.data
+  },
+  onConflict: async () => {
+    toast.info(t('mapEditor.draw.conflict'))
+    await load()
+  },
+  onError: (error) => toastApiError(error),
+  onSaved: (result, previous) => {
+    const saved = plans.value.find((p) => p.id === result.plan_id)
+    if (saved) {
+      saved.shapes = result.shapes
+      saved.shapes_revision = result.revision
+    }
+    invalidatePlanShapes(result.plan_id)
+    emit('changed')
+    // Drawing the first shape (or deleting the last) can show or hide the map.
+    if (previous.length > 0 !== result.shapes.length > 0) void refreshEventCounts()
+  },
+})
+
+function resetHistory() {
+  const current = plan.value
+  history.reset(
+    current?.id ?? null,
+    sortShapes(current?.shapes ?? []),
+    current?.shapes_revision ?? 0,
+  )
+}
+
+// Leaving with unsaved drawing steps: let the browser ask first.
+useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
+  if (history.pending.value === 0) return
+  event.preventDefault()
+  event.returnValue = ''
+})
+
 // ── Canvas ────────────────────────────────────────────────────────────────
-const width = computed(() => plan.value?.image_width ?? 0)
-const height = computed(() => plan.value?.image_height ?? 0)
+const size = computed(() => (plan.value ? planSize(plan.value) : { W: 0, H: 0 }))
+const width = computed(() => size.value.W)
+const height = computed(() => size.value.H)
 
 const rootRef = ref<HTMLElement | null>(null)
 const svgRef = ref<SVGSVGElement | null>(null)
 const canvasRef = ref<HTMLElement | null>(null)
-const panZoom = usePanZoom(svgRef, { width, height })
+const inspectorRef = ref<InstanceType<typeof VenueShapeInspector> | null>(null)
+
+/** What a press on the canvas landed on: a handle, a shape, or the ground. */
+function pressTarget(event: Event): PressTarget {
+  const el = event.target as Element | null
+  if (!el || typeof el.closest !== 'function') return null
+  const handle = el.closest('[data-handle]')?.getAttribute('data-handle')
+  if (handle) {
+    const [kind, arg] = handle.split(':')
+    if (kind === 'vertex') return { type: 'handle', handle: { kind, index: Number(arg) } }
+    if (kind === 'insert') return { type: 'handle', handle: { kind, edgeIndex: Number(arg) } }
+    if (kind === 'resize' && RECT_HANDLES.includes(arg as RectHandle)) {
+      return { type: 'handle', handle: { kind, handle: arg as RectHandle } }
+    }
+    return { type: 'handle', handle: { kind: 'label' } }
+  }
+  const id = el.closest('[data-shape-id]')?.getAttribute('data-shape-id')
+  return id ? { type: 'shape', id } : null
+}
+
+const panZoom = usePanZoom(svgRef, {
+  width,
+  height,
+  // While placing a pin the plan pans as before; otherwise the tool decides.
+  panFilter: (e) =>
+    placing.value
+      ? e.pointerType !== 'mouse' || e.button === 0
+      : editor.panFilter(e, pressTarget(e)),
+  dblclickZoom: () => editor.tool.value === 'select',
+})
 const { viewBoxAttr, unitsPerPixel, isGesturing } = panZoom
+
+const editor = useShapeEditor({
+  shapes: () => history.shapes.value,
+  size: () => size.value,
+  upp: () => unitsPerPixel.value,
+  toPoint: (x, y) => {
+    const p = panZoom.clientToSvg(x, y)
+    return [width.value > 0 ? p.x / width.value : 0, height.value > 0 ? p.y / height.value : 0]
+  },
+  execute: (command) => history.execute(command),
+  undo: () => history.undo(),
+  redo: () => history.redo(),
+  // The inspector mounts with the label draft, so focus it after the render.
+  onLabelDraft: () => void nextTick(() => inspectorRef.value?.focusLabel()),
+})
+const {
+  tool,
+  selected: selectedShape,
+  selectedId: selectedShapeId,
+  selectedVertex,
+  draft,
+  snapEnabled,
+  snapHit,
+  spaceHeld,
+  displayShapes,
+  grid,
+} = editor
+
+// Two fingers on the plan: whatever one finger started is a pinch now.
+watch(panZoom.pointerCount, (n) => {
+  if (n > 1) editor.abortGesture()
+})
 
 const {
   src,
@@ -270,8 +463,14 @@ const {
   error: imageError,
 } = useAuthedImage(() => planImageUrl(plan.value))
 
+const hasImage = computed(() => !!plan.value?.image_etag)
+const isBlankAndEmpty = computed(
+  () => !!plan.value && !hasImage.value && history.shapes.value.length === 0,
+)
+
 const markers = computed<VenueMarkerRead[]>(() => plan.value?.markers ?? [])
 const locationNames = computed(() => new Map(locations.value.map((l) => [l.id, l.name])))
+const locationNameRecord = computed(() => Object.fromEntries(locationNames.value))
 const placedLocationIds = computed(() =>
   markers.value.flatMap((m) => (m.location_id ? [m.location_id] : [])),
 )
@@ -288,14 +487,75 @@ function markerName(marker: VenueMarkerRead): string {
   return marker.label ? `${marker.label} (${kind})` : kind
 }
 
+const lineDraft = computed(() => {
+  const d = draft.value
+  return d && (d.tool === 'polygon' || d.tool === 'path') ? d : null
+})
+
+const toolHint = computed(() => {
+  if (lineDraft.value || draft.value?.tool === 'label') return null
+  if (tool.value === 'rect') {
+    return isBlankAndEmpty.value ? t('mapEditor.draw.emptyHint') : t('mapEditor.draw.rectHint')
+  }
+  if (tool.value === 'polygon') return t('mapEditor.draw.polygonHint')
+  if (tool.value === 'path') return t('mapEditor.draw.pathHint')
+  if (tool.value === 'label') return t('mapEditor.draw.labelHint')
+  return isBlankAndEmpty.value ? t('mapEditor.draw.emptyHint') : null
+})
+
+const canvasCursor = computed(() => {
+  if (placing.value) return 'cursor-crosshair'
+  if (spaceHeld.value) return 'cursor-grab active:cursor-grabbing'
+  if (tool.value !== 'select') return 'cursor-crosshair'
+  return 'cursor-grab active:cursor-grabbing'
+})
+
+/**
+ * Set when a pointer-up ends an edit drag, so the click the browser fires
+ * right after it is not read as "clicked the empty plan". Dragging the "+"
+ * on an edge replaces that handle with a vertex mid-drag, so the click lands
+ * on the plan itself and would otherwise clear the selection.
+ */
+let swallowClick = false
+
+function onSvgPointerDown(event: PointerEvent) {
+  swallowClick = false
+  if (placing.value) return
+  editor.onPointerDown(event, pressTarget(event))
+}
+
+function onSvgDoubleClick(event: MouseEvent) {
+  if (editor.onDoubleClick()) event.preventDefault()
+}
+
+useEventListener(window, 'pointermove', (e: PointerEvent) => editor.onPointerMove(e))
+useEventListener(window, 'pointerup', (e: PointerEvent) => {
+  if (editor.dragging.value) swallowClick = true
+  editor.onPointerUp(e)
+})
+useEventListener(window, 'pointercancel', (e: PointerEvent) => editor.onPointerCancel(e))
+useEventListener(window, 'blur', () => editor.onBlur())
+
+// One selection at a time: a pin or a drawing.
+watch(selectedShapeId, (id) => {
+  if (id) selectedMarkerId.value = null
+})
+
+// A drawing tool and pin placement exclude each other.
+watch(tool, (next) => {
+  if (next !== 'select') placing.value = null
+})
+
 // ── Placement ─────────────────────────────────────────────────────────────
 type Placing = { key: string; kind: MarkerKind; locationId: string | null; name: string }
 const placing = ref<Placing | null>(null)
-const creating = ref(false)
+const creatingMarker = ref(false)
 
 function startPlacing(next: Placing) {
+  editor.setTool('select')
   placing.value = placing.value?.key === next.key ? null : next
   selectedMarkerId.value = null
+  editor.select(null)
   // On a phone the palette sits below the map; bring the map back into view.
   if (placing.value) {
     void nextTick(() => canvasRef.value?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }))
@@ -334,8 +594,8 @@ function cancelPlacing() {
 async function placeAt(point: Point) {
   const item = placing.value
   const current = plan.value
-  if (!item || !current || creating.value) return
-  creating.value = true
+  if (!item || !current || creatingMarker.value) return
+  creatingMarker.value = true
   try {
     const res = await post<{ data: VenueMarkerRead }>({
       url: `/venue-plans/${current.id}/markers`,
@@ -352,16 +612,21 @@ async function placeAt(point: Point) {
   } catch (error) {
     toastApiError(error)
   } finally {
-    creating.value = false
+    creatingMarker.value = false
   }
 }
 
-/** A click (or tap) on the plan, not on a pin, while placing: put the pin there. */
+/** A click (or tap) on the plan, not on a pin: place a pin, or clear the selection. */
 function onCanvasClick(event: MouseEvent) {
   // The click that ends a pan is neither a placement nor a deselect.
   if (isGesturing.value) return
+  if (swallowClick) {
+    swallowClick = false
+    return
+  }
   if (!placing.value) {
     selectedMarkerId.value = null
+    if (tool.value === 'select' && pressTarget(event) === null) editor.select(null)
     return
   }
   const point = panZoom.clientToSvg(event.clientX, event.clientY)
@@ -375,9 +640,34 @@ function placeInCentre() {
   void placeAt(toNormalised({ x: vb.x + vb.w / 2, y: vb.y + vb.h / 2 }, width.value, height.value))
 }
 
+const OVERLAY_SELECTOR = '[role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]'
+
+/**
+ * Drawing shortcuts belong to the editor: they fire when focus is inside it or
+ * nowhere in particular (the body, after a click on the plan), never from the
+ * rest of the page and never while a dialog or menu is open on top of it.
+ */
+function keyIsForEditor(event: KeyboardEvent): boolean {
+  if (document.querySelector(`[role="dialog"][data-state="open"], [role="alertdialog"]`)) {
+    return false
+  }
+  const target = event.target
+  if (!(target instanceof Element)) return true
+  if (target.closest(OVERLAY_SELECTOR)) return false
+  if (target === document.body || target === document.documentElement) return true
+  return !!rootRef.value?.contains(target)
+}
+
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && placing.value) cancelPlacing()
+  if (!keyIsForEditor(event)) return
+  if (event.key === 'Escape' && placing.value) {
+    cancelPlacing()
+    return
+  }
+  if (!plan.value) return
+  editor.onKeyDown(event)
 })
+useEventListener(document, 'keyup', (event: KeyboardEvent) => editor.onKeyUp(event))
 
 // ── Selected pin ──────────────────────────────────────────────────────────
 const selectedMarkerId = ref<string | null>(null)
@@ -388,12 +678,16 @@ const labelDraft = ref('')
 
 watch(selectedMarker, (marker) => {
   labelDraft.value = marker?.label ?? ''
+  if (marker) editor.select(null)
 })
 
 watch(selectedPlanId, () => {
   placing.value = null
   selectedMarkerId.value = null
+  editor.select(null)
+  editor.cancelDraft()
   panZoom.reset()
+  resetHistory()
 })
 
 /** PATCH a pin; on failure put back what `revert` restores and say why. */
@@ -528,7 +822,7 @@ function onMarkerPointerUp(event: PointerEvent) {
   })
 }
 
-// ── Keyboard ──────────────────────────────────────────────────────────────
+// ── Keyboard (pins) ───────────────────────────────────────────────────────
 const NUDGE = 0.005
 const NUDGE_LARGE = 0.02
 const NUDGE_SAVE_DELAY = 400
@@ -569,6 +863,7 @@ const ARROWS: Record<string, Point> = {
   ArrowDown: { x: 0, y: 1 },
 }
 
+// The pin's own keys are prevented, so the drawing shortcuts on the document skip them.
 function onMarkerKey(event: KeyboardEvent, marker: VenueMarkerRead) {
   const arrow = ARROWS[event.key]
   if (arrow) {
@@ -584,6 +879,7 @@ function onMarkerKey(event: KeyboardEvent, marker: VenueMarkerRead) {
     event.preventDefault()
     selectedMarkerId.value = marker.id
   } else if (event.key === 'Escape') {
+    event.preventDefault()
     selectedMarkerId.value = null
   }
 }
@@ -591,6 +887,7 @@ function onMarkerKey(event: KeyboardEvent, marker: VenueMarkerRead) {
 // Don't lose a nudge that is still waiting for its debounce.
 onBeforeUnmount(() => {
   for (const id of [...nudgeTimers.keys()]) flushNudge(id)
+  editor.flushNudge()
 })
 </script>
 
@@ -612,7 +909,7 @@ onBeforeUnmount(() => {
     >
       <VenuePlanSwitcher
         v-if="!loading && !loadError && plans.length > 0"
-        v-model="selectedPlanId"
+        v-model="planModel"
         :plans="plans"
         class="min-w-0 flex-1"
       >
@@ -710,54 +1007,52 @@ onBeforeUnmount(() => {
       </Button>
     </div>
 
-    <template v-else>
-      <div
-        v-if="plan && !plan.image_etag"
-        :class="embedded ? 'min-h-0 flex-1' : 'h-[50dvh] min-h-64'"
-      >
-        <div
-          v-if="sandbox"
-          class="flex h-full w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-6 text-center"
-          role="note"
-          data-testid="plan-upload-sandbox"
-        >
-          <ImageUp class="text-muted-foreground size-10" aria-hidden="true" />
-          <div class="max-w-sm space-y-1">
-            <p class="font-medium">{{ t('mapEditor.upload.sandboxTitle') }}</p>
-            <p class="text-muted-foreground text-sm">{{ t('mapEditor.upload.sandboxHint') }}</p>
-          </div>
-        </div>
-        <VenuePlanUpload v-else :plan-id="plan.id" @uploaded="onUploaded" />
-      </div>
+    <div
+      v-else-if="plan"
+      class="grid gap-4"
+      :class="
+        embedded
+          ? 'min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1'
+          : 'lg:grid-cols-[minmax(0,1fr)_18rem]'
+      "
+    >
+      <div class="flex min-h-0 min-w-0 flex-col gap-2">
+        <VenueEditorToolbar
+          :tool="tool"
+          :snap-enabled="snapEnabled"
+          :can-undo="history.canUndo.value"
+          :can-redo="history.canRedo.value"
+          :pending="history.pending.value"
+          @set-tool="editor.setTool"
+          @toggle-snap="editor.toggleSnap"
+          @undo="editor.undo"
+          @redo="editor.redo"
+        />
 
-      <div
-        v-else-if="plan"
-        class="grid gap-4"
-        :class="
-          embedded
-            ? 'min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1'
-            : 'lg:grid-cols-[minmax(0,1fr)_18rem]'
-        "
-      >
         <div
           ref="canvasRef"
           class="map-ground relative scroll-mt-20 overflow-hidden rounded-lg border px-4 pt-10 pb-4"
-          :class="embedded ? 'h-full min-h-0' : 'h-[60dvh] min-h-72'"
+          :class="[embedded ? 'min-h-0 flex-1' : 'h-[60dvh] min-h-72', planSurfaceClass(plan)]"
         >
-          <!-- Padding plus `overflow-visible`: a pin on the picture's edge stays whole. -->
+          <!-- Padding plus `overflow-visible`: a pin on the plan's edge stays whole. -->
           <svg
             ref="svgRef"
             :viewBox="viewBoxAttr"
             class="block h-full w-full touch-none overflow-visible select-none"
-            :class="placing ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'"
+            :class="canvasCursor"
             role="group"
             :aria-label="plan.name"
+            aria-describedby="map-editor-shortcuts"
             :aria-busy="imageLoading || undefined"
+            :data-tool="tool"
             data-testid="editor-canvas"
+            @pointerdown="onSvgPointerDown"
+            @pointerleave="editor.onPointerLeave()"
+            @dblclick="onSvgDoubleClick"
             @click="onCanvasClick"
           >
             <image
-              v-if="src"
+              v-if="hasImage && src"
               :href="src"
               x="0"
               y="0"
@@ -765,46 +1060,89 @@ onBeforeUnmount(() => {
               :height="height"
               preserveAspectRatio="none"
             />
-            <template v-for="marker in markers" :key="marker.id">
-              <component
-                :is="isPill(marker) ? VenueMarkerPill : VenueMarkerGlyph"
-                v-bind="
-                  isPill(marker)
-                    ? { name: markerName(marker) }
-                    : { kind: marker.kind, label: markerName(marker) }
-                "
-                :x="marker.x * width"
-                :y="marker.y * height"
-                :scale="unitsPerPixel"
-                :selected="marker.id === selectedMarkerId"
-                role="button"
-                tabindex="0"
-                :aria-label="markerName(marker)"
-                :aria-pressed="marker.id === selectedMarkerId"
-                :aria-describedby="
-                  marker.id === selectedMarkerId ? 'map-editor-nudge-hint' : undefined
-                "
-                :class="draggingId === marker.id ? 'cursor-grabbing' : 'cursor-move'"
-                :data-testid="`map-marker-${marker.location_id ?? marker.id}`"
-                @pointerdown="onMarkerPointerDown($event, marker)"
-                @pointermove="onMarkerPointerMove($event)"
-                @pointerup="onMarkerPointerUp($event)"
-                @pointercancel="onMarkerPointerUp($event)"
-                @click.stop
-                @dblclick.stop
-                @focus="selectedMarkerId = marker.id"
-                @keydown="onMarkerKey($event, marker)"
-              />
-            </template>
+            <rect
+              x="0"
+              y="0"
+              :width="width"
+              :height="height"
+              :style="{
+                fill: hasImage ? 'none' : 'var(--map-canvas)',
+                stroke: 'var(--map-canvas-edge)',
+              }"
+              stroke-width="1"
+              vector-effect="non-scaling-stroke"
+              stroke-dasharray="6 4"
+              pointer-events="none"
+              data-testid="editor-canvas-bounds"
+            />
+            <VenueShapeLayer
+              :shapes="displayShapes"
+              :width="width"
+              :height="height"
+              :units-per-pixel="unitsPerPixel"
+              interactive="all"
+              :selected-shape-ids="selectedShapeId ? [selectedShapeId] : []"
+              :location-names="locationNameRecord"
+              @select-shape="(shape) => editor.select(shape.id)"
+            />
+            <VenueDrawPreview
+              :draft="draft"
+              :snap-hit="snapHit"
+              :width="width"
+              :height="height"
+              :units-per-pixel="unitsPerPixel"
+              :grid="snapEnabled && tool !== 'select' ? grid : null"
+            />
+            <g :class="tool !== 'select' ? 'pointer-events-none' : undefined">
+              <template v-for="marker in markers" :key="marker.id">
+                <component
+                  :is="isPill(marker) ? VenueMarkerPill : VenueMarkerGlyph"
+                  v-bind="
+                    isPill(marker)
+                      ? { name: markerName(marker) }
+                      : { kind: marker.kind, label: markerName(marker) }
+                  "
+                  :x="marker.x * width"
+                  :y="marker.y * height"
+                  :scale="unitsPerPixel"
+                  :selected="marker.id === selectedMarkerId"
+                  role="button"
+                  tabindex="0"
+                  :aria-label="markerName(marker)"
+                  :aria-pressed="marker.id === selectedMarkerId"
+                  :aria-describedby="
+                    marker.id === selectedMarkerId ? 'map-editor-nudge-hint' : undefined
+                  "
+                  :class="draggingId === marker.id ? 'cursor-grabbing' : 'cursor-move'"
+                  :data-testid="`map-marker-${marker.location_id ?? marker.id}`"
+                  @pointerdown="onMarkerPointerDown($event, marker)"
+                  @pointermove="onMarkerPointerMove($event)"
+                  @pointerup="onMarkerPointerUp($event)"
+                  @pointercancel="onMarkerPointerUp($event)"
+                  @click.stop
+                  @dblclick.stop
+                  @focus="selectedMarkerId = marker.id"
+                  @keydown="onMarkerKey($event, marker)"
+                />
+              </template>
+            </g>
+            <VenueEditHandles
+              v-if="selectedShape && tool === 'select'"
+              :shape="selectedShape"
+              :width="width"
+              :height="height"
+              :units-per-pixel="unitsPerPixel"
+              :selected-vertex="selectedVertex"
+            />
           </svg>
 
-          <div v-if="imageLoading" class="absolute inset-0" role="status">
+          <div v-if="hasImage && imageLoading" class="absolute inset-0" role="status">
             <Skeleton class="h-full w-full rounded-none" />
             <span class="sr-only">{{ t('venueMap.canvas.loading') }}</span>
           </div>
           <div
-            v-else-if="imageError"
-            class="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm"
+            v-else-if="hasImage && imageError"
+            class="text-muted-foreground pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center text-sm"
             role="alert"
           >
             <ImageOff class="size-6" />
@@ -823,7 +1161,7 @@ onBeforeUnmount(() => {
             <Button
               size="sm"
               variant="secondary"
-              :disabled="creating"
+              :disabled="creatingMarker"
               data-testid="placement-centre"
               @click="placeInCentre"
             >
@@ -832,6 +1170,55 @@ onBeforeUnmount(() => {
             <Button size="sm" variant="ghost" data-testid="placement-cancel" @click="cancelPlacing">
               <X />
               {{ t('mapEditor.place.cancel') }}
+            </Button>
+          </div>
+          <p
+            v-else-if="toolHint"
+            class="bg-background/90 text-foreground pointer-events-none absolute inset-x-2 top-2 rounded-md border px-3 py-1.5 text-center text-[13px] shadow-sm"
+            role="status"
+            data-testid="draw-hint"
+          >
+            {{ toolHint }}
+          </p>
+
+          <!-- Finishing a shape or a line without a keyboard or a double tap. -->
+          <div
+            v-if="lineDraft"
+            class="bg-background/95 absolute bottom-2 left-2 flex max-w-[calc(100%-4rem)] flex-wrap items-center gap-2 rounded-md border p-1.5 shadow-md"
+            role="toolbar"
+            :aria-label="t(`mapEditor.tools.${lineDraft.tool}`)"
+            data-testid="draw-bar"
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              :disabled="lineDraft.points.length === 0"
+              data-testid="draw-undo-point"
+              @click="editor.undoPoint()"
+            >
+              <Undo2 />
+              {{ t('mapEditor.draw.undoPoint') }}
+            </Button>
+            <Button
+              size="sm"
+              :disabled="lineDraft.points.length < (lineDraft.tool === 'polygon' ? 3 : 2)"
+              :data-testid="lineDraft.tool === 'polygon' ? 'draw-close' : 'draw-finish'"
+              @click="editor.finishDraft()"
+            >
+              {{
+                lineDraft.tool === 'polygon'
+                  ? t('mapEditor.draw.closeShape')
+                  : t('mapEditor.draw.finish')
+              }}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              data-testid="draw-cancel"
+              @click="editor.cancelDraft()"
+            >
+              <X />
+              {{ t('mapEditor.draw.cancel') }}
             </Button>
           </div>
 
@@ -865,139 +1252,203 @@ onBeforeUnmount(() => {
             </Button>
           </div>
         </div>
+      </div>
 
-        <aside class="space-y-4" :class="embedded ? 'min-h-0 overflow-y-auto pb-1' : ''">
-          <section
-            v-if="selectedMarker"
-            class="space-y-3 rounded-lg border p-3"
-            :aria-label="t('mapEditor.marker.title')"
-            data-testid="marker-panel"
-          >
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <p class="text-muted-foreground text-xs">{{ t('mapEditor.marker.title') }}</p>
-                <p class="truncate font-medium">{{ markerName(selectedMarker) }}</p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                data-testid="marker-panel-close"
-                @click="selectedMarkerId = null"
-              >
-                {{ t('mapEditor.marker.close') }}
-              </Button>
+      <aside class="space-y-4" :class="embedded ? 'min-h-0 overflow-y-auto pb-1' : ''">
+        <VenueShapeInspector
+          v-if="selectedShape || draft?.tool === 'label'"
+          ref="inspectorRef"
+          :shape="selectedShape"
+          :label-draft="draft?.tool === 'label'"
+          :locations="locations"
+          :selected-vertex="selectedVertex"
+          :width="width"
+          :height="height"
+          @update="(p) => editor.updateSelected(p)"
+          @duplicate="editor.duplicateSelected()"
+          @delete="editor.deleteSelected()"
+          @reorder="(d) => editor.reorderSelected(d)"
+          @remove-vertex="editor.removeSelectedVertex()"
+          @commit-label="(text) => editor.commitLabel(text)"
+          @cancel-label="editor.cancelDraft()"
+          @close="editor.select(null)"
+        />
+
+        <section
+          v-if="selectedMarker"
+          class="space-y-3 rounded-lg border p-3"
+          :aria-label="t('mapEditor.marker.title')"
+          data-testid="marker-panel"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-muted-foreground text-xs">{{ t('mapEditor.marker.title') }}</p>
+              <p class="truncate font-medium">{{ markerName(selectedMarker) }}</p>
             </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              data-testid="marker-panel-close"
+              @click="selectedMarkerId = null"
+            >
+              {{ t('mapEditor.marker.close') }}
+            </Button>
+          </div>
 
-            <template v-if="selectedMarker.kind !== 'location'">
-              <div class="space-y-1.5">
-                <Label for="map-editor-marker-kind">{{ t('mapEditor.marker.kind') }}</Label>
-                <NativeSelect
-                  id="map-editor-marker-kind"
-                  :model-value="selectedMarker.kind"
-                  class="w-full"
-                  data-testid="marker-kind"
-                  @change="onKindChange"
-                >
-                  <NativeSelectOption
-                    v-for="kind in GENERIC_MARKER_KINDS"
-                    :key="kind"
-                    :value="kind"
-                  >
-                    {{ t(markerKindLabelKey(kind)) }}
-                  </NativeSelectOption>
-                </NativeSelect>
-              </div>
-              <div class="space-y-1.5">
-                <Label for="map-editor-marker-label">{{ t('mapEditor.marker.label') }}</Label>
-                <Input
-                  id="map-editor-marker-label"
-                  v-model="labelDraft"
-                  maxlength="120"
-                  :placeholder="t('mapEditor.marker.labelPlaceholder')"
-                  data-testid="marker-label"
-                  @change="saveLabel"
-                  @keydown.enter.prevent="saveLabel"
-                />
-              </div>
-            </template>
-            <p v-else class="text-muted-foreground text-sm">
-              {{ t('mapEditor.marker.locationHint') }}
-            </p>
+          <template v-if="selectedMarker.kind !== 'location'">
+            <div class="space-y-1.5">
+              <Label for="map-editor-marker-kind">{{ t('mapEditor.marker.kind') }}</Label>
+              <NativeSelect
+                id="map-editor-marker-kind"
+                :model-value="selectedMarker.kind"
+                class="w-full"
+                data-testid="marker-kind"
+                @change="onKindChange"
+              >
+                <NativeSelectOption v-for="kind in GENERIC_MARKER_KINDS" :key="kind" :value="kind">
+                  {{ t(markerKindLabelKey(kind)) }}
+                </NativeSelectOption>
+              </NativeSelect>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="map-editor-marker-label">{{ t('mapEditor.marker.label') }}</Label>
+              <Input
+                id="map-editor-marker-label"
+                v-model="labelDraft"
+                maxlength="120"
+                :placeholder="t('mapEditor.marker.labelPlaceholder')"
+                data-testid="marker-label"
+                @change="saveLabel"
+                @keydown.enter.prevent="saveLabel"
+              />
+            </div>
+          </template>
+          <p v-else class="text-muted-foreground text-sm">
+            {{ t('mapEditor.marker.locationHint') }}
+          </p>
 
-            <p id="map-editor-nudge-hint" class="text-muted-foreground text-xs">
-              {{ t('mapEditor.marker.nudgeHint') }}
-            </p>
+          <p id="map-editor-nudge-hint" class="text-muted-foreground text-xs">
+            {{ t('mapEditor.marker.nudgeHint') }}
+          </p>
 
+          <Button
+            size="sm"
+            variant="outline"
+            class="text-destructive w-full"
+            data-testid="marker-delete"
+            @click="deleteMarker(selectedMarker)"
+          >
+            <Trash2 />
+            {{ t('mapEditor.marker.delete') }}
+          </Button>
+        </section>
+
+        <div class="rounded-lg border p-3">
+          <VenueMarkerPalette
+            :locations="locations"
+            :placed-location-ids="placedLocationIds"
+            :active="placing?.key ?? null"
+            :disabled="creatingMarker"
+            @pick-location="pickLocation"
+            @pick-kind="pickKind"
+          />
+        </div>
+
+        <section
+          class="space-y-2 rounded-lg border p-3"
+          :class="wantsPicture.has(plan.id) && !hasImage ? 'ring-primary/40 ring-2' : ''"
+          :aria-label="t('mapEditor.picture.title')"
+          data-testid="picture-card"
+        >
+          <p class="text-sm font-medium">{{ t('mapEditor.picture.title') }}</p>
+          <p
+            v-if="sandbox"
+            class="text-muted-foreground text-sm"
+            role="note"
+            data-testid="plan-upload-sandbox"
+          >
+            {{
+              hasImage ? t('mapEditor.upload.sandboxReplace') : t('mapEditor.create.pictureSandbox')
+            }}
+          </p>
+          <template v-else-if="!hasImage">
+            <div v-if="wantsPicture.has(plan.id)" class="h-56">
+              <VenuePlanUpload :key="`zone-${plan.id}`" :plan-id="plan.id" @uploaded="onUploaded" />
+            </div>
+            <VenuePlanUpload
+              v-else
+              :key="`add-${plan.id}`"
+              :plan-id="plan.id"
+              compact
+              :label="t('mapEditor.picture.add')"
+              :hint="
+                history.shapes.value.length > 0
+                  ? t('mapEditor.draw.stretchHint')
+                  : t('mapEditor.upload.hint')
+              "
+              @uploaded="onUploaded"
+            />
+          </template>
+          <template v-else>
+            <VenuePlanUpload :plan-id="plan.id" compact @uploaded="onUploaded" />
             <Button
               size="sm"
               variant="outline"
-              class="text-destructive w-full"
-              data-testid="marker-delete"
-              @click="deleteMarker(selectedMarker)"
+              class="text-destructive"
+              data-testid="picture-remove"
+              @click="removePicture"
             >
-              <Trash2 />
-              {{ t('mapEditor.marker.delete') }}
+              <ImageMinus />
+              {{ t('mapEditor.picture.remove') }}
             </Button>
-          </section>
-
-          <div class="rounded-lg border p-3">
-            <VenueMarkerPalette
-              :locations="locations"
-              :placed-location-ids="placedLocationIds"
-              :active="placing?.key ?? null"
-              :disabled="creating"
-              @pick-location="pickLocation"
-              @pick-kind="pickKind"
-            />
-          </div>
-
-          <div class="rounded-lg border p-3">
             <p
-              v-if="sandbox"
-              class="text-muted-foreground text-sm"
-              role="note"
-              data-testid="plan-upload-sandbox"
+              v-if="history.shapes.value.length > 0"
+              class="text-muted-foreground text-xs"
+              data-testid="picture-stretch-hint"
             >
-              {{ t('mapEditor.upload.sandboxReplace') }}
+              {{ t('mapEditor.draw.stretchHint') }}
             </p>
-            <VenuePlanUpload v-else :plan-id="plan.id" compact @uploaded="onUploaded" />
-          </div>
-        </aside>
-      </div>
-    </template>
+          </template>
+        </section>
+      </aside>
+    </div>
 
-    <ResponsiveDialog v-model:open="nameDialog.open">
+    <VenuePlanCreateDialog
+      v-model:open="createOpen"
+      :sandbox="sandbox"
+      :saving="creating"
+      @submit="createPlan"
+    />
+
+    <ResponsiveDialog v-model:open="renameDialog.open">
       <ResponsiveDialogContent>
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>
-            {{
-              nameDialog.mode === 'create'
-                ? t('mapEditor.plans.addTitle')
-                : t('mapEditor.plans.renameTitle')
-            }}
-          </ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>{{ t('mapEditor.plans.renameTitle') }}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription class="sr-only">
+            {{ t('mapEditor.plans.renameDescription') }}
+          </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody class="pb-2">
-          <form id="map-editor-plan-name" class="space-y-1.5" @submit.prevent="submitName">
+          <form id="map-editor-plan-name" class="space-y-1.5" @submit.prevent="submitRename">
             <Label for="map-editor-plan-name-input">{{ t('mapEditor.plans.name') }}</Label>
             <Input
               id="map-editor-plan-name-input"
-              v-model="nameDialog.name"
+              v-model="renameDialog.name"
               maxlength="120"
               :placeholder="t('mapEditor.plans.namePlaceholder')"
-              data-testid="plan-name-input"
+              data-testid="plan-rename-input"
             />
           </form>
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button variant="outline" @click="nameDialog.open = false">
+          <Button variant="outline" @click="renameDialog.open = false">
             {{ t('common.actions.cancel') }}
           </Button>
           <Button
             type="submit"
             form="map-editor-plan-name"
             :disabled="!trimmedName || savingName"
-            data-testid="plan-name-save"
+            data-testid="plan-rename-save"
           >
             {{ t('common.actions.save') }}
           </Button>

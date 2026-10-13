@@ -1,4 +1,61 @@
 {
+    "create": {
+        "aspect": {
+            "landscape": "Querformat",
+            "portrait": "Hochformat",
+            "square": "Quadrat"
+        },
+        "aspectLabel": "Form der Zeichenfläche",
+        "blank": "Selbst zeichnen",
+        "blankHint": "Starte mit einer leeren Fläche und zeichne Räume, Wege und Beschriftungen.",
+        "description": "Gib dem Plan einen Namen und wähle, ob du ihn selbst zeichnest oder ein Bild verwendest.",
+        "name": "Name",
+        "picture": "Bild verwenden",
+        "pictureHint": "Lade einen Grundriss oder ein Foto vom Lageplan hoch. Du kannst trotzdem darauf zeichnen.",
+        "pictureSandbox": "Nicht in der Demo. In deiner eigenen Veranstaltung kannst du hier ein Bild hochladen.",
+        "submit": "Plan anlegen",
+        "title": "Neuer Plan"
+    },
+    "draw": {
+        "cancel": "Abbrechen",
+        "closeShape": "Form schließen",
+        "conflict": "Jemand anderes hat diesen Plan inzwischen geändert. Wir haben den neuesten Stand geladen.",
+        "emptyHint": "Zeichne deinen Veranstaltungsort: Zieh ein Rechteck für einen Raum auf oder wähl oben ein anderes Werkzeug.",
+        "finish": "Fertig",
+        "labelHint": "Tipp auf die Stelle, an der der Text stehen soll.",
+        "labelPlaceholder": "z. B. Große Halle",
+        "pathHint": "Tipp, um Punkte zu setzen. Doppeltipp oder „Fertig“ beendet die Linie.",
+        "polygonHint": "Tipp, um Ecken zu setzen. Tipp auf die erste Ecke oder auf „Form schließen“, um fertig zu werden.",
+        "rectHint": "Zieh ein Rechteck auf.",
+        "saved": "Alles gespeichert",
+        "saving": "Wird gespeichert…",
+        "stretchHint": "Deine Zeichnung passt sich an die Seitenverhältnisse des Bildes an. Prüf, ob noch alles an der richtigen Stelle ist.",
+        "undoPoint": "Punkt zurück"
+    },
+    "inspector": {
+        "back": "Nach hinten",
+        "delete": "Löschen",
+        "duplicate": "Duplizieren",
+        "forward": "Nach vorne",
+        "label": "Beschriftung",
+        "labelSize": "Textgröße",
+        "labelSizes": {
+            "lg": "Groß",
+            "md": "Mittel",
+            "sm": "Klein"
+        },
+        "link": "Verknüpfter Ort",
+        "linkHint": "Wer auf diese Fläche tippt, sieht den Ort.",
+        "linkNone": "Keiner",
+        "moveLabelHint": "Zieh den kleinen Text-Griff auf dem Plan, um die Beschriftung zu verschieben.",
+        "newLabel": "Neuer Text",
+        "order": "Reihenfolge",
+        "removePoint": "Ausgewählten Punkt entfernen",
+        "resetLabel": "Beschriftung zurücksetzen",
+        "strokeWidth": "Linienbreite",
+        "style": "Aussehen",
+        "title": "Ausgewählte Zeichnung"
+    },
     "marker": {
         "close": "Schließen",
         "delete": "Markierung entfernen",
@@ -18,6 +75,14 @@
         "noLocations": "Noch keine Orte. Leg sie im Reiter „Orte“ an.",
         "title": "Markierungen setzen",
         "unplaced": "Noch nicht auf diesem Plan"
+    },
+    "picture": {
+        "add": "Bild darunterlegen",
+        "remove": "Bild entfernen",
+        "removeConfirm": "Das Bild von „{name}“ entfernen? Deine Zeichnung und die Markierungen bleiben.",
+        "removed": "Bild entfernt",
+        "replace": "Bild ersetzen",
+        "title": "Bild"
     },
     "place": {
         "added": "Markierung gesetzt",
@@ -41,6 +106,7 @@
         "name": "Name",
         "namePlaceholder": "z. B. Gelände oder Halle, Erdgeschoss",
         "rename": "Umbenennen",
+        "renameDescription": "Der neue Name steht für alle in der Veranstaltung auf dem Reiter des Plans.",
         "renameTitle": "Plan umbenennen",
         "saved": "Plan gespeichert"
     },
@@ -48,6 +114,18 @@
         "description": "Lade einen Plan deines Veranstaltungsorts hoch und markiere, wo was ist. Helfende finden ihn unter „Lageplan“ und wenn sie eine Schicht öffnen.",
         "tab": "Lageplan",
         "title": "Lageplan"
+    },
+    "tools": {
+        "label": "Text",
+        "path": "Linie",
+        "polygon": "Fläche",
+        "rect": "Rechteck",
+        "redo": "Wiederholen",
+        "select": "Auswählen",
+        "shortcutsHint": "Tastenkürzel: V Auswählen, R Rechteck, P Fläche, L Linie, T Text, G Einrasten. Strg+Z macht Zeichenschritte rückgängig (keine Markierungen).",
+        "snap": "Am Raster einrasten",
+        "title": "Zeichenwerkzeuge",
+        "undo": "Rückgängig"
     },
     "upload": {
         "choose": "Bild auswählen",

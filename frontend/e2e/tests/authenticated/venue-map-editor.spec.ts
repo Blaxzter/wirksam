@@ -65,12 +65,16 @@ test.describe('Venue map editor', () => {
     await expect(editor.getByTestId('map-editor-empty')).toBeVisible()
     await expect(page.getByTestId('sidebar-link-event-map')).toHaveCount(0)
 
-    // ── Add a plan ──
+    // ── Add a plan from a picture ──
     await editor.getByTestId('plan-add').click()
     await page.getByTestId('plan-name-input').fill('Grounds')
+    // The dialog asks: draw it yourself (the default) or use a picture.
+    await expect(page.getByTestId('plan-create-blank').locator('input')).toBeChecked()
+    await page.getByTestId('plan-create-picture').click()
     await page.getByTestId('plan-name-save').click()
-    await expect(editor.getByTestId('plan-upload-zone')).toBeVisible()
-    // A plan without a picture still does not count.
+    // The side panel offers the upload big; the canvas is already there.
+    await expect(editor.getByTestId('picture-card').getByTestId('plan-upload-zone')).toBeVisible()
+    // A plan without a picture or a drawing still does not count.
     await expect(page.getByTestId('sidebar-link-event-map')).toHaveCount(0)
 
     // ── Upload the picture ──

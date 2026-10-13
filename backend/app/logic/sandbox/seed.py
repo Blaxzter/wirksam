@@ -45,15 +45,18 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.user_availability import user_availability as crud_user_availability
-from app.logic.images import NormalizedImage
 from app.logic.notifications.messages import format_time_until, get_message
-from app.logic.sandbox.venue_plan_art import (
+from app.logic.sandbox.venue_plan_shapes import (
+    HEIGHT,
     PLAN_KEYS,
     SPOTS,
+    WIDTH,
     PlanKey,
-    render_demo_plan,
+    demo_shapes,
+    label_text,
 )
 from app.logic.shift_generator import generate_shifts
+from app.logic.venue_shapes import round_point
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
@@ -65,7 +68,7 @@ from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 from app.schemas.sandbox import SandboxRole
 from app.schemas.user_availability import (
     UserAvailabilityCreate,
@@ -119,7 +122,7 @@ class _TaskSpec:
     location_desc_en: str
     location_desc_de: str
     #: Which demo plan the location's marker sits on, and at which drawn spot
-    #: (a key of ``venue_plan_art.SPOTS``); ``None`` keeps it off the map.
+    #: (a key of ``venue_plan_shapes.SPOTS``); ``None`` keeps it off the map.
     marker: tuple[PlanKey, str] | None
     category_en: str
     category_de: str
@@ -400,7 +403,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
     ),
 )
 
-# The demo plans in tab order, by their key in ``venue_plan_art``.
+# The demo plans in tab order, by their key in ``venue_plan_shapes``.
 _PLAN_NAMES: dict[PlanKey, dict[str, str]] = {
     "indoor": {"en": "Building", "de": "Gebäude"},
     "outdoor": {"en": "Outdoor area", "de": "Außengelände"},
@@ -677,36 +680,54 @@ async def _seed_venue_plan(
 ) -> None:
     """The drawn plans, with every placeable location and the generic pins.
 
-    The images are rendered once per plan, language and process
-    (``render_demo_plan`` is cached), so the cost per demo is one ``bytea``
-    insert per plan. Every pin is placed from ``SPOTS``, the table the drawing
-    is made from, so it sits on the feature it names.
+    Both plans are blank canvases drawn with shapes, exactly what an organiser
+    would make in the editor, so they follow the light and dark theme. Every
+    pin is placed from ``SPOTS``, the table the shapes are built from, and the
+    rooms that stand for a place are linked to it through the same spots.
     """
     plans: dict[PlanKey, VenuePlan] = {}
-    images: dict[PlanKey, NormalizedImage] = {}
     for order, key in enumerate(PLAN_KEYS):
-        image = images[key] = render_demo_plan(key, lang)
         plans[key] = VenuePlan(
             event_id=event.id,
             name=_PLAN_NAMES[key][lang],
             sort_order=order,
-            image_etag=image.etag,
-            image_width=image.width,
-            image_height=image.height,
+            canvas_width=WIDTH,
+            canvas_height=HEIGHT,
+            # As if the drawing had been saved in one batch.
+            shapes_revision=1,
         )
         db.add(plans[key])
     # No ORM relationship ties the children to the plan, so the plan rows go
     # in first rather than relying on the flush to order the inserts.
     await db.flush()
+
+    spot_location: dict[tuple[PlanKey, str], uuid.UUID] = {}
+    for spec in _TASK_SPECS:
+        if spec.marker is not None:
+            spot_location.setdefault(spec.marker, locations[spec.location(lang)].id)
     for key, plan in plans.items():
-        db.add(
-            VenuePlanImage(
-                plan_id=plan.id,
-                data=images[key].data,
-                content_type=images[key].content_type,
-                etag=images[key].etag,
+        for order, shape in enumerate(demo_shapes(key)):
+            db.add(
+                VenueShape(
+                    plan_id=plan.id,
+                    location_id=(
+                        spot_location.get((key, shape.link_spot))
+                        if shape.link_spot
+                        else None
+                    ),
+                    kind=shape.kind,
+                    style=shape.style,
+                    points=[round_point(p) for p in shape.points],
+                    label=label_text(shape.label_key, lang)
+                    if shape.label_key
+                    else None,
+                    label_size=shape.label_size,
+                    label_x=shape.label_at[0] if shape.label_at else None,
+                    label_y=shape.label_at[1] if shape.label_at else None,
+                    stroke_width=shape.stroke_width,
+                    sort_order=order,
+                )
             )
-        )
     placed: set[str] = set()
     for spec in _TASK_SPECS:
         name = spec.location(lang)

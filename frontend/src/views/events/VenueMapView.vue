@@ -73,6 +73,7 @@ import {
   markerKindLabelKey,
   staffingLabelKey,
 } from '@/lib/venue-map'
+import { planHasMap, planMarkers, planSurfaceClass } from '@/lib/venue-shapes'
 
 /**
  * The event's venue map: pick a plan, find a place, tap it to see that day's
@@ -245,9 +246,8 @@ watch(
 )
 
 // === Plans ===
-const plans = computed<VenuePlanRead[]>(() =>
-  (mapData.value?.plans ?? []).filter((p) => p.image_etag && p.image_width && p.image_height),
-)
+/** The plans worth showing: those with a picture or a drawing. */
+const plans = computed<VenuePlanRead[]>(() => (mapData.value?.plans ?? []).filter(planHasMap))
 const locations = computed(() => mapData.value?.locations ?? [])
 const locationsById = computed(() => new Map(locations.value.map((l) => [l.id, l])))
 
@@ -292,11 +292,14 @@ const statsById = computed(
 const staffing = computed(() => Object.fromEntries(statsById.value))
 
 /** Every place, by name; its position is the number on its pill. */
-/** Each location's pin: the one on the active plan, else the first elsewhere. */
+/**
+ * Each location's pin: the one on the active plan, else the first elsewhere.
+ * A place drawn as an area without a marker has a virtual pin (`shape:<id>`).
+ */
 const markerByLocation = computed(() => {
   const byLocation = new Map<string, VenueMarkerRead>()
   for (const plan of plans.value) {
-    for (const marker of plan.markers ?? []) {
+    for (const marker of planMarkers(plan)) {
       if (!marker.location_id) continue
       const existing = byLocation.get(marker.location_id)
       if (!existing || (marker.plan_id === planId.value && existing.plan_id !== planId.value)) {
@@ -493,10 +496,17 @@ function onBooked() {
 const editing = ref(false)
 /** The event the editor saved something for since editing began. */
 let editedEventId: string | null = null
+/** The plan open in the editor, so "Done" comes back to it. */
+let editedPlanId: string | null = null
 
 function startEditing() {
   clearSelection()
+  editedPlanId = planId.value
   editing.value = true
+}
+
+function onEditorPlanChange(id: string | null) {
+  editedPlanId = id
 }
 
 function onEditorChanged() {
@@ -511,6 +521,10 @@ function refreshEditedEvent() {
 
 function finishEditing() {
   editing.value = false
+  if (editedPlanId && editedPlanId !== planId.value) {
+    planId.value = editedPlanId
+    setQuery({ plan: editedPlanId, location: undefined })
+  }
   // Plans, pins or pictures may have changed: fetch the map afresh.
   void loadMap({ quiet: !!mapData.value })
   refreshEditedEvent()
@@ -611,8 +625,10 @@ watch(eventId, () => void init(), { immediate: true })
       :event-id="eventId"
       embedded
       :sandbox="!!event?.is_sandbox"
+      :initial-plan-id="planId"
       class="min-h-0 flex-1"
       @changed="onEditorChanged"
+      @plan-change="onEditorPlanChange"
     >
       <template #actions>
         <Button size="sm" class="shrink-0" data-testid="map-edit-done" @click="finishEditing">
@@ -831,7 +847,7 @@ watch(eventId, () => void init(), { immediate: true })
         }}</Button>
       </div>
 
-      <!-- No plan with a picture -->
+      <!-- No plan with a picture or a drawing -->
       <div
         v-else-if="mapData && plans.length === 0"
         class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-6 text-center"
@@ -908,19 +924,22 @@ watch(eventId, () => void init(), { immediate: true })
             </Button>
           </div>
 
-          <!-- Legend -->
+          <!-- Legend. It sits on the plan like the pills do, so it takes the
+               plan's surface (light on a picture, even in dark mode) and the
+               pill colours: its dots then match the pills exactly. -->
           <div
             v-if="!(genericMarker && !isWide)"
-            class="bg-card/95 pointer-events-none absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] space-y-1 rounded-lg border px-2.5 py-1.5 shadow-sm sm:px-3 sm:py-2"
+            class="bg-map-pill border-map-canvas-edge pointer-events-none absolute bottom-3 left-3 max-w-[calc(100%-1.5rem)] space-y-1 rounded-lg border px-2.5 py-1.5 shadow-sm sm:px-3 sm:py-2"
+            :class="planSurfaceClass(activePlan)"
             data-testid="map-legend"
           >
             <p
-              class="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase sm:text-[11px]"
+              class="text-map-pill-ink-soft text-[11px] font-semibold tracking-wide uppercase"
             >
               {{ t('venueMap.legend.title', { day: dataDayLabel }) }}
             </p>
             <ul
-              class="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] sm:block sm:space-y-0.5 sm:text-xs"
+              class="text-map-pill-ink flex flex-wrap gap-x-3 gap-y-0.5 text-xs sm:block sm:space-y-0.5 sm:text-[13px]"
             >
               <li
                 v-for="status in legendStatuses"
@@ -928,7 +947,7 @@ watch(eventId, () => void init(), { immediate: true })
                 class="flex items-center gap-1.5 sm:gap-2"
               >
                 <span
-                  class="size-2.5 rounded-full"
+                  class="ring-map-pill size-3 rounded-full ring-1"
                   :class="STAFFING_CLASSES[status].bg"
                   aria-hidden="true"
                 />

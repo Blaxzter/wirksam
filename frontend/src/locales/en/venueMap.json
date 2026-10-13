@@ -44,6 +44,24 @@
     "planSwitcher": {
         "label": "Choose a map"
     },
+    "shapeKinds": {
+        "label": "Text",
+        "path": "Line",
+        "polygon": "Shape",
+        "rect": "Rectangle"
+    },
+    "shapeStyles": {
+        "area": "Area",
+        "building": "Building",
+        "furniture": "Furniture",
+        "green": "Green space",
+        "parking": "Parking",
+        "path": "Walkway",
+        "room": "Room",
+        "stage": "Stage",
+        "wall": "Wall",
+        "water": "Water"
+    },
     "sheet": {
         "book": "Book",
         "bookShift": "Book {time}",
@@ -71,8 +89,8 @@
         "done": "Done",
         "edit": "Edit",
         "empty": "No venue map yet",
-        "emptyAdmin": "Add a picture of the venue so helpers can see where everything is.",
-        "emptyHint": "Once the organisers add a map of the venue, you can find it here.",
+        "emptyAdmin": "Draw the venue or add a picture of it, so helpers can see where everything is.",
+        "emptyHint": "Once the organisers draw or upload a map of the venue, you can find it here.",
         "goToEditor": "Set up the map",
         "mapControls": "Map controls",
         "more": "More options",

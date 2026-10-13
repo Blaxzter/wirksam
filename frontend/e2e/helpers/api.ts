@@ -17,6 +17,7 @@ import type {
   VenueMarkerCreate,
   VenueMarkerRead,
   VenuePlanRead,
+  VenueShapeRead,
 } from '../../src/client/types.gen.js'
 
 export type {
@@ -27,6 +28,7 @@ export type {
   LocationRead,
   VenueMarkerRead,
   VenuePlanRead,
+  VenueShapeRead,
 }
 export type TaskWithShifts = TaskCreateWithShiftsResponse
 
@@ -297,13 +299,43 @@ export async function createLocation(
   return api<LocationRead>(page, 'POST', `/events/${eventId}/locations`, body)
 }
 
-/** Create an (image-less) venue plan in an event. Event admin required. */
+/**
+ * Create an (image-less) venue plan in an event: a blank canvas of the given
+ * aspect (landscape by default). Event admin required. A bare string is the
+ * plan's name.
+ */
 export async function createVenuePlan(
   page: Page,
   eventId: string,
-  name: string,
+  body: string | { name: string; canvas?: 'landscape' | 'portrait' | 'square' },
 ): Promise<VenuePlanRead> {
-  return api<VenuePlanRead>(page, 'POST', `/events/${eventId}/venue-plans`, { name })
+  const payload = typeof body === 'string' ? { name: body } : body
+  return api<VenuePlanRead>(page, 'POST', `/events/${eventId}/venue-plans`, payload)
+}
+
+/** A plan's drawing and its revision, as the shape endpoints return it. */
+export type PlanShapes = { revision: number; shapes: VenueShapeRead[] }
+
+/**
+ * Apply drawing operations to a plan in one atomic batch
+ * (`{ op: 'create', shape }`, `{ op: 'update', id, patch }`, `{ op: 'delete', id }`).
+ * Event admin required; also allowed in a sandbox.
+ */
+export async function batchShapes(
+  page: Page,
+  planId: string,
+  ops: unknown[],
+  expectedRevision?: number,
+): Promise<PlanShapes> {
+  return api<PlanShapes>(page, 'POST', `/venue-plans/${planId}/shapes/batch`, {
+    ops,
+    ...(expectedRevision === undefined ? {} : { expected_revision: expectedRevision }),
+  })
+}
+
+/** Read a plan's drawing. Any event member. */
+export async function getPlanShapes(page: Page, planId: string): Promise<PlanShapes> {
+  return api<PlanShapes>(page, 'GET', `/venue-plans/${planId}/shapes`)
 }
 
 /**

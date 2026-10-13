@@ -13,7 +13,7 @@ import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 import VenuePlaceOverview from '@/components/venue-map/VenuePlaceOverview.vue'
 import VenuePlanSwitcher from '@/components/venue-map/VenuePlanSwitcher.vue'
 
-import type { LocationPin, LocationRead, VenuePlanRead } from '@/client/types.gen'
+import type { LocationPin, LocationRead, VenuePlanRead, VenueShapeRead } from '@/client/types.gen'
 import i18n from '@/locales/i18n'
 
 /**
@@ -22,8 +22,10 @@ import i18n from '@/locales/i18n'
  * lib and composable specs.
  */
 
+const getMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@/composables/useAuthenticatedClient', () => ({
-  useAuthenticatedClient: () => ({ getAuthToken: async () => 'tok' }),
+  useAuthenticatedClient: () => ({ getAuthToken: async () => 'tok', get: getMock }),
 }))
 
 const fetchMock = vi.fn()
@@ -43,6 +45,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals()
   fetchMock.mockReset()
+  getMock.mockReset()
 })
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
@@ -67,6 +70,11 @@ const plan: VenuePlanRead = {
   image_etag: 'etag1',
   image_width: 1000,
   image_height: 500,
+  canvas_width: 1600,
+  canvas_height: 1000,
+  shapes_revision: 0,
+  width: 1000,
+  height: 500,
   created_at: '2026-10-01T00:00:00Z',
   updated_at: '2026-10-01T00:00:00Z',
   markers: [
@@ -263,6 +271,102 @@ describe('VenueMapCanvas', () => {
     await flush()
     expect(wrapper.get('[role="alert"]').text()).toContain('could not be loaded')
   })
+  it('keeps the light map colours on a picture plan', () => {
+    const wrapper = mount(VenueMapCanvas, { props: { plan }, global: { plugins: [i18n] } })
+    expect(wrapper.get('[data-testid="venue-map-canvas"]').classes()).toContain('map-light')
+  })
+})
+
+describe('VenueMapCanvas on a drawn plan', () => {
+  const hall: VenueShapeRead = {
+    id: 's-hall',
+    plan_id: 'plan-2',
+    kind: 'rect',
+    style: 'room',
+    points: [
+      [0.1, 0.2],
+      [0.5, 0.6],
+    ],
+    label: 'Hall',
+    label_size: 'md',
+    location_id: 'loc-foyer',
+    sort_order: 1,
+  }
+  const path: VenueShapeRead = {
+    id: 's-path',
+    plan_id: 'plan-2',
+    kind: 'path',
+    style: 'path',
+    points: [
+      [0, 0.9],
+      [1, 0.9],
+    ],
+    label_size: 'md',
+    stroke_width: 0.02,
+    sort_order: 0,
+  }
+  const drawn: VenuePlanRead = {
+    ...plan,
+    id: 'plan-2',
+    image_etag: null,
+    image_width: null,
+    image_height: null,
+    width: 1600,
+    height: 1000,
+    shapes_revision: 1,
+    markers: [],
+    shapes: [hall, path],
+  }
+
+  it('draws the shapes under a virtual pill, without fetching a picture', async () => {
+    const wrapper = mount(VenueMapCanvas, {
+      props: { plan: drawn, locations: [foyer], selectedMarkerId: 'shape:s-hall' },
+      global: { plugins: [i18n] },
+    })
+    await flush()
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(wrapper.find('image').exists()).toBe(false)
+    expect(wrapper.get('svg').attributes('viewBox')).toBe('0 0 1600 1000')
+    expect(wrapper.get('[data-testid="venue-map-canvas"]').classes()).not.toContain('map-light')
+
+    // Drawing order follows sort_order.
+    const ids = wrapper.findAll('.venue-shape').map((g) => g.attributes('data-shape-id'))
+    expect(ids).toEqual(['s-path', 's-hall'])
+    const pill = wrapper.get('[data-testid="map-marker-loc-foyer"]')
+    expect(pill.classes()).toContain('venue-pill')
+    // The selected pill's place gets the strong highlight on its area.
+    const area = wrapper.get('[data-testid="venue-shape-s-hall"]')
+    expect(area.attributes('data-selected-location')).toBe('true')
+    await expect(
+      (wrapper.vm as unknown as { ready: () => Promise<void> }).ready(),
+    ).resolves.toBeUndefined()
+  })
+
+  it('selects the place when its area is tapped, not the background', async () => {
+    const wrapper = mount(VenueMapCanvas, {
+      props: { plan: drawn, locations: [foyer] },
+      global: { plugins: [i18n] },
+    })
+    await wrapper.get('[data-testid="venue-shape-s-hall"]').trigger('click')
+    const [[marker]] = wrapper.emitted('select-marker') as [[{ id: string; location_id: string }]]
+    expect(marker.id).toBe('shape:s-hall')
+    expect(marker.location_id).toBe('loc-foyer')
+    expect(wrapper.emitted('select-background')).toBeUndefined()
+
+    const vm = wrapper.vm as unknown as { focusMarker: (id: string, zoom?: number) => void }
+    vm.focusMarker('shape:s-hall', 2)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('svg').attributes('viewBox')).not.toBe('0 0 1600 1000')
+  })
+
+  it('ignores taps on areas when not interactive', async () => {
+    const wrapper = mount(VenueMapCanvas, {
+      props: { plan: drawn, locations: [foyer], interactive: false },
+      global: { plugins: [i18n] },
+    })
+    await wrapper.get('[data-testid="venue-shape-s-hall"]').trigger('click')
+    expect(wrapper.emitted('select-marker')).toBeUndefined()
+  })
 })
 
 describe('VenueMiniMap', () => {
@@ -273,6 +377,11 @@ describe('VenueMiniMap', () => {
     image_etag: 'etag1',
     image_width: 1000,
     image_height: 500,
+    canvas_width: 1600,
+    canvas_height: 1000,
+    shapes_revision: 0,
+    width: 1000,
+    height: 500,
     x: 0.5,
     y: 0.5,
   }
@@ -309,6 +418,57 @@ describe('VenueMiniMap', () => {
     await expect(
       (wrapper.vm as unknown as { ready: () => Promise<void> }).ready(),
     ).resolves.toBeUndefined()
+  })
+
+  it('draws the shapes of a drawn plan, fetched by revision', async () => {
+    const shape: VenueShapeRead = {
+      id: 's1',
+      plan_id: 'plan-3',
+      kind: 'rect',
+      style: 'stage',
+      points: [
+        [0.4, 0.4],
+        [0.6, 0.6],
+      ],
+      label_size: 'md',
+      location_id: 'loc-foyer',
+      sort_order: 0,
+    }
+    getMock.mockResolvedValue({ data: { plan_id: 'plan-3', revision: 4, shapes: [shape] } })
+    const drawnPin: LocationPin = {
+      ...pin,
+      plan_id: 'plan-3',
+      marker_id: null,
+      shape_id: 's1',
+      image_etag: null,
+      image_width: null,
+      image_height: null,
+      width: 1600,
+      height: 1000,
+      shapes_revision: 4,
+      shape_count: 1,
+    }
+    const wrapper = mount(VenueMiniMap, {
+      props: { eventId: 'e1', pin: drawnPin, locationId: 'loc-foyer', static: true },
+      global: { plugins: [i18n, router] },
+    })
+    await (wrapper.vm as unknown as { ready: () => Promise<void> }).ready()
+    await flush()
+    expect(getMock).toHaveBeenCalledWith({ url: '/venue-plans/plan-3/shapes' })
+    expect(fetchMock).not.toHaveBeenCalled()
+    const g = wrapper.get('[data-testid="venue-shape-s1"]')
+    expect(g.attributes('data-selected-location')).toBe('true')
+    expect(wrapper.get('[data-testid="venue-mini-map"]').classes()).not.toContain('map-light')
+  })
+
+  it('does not ask for shapes when the plan has none', async () => {
+    const wrapper = mount(VenueMiniMap, {
+      props: { eventId: 'e1', pin, static: true },
+      global: { plugins: [i18n, router] },
+    })
+    await flush()
+    expect(getMock).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="venue-mini-map"]').classes()).toContain('map-light')
   })
 })
 

@@ -23,7 +23,7 @@ generation config; shifts before, on and after today; five more guest accounts
 as teammates, with availabilities; bookings that leave the rota deliberately
 uneven; a notification inbox for the visitor; the tasks' locations as real
 `locations` rows with a short description each, plus two venue plans (the
-building and the outdoor area) with drawn images and markers on them; and — for the manager role only — one pending
+building and the outdoor area) drawn as shapes, with markers on them; and — for the manager role only — one pending
 invitation, one pending join request, and the notification telling them about
 it.
 
@@ -31,14 +31,20 @@ The venue plan exists for the same reason as the inbox: a sandbox may not
 upload an image (`PUT /venue-plans/{id}/image` answers 403
 `sandbox.upload_disabled`, because it would store an anonymous visitor's file),
 so without a seeded plan the map would be an empty state the visitor can do
-nothing about. `logic/sandbox/venue_plan_art.py` draws both with Pillow and
-runs them through the same `normalize_image` pipeline as an upload, cached per
-plan and language. Every marker is placed from its `SPOTS` table, the same
-numbers the drawing uses, so a pin always sits on the feature it names. Today's
+nothing about. Both plans are blank canvases made of `venue_shapes` rows
+(rooms, areas, paths, captions), exactly what an organiser would draw in the
+editor, so they are vectors that follow the light and dark theme rather than
+pictures. `logic/sandbox/venue_plan_shapes.py` lists them shape by shape,
+language-free; the seeder resolves the captions. Every marker is placed from its
+`SPOTS` table, the same numbers the shapes are built from, so a pin always sits
+on the feature it names, and the demo rooms that stand for a place (main hall,
+café counter, food stalls, ...) are linked to it through the same spots. Today's
 shifts at the pinned places are filled to fixed shares rather than at random
 (`today_fill` in `seed.py`), so the map's staffing colours always show a mix of
 full, partly staffed and short. Every other map edit (plans, markers,
-locations) stays allowed, so a manager can still try the editor.
+locations, drawing shapes through `POST /venue-plans/{id}/shapes/batch`, and
+removing a picture) stays allowed, so a manager can still try the editor. Only
+the upload is refused.
 
 The inbox is the one part of the seed that exists because of a guard rather
 than in spite of one. `NotificationService` drops a sandbox recipient *before*
@@ -97,10 +103,12 @@ leaves the orphans described above.
 3. shift_batches, then tasks (by event_id)   — never by cascade from the event
 4. user_availabilities, event_memberships
 5. venue_markers (by plan, then by location),
-   venue_plan_images, venue_plans, locations — all cascade from the event too;
-                                                explicit so the plan image
-                                                visibly goes, and the locations
-                                                go after the rows pointing at them
+   venue_shapes, venue_plan_images,
+   venue_plans, locations                    — all cascade from the event too;
+                                                explicit so the drawing and any
+                                                image visibly go, and the
+                                                locations go after the rows
+                                                pointing at them
 6. events                                    — invitations and join requests cascade
 7. auth_sessions, then users                 — last, always; notifications,
                                                 avatars and tokens cascade from
@@ -168,7 +176,7 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `logic/notifications/service.py` | a sandbox recipient gets **no notification row**, not merely no delivery — which is why the demo inbox is seeded directly instead |
 | `logic/notifications/triggers.py::dispatch_task_published` | hard stop — that fan-out reaches every active account on the installation |
 | `api/routes/auth.py` | change-password and resend-verification return 403 `sandbox.not_available` |
-| `api/routes/venue_map.py` | plan image upload returns 403 `sandbox.upload_disabled`. Locations, plans and markers need no guard of their own: every one of them belongs to one event and is only reachable through `require_event_visible` |
+| `api/routes/venue_map.py` | plan image upload returns 403 `sandbox.upload_disabled`. Locations, plans, markers and shapes need no guard of their own: every one of them belongs to one event and is only reachable through `require_event_visible` |
 
 Note what is deliberately **not** blocked: member role changes and join-request
 decisions. The manager tour walks a visitor through both, and neither sends mail

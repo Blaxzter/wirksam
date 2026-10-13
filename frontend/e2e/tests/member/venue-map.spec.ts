@@ -8,10 +8,14 @@
 import { expect, test } from '../../fixtures.js'
 import {
   type EventRead,
+  type LocationRead,
   type MappedEvent,
   addMember,
   apiStatus,
+  batchShapes,
   createEvent,
+  createLocation,
+  createVenuePlan,
   deleteEvent,
   deleteTask,
   futureDate,
@@ -131,5 +135,103 @@ test.describe('Venue map – nothing to show', () => {
   test('someone outside the event cannot read its map', async ({ memberPage }) => {
     // 404, not 403: a private event must not be probed by id.
     expect(await apiStatus(memberPage, 'GET', `/events/${seeded.event.id}/venue-map`)).toBe(404)
+  })
+})
+
+test.describe('Venue map – a drawn plan', () => {
+  let drawn: { event: EventRead; location: LocationRead; shapeId: string }
+
+  test.beforeEach(async ({ adminPage, disposablePage, disposableUser }) => {
+    const event = await createEvent(
+      adminPage,
+      uniqueName('E2E Drawn Map'),
+      'published',
+      'private',
+      {
+        start: futureDate(1),
+        end: futureDate(2),
+      },
+    )
+    const location = await createLocation(adminPage, event.id, { name: uniqueName('Main Hall') })
+    // A blank canvas with one room linked to the place, and no marker for it.
+    const plan = await createVenuePlan(adminPage, event.id, { name: 'Building' })
+    const { shapes } = await batchShapes(
+      adminPage,
+      plan.id,
+      [
+        {
+          op: 'create',
+          shape: {
+            kind: 'rect',
+            style: 'room',
+            points: [
+              [0.2, 0.2],
+              [0.8, 0.8],
+            ],
+            label: 'Hall',
+            location_id: location.id,
+          },
+        },
+      ],
+      0,
+    )
+    drawn = { event, location, shapeId: shapes[0]!.id }
+    await addMember(adminPage, disposablePage, event.id, disposableUser.email)
+    await setSelectedEvent(disposablePage, event.id)
+  })
+
+  test.afterEach(async ({ adminPage }) => {
+    await deleteEvent(adminPage, drawn.event.id).catch(() => {})
+  })
+
+  test('a room drawn for a place gets a pill and opens the place', async ({
+    disposablePage: page,
+  }) => {
+    const { event, location, shapeId } = drawn
+    await page.goto(`/app/map/${event.id}`)
+
+    // A drawing alone makes it a map: the nav entry is there.
+    await expect(page.getByTestId('sidebar-link-event-map')).toBeVisible()
+    const room = page.getByTestId(`venue-shape-${shapeId}`)
+    await expect(room).toBeVisible()
+    // The place has no marker, so its area carries a pill of its own.
+    await expect(page.getByTestId(`map-marker-${location.id}`)).toBeVisible()
+
+    // Tap the room away from its pill (which sits in the middle).
+    await room.locator('.vs-body').click({ position: { x: 12, y: 12 } })
+    await expect(page.getByTestId('location-sheet-title')).toHaveText(location.name)
+    await expect(room).toHaveAttribute('data-selected-location', 'true')
+  })
+
+  test('the drawing and the pills follow the dark theme', async ({ disposablePage: page }) => {
+    const { event, location, shapeId } = drawn
+    const body = page.getByTestId(`venue-shape-${shapeId}`).locator('.vs-body')
+    const name = page.getByTestId(`map-marker-${location.id}`).getByTestId('marker-name')
+    const fill = (el: Element) => getComputedStyle(el).fill
+
+    await page.emulateMedia({ colorScheme: 'light' })
+    await page.goto(`/app/map/${event.id}`)
+    await expect(body).toBeVisible()
+    const lightFill = await body.evaluate(fill)
+
+    await page.emulateMedia({ colorScheme: 'dark' })
+    await page.reload()
+    await expect(body).toBeVisible()
+    await expect.poll(() => body.evaluate(fill)).not.toBe(lightFill)
+    // Pill text turns light on the dark pill (OKLab lightness above 0.8).
+    const lightness = await name.evaluate((el) => {
+      const ctx = document.createElement('canvas').getContext('2d')!
+      ctx.fillStyle = getComputedStyle(el).fill
+      ctx.fillRect(0, 0, 1, 1)
+      const [r, g, b] = [...ctx.getImageData(0, 0, 1, 1).data].map((v) => {
+        const c = v / 255
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+      }) as [number, number, number]
+      const l = Math.cbrt(0.4122214708 * r + 0.5363015195 * g + 0.0514459929 * b)
+      const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+      const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+      return 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
+    })
+    expect(lightness).toBeGreaterThan(0.8)
   })
 })

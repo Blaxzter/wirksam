@@ -25,7 +25,7 @@ from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 
 # ``test_event`` runs 2026-06-10 → 2026-06-14. Cloning it to 2027-06-09 is a
 # whole-year move that is deliberately *not* a round number of weeks, so an
@@ -1737,6 +1737,8 @@ class TestCloneLocationsAndVenueMap:
         assert plan.sort_order == test_venue_plan.sort_order
         assert plan.image_etag == test_venue_plan.image_etag
         assert (plan.image_width, plan.image_height) == (800, 600)
+        # Nothing drawn on the source, so nothing for clients to fetch.
+        assert plan.shapes_revision == 0
 
         images = (
             (
@@ -1775,6 +1777,84 @@ class TestCloneLocationsAndVenueMap:
         assert [loc.id for loc in source_locations] == [test_location.id]
         await db_session.refresh(test_location_marker)
         assert test_location_marker.location_id == test_location.id
+
+    async def test_shapes_are_copied_with_their_links_remapped(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_location: Location,
+        test_venue_plan: VenuePlan,
+        test_venue_shapes: list[VenueShape],
+        blank_plan: VenuePlan,
+        test_private_event: Event,
+        as_event_admin: None,
+    ):
+        """New ids, the clone's own location, canvas size kept, revision 1 (so
+        clients fetch the copied drawing);
+        a link that cannot be remapped is cleared and the area kept."""
+        blank_plan.canvas_width, blank_plan.canvas_height = 1000, 1600
+        stray = Location(event_id=test_private_event.id, name="Elsewhere")
+        db_session.add_all([blank_plan, stray])
+        await db_session.flush()
+        db_session.add(
+            VenueShape(
+                plan_id=blank_plan.id,
+                location_id=stray.id,
+                kind="polygon",
+                style="area",
+                points=[[0, 0], [1, 0], [0, 1]],
+            )
+        )
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event, tasks=[]),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["plans_created"] == 2
+        assert r.json()["event"]["venue_plan_count"] == 2
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        [copy] = await _locations_of(db_session, new_event_id)
+
+        plans = (
+            (
+                await db_session.execute(
+                    select(VenuePlan)
+                    .where(col(VenuePlan.event_id) == new_event_id)
+                    .order_by(col(VenuePlan.sort_order))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        ground, garden = plans
+        assert (garden.canvas_width, garden.canvas_height) == (1000, 1600)
+        # Not 0: that would tell the mini-map there is nothing drawn to fetch.
+        assert (ground.shapes_revision, garden.shapes_revision) == (1, 1)
+
+        def shapes_of(plan_id: uuid.UUID):
+            return db_session.execute(
+                select(VenueShape)
+                .where(col(VenueShape.plan_id) == plan_id)
+                .order_by(col(VenueShape.sort_order))
+            )
+
+        copied = (await shapes_of(ground.id)).scalars().all()
+        assert [s.kind for s in copied] == [s.kind for s in test_venue_shapes]
+        assert {s.id for s in copied}.isdisjoint({s.id for s in test_venue_shapes})
+        assert [s.location_id for s in copied] == [copy.id, None, None, None]
+        for new, old in zip(copied, test_venue_shapes, strict=True):
+            assert (new.style, new.points, new.label, new.label_size) == (
+                old.style,
+                old.points,
+                old.label,
+                old.label_size,
+            )
+            assert new.stroke_width == old.stroke_width
+        [area] = (await shapes_of(garden.id)).scalars().all()
+        assert area.location_id is None
 
     async def test_event_without_locations_reports_zero(
         self,

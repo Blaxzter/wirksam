@@ -55,6 +55,10 @@ Locations (#182) and the venue map (#185), all on `test_event`:
 - `test_venue_plan` - "Ground floor", with an 800x600 image row stored and
   `image_etag` / `image_width` / `image_height` set on the plan
 - `test_location_marker` - `test_location` placed on `test_venue_plan`
+- `test_venue_shapes` - one shape of each kind on `test_venue_plan`, in drawing
+  order: a rect linked to `test_location`, a polygon, a path and a text label
+  (the plan's `shapes_revision` is set to 1)
+- `blank_plan` - "Garden", a second plan with no image (a 1600x1000 blank canvas)
 - `make_png(width, height, color=...)` - module helper (not a fixture) that
   builds a PNG in-process; import it from `tests.fixtures.locations`
 

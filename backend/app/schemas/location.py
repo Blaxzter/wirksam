@@ -10,6 +10,7 @@ from pydantic import (
     ConfigDict,
     Field,
     StringConstraints,
+    computed_field,
     field_validator,
 )
 
@@ -106,16 +107,35 @@ class LocationRead(LocationBase):
 
 
 class LocationPin(BaseModel):
-    """Where a location sits on one venue plan."""
+    """Where a location sits on one venue plan.
+
+    A marker, or the centroid of a linked area when the plan has no marker for
+    this location (then ``marker_id`` is null and ``shape_id`` names the area).
+    """
 
     plan_id: uuid.UUID
     plan_name: str
-    marker_id: uuid.UUID
+    marker_id: uuid.UUID | None = None
+    shape_id: uuid.UUID | None = None
     image_etag: str | None = None
     image_width: int | None = None
     image_height: int | None = None
+    canvas_width: int
+    canvas_height: int
+    shapes_revision: int
+    shape_count: int = Field(default=0, description="Shapes drawn on the plan")
     x: float
     y: float
+
+    @computed_field(description="Effective plan width: the image's, else the canvas's")  # type: ignore[prop-decorator]
+    @property
+    def width(self) -> int:
+        return self.image_width or self.canvas_width
+
+    @computed_field(description="Effective plan height: the image's, else the canvas's")  # type: ignore[prop-decorator]
+    @property
+    def height(self) -> int:
+        return self.image_height or self.canvas_height
 
 
 class LocationDetailRead(LocationRead):

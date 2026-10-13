@@ -107,7 +107,9 @@ export function staffingLabelKey(status: StaffingStatus): string {
 /**
  * Literal class names per status, so Tailwind's scanner emits them. The
  * colours are theme tokens (`--staff-*` in `index.css`) with a light and a
- * dark value each.
+ * dark value each. A chip's text uses the darker (light mode) or brighter
+ * (dark mode) `--staff-*-ink`, because the fill colour itself is too weak as
+ * small text on its own 12% tint.
  */
 export const STAFFING_CLASSES: Record<
   StaffingStatus,
@@ -117,22 +119,22 @@ export const STAFFING_CLASSES: Record<
     fill: 'fill-staff-full',
     stroke: 'stroke-staff-full',
     bg: 'bg-staff-full',
-    text: 'text-staff-full',
-    chip: 'border-staff-full/40 bg-staff-full/10 text-staff-full',
+    text: 'text-staff-full-ink',
+    chip: 'border-staff-full/50 bg-staff-full/12 text-staff-full-ink',
   },
   partial: {
     fill: 'fill-staff-partial',
     stroke: 'stroke-staff-partial',
     bg: 'bg-staff-partial',
-    text: 'text-staff-partial',
-    chip: 'border-staff-partial/50 bg-staff-partial/10 text-foreground',
+    text: 'text-staff-partial-ink',
+    chip: 'border-staff-partial/50 bg-staff-partial/12 text-staff-partial-ink',
   },
   short: {
     fill: 'fill-staff-short',
     stroke: 'stroke-staff-short',
     bg: 'bg-staff-short',
-    text: 'text-staff-short',
-    chip: 'border-staff-short/40 bg-staff-short/10 text-staff-short',
+    text: 'text-staff-short-ink',
+    chip: 'border-staff-short/50 bg-staff-short/12 text-staff-short-ink',
   },
   none: {
     fill: 'fill-staff-none',

@@ -5,8 +5,9 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.logic.venue_shapes import LINKABLE_KINDS, shape_anchor
 from app.models.location import Location
-from app.models.venue_plan import VenueMarker, VenuePlan
+from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 from app.schemas.location import LocationCreate, LocationPin, LocationUpdate
 
 
@@ -93,36 +94,98 @@ class CRUDLocation:
 
     async def delete(self, session: AsyncSession, *, location: Location) -> None:
         """Delete a location. The database nulls ``location_id`` on tasks,
-        batches and shifts (their text stays) and drops its markers."""
+        batches, shifts and shapes (their text and drawing stay) and drops its
+        markers."""
         await session.delete(location)
         await session.flush()
 
     async def pins_for_location(
         self, session: AsyncSession, *, location_id: uuid.UUID
     ) -> list[LocationPin]:
-        """Every placement of a location, in plan order."""
-        result = await session.execute(
-            select(VenueMarker, VenuePlan)
-            .join(VenuePlan, col(VenuePlan.id) == col(VenueMarker.plan_id))
-            .where(col(VenueMarker.location_id) == location_id)
-            .order_by(
-                col(VenuePlan.sort_order),
-                col(VenuePlan.created_at),
-                col(VenuePlan.id),
+        """Every placement of a location, in plan order.
+
+        A marker wins. On a plan where the location has no marker but a linked
+        rect or polygon, the first such area (by ``sort_order``) yields a pin
+        at its centroid, so a drawn room shows up in mini-maps too.
+        """
+        marker_rows = (
+            (
+                await session.execute(
+                    select(VenueMarker, VenuePlan)
+                    .join(VenuePlan, col(VenuePlan.id) == col(VenueMarker.plan_id))
+                    .where(col(VenueMarker.location_id) == location_id)
+                )
             )
+            .tuples()
+            .all()
+        )
+        shape_rows = (
+            (
+                await session.execute(
+                    select(VenueShape, VenuePlan)
+                    .join(VenuePlan, col(VenuePlan.id) == col(VenueShape.plan_id))
+                    .where(
+                        col(VenueShape.location_id) == location_id,
+                        col(VenueShape.kind).in_(LINKABLE_KINDS),
+                    )
+                    .order_by(
+                        col(VenueShape.sort_order),
+                        col(VenueShape.created_at),
+                        col(VenueShape.id),
+                    )
+                )
+            )
+            .tuples()
+            .all()
+        )
+
+        # (plan, marker id, shape, x, y) per placement.
+        placed: list[
+            tuple[VenuePlan, uuid.UUID | None, VenueShape | None, float, float]
+        ] = [
+            (plan, marker.id, None, marker.x, marker.y) for marker, plan in marker_rows
+        ]
+        with_marker = {plan.id for plan, *_ in placed}
+        for shape, plan in shape_rows:
+            if plan.id in with_marker:
+                continue
+            with_marker.add(plan.id)
+            x, y = shape_anchor(shape.kind, shape.points)
+            placed.append((plan, None, shape, x, y))
+        if not placed:
+            return []
+
+        counts = dict(
+            (
+                await session.execute(
+                    select(col(VenueShape.plan_id), func.count())
+                    .where(col(VenueShape.plan_id).in_({p.id for p, *_ in placed}))
+                    .group_by(col(VenueShape.plan_id))
+                )
+            )
+            .tuples()
+            .all()
+        )
+        placed.sort(
+            key=lambda row: (row[0].sort_order, row[0].created_at, str(row[0].id))
         )
         return [
             LocationPin(
                 plan_id=plan.id,
                 plan_name=plan.name,
-                marker_id=marker.id,
+                marker_id=marker_id,
+                shape_id=shape.id if shape is not None else None,
                 image_etag=plan.image_etag,
                 image_width=plan.image_width,
                 image_height=plan.image_height,
-                x=marker.x,
-                y=marker.y,
+                canvas_width=plan.canvas_width,
+                canvas_height=plan.canvas_height,
+                shapes_revision=plan.shapes_revision,
+                shape_count=counts.get(plan.id, 0),
+                x=x,
+                y=y,
             )
-            for marker, plan in result.tuples().all()
+            for plan, marker_id, shape, x, y in placed
         ]
 
 

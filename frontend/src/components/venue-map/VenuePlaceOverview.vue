@@ -79,7 +79,7 @@ const totals = computed(() =>
           @click="emit('select', row.location)"
         >
           <span
-            class="text-staff-foreground flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums"
+            class="text-staff-foreground flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums"
             :class="row.classes.bg"
             aria-hidden="true"
           >
@@ -97,13 +97,13 @@ const totals = computed(() =>
                 <span class="sr-only">{{ t('venueMap.panel.notOnMap') }}</span>
               </template>
             </span>
-            <span class="text-muted-foreground block truncate text-xs">
+            <span class="text-foreground/75 block truncate text-[13px]">
               {{ t(staffingLabelKey(row.status)) }}
             </span>
           </span>
           <span
             v-if="row.stat && row.stat.capacity > 0"
-            class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold tabular-nums"
+            class="shrink-0 rounded-full border px-2 py-0.5 text-[13px] font-semibold tabular-nums"
             :class="row.classes.chip"
           >
             {{ row.stat.booked }}/{{ row.stat.capacity }}

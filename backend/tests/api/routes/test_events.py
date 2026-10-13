@@ -18,7 +18,7 @@ from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 
 
 @pytest.mark.asyncio
@@ -543,6 +543,34 @@ async def _location_graph(
 @pytest.mark.asyncio
 class TestEventVenueMap:
     """What the venue map adds to the event read, and to deleting an event."""
+
+    async def test_venue_plan_count_counts_drawn_plans_but_not_pins_alone(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+    ):
+        """A blank plan with a shape is a map; one with only pins is not yet."""
+        drawn = VenuePlan(event_id=test_event.id, name="Drawn", sort_order=0)
+        pins_only = VenuePlan(event_id=test_event.id, name="Pins", sort_order=1)
+        db_session.add_all([drawn, pins_only])
+        await db_session.flush()
+        db_session.add_all(
+            [
+                VenueShape(
+                    plan_id=drawn.id,
+                    kind="rect",
+                    style="room",
+                    points=[[0.1, 0.1], [0.5, 0.5]],
+                ),
+                VenueMarker(plan_id=pins_only.id, kind="toilets", x=0.5, y=0.5),
+            ]
+        )
+        await db_session.flush()
+
+        r = await async_client.get(f"/api/v1/events/{test_event.id}")
+        assert r.status_code == 200
+        assert r.json()["venue_plan_count"] == 1
 
     async def test_venue_plan_count_counts_only_plans_with_an_image(
         self,

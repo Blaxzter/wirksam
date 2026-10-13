@@ -38,9 +38,11 @@ from tests.fixtures.events import (
     test_user_availability_with_dates,
 )
 from tests.fixtures.locations import (
+    blank_plan,
     test_location,
     test_location_marker,
     test_venue_plan,
+    test_venue_shapes,
 )
 from tests.fixtures.sandbox import (
     SandboxFactory,

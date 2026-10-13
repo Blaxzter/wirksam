@@ -39,8 +39,12 @@ from sqlmodel import col
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic.notifications.registry import classification_for_code
 from app.logic.sandbox.seed import guest_display_name
-from app.logic.sandbox.venue_plan_art import PLAN_KEYS, SPOTS, render_demo_plan
-from app.logic.venue_map import PLAN_MAX_BYTES, PLAN_MAX_DIM
+from app.logic.sandbox.venue_plan_shapes import (
+    PLAN_KEYS,
+    SPOTS,
+    demo_shapes,
+    label_text,
+)
 from app.models.booking import Booking
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
@@ -52,8 +56,9 @@ from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.schemas.sandbox import SandboxRole
+from app.schemas.venue_map import VenueShapeCreate
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
 
 
@@ -681,10 +686,11 @@ class TestSeededVenueMap:
             # The denormalised text is what every read path shows.
             assert row.location == locations[row.location_id].name
 
-    async def test_two_plans_with_images_and_markers(
+    async def test_two_drawn_plans_with_markers(
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
     ) -> None:
-        """The building and the grounds around it, in that order, each drawn."""
+        """The building and the grounds around it, in that order, each drawn
+        as shapes on a blank canvas (no picture, so it follows the theme)."""
         plans = sorted(
             await _plans(db_session, test_sandbox), key=lambda p: p.sort_order
         )
@@ -693,16 +699,21 @@ class TestSeededVenueMap:
 
         markers_by_plan: dict[uuid.UUID, list[VenueMarker]] = {}
         for plan in plans:
-            assert plan.image_etag is not None
-            assert (plan.image_width, plan.image_height) == (1600, 1000)
-            image = (
+            assert plan.image_etag is None
+            assert (plan.canvas_width, plan.canvas_height) == (1600, 1000)
+            assert plan.shapes_revision == 1
+            images = (
                 await db_session.execute(
                     select(VenuePlanImage).where(col(VenuePlanImage.plan_id) == plan.id)
                 )
-            ).scalar_one()
-            assert image.etag == plan.image_etag
-            assert image.content_type == "image/webp"
-            assert image.data.startswith(b"RIFF")
+            ).scalars()
+            assert list(images) == []
+            shapes = (
+                await db_session.execute(
+                    select(VenueShape).where(col(VenueShape.plan_id) == plan.id)
+                )
+            ).scalars()
+            assert len(list(shapes)) > 20
             markers_by_plan[plan.id] = list(
                 (
                     await db_session.execute(
@@ -748,7 +759,7 @@ class TestSeededVenueMap:
     async def test_pins_sit_on_the_drawn_spots(
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
     ) -> None:
-        """Every pin is placed from ``SPOTS``, the table the picture is drawn from.
+        """Every pin is placed from ``SPOTS``, the table the shapes are built from.
 
         Hand-typed coordinates drift the moment the drawing changes; a pin
         floating next to the stall it names is the kind of detail that makes a
@@ -806,10 +817,69 @@ class TestSeededVenueMap:
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
     ) -> None:
         """The nav item hangs off ``venue_plan_count``; the demo must show it."""
-        counts = await crud_venue_map.count_plans_with_image_by_event(
+        counts = await crud_venue_map.count_visible_plans_by_event(
             db_session, event_ids=[test_sandbox.event.id]
         )
         assert counts == {test_sandbox.event.id: 2}
+
+    async def test_linked_rooms_point_at_the_place_of_their_spot(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """A demo room linked through ``link_spot`` opens the place whose pin
+        sits on that spot, on the same plan."""
+        plans = sorted(
+            await _plans(db_session, test_sandbox), key=lambda p: p.sort_order
+        )
+        names = {loc.id: loc.name for loc in await _locations(db_session, test_sandbox)}
+        for key, plan in zip(PLAN_KEYS, plans, strict=True):
+            shapes = list(
+                (
+                    await db_session.execute(
+                        select(VenueShape)
+                        .where(col(VenueShape.plan_id) == plan.id)
+                        .order_by(col(VenueShape.sort_order))
+                    )
+                ).scalars()
+            )
+            specs = demo_shapes(key)
+            assert [s.sort_order for s in shapes] == list(range(len(specs)))
+            markers = {
+                (m.x, m.y): m.location_id
+                for m in (
+                    await db_session.execute(
+                        select(VenueMarker).where(
+                            col(VenueMarker.plan_id) == plan.id,
+                            col(VenueMarker.kind) == "location",
+                        )
+                    )
+                ).scalars()
+            }
+            linked = 0
+            for spec, shape in zip(specs, shapes, strict=True):
+                assert shape.kind == spec.kind
+                if spec.link_spot is None:
+                    assert shape.location_id is None
+                    continue
+                linked += 1
+                assert shape.location_id is not None
+                assert shape.location_id in names
+                assert markers[SPOTS[key][spec.link_spot]] == shape.location_id
+            assert linked >= 3
+
+    async def test_the_drawing_is_in_the_language_the_visitor_clicked(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        german = await make_sandbox(language="de")
+        labels = set(
+            (
+                await db_session.execute(
+                    select(col(VenueShape.label))
+                    .join(VenuePlan, col(VenuePlan.id) == col(VenueShape.plan_id))
+                    .where(col(VenuePlan.event_id) == german.event.id)
+                )
+            ).scalars()
+        )
+        assert {"Große Halle", "Festwiese", "Bühne"} <= labels
 
     async def test_it_is_drawn_in_the_language_the_visitor_clicked(
         self, db_session: AsyncSession, make_sandbox: SandboxFactory
@@ -820,23 +890,38 @@ class TestSeededVenueMap:
         de_plans = sorted(await _plans(db_session, german), key=lambda p: p.sort_order)
         en_plans = sorted(await _plans(db_session, english), key=lambda p: p.sort_order)
         assert [p.name for p in de_plans] == ["Gebäude", "Außengelände"]
-        # Different labels drawn into the pictures, so different bytes.
-        for de_plan, en_plan in zip(de_plans, en_plans, strict=True):
-            assert de_plan.image_etag != en_plan.image_etag
+        assert [p.name for p in en_plans] == ["Building", "Outdoor area"]
         assert "Große Halle" in {
             loc.name for loc in await _locations(db_session, german)
         }
 
 
-def test_the_drawing_is_rendered_once_per_plan_and_language() -> None:
-    """Every demo click reuses the normalised images rather than redrawing them."""
-    assert render_demo_plan("indoor", "en") is render_demo_plan("indoor", "en")
-    assert render_demo_plan("indoor", "de") is not render_demo_plan("indoor", "en")
-    assert render_demo_plan("outdoor", "en") is not render_demo_plan("indoor", "en")
-    for key in PLAN_KEYS:
-        image = render_demo_plan(key, "de")
-        assert len(image.data) <= PLAN_MAX_BYTES
-        assert max(image.width, image.height) <= PLAN_MAX_DIM
+@pytest.mark.parametrize("key", PLAN_KEYS)
+@pytest.mark.parametrize("lang", ["en", "de"])
+def test_every_demo_shape_is_one_the_editor_could_have_made(
+    key: str, lang: str
+) -> None:
+    """The demo goes through no API, so check each shape against the schema the
+    batch endpoint uses; a demo shape the editor would refuse to save is one it
+    may also fail to draw."""
+    specs = demo_shapes(key)  # pyright: ignore[reportArgumentType]
+    assert 20 < len(specs) < 60
+    for spec in specs:
+        assert len(spec.points) < 100
+        VenueShapeCreate(
+            kind=spec.kind,
+            style=spec.style,  # pyright: ignore[reportArgumentType]
+            points=[list(p) for p in spec.points],
+            label=label_text(spec.label_key, lang) if spec.label_key else None,
+            label_size=spec.label_size,
+            label_x=spec.label_at[0] if spec.label_at else None,
+            label_y=spec.label_at[1] if spec.label_at else None,
+            stroke_width=spec.stroke_width,
+            location_id=uuid.uuid4() if spec.link_spot else None,
+        )
+        if spec.link_spot is not None:
+            assert spec.link_spot in SPOTS[key]  # pyright: ignore[reportArgumentType]
+    assert demo_shapes(key) is specs  # pyright: ignore[reportArgumentType]
 
 
 # ── The two tracks ────────────────────────────────────────────────

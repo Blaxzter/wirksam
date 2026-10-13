@@ -11,7 +11,7 @@ import uuid
 from datetime import date, time
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -24,7 +24,7 @@ from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.schemas.location import LocationCreate, LocationUpdate
 from app.schemas.venue_map import VenueMarkerCreate
 
@@ -196,7 +196,7 @@ class TestCRUDVenuePlans:
             data=VenueMarkerCreate(kind="first_aid", label="Tent", x=0, y=1),
         )
 
-        plans = await crud_venue_map.list_plans_with_markers(
+        plans = await crud_venue_map.list_plans_full(
             db_session, event_id=test_venue_plan.event_id
         )
 
@@ -221,9 +221,7 @@ class TestCRUDVenuePlans:
         self, db_session: AsyncSession, test_event: Event
     ) -> None:
         assert (
-            await crud_venue_map.list_plans_with_markers(
-                db_session, event_id=test_event.id
-            )
+            await crud_venue_map.list_plans_full(db_session, event_id=test_event.id)
             == []
         )
 
@@ -265,7 +263,7 @@ class TestCRUDVenuePlans:
         assert [p.id for p in result] == [other.id, test_venue_plan.id]
         assert [p.sort_order for p in result] == [0, 1]
 
-    async def test_count_plans_with_image_by_event(
+    async def test_count_visible_plans_by_event(
         self,
         db_session: AsyncSession,
         test_venue_plan: VenuePlan,
@@ -276,15 +274,13 @@ class TestCRUDVenuePlans:
             db_session, event_id=test_venue_plan.event_id, name="Draft"
         )
 
-        counts = await crud_venue_map.count_plans_with_image_by_event(
+        counts = await crud_venue_map.count_visible_plans_by_event(
             db_session, event_ids=[test_venue_plan.event_id, test_private_event.id]
         )
 
         assert counts == {test_venue_plan.event_id: 1}
         assert (
-            await crud_venue_map.count_plans_with_image_by_event(
-                db_session, event_ids=[]
-            )
+            await crud_venue_map.count_visible_plans_by_event(db_session, event_ids=[])
             == {}
         )
 
@@ -526,6 +522,17 @@ class TestEventDeleteWithLocations:
         session.add(
             VenueMarker(plan_id=plan.id, location_id=loc.id, kind="location", x=0, y=0)
         )
+        # The shape's location FK is SET NULL next to the plan's CASCADE, the
+        # same pairing; see the comment on VenueShape.location_id.
+        session.add(
+            VenueShape(
+                plan_id=plan.id,
+                location_id=loc.id,
+                kind="rect",
+                style="room",
+                points=[[0, 0], [0.5, 0.5]],
+            )
+        )
         await session.flush()
         return event, loc, task, shift, plan
 
@@ -547,6 +554,12 @@ class TestEventDeleteWithLocations:
         assert reloaded_shift.location == "Hall"
         assert await session.get(Location, loc.id, populate_existing=True) is None
         assert await session.get(VenuePlan, plan.id, populate_existing=True) is None
+        remaining = await session.execute(
+            select(func.count())
+            .select_from(VenueShape)
+            .where(col(VenueShape.plan_id) == plan.id)
+        )
+        assert remaining.scalar_one() == 0
 
     async def test_orm_event_delete(
         self,

@@ -1359,6 +1359,8 @@ export type EventRead = {
   pending_request_count?: number
   /**
    * Venue Plan Count
+   *
+   * plans with an image or at least one shape
    */
   venue_plan_count?: number
   /**
@@ -1712,6 +1714,9 @@ export type LocationDetailRead = {
  * LocationPin
  *
  * Where a location sits on one venue plan.
+ *
+ * A marker, or the centroid of a linked area when the plan has no marker for
+ * this location (then ``marker_id`` is null and ``shape_id`` names the area).
  */
 export type LocationPin = {
   /**
@@ -1725,7 +1730,11 @@ export type LocationPin = {
   /**
    * Marker Id
    */
-  marker_id: string
+  marker_id?: string | null
+  /**
+   * Shape Id
+   */
+  shape_id?: string | null
   /**
    * Image Etag
    */
@@ -1739,6 +1748,24 @@ export type LocationPin = {
    */
   image_height?: number | null
   /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Shapes Revision
+   */
+  shapes_revision: number
+  /**
+   * Shape Count
+   *
+   * Shapes drawn on the plan
+   */
+  shape_count?: number
+  /**
    * X
    */
   x: number
@@ -1746,6 +1773,18 @@ export type LocationPin = {
    * Y
    */
   y: number
+  /**
+   * Width
+   *
+   * Effective plan width: the image's, else the canvas's
+   */
+  readonly width: number
+  /**
+   * Height
+   *
+   * Effective plan height: the image's, else the canvas's
+   */
+  readonly height: number
 }
 
 /**
@@ -2579,6 +2618,46 @@ export type SelectedEventUpdate = {
    * Selected Event Id
    */
   selected_event_id?: string | null
+}
+
+/**
+ * ShapeCreateOp
+ */
+export type ShapeCreateOp = {
+  /**
+   * Op
+   */
+  op: 'create'
+  shape: VenueShapeCreate
+}
+
+/**
+ * ShapeDeleteOp
+ */
+export type ShapeDeleteOp = {
+  /**
+   * Op
+   */
+  op: 'delete'
+  /**
+   * Id
+   */
+  id: string
+}
+
+/**
+ * ShapeUpdateOp
+ */
+export type ShapeUpdateOp = {
+  /**
+   * Op
+   */
+  op: 'update'
+  /**
+   * Id
+   */
+  id: string
+  patch: VenueShapeUpdate
 }
 
 /**
@@ -4464,6 +4543,12 @@ export type VenuePlanCreate = {
    * Name
    */
   name: string
+  /**
+   * Canvas
+   *
+   * Aspect of the blank canvas; it cannot be changed later
+   */
+  canvas?: 'landscape' | 'portrait' | 'square'
 }
 
 /**
@@ -4511,6 +4596,18 @@ export type VenuePlanRead = {
    */
   image_height?: number | null
   /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Shapes Revision
+   */
+  shapes_revision: number
+  /**
    * Created At
    */
   created_at: string
@@ -4522,6 +4619,46 @@ export type VenuePlanRead = {
    * Markers
    */
   markers?: Array<VenueMarkerRead>
+  /**
+   * Shapes
+   *
+   * In drawing order (``sort_order``)
+   */
+  shapes?: Array<VenueShapeRead>
+  /**
+   * Width
+   *
+   * Effective width: the image's, else the canvas's
+   */
+  readonly width: number
+  /**
+   * Height
+   *
+   * Effective height: the image's, else the canvas's
+   */
+  readonly height: number
+}
+
+/**
+ * VenuePlanShapesRead
+ */
+export type VenuePlanShapesRead = {
+  /**
+   * Plan Id
+   */
+  plan_id: string
+  /**
+   * Revision
+   *
+   * The plan's ``shapes_revision``
+   */
+  revision: number
+  /**
+   * Shapes
+   *
+   * In drawing order
+   */
+  shapes: Array<VenueShapeRead>
 }
 
 /**
@@ -4532,6 +4669,217 @@ export type VenuePlanUpdate = {
    * Name
    */
   name?: string | null
+}
+
+/**
+ * VenueShapeBatch
+ *
+ * Shape edits, applied in order and all or nothing.
+ */
+export type VenueShapeBatch = {
+  /**
+   * Ops
+   */
+  ops: Array<ShapeCreateOp | ShapeUpdateOp | ShapeDeleteOp>
+  /**
+   * Expected Revision
+   *
+   * The plan's ``shapes_revision`` the client last saw; a mismatch is 409 ``venue_shape.revision_conflict``
+   */
+  expected_revision?: number | null
+}
+
+/**
+ * VenueShapeCreate
+ *
+ * A new shape. The whole geometry is checked by ``validate_geometry``.
+ */
+export type VenueShapeCreate = {
+  /**
+   * Id
+   *
+   * Optional client-chosen id, so undoing a delete can re-create the shape under the same id
+   */
+  id?: string | null
+  /**
+   * Kind
+   */
+  kind: 'rect' | 'polygon' | 'path' | 'label'
+  /**
+   * Style
+   */
+  style:
+    | 'building'
+    | 'room'
+    | 'area'
+    | 'stage'
+    | 'furniture'
+    | 'green'
+    | 'water'
+    | 'parking'
+    | 'path'
+    | 'wall'
+  /**
+   * Points
+   */
+  points: Array<[number, number]>
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * Label Size
+   */
+  label_size?: 'sm' | 'md' | 'lg'
+  /**
+   * Label X
+   */
+  label_x?: number | null
+  /**
+   * Label Y
+   */
+  label_y?: number | null
+  /**
+   * Stroke Width
+   *
+   * Paths only: width as a fraction of the plan's shorter side
+   */
+  stroke_width?: number | null
+  /**
+   * Location Id
+   *
+   * Rect and polygon only
+   */
+  location_id?: string | null
+  /**
+   * Sort Order
+   *
+   * z order; left out, the shape goes on top
+   */
+  sort_order?: number | null
+}
+
+/**
+ * VenueShapeRead
+ */
+export type VenueShapeRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Plan Id
+   */
+  plan_id: string
+  /**
+   * Kind
+   */
+  kind: 'rect' | 'polygon' | 'path' | 'label'
+  /**
+   * Style
+   */
+  style:
+    | 'building'
+    | 'room'
+    | 'area'
+    | 'stage'
+    | 'furniture'
+    | 'green'
+    | 'water'
+    | 'parking'
+    | 'path'
+    | 'wall'
+  /**
+   * Points
+   */
+  points: Array<Array<number>>
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * Label Size
+   */
+  label_size: 'sm' | 'md' | 'lg'
+  /**
+   * Label X
+   */
+  label_x?: number | null
+  /**
+   * Label Y
+   */
+  label_y?: number | null
+  /**
+   * Stroke Width
+   */
+  stroke_width?: number | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
+   * Sort Order
+   */
+  sort_order: number
+}
+
+/**
+ * VenueShapeUpdate
+ *
+ * Partial update; the merged shape is re-validated as a whole.
+ *
+ * ``kind`` cannot change (delete and re-create instead). An explicit ``null``
+ * for ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as
+ * those cannot be cleared.
+ */
+export type VenueShapeUpdate = {
+  /**
+   * Style
+   */
+  style?:
+    | 'building'
+    | 'room'
+    | 'area'
+    | 'stage'
+    | 'furniture'
+    | 'green'
+    | 'water'
+    | 'parking'
+    | 'path'
+    | 'wall'
+    | null
+  /**
+   * Points
+   */
+  points?: Array<[number, number]> | null
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * Label Size
+   */
+  label_size?: 'sm' | 'md' | 'lg' | null
+  /**
+   * Label X
+   */
+  label_x?: number | null
+  /**
+   * Label Y
+   */
+  label_y?: number | null
+  /**
+   * Stroke Width
+   */
+  stroke_width?: number | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
+   * Sort Order
+   */
+  sort_order?: number | null
 }
 
 /**
@@ -4699,8 +5047,127 @@ export type EventReadWritable = {
   pending_request_count?: number
   /**
    * Venue Plan Count
+   *
+   * plans with an image or at least one shape
    */
   venue_plan_count?: number
+}
+
+/**
+ * LocationDetailRead
+ */
+export type LocationDetailReadWritable = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   *
+   * Markdown
+   */
+  description?: string | null
+  /**
+   * Address
+   */
+  address?: string | null
+  /**
+   * Map Url
+   */
+  map_url?: string | null
+  /**
+   * Contact
+   *
+   * Free text, e.g. name and phone
+   */
+  contact?: string | null
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Pins
+   *
+   * Placements on the event's venue plans; empty for non-members
+   */
+  pins?: Array<LocationPinWritable>
+}
+
+/**
+ * LocationPin
+ *
+ * Where a location sits on one venue plan.
+ *
+ * A marker, or the centroid of a linked area when the plan has no marker for
+ * this location (then ``marker_id`` is null and ``shape_id`` names the area).
+ */
+export type LocationPinWritable = {
+  /**
+   * Plan Id
+   */
+  plan_id: string
+  /**
+   * Plan Name
+   */
+  plan_name: string
+  /**
+   * Marker Id
+   */
+  marker_id?: string | null
+  /**
+   * Shape Id
+   */
+  shape_id?: string | null
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Shapes Revision
+   */
+  shapes_revision: number
+  /**
+   * Shape Count
+   *
+   * Shapes drawn on the plan
+   */
+  shape_count?: number
+  /**
+   * X
+   */
+  x: number
+  /**
+   * Y
+   */
+  y: number
 }
 
 /**
@@ -4713,6 +5180,106 @@ export type TaskCreateWithShiftsResponseWritable = {
    */
   shifts_created: number
   event?: EventReadWritable | null
+}
+
+/**
+ * VenueMapRead
+ */
+export type VenueMapReadWritable = {
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * On
+   *
+   * The day ``my_location_ids`` and ``location_stats`` refer to
+   */
+  on: string
+  /**
+   * Plans
+   */
+  plans: Array<VenuePlanReadWritable>
+  /**
+   * Locations
+   */
+  locations: Array<LocationRead>
+  /**
+   * My Location Ids
+   *
+   * Locations of the caller's active bookings on ``on``
+   */
+  my_location_ids?: Array<string>
+  /**
+   * Location Stats
+   *
+   * Per-location staffing on ``on``. Only locations with at least one shift that day are listed; for non-admins, shifts of unpublished tasks are left out, matching ``GET /locations/{id}/shifts``.
+   */
+  location_stats?: Array<VenueLocationStat>
+}
+
+/**
+ * VenuePlanRead
+ */
+export type VenuePlanReadWritable = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Sort Order
+   */
+  sort_order: number
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Shapes Revision
+   */
+  shapes_revision: number
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Markers
+   */
+  markers?: Array<VenueMarkerRead>
+  /**
+   * Shapes
+   *
+   * In drawing order (``sort_order``)
+   */
+  shapes?: Array<VenueShapeRead>
 }
 
 export type HealthHealthCheckData = {
@@ -11147,6 +11714,66 @@ export type VenueMapUpdateVenuePlanResponses = {
 export type VenueMapUpdateVenuePlanResponse =
   VenueMapUpdateVenuePlanResponses[keyof VenueMapUpdateVenuePlanResponses]
 
+export type VenueMapDeleteVenuePlanImageData = {
+  body?: never
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/image'
+}
+
+export type VenueMapDeleteVenuePlanImageErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapDeleteVenuePlanImageError =
+  VenueMapDeleteVenuePlanImageErrors[keyof VenueMapDeleteVenuePlanImageErrors]
+
+export type VenueMapDeleteVenuePlanImageResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenuePlanRead
+}
+
+export type VenueMapDeleteVenuePlanImageResponse =
+  VenueMapDeleteVenuePlanImageResponses[keyof VenueMapDeleteVenuePlanImageResponses]
+
 export type VenueMapGetVenuePlanImageData = {
   body?: never
   path: {
@@ -11443,6 +12070,126 @@ export type VenueMapUpdateVenueMarkerResponses = {
 
 export type VenueMapUpdateVenueMarkerResponse =
   VenueMapUpdateVenueMarkerResponses[keyof VenueMapUpdateVenueMarkerResponses]
+
+export type VenueMapGetVenuePlanShapesData = {
+  body?: never
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/shapes'
+}
+
+export type VenueMapGetVenuePlanShapesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapGetVenuePlanShapesError =
+  VenueMapGetVenuePlanShapesErrors[keyof VenueMapGetVenuePlanShapesErrors]
+
+export type VenueMapGetVenuePlanShapesResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenuePlanShapesRead
+}
+
+export type VenueMapGetVenuePlanShapesResponse =
+  VenueMapGetVenuePlanShapesResponses[keyof VenueMapGetVenuePlanShapesResponses]
+
+export type VenueMapBatchVenuePlanShapesData = {
+  body: VenueShapeBatch
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/shapes/batch'
+}
+
+export type VenueMapBatchVenuePlanShapesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapBatchVenuePlanShapesError =
+  VenueMapBatchVenuePlanShapesErrors[keyof VenueMapBatchVenuePlanShapesErrors]
+
+export type VenueMapBatchVenuePlanShapesResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenuePlanShapesRead
+}
+
+export type VenueMapBatchVenuePlanShapesResponse =
+  VenueMapBatchVenuePlanShapesResponses[keyof VenueMapBatchVenuePlanShapesResponses]
 
 export type NotificationsListNotificationTypesData = {
   body?: never

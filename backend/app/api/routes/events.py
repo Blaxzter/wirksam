@@ -107,7 +107,7 @@ async def decorate_events(
     # The venue map is for members only; a non-member must not even learn a
     # public event has one (the "Map" link would only lead to a 404).
     member_of = [e.id for e in events if user.is_admin or e.id in my_roles]
-    plan_counts = await crud_venue_map.count_plans_with_image_by_event(
+    plan_counts = await crud_venue_map.count_visible_plans_by_event(
         session, event_ids=member_of
     )
 

@@ -1,4 +1,61 @@
 {
+    "create": {
+        "aspect": {
+            "landscape": "Landscape",
+            "portrait": "Portrait",
+            "square": "Square"
+        },
+        "aspectLabel": "Shape of the drawing area",
+        "blank": "Draw it yourself",
+        "blankHint": "Start with an empty area and draw rooms, paths and labels.",
+        "description": "Name the map and choose whether to draw it yourself or start from a picture.",
+        "name": "Name",
+        "picture": "Use a picture",
+        "pictureHint": "Upload a floor plan or a photo of a site map. You can still draw on top of it.",
+        "pictureSandbox": "Not in the demo. In your own event you can upload a picture here.",
+        "submit": "Create map",
+        "title": "New map"
+    },
+    "draw": {
+        "cancel": "Cancel",
+        "closeShape": "Close shape",
+        "conflict": "Someone else changed this map in the meantime. We loaded the latest version.",
+        "emptyHint": "Draw your venue: drag to draw a room, or pick another tool above.",
+        "finish": "Finish",
+        "labelHint": "Tap where the text should go.",
+        "labelPlaceholder": "e.g. Main hall",
+        "pathHint": "Tap to add points. Double-tap or press Finish to end the line.",
+        "polygonHint": "Tap to add corners. Tap the first corner or press Close shape to finish.",
+        "rectHint": "Drag to draw a rectangle.",
+        "saved": "All changes saved",
+        "saving": "Saving…",
+        "stretchHint": "Your drawing stretches to the picture's proportions. Check that everything still sits right.",
+        "undoPoint": "Undo point"
+    },
+    "inspector": {
+        "back": "Send backward",
+        "delete": "Delete",
+        "duplicate": "Duplicate",
+        "forward": "Bring forward",
+        "label": "Label",
+        "labelSize": "Text size",
+        "labelSizes": {
+            "lg": "Large",
+            "md": "Medium",
+            "sm": "Small"
+        },
+        "link": "Linked place",
+        "linkHint": "Tapping this area opens the place.",
+        "linkNone": "None",
+        "moveLabelHint": "Drag the small text handle on the map to move the label.",
+        "newLabel": "New text",
+        "order": "Order",
+        "removePoint": "Remove selected point",
+        "resetLabel": "Reset label position",
+        "strokeWidth": "Line width",
+        "style": "Look",
+        "title": "Selected drawing"
+    },
     "marker": {
         "close": "Close",
         "delete": "Remove pin",
@@ -18,6 +75,14 @@
         "noLocations": "No locations yet. Add them in the Locations tab.",
         "title": "Add pins",
         "unplaced": "Not on this map yet"
+    },
+    "picture": {
+        "add": "Put a picture underneath",
+        "remove": "Remove picture",
+        "removeConfirm": "Remove the picture from “{name}”? Your drawing and pins stay.",
+        "removed": "Picture removed",
+        "replace": "Replace picture",
+        "title": "Picture"
     },
     "place": {
         "added": "Pin added",
@@ -41,6 +106,7 @@
         "name": "Name",
         "namePlaceholder": "e.g. Grounds or Hall, ground floor",
         "rename": "Rename",
+        "renameDescription": "The new name shows on the map's tab for everyone in the event.",
         "renameTitle": "Rename map",
         "saved": "Map saved"
     },
@@ -48,6 +114,18 @@
         "description": "Upload a plan of your venue and pin where everything is. Helpers find it under “Map” and when they open a shift.",
         "tab": "Map",
         "title": "Venue map"
+    },
+    "tools": {
+        "label": "Text",
+        "path": "Line",
+        "polygon": "Shape",
+        "rect": "Rectangle",
+        "redo": "Redo",
+        "select": "Select",
+        "shortcutsHint": "Shortcuts: V select, R rectangle, P shape, L line, T text, G snapping. Ctrl+Z undoes drawing steps (not pins).",
+        "snap": "Snap to grid",
+        "title": "Drawing tools",
+        "undo": "Undo"
     },
     "upload": {
         "choose": "Choose picture",

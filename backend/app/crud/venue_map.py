@@ -15,12 +15,15 @@ from app.models.booking import Booking
 from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
-from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.schemas.venue_map import (
+    CANVAS_PRESETS,
+    CanvasPreset,
     VenueLocationStat,
     VenueMarkerCreate,
     VenueMarkerRead,
     VenuePlanRead,
+    VenueShapeRead,
 )
 
 
@@ -30,10 +33,17 @@ def _now() -> datetime:
 
 
 _PLAN_ORDER = (col(VenuePlan.sort_order), col(VenuePlan.created_at), col(VenuePlan.id))
+_SHAPE_ORDER = (
+    col(VenueShape.sort_order),
+    col(VenueShape.created_at),
+    col(VenueShape.id),
+)
+# The longer side of a canvas that replaces a removed picture.
+_CANVAS_LONG_SIDE = 1600
 
 
 class CRUDVenueMap:
-    """Venue plans, their image bytes and their markers.
+    """Venue plans, their image bytes, their markers and their shapes.
 
     Never commits; the request owns the transaction.
     """
@@ -68,37 +78,72 @@ class CRUDVenueMap:
         )
         return list(result.scalars().all())
 
-    async def list_plans_with_markers(
-        self, session: AsyncSession, *, event_id: uuid.UUID
-    ) -> list[VenuePlanRead]:
-        """Plans in display order with their markers nested — two queries."""
-        plans = await self.list_plans(session, event_id=event_id)
-        markers = await self.list_markers_for_plans(
-            session, plan_ids=[p.id for p in plans]
+    async def list_shapes_for_plans(
+        self, session: AsyncSession, *, plan_ids: Sequence[uuid.UUID]
+    ) -> list[VenueShape]:
+        """Shapes of ``plan_ids``, per plan in drawing order."""
+        if not plan_ids:
+            return []
+        result = await session.execute(
+            select(VenueShape)
+            .where(col(VenueShape.plan_id).in_(plan_ids))
+            .order_by(col(VenueShape.plan_id), *_SHAPE_ORDER)
         )
-        by_plan: dict[uuid.UUID, list[VenueMarkerRead]] = defaultdict(list)
+        return list(result.scalars().all())
+
+    async def plan_reads(
+        self, session: AsyncSession, *, plans: Sequence[VenuePlan]
+    ) -> list[VenuePlanRead]:
+        """``plans`` as reads with markers and shapes nested — two queries."""
+        plan_ids = [p.id for p in plans]
+        markers = await self.list_markers_for_plans(session, plan_ids=plan_ids)
+        shapes = await self.list_shapes_for_plans(session, plan_ids=plan_ids)
+        markers_by_plan: dict[uuid.UUID, list[VenueMarkerRead]] = defaultdict(list)
         for marker in markers:
-            by_plan[marker.plan_id].append(VenueMarkerRead.model_validate(marker))
+            markers_by_plan[marker.plan_id].append(
+                VenueMarkerRead.model_validate(marker)
+            )
+        shapes_by_plan: dict[uuid.UUID, list[VenueShapeRead]] = defaultdict(list)
+        for shape in shapes:
+            shapes_by_plan[shape.plan_id].append(VenueShapeRead.model_validate(shape))
         return [
             VenuePlanRead.model_validate(plan).model_copy(
-                update={"markers": by_plan.get(plan.id, [])}
+                update={
+                    "markers": markers_by_plan.get(plan.id, []),
+                    "shapes": shapes_by_plan.get(plan.id, []),
+                }
             )
             for plan in plans
         ]
 
+    async def list_plans_full(
+        self, session: AsyncSession, *, event_id: uuid.UUID
+    ) -> list[VenuePlanRead]:
+        """Plans in display order with markers and shapes nested — three queries."""
+        plans = await self.list_plans(session, event_id=event_id)
+        return await self.plan_reads(session, plans=plans)
+
     async def create_plan(
-        self, session: AsyncSession, *, event_id: uuid.UUID, name: str
+        self,
+        session: AsyncSession,
+        *,
+        event_id: uuid.UUID,
+        name: str,
+        canvas: CanvasPreset = "landscape",
     ) -> VenuePlan:
-        """Append a plan after the event's existing ones."""
+        """Append a blank plan of the ``canvas`` aspect after the event's others."""
         current_max = await session.scalar(
             select(func.max(col(VenuePlan.sort_order))).where(
                 col(VenuePlan.event_id) == event_id
             )
         )
+        canvas_width, canvas_height = CANVAS_PRESETS[canvas]
         plan = VenuePlan(
             event_id=event_id,
             name=name,
             sort_order=0 if current_max is None else current_max + 1,
+            canvas_width=canvas_width,
+            canvas_height=canvas_height,
         )
         session.add(plan)
         await session.flush()
@@ -116,7 +161,7 @@ class CRUDVenueMap:
         return plan
 
     async def delete_plan(self, session: AsyncSession, *, plan: VenuePlan) -> None:
-        """Delete a plan; its image row and markers go with it (DB cascade)."""
+        """Delete a plan; its image row, markers and shapes go with it (DB cascade)."""
         await session.delete(plan)
         await session.flush()
 
@@ -148,21 +193,27 @@ class CRUDVenueMap:
         await session.flush()
         return [by_id[plan_id] for plan_id in plan_ids]
 
-    async def count_plans_with_image_by_event(
+    async def count_visible_plans_by_event(
         self, session: AsyncSession, *, event_ids: Sequence[uuid.UUID]
     ) -> dict[uuid.UUID, int]:
-        """How many plans *with an image* each event has (absent means 0).
+        """How many plans *with an image or a shape* each event has (absent = 0).
 
-        A plan without an image is unfinished editor state, so it does not
-        count towards showing the map to members.
+        A plan with neither is unfinished editor state (even with pins on it),
+        so it does not count towards showing the map to members.
         """
         if not event_ids:
             return {}
+        has_shape = (
+            select(sa.literal(1))
+            .where(col(VenueShape.plan_id) == col(VenuePlan.id))
+            .correlate(VenuePlan)
+            .exists()
+        )
         result = await session.execute(
             select(col(VenuePlan.event_id), func.count())
             .where(
                 col(VenuePlan.event_id).in_(event_ids),
-                col(VenuePlan.image_etag).is_not(None),
+                sa.or_(col(VenuePlan.image_etag).is_not(None), has_shape),
             )
             .group_by(col(VenuePlan.event_id))
         )
@@ -226,6 +277,30 @@ class CRUDVenueMap:
         session.add(plan)
         await session.flush()
         return row
+
+    async def delete_image(
+        self, session: AsyncSession, *, plan: VenuePlan
+    ) -> VenuePlan:
+        """Remove the plan's picture and turn it into a blank canvas.
+
+        The canvas takes the picture's aspect with its longer side scaled to
+        1600, so the normalised shapes and markers stay where they were.
+        """
+        image = await self.get_image(session, plan_id=plan.id)
+        if image is not None:
+            await session.delete(image)
+        if plan.image_width and plan.image_height:
+            scale = _CANVAS_LONG_SIDE / max(plan.image_width, plan.image_height)
+            plan.canvas_width = max(1, round(plan.image_width * scale))
+            plan.canvas_height = max(1, round(plan.image_height * scale))
+        plan.image_etag = None
+        plan.image_width = None
+        plan.image_height = None
+        plan.updated_at = _now()
+        session.add(plan)
+        await session.flush()
+        await session.refresh(plan)
+        return plan
 
     # ── Markers ────────────────────────────────────────────────────────────
 
@@ -341,7 +416,7 @@ class CRUDVenueMap:
         source_event_id: uuid.UUID,
         new_event_id: uuid.UUID,
     ) -> tuple[dict[uuid.UUID, uuid.UUID], int]:
-        """Copy an event's locations, plans (with image bytes) and markers.
+        """Copy an event's locations, plans (with image bytes), markers and shapes.
 
         Returns ``(location_map, plans_created)`` where ``location_map`` maps
         each source location id to its copy, for remapping ``location_id`` on
@@ -379,22 +454,27 @@ class CRUDVenueMap:
 
         source_plans = await self.list_plans(session, event_id=source_event_id)
         plan_map: dict[uuid.UUID, uuid.UUID] = {}
+        new_plans: dict[uuid.UUID, VenuePlan] = {}
         for src in source_plans:
             new_id = uuid.uuid4()
             plan_map[src.id] = new_id
-            session.add(
-                VenuePlan(
-                    id=new_id,
-                    created_at=now,
-                    updated_at=now,
-                    event_id=new_event_id,
-                    name=src.name,
-                    sort_order=src.sort_order,
-                    image_etag=src.image_etag,
-                    image_width=src.image_width,
-                    image_height=src.image_height,
-                )
+            new_plans[new_id] = VenuePlan(
+                id=new_id,
+                created_at=now,
+                updated_at=now,
+                event_id=new_event_id,
+                name=src.name,
+                sort_order=src.sort_order,
+                image_etag=src.image_etag,
+                image_width=src.image_width,
+                image_height=src.image_height,
+                canvas_width=src.canvas_width,
+                canvas_height=src.canvas_height,
+                # Set to 1 below for a plan whose drawing is copied: 0 tells
+                # clients there is nothing drawn to fetch.
+                shapes_revision=0,
             )
+            session.add(new_plans[new_id])
         # The image INSERT ... SELECT below is a Core statement, so the plan
         # rows it points at must be in the database first.
         await session.flush()
@@ -442,6 +522,33 @@ class CRUDVenueMap:
                     label=src.label,
                     x=src.x,
                     y=src.y,
+                )
+            )
+        shapes = await self.list_shapes_for_plans(session, plan_ids=list(plan_map))
+        for shape in shapes:
+            new_plans[plan_map[shape.plan_id]].shapes_revision = 1
+            session.add(
+                VenueShape(
+                    created_at=now,
+                    updated_at=now,
+                    plan_id=plan_map[shape.plan_id],
+                    # Unlike a marker, an area is worth keeping without its
+                    # place: a link that cannot be remapped is cleared and the
+                    # drawing stays.
+                    location_id=(
+                        location_map.get(shape.location_id)
+                        if shape.location_id is not None
+                        else None
+                    ),
+                    kind=shape.kind,
+                    style=shape.style,
+                    points=[list(p) for p in shape.points],
+                    label=shape.label,
+                    label_size=shape.label_size,
+                    label_x=shape.label_x,
+                    label_y=shape.label_y,
+                    stroke_width=shape.stroke_width,
+                    sort_order=shape.sort_order,
                 )
             )
         await session.flush()

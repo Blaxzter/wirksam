@@ -375,6 +375,7 @@ onMounted(async () => {
                   ref="miniMap"
                   :event-id="task.event_id"
                   :pin="pin"
+                  :location-id="location?.id ?? null"
                   :link-to-map="false"
                   static
                 />

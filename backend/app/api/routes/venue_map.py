@@ -1,4 +1,4 @@
-"""Venue plans, markers and the member map view (#185).
+"""Venue plans, markers, drawn shapes and the member map view (#185).
 
 The map is **member-only**. A non-member gets a 404 even on a public event, so
 nothing here can be used to probe a plan, a marker or an image by id. That is
@@ -9,6 +9,10 @@ ones.
 Plan images are served by an authenticated GET with ``Cache-Control: private``;
 the frontend fetches them with its bearer token and shows a blob URL. There are
 no public image URLs.
+
+Shapes are written only through ``POST /venue-plans/{id}/shapes/batch``: one
+atomic list of create/update/delete ops, so the editor's undo and redo steps
+map onto plain requests (see ``app/logic/venue_shape_batch.py``).
 """
 
 import datetime as dt
@@ -34,6 +38,7 @@ from app.logic.permissions import (
     role_at_least,
 )
 from app.logic.venue_map import normalize_plan_image
+from app.logic.venue_shape_batch import apply_batch
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.shift import Shift
@@ -51,7 +56,10 @@ from app.schemas.venue_map import (
     VenuePlanCreate,
     VenuePlanOrder,
     VenuePlanRead,
+    VenuePlanShapesRead,
     VenuePlanUpdate,
+    VenueShapeBatch,
+    VenueShapeRead,
     marker_kind_mismatch,
 )
 
@@ -60,6 +68,8 @@ router = APIRouter(tags=["venue-map"])
 # The image URL carries ``?v=<etag>``, so a new upload is a new URL; a week of
 # private caching is safe and keeps re-opening the map cheap.
 _IMAGE_CACHE_CONTROL = "private, max-age=604800"
+# Shapes change with every edit; the client keys its own cache on the revision.
+_SHAPES_CACHE_CONTROL = "private, no-cache"
 
 
 # ── Gates ──────────────────────────────────────────────────────────────────
@@ -102,10 +112,8 @@ async def _load_marker(session: DBDep, marker_id: uuid.UUID) -> VenueMarker:
 
 
 async def _plan_read(session: DBDep, plan: VenuePlan) -> VenuePlanRead:
-    markers = await crud_venue_map.list_markers_for_plans(session, plan_ids=[plan.id])
-    return VenuePlanRead.model_validate(plan).model_copy(
-        update={"markers": [VenueMarkerRead.model_validate(m) for m in markers]}
-    )
+    (read,) = await crud_venue_map.plan_reads(session, plans=[plan])
+    return read
 
 
 async def _check_marker_location(
@@ -149,7 +157,7 @@ async def get_venue_map(
 ) -> VenueMapRead:
     """Everything the map screen needs in one call.
 
-    Plans in display order with their markers, every location of the event,
+    Plans in display order with their markers and shapes, every location of the event,
     the locations of the caller's own confirmed bookings on ``on``
     (default: today) so the map can highlight where they are needed, and
     per-location staffing for that day (shifts of unpublished tasks counted
@@ -158,7 +166,7 @@ async def get_venue_map(
     event, role = await _member_event(current_user, session, event_id)
     day = on or dt.date.today()
 
-    plans = await crud_venue_map.list_plans_with_markers(session, event_id=event.id)
+    plans = await crud_venue_map.list_plans_full(session, event_id=event.id)
     locations = await crud_location.list_for_event(session, event_id=event.id)
 
     result = await session.execute(
@@ -208,9 +216,15 @@ async def create_venue_plan(
     session: DBDep,
     current_user: CurrentUser,
 ) -> VenuePlanRead:
-    """Add an (image-less) plan after the event's existing ones."""
+    """Add a blank plan after the event's existing ones.
+
+    ``canvas`` picks the aspect of the drawing area (landscape 1600 x 1000,
+    portrait 1000 x 1600, square 1200 x 1200); a picture can be uploaded later.
+    """
     event = await _admin_event(current_user, session, event_id)
-    plan = await crud_venue_map.create_plan(session, event_id=event.id, name=body.name)
+    plan = await crud_venue_map.create_plan(
+        session, event_id=event.id, name=body.name, canvas=body.canvas
+    )
     return VenuePlanRead.model_validate(plan)
 
 
@@ -231,7 +245,7 @@ async def reorder_venue_plans(
             code="venue_plan.order_mismatch",
             detail="The list must contain every plan of this event exactly once",
         )
-    return await crud_venue_map.list_plans_with_markers(session, event_id=event.id)
+    return await crud_venue_map.list_plans_full(session, event_id=event.id)
 
 
 @router.patch("/venue-plans/{plan_id}", response_model=VenuePlanRead)
@@ -254,7 +268,7 @@ async def delete_venue_plan(
     session: DBDep,
     current_user: CurrentUser,
 ) -> None:
-    """Delete a plan together with its image and markers."""
+    """Delete a plan together with its image, markers and shapes."""
     plan = await _load_plan(session, plan_id)
     await _admin_event(current_user, session, plan.event_id)
     await crud_venue_map.delete_plan(session, plan=plan)
@@ -273,8 +287,9 @@ async def upload_venue_plan_image(
     """Upload or replace a plan's image.
 
     It is shrunk to fit 2560 px, re-encoded as WebP and stored in the database.
-    Markers keep their normalised coordinates, so replacing a plan with a
-    redrawn version of the same venue leaves them where they were.
+    Markers and shapes keep their normalised coordinates, so replacing a plan
+    with a redrawn version of the same venue leaves them where they were (a
+    drawing stretches to the picture's proportions).
 
     Refused in a demo event and for a demo guest anywhere (they can create
     events of their own): every other map edit is open to a sandbox guest so
@@ -305,6 +320,27 @@ async def upload_venue_plan_image(
 
     await crud_venue_map.upsert_image(session, plan=plan, image=image)
     await session.refresh(plan)
+    return await _plan_read(session, plan)
+
+
+@router.delete("/venue-plans/{plan_id}/image", response_model=VenuePlanRead)
+async def delete_venue_plan_image(
+    plan_id: uuid.UUID,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> VenuePlanRead:
+    """Remove a plan's picture; the plan becomes a blank canvas.
+
+    The canvas keeps the picture's aspect (longer side 1600), so shapes and
+    markers stay where they were. Allowed in a demo, as it adds nothing.
+    """
+    plan = await _load_plan(session, plan_id)
+    await _admin_event(current_user, session, plan.event_id)
+    if plan.image_etag is None:
+        raise_problem(
+            404, code="venue_plan.image_not_found", detail="This plan has no image"
+        )
+    plan = await crud_venue_map.delete_image(session, plan=plan)
     return await _plan_read(session, plan)
 
 
@@ -431,3 +467,50 @@ async def delete_venue_marker(
     await _admin_event(current_user, session, plan.event_id)
     await session.delete(marker)
     await session.flush()
+
+
+# ── Shapes ─────────────────────────────────────────────────────────────────
+
+
+@router.get("/venue-plans/{plan_id}/shapes", response_model=VenuePlanShapesRead)
+async def get_venue_plan_shapes(
+    plan_id: uuid.UUID,
+    response: Response,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> VenuePlanShapesRead:
+    """A plan's shapes in drawing order, for the mini-maps and print views.
+
+    The map screen gets them nested in ``GET /events/{id}/venue-map``.
+    """
+    plan = await _load_plan(session, plan_id)
+    await _member_event(current_user, session, plan.event_id)
+    shapes = await crud_venue_map.list_shapes_for_plans(session, plan_ids=[plan.id])
+    response.headers["Cache-Control"] = _SHAPES_CACHE_CONTROL
+    return VenuePlanShapesRead(
+        plan_id=plan.id,
+        revision=plan.shapes_revision,
+        shapes=[VenueShapeRead.model_validate(s) for s in shapes],
+    )
+
+
+@router.post("/venue-plans/{plan_id}/shapes/batch", response_model=VenuePlanShapesRead)
+async def batch_venue_plan_shapes(
+    plan_id: uuid.UUID,
+    body: VenueShapeBatch,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> VenuePlanShapesRead:
+    """Create, update and delete shapes in one atomic step.
+
+    Ops run in order; if any fails, none is applied (the error's detail names
+    it as ``ops[i]``). A create may bring its own ``id``, so undoing a delete
+    restores the same shape. With ``expected_revision``, a plan someone else
+    changed meanwhile is a 409 ``venue_shape.revision_conflict``. Returns the
+    plan's full shape list and new revision.
+
+    Open to demo guests: drawing stores nothing but numbers and short labels.
+    """
+    plan = await _load_plan(session, plan_id)
+    await _admin_event(current_user, session, plan.event_id)
+    return await apply_batch(session, plan=plan, batch=body)

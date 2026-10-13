@@ -1,12 +1,26 @@
-"""Schemas for venue plans, their markers and the member map view (#185)."""
+"""Schemas for venue plans, their markers, drawn shapes and the map view (#185)."""
 
 import datetime as dt
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
+from app.logic.venue_shapes import (
+    MAX_LABEL_LENGTH,
+    MAX_OPS_PER_BATCH,
+    MAX_POINTS_PER_SHAPE,
+    validate_geometry,
+)
 from app.schemas.location import LocationRead
 
 MarkerKind = Literal[
@@ -18,6 +32,10 @@ MarkerKind = Literal[
     "parking",
     "kitchen",
 ]
+
+# z order. Bounded well inside the 32-bit column, so "put it on top" (max + 1)
+# can never overflow it either.
+SortOrder = Annotated[int, Field(ge=-1_000_000, le=1_000_000)]
 
 PlanName = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)
@@ -78,8 +96,180 @@ class VenueMarkerRead(BaseModel):
     y: float
 
 
+# ── Shapes ─────────────────────────────────────────────────────────────────
+
+ShapeKind = Literal["rect", "polygon", "path", "label"]
+ShapeStyle = Literal[
+    "building",
+    "room",
+    "area",
+    "stage",
+    "furniture",
+    "green",
+    "water",
+    "parking",
+    "path",
+    "wall",
+]
+LabelSize = Literal["sm", "md", "lg"]
+CanvasPreset = Literal["landscape", "portrait", "square"]
+CANVAS_PRESETS: Final[dict[str, tuple[int, int]]] = {
+    "landscape": (1600, 1000),
+    "portrait": (1000, 1600),
+    "square": (1200, 1200),
+}
+
+ShapePoint = Annotated[list[Coordinate], Field(min_length=2, max_length=2)]
+ShapeLabel = Annotated[
+    str, StringConstraints(strip_whitespace=True, max_length=MAX_LABEL_LENGTH)
+]
+
+
+def _empty_to_none(value: str | None) -> str | None:
+    return value or None
+
+
+class VenueShapeCreate(BaseModel):
+    """A new shape. The whole geometry is checked by ``validate_geometry``."""
+
+    id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Optional client-chosen id, so undoing a delete can re-create the "
+            "shape under the same id"
+        ),
+    )
+    kind: ShapeKind
+    style: ShapeStyle
+    points: list[ShapePoint] = Field(min_length=1, max_length=MAX_POINTS_PER_SHAPE)
+    label: ShapeLabel | None = None
+    label_size: LabelSize = "md"
+    label_x: Coordinate | None = None
+    label_y: Coordinate | None = None
+    stroke_width: float | None = Field(
+        default=None,
+        description="Paths only: width as a fraction of the plan's shorter side",
+    )
+    location_id: uuid.UUID | None = Field(
+        default=None, description="Rect and polygon only"
+    )
+    sort_order: SortOrder | None = Field(
+        default=None, description="z order; left out, the shape goes on top"
+    )
+
+    @field_validator("label")
+    @classmethod
+    def _blank_label(cls, value: str | None) -> str | None:
+        return _empty_to_none(value)
+
+    @model_validator(mode="after")
+    def _geometry(self) -> "VenueShapeCreate":
+        geometry = validate_geometry(
+            kind=self.kind,
+            points=self.points,
+            label=self.label,
+            stroke_width=self.stroke_width,
+            location_id=self.location_id,
+            label_x=self.label_x,
+            label_y=self.label_y,
+        )
+        self.points = geometry.points
+        self.stroke_width = geometry.stroke_width
+        return self
+
+
+class VenueShapeUpdate(BaseModel):
+    """Partial update; the merged shape is re-validated as a whole.
+
+    ``kind`` cannot change (delete and re-create instead). An explicit ``null``
+    for ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as
+    those cannot be cleared.
+    """
+
+    style: ShapeStyle | None = None
+    points: list[ShapePoint] | None = Field(
+        default=None, min_length=1, max_length=MAX_POINTS_PER_SHAPE
+    )
+    label: ShapeLabel | None = None
+    label_size: LabelSize | None = None
+    label_x: Coordinate | None = None
+    label_y: Coordinate | None = None
+    stroke_width: float | None = None
+    location_id: uuid.UUID | None = None
+    sort_order: SortOrder | None = None
+
+    @field_validator("label")
+    @classmethod
+    def _blank_label(cls, value: str | None) -> str | None:
+        return _empty_to_none(value)
+
+
+class ShapeCreateOp(BaseModel):
+    op: Literal["create"]
+    shape: VenueShapeCreate
+
+
+class ShapeUpdateOp(BaseModel):
+    op: Literal["update"]
+    id: uuid.UUID
+    patch: VenueShapeUpdate
+
+
+class ShapeDeleteOp(BaseModel):
+    op: Literal["delete"]
+    id: uuid.UUID
+
+
+ShapeOp = Annotated[
+    ShapeCreateOp | ShapeUpdateOp | ShapeDeleteOp, Field(discriminator="op")
+]
+
+
+class VenueShapeBatch(BaseModel):
+    """Shape edits, applied in order and all or nothing."""
+
+    ops: list[ShapeOp] = Field(min_length=1, max_length=MAX_OPS_PER_BATCH)
+    expected_revision: int | None = Field(
+        default=None,
+        description=(
+            "The plan's ``shapes_revision`` the client last saw; a mismatch is "
+            "409 ``venue_shape.revision_conflict``"
+        ),
+    )
+
+
+class VenueShapeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    plan_id: uuid.UUID
+    kind: ShapeKind
+    style: ShapeStyle
+    points: list[list[float]]
+    label: str | None = None
+    label_size: LabelSize
+    label_x: float | None = None
+    label_y: float | None = None
+    stroke_width: float | None = None
+    location_id: uuid.UUID | None = None
+    sort_order: int
+
+
+class VenuePlanShapesRead(BaseModel):
+    plan_id: uuid.UUID
+    revision: int = Field(description="The plan's ``shapes_revision``")
+    shapes: list[VenueShapeRead] = Field(description="In drawing order")
+
+
+# ── Plans ──────────────────────────────────────────────────────────────────
+
+
 class VenuePlanCreate(BaseModel):
     name: PlanName
+    canvas: CanvasPreset = Field(
+        default="landscape",
+        description="Aspect of the blank canvas; it cannot be changed later",
+    )
 
 
 class VenuePlanUpdate(BaseModel):
@@ -102,9 +292,25 @@ class VenuePlanRead(BaseModel):
     image_etag: str | None = None
     image_width: int | None = None
     image_height: int | None = None
+    canvas_width: int
+    canvas_height: int
+    shapes_revision: int
     created_at: dt.datetime
     updated_at: dt.datetime
     markers: list[VenueMarkerRead] = Field(default_factory=list)
+    shapes: list[VenueShapeRead] = Field(
+        default_factory=list, description="In drawing order (``sort_order``)"
+    )
+
+    @computed_field(description="Effective width: the image's, else the canvas's")  # type: ignore[prop-decorator]
+    @property
+    def width(self) -> int:
+        return self.image_width or self.canvas_width
+
+    @computed_field(description="Effective height: the image's, else the canvas's")  # type: ignore[prop-decorator]
+    @property
+    def height(self) -> int:
+        return self.image_height or self.canvas_height
 
 
 class VenueLocationStat(BaseModel):

@@ -30,7 +30,7 @@ from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
 from .user_avatar import UserAvatar
 from .user_token import UserToken
-from .venue_plan import VenueMarker, VenuePlan, VenuePlanImage
+from .venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 
 __all__ = [
     "SQLModel",
@@ -60,4 +60,5 @@ __all__ = [
     "VenueMarker",
     "VenuePlan",
     "VenuePlanImage",
+    "VenueShape",
 ]

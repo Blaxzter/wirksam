@@ -7,17 +7,24 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 import { useAuthedImage } from '@/composables/useAuthedImage'
+import { usePlanShapes } from '@/composables/usePlanShapes'
 
 import { Skeleton } from '@/components/ui/skeleton'
 
 import VenueMarkerGlyph from '@/components/venue-map/VenueMarkerGlyph.vue'
+import VenueShapeLayer from '@/components/venue-map/VenueShapeLayer.vue'
 
 import type { LocationPin } from '@/client/types.gen'
 import { cropAround, planImageUrl, unitsPerPixel, viewBoxToString } from '@/lib/venue-map'
+import { planSize, planSurfaceClass, sortShapes } from '@/lib/venue-shapes'
 
 /**
  * A small, fixed 16:9 crop of a venue plan around one location's pin — "this
  * is where your shift is". No pan or zoom.
+ *
+ * The plan is its picture (if any) with its drawn shapes on top; the shapes
+ * are fetched by plan and revision (`usePlanShapes`) only when the pin says
+ * the plan has some. The pin's place's areas get the strong highlight.
  *
  * With `linkToMap` the whole box links to the full map, focused on the plan
  * and (given `locationId`) the location. `static` is for print: no link, no
@@ -40,8 +47,9 @@ const { t } = useI18n()
 const isStatic = computed(() => props.static)
 const asLink = computed(() => props.linkToMap && !isStatic.value)
 
-const width = computed(() => props.pin.image_width ?? 0)
-const height = computed(() => props.pin.image_height ?? 0)
+const size = computed(() => planSize(props.pin))
+const width = computed(() => size.value.W)
+const height = computed(() => size.value.H)
 
 const viewBox = computed(() => cropAround(props.pin.x, props.pin.y, width.value, height.value))
 
@@ -52,7 +60,16 @@ const scale = computed(() => unitsPerPixel(viewBox.value, clientWidth.value, cli
 const image = useAuthedImage(() =>
   planImageUrl({ id: props.pin.plan_id, image_etag: props.pin.image_etag }),
 )
-const { src, loading, error } = image
+const { src, loading: imageLoading, error } = image
+
+const planShapes = usePlanShapes(
+  () => props.pin.plan_id,
+  () => props.pin.shapes_revision,
+  () => (props.pin.shape_count ?? 0) > 0,
+)
+const shapes = computed(() => sortShapes(planShapes.shapes.value))
+const loading = computed(() => imageLoading.value || planShapes.loading.value)
+const surfaceClass = computed(() => planSurfaceClass(props.pin))
 
 const decodedSrc = ref<string | null>(null)
 const markDecoded = () => (decodedSrc.value = src.value)
@@ -68,8 +85,9 @@ const mapRoute = computed(() => ({
 
 const label = computed(() => t('venueMap.miniMap.alt', { plan: props.pin.plan_name }))
 
-/** Resolves once the picture has been fetched and drawn, or has failed. */
+/** Resolves once the picture (if any) is drawn and the shapes are in, or either failed. */
 async function ready() {
+  await planShapes.ready()
   await image.ready()
   if (!src.value) return
   await until(() => decodedSrc.value === src.value || !!error.value).toBe(true, {
@@ -86,8 +104,11 @@ defineExpose({ ready })
     v-bind="
       asLink ? { to: mapRoute, 'aria-label': `${label} – ${t('venueMap.miniMap.open')}` } : {}
     "
-    class="venue-mini-map bg-muted/40 group relative block aspect-[16/9] w-full overflow-hidden rounded-lg border"
-    :class="asLink ? 'focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]' : ''"
+    class="venue-mini-map map-ground group relative block aspect-[16/9] w-full overflow-hidden rounded-lg border"
+    :class="[
+      surfaceClass,
+      asLink ? 'focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]' : '',
+    ]"
     data-testid="venue-mini-map"
   >
     <svg
@@ -107,6 +128,16 @@ defineExpose({ ready })
         preserveAspectRatio="none"
         @load="markDecoded"
         @error="markDecoded"
+      />
+      <VenueShapeLayer
+        v-if="shapes.length"
+        :shapes="shapes"
+        :width="width"
+        :height="height"
+        :units-per-pixel="scale"
+        interactive="none"
+        :selected-location-id="locationId"
+        :min-label-px="9"
       />
       <VenueMarkerGlyph
         kind="location"
