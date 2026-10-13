@@ -12,6 +12,7 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import Button from '@/components/ui/button/Button.vue'
 
 import EventEditForm from '@/components/events/EventEditForm.vue'
+import EventHours from '@/components/events/EventHours.vue'
 import EventInvitations from '@/components/events/EventInvitations.vue'
 import EventJoinRequests from '@/components/events/EventJoinRequests.vue'
 import EventMembers from '@/components/events/EventMembers.vue'
@@ -23,6 +24,7 @@ import type {
   EventRead,
   TaskListResponse,
   TaskRead,
+  VolunteerHours,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
@@ -65,6 +67,7 @@ const tasks = ref<TaskRead[]>([])
 const members = ref<EventMemberRead[]>([])
 const invitations = ref<EventInvitationRead[]>([])
 const joinRequests = ref<EventJoinRequestRead[]>([])
+const hours = ref<VolunteerHours[]>([])
 const loading = ref(false)
 
 const canManage = computed(() =>
@@ -115,8 +118,27 @@ async function loadJoinRequests() {
   }
 }
 
+async function loadHours() {
+  if (!targetEventId.value || !canManage.value) return
+  try {
+    const res = await get<{ data: VolunteerHours[] }>({
+      url: `/events/${targetEventId.value}/hours`,
+    })
+    hours.value = res.data
+  } catch {
+    hours.value = []
+  }
+}
+
+/** Total minutes per member, for the badge on each roster row. */
+const hoursByUser = computed(() =>
+  canManage.value
+    ? Object.fromEntries(hours.value.map((h) => [h.user_id, h.total_minutes]))
+    : undefined,
+)
+
 async function loadPeople() {
-  await Promise.all([loadMembers(), loadInvitations(), loadJoinRequests()])
+  await Promise.all([loadMembers(), loadInvitations(), loadJoinRequests(), loadHours()])
 }
 
 /** After leaving an event the user no longer belongs here — send them home. */
@@ -155,6 +177,7 @@ watch(targetEventId, () => {
   members.value = []
   invitations.value = []
   joinRequests.value = []
+  hours.value = []
   tasks.value = []
   loadEvent()
 })
@@ -231,8 +254,16 @@ onMounted(loadEvent)
           :members="members"
           :can-edit="canManage"
           :is-owner="isOwner"
+          :hours-by-user="hoursByUser"
           @updated="loadPeople"
           @left="handleLeft"
+        />
+        <EventHours
+          v-if="canManage"
+          :event-id="targetEventId"
+          :hours="hours"
+          :members="members"
+          @updated="loadHours"
         />
         <EventInvitations
           v-if="canManage"

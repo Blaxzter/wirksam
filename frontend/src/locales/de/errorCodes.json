@@ -21,6 +21,7 @@
     "event": {
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
         "forbidden": "Sie haben in dieser Veranstaltung keine Berechtigung dafür.",
+        "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
@@ -48,5 +49,8 @@
         "transfer_same_user": "Bitte wählen Sie ein anderes Mitglied für die Übernahme aus.",
         "transfer_target_inactive": "Das Konto des ausgewählten Mitglieds ist nicht aktiv.",
         "transfer_target_not_found": "Das ausgewählte Mitglied wurde nicht gefunden."
+    },
+    "work_log": {
+        "not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er bereits gelöscht."
     }
 }

@@ -21,6 +21,7 @@
     "event": {
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
         "forbidden": "You do not have permission to do this in this event.",
+        "member_not_found": "That person is not a member of this event.",
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
@@ -48,5 +49,8 @@
         "transfer_same_user": "Please choose a different member to take over.",
         "transfer_target_inactive": "The chosen member's account is not active.",
         "transfer_target_not_found": "The chosen member could not be found."
+    },
+    "work_log": {
+        "not_found": "That entry could not be found. It may have been deleted already."
     }
 }

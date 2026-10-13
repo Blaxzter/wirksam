@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { formatDate } from '@/lib/format'
+import { formatDate, formatHours } from '@/lib/format'
 import i18n from '@/locales/i18n'
 
 /**
@@ -78,5 +78,29 @@ describe('formatDate', () => {
 
   it('returns "Invalid Date" for an empty string', () => {
     expect(formatDate('')).toBe('Invalid Date')
+  })
+})
+
+describe('formatHours', () => {
+  const originalLocale = i18n.global.locale.value
+
+  afterEach(() => {
+    i18n.global.locale.value = originalLocale
+  })
+
+  it('renders whole and fractional hours with the locale separator', () => {
+    i18n.global.locale.value = 'en'
+    expect(formatHours(0)).toBe('0')
+    expect(formatHours(240)).toBe('4')
+    expect(formatHours(450)).toBe('7.5')
+    expect(formatHours(45)).toBe('0.75')
+
+    i18n.global.locale.value = 'de'
+    expect(formatHours(450)).toBe('7,5')
+  })
+
+  it('rounds to two decimals', () => {
+    i18n.global.locale.value = 'en'
+    expect(formatHours(10)).toBe('0.17')
   })
 })
