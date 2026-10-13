@@ -180,8 +180,18 @@ const isShiftFull = computed(() => bookedCount.value >= capacity.value)
  */
 const bookedByMeOnServer = computed(() => resolvedShift.value?.is_booked_by_me === true)
 
+/** Overlaps a shift the user already holds — the server would refuse it. */
+const clashesWithMine = computed(
+  () => !resolvedMyBooking.value && !!resolvedShift.value?.collides_with_my_booking,
+)
+
 const canBook = computed(() => {
-  return !resolvedMyBooking.value && !bookedByMeOnServer.value && !isShiftFull.value
+  return (
+    !resolvedMyBooking.value &&
+    !bookedByMeOnServer.value &&
+    !isShiftFull.value &&
+    !clashesWithMine.value
+  )
 })
 
 const hasMenuItems = computed(() => {
@@ -332,6 +342,13 @@ const navigateToBooking = () => {
           class="text-muted-foreground flex-1 text-sm md:flex-none"
         >
           {{ t('duties.shifts.detail.fullyBooked') }}
+        </p>
+        <p
+          v-else-if="clashesWithMine"
+          data-testid="shift-clash-note"
+          class="text-destructive flex-1 text-sm md:flex-none"
+        >
+          {{ t('duties.shifts.detail.clashesWithMine') }}
         </p>
 
         <Button

@@ -77,6 +77,7 @@ function feedShiftsToDay(shifts: FeedShiftEntry[]): Map<string, DayShiftEntry[]>
       currentBookings: shift.current_bookings,
       maxBookings: shift.max_bookings,
       isBookedByMe: shift.is_booked_by_me,
+      collidesWithMyBooking: shift.collides_with_my_booking,
     })
   }
   return map

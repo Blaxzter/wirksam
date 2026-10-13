@@ -148,6 +148,45 @@ describe('normalizeApiError', () => {
       expect(result.code).toBe('booking.slot_full')
     })
 
+    it('names the shift a booking.time_conflict clashes with', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 409,
+          data: {
+            type: 'urn:problem:booking.time_conflict',
+            code: 'booking.time_conflict',
+            title: 'Conflict',
+            status: 409,
+            conflicting_shift: {
+              id: 'abc',
+              task_id: 'def',
+              title: 'Gate 08:00-12:00',
+              task_name: 'Gate',
+              date: '2026-05-24',
+              start_time: '08:00:00',
+              end_time: '12:00:00',
+            },
+          },
+        }),
+      )
+
+      expect(result.code).toBe('booking.time_conflict')
+      expect(result.message).toMatch(
+        /^This shift overlaps your shift “Gate” \(.+, 08:00 – 12:00\)$/,
+      )
+    })
+
+    it('falls back to the plain time_conflict message without a conflicting shift', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 409,
+          data: { type: 'urn:problem:booking.time_conflict', title: 'Conflict', status: 409 },
+        }),
+      )
+
+      expect(result.message).toBe('This shift overlaps one of your booked shifts')
+    })
+
     it('ignores a type that does not use the urn:problem: prefix', () => {
       const result = normalizeApiError(
         axiosError({
