@@ -10,6 +10,8 @@ from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.crud.shift import shift as crud_shift
+from app.crud.task import task as crud_task
+from app.logic.booking_conflicts import find_conflicting_booking
 from app.logic.event_scope import get_user_event_scope
 from app.logic.notifications.triggers import (
     dispatch_booking_cancelled_by_user,
@@ -25,6 +27,7 @@ from app.schemas.booking import (
     BookingReadWithShift,
     BookingUpdate,
     MyBookingsListResponse,
+    ShiftConflict,
     ShiftSummary,
 )
 
@@ -134,6 +137,20 @@ async def create_booking(
             detail="You already have a confirmed booking for this shift",
         )
 
+    conflict = await find_conflicting_booking(
+        session, user_id=current_user.id, shift=shift
+    )
+    if conflict is not None:
+        conflict_task = await crud_task.get(session, str(conflict.shift.task_id))
+        clash = ShiftConflict.model_validate(conflict.shift)
+        clash.task_name = conflict_task.name if conflict_task else None
+        raise_problem(
+            409,
+            code="booking.time_conflict",
+            detail=f"This shift overlaps your booked shift '{clash.title}'",
+            extensions={"conflicting_shift": clash.model_dump(mode="json")},
+        )
+
     confirmed_count = await crud_booking.get_confirmed_count(session, shift_id=shift.id)
     if confirmed_count >= shift.max_bookings:
         raise_problem(
@@ -164,8 +181,6 @@ async def create_booking(
         result = await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
 
     # Load task name for richer notification
-    from app.crud.task import task as crud_task
-
     task = await crud_task.get(session, str(shift.task_id))
     task_name = task.name if task else None
 

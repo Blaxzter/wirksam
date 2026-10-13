@@ -14,7 +14,9 @@
     "booking": {
         "already_exists": "Sie haben bereits eine Buchung für diese Schicht",
         "forbidden": "Sie können nur Ihre eigenen Buchungen verwalten",
-        "slot_full": "Diese Dienstschicht ist ausgebucht"
+        "slot_full": "Diese Dienstschicht ist ausgebucht",
+        "time_conflict": "Diese Schicht überschneidet sich mit einer Ihrer gebuchten Schichten",
+        "time_conflict_with": "Diese Schicht überschneidet sich mit Ihrer Schicht „{name}“ ({when})"
     },
     "event": {
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",

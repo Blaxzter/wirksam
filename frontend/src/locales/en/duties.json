@@ -530,6 +530,7 @@
             "capacity": "Capacity",
             "capacityValue": "{current} / {max} booked",
             "category": "Category",
+            "clashesWithMine": "Clashes with one of your shifts",
             "date": "Date",
             "description": "Description",
             "freeSlots": "1 spot still free | {count} spots still free",

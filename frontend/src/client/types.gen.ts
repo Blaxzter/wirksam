@@ -1441,6 +1441,10 @@ export type FeedShiftEntry = {
    * Is Booked By Me
    */
   is_booked_by_me?: boolean
+  /**
+   * Collides With My Booking
+   */
+  collides_with_my_booking?: boolean
 }
 
 /**
@@ -2537,6 +2541,10 @@ export type ShiftRead = {
    * Is Booked By Me
    */
   is_booked_by_me?: boolean
+  /**
+   * Collides With My Booking
+   */
+  collides_with_my_booking?: boolean
 }
 
 /**

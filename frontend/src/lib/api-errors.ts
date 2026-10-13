@@ -75,13 +75,45 @@ const messageFromCode = (code?: string | null): string | null => {
   return te(key) ? t(key) : null
 }
 
+const clockTime = (value: unknown): string => (typeof value === 'string' ? value.slice(0, 5) : '')
+
+/**
+ * `booking.time_conflict` carries the shift it clashes with, so the message can
+ * name it instead of leaving the volunteer to hunt through their bookings.
+ */
+const timeConflictMessage = (problem: ProblemDetailsWithCode): string | null => {
+  const shift = (problem as Record<string, unknown>).conflicting_shift
+  if (!isRecord(shift) || typeof shift.date !== 'string') return null
+  const name =
+    typeof shift.task_name === 'string' && shift.task_name
+      ? shift.task_name
+      : typeof shift.title === 'string'
+        ? shift.title
+        : ''
+  if (!name) return null
+  const date = new Date(`${shift.date}T00:00:00`).toLocaleDateString(i18n.global.locale.value, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  const start = clockTime(shift.start_time)
+  const end = clockTime(shift.end_time)
+  const when = start && end ? `${date}, ${start} – ${end}` : date
+  return t('errorCodes.booking.time_conflict_with', { name, when })
+}
+
 const messageFromProblemDetails = (problem: ProblemDetailsWithCode): string => {
   if (Array.isArray(problem.errors) && problem.errors.length > 0) {
     return t('common.errors.api.validation', {
       message: formatValidationErrors(problem.errors),
     })
   }
-  const codeMessage = messageFromCode(problem.code ?? codeFromType(problem.type))
+  const code = problem.code ?? codeFromType(problem.type)
+  if (code === 'booking.time_conflict') {
+    const conflict = timeConflictMessage(problem)
+    if (conflict) return conflict
+  }
+  const codeMessage = messageFromCode(code)
   if (codeMessage) return codeMessage
   if (problem.detail) return problem.detail
   const statusFallback = statusMessage(problem.status)

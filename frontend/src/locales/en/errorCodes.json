@@ -14,7 +14,9 @@
     "booking": {
         "already_exists": "You already have a booking for this shift",
         "forbidden": "You can only manage your own bookings",
-        "slot_full": "This duty shift is fully booked"
+        "slot_full": "This duty shift is fully booked",
+        "time_conflict": "This shift overlaps one of your booked shifts",
+        "time_conflict_with": "This shift overlaps your shift “{name}” ({when})"
     },
     "event": {
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",

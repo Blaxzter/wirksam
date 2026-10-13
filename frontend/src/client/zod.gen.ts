@@ -664,6 +664,7 @@ export const zFeedShiftEntry = z
     max_bookings: z.int().optional().default(1),
     current_bookings: z.int().optional().default(0),
     is_booked_by_me: z.boolean().optional().default(false),
+    collides_with_my_booking: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
     description: 'Lightweight shift for the feed — no title/description, just booking info.',
@@ -1213,6 +1214,7 @@ export const zShiftRead = z.object({
   updated_at: z.iso.datetime(),
   current_bookings: z.int().optional().default(0),
   is_booked_by_me: z.boolean().optional().default(false),
+  collides_with_my_booking: z.boolean().optional().default(false),
 })
 
 /**

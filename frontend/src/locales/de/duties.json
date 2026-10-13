@@ -530,6 +530,7 @@
             "capacity": "Kapazität",
             "capacityValue": "{current} / {max} gebucht",
             "category": "Kategorie",
+            "clashesWithMine": "Überschneidet sich mit einer Ihrer Schichten",
             "date": "Datum",
             "description": "Beschreibung",
             "freeSlots": "Noch 1 Platz frei | Noch {count} Plätze frei",
