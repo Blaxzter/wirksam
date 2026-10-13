@@ -44,6 +44,12 @@ test.describe('Venue map – helper view', () => {
 
     const pin = page.getByTestId(`map-marker-${location.id}`)
     await expect(pin).toBeVisible()
+    // A helper reads the map but cannot edit it.
+    await expect(page.getByTestId('map-edit')).toHaveCount(0)
+    // The map fills the window: the page itself never scrolls.
+    await expect
+      .poll(() => page.evaluate(() => document.scrollingElement!.scrollHeight - window.innerHeight))
+      .toBeLessThanOrEqual(0)
     // Nothing booked yet, so nothing is highlighted.
     await expect(pin.getByTestId('marker-highlight')).toHaveCount(0)
 

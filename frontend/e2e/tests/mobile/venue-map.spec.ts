@@ -42,6 +42,11 @@ test.describe('Venue map – on a phone', () => {
 
   test('a tapped place opens as a bottom sheet', async ({ disposablePage: page }) => {
     await page.goto(`/app/map/${seeded.event.id}`)
+    await expect(page.getByTestId(`map-marker-${seeded.location.id}`)).toBeVisible()
+    // The map fills the screen: the page itself never scrolls.
+    await expect
+      .poll(() => page.evaluate(() => document.scrollingElement!.scrollHeight - window.innerHeight))
+      .toBeLessThanOrEqual(0)
     await page.getByTestId(`map-marker-${seeded.location.id}`).tap()
 
     const sheet = page.getByTestId('location-sheet')

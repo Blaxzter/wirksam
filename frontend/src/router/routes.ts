@@ -21,6 +21,11 @@ declare module 'vue-router' {
      * pages a participant could never use.
      */
     requiresEventManager?: boolean
+    /**
+     * The page fills exactly the space below the header and the document does
+     * not scroll (the venue map). Its root should be `flex-1 min-h-0`.
+     */
+    fullHeight?: boolean
   }
 }
 
@@ -114,6 +119,7 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           component: () => import('@/views/events/VenueMapView.vue'),
           meta: {
             routerViewKey: 'event-map',
+            fullHeight: true,
             breadcrumbs: [{ title: 'Map', titleKey: 'venueMap.title' }],
           },
         },

@@ -4296,6 +4296,42 @@ export type UserUpdate = {
 }
 
 /**
+ * VenueLocationStat
+ *
+ * Staffing of one location over the shifts it hosts on the map's day.
+ */
+export type VenueLocationStat = {
+  /**
+   * Location Id
+   */
+  location_id: string
+  /**
+   * Shift Count
+   *
+   * Shifts at this location on the day
+   */
+  shift_count: number
+  /**
+   * Booked
+   *
+   * Active (confirmed) bookings over those shifts
+   */
+  booked: number
+  /**
+   * Capacity
+   *
+   * Sum of ``max_bookings`` over those shifts
+   */
+  capacity: number
+  /**
+   * Open Shifts
+   *
+   * Shifts that still have a free place (booked < max_bookings)
+   */
+  open_shifts: number
+}
+
+/**
  * VenueMapRead
  */
 export type VenueMapRead = {
@@ -4306,7 +4342,7 @@ export type VenueMapRead = {
   /**
    * On
    *
-   * The day ``my_location_ids`` refers to
+   * The day ``my_location_ids`` and ``location_stats`` refer to
    */
   on: string
   /**
@@ -4323,6 +4359,12 @@ export type VenueMapRead = {
    * Locations of the caller's active bookings on ``on``
    */
   my_location_ids?: Array<string>
+  /**
+   * Location Stats
+   *
+   * Per-location staffing on ``on``. Only locations with at least one shift that day are listed; for non-admins, shifts of unpublished tasks are left out, matching ``GET /locations/{id}/shifts``.
+   */
+  location_stats?: Array<VenueLocationStat>
 }
 
 /**

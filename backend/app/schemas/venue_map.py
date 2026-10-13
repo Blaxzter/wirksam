@@ -107,12 +107,34 @@ class VenuePlanRead(BaseModel):
     markers: list[VenueMarkerRead] = Field(default_factory=list)
 
 
+class VenueLocationStat(BaseModel):
+    """Staffing of one location over the shifts it hosts on the map's day."""
+
+    location_id: uuid.UUID
+    shift_count: int = Field(description="Shifts at this location on the day")
+    booked: int = Field(description="Active (confirmed) bookings over those shifts")
+    capacity: int = Field(description="Sum of ``max_bookings`` over those shifts")
+    open_shifts: int = Field(
+        description="Shifts that still have a free place (booked < max_bookings)"
+    )
+
+
 class VenueMapRead(BaseModel):
     event_id: uuid.UUID
-    on: dt.date = Field(description="The day ``my_location_ids`` refers to")
+    on: dt.date = Field(
+        description="The day ``my_location_ids`` and ``location_stats`` refer to"
+    )
     plans: list[VenuePlanRead]
     locations: list[LocationRead]
     my_location_ids: list[uuid.UUID] = Field(
         default_factory=list,
         description="Locations of the caller's active bookings on ``on``",
+    )
+    location_stats: list[VenueLocationStat] = Field(
+        default_factory=list,
+        description=(
+            "Per-location staffing on ``on``. Only locations with at least one "
+            "shift that day are listed; for non-admins, shifts of unpublished "
+            "tasks are left out, matching ``GET /locations/{id}/shifts``."
+        ),
     )

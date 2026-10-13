@@ -18,12 +18,12 @@ Two rows and everything hanging off them:
 - a **demo event** — `events.is_sandbox = true`, private, with
   `events.sandbox_expires_at` set to now plus `SANDBOX_TTL_MINUTES`.
 
-Seeded into it: four published tasks, each with a real `ShiftBatch` and stored
+Seeded into it: eight published tasks, each with a real `ShiftBatch` and stored
 generation config; shifts before, on and after today; five more guest accounts
 as teammates, with availabilities; bookings that leave the rota deliberately
 uneven; a notification inbox for the visitor; the tasks' locations as real
-`locations` rows with a short description each, plus one venue plan with a
-drawn image and markers on it; and — for the manager role only — one pending
+`locations` rows with a short description each, plus two venue plans (the
+building and the outdoor area) with drawn images and markers on them; and — for the manager role only — one pending
 invitation, one pending join request, and the notification telling them about
 it.
 
@@ -31,10 +31,14 @@ The venue plan exists for the same reason as the inbox: a sandbox may not
 upload an image (`PUT /venue-plans/{id}/image` answers 403
 `sandbox.upload_disabled`, because it would store an anonymous visitor's file),
 so without a seeded plan the map would be an empty state the visitor can do
-nothing about. `logic/sandbox/venue_plan_art.py` draws it with Pillow and runs
-it through the same `normalize_image` pipeline as an upload, cached per
-language. Every other map edit (plans, markers, locations) stays allowed, so a
-manager can still try the editor.
+nothing about. `logic/sandbox/venue_plan_art.py` draws both with Pillow and
+runs them through the same `normalize_image` pipeline as an upload, cached per
+plan and language. Every marker is placed from its `SPOTS` table, the same
+numbers the drawing uses, so a pin always sits on the feature it names. Today's
+shifts at the pinned places are filled to fixed shares rather than at random
+(`today_fill` in `seed.py`), so the map's staffing colours always show a mix of
+full, partly staffed and short. Every other map edit (plans, markers,
+locations) stays allowed, so a manager can still try the editor.
 
 The inbox is the one part of the seed that exists because of a guard rather
 than in spite of one. `NotificationService` drops a sandbox recipient *before*

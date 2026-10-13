@@ -301,7 +301,11 @@ onMounted(loadEvent)
         />
       </div>
       <EventLocations v-else-if="shownTab === 'locations'" :event-id="targetEventId" />
-      <VenueMapEditor v-else-if="shownTab === 'map'" :event-id="targetEventId" />
+      <VenueMapEditor
+        v-else-if="shownTab === 'map'"
+        :event-id="targetEventId"
+        :sandbox="!!event?.is_sandbox"
+      />
     </template>
   </div>
 </template>

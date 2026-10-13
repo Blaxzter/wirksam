@@ -1,6 +1,6 @@
 {
     "marker": {
-        "close": "Done",
+        "close": "Close",
         "delete": "Remove pin",
         "deleteConfirm": "Remove the pin “{name}” from this map?",
         "kind": "Type",
@@ -55,6 +55,9 @@
         "hint": "PNG, JPG or WebP. PDFs: export as image first.",
         "replace": "Replace picture",
         "replaceHint": "The pins stay where they are.",
+        "sandboxHint": "In your own event you upload a plan of your venue here. In the demo you can place, move and remove pins on the plans that are already there.",
+        "sandboxReplace": "Pictures cannot be replaced in the demo. In your own event you can upload a plan of your venue here.",
+        "sandboxTitle": "No picture uploads in the demo",
         "success": "Picture saved",
         "title": "Add a picture of the venue",
         "uploading": "Uploading…"

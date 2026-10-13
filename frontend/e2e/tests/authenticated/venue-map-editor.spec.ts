@@ -125,5 +125,20 @@ test.describe('Venue map editor', () => {
     const firstAid = markers.find((m) => m.kind === 'first_aid')
     expect(firstAid?.location_id).toBeNull()
     expect(firstAid?.x).toBeGreaterThan(0.5)
+
+    // ── Edit in place from the map page ──
+    await page.goto(`/app/map/${event.id}`)
+    await expect(page.getByTestId(`map-marker-${location.id}`)).toBeVisible()
+    await page.getByTestId('map-edit').click()
+    const inPlace = page.getByTestId('venue-map-editor')
+    await expect(inPlace.getByTestId('editor-canvas')).toBeVisible()
+    await expect(inPlace.getByTestId('plan-upload-replace')).toBeVisible()
+    // Editing in place keeps the page at window height, like the map itself.
+    await expect
+      .poll(() => page.evaluate(() => document.scrollingElement!.scrollHeight - window.innerHeight))
+      .toBeLessThanOrEqual(0)
+    await page.getByTestId('map-edit-done').click()
+    await expect(inPlace).toHaveCount(0)
+    await expect(page.getByTestId(`map-marker-${location.id}`)).toBeVisible()
   })
 })

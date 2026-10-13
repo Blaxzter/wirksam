@@ -831,6 +831,7 @@ export type {
   UsersUploadMyAvatarResponses,
   UserUpdate,
   ValidationErrorItem,
+  VenueLocationStat,
   VenueMapCreateVenueMarkerData,
   VenueMapCreateVenueMarkerError,
   VenueMapCreateVenueMarkerErrors,

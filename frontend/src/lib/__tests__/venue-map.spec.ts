@@ -4,15 +4,20 @@ import { describe, expect, it } from 'vitest'
 import {
   GENERIC_MARKER_KINDS,
   MARKER_KINDS,
+  STAFFING_CLASSES,
+  STAFFING_LEGEND,
   clamp01,
   clientToImage,
   cropAround,
+  estimateTextWidth,
   fitViewBox,
   markerIcon,
   markerKindLabelKey,
   panBy,
   planImageUrl,
   sharedLocationId,
+  staffingLabelKey,
+  staffingStatus,
   toNormalised,
   unitsPerPixel,
   viewBoxToString,
@@ -240,5 +245,44 @@ describe('sharedLocationId', () => {
     expect(sharedLocationId([{ location_id: 'a' }, { location_id: null }], 'a')).toBeNull()
     expect(sharedLocationId([{ location_id: null }, { location_id: 'a' }], 'a')).toBeNull()
     expect(sharedLocationId([{}], 'a')).toBeNull()
+  })
+})
+
+describe('staffingStatus', () => {
+  it('is none without shifts that day', () => {
+    expect(staffingStatus(undefined)).toBe('none')
+    expect(staffingStatus(null)).toBe('none')
+    expect(staffingStatus({ booked: 0, capacity: 0 })).toBe('none')
+  })
+
+  it('is full once every slot is booked', () => {
+    expect(staffingStatus({ booked: 4, capacity: 4 })).toBe('full')
+    expect(staffingStatus({ booked: 5, capacity: 4 })).toBe('full')
+  })
+
+  it('is partial from half the slots, short below', () => {
+    expect(staffingStatus({ booked: 4, capacity: 8 })).toBe('partial')
+    expect(staffingStatus({ booked: 3, capacity: 4 })).toBe('partial')
+    expect(staffingStatus({ booked: 3, capacity: 7 })).toBe('short')
+    expect(staffingStatus({ booked: 2, capacity: 9 })).toBe('short')
+    expect(staffingStatus({ booked: 0, capacity: 4 })).toBe('short')
+  })
+
+  it('names and colours every status', () => {
+    expect(STAFFING_LEGEND).toEqual(['full', 'partial', 'short'])
+    expect(staffingLabelKey('short')).toBe('venueMap.staffing.short')
+    for (const status of ['full', 'partial', 'short', 'none'] as const) {
+      expect(STAFFING_CLASSES[status].fill).toMatch(/^fill-staff-/)
+    }
+  })
+})
+
+describe('estimateTextWidth', () => {
+  it('grows with the text and the font size', () => {
+    expect(estimateTextWidth('', 12)).toBe(0)
+    expect(estimateTextWidth('Info', 12)).toBeLessThan(estimateTextWidth('Information', 12))
+    expect(estimateTextWidth('Bar', 24)).toBeGreaterThan(estimateTextWidth('Bar', 12))
+    // Wide letters count for more than narrow ones.
+    expect(estimateTextWidth('MMM', 12)).toBeGreaterThan(estimateTextWidth('iii', 12))
   })
 })

@@ -308,7 +308,8 @@ class TestPurgeSandbox:
         assert inv.availability_ids, "the seeder must have produced availabilities"
         assert inv.notification_ids, "the seeder must have produced an inbox"
         assert inv.location_ids, "the seeder must have produced locations"
-        assert inv.plan_ids, "the seeder must have produced a venue plan"
+        # Both drawn plans, so the sweep is shown to take more than one.
+        assert len(inv.plan_ids) == 2, "the seeder must have produced two venue plans"
 
         before = await _remaining(db_session, inv)
         assert all(count > 0 for count in before.values()), before

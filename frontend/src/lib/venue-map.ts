@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 
 import { CookingPot, Cross, DoorOpen, Info, MapPin, SquareParking, Toilet } from '@lucide/vue'
 
-import type { VenueMarkerRead } from '@/client/types.gen'
+import type { LocationRead, VenueLocationStat, VenueMarkerRead } from '@/client/types.gen'
 
 /**
  * Geometry and vocabulary for venue maps (#185).
@@ -72,6 +72,104 @@ export function markerIcon(kind: string): Component {
 export function markerKindLabelKey(kind: string): string {
   const camel = kind.replace(/_([a-z])/g, (_m, c: string) => c.toUpperCase())
   return `venueMap.markerKinds.${camel}`
+}
+
+/**
+ * How well a place is staffed on the day the map shows.
+ *
+ * - `full`: every slot of that day's shifts there is booked;
+ * - `partial`: at least half of them are;
+ * - `short`: fewer than half;
+ * - `none`: no shifts there that day (the API leaves such a place out of
+ *   `location_stats`, so a missing entry means `none`).
+ */
+export type StaffingStatus = 'full' | 'partial' | 'short' | 'none'
+
+/** The statuses a legend lists, most to least staffed. */
+export const STAFFING_LEGEND = ['full', 'partial', 'short'] as const satisfies StaffingStatus[]
+
+/** Share of booked slots from which a place counts as partly rather than under-staffed. */
+export const PARTIAL_THRESHOLD = 0.5
+
+export function staffingStatus(
+  stat: { booked: number; capacity: number } | null | undefined,
+): StaffingStatus {
+  if (!stat || !(stat.capacity > 0)) return 'none'
+  if (stat.booked >= stat.capacity) return 'full'
+  return stat.booked / stat.capacity >= PARTIAL_THRESHOLD ? 'partial' : 'short'
+}
+
+/** The i18n key naming a staffing status (`venueMap.staffing.*`). */
+export function staffingLabelKey(status: StaffingStatus): string {
+  return `venueMap.staffing.${status}`
+}
+
+/**
+ * Literal class names per status, so Tailwind's scanner emits them. The
+ * colours are theme tokens (`--staff-*` in `index.css`) with a light and a
+ * dark value each.
+ */
+export const STAFFING_CLASSES: Record<
+  StaffingStatus,
+  { fill: string; stroke: string; bg: string; text: string; chip: string }
+> = {
+  full: {
+    fill: 'fill-staff-full',
+    stroke: 'stroke-staff-full',
+    bg: 'bg-staff-full',
+    text: 'text-staff-full',
+    chip: 'border-staff-full/40 bg-staff-full/10 text-staff-full',
+  },
+  partial: {
+    fill: 'fill-staff-partial',
+    stroke: 'stroke-staff-partial',
+    bg: 'bg-staff-partial',
+    text: 'text-staff-partial',
+    chip: 'border-staff-partial/50 bg-staff-partial/10 text-foreground',
+  },
+  short: {
+    fill: 'fill-staff-short',
+    stroke: 'stroke-staff-short',
+    bg: 'bg-staff-short',
+    text: 'text-staff-short',
+    chip: 'border-staff-short/40 bg-staff-short/10 text-staff-short',
+  },
+  none: {
+    fill: 'fill-staff-none',
+    stroke: 'stroke-staff-none',
+    bg: 'bg-staff-none',
+    text: 'text-muted-foreground',
+    chip: 'border-border bg-muted text-muted-foreground',
+  },
+}
+
+/** One row of the map's list of places (`VenuePlaceOverview`). */
+export type PlaceOverviewItem = {
+  location: LocationRead
+  badge: number
+  stat: VenueLocationStat | null
+  /** Has a pin on some plan; a place without one cannot be shown on the map. */
+  pinned: boolean
+  /** The viewer has a shift there that day. */
+  mine: boolean
+}
+
+/**
+ * A rough width (CSS px) of `text` set at `fontSize` px, for laying out a
+ * marker pill before the browser has measured it (and in tests, where there is
+ * no layout). Errs on the wide side so a pill is never too short to hold its
+ * text.
+ */
+export function estimateTextWidth(text: string, fontSize: number): number {
+  let em = 0
+  for (const ch of text) {
+    if (/[ilj.,:;'|!]/.test(ch)) em += 0.3
+    else if (/[mwMW]/.test(ch)) em += 0.85
+    else if (/[A-ZÄÖÜ0-9]/.test(ch)) em += 0.66
+    else if (ch === ' ') em += 0.3
+    else em += 0.56
+  }
+  return Math.ceil(em * fontSize)
 }
 
 /**

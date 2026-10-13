@@ -1,6 +1,6 @@
 {
     "marker": {
-        "close": "Fertig",
+        "close": "Schließen",
         "delete": "Markierung entfernen",
         "deleteConfirm": "Die Markierung „{name}“ von diesem Plan entfernen?",
         "kind": "Art",
@@ -55,6 +55,9 @@
         "hint": "PNG, JPG oder WebP. PDFs bitte vorher als Bild exportieren.",
         "replace": "Bild ersetzen",
         "replaceHint": "Die Markierungen bleiben, wo sie sind.",
+        "sandboxHint": "In deiner eigenen Veranstaltung lädst du hier einen Plan deines Geländes hoch. In der Demo kannst du auf den vorhandenen Plänen Pins setzen, verschieben und entfernen.",
+        "sandboxReplace": "In der Demo kannst du das Bild nicht austauschen. In deiner eigenen Veranstaltung lädst du hier einen Plan deines Geländes hoch.",
+        "sandboxTitle": "In der Demo kannst du keine Bilder hochladen",
         "success": "Bild gespeichert",
         "title": "Bild vom Veranstaltungsort hinzufügen",
         "uploading": "Wird hochgeladen…"

@@ -28,7 +28,11 @@ from app.crud.location import location as crud_location
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic.images import MAX_INPUT_BYTES, ImageProcessingError
 from app.logic.locations import resolve_location
-from app.logic.permissions import require_event_role, require_event_visible
+from app.logic.permissions import (
+    require_event_role,
+    require_event_visible,
+    role_at_least,
+)
 from app.logic.venue_map import normalize_plan_image
 from app.models.booking import Booking
 from app.models.event import Event
@@ -146,10 +150,12 @@ async def get_venue_map(
     """Everything the map screen needs in one call.
 
     Plans in display order with their markers, every location of the event,
-    and the locations of the caller's own confirmed bookings on ``on``
-    (default: today) so the map can highlight where they are needed.
+    the locations of the caller's own confirmed bookings on ``on``
+    (default: today) so the map can highlight where they are needed, and
+    per-location staffing for that day (shifts of unpublished tasks counted
+    for event admins only, as in ``GET /locations/{id}/shifts``).
     """
-    event, _ = await _member_event(current_user, session, event_id)
+    event, role = await _member_event(current_user, session, event_id)
     day = on or dt.date.today()
 
     plans = await crud_venue_map.list_plans_with_markers(session, event_id=event.id)
@@ -179,6 +185,12 @@ async def get_venue_map(
         plans=plans,
         locations=[LocationRead.model_validate(loc) for loc in locations],
         my_location_ids=my_location_ids,
+        location_stats=await crud_venue_map.location_stats(
+            session,
+            event_id=event.id,
+            day=day,
+            include_unpublished=role_at_least(role, "admin"),
+        ),
     )
 
 

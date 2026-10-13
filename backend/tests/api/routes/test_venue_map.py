@@ -1093,3 +1093,263 @@ class TestVenueMapView:
         r = await async_client.get(f"{API}/events/{test_event.id}/venue-map")
         assert r.status_code == 200
         assert [p["id"] for p in r.json()["plans"]] == [str(test_venue_plan.id)]
+
+
+# ── Staffing per location ──────────────────────────────────────────────────
+
+
+STAFF_DAY = dt.date(2026, 6, 11)
+
+
+async def _staffing_scenario(
+    db_session: AsyncSession,
+    *,
+    event: Event,
+    other_event: Event,
+    published_task: Task,
+    users: list[User],
+) -> tuple[Location, Location, Location]:
+    """Shifts on and around ``STAFF_DAY``; returns (stage, backstage, idle).
+
+    ``stage`` (published task, on the day): a 3-place shift with two confirmed
+    bookings and one cancelled one, and a full 1-place shift — 2 shifts, 3/4
+    booked, 1 still open. A shift there the next day must not count.
+    ``backstage`` only has a shift of a *draft* task: 1/2 booked, 1 open.
+    ``idle`` has no shift at all. Shifts without a location and shifts of
+    another event are noise.
+    """
+    stage = await _add_location(db_session, event, "Stage")
+    backstage = await _add_location(db_session, event, "Backstage")
+    idle = await _add_location(db_session, event, "Idle")
+    foreign = await _add_location(db_session, other_event, "Foreign")
+
+    draft_task = Task(
+        name="Draft",
+        start_date=STAFF_DAY,
+        end_date=STAFF_DAY,
+        status="draft",
+        event_id=event.id,
+    )
+    foreign_task = Task(
+        name="Elsewhere",
+        start_date=STAFF_DAY,
+        end_date=STAFF_DAY,
+        status="published",
+        event_id=other_event.id,
+    )
+    db_session.add_all([draft_task, foreign_task])
+    await db_session.flush()
+
+    async def shift(
+        task: Task,
+        loc: Location | None,
+        max_bookings: int,
+        bookings: list[tuple[User, str]],
+        on: dt.date = STAFF_DAY,
+    ) -> None:
+        s = Shift(
+            task_id=task.id,
+            title="Dienst",
+            date=on,
+            start_time=dt.time(9),
+            end_time=dt.time(11),
+            max_bookings=max_bookings,
+            location=loc.name if loc else "Free text",
+            location_id=loc.id if loc else None,
+        )
+        db_session.add(s)
+        await db_session.flush()
+        for user, status in bookings:
+            db_session.add(Booking(shift_id=s.id, user_id=user.id, status=status))
+        await db_session.flush()
+
+    a, b, c = users
+    await shift(
+        published_task,
+        stage,
+        3,
+        [(a, "confirmed"), (b, "confirmed"), (c, "cancelled")],
+    )
+    await shift(published_task, stage, 1, [(c, "confirmed")])
+    await shift(
+        published_task,
+        stage,
+        4,
+        [(a, "confirmed")],
+        on=STAFF_DAY + dt.timedelta(days=1),
+    )
+    await shift(draft_task, backstage, 2, [(b, "confirmed")])
+    await shift(published_task, None, 5, [(a, "confirmed")])
+    await shift(foreign_task, foreign, 2, [(a, "confirmed")])
+    return stage, backstage, idle
+
+
+@pytest.mark.asyncio
+class TestVenueMapLocationStats:
+    async def _get_stats(
+        self, async_client: AsyncClient, event: Event
+    ) -> dict[str, dict[str, Any]]:
+        r = await async_client.get(
+            f"{API}/events/{event.id}/venue-map",
+            params={"on": STAFF_DAY.isoformat()},
+        )
+        assert r.status_code == 200, r.text
+        return {s["location_id"]: s for s in r.json()["location_stats"]}
+
+    async def test_member_sees_published_shifts_only(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+        test_outsider_user: User,
+    ) -> None:
+        stage, _, _ = await _staffing_scenario(
+            db_session,
+            event=test_event,
+            other_event=test_draft_event,
+            published_task=test_task,
+            users=[test_user, test_event_admin_user, test_outsider_user],
+        )
+
+        stats = await self._get_stats(async_client, test_event)
+
+        assert stats == {
+            str(stage.id): {
+                "location_id": str(stage.id),
+                "shift_count": 2,
+                "booked": 3,
+                "capacity": 4,
+                "open_shifts": 1,
+            }
+        }
+
+    async def test_admin_also_sees_unpublished_shifts(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+        test_outsider_user: User,
+    ) -> None:
+        stage, backstage, idle = await _staffing_scenario(
+            db_session,
+            event=test_event,
+            other_event=test_draft_event,
+            published_task=test_task,
+            users=[test_user, test_event_admin_user, test_outsider_user],
+        )
+
+        stats = await self._get_stats(async_client, test_event)
+
+        assert set(stats) == {str(stage.id), str(backstage.id)}
+        assert str(idle.id) not in stats
+        assert stats[str(stage.id)]["booked"] == 3
+        assert stats[str(backstage.id)] == {
+            "location_id": str(backstage.id),
+            "shift_count": 1,
+            "booked": 1,
+            "capacity": 2,
+            "open_shifts": 1,
+        }
+
+    async def test_other_day_has_its_own_stats(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+        test_outsider_user: User,
+    ) -> None:
+        stage, _, _ = await _staffing_scenario(
+            db_session,
+            event=test_event,
+            other_event=test_draft_event,
+            published_task=test_task,
+            users=[test_user, test_event_admin_user, test_outsider_user],
+        )
+
+        r = await async_client.get(
+            f"{API}/events/{test_event.id}/venue-map",
+            params={"on": (STAFF_DAY + dt.timedelta(days=1)).isoformat()},
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["location_stats"] == [
+            {
+                "location_id": str(stage.id),
+                "shift_count": 1,
+                "booked": 1,
+                "capacity": 4,
+                "open_shifts": 1,
+            }
+        ]
+
+    async def test_over_booked_shift_is_capped_at_capacity(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+        test_outsider_user: User,
+    ) -> None:
+        """An over-booked shift must not hide a free place in another one."""
+        bar = await _add_location(db_session, test_event, "Bar")
+        over = Shift(
+            task_id=test_task.id,
+            title="Dienst",
+            date=STAFF_DAY,
+            start_time=dt.time(9),
+            end_time=dt.time(11),
+            max_bookings=2,
+            location=bar.name,
+            location_id=bar.id,
+        )
+        free = Shift(
+            task_id=test_task.id,
+            title="Dienst",
+            date=STAFF_DAY,
+            start_time=dt.time(12),
+            end_time=dt.time(14),
+            max_bookings=1,
+            location=bar.name,
+            location_id=bar.id,
+        )
+        db_session.add_all([over, free])
+        await db_session.flush()
+        for user in (test_user, test_event_admin_user, test_outsider_user):
+            db_session.add(
+                Booking(shift_id=over.id, user_id=user.id, status="confirmed")
+            )
+        await db_session.flush()
+
+        stats = await self._get_stats(async_client, test_event)
+
+        assert stats[str(bar.id)] == {
+            "location_id": str(bar.id),
+            "shift_count": 2,
+            "booked": 2,
+            "capacity": 3,
+            "open_shifts": 1,
+        }
+
+    async def test_no_shifts_means_empty_list(
+        self, async_client: AsyncClient, test_event: Event, test_location: Location
+    ) -> None:
+        r = await async_client.get(
+            f"{API}/events/{test_event.id}/venue-map",
+            params={"on": STAFF_DAY.isoformat()},
+        )
+        assert r.status_code == 200
+        assert r.json()["location_stats"] == []

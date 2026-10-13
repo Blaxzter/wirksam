@@ -19,9 +19,11 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
   under every classification tab, because nothing the visitor does during the
   tour can produce one — ``NotificationService`` skips a sandbox recipient
   before it writes a row, so a demo inbox is seeded or it is empty forever;
-* the tasks point at real locations with a venue plan behind them, because a
+* the tasks point at real locations with venue plans behind them, because a
   sandbox cannot upload an image (``sandbox.upload_disabled``) and the map
-  would otherwise be an empty state the visitor can do nothing about.
+  would otherwise be an empty state the visitor can do nothing about; and
+  today's shifts at those places are deliberately full, half full and short,
+  because the map colours every pin by the day's staffing.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -35,6 +37,7 @@ difference is a few hundred round trips on every click of the demo button.
 """
 
 import datetime as dt
+import math
 import secrets
 import uuid
 from dataclasses import dataclass
@@ -42,8 +45,14 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.user_availability import user_availability as crud_user_availability
+from app.logic.images import NormalizedImage
 from app.logic.notifications.messages import format_time_until, get_message
-from app.logic.sandbox.venue_plan_art import render_demo_plan
+from app.logic.sandbox.venue_plan_art import (
+    PLAN_KEYS,
+    SPOTS,
+    PlanKey,
+    render_demo_plan,
+)
 from app.logic.shift_generator import generate_shifts
 from app.models.booking import Booking
 from app.models.event import Event
@@ -109,9 +118,9 @@ class _TaskSpec:
     location_de: str
     location_desc_en: str
     location_desc_de: str
-    #: Where the location's marker sits on the demo plan, as fractions of the
-    #: image (see ``venue_plan_art``); ``None`` keeps it off the map.
-    marker_at: tuple[float, float] | None
+    #: Which demo plan the location's marker sits on, and at which drawn spot
+    #: (a key of ``venue_plan_art.SPOTS``); ``None`` keeps it off the map.
+    marker: tuple[PlanKey, str] | None
     category_en: str
     category_de: str
     day_offsets: tuple[int, ...]
@@ -119,6 +128,11 @@ class _TaskSpec:
     end_hour: int
     duration_minutes: int
     people_per_shift: int
+    #: How full today's shifts of this task are made, as a share of their
+    #: places. The map colours each place by the day's staffing, and pills
+    #: that all come out one colour show nothing; ``None`` leaves today to
+    #: the random fill like every other day.
+    today_fill: float | None = None
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -139,6 +153,10 @@ class _TaskSpec:
 # Deliberately mundane. A demo event about a summer festival invites the reader
 # to imagine their own rota; one about "Demo Task 1" invites them to close the
 # tab. Offsets are relative to today, so the data is always current.
+#
+# The first spec must start strictly before every other one: the board sorts
+# tasks by start date, and the tour's bookable chip is reserved on the first
+# spec (see ``_seed_bookings``), so it has to be the first row on screen.
 _TASK_SPECS: tuple[_TaskSpec, ...] = (
     _TaskSpec(
         name_en="Welcome desk",
@@ -154,14 +172,13 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         location_en="Main entrance",
         location_de="Haupteingang",
         location_desc_en=(
-            "The glass doors facing the **car park**. The desk is just inside "
-            "on the left."
+            "The glass doors on **Riverside Road**. The desk is just inside, "
+            "facing the door."
         ),
         location_desc_de=(
-            "Die Glastüren zum **Parkplatz**. Der Tisch steht gleich links "
-            "hinter dem Eingang."
+            "Die Glastüren am **Uferweg**. Der Tisch steht gleich hinter dem Eingang."
         ),
-        marker_at=(0.22, 0.70),
+        marker=("indoor", "welcome_desk"),
         category_en="Front of house",
         category_de="Empfang",
         day_offsets=(-2, 0, 1, 3, 5),
@@ -169,6 +186,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         end_hour=15,
         duration_minutes=120,
         people_per_shift=2,
+        today_fill=1.0,
     ),
     _TaskSpec(
         name_en="Café counter",
@@ -191,7 +209,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
             "Theke an der Rückwand des Foyers. Schürzen und der Kassenschlüssel "
             "liegen im Schrank unter der Kaffeemaschine."
         ),
-        marker_at=(0.22, 0.52),
+        marker=("indoor", "cafe_counter"),
         category_en="Catering",
         category_de="Verpflegung",
         day_offsets=(-1, 0, 2, 4, 6),
@@ -199,6 +217,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         end_hour=16,
         duration_minutes=90,
         people_per_shift=2,
+        today_fill=0.5,
     ),
     _TaskSpec(
         name_en="Stage crew",
@@ -221,14 +240,15 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
             "Durch das Foyer und geradeaus. Treffpunkt ist **seitlich der "
             "Bühne**, nicht davor."
         ),
-        marker_at=(0.66, 0.32),
+        marker=("indoor", "stage"),
         category_en="Technical",
         category_de="Technik",
-        day_offsets=(1, 4, 7, 9),
+        day_offsets=(0, 1, 4, 7, 9),
         start_hour=14,
         end_hour=20,
         duration_minutes=120,
         people_per_shift=3,
+        today_fill=0.2,
     ),
     _TaskSpec(
         name_en="Closing tidy-up",
@@ -245,7 +265,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         location_de="Gesamtes Gelände",
         location_desc_en="Everywhere at once. Start in the main hall and work outwards.",
         location_desc_de="Überall gleichzeitig. Am besten in der Halle anfangen.",
-        marker_at=None,
+        marker=None,
         category_en="Logistics",
         category_de="Logistik",
         day_offsets=(0, 3, 6, 8, 10),
@@ -254,16 +274,160 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=90,
         people_per_shift=4,
     ),
+    _TaskSpec(
+        name_en="Grill stand",
+        name_de="Grillstand",
+        description_en=(
+            "Sausages, halloumi and corn on the cob. One on the grill, one on "
+            "the buns, one taking the money."
+        ),
+        description_de=(
+            "Würstchen, Halloumi und Maiskolben. Eine Person am Grill, eine an "
+            "den Brötchen, eine an der Kasse."
+        ),
+        location_en="Food stalls",
+        location_de="Essensstände",
+        location_desc_en=(
+            "The row of stalls along the top of the meadow. The grill is the "
+            "**middle stall**; gas and tongs are in the crate behind it."
+        ),
+        location_desc_de=(
+            "Die Reihe Stände am oberen Rand der Festwiese. Der Grill ist der "
+            "**mittlere Stand**, Gas und Zangen liegen in der Kiste dahinter."
+        ),
+        marker=("outdoor", "food_stalls"),
+        category_en="Catering",
+        category_de="Verpflegung",
+        day_offsets=(-1, 0, 2, 5, 7),
+        start_hour=11,
+        end_hour=19,
+        duration_minutes=120,
+        people_per_shift=3,
+        today_fill=1.0,
+    ),
+    _TaskSpec(
+        name_en="Wristband check",
+        name_de="Bändchenkontrolle",
+        description_en=(
+            "Check wristbands at the meadow gate and sell day passes to anyone "
+            "without one. Friendly but firm."
+        ),
+        description_de=(
+            "Am Wiesentor die Bändchen kontrollieren und Tageskarten an alle "
+            "ohne verkaufen. Freundlich, aber bestimmt."
+        ),
+        location_en="Meadow gate",
+        location_de="Wiesentor",
+        location_desc_en=(
+            "Where the path from **Riverside Road** reaches the meadow. Pick "
+            "up the cash box at the info desk in the foyer."
+        ),
+        location_desc_de=(
+            "Wo der Weg vom **Uferweg** auf die Festwiese trifft. Die Kasse "
+            "holst du am Infotisch im Foyer ab."
+        ),
+        marker=("outdoor", "meadow_gate"),
+        category_en="Front of house",
+        category_de="Empfang",
+        day_offsets=(-1, 0, 1, 6, 8),
+        start_hour=10,
+        end_hour=18,
+        duration_minutes=120,
+        people_per_shift=2,
+        today_fill=0.5,
+    ),
+    _TaskSpec(
+        name_en="Kids' games",
+        name_de="Kinderspiele",
+        description_en=(
+            "Sack races, face paint and the sandpit. Someone has to keep count "
+            "of the buckets."
+        ),
+        description_de=(
+            "Sackhüpfen, Kinderschminken und der Sandkasten. Irgendwer muss die "
+            "Eimer zählen."
+        ),
+        location_en="Kids' corner",
+        location_de="Kinderecke",
+        location_desc_en=(
+            "The round sandpit on the meadow, right of the beer tables. Games "
+            "and face paint are in the blue box."
+        ),
+        location_desc_de=(
+            "Der runde Sandkasten auf der Festwiese, rechts von den "
+            "Biertischen. Spiele und Schminke sind in der blauen Kiste."
+        ),
+        marker=("outdoor", "kids_corner"),
+        category_en="Programme",
+        category_de="Programm",
+        day_offsets=(0, 2, 4, 6, 9),
+        start_hour=13,
+        end_hour=17,
+        duration_minutes=120,
+        people_per_shift=2,
+        today_fill=0.75,
+    ),
+    _TaskSpec(
+        name_en="Parking marshals",
+        name_de="Parkplatzeinweisung",
+        description_en=(
+            "Wave cars into the bays and keep the lane to the road clear. "
+            "High-vis vests provided."
+        ),
+        description_de=(
+            "Autos in die Lücken winken und die Zufahrt zur Straße freihalten. "
+            "Warnwesten liegen bereit."
+        ),
+        location_en="Car park",
+        location_de="Parkplatz",
+        location_desc_en=(
+            "Next to the building, way in from **Riverside Road**. Meet in "
+            "the middle lane."
+        ),
+        location_desc_de=(
+            "Neben dem Gebäude, Einfahrt vom **Uferweg**. Treffpunkt ist die "
+            "mittlere Fahrgasse."
+        ),
+        marker=("outdoor", "car_park"),
+        category_en="Logistics",
+        category_de="Logistik",
+        day_offsets=(0, 3, 7, 10),
+        start_hour=9,
+        end_hour=13,
+        duration_minutes=120,
+        people_per_shift=2,
+        today_fill=0.25,
+    ),
 )
 
-_PLAN_NAME = {"en": "Venue", "de": "Gelände"}
+# The demo plans in tab order, by their key in ``venue_plan_art``.
+_PLAN_NAMES: dict[PlanKey, dict[str, str]] = {
+    "indoor": {"en": "Building", "de": "Gebäude"},
+    "outdoor": {"en": "Outdoor area", "de": "Außengelände"},
+}
 
-# The generic markers on the demo plan: (kind, (x, y), label by language).
-_GENERIC_MARKERS: tuple[tuple[str, tuple[float, float], dict[str, str] | None], ...] = (
-    ("entrance", (0.94, 0.53), {"en": "Side entrance", "de": "Seiteneingang"}),
-    ("first_aid", (0.30, 0.18), None),
-    ("toilets", (0.14, 0.18), None),
-    ("parking", (0.12, 0.87), None),
+# The generic markers: (plan, kind, spot in ``SPOTS``, label by language).
+# Between them they use every generic kind, so the demo shows the whole set.
+_GENERIC_MARKERS: tuple[tuple[PlanKey, str, str, dict[str, str] | None], ...] = (
+    (
+        "indoor",
+        "entrance",
+        "side_entrance",
+        {"en": "Side entrance", "de": "Seiteneingang"},
+    ),
+    ("indoor", "info_desk", "info_desk", None),
+    ("indoor", "kitchen", "kitchen", None),
+    ("indoor", "first_aid", "first_aid", None),
+    ("indoor", "toilets", "toilets", None),
+    ("outdoor", "entrance", "side_gate", {"en": "Side gate", "de": "Seitentor"}),
+    (
+        "outdoor",
+        "first_aid",
+        "first_aid_tent",
+        {"en": "First-aid tent", "de": "Sanitätszelt"},
+    ),
+    ("outdoor", "toilets", "toilets", None),
+    ("outdoor", "parking", "bike_parking", {"en": "Bikes", "de": "Fahrräder"}),
 )
 
 _TEAMMATE_NAMES: tuple[tuple[str, str], ...] = (
@@ -364,6 +528,7 @@ async def seed_sandbox(
     )
     guest_bookings = await _seed_bookings(
         db,
+        tasks=tasks,
         shifts=shifts,
         owner=owner,
         teammates=teammates,
@@ -510,52 +675,60 @@ async def _seed_venue_plan(
     locations: dict[str, Location],
     lang: str,
 ) -> None:
-    """One drawn plan with every placeable location and a few generic pins.
+    """The drawn plans, with every placeable location and the generic pins.
 
-    The image is rendered once per language and process (``render_demo_plan``
-    is cached), so the cost per demo is a single ``bytea`` insert.
+    The images are rendered once per plan, language and process
+    (``render_demo_plan`` is cached), so the cost per demo is one ``bytea``
+    insert per plan. Every pin is placed from ``SPOTS``, the table the drawing
+    is made from, so it sits on the feature it names.
     """
-    image = render_demo_plan(lang)
-    plan = VenuePlan(
-        event_id=event.id,
-        name=_PLAN_NAME[lang],
-        sort_order=0,
-        image_etag=image.etag,
-        image_width=image.width,
-        image_height=image.height,
-    )
-    db.add(plan)
-    # No ORM relationship ties the children to the plan, so the plan row goes
+    plans: dict[PlanKey, VenuePlan] = {}
+    images: dict[PlanKey, NormalizedImage] = {}
+    for order, key in enumerate(PLAN_KEYS):
+        image = images[key] = render_demo_plan(key, lang)
+        plans[key] = VenuePlan(
+            event_id=event.id,
+            name=_PLAN_NAMES[key][lang],
+            sort_order=order,
+            image_etag=image.etag,
+            image_width=image.width,
+            image_height=image.height,
+        )
+        db.add(plans[key])
+    # No ORM relationship ties the children to the plan, so the plan rows go
     # in first rather than relying on the flush to order the inserts.
     await db.flush()
-    db.add(
-        VenuePlanImage(
-            plan_id=plan.id,
-            data=image.data,
-            content_type=image.content_type,
-            etag=image.etag,
+    for key, plan in plans.items():
+        db.add(
+            VenuePlanImage(
+                plan_id=plan.id,
+                data=images[key].data,
+                content_type=images[key].content_type,
+                etag=images[key].etag,
+            )
         )
-    )
     placed: set[str] = set()
     for spec in _TASK_SPECS:
         name = spec.location(lang)
-        if spec.marker_at is None or name in placed:
+        if spec.marker is None or name in placed:
             continue
         placed.add(name)
-        x, y = spec.marker_at
+        plan_key, spot = spec.marker
+        x, y = SPOTS[plan_key][spot]
         db.add(
             VenueMarker(
-                plan_id=plan.id,
+                plan_id=plans[plan_key].id,
                 location_id=locations[name].id,
                 kind="location",
                 x=x,
                 y=y,
             )
         )
-    for kind, (x, y), labels in _GENERIC_MARKERS:
+    for plan_key, kind, spot, labels in _GENERIC_MARKERS:
+        x, y = SPOTS[plan_key][spot]
         db.add(
             VenueMarker(
-                plan_id=plan.id,
+                plan_id=plans[plan_key].id,
                 kind=kind,
                 label=labels[lang] if labels else None,
                 x=x,
@@ -568,6 +741,7 @@ async def _seed_venue_plan(
 async def _seed_bookings(
     db: AsyncSession,
     *,
+    tasks: list[Task],
     shifts: list[Shift],
     owner: User,
     teammates: list[User],
@@ -607,6 +781,37 @@ async def _seed_bookings(
             if rng.percent() < fill_chance:
                 _book(shift, teammate)
 
+    def _set_headcount(shift: Shift, wanted: int) -> None:
+        # Trimming expunges the pending row, as for the guest below, so its
+        # INSERT never happens; topping up takes teammates in order.
+        on_it = roster.setdefault(shift.id, [])
+        while len(on_it) > wanted:
+            db.expunge(on_it.pop()[1])
+        for teammate in teammates:
+            if len(on_it) >= wanted:
+                break
+            if all(user.id != teammate.id for user, _ in on_it):
+                _book(shift, teammate)
+
+    # Today's staffing per place is what the map colours its pins by, so it is
+    # set rather than rolled: full here, half there, short somewhere else. No
+    # ``rng`` draws, so nothing below reshuffles.
+    fill_by_task = {
+        task.id: spec.today_fill
+        for spec, task in zip(_TASK_SPECS, tasks, strict=True)
+        if spec.today_fill is not None
+    }
+    for task_id, fill in fill_by_task.items():
+        todays = [s for s in shifts if s.task_id == task_id and s.date == today]
+        # The day's places are filled from the morning on, so the side panel's
+        # list of the day's shifts reads full, part, empty rather than the
+        # same count on every line. Rounded half up, not to even.
+        remaining = math.floor(fill * sum(s.max_bookings for s in todays) + 0.5)
+        for shift in todays:
+            wanted = min(shift.max_bookings, remaining)
+            remaining -= wanted
+            _set_headcount(shift, wanted)
+
     # The visitor's own bookings — one already behind them and two ahead, so
     # "My bookings" has both a history and something to look forward to, and
     # the dashboard counter is never zero.
@@ -635,7 +840,13 @@ async def _seed_bookings(
         on_first_task[0] if on_first_task else None,
     )
 
-    guest_choices = [s for s in upcoming if s is not tour_shift]
+    # Today's shifts with a set fill stay as set above: the guest landing on
+    # the one short place would turn its pin from short to half staffed.
+    guest_choices = [
+        s
+        for s in upcoming
+        if s is not tour_shift and not (s.date == today and s.task_id in fill_by_task)
+    ]
     held: list[_GuestBooking] = []
     for shift in _pick_spread(guest_choices, 2) + _pick_spread(past_shifts, 1):
         # Make room for the guest on a shift the loop above already filled — by

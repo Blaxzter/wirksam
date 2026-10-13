@@ -39,7 +39,7 @@ from sqlmodel import col
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic.notifications.registry import classification_for_code
 from app.logic.sandbox.seed import guest_display_name
-from app.logic.sandbox.venue_plan_art import render_demo_plan
+from app.logic.sandbox.venue_plan_art import PLAN_KEYS, SPOTS, render_demo_plan
 from app.logic.venue_map import PLAN_MAX_BYTES, PLAN_MAX_DIM
 from app.models.booking import Booking
 from app.models.event_invitation import EventInvitation
@@ -658,7 +658,7 @@ class TestSeededVenueMap:
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
     ) -> None:
         locations = {loc.id: loc for loc in await _locations(db_session, test_sandbox)}
-        assert len(locations) == 4
+        assert len(locations) == 8
         assert all(loc.description for loc in locations.values())
 
         tasks = await _tasks(db_session, test_sandbox)
@@ -681,43 +681,126 @@ class TestSeededVenueMap:
             # The denormalised text is what every read path shows.
             assert row.location == locations[row.location_id].name
 
-    async def test_one_plan_with_an_image_and_markers(
+    async def test_two_plans_with_images_and_markers(
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
     ) -> None:
-        [plan] = await _plans(db_session, test_sandbox)
-        assert plan.name == "Venue"
-        assert plan.image_etag is not None
-        assert (plan.image_width, plan.image_height) == (1600, 1000)
-
-        image = (
-            await db_session.execute(
-                select(VenuePlanImage).where(col(VenuePlanImage.plan_id) == plan.id)
-            )
-        ).scalar_one()
-        assert image.etag == plan.image_etag
-        assert image.content_type == "image/webp"
-        assert image.data.startswith(b"RIFF")
-
-        markers = list(
-            (
-                await db_session.execute(
-                    select(VenueMarker).where(col(VenueMarker.plan_id) == plan.id)
-                )
-            ).scalars()
+        """The building and the grounds around it, in that order, each drawn."""
+        plans = sorted(
+            await _plans(db_session, test_sandbox), key=lambda p: p.sort_order
         )
+        assert [p.name for p in plans] == ["Building", "Outdoor area"]
+        assert [p.sort_order for p in plans] == [0, 1]
+
+        markers_by_plan: dict[uuid.UUID, list[VenueMarker]] = {}
+        for plan in plans:
+            assert plan.image_etag is not None
+            assert (plan.image_width, plan.image_height) == (1600, 1000)
+            image = (
+                await db_session.execute(
+                    select(VenuePlanImage).where(col(VenuePlanImage.plan_id) == plan.id)
+                )
+            ).scalar_one()
+            assert image.etag == plan.image_etag
+            assert image.content_type == "image/webp"
+            assert image.data.startswith(b"RIFF")
+            markers_by_plan[plan.id] = list(
+                (
+                    await db_session.execute(
+                        select(VenueMarker).where(col(VenueMarker.plan_id) == plan.id)
+                    )
+                ).scalars()
+            )
+        building, outdoor = (markers_by_plan[p.id] for p in plans)
+        markers = [*building, *outdoor]
         assert all(0 <= m.x <= 1 and 0 <= m.y <= 1 for m in markers)
-        placed = {m.location_id for m in markers if m.kind == "location"}
+
         locations = {
             loc.name: loc.id for loc in await _locations(db_session, test_sandbox)
         }
-        # Every location with a place on the plan, and not the "whole venue".
-        assert placed == {
+
+        def placed(on: list[VenueMarker]) -> set[uuid.UUID | None]:
+            return {m.location_id for m in on if m.kind == "location"}
+
+        # Every location with a place on a plan, on the plan it belongs to,
+        # and not the "whole venue".
+        assert placed(building) == {
             locations["Main entrance"],
             locations["Foyer café"],
             locations["Main hall"],
         }
+        assert placed(outdoor) == {
+            locations["Food stalls"],
+            locations["Meadow gate"],
+            locations["Kids' corner"],
+            locations["Car park"],
+        }
+        # Between them the plans show every generic kind there is.
         generic = {m.kind for m in markers if m.location_id is None}
-        assert generic == {"entrance", "first_aid", "toilets", "parking"}
+        assert generic == {
+            "entrance",
+            "info_desk",
+            "first_aid",
+            "toilets",
+            "parking",
+            "kitchen",
+        }
+
+    async def test_pins_sit_on_the_drawn_spots(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Every pin is placed from ``SPOTS``, the table the picture is drawn from.
+
+        Hand-typed coordinates drift the moment the drawing changes; a pin
+        floating next to the stall it names is the kind of detail that makes a
+        demo look unfinished.
+        """
+        plans = sorted(
+            await _plans(db_session, test_sandbox), key=lambda p: p.sort_order
+        )
+        for key, plan in zip(PLAN_KEYS, plans, strict=True):
+            spots = set(SPOTS[key].values())
+            markers = (
+                await db_session.execute(
+                    select(VenueMarker).where(col(VenueMarker.plan_id) == plan.id)
+                )
+            ).scalars()
+            for marker in markers:
+                assert (marker.x, marker.y) in spots, (plan.name, marker.kind)
+
+    async def test_todays_staffing_is_a_mix(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """The map colours each place by the day's staffing.
+
+        If every pin came out the same colour the legend would explain
+        nothing, so today has places that are full, places that are partly
+        staffed and places that are short.
+        """
+        today = test_sandbox.event.start_date + dt.timedelta(days=3)
+        stats = await crud_venue_map.location_stats(
+            db_session,
+            event_id=test_sandbox.event.id,
+            day=today,
+            include_unpublished=False,
+        )
+        on_a_plan = set(
+            (
+                await db_session.execute(
+                    select(col(VenueMarker.location_id)).where(
+                        col(VenueMarker.location_id).is_not(None)
+                    )
+                )
+            ).scalars()
+        )
+        shares = {
+            stat.location_id: stat.booked / stat.capacity
+            for stat in stats
+            if stat.location_id in on_a_plan and stat.capacity
+        }
+        assert len(shares) == 7, "every pinned place has shifts today"
+        assert any(share == 1 for share in shares.values())
+        assert any(0.4 <= share < 1 for share in shares.values())
+        assert any(share < 0.4 for share in shares.values())
 
     async def test_the_map_counts_on_the_event_read(
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
@@ -726,7 +809,7 @@ class TestSeededVenueMap:
         counts = await crud_venue_map.count_plans_with_image_by_event(
             db_session, event_ids=[test_sandbox.event.id]
         )
-        assert counts == {test_sandbox.event.id: 1}
+        assert counts == {test_sandbox.event.id: 2}
 
     async def test_it_is_drawn_in_the_language_the_visitor_clicked(
         self, db_session: AsyncSession, make_sandbox: SandboxFactory
@@ -734,23 +817,26 @@ class TestSeededVenueMap:
         german = await make_sandbox(language="de")
         english = await make_sandbox(language="en")
 
-        [de_plan] = await _plans(db_session, german)
-        [en_plan] = await _plans(db_session, english)
-        assert de_plan.name == "Gelände"
-        # Different labels drawn into the picture, so different bytes.
-        assert de_plan.image_etag != en_plan.image_etag
+        de_plans = sorted(await _plans(db_session, german), key=lambda p: p.sort_order)
+        en_plans = sorted(await _plans(db_session, english), key=lambda p: p.sort_order)
+        assert [p.name for p in de_plans] == ["Gebäude", "Außengelände"]
+        # Different labels drawn into the pictures, so different bytes.
+        for de_plan, en_plan in zip(de_plans, en_plans, strict=True):
+            assert de_plan.image_etag != en_plan.image_etag
         assert "Große Halle" in {
             loc.name for loc in await _locations(db_session, german)
         }
 
 
-def test_the_drawing_is_rendered_once_per_language() -> None:
-    """Every demo click reuses the normalised image rather than redrawing it."""
-    assert render_demo_plan("en") is render_demo_plan("en")
-    assert render_demo_plan("de") is not render_demo_plan("en")
-    image = render_demo_plan("de")
-    assert len(image.data) <= PLAN_MAX_BYTES
-    assert max(image.width, image.height) <= PLAN_MAX_DIM
+def test_the_drawing_is_rendered_once_per_plan_and_language() -> None:
+    """Every demo click reuses the normalised images rather than redrawing them."""
+    assert render_demo_plan("indoor", "en") is render_demo_plan("indoor", "en")
+    assert render_demo_plan("indoor", "de") is not render_demo_plan("indoor", "en")
+    assert render_demo_plan("outdoor", "en") is not render_demo_plan("indoor", "en")
+    for key in PLAN_KEYS:
+        image = render_demo_plan(key, "de")
+        assert len(image.data) <= PLAN_MAX_BYTES
+        assert max(image.width, image.height) <= PLAN_MAX_DIM
 
 
 # ── The two tracks ────────────────────────────────────────────────

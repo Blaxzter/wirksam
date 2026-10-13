@@ -1,7 +1,7 @@
 import uuid
 from collections import defaultdict
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import cast
 
 import sqlalchemy as sa
@@ -11,9 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.logic.images import NormalizedImage
+from app.models.booking import Booking
 from app.models.location import Location
+from app.models.shift import Shift
+from app.models.task import Task
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage
 from app.schemas.venue_map import (
+    VenueLocationStat,
     VenueMarkerCreate,
     VenueMarkerRead,
     VenuePlanRead,
@@ -260,6 +264,73 @@ class CRUDVenueMap:
         await session.flush()
         await session.refresh(marker)
         return marker
+
+    # ── Staffing ───────────────────────────────────────────────────────────
+
+    async def location_stats(
+        self,
+        session: AsyncSession,
+        *,
+        event_id: uuid.UUID,
+        day: date,
+        include_unpublished: bool,
+    ) -> list[VenueLocationStat]:
+        """Per-location staffing over the event's shifts on ``day``.
+
+        One aggregate query. Only confirmed bookings count, as everywhere
+        ``current_bookings`` is computed; ``include_unpublished`` is for event
+        admins, everyone else sees published tasks only. Locations without a
+        shift that day are absent.
+        """
+        # Correlated per-shift count, so only this event's shifts on ``day``
+        # are counted rather than every booking on the platform.
+        booked = (
+            select(func.count())
+            .where(
+                col(Booking.shift_id) == col(Shift.id),
+                col(Booking.status) == "confirmed",
+            )
+            .correlate(Shift)
+            .scalar_subquery()
+        )
+        # Cap each shift at its capacity before summing: an over-booked shift
+        # (possible after shift regeneration lowers max_bookings) must not
+        # hide a free place in another shift at the same location.
+        capped = func.least(booked, col(Shift.max_bookings))
+        query = (
+            select(
+                col(Shift.location_id),
+                func.count(col(Shift.id)),
+                func.coalesce(func.sum(capped), 0),
+                func.coalesce(func.sum(col(Shift.max_bookings)), 0),
+                func.count(col(Shift.id)).filter(booked < col(Shift.max_bookings)),
+            )
+            .join(Task, col(Task.id) == col(Shift.task_id))
+            .where(
+                col(Task.event_id) == event_id,
+                col(Shift.date) == day,
+                col(Shift.location_id).is_not(None),
+            )
+            .group_by(col(Shift.location_id))
+            .order_by(col(Shift.location_id))
+        )
+        if not include_unpublished:
+            query = query.where(col(Task.status) == "published")
+
+        result = await session.execute(query)
+        return [
+            VenueLocationStat(
+                location_id=location_id,
+                shift_count=int(shift_count),
+                booked=int(booked_total),
+                capacity=int(capacity),
+                open_shifts=int(open_shifts),
+            )
+            for location_id, shift_count, booked_total, capacity, open_shifts in (
+                result.tuples().all()
+            )
+            if location_id is not None
+        ]
 
     # ── Event clone ────────────────────────────────────────────────────────
 

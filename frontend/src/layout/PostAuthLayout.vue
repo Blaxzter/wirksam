@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { Sparkles } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -34,6 +34,13 @@ const route = useRoute()
 const router = useRouter()
 const open = ref(true)
 
+/**
+ * `meta.fullHeight` routes (the venue map) fill exactly the viewport below the
+ * header, the demo banner included, and never scroll the document: the shell
+ * gets a fixed height and the page a flex column it can grow into.
+ */
+const fullHeight = computed(() => route.meta.fullHeight === true)
+
 function routeViewKey(r: RouteLocationNormalizedLoadedGeneric): string {
   const key = r.meta.routerViewKey
   if (typeof key === 'function')
@@ -65,12 +72,22 @@ function goToChangelog() {
 </script>
 
 <template>
-  <SidebarProvider v-model:open="open">
+  <SidebarProvider
+    v-model:open="open"
+    :class="fullHeight ? 'h-[calc(100dvh-var(--demo-banner-height,0px))] min-h-0' : undefined"
+  >
     <AppSidebar :open="open" />
-    <SidebarInset class="flex flex-col pb-16 md:pb-0">
+    <SidebarInset
+      class="flex flex-col pb-16 md:pb-0"
+      :class="fullHeight ? 'min-h-0 overflow-hidden' : undefined"
+    >
       <PostAuthHeader />
 
-      <div class="flex-1 p-4 pt-0" data-testid="main-content">
+      <div
+        class="flex-1 p-4 pt-0"
+        :class="fullHeight ? 'flex min-h-0 flex-col pb-0' : undefined"
+        data-testid="main-content"
+      >
         <ErrorBoundary>
           <RouterView :key="routeViewKey(route)" />
         </ErrorBoundary>

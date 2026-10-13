@@ -2167,6 +2167,31 @@ export const zUserUpdate = z.object({
 })
 
 /**
+ * VenueLocationStat
+ *
+ * Staffing of one location over the shifts it hosts on the map's day.
+ */
+export const zVenueLocationStat = z
+  .object({
+    location_id: z.uuid(),
+    shift_count: z.int().register(z.globalRegistry, {
+      description: 'Shifts at this location on the day',
+    }),
+    booked: z.int().register(z.globalRegistry, {
+      description: 'Active (confirmed) bookings over those shifts',
+    }),
+    capacity: z.int().register(z.globalRegistry, {
+      description: 'Sum of ``max_bookings`` over those shifts',
+    }),
+    open_shifts: z.int().register(z.globalRegistry, {
+      description: 'Shifts that still have a free place (booked < max_bookings)',
+    }),
+  })
+  .register(z.globalRegistry, {
+    description: "Staffing of one location over the shifts it hosts on the map's day.",
+  })
+
+/**
  * VenueMarkerCreate
  */
 export const zVenueMarkerCreate = z.object({
@@ -2247,7 +2272,7 @@ export const zVenuePlanRead = z.object({
 export const zVenueMapRead = z.object({
   event_id: z.uuid(),
   on: z.iso.date().register(z.globalRegistry, {
-    description: 'The day ``my_location_ids`` refers to',
+    description: 'The day ``my_location_ids`` and ``location_stats`` refer to',
   }),
   plans: z.array(zVenuePlanRead),
   locations: z.array(zLocationRead),
@@ -2255,6 +2280,13 @@ export const zVenueMapRead = z.object({
     .array(z.uuid())
     .register(z.globalRegistry, {
       description: "Locations of the caller's active bookings on ``on``",
+    })
+    .optional(),
+  location_stats: z
+    .array(zVenueLocationStat)
+    .register(z.globalRegistry, {
+      description:
+        'Per-location staffing on ``on``. Only locations with at least one shift that day are listed; for non-admins, shifts of unpublished tasks are left out, matching ``GET /locations/{id}/shifts``.',
     })
     .optional(),
 })

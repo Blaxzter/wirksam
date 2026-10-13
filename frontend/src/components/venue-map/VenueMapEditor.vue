@@ -6,6 +6,7 @@ import {
   ArrowRight,
   EllipsisVertical,
   ImageOff,
+  ImageUp,
   Map as MapIcon,
   Maximize,
   Minus,
@@ -49,6 +50,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 import VenueMarkerGlyph from '@/components/venue-map/VenueMarkerGlyph.vue'
 import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
+import VenueMarkerPill from '@/components/venue-map/VenueMarkerPill.vue'
 import VenuePlanSwitcher from '@/components/venue-map/VenuePlanSwitcher.vue'
 import VenuePlanUpload from '@/components/venue-map/VenuePlanUpload.vue'
 
@@ -80,9 +82,27 @@ import {
  *   middle" places a new pin without pointing.
  *
  * Pins are stored normalised (0..1), so replacing the picture keeps them.
+ *
+ * Two homes: the "Map" tab of the event settings, and the map page itself,
+ * where an admin flips into editing in place. `embedded` is the latter: no
+ * heading, the editor fills its parent's height, and the `actions` slot (the
+ * page's "Done" button) sits at the end of the plan row.
+ *
+ * In a demo (`sandbox`) the server refuses picture uploads, so the editor says
+ * so instead of offering an upload that can only fail.
  */
-const props = defineProps<{
-  eventId: string
+const props = withDefaults(
+  defineProps<{
+    eventId: string
+    embedded?: boolean
+    sandbox?: boolean
+  }>(),
+  { embedded: false, sandbox: false },
+)
+
+const emit = defineEmits<{
+  /** Something was saved: plans, pins or a picture. */
+  changed: []
 }>()
 
 const { t } = useI18n()
@@ -170,6 +190,7 @@ async function submitName() {
       plans.value.push(res.data)
       selectedPlanId.value = res.data.id
       toast.success(t('mapEditor.plans.created'))
+      emit('changed')
       void refreshEventCounts()
     } else if (plan.value) {
       const res = await patch<{ data: VenuePlanRead }>({
@@ -177,6 +198,7 @@ async function submitName() {
         body: { name },
       })
       replacePlan(res.data)
+      emit('changed')
       toast.success(t('mapEditor.plans.saved'))
     }
     nameDialog.value.open = false
@@ -201,6 +223,7 @@ async function deletePlan() {
     plans.value = plans.value.filter((p) => p.id !== current.id)
     selectedPlanId.value = plans.value[Math.min(index, plans.value.length - 1)]?.id ?? null
     toast.success(t('mapEditor.plans.deleted'))
+    emit('changed')
     void refreshEventCounts()
   } catch (error) {
     toastApiError(error)
@@ -219,6 +242,7 @@ async function movePlan(offset: -1 | 1) {
       body: { plan_ids: ids },
     })
     plans.value = res.data
+    emit('changed')
   } catch (error) {
     toastApiError(error)
   }
@@ -226,6 +250,7 @@ async function movePlan(offset: -1 | 1) {
 
 function onUploaded(updated: VenuePlanRead) {
   replacePlan(updated)
+  emit('changed')
   void refreshEventCounts()
 }
 
@@ -250,6 +275,11 @@ const locationNames = computed(() => new Map(locations.value.map((l) => [l.id, l
 const placedLocationIds = computed(() =>
   markers.value.flatMap((m) => (m.location_id ? [m.location_id] : [])),
 )
+
+/** A location pin whose place still exists is drawn as a pill, like on the map. */
+function isPill(marker: VenueMarkerRead) {
+  return !!marker.location_id && locationNames.value.has(marker.location_id)
+}
 
 function markerName(marker: VenueMarkerRead): string {
   const name = marker.location_id ? locationNames.value.get(marker.location_id) : null
@@ -312,6 +342,7 @@ async function placeAt(point: Point) {
       body: { kind: item.kind, location_id: item.locationId, x: point.x, y: point.y },
     })
     ;(current.markers ??= []).push(res.data)
+    emit('changed')
     placing.value = null
     selectedMarkerId.value = res.data.id
     // Focus the new pin, so the arrow keys nudge it straight away; the banner
@@ -378,6 +409,7 @@ async function patchMarker(
     })
     marker.kind = res.data.kind
     marker.label = res.data.label
+    emit('changed')
   } catch (error) {
     revert()
     toastApiError(error)
@@ -418,6 +450,7 @@ async function deleteMarker(marker: VenueMarkerRead) {
     await del({ url: `/venue-markers/${marker.id}` })
     if (current?.markers) current.markers = current.markers.filter((m) => m.id !== marker.id)
     if (selectedMarkerId.value === marker.id) selectedMarkerId.value = null
+    emit('changed')
   } catch (error) {
     toastApiError(error)
   }
@@ -431,6 +464,8 @@ let drag: {
   pointerId: number
   start: Point
   origin: Point
+  /** Pointer minus pin, in image units: a pill is grabbed above its point. */
+  grab: Point
   moved: boolean
 } | null = null
 const draggingId = ref<string | null>(null)
@@ -445,11 +480,13 @@ function onMarkerPointerDown(event: PointerEvent, marker: VenueMarkerRead) {
   } catch {
     // Pointer already gone; the drag simply does not start.
   }
+  const pressed = panZoom.clientToSvg(event.clientX, event.clientY)
   drag = {
     marker,
     pointerId: event.pointerId,
     start: { x: event.clientX, y: event.clientY },
     origin: { x: marker.x, y: marker.y },
+    grab: { x: pressed.x - marker.x * width.value, y: pressed.y - marker.y * height.value },
     moved: false,
   }
 }
@@ -463,8 +500,9 @@ function onMarkerPointerMove(event: PointerEvent) {
     drag.moved = true
     draggingId.value = drag.marker.id
   }
+  const pointer = panZoom.clientToSvg(event.clientX, event.clientY)
   const point = toNormalised(
-    panZoom.clientToSvg(event.clientX, event.clientY),
+    { x: pointer.x - drag.grab.x, y: pointer.y - drag.grab.y },
     width.value,
     height.value,
   )
@@ -557,44 +595,27 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="rootRef" class="space-y-4" data-testid="venue-map-editor">
-    <div class="space-y-1">
+  <div
+    ref="rootRef"
+    :class="embedded ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'"
+    data-testid="venue-map-editor"
+  >
+    <div v-if="!embedded" class="space-y-1">
       <h2 class="text-lg font-semibold">{{ t('mapEditor.settings.title') }}</h2>
       <p class="text-muted-foreground text-sm">{{ t('mapEditor.settings.description') }}</p>
     </div>
 
-    <Skeleton v-if="loading" class="h-80 w-full" />
-
+    <!-- Plans and what to do with them; on the map page also "Done". -->
     <div
-      v-else-if="loadError"
-      class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center"
-      role="alert"
-      data-testid="map-editor-error"
+      v-if="embedded || (!loading && !loadError && plans.length > 0)"
+      class="flex min-w-0 items-center gap-2"
     >
-      <p class="text-muted-foreground text-sm">{{ t('mapEditor.plans.loadError') }}</p>
-      <Button variant="outline" data-testid="map-editor-retry" @click="load">
-        {{ t('venueMap.view.retry') }}
-      </Button>
-    </div>
-
-    <div
-      v-else-if="plans.length === 0"
-      class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center"
-      data-testid="map-editor-empty"
-    >
-      <MapIcon class="text-muted-foreground size-10" aria-hidden="true" />
-      <div class="space-y-1">
-        <p class="font-medium">{{ t('mapEditor.plans.empty') }}</p>
-        <p class="text-muted-foreground max-w-md text-sm">{{ t('mapEditor.plans.emptyHint') }}</p>
-      </div>
-      <Button data-testid="plan-add" @click="openCreate">
-        <Plus />
-        {{ t('mapEditor.plans.add') }}
-      </Button>
-    </div>
-
-    <template v-else>
-      <VenuePlanSwitcher v-model="selectedPlanId" :plans="plans">
+      <VenuePlanSwitcher
+        v-if="!loading && !loadError && plans.length > 0"
+        v-model="selectedPlanId"
+        :plans="plans"
+        class="min-w-0 flex-1"
+      >
         <template #trailing>
           <DropdownMenu v-if="plan">
             <DropdownMenuTrigger as-child>
@@ -653,15 +674,75 @@ onBeforeUnmount(() => {
           </Button>
         </template>
       </VenuePlanSwitcher>
+      <p v-else class="min-w-0 flex-1 truncate text-sm font-medium">
+        {{ t('mapEditor.settings.title') }}
+      </p>
+      <slot name="actions" />
+    </div>
 
-      <div v-if="plan && !plan.image_etag" class="h-[50dvh] min-h-64">
-        <VenuePlanUpload :plan-id="plan.id" @uploaded="onUploaded" />
+    <Skeleton v-if="loading" :class="embedded ? 'min-h-0 w-full flex-1' : 'h-80 w-full'" />
+
+    <div
+      v-else-if="loadError"
+      class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center"
+      role="alert"
+      data-testid="map-editor-error"
+    >
+      <p class="text-muted-foreground text-sm">{{ t('mapEditor.plans.loadError') }}</p>
+      <Button variant="outline" data-testid="map-editor-retry" @click="load">
+        {{ t('venueMap.view.retry') }}
+      </Button>
+    </div>
+
+    <div
+      v-else-if="plans.length === 0"
+      class="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center"
+      data-testid="map-editor-empty"
+    >
+      <MapIcon class="text-muted-foreground size-10" aria-hidden="true" />
+      <div class="space-y-1">
+        <p class="font-medium">{{ t('mapEditor.plans.empty') }}</p>
+        <p class="text-muted-foreground max-w-md text-sm">{{ t('mapEditor.plans.emptyHint') }}</p>
+      </div>
+      <Button data-testid="plan-add" @click="openCreate">
+        <Plus />
+        {{ t('mapEditor.plans.add') }}
+      </Button>
+    </div>
+
+    <template v-else>
+      <div
+        v-if="plan && !plan.image_etag"
+        :class="embedded ? 'min-h-0 flex-1' : 'h-[50dvh] min-h-64'"
+      >
+        <div
+          v-if="sandbox"
+          class="flex h-full w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-6 text-center"
+          role="note"
+          data-testid="plan-upload-sandbox"
+        >
+          <ImageUp class="text-muted-foreground size-10" aria-hidden="true" />
+          <div class="max-w-sm space-y-1">
+            <p class="font-medium">{{ t('mapEditor.upload.sandboxTitle') }}</p>
+            <p class="text-muted-foreground text-sm">{{ t('mapEditor.upload.sandboxHint') }}</p>
+          </div>
+        </div>
+        <VenuePlanUpload v-else :plan-id="plan.id" @uploaded="onUploaded" />
       </div>
 
-      <div v-else-if="plan" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div
+        v-else-if="plan"
+        class="grid gap-4"
+        :class="
+          embedded
+            ? 'min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1'
+            : 'lg:grid-cols-[minmax(0,1fr)_18rem]'
+        "
+      >
         <div
           ref="canvasRef"
-          class="bg-muted/30 relative h-[60dvh] min-h-72 scroll-mt-20 overflow-hidden rounded-lg border p-4"
+          class="map-ground relative scroll-mt-20 overflow-hidden rounded-lg border px-4 pt-10 pb-4"
+          :class="embedded ? 'h-full min-h-0' : 'h-[60dvh] min-h-72'"
         >
           <!-- Padding plus `overflow-visible`: a pin on the picture's edge stays whole. -->
           <svg
@@ -684,33 +765,37 @@ onBeforeUnmount(() => {
               :height="height"
               preserveAspectRatio="none"
             />
-            <VenueMarkerGlyph
-              v-for="marker in markers"
-              :key="marker.id"
-              :kind="marker.kind"
-              :x="marker.x * width"
-              :y="marker.y * height"
-              :scale="unitsPerPixel"
-              :label="markerName(marker)"
-              :selected="marker.id === selectedMarkerId"
-              role="button"
-              tabindex="0"
-              :aria-label="markerName(marker)"
-              :aria-pressed="marker.id === selectedMarkerId"
-              :aria-describedby="
-                marker.id === selectedMarkerId ? 'map-editor-nudge-hint' : undefined
-              "
-              :class="draggingId === marker.id ? 'cursor-grabbing' : 'cursor-move'"
-              :data-testid="`map-marker-${marker.location_id ?? marker.id}`"
-              @pointerdown="onMarkerPointerDown($event, marker)"
-              @pointermove="onMarkerPointerMove($event)"
-              @pointerup="onMarkerPointerUp($event)"
-              @pointercancel="onMarkerPointerUp($event)"
-              @click.stop
-              @dblclick.stop
-              @focus="selectedMarkerId = marker.id"
-              @keydown="onMarkerKey($event, marker)"
-            />
+            <template v-for="marker in markers" :key="marker.id">
+              <component
+                :is="isPill(marker) ? VenueMarkerPill : VenueMarkerGlyph"
+                v-bind="
+                  isPill(marker)
+                    ? { name: markerName(marker) }
+                    : { kind: marker.kind, label: markerName(marker) }
+                "
+                :x="marker.x * width"
+                :y="marker.y * height"
+                :scale="unitsPerPixel"
+                :selected="marker.id === selectedMarkerId"
+                role="button"
+                tabindex="0"
+                :aria-label="markerName(marker)"
+                :aria-pressed="marker.id === selectedMarkerId"
+                :aria-describedby="
+                  marker.id === selectedMarkerId ? 'map-editor-nudge-hint' : undefined
+                "
+                :class="draggingId === marker.id ? 'cursor-grabbing' : 'cursor-move'"
+                :data-testid="`map-marker-${marker.location_id ?? marker.id}`"
+                @pointerdown="onMarkerPointerDown($event, marker)"
+                @pointermove="onMarkerPointerMove($event)"
+                @pointerup="onMarkerPointerUp($event)"
+                @pointercancel="onMarkerPointerUp($event)"
+                @click.stop
+                @dblclick.stop
+                @focus="selectedMarkerId = marker.id"
+                @keydown="onMarkerKey($event, marker)"
+              />
+            </template>
           </svg>
 
           <div v-if="imageLoading" class="absolute inset-0" role="status">
@@ -781,7 +866,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <aside class="space-y-4">
+        <aside class="space-y-4" :class="embedded ? 'min-h-0 overflow-y-auto pb-1' : ''">
           <section
             v-if="selectedMarker"
             class="space-y-3 rounded-lg border p-3"
@@ -867,7 +952,15 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="rounded-lg border p-3">
-            <VenuePlanUpload :plan-id="plan.id" compact @uploaded="onUploaded" />
+            <p
+              v-if="sandbox"
+              class="text-muted-foreground text-sm"
+              role="note"
+              data-testid="plan-upload-sandbox"
+            >
+              {{ t('mapEditor.upload.sandboxReplace') }}
+            </p>
+            <VenuePlanUpload v-else :plan-id="plan.id" compact @uploaded="onUploaded" />
           </div>
         </aside>
       </div>

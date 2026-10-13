@@ -8,7 +8,9 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import LocationDescription from '@/components/locations/LocationDescription.vue'
 import VenueMapCanvas from '@/components/venue-map/VenueMapCanvas.vue'
 import VenueMarkerGlyph from '@/components/venue-map/VenueMarkerGlyph.vue'
+import VenueMarkerPill from '@/components/venue-map/VenueMarkerPill.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
+import VenuePlaceOverview from '@/components/venue-map/VenuePlaceOverview.vue'
 import VenuePlanSwitcher from '@/components/venue-map/VenuePlanSwitcher.vue'
 
 import type { LocationPin, LocationRead, VenuePlanRead } from '@/client/types.gen'
@@ -96,6 +98,84 @@ describe('VenueMarkerGlyph', () => {
   })
 })
 
+describe('VenueMarkerPill', () => {
+  it('stands its stem on the point and shows name, count and status', () => {
+    const wrapper = mount({
+      render: () =>
+        h('svg', [
+          h(VenueMarkerPill, {
+            x: 10,
+            y: 20,
+            scale: 2,
+            name: 'Bar',
+            count: '5/8',
+            status: 'partial',
+            badge: 3,
+            highlighted: true,
+          }),
+        ]),
+    })
+    const g = wrapper.get('g.venue-pill')
+    expect(g.attributes('transform')).toBe('translate(10 20) scale(2)')
+    expect(g.attributes('data-status')).toBe('partial')
+    // The stem ends on the point itself.
+    expect(wrapper.get('line').attributes('x1')).toBe('0')
+    expect(wrapper.get('[data-testid="marker-count"]').text()).toBe('5/8')
+    expect(wrapper.text()).toContain('Bar')
+    expect(wrapper.find('[data-testid="marker-highlight"]').exists()).toBe(true)
+    expect(wrapper.get('title').text()).toBe('Bar · 5/8')
+  })
+
+  it('compact keeps only the badge', () => {
+    const wrapper = mount({
+      render: () =>
+        h('svg', [
+          h(VenueMarkerPill, { x: 0, y: 0, name: 'Bar', count: '1/2', compact: true, badge: 1 }),
+        ]),
+    })
+    expect(wrapper.find('[data-testid="marker-count"]').exists()).toBe(false)
+    expect(wrapper.get('title').text()).toBe('Bar · 1/2')
+  })
+})
+
+describe('VenuePlaceOverview', () => {
+  it('lists places with their staffing and emits the picked one', async () => {
+    const wrapper = mount(VenuePlaceOverview, {
+      props: {
+        dayLabel: 'Sat',
+        items: [
+          {
+            location: foyer,
+            badge: 1,
+            stat: { location_id: foyer.id, shift_count: 2, booked: 1, capacity: 4, open_shifts: 2 },
+            pinned: true,
+            mine: true,
+          },
+        ],
+      },
+      global: { plugins: [i18n] },
+    })
+    expect(wrapper.text()).toContain('1 of 4 slots booked')
+    expect(wrapper.text()).toContain('Understaffed')
+    await wrapper.get('[data-testid="map-overview-loc-foyer"]').trigger('click')
+    expect(wrapper.emitted('select')![0]).toEqual([foyer])
+  })
+
+  it('names the "your shift" and "no pin" marks in text, not only on the icons', () => {
+    const wrapper = mount(VenuePlaceOverview, {
+      props: {
+        dayLabel: 'Sat',
+        items: [{ location: foyer, badge: 1, stat: null, pinned: false, mine: true }],
+      },
+      global: { plugins: [i18n] },
+    })
+    const row = wrapper.get('[data-testid="map-overview-loc-foyer"]')
+    const hidden = row.findAll('.sr-only').map((s) => s.text())
+    expect(hidden).toEqual(['You have a shift here', 'Not on the map'])
+    for (const svg of row.findAll('svg')) expect(svg.attributes('aria-hidden')).toBe('true')
+  })
+})
+
 describe('VenueMapCanvas', () => {
   it('draws the plan image and one button per marker', async () => {
     const wrapper = mount(VenueMapCanvas, {
@@ -112,6 +192,7 @@ describe('VenueMapCanvas', () => {
     expect(wrapper.get('image').attributes('href')).toBe('blob:plan')
 
     const foyerMarker = wrapper.get('[data-testid="map-marker-loc-foyer"]')
+    expect(foyerMarker.classes()).toContain('venue-pill')
     expect(foyerMarker.attributes('role')).toBe('button')
     expect(foyerMarker.attributes('aria-label')).toBe('Foyer')
     expect(foyerMarker.attributes('data-highlighted')).toBe('true')
@@ -150,7 +231,6 @@ describe('VenueMapCanvas', () => {
     expect(copy.attributes('role')).toBeUndefined()
     expect(wrapper.findAll('g.venue-marker').at(-1)!.element).toBe(copy.element)
   })
-
   it('is inert when not interactive', async () => {
     const wrapper = mount(VenueMapCanvas, {
       props: { plan, interactive: false },

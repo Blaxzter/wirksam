@@ -6,6 +6,9 @@
         "zoomIn": "Vergrößern",
         "zoomOut": "Verkleinern"
     },
+    "legend": {
+        "title": "Besetzung · {day}"
+    },
     "locationDetails": {
         "address": "Adresse",
         "contact": "Ansprechperson",
@@ -24,6 +27,20 @@
         "alt": "Wo es auf dem Plan „{plan}“ liegt",
         "open": "Plan öffnen"
     },
+    "panel": {
+        "allTaken": "Alle Plätze sind vergeben",
+        "back": "Alle Orte",
+        "bookedOf": "{booked} von {max} gebucht",
+        "label": "Orte",
+        "mine": "Du hast hier eine Schicht",
+        "noPlaces": "Noch keine Orte.",
+        "notOnMap": "Nicht auf dem Plan",
+        "openSlots": "Noch {count} Platz frei | Noch {count} Plätze frei",
+        "overviewOn": "Besetzung · {day}",
+        "overviewTitle": "Alle Orte",
+        "overviewTotal": "{booked} von {capacity} Plätzen gebucht",
+        "staffedOn": "Gebucht am {day}"
+    },
     "planSwitcher": {
         "label": "Plan auswählen"
     },
@@ -37,6 +54,12 @@
         "noShifts": "Hier gibt es an diesem Tag keine Schichten",
         "shiftsOn": "Schichten am {day}"
     },
+    "staffing": {
+        "full": "Voll besetzt",
+        "none": "Keine Schichten",
+        "partial": "Teilweise besetzt",
+        "short": "Unterbesetzt"
+    },
     "title": "Lageplan",
     "view": {
         "close": "Schließen",
@@ -45,11 +68,14 @@
             "next": "Nächster Tag",
             "prev": "Vorheriger Tag"
         },
+        "done": "Fertig",
+        "edit": "Bearbeiten",
         "empty": "Noch kein Lageplan",
         "emptyAdmin": "Lade ein Bild vom Gelände hoch, damit alle sehen, wo was ist.",
         "emptyHint": "Sobald das Orga-Team einen Plan hochlädt, findest du ihn hier.",
         "goToEditor": "Lageplan einrichten",
         "mapControls": "Plan-Steuerung",
+        "more": "Weitere Optionen",
         "myShifts": "Meine Schichten",
         "myShiftsHint": "Hebt die Orte hervor, an denen du an diesem Tag eine Schicht hast",
         "notFound": "Der Lageplan konnte nicht geladen werden.",
