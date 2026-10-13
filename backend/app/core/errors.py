@@ -42,6 +42,7 @@ def _problem_response(
     code: str | None = None,
     headers: Mapping[str, str] | None = None,
     type_url: str = "about:blank",
+    extensions: Mapping[str, Any] | None = None,
 ) -> JSONResponse:
     payload = ProblemDetails(
         type=type_url,
@@ -51,10 +52,11 @@ def _problem_response(
         detail=detail,
         instance=instance,
         errors=errors,
+        **(extensions or {}),
     )
     return JSONResponse(
         status_code=status_code,
-        content=payload.model_dump(exclude_none=True),
+        content=payload.model_dump(mode="json", exclude_none=True),
         headers=dict(headers) if headers else None,
         media_type=PROBLEM_JSON_MEDIA_TYPE,
     )
@@ -94,6 +96,15 @@ def _parse_problem_detail(detail: object) -> tuple[str | None, str | None, str |
             )
         return detail_value, type_value, code_value
     return coerce_problem_detail(detail), None, None
+
+
+def _problem_extensions(detail: object) -> dict[str, Any] | None:
+    """Extra members a route attached via ``raise_problem(extensions=...)``."""
+    if isinstance(detail, dict):
+        extensions = cast(dict[str, Any], detail).get("extensions")
+        if isinstance(extensions, dict):
+            return cast(dict[str, Any], extensions)
+    return None
 
 
 def _slugify_resource(value: str) -> str:
@@ -140,6 +151,7 @@ def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse
         code=code,
         headers=exc.headers,
         type_url=resolved_type_url,
+        extensions=_problem_extensions(exc.detail),
     )
 
 
@@ -161,6 +173,7 @@ def starlette_http_exception_handler(
         code=code,
         headers=exc.headers,
         type_url=resolved_type_url,
+        extensions=_problem_extensions(exc.detail),
     )
 
 
@@ -192,11 +205,17 @@ def unhandled_exception_handler(request: Request, exc: Exception) -> JSONRespons
 
 
 def problem_detail(
-    *, code: str, detail: str | None = None, type_url: str | None = None
-) -> dict[str, str]:
-    payload = {"code": code, "type": type_url or f"urn:problem:{code}"}
+    *,
+    code: str,
+    detail: str | None = None,
+    type_url: str | None = None,
+    extensions: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {"code": code, "type": type_url or f"urn:problem:{code}"}
     if detail:
         payload["detail"] = detail
+    if extensions:
+        payload["extensions"] = dict(extensions)
     return payload
 
 
@@ -206,9 +225,11 @@ def raise_problem(
     code: str,
     detail: str | None = None,
     headers: dict[str, str] | None = None,
+    extensions: Mapping[str, Any] | None = None,
 ) -> NoReturn:
+    """Raise an RFC 9457 problem; ``extensions`` become top-level members."""
     raise HTTPException(
         status_code=status_code,
-        detail=problem_detail(code=code, detail=detail),
+        detail=problem_detail(code=code, detail=detail, extensions=extensions),
         headers=headers,
     )

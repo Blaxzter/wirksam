@@ -89,3 +89,16 @@ class TaskBookingEntry(BaseModel):
     shift_id: uuid.UUID
     user_name: str | None = None
     user_phone_number: str | None = None
+
+
+class ShiftConflict(BaseModel):
+    """The booked shift a new booking would overlap (``booking.time_conflict``)."""
+
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    task_id: uuid.UUID
+    title: str
+    date: dt.date
+    start_time: dt.time | None = None
+    end_time: dt.time | None = None
+    task_name: str | None = None
