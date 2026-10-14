@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest something WirkSam should do, or do differently.
+labels: ["enhancement"]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for taking the time. Describing the situation you're in helps more than describing a solution: there may already be a way to do it, or a better fit than the first idea.
+    - type: textarea
+      id: problem
+      attributes:
+          label: What are you trying to do?
+          description: The event, the team, and what gets in the way today.
+          placeholder: We run a three-day festival with ~80 volunteers, and...
+      validations:
+          required: true
+    - type: textarea
+      id: idea
+      attributes:
+          label: What would help?
+          description: How you imagine it could work. Rough is fine.
+    - type: dropdown
+      id: role
+      attributes:
+          label: Your role
+          options:
+              - Organiser / event admin
+              - Volunteer / member
+              - Self-hosting WirkSam
+              - Just looking
+    - type: textarea
+      id: context
+      attributes:
+          label: Anything else?
+          description: Screenshots, links, how other tools handle it.

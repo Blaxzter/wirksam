@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { SparklesIcon } from '@lucide/vue'
+import { siGithub } from 'simple-icons'
 
 import { formatDate } from '@/lib/format'
+import { REPO_URL } from '@/lib/project-links'
+
+import SimpleIcon from '@/components/utils/SimpleIcon.vue'
 
 const appVersion = __APP_VERSION__
 const appVersionDate = __APP_VERSION_DATE__
@@ -49,6 +53,15 @@ const legal = [
         >
           {{ $t(item.label) }}
         </RouterLink>
+        <a
+          :href="REPO_URL"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+        >
+          <SimpleIcon :icon-data="siGithub" class-name="size-3.5" />
+          {{ $t('preauth.layout.footer.github') }}
+        </a>
       </nav>
     </div>
   </footer>

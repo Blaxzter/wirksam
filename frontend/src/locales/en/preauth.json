@@ -228,6 +228,17 @@
             },
             "title": "Everything a roster needs"
         },
+        "feedback": {
+            "accountHint": "Both open a short form on GitHub, which needs a free GitHub account. No account?",
+            "bugButton": "Report a bug",
+            "emailLink": "Send us an email instead.",
+            "emailSubject": "WirkSam feedback",
+            "eyebrow": "Feedback",
+            "featureButton": "Suggest a feature",
+            "githubButton": "View on GitHub",
+            "lede": "WirkSam grows with the teams that use it. Tell us what your event needs, or what got in your way.",
+            "title": "Missing something?"
+        },
         "finalCta": {
             "button": "Start an event",
             "demoButton": "Try a demo event",
@@ -335,6 +346,7 @@
         "appName": "WirkSam",
         "footer": {
             "copyright": "© 2026 WirkSam. Effective together.",
+            "github": "Source on GitHub",
             "impressum": "Legal Notice",
             "privacy": "Privacy Policy",
             "terms": "Terms of Service",
