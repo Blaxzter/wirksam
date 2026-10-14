@@ -18,14 +18,17 @@ Two modes, controlled by `dev_mode` at the top of `justfile` (default: `"local"`
 ```bash
 just dev               # Uses dev_mode default
 just dev docker        # Full stack via Docker Compose watch (hot reload)
-just dev local         # DB+Adminer in Docker, migrations, then backend + frontend in one terminal
+just dev local         # DB+Adminer in Docker, migrations, demo seed, then backend + frontend in one terminal
 just dev-backend       # or start either one on its own
 just dev-frontend
 ```
 
-Local mode runs `scripts/dev.mjs`: Ctrl+C stops backend and frontend (the DB
+Local mode runs `scripts/dev.mjs`: Docker services, migrations, then `just seed`
+(a dev admin `dev@example.com` / `devpassword` plus `[DEMO]` events; a no-op once
+they exist), then backend and frontend. Ctrl+C stops backend and frontend (the DB
 container keeps running), and if either one dies the other is stopped too;
-`node scripts/dev.mjs --no-migrate` skips the migration step.
+`--no-migrate` / `--no-seed` skip those steps. `just seed --force` adds another
+demo batch.
 
 `just test-e2e` also respects `dev_mode`: docker runs Playwright in a container, local runs `pnpm test:e2e` directly.
 
