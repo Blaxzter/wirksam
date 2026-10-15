@@ -7,6 +7,7 @@
         "zoomOut": "Verkleinern"
     },
     "legend": {
+        "landmarks": "Symbole: zur Orientierung, keine Schichten",
         "title": "Besetzung · {day}"
     },
     "locationDetails": {
@@ -92,6 +93,7 @@
         "emptyAdmin": "Zeichne das Gelände oder lade ein Bild davon hoch, damit alle sehen, wo was ist.",
         "emptyHint": "Sobald das Orga-Team einen Plan zeichnet oder hochlädt, findest du ihn hier.",
         "goToEditor": "Lageplan einrichten",
+        "landmarkHint": "Nur zur Orientierung. Hier gibt es keine Schichten.",
         "mapControls": "Plan-Steuerung",
         "more": "Weitere Optionen",
         "myShifts": "Meine Schichten",

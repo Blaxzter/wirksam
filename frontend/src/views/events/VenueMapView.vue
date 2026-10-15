@@ -14,6 +14,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Signpost,
   Star,
   X,
 } from '@lucide/vue'
@@ -611,6 +612,11 @@ const genericMarkerTitle = computed(() => {
 
 const legendStatuses = [...STAFFING_LEGEND, 'none'] as const
 
+/** Whether the plan shows symbols (toilets, first aid, …) that are not places. */
+const planHasLandmarks = computed(() =>
+  (activePlan.value?.markers ?? []).some((m) => m.kind !== 'location'),
+)
+
 // Last, so everything init() touches is declared.
 watch(eventId, () => void init(), { immediate: true })
 </script>
@@ -954,6 +960,14 @@ watch(eventId, () => void init(), { immediate: true })
                 {{ t(staffingLabelKey(status)) }}
               </li>
             </ul>
+            <p
+              v-if="planHasLandmarks"
+              class="text-map-pill-ink-soft border-map-canvas-edge flex items-center gap-1.5 border-t pt-1 text-xs sm:gap-2 sm:text-[13px]"
+              data-testid="map-legend-landmarks"
+            >
+              <Signpost class="size-3.5 shrink-0" aria-hidden="true" />
+              {{ t('venueMap.legend.landmarks') }}
+            </p>
           </div>
 
           <!-- A generic marker (entrance, toilets, …) has nothing to book: a small card is enough. -->
@@ -966,8 +980,11 @@ watch(eventId, () => void init(), { immediate: true })
             <component :is="markerIcon(genericMarker.kind)" class="text-primary size-5 shrink-0" />
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium">{{ genericMarkerTitle }}</p>
-              <p v-if="genericMarker.label" class="text-muted-foreground text-xs">
-                {{ t(markerKindLabelKey(genericMarker.kind)) }}
+              <p class="text-muted-foreground text-xs">
+                <template v-if="genericMarker.label">
+                  {{ t(markerKindLabelKey(genericMarker.kind)) }} ·
+                </template>
+                {{ t('venueMap.view.landmarkHint') }}
               </p>
             </div>
             <Button
@@ -1037,6 +1054,9 @@ watch(eventId, () => void init(), { immediate: true })
                   </h2>
                 </div>
               </div>
+              <p class="text-muted-foreground text-sm" data-testid="map-marker-hint">
+                {{ t('venueMap.view.landmarkHint') }}
+              </p>
             </div>
 
             <VenuePlaceOverview

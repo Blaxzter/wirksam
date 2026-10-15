@@ -7,6 +7,7 @@
         "zoomOut": "Zoom out"
     },
     "legend": {
+        "landmarks": "Symbols: for finding your way, no shifts",
         "title": "Staffing · {day}"
     },
     "locationDetails": {
@@ -92,6 +93,7 @@
         "emptyAdmin": "Draw the venue or add a picture of it, so helpers can see where everything is.",
         "emptyHint": "Once the organisers draw or upload a map of the venue, you can find it here.",
         "goToEditor": "Set up the map",
+        "landmarkHint": "Just for finding your way. There are no shifts here.",
         "mapControls": "Map controls",
         "more": "More options",
         "myShifts": "My shifts",
