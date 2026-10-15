@@ -180,15 +180,18 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* Hover outlines the area rather than tinting it: a tint would wash out the
+   furniture drawn on top of a room. */
 .vs-hover {
-  fill: var(--map-ink);
-  fill-opacity: 0;
-  stroke: none;
-  transition: fill-opacity 120ms ease-out;
+  fill: none;
+  stroke: var(--map-highlight);
+  stroke-width: 2px;
+  stroke-opacity: 0;
+  transition: stroke-opacity 120ms ease-out;
 }
 
 .vs-tappable:hover > .vs-hover {
-  fill-opacity: 0.08;
+  stroke-opacity: 1;
 }
 
 .vs-hl-selected {
@@ -519,7 +522,7 @@
   --map-shape-stage-fill: oklch(0.80 0.045 75);
   --map-shape-stage-stroke: oklch(0.68 0.05 70);
   --map-shape-stage-ink: oklch(0.30 0.03 65);
-  --map-shape-furniture-fill: oklch(0.83 0.04 75);
+  --map-shape-furniture-fill: oklch(0.79 0.045 72);
   --map-shape-furniture-stroke: transparent;
   --map-shape-furniture-ink: oklch(0.32 0.03 65);
   --map-shape-green-fill: oklch(0.88 0.055 125);
@@ -573,7 +576,7 @@
   --map-shape-stage-fill: oklch(0.38 0.035 75);
   --map-shape-stage-stroke: oklch(0.50 0.04 75);
   --map-shape-stage-ink: oklch(0.93 0.02 80);
-  --map-shape-furniture-fill: oklch(0.36 0.014 155);
+  --map-shape-furniture-fill: oklch(0.40 0.016 155);
   --map-shape-furniture-stroke: transparent;
   --map-shape-furniture-ink: oklch(0.90 0.01 155);
   --map-shape-green-fill: oklch(0.31 0.05 140);
@@ -768,7 +771,7 @@
     --map-shape-stage-fill: oklch(0.80 0.045 75) !important;
     --map-shape-stage-stroke: oklch(0.68 0.05 70) !important;
     --map-shape-stage-ink: oklch(0.30 0.03 65) !important;
-    --map-shape-furniture-fill: oklch(0.83 0.04 75) !important;
+    --map-shape-furniture-fill: oklch(0.79 0.045 72) !important;
     --map-shape-furniture-stroke: transparent !important;
     --map-shape-furniture-ink: oklch(0.32 0.03 65) !important;
     --map-shape-green-fill: oklch(0.88 0.055 125) !important;
