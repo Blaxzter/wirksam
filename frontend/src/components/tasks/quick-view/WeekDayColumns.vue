@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, Loader2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFormatters } from '@/composables/useFormatters'
 
 import Button from '@/components/ui/button/Button.vue'
+
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 export interface DayShiftEntry {
@@ -31,11 +32,17 @@ const props = defineProps<{
   visibleDays?: number
   expanded?: boolean
   hideFullShifts?: boolean
+  /** More days exist after the last one shown; swiping there asks for them. */
+  hasMoreNext?: boolean
+  /** Likewise before the first one. */
+  hasMorePrevious?: boolean
+  loadingNext?: boolean
+  loadingPrevious?: boolean
 }>()
 
 const emit = defineEmits<{
-  previous: []
-  next: []
+  loadNext: []
+  loadPrevious: []
   clickShift: [slotId: string]
   toggleExpand: []
 }>()
@@ -131,30 +138,136 @@ function slotCountClasses(shift: DayShiftEntry): string {
   return 'text-muted-foreground'
 }
 
+/*
+ * One horizontal scroller, a column per day, `visibleDays` of them filling its
+ * width. Later days load as a sentinel after the last column nears view; it is
+ * in reach from the start, so the next days arrive at once and the strip can
+ * be swiped at all. Earlier days cannot work that way — the strip opens at its
+ * start, with nothing to its left to scroll into — so they load on the first
+ * touch of the strip and whenever a scroll comes near the start; the columns
+ * added in front are then kept out of sight until swiped to.
+ */
+const scroller = ref<HTMLElement | null>(null)
+const tailSentinel = ref<HTMLElement | null>(null)
+const NEAR_EDGE_PX = 120
+let observer: IntersectionObserver | null = null
+let pageBackPending = false
+
+const atStart = ref(true)
+const atEnd = ref(false)
+
+function updateEdges() {
+  const el = scroller.value
+  if (!el) return
+  atStart.value = el.scrollLeft <= 1
+  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+}
+
+function requestPrevious() {
+  if (props.hasMorePrevious && !props.loadingPrevious) emit('loadPrevious')
+}
+
+function onScroll() {
+  updateEdges()
+  if ((scroller.value?.scrollLeft ?? Infinity) < NEAR_EDGE_PX) requestPrevious()
+}
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((entry) => entry.isIntersecting) && props.hasMoreNext) emit('loadNext')
+    },
+    { root: scroller.value, rootMargin: `0px ${NEAR_EDGE_PX}px` },
+  )
+  if (tailSentinel.value) observer.observe(tailSentinel.value)
+  updateEdges()
+})
+
+onBeforeUnmount(() => observer?.disconnect())
+
+// Days added in front would push the visible ones right; keep them in place.
+watch(
+  () => props.days[0]?.dateStr,
+  async (first, before) => {
+    const el = scroller.value
+    if (!el || !first || !before || first >= before) return
+    const widthBefore = el.scrollWidth
+    const leftBefore = el.scrollLeft
+    await nextTick()
+    el.scrollLeft = leftBefore + (el.scrollWidth - widthBefore)
+    updateEdges()
+    // The ‹ arrow asked for these days: now go back to them.
+    if (pageBackPending) {
+      pageBackPending = false
+      el.scrollBy({ left: -el.clientWidth, behavior: 'smooth' })
+    }
+  },
+  { flush: 'pre' },
+)
+
+watch(
+  () => props.days.length,
+  () => nextTick(updateEdges),
+)
+
+/** Arrow buttons (wider screens): a screenful of days at a time. */
+function page(direction: 1 | -1) {
+  const el = scroller.value
+  if (!el) return
+  if (direction === -1 && atStart.value && props.hasMorePrevious) {
+    pageBackPending = true
+    emit('loadPrevious')
+    return
+  }
+  if (direction === 1 && atEnd.value && props.hasMoreNext) emit('loadNext')
+  el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' })
+}
+
+const canGoPrevious = computed(() => !atStart.value || !!props.hasMorePrevious)
+const canGoNext = computed(() => !atEnd.value || !!props.hasMoreNext)
+
 defineExpose({ totalHidden, maxShiftCount })
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
-    <!-- Header row: arrows + day labels -->
-    <div class="flex items-center">
-      <HintTooltip :label="t('duties.tasks.quickView.previousDays')">
-        <button
-          class="flex w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-          :aria-label="t('duties.tasks.quickView.previousDays')"
-          @click="emit('previous')"
-        >
-          <ChevronLeft class="h-4 w-4" />
-        </button>
-      </HintTooltip>
+  <div class="flex h-full items-stretch">
+    <HintTooltip :label="t('duties.tasks.quickView.previousDays')">
+      <button
+        class="hidden w-6 shrink-0 items-start justify-center pt-3 text-muted-foreground hover:text-foreground disabled:opacity-30 md:flex"
+        :aria-label="t('duties.tasks.quickView.previousDays')"
+        :disabled="!canGoPrevious"
+        @click="page(-1)"
+      >
+        <ChevronLeft class="h-4 w-4" />
+      </button>
+    </HintTooltip>
 
-      <div class="grid flex-1" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
-        <div
-          v-for="day in days"
-          :key="day.dateStr"
-          class="px-1 py-1.5 text-center"
-          :class="day.dateStr === today ? 'bg-primary/5 rounded-t-md' : ''"
-        >
+    <div
+      ref="scroller"
+      data-testid="day-strip"
+      class="flex min-w-0 flex-1 snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      @scroll.passive="onScroll"
+      @pointerdown.once="requestPrevious"
+    >
+      <!-- Swiped to the start: earlier days load here. -->
+      <div
+        class="flex shrink-0 items-center justify-center"
+        :class="loadingPrevious ? 'w-8' : 'w-px'"
+        aria-hidden="true"
+      >
+        <Loader2 v-if="loadingPrevious" class="size-4 animate-spin text-muted-foreground" />
+      </div>
+
+      <!-- Phones see a sliver of the next day at the edge: the strip swipes. -->
+      <div
+        v-for="day in days"
+        :key="day.dateStr"
+        :data-testid="`day-column-${day.dateStr}`"
+        class="flex w-[calc(100%/var(--cols))] shrink-0 snap-start flex-col rounded-md max-md:w-[calc(100%/(var(--cols)+0.4))]"
+        :class="day.dateStr === today ? 'bg-primary/5' : ''"
+        :style="{ '--cols': cols }"
+      >
+        <div class="px-1 py-1.5 text-center">
           <div
             class="text-xs font-medium"
             :class="day.dateStr === today ? 'text-primary' : 'text-muted-foreground'"
@@ -168,34 +281,8 @@ defineExpose({ totalHidden, maxShiftCount })
             {{ formatDayDate(day.date) }}
           </div>
         </div>
-      </div>
 
-      <HintTooltip :label="t('duties.tasks.quickView.nextDays')">
-        <button
-          class="flex w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-          :aria-label="t('duties.tasks.quickView.nextDays')"
-          @click="emit('next')"
-        >
-          <ChevronRight class="h-4 w-4" />
-        </button>
-      </HintTooltip>
-    </div>
-
-    <!-- Shift grid: no arrows, grows to fill -->
-    <div class="flex min-h-0 flex-1">
-      <!-- Spacer matching left arrow width -->
-      <div class="w-6 shrink-0" />
-
-      <div
-        class="grid min-h-0 flex-1"
-        :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }"
-      >
-        <div
-          v-for="day in days"
-          :key="'shifts-' + day.dateStr"
-          class="flex flex-col gap-1 px-1 py-1"
-          :class="day.dateStr === today ? 'bg-primary/5 rounded-b-md' : ''"
-        >
+        <div class="flex flex-1 flex-col gap-1 px-1 py-1">
           <template v-if="filteredShifts(day).length > 0">
             <Button
               v-for="shift in visibleShifts(day)"
@@ -247,8 +334,26 @@ defineExpose({ totalHidden, maxShiftCount })
         </div>
       </div>
 
-      <!-- Spacer matching right arrow width -->
-      <div class="w-6 shrink-0" />
+      <!-- Swiped to the end: later days load here. -->
+      <div
+        ref="tailSentinel"
+        class="flex shrink-0 items-center justify-center"
+        :class="loadingNext ? 'w-8' : 'w-px'"
+        aria-hidden="true"
+      >
+        <Loader2 v-if="loadingNext" class="size-4 animate-spin text-muted-foreground" />
+      </div>
     </div>
+
+    <HintTooltip :label="t('duties.tasks.quickView.nextDays')">
+      <button
+        class="hidden w-6 shrink-0 items-start justify-center pt-3 text-muted-foreground hover:text-foreground disabled:opacity-30 md:flex"
+        :aria-label="t('duties.tasks.quickView.nextDays')"
+        :disabled="!canGoNext"
+        @click="page(1)"
+      >
+        <ChevronRight class="h-4 w-4" />
+      </button>
+    </HintTooltip>
   </div>
 </template>
