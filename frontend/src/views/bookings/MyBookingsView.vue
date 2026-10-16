@@ -29,6 +29,8 @@ import Separator from '@/components/ui/separator/Separator.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 import type { BookingReadWithShift, MyBookingsListResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
@@ -379,9 +381,11 @@ onMounted(loadBookings)
       <section v-for="event in groupedBookings" :key="event.key">
         <!-- Group header (only when grouping is active) -->
         <div v-if="event.label" class="flex items-center gap-3 mb-4">
-          <h2 class="text-lg font-semibold truncate min-w-0 max-w-sm" :title="event.label">
-            {{ event.label }}
-          </h2>
+          <HintTooltip :label="event.label">
+            <h2 class="text-lg font-semibold truncate min-w-0 max-w-sm">
+              {{ event.label }}
+            </h2>
+          </HintTooltip>
           <Separator class="flex-1" />
           <span class="text-sm text-muted-foreground whitespace-nowrap">
             {{ event.bookings.length }}
@@ -400,12 +404,11 @@ onMounted(loadBookings)
               <div class="flex items-start justify-between gap-2 min-w-0">
                 <div class="min-w-0">
                   <!-- Use task name as title for active bookings; fall back to shift title for cancelled -->
-                  <CardTitle
-                    class="text-lg truncate"
-                    :title="eventName(booking) ?? slotTitle(booking)"
-                  >
-                    {{ eventName(booking) ?? slotTitle(booking) }}
-                  </CardTitle>
+                  <HintTooltip :label="eventName(booking) ?? slotTitle(booking)">
+                    <CardTitle class="text-lg truncate">
+                      {{ eventName(booking) ?? slotTitle(booking) }}
+                    </CardTitle>
+                  </HintTooltip>
                 </div>
                 <Badge :variant="statusVariant(booking.status)" class="shrink-0">
                   {{ t(`duties.bookings.statuses.${booking.status ?? 'confirmed'}`) }}

@@ -21,6 +21,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 
 import MobileUserMenu from '@/components/navigation/MobileUserMenu.vue'
 import NotificationBell from '@/components/navigation/NotificationBell.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 const breadcrumbStore = useBreadcrumbStore()
 const router = useRouter()
@@ -50,7 +51,13 @@ const mobileParent = computed(() => {
     class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear event-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
   >
     <div class="flex flex-1 items-center gap-2 px-4">
-      <SidebarTrigger data-testid="btn-sidebar-toggle" class="-ml-1" />
+      <HintTooltip :label="t('navigation.sidebar.toggle')" side="bottom">
+        <SidebarTrigger
+          data-testid="btn-sidebar-toggle"
+          class="-ml-1"
+          :aria-label="t('navigation.sidebar.toggle')"
+        />
+      </HintTooltip>
       <Separator orientation="vertical" class="mr-2 h-4" />
 
       <!-- Mobile: show parent crumb as back link -->

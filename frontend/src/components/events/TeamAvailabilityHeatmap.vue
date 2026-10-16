@@ -7,6 +7,8 @@ import { useFormatters } from '@/composables/useFormatters'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 import type { UserAvailabilityWithUser } from '@/client/types.gen'
 
 type AvailabilityType = 'fully_available' | 'specific_dates' | 'time_range'
@@ -184,13 +186,13 @@ function memberDisplayShort(m: UserAvailabilityWithUser): string {
         </div>
 
         <div class="flex flex-1 gap-0.5 sm:gap-1">
-          <div
-            v-for="(d, di) in days"
-            :key="di"
-            class="h-[18px] flex-1 rounded-sm sm:h-[22px]"
-            :class="heatStyles[heatFor(m, di)]"
-            :title="formatDateLabel(d.toISOString().slice(0, 10))"
-          />
+          <!-- Hover a cell to see its date. -->
+          <HintTooltip v-for="(d, di) in days" :key="di" :label="formatDateLabel(dateKey(d))">
+            <div
+              class="h-[18px] flex-1 rounded-sm sm:h-[22px]"
+              :class="heatStyles[heatFor(m, di)]"
+            />
+          </HintTooltip>
         </div>
       </div>
     </div>

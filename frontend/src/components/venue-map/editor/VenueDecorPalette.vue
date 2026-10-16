@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenuePropGlyph from '@/components/venue-map/VenuePropGlyph.vue'
 
 import {
@@ -101,7 +102,7 @@ const itemSize = computed(() =>
   >
     <!-- The padding keeps the chosen item's ring inside the scroll box, which clips. -->
     <div
-      class="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:thin]"
+      class="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:thin] max-lg:[scrollbar-width:none]"
     >
       <div
         class="flex shrink-0 items-center gap-1.5"
@@ -111,32 +112,35 @@ const itemSize = computed(() =>
         <template v-for="(group, gi) in GROUPS" :key="group">
           <span v-if="gi > 0" class="bg-border mx-0.5 h-8 w-px shrink-0" aria-hidden="true" />
           <span class="sr-only">{{ t(`mapEditor.decor.groups.${group}`) }}</span>
-          <button
+          <HintTooltip
             v-for="prop in PROP_GROUPS[group]"
             :key="prop"
-            :ref="(el) => setButton(prop, el)"
-            type="button"
-            role="radio"
-            :aria-checked="prop === modelValue"
-            :tabindex="prop === focusable ? 0 : -1"
-            :title="t(propLabelKey(prop))"
-            :aria-label="t(propLabelKey(prop))"
-            :disabled="disabled"
-            class="focus-visible:ring-ring/50 flex shrink-0 items-center justify-center rounded-md border bg-[var(--map-canvas)] outline-none focus-visible:ring-[3px] disabled:opacity-50"
-            :class="[
-              itemSize,
-              prop === modelValue
-                ? 'ring-2 ring-[var(--map-select)]'
-                : 'hover:border-foreground/40',
-            ]"
-            :data-testid="`decor-item-${prop}`"
-            @click="choose(prop)"
-            @keydown="onKeydown($event, prop)"
+            :label="t(propLabelKey(prop))"
           >
-            <svg viewBox="-26 -26 52 52" class="size-8" aria-hidden="true">
-              <VenuePropGlyph :prop="prop" />
-            </svg>
-          </button>
+            <button
+              :ref="(el) => setButton(prop, el)"
+              type="button"
+              role="radio"
+              :aria-checked="prop === modelValue"
+              :tabindex="prop === focusable ? 0 : -1"
+              :aria-label="t(propLabelKey(prop))"
+              :disabled="disabled"
+              class="focus-visible:ring-ring/50 flex shrink-0 items-center justify-center rounded-md border bg-[var(--map-canvas)] outline-none focus-visible:ring-[3px] disabled:opacity-50"
+              :class="[
+                itemSize,
+                prop === modelValue
+                  ? 'ring-2 ring-[var(--map-select)]'
+                  : 'hover:border-foreground/40',
+              ]"
+              :data-testid="`decor-item-${prop}`"
+              @click="choose(prop)"
+              @keydown="onKeydown($event, prop)"
+            >
+              <svg viewBox="-26 -26 52 52" class="size-8" aria-hidden="true">
+                <VenuePropGlyph :prop="prop" />
+              </svg>
+            </button>
+          </HintTooltip>
         </template>
       </div>
 
@@ -198,29 +202,28 @@ const itemSize = computed(() =>
     :aria-labelledby="labelledby"
     data-testid="decor-picker"
   >
-    <button
-      v-for="prop in ordered"
-      :key="prop"
-      :ref="(el) => setButton(prop, el)"
-      type="button"
-      role="radio"
-      :aria-checked="prop === modelValue"
-      :tabindex="prop === focusable ? 0 : -1"
-      :title="t(propLabelKey(prop))"
-      :aria-label="t(propLabelKey(prop))"
-      :disabled="disabled"
-      class="focus-visible:ring-ring/50 flex items-center justify-center rounded-md border bg-[var(--map-canvas)] p-0.5 outline-none focus-visible:ring-[3px] disabled:opacity-50"
-      :class="[
-        itemSize,
-        prop === modelValue ? 'ring-2 ring-[var(--map-select)]' : 'hover:border-foreground/40',
-      ]"
-      :data-testid="`decor-type-${prop}`"
-      @click="prop !== modelValue && choose(prop)"
-      @keydown="onKeydown($event, prop)"
-    >
-      <svg viewBox="-26 -26 52 52" class="size-full" aria-hidden="true">
-        <VenuePropGlyph :prop="prop" />
-      </svg>
-    </button>
+    <HintTooltip v-for="prop in ordered" :key="prop" :label="t(propLabelKey(prop))">
+      <button
+        :ref="(el) => setButton(prop, el)"
+        type="button"
+        role="radio"
+        :aria-checked="prop === modelValue"
+        :tabindex="prop === focusable ? 0 : -1"
+        :aria-label="t(propLabelKey(prop))"
+        :disabled="disabled"
+        class="focus-visible:ring-ring/50 flex items-center justify-center rounded-md border bg-[var(--map-canvas)] p-0.5 outline-none focus-visible:ring-[3px] disabled:opacity-50"
+        :class="[
+          itemSize,
+          prop === modelValue ? 'ring-2 ring-[var(--map-select)]' : 'hover:border-foreground/40',
+        ]"
+        :data-testid="`decor-type-${prop}`"
+        @click="prop !== modelValue && choose(prop)"
+        @keydown="onKeydown($event, prop)"
+      >
+        <svg viewBox="-26 -26 52 52" class="size-full" aria-hidden="true">
+          <VenuePropGlyph :prop="prop" />
+        </svg>
+      </button>
+    </HintTooltip>
   </div>
 </template>

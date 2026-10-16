@@ -22,7 +22,7 @@ const props = withDefaults(
     x: number
     y: number
     scale?: number
-    /** Shown as a native tooltip, and below the marker with `showLabel`. */
+    /** The hover hint (`VenuePinHint`, via `data-hint`), and below the marker with `showLabel`. */
     label?: string | null
     showLabel?: boolean
     selected?: boolean
@@ -58,8 +58,8 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
     :data-kind="kind"
     :data-selected="selected || undefined"
     :data-highlighted="highlighted || undefined"
+    :data-hint="label || undefined"
   >
-    <title v-if="label">{{ label }}</title>
     <circle
       v-if="highlighted"
       r="20"

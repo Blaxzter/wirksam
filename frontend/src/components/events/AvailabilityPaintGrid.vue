@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useFormatters } from '@/composables/useFormatters'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 const props = defineProps<{
   days: Date[]
   hours: number[]
@@ -118,12 +120,12 @@ function toggleDay(di: number) {
   emit('update:modelValue', next)
 }
 
-const dayHeaderShort = computed(() => (d: Date) =>
-  d.toLocaleDateString(locale.value, { weekday: 'short' }),
+const dayHeaderShort = computed(
+  () => (d: Date) => d.toLocaleDateString(locale.value, { weekday: 'short' }),
 )
 
-const dayHeaderNarrow = computed(() => (d: Date) =>
-  d.toLocaleDateString(locale.value, { weekday: 'narrow' }),
+const dayHeaderNarrow = computed(
+  () => (d: Date) => d.toLocaleDateString(locale.value, { weekday: 'narrow' }),
 )
 
 function dayLabel(d: Date) {
@@ -183,25 +185,31 @@ function dayLabel(d: Date) {
           class="flex shrink-0 flex-col sm:shrink"
           :class="['min-w-11 sm:min-w-0 sm:flex-1']"
         >
-          <button
-            type="button"
-            :title="dayLabel(d)"
-            class="mb-1 flex h-10 flex-col items-center justify-center gap-0.5 rounded-md border px-1 text-center transition-colors sm:h-8"
-            :class="
-              dayCount(di) === hours.length
-                ? 'border-primary bg-primary text-primary-foreground'
-                : dayCount(di) > 0
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-background text-muted-foreground hover:border-primary/40'
-            "
-            @click="toggleDay(di)"
-          >
-            <span class="text-[10px] font-semibold uppercase tracking-wider opacity-90 sm:text-[9px]">
-              <span class="hidden sm:inline">{{ dayHeaderShort(d) }}</span>
-              <span class="sm:hidden">{{ dayHeaderNarrow(d) }}</span>
-            </span>
-            <span class="text-[13px] font-semibold leading-none sm:text-[12px]">{{ d.getDate() }}</span>
-          </button>
+          <HintTooltip :label="dayLabel(d)">
+            <button
+              type="button"
+              :aria-label="dayLabel(d)"
+              class="mb-1 flex h-10 flex-col items-center justify-center gap-0.5 rounded-md border px-1 text-center transition-colors sm:h-8"
+              :class="
+                dayCount(di) === hours.length
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : dayCount(di) > 0
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-background text-muted-foreground hover:border-primary/40'
+              "
+              @click="toggleDay(di)"
+            >
+              <span
+                class="text-[10px] font-semibold uppercase tracking-wider opacity-90 sm:text-[9px]"
+              >
+                <span class="hidden sm:inline">{{ dayHeaderShort(d) }}</span>
+                <span class="sm:hidden">{{ dayHeaderNarrow(d) }}</span>
+              </span>
+              <span class="text-[13px] font-semibold leading-none sm:text-[12px]">{{
+                d.getDate()
+              }}</span>
+            </button>
+          </HintTooltip>
 
           <div
             v-for="h in hours"

@@ -72,6 +72,12 @@ test.describe('Venue plan templates', () => {
 
     // ── Save as template ──
     await editor.getByTestId('plan-actions').click()
+    // The menu opens next to its button, inside the window.
+    await expect(page.getByTestId('plan-save-template')).toBeVisible()
+    const trigger = (await editor.getByTestId('plan-actions').boundingBox())!
+    const item = (await page.getByTestId('plan-save-template').boundingBox())!
+    expect(item.y).toBeGreaterThan(trigger.y)
+    expect(item.y + item.height).toBeLessThanOrEqual(page.viewportSize()!.height)
     await page.getByTestId('plan-save-template').click()
     const nameInput = page.getByTestId('template-name-input')
     await expect(nameInput).toHaveValue('Festwiese')

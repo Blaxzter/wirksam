@@ -11,6 +11,7 @@ import { useAuth } from '@/composables/useAuth'
 import { usePalette } from '@/composables/usePalette'
 
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 import SandboxBanner from '@/components/sandbox/SandboxBanner.vue'
 import SandboxWelcomeDialog from '@/components/sandbox/SandboxWelcomeDialog.vue'
@@ -31,31 +32,35 @@ usePalette()
 </script>
 
 <template>
-  <Toaster />
-  <GlobalDialog />
+  <!-- One provider for every tooltip in the app, so hovering from one hint to
+       the next skips the delay. Components (and HintTooltip) need not bring their own. -->
+  <TooltipProvider :delay-duration="300">
+    <Toaster />
+    <GlobalDialog />
 
-  <!-- Above the loading/outlet pair, not inside it: this is the only node that
+    <!-- Above the loading/outlet pair, not inside it: this is the only node that
        outlives every layout, and anywhere lower would be unmounted on the first
        navigation, resetting the countdown it is there to show. -->
-  <SandboxBanner />
+    <SandboxBanner />
 
-  <!-- Opened by `tour/install.ts` on a demo session's first arrival at the
+    <!-- Opened by `tour/install.ts` on a demo session's first arrival at the
        dashboard, and mounted here for the same reason the banner is: the
        layout underneath it is rebuilt on every navigation. -->
-  <SandboxWelcomeDialog />
+    <SandboxWelcomeDialog />
 
-  <!-- Loading state -->
-  <div v-if="isLoading" class="min-h-screen flex items-center justify-center bg-background">
-    <div class="text-center space-y-4">
-      <div
-        class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"
-      ></div>
-      <p class="text-muted-foreground">{{ $t('utils.loading') }}</p>
+    <!-- Loading state -->
+    <div v-if="isLoading" class="min-h-screen flex items-center justify-center bg-background">
+      <div class="text-center space-y-4">
+        <div
+          class="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"
+        ></div>
+        <p class="text-muted-foreground">{{ $t('utils.loading') }}</p>
+      </div>
     </div>
-  </div>
 
-  <!-- Router outlet - layouts will be handled by nested routes -->
-  <RouterView v-else />
+    <!-- Router outlet - layouts will be handled by nested routes -->
+    <RouterView v-else />
+  </TooltipProvider>
 </template>
 
 <style scoped></style>

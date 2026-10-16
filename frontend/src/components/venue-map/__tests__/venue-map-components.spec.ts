@@ -102,7 +102,8 @@ describe('VenueMarkerGlyph', () => {
     expect(g.attributes('transform')).toBe('translate(10 20) scale(2)')
     expect(g.attributes('data-kind')).toBe('parking')
     expect(wrapper.find('[data-testid="marker-highlight"]').exists()).toBe(true)
-    expect(wrapper.get('title').text()).toBe('P1')
+    expect(g.attributes('data-hint')).toBe('P1')
+    expect(wrapper.find('title').exists()).toBe(false)
   })
 })
 
@@ -131,7 +132,8 @@ describe('VenueMarkerPill', () => {
     expect(wrapper.get('[data-testid="marker-count"]').text()).toBe('5/8')
     expect(wrapper.text()).toContain('Bar')
     expect(wrapper.find('[data-testid="marker-highlight"]').exists()).toBe(true)
-    expect(wrapper.get('title').text()).toBe('Bar · 5/8')
+    expect(g.attributes('data-hint')).toBe('Bar · 5/8')
+    expect(wrapper.find('title').exists()).toBe(false)
   })
 
   it('compact keeps only the badge', () => {
@@ -142,7 +144,7 @@ describe('VenueMarkerPill', () => {
         ]),
     })
     expect(wrapper.find('[data-testid="marker-count"]').exists()).toBe(false)
-    expect(wrapper.get('title').text()).toBe('Bar · 1/2')
+    expect(wrapper.get('g.venue-pill').attributes('data-hint')).toBe('Bar · 1/2')
   })
 })
 
@@ -486,6 +488,17 @@ describe('VenuePlanSwitcher', () => {
     expect(buttons.map((b) => b.text())).toEqual(['Grounds', 'Hall'])
     await buttons[1]!.trigger('click')
     expect(wrapper.emitted('update:modelValue')).toEqual([['b']])
+  })
+
+  it('adds a plan menu button in compact mode, named after the chosen plan', () => {
+    const wrapper = mount(VenuePlanSwitcher, {
+      props: { plans: [{ id: 'a', name: 'Grounds' }], modelValue: 'a', compact: true },
+      global: { plugins: [i18n] },
+    })
+    const menu = wrapper.get('[data-testid="plan-switcher-menu"]')
+    expect(menu.text()).toBe('Grounds')
+    expect(menu.attributes('aria-label')).toBe('Choose a map: Grounds')
+    expect(menu.classes()).toContain('lg:hidden')
   })
 })
 

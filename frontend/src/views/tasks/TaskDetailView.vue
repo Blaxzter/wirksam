@@ -60,6 +60,7 @@ import LocationPicker from '@/components/locations/LocationPicker.vue'
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
 import type {
@@ -626,15 +627,17 @@ onMounted(async () => {
 
           <!-- Desktop actions -->
           <div class="hidden sm:flex gap-2 shrink-0">
-            <Button
-              data-testid="btn-print"
-              variant="outline"
-              size="icon"
-              :title="t('print.printTask')"
-              @click="router.push({ name: 'print-task', params: { eventId: task!.id } })"
-            >
-              <Printer class="h-4 w-4" />
-            </Button>
+            <HintTooltip :label="t('print.printTask')">
+              <Button
+                data-testid="btn-print"
+                variant="outline"
+                size="icon"
+                :aria-label="t('print.printTask')"
+                @click="router.push({ name: 'print-task', params: { eventId: task!.id } })"
+              >
+                <Printer class="h-4 w-4" />
+              </Button>
+            </HintTooltip>
             <Button
               v-if="canManage && !hasBatches"
               data-testid="btn-edit-task"
@@ -666,15 +669,17 @@ onMounted(async () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button
-                data-testid="btn-delete-task"
-                variant="destructive"
-                size="icon"
-                :aria-label="t('duties.tasks.delete')"
-                @click="handleDeleteTask"
-              >
-                <Trash2 class="h-4 w-4" />
-              </Button>
+              <HintTooltip :label="t('duties.tasks.delete')">
+                <Button
+                  data-testid="btn-delete-task"
+                  variant="destructive"
+                  size="icon"
+                  :aria-label="t('duties.tasks.delete')"
+                  @click="handleDeleteTask"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </Button>
+              </HintTooltip>
             </template>
           </div>
 
@@ -970,13 +975,15 @@ onMounted(async () => {
                       </div>
 
                       <!-- Expand button (visible on hover) -->
-                      <button
-                        class="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-sm opacity-0 transition-opacity event-hover:opacity-100 hover:bg-muted"
-                        :title="t('duties.shifts.detail.openDetails')"
-                        @click.stop="openShiftDetail(shift)"
-                      >
-                        <Expand class="h-3 w-3 text-muted-foreground" />
-                      </button>
+                      <HintTooltip :label="t('duties.shifts.detail.openDetails')">
+                        <button
+                          class="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-sm opacity-0 transition-opacity event-hover:opacity-100 hover:bg-muted"
+                          :aria-label="t('duties.shifts.detail.openDetails')"
+                          @click.stop="openShiftDetail(shift)"
+                        >
+                          <Expand class="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </HintTooltip>
 
                       <!-- Time -->
                       <p class="text-center text-lg font-mono font-semibold">
@@ -1024,16 +1031,17 @@ onMounted(async () => {
                       </p>
 
                       <!-- Admin delete (stop propagation so it doesn't trigger booking) -->
-                      <Button
-                        v-if="canManage"
-                        variant="ghost"
-                        size="icon"
-                        class="absolute bottom-0.5 right-0.5 h-5 w-5"
-                        :aria-label="t('duties.shifts.delete')"
-                        @click.stop="handleDeleteShift(shift)"
-                      >
-                        <Trash2 class="h-3 w-3 text-destructive" />
-                      </Button>
+                      <HintTooltip v-if="canManage" :label="t('duties.shifts.delete')">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          class="absolute bottom-0.5 right-0.5 h-5 w-5"
+                          :aria-label="t('duties.shifts.delete')"
+                          @click.stop="handleDeleteShift(shift)"
+                        >
+                          <Trash2 class="h-3 w-3 text-destructive" />
+                        </Button>
+                      </HintTooltip>
                     </CardContent>
                   </Card>
                 </div>

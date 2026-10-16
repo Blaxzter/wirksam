@@ -909,7 +909,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
         selectedVertex.value = null
         return true
       }
-      // "Press Esc when you're done": one press leaves the Deko tool, and the
+      // Esc ends a run of stamping, like tapping the arrow: one press leaves the Deko tool, and the
       // decoration placed last stays selected for the side panel.
       if (tool.value === 'prop') {
         setTool('select')

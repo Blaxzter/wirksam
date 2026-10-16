@@ -15,7 +15,7 @@ import { STAFFING_CLASSES, type StaffingStatus, estimateTextWidth } from '@/lib/
  * with it. Text uses the map's own pill ink (`--map-pill-ink`), not the page
  * foreground, so a pill on a picture plan (`.map-light`) stays dark-on-light
  * in dark mode. `compact` leaves only the badge on its stem (a crowded small
- * screen), and the name moves into the tooltip.
+ * screen), and the name moves into the hover hint (`VenuePinHint`).
  *
  * Attributes fall through to the root `<g>`, so the parent makes it a button.
  */
@@ -34,7 +34,7 @@ const props = withDefaults(
     /** Draws a primary-colour ring — "your shift is here". */
     highlighted?: boolean
     compact?: boolean
-    /** Native tooltip; defaults to the name and count. */
+    /** The hover hint (`VenuePinHint`, via `data-hint`); defaults to the name and count. */
     title?: string | null
   }>(),
   {
@@ -119,8 +119,8 @@ const transform = computed(() => `translate(${props.x} ${props.y}) scale(${props
     :data-status="status"
     :data-selected="selected || undefined"
     :data-highlighted="highlighted || undefined"
+    :data-hint="tooltip"
   >
-    <title>{{ tooltip }}</title>
     <!-- Stem and the dot on the exact spot. -->
     <line
       x1="0"

@@ -76,7 +76,12 @@ const itemClass =
         <CheckCircle2 class="size-4 text-emerald-600" aria-hidden="true" />
         {{ t('mapEditor.palette.allPlaced') }}
       </p>
-      <ul v-else class="grid max-h-60 grid-cols-1 gap-1.5 overflow-y-auto lg:max-h-80">
+      <!-- In the editor's phone sheet the sheet scrolls; no box scrolling inside it. -->
+      <ul
+        v-else
+        class="grid grid-cols-1 gap-1.5 lg:max-h-80 lg:overflow-y-auto"
+        data-testid="palette-locations"
+      >
         <li v-for="location in unplaced" :key="location.id">
           <button
             type="button"

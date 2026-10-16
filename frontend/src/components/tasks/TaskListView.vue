@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import type { TaskRead } from '@/client/types.gen'
 import { formatDate } from '@/lib/format'
@@ -51,16 +52,17 @@ const authStore = useAuthStore()
       <CardContent>
         <div class="flex items-center justify-between text-sm text-muted-foreground">
           <span>{{ formatDate(task.start_date) }} – {{ formatDate(task.end_date) }}</span>
-          <Button
-            v-if="authStore.isManager"
-            variant="ghost"
-            size="icon"
-            class="h-8 w-8"
-            :aria-label="t('duties.tasks.delete')"
-            @click.stop="emit('delete', task)"
-          >
-            <Trash2 class="h-4 w-4 text-destructive" />
-          </Button>
+          <HintTooltip v-if="authStore.isManager" :label="t('duties.tasks.delete')">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8"
+              :aria-label="t('duties.tasks.delete')"
+              @click.stop="emit('delete', task)"
+            >
+              <Trash2 class="h-4 w-4 text-destructive" />
+            </Button>
+          </HintTooltip>
         </div>
       </CardContent>
     </Card>

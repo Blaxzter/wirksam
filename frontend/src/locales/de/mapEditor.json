@@ -46,7 +46,7 @@
         "labelPlaceholder": "z. B. Große Halle",
         "pathHint": "Tipp, um Punkte zu setzen. Doppeltipp oder „Fertig“ beendet die Linie.",
         "polygonHint": "Tipp, um Ecken zu setzen. Tipp auf die erste Ecke oder auf „Form schließen“, um fertig zu werden.",
-        "propHint": "Tipp auf den Plan, um etwas hinzuzufügen: {name}. Mit Esc bist du fertig.",
+        "propHint": "Tipp auf den Plan, um etwas hinzuzufügen: {name}. Fertig? Tipp auf den Pfeil.",
         "rectHint": "Zieh ein Rechteck auf.",
         "saved": "Alles gespeichert",
         "saving": "Wird gespeichert…",
@@ -146,6 +146,11 @@
         "tab": "Lageplan",
         "title": "Lageplan"
     },
+    "sheet": {
+        "hide": "Ausblenden",
+        "pins": "Markierungen & Bild",
+        "selection": "Auswahl"
+    },
     "templates": {
         "actions": "Optionen für die Vorlage „{name}“",
         "createdFrom": "Plan aus der Vorlage hinzugefügt. Setz jetzt deine Markierungen.",
@@ -169,6 +174,7 @@
     },
     "tools": {
         "label": "Text",
+        "more": "Mehr",
         "path": "Linie",
         "polygon": "Fläche",
         "prop": "Deko",

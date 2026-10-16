@@ -10,6 +10,8 @@ import { useNotificationStore } from '@/stores/notification'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 const emit = defineEmits<{
   navigate: []
 }>()
@@ -115,11 +117,7 @@ function getNotificationIcon(typeCode: string): string {
       aria-busy="true"
       :aria-label="t('notifications.title')"
     >
-      <div
-        v-for="i in 3"
-        :key="i"
-        class="flex gap-3 px-4 py-3"
-      >
+      <div v-for="i in 3" :key="i" class="flex gap-3 px-4 py-3">
         <Skeleton class="mt-0.5 h-5 w-5 rounded-full" />
         <div class="min-w-0 flex-1">
           <Skeleton class="mb-1.5 h-4 w-2/3" />
@@ -165,25 +163,28 @@ function getNotificationIcon(typeCode: string): string {
       </div>
 
       <div class="hidden flex-shrink-0 flex-col gap-1 event-hover:flex">
-        <Button
-          v-if="!notification.is_read"
-          variant="ghost"
-          size="icon"
-          class="h-6 w-6 cursor-pointer hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
-          :title="t('notifications.markRead')"
-          @click.stop="handleMarkAsRead(notification.id)"
-        >
-          <Check class="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="h-6 w-6 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-          :title="t('notifications.dismiss')"
-          @click.stop="handleDismiss(notification.id)"
-        >
-          <Trash2 class="h-3 w-3" />
-        </Button>
+        <HintTooltip v-if="!notification.is_read" :label="t('notifications.markRead')">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-6 w-6 cursor-pointer hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+            :aria-label="t('notifications.markRead')"
+            @click.stop="handleMarkAsRead(notification.id)"
+          >
+            <Check class="h-3 w-3" />
+          </Button>
+        </HintTooltip>
+        <HintTooltip :label="t('notifications.dismiss')">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-6 w-6 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+            :aria-label="t('notifications.dismiss')"
+            @click.stop="handleDismiss(notification.id)"
+          >
+            <Trash2 class="h-3 w-3" />
+          </Button>
+        </HintTooltip>
       </div>
     </div>
 

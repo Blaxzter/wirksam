@@ -9,6 +9,8 @@ import { useSandboxStore } from '@/stores/sandbox'
 
 import { Button } from '@/components/ui/button'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 import { millisUntil } from '@/lib/server-time'
 import { requestTour } from '@/tour/offer'
 
@@ -167,12 +169,18 @@ async function exit() {
   >
     <FlaskConicalIcon aria-hidden="true" class="size-4 shrink-0" />
 
-    <p class="min-w-0 flex-1 truncate text-sm">
-      <span class="font-semibold">{{ t('sandbox.banner.label') }}</span>
-      <template v-if="roleLabel">&nbsp;{{ roleLabel }}</template>
+    <!-- The role gives way first: on a narrow phone the countdown must stay readable. -->
+    <p class="flex min-w-0 flex-1 items-baseline text-sm">
+      <span class="min-w-0 truncate">
+        <span class="font-semibold">{{ t('sandbox.banner.label') }}</span>
+        <template v-if="roleLabel">&nbsp;{{ roleLabel }}</template>
+      </span>
       <template v-if="countdown">
-        <span aria-hidden="true" class="px-1.5 opacity-60">&middot;</span>
-        <span data-testid="sandbox-countdown" class="tabular-nums opacity-90">
+        <span aria-hidden="true" class="shrink-0 px-1.5 opacity-60">&middot;</span>
+        <span
+          data-testid="sandbox-countdown"
+          class="shrink-0 whitespace-nowrap tabular-nums opacity-90"
+        >
           {{
             expired
               ? t('sandbox.banner.expired')
@@ -182,28 +190,33 @@ async function exit() {
       </template>
     </p>
 
-    <Button
-      data-testid="btn-sandbox-tour"
-      variant="ghost"
-      size="sm"
-      class="shrink-0 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-      @click="restartTour"
-    >
-      <RotateCcwIcon class="size-4" />
-      <span class="hidden sm:inline">{{ t('sandbox.banner.restartTour') }}</span>
-    </Button>
+    <!-- Icon only on a phone: the text stays for screen readers, the hint for the pointer. -->
+    <HintTooltip :label="t('sandbox.banner.restartTour')" side="bottom">
+      <Button
+        data-testid="btn-sandbox-tour"
+        variant="ghost"
+        size="sm"
+        class="shrink-0 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+        @click="restartTour"
+      >
+        <RotateCcwIcon class="size-4" />
+        <span class="max-sm:sr-only">{{ t('sandbox.banner.restartTour') }}</span>
+      </Button>
+    </HintTooltip>
 
-    <Button
-      data-testid="btn-sandbox-exit"
-      variant="ghost"
-      size="sm"
-      :disabled="sandboxStore.exiting"
-      class="shrink-0 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
-      @click="exit"
-    >
-      <LogOutIcon class="size-4" />
-      <span class="hidden sm:inline">{{ t('sandbox.banner.exit') }}</span>
-    </Button>
+    <HintTooltip :label="t('sandbox.banner.exit')" side="bottom">
+      <Button
+        data-testid="btn-sandbox-exit"
+        variant="ghost"
+        size="sm"
+        :disabled="sandboxStore.exiting"
+        class="shrink-0 text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
+        @click="exit"
+      >
+        <LogOutIcon class="size-4" />
+        <span class="max-sm:sr-only">{{ t('sandbox.banner.exit') }}</span>
+      </Button>
+    </HintTooltip>
   </div>
 </template>
 

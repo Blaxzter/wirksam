@@ -26,6 +26,8 @@ import {
 import Switch from '@/components/ui/switch/Switch.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 defineProps<{
   offsetLabel: string
   channels: string[]
@@ -97,16 +99,9 @@ function onConfirmRemove() {
         </TooltipProvider>
 
         <!-- Normal toggle button -->
-        <button
+        <HintTooltip
           v-else
-          :disabled="loading"
-          :class="[
-            'flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
-            channels.includes(ch)
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:bg-muted/80',
-          ]"
-          :title="
+          :label="
             channels.includes(ch)
               ? t('notifications.reminders.channelActiveHint', {
                   channel: t(`notifications.channels.${ch}`),
@@ -114,13 +109,25 @@ function onConfirmRemove() {
                 })
               : t(`notifications.channels.${ch}`)
           "
-          @click="$emit('toggle-channel', ch)"
         >
-          <Mail v-if="ch === 'email'" :size="14" />
-          <Smartphone v-else-if="ch === 'push'" :size="14" />
-          <MessageCircle v-else :size="14" />
-          <span class="hidden md:inline">{{ t(`notifications.channels.${ch}`) }}</span>
-        </button>
+          <button
+            :disabled="loading"
+            :class="[
+              'flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+              channels.includes(ch)
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80',
+            ]"
+            :aria-label="t(`notifications.channels.${ch}`)"
+            :aria-pressed="channels.includes(ch)"
+            @click="$emit('toggle-channel', ch)"
+          >
+            <Mail v-if="ch === 'email'" :size="14" />
+            <Smartphone v-else-if="ch === 'push'" :size="14" />
+            <MessageCircle v-else :size="14" />
+            <span class="hidden md:inline">{{ t(`notifications.channels.${ch}`) }}</span>
+          </button>
+        </HintTooltip>
       </template>
     </div>
 

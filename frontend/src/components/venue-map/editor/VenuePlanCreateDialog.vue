@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { type ComponentPublicInstance, computed, ref, shallowReactive, watch } from 'vue'
 
 import { EllipsisVertical, ImageUp, LayoutTemplate, Pencil, PencilRuler, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/responsive-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueTemplateNameDialog from '@/components/venue-map/editor/VenueTemplateNameDialog.vue'
 import VenueTemplateThumb from '@/components/venue-map/editor/VenueTemplateThumb.vue'
 
@@ -174,6 +175,16 @@ async function deleteTemplate(template: VenueTemplateSummary) {
   } catch (error) {
     toastApiError(error)
   }
+}
+
+// The menu trigger sits inside a HintTooltip, so it anchors to the tooltip,
+// not to its own menu: the menu content is told where each button is, or it
+// opens off-screen (reka-ui finds an anchor through the nearest popup root).
+const actionButtons = shallowReactive(new Map<string, Element>())
+function setActionButton(id: string, el: Element | ComponentPublicInstance | null) {
+  const node = el && '$el' in el ? (el.$el as Element) : el
+  if (node) actionButtons.set(id, node)
+  else actionButtons.delete(id)
 }
 </script>
 
@@ -347,19 +358,22 @@ async function deleteTemplate(template: VenueTemplateSummary) {
                     </span>
                   </label>
                   <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        class="absolute right-1 bottom-1"
-                        :aria-label="t('mapEditor.templates.actions', { name: template.name })"
-                        data-testid="template-actions"
-                      >
-                        <EllipsisVertical />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <HintTooltip :label="t('mapEditor.templates.actions', { name: template.name })">
+                      <DropdownMenuTrigger as-child>
+                        <Button
+                          :ref="(el) => setActionButton(template.id, el)"
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          class="absolute right-1 bottom-1"
+                          :aria-label="t('mapEditor.templates.actions', { name: template.name })"
+                          data-testid="template-actions"
+                        >
+                          <EllipsisVertical />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </HintTooltip>
+                    <DropdownMenuContent align="end" :reference="actionButtons.get(template.id)">
                       <DropdownMenuItem
                         data-testid="template-rename"
                         @select="openRename(template)"

@@ -49,6 +49,7 @@
         },
         "platform": "Plattform",
         "sections": {},
+        "toggle": "Menü ein- oder ausblenden",
         "toggleSubmenu": "Untermenü {title} umschalten"
     },
     "user": {

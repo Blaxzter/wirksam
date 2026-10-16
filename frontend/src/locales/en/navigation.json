@@ -49,6 +49,7 @@
         },
         "platform": "Platform",
         "sections": {},
+        "toggle": "Show or hide the menu",
         "toggleSubmenu": "Toggle {title} submenu"
     },
     "user": {

@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator'
 
 import NotificationList from '@/components/navigation/NotificationList.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -113,25 +114,28 @@ onUnmounted(() => {
             <CheckCheck class="mr-1 h-3 w-3" />
             {{ t('notifications.markAllRead') }}
           </Button>
-          <Button
-            v-if="hasAny"
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 hover:text-red-700 dark:hover:text-red-400"
-            :title="t('notifications.deleteAll')"
-            @click="handleDismissAll"
-          >
-            <Trash2 class="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7"
-            :aria-label="t('notifications.managePreferences')"
-            @click="goToPreferences"
-          >
-            <Settings class="h-3.5 w-3.5" />
-          </Button>
+          <HintTooltip v-if="hasAny" :label="t('notifications.deleteAll')">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7 hover:text-red-700 dark:hover:text-red-400"
+              :aria-label="t('notifications.deleteAll')"
+              @click="handleDismissAll"
+            >
+              <Trash2 class="h-3.5 w-3.5" />
+            </Button>
+          </HintTooltip>
+          <HintTooltip :label="t('notifications.managePreferences')">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7"
+              :aria-label="t('notifications.managePreferences')"
+              @click="goToPreferences"
+            >
+              <Settings class="h-3.5 w-3.5" />
+            </Button>
+          </HintTooltip>
         </div>
       </div>
 

@@ -4,6 +4,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+
 import VenueMapEditor from '@/components/venue-map/VenueMapEditor.vue'
 import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
 import VenueDecorPalette from '@/components/venue-map/editor/VenueDecorPalette.vue'
@@ -24,6 +26,14 @@ import i18n from '@/locales/i18n'
  * client point 1:1 to image units (see `clientToImage`): a click at
  * (500, 250) on the 1000×500 plan is the normalised point (0.5, 0.5).
  */
+
+// The buttons' tooltips (reka-ui) measure themselves when they open on focus
+// or hover; jsdom has no ResizeObserver.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 
 const api = {
   get: vi.fn(),
@@ -514,8 +524,7 @@ describe('VenueMapEditor: templates', () => {
         },
       }),
     )
-    const listLoads = () =>
-      api.get.mock.calls.filter((c) => c[0].url === '/venue-templates').length
+    const listLoads = () => api.get.mock.calls.filter((c) => c[0].url === '/venue-templates').length
     const before = listLoads()
     q('plan-name-save').click()
     await flushPromises()
@@ -829,7 +838,7 @@ describe('VenueMapEditor: decoration', () => {
     const wrapper = await mountEditor()
     await wrapper.find('[data-testid="tool-prop"]').trigger('click')
     expect(wrapper.find('[data-testid="draw-hint"]').text()).toBe(
-      'Tipp auf den Plan, um etwas hinzuzufügen: Laubbaum. Mit Esc bist du fertig.',
+      'Tipp auf den Plan, um etwas hinzuzufügen: Laubbaum. Fertig? Tipp auf den Pfeil.',
     )
   })
 
@@ -842,8 +851,8 @@ describe('VenueMapEditor: decoration', () => {
     await wrapper.find('[data-testid="tool-prop"]').trigger('click')
     const palette = wrapper.find('[data-testid="decor-palette"]')
     expect(palette.exists()).toBe(true)
-    expect(palette.text()).not.toContain("has no shifts")
-    expect(wrapper.find('[data-testid="draw-hint"]').text()).toContain('Esc')
+    expect(palette.text()).not.toContain('has no shifts')
+    expect(wrapper.find('[data-testid="draw-hint"]').text()).toContain('Tap the arrow')
 
     await wrapper.find('[data-testid="decor-item-conifer"]').trigger('click')
     expect(wrapper.find('[data-testid="decor-item-conifer"]').attributes('aria-checked')).toBe(
@@ -1034,5 +1043,119 @@ describe('VenueMapEditor: decoration ghost', () => {
     expect(ghost.find('[data-prop="bench"]').exists()).toBe(true)
     await wrapper.find('[data-testid="editor-canvas"]').trigger('pointerleave')
     expect(wrapper.find('[data-testid="draw-prop-ghost"]').exists()).toBe(false)
+  })
+})
+
+describe('VenueMapEditor: the phone sheet', () => {
+  // jsdom applies no CSS: "shut" is the `max-lg:hidden` class on the panel.
+  const isShut = (wrapper: Awaited<ReturnType<typeof mountEditor>>) =>
+    wrapper.get('[data-testid="editor-panel"]').classes().includes('max-lg:hidden')
+
+  it('starts shut, opens with its button and shuts again for placing a pin', async () => {
+    api.post.mockResolvedValue({
+      data: {
+        id: 'm2',
+        plan_id: 'plan-1',
+        kind: 'location',
+        location_id: 'loc-kitchen',
+        x: 0.5,
+        y: 0.5,
+      },
+    })
+    const wrapper = await mountEditor()
+    expect(isShut(wrapper)).toBe(true)
+
+    await wrapper.get('[data-testid="editor-sheet-open"]').trigger('click')
+    expect(isShut(wrapper)).toBe(false)
+    expect(wrapper.get('[data-testid="editor-panel"]').attributes('aria-label')).toBe(
+      'Pins & picture',
+    )
+
+    // Picking a place puts the sheet away, so the plan can be tapped.
+    await wrapper.get('[data-testid="palette-location-loc-kitchen"]').trigger('click')
+    expect(isShut(wrapper)).toBe(true)
+    expect(wrapper.find('[data-testid="editor-sheet-open"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="placement-banner"]').exists()).toBe(true)
+
+    // The new pin is selected, but the sheet stays shut for the next one.
+    await wrapper
+      .get('[data-testid="editor-canvas"]')
+      .trigger('click', { clientX: 500, clientY: 250 })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="marker-panel"]').exists()).toBe(true)
+    expect(isShut(wrapper)).toBe(true)
+    expect(wrapper.get('[data-testid="editor-sheet-open"]').text()).toBe('Selection')
+  })
+
+  it('opens for a tapped pin but not for a dragged one, and hides with its button', async () => {
+    api.patch.mockImplementation(async ({ body }: { body: Record<string, unknown> }) => ({
+      data: { ...plans[0]!.markers![0]!, ...body },
+    }))
+    const wrapper = await mountEditor()
+    const marker = wrapper.get('[data-testid="map-marker-loc-foyer"]').element
+
+    pointer(marker, 'pointerdown', 500, 250)
+    await flushPromises()
+    pointer(marker, 'pointermove', 600, 300)
+    pointer(marker, 'pointerup', 600, 300)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="marker-panel"]').exists()).toBe(true)
+    expect(isShut(wrapper)).toBe(true)
+
+    await wrapper
+      .get('[data-testid="editor-canvas"]')
+      .trigger('click', { clientX: 900, clientY: 50 })
+    await flushPromises()
+    pointer(marker, 'pointerdown', 600, 300)
+    await flushPromises()
+    pointer(marker, 'pointerup', 600, 300)
+    await flushPromises()
+    expect(isShut(wrapper)).toBe(false)
+    expect(wrapper.get('[data-testid="editor-panel"]').attributes('aria-label')).toBe('Selection')
+
+    await wrapper.get('[data-testid="editor-sheet-close"]').trigger('click')
+    expect(isShut(wrapper)).toBe(true)
+    // Still selected: the button on the plan brings it back.
+    expect(wrapper.find('[data-testid="marker-panel"]').exists()).toBe(true)
+  })
+
+  it('opens for a shape picked with the select tool and shuts for another tool', async () => {
+    plans = [blankPlan({ shapes: [rectShape()] })]
+    serverShapes = [rectShape()]
+    const wrapper = await mountEditor()
+    await wrapper.get('[data-testid="venue-shape-shape-1"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
+    expect(isShut(wrapper)).toBe(false)
+
+    await wrapper.get('[data-testid="tool-prop"]').trigger('click')
+    await flushPromises()
+    expect(isShut(wrapper)).toBe(true)
+  })
+
+  it('shuts when a tap on the plan finds nothing to select', async () => {
+    const wrapper = await mountEditor()
+    await wrapper.get('[data-testid="editor-sheet-open"]').trigger('click')
+    await wrapper
+      .get('[data-testid="editor-canvas"]')
+      .trigger('click', { clientX: 900, clientY: 50 })
+    expect(isShut(wrapper)).toBe(true)
+  })
+
+  it('keeps the plan switcher compact and moves redo and snapping into "More"', async () => {
+    const wrapper = await mountEditor()
+    expect(wrapper.get('[data-testid="plan-switcher-menu"]').text()).toBe('Grounds')
+    expect(wrapper.get('[data-testid="tool-more"]').attributes('aria-label')).toBe('More')
+  })
+
+  it('anchors the menus behind a hint to their own buttons', async () => {
+    // A menu trigger inside HintTooltip registers with the tooltip, not its
+    // menu; without an explicit reference the menu opens off-screen.
+    const wrapper = await mountEditor()
+    const references = wrapper
+      .findAllComponents(DropdownMenuContent)
+      .map((menu) => menu.props('reference'))
+    expect(references).toContain(q('plan-actions'))
+    expect(references).toContain(q('tool-more'))
   })
 })

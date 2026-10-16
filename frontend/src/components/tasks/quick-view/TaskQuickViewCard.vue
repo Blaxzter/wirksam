@@ -10,6 +10,7 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import type { FeedTaskItem, FeedShiftEntry, ShiftWindowResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -213,16 +214,17 @@ watch(
           <span class="text-xs text-muted-foreground">
             {{ t('duties.tasks.quickView.availableShifts', { count: totalAvailableShifts }) }}
           </span>
-          <Button
-            v-if="canManage"
-            variant="ghost"
-            size="icon"
-            class="h-6 w-6"
-            :aria-label="t('duties.tasks.delete')"
-            @click.stop="emit('delete', task)"
-          >
-            <Trash2 class="h-3.5 w-3.5 text-destructive" />
-          </Button>
+          <HintTooltip v-if="canManage" :label="t('duties.tasks.delete')">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-6 w-6"
+              :aria-label="t('duties.tasks.delete')"
+              @click.stop="emit('delete', task)"
+            >
+              <Trash2 class="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </HintTooltip>
         </div>
       </div>
 

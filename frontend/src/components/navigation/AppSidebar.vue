@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 
-import { useColorMode } from '@vueuse/core'
 import {
   BarChart3,
   Bell,
@@ -15,6 +14,7 @@ import {
   Map as MapIcon,
   Users,
 } from '@lucide/vue'
+import { useColorMode } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -45,6 +45,7 @@ import EventSwitcherMenu from '@/components/navigation/EventSwitcherMenu.vue'
 import NavMain from '@/components/navigation/NavMain.vue'
 import type { NavSubItem } from '@/components/navigation/NavMain.vue'
 import NavUser from '@/components/navigation/NavUser.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 interface AppSidebarProps extends SidebarProps {
   open?: boolean
@@ -65,10 +66,11 @@ const notificationDisplayCount = computed(() => {
   return notificationStore.unreadCount.toString()
 })
 
-const showEventSwitcher = computed(
-  () => authStore.profile?.show_event_switcher_in_nav ?? false,
-)
+const showEventSwitcher = computed(() => authStore.profile?.show_event_switcher_in_nav ?? false)
 const selectedEventName = computed(() => authStore.selectedEvent?.name ?? '')
+const switcherLabel = computed(
+  () => selectedEventName.value || t('navigation.sidebar.eventSwitcher.empty'),
+)
 const { isMobile, setOpenMobile, state } = useSidebar()
 const router = useRouter()
 const route = useRoute()
@@ -265,9 +267,16 @@ const navAdmin = computed(() => {
               state === 'collapsed' ? 'justify-center px-0 py-2' : '',
               open ? 'bg-accent' : '',
             ]"
-            :title="state === 'collapsed' ? selectedEventName : undefined"
+            :aria-label="state === 'collapsed' ? switcherLabel : undefined"
           >
-            <CalendarRange class="size-4 shrink-0 text-muted-foreground" />
+            <!-- The popover owns the button as its trigger, so the hint sits on
+                 the icon, which is all the collapsed button shows. -->
+            <HintTooltip v-if="state === 'collapsed'" :label="switcherLabel" side="right">
+              <span class="flex w-full justify-center">
+                <CalendarRange class="size-4 shrink-0 text-muted-foreground" />
+              </span>
+            </HintTooltip>
+            <CalendarRange v-else class="size-4 shrink-0 text-muted-foreground" />
             <div v-if="state !== 'collapsed'" class="min-w-0 flex-1">
               <p class="truncate font-medium leading-tight">
                 {{ selectedEventName || t('navigation.sidebar.eventSwitcher.empty') }}
@@ -353,6 +362,11 @@ const navAdmin = computed(() => {
         <span v-if="hasNewVersions" class="size-1.5 rounded-full bg-primary" />
       </RouterLink>
     </SidebarFooter>
-    <SidebarRail />
+    <!--
+      No native `title` (shadcn ships an English one): the resize cursor is the
+      hint here, and a tooltip anchored to a full-height strip would float
+      mid-screen over the menu. The header's toggle carries the tooltip.
+    -->
+    <SidebarRail title="" :aria-label="t('navigation.sidebar.toggle')" />
   </Sidebar>
 </template>

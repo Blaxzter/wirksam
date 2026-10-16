@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 import VenueMarkerGlyph from '@/components/venue-map/VenueMarkerGlyph.vue'
 import VenueMarkerPill from '@/components/venue-map/VenueMarkerPill.vue'
+import VenuePinHint from '@/components/venue-map/VenuePinHint.vue'
 import VenueShapeLayer from '@/components/venue-map/VenueShapeLayer.vue'
 
 import type { LocationRead, VenueMarkerRead, VenuePlanRead } from '@/client/types.gen'
@@ -344,6 +345,7 @@ defineExpose({
       </template>
       <slot :width="width" :height="height" :units-per-pixel="unitsPerPixel" />
     </svg>
+    <VenuePinHint :container="svgRef" />
 
     <div v-if="loading" class="absolute inset-0" role="status">
       <Skeleton class="h-full w-full rounded-none" />

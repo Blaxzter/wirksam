@@ -1,22 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import {
-  Bell,
-  CheckCheck,
-  ExternalLink,
-  Loader2,
-  Settings,
-  Trash2,
-} from '@lucide/vue'
+import { Bell, CheckCheck, ExternalLink, Loader2, Settings, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import {
+  NOTIFICATION_CLASSIFICATIONS,
   type NotificationClassification,
   type NotificationItem,
-  NOTIFICATION_CLASSIFICATIONS,
   useNotificationStore,
 } from '@/stores/notification'
 
@@ -24,6 +17,8 @@ import { useDialog } from '@/composables/useDialog'
 
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -71,12 +66,14 @@ const filterPills = computed<{ key: Filter; label: string; count: number }[]>(()
 ])
 
 function pluralKey(c: NotificationClassification): string {
-  return ({
-    reminder: 'reminders',
-    change: 'changes',
-    match: 'matches',
-    announcement: 'announcements',
-  } as const)[c]
+  return (
+    {
+      reminder: 'reminders',
+      change: 'changes',
+      match: 'matches',
+      announcement: 'announcements',
+    } as const
+  )[c]
 }
 
 const TONE_BY_CLASSIFICATION: Record<NotificationClassification, { bg: string; fg: string }> = {
@@ -135,8 +132,7 @@ function routeFor(n: NotificationItem) {
   const data = n.data
   if (!data) return null
   if (data.task_id) return { name: 'task-detail', params: { eventId: data.task_id as string } }
-  if (data.event_id)
-    return { name: 'event-settings', params: { eventId: data.event_id as string } }
+  if (data.event_id) return { name: 'event-settings', params: { eventId: data.event_id as string } }
   if (data.booking_id) return { name: 'my-bookings' }
   return null
 }
@@ -297,27 +293,28 @@ onMounted(() => {
         >
           {{ t('notifications.markAllRead') }}
         </button>
-        <Button
-          v-if="hasAny"
-          variant="ghost"
-          size="icon"
-          class="h-7 w-7 hover:text-red-700 dark:hover:text-red-400"
-          :title="t('notifications.deleteAll')"
-          :aria-label="t('notifications.deleteAll')"
-          @click="handleDismissAll"
-        >
-          <Trash2 class="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          class="h-7 w-7"
-          :title="t('notifications.managePreferences')"
-          :aria-label="t('notifications.managePreferences')"
-          @click="goToPreferences"
-        >
-          <Settings class="h-3.5 w-3.5" />
-        </Button>
+        <HintTooltip v-if="hasAny" :label="t('notifications.deleteAll')">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-7 w-7 hover:text-red-700 dark:hover:text-red-400"
+            :aria-label="t('notifications.deleteAll')"
+            @click="handleDismissAll"
+          >
+            <Trash2 class="h-3.5 w-3.5" />
+          </Button>
+        </HintTooltip>
+        <HintTooltip :label="t('notifications.managePreferences')">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-7 w-7"
+            :aria-label="t('notifications.managePreferences')"
+            @click="goToPreferences"
+          >
+            <Settings class="h-3.5 w-3.5" />
+          </Button>
+        </HintTooltip>
       </div>
     </div>
 
@@ -401,10 +398,7 @@ onMounted(() => {
 
     <!-- Mobile: flat list with row dividers, no card chrome.
          Desktop (sm+): each entry becomes its own card with spacing. -->
-    <ul
-      v-else
-      class="divide-border divide-y sm:divide-y-0 sm:divide-transparent sm:space-y-2"
-    >
+    <ul v-else class="divide-border divide-y sm:divide-y-0 sm:divide-transparent sm:space-y-2">
       <li
         v-for="n in filtered"
         :key="n.id"
@@ -497,27 +491,28 @@ onMounted(() => {
             data-no-swipe
             class="bg-background border-border absolute top-2 right-2 flex gap-1 rounded-md border p-0.5 shadow-sm"
           >
-            <Button
-              v-if="!n.is_read"
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 cursor-pointer hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
-              :title="t('notifications.markRead')"
-              :aria-label="t('notifications.markRead')"
-              @click.stop="handleMarkAsRead(n.id)"
-            >
-              <CheckCheck class="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-              :title="t('notifications.dismiss')"
-              :aria-label="t('notifications.dismiss')"
-              @click.stop="handleDismiss(n.id)"
-            >
-              <Trash2 class="h-3.5 w-3.5" />
-            </Button>
+            <HintTooltip v-if="!n.is_read" :label="t('notifications.markRead')">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7 cursor-pointer hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
+                :aria-label="t('notifications.markRead')"
+                @click.stop="handleMarkAsRead(n.id)"
+              >
+                <CheckCheck class="h-3.5 w-3.5" />
+              </Button>
+            </HintTooltip>
+            <HintTooltip :label="t('notifications.dismiss')">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                :aria-label="t('notifications.dismiss')"
+                @click.stop="handleDismiss(n.id)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </Button>
+            </HintTooltip>
           </div>
         </div>
       </li>

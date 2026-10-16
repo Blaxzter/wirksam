@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import {
+  type ComponentPublicInstance,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch,
+} from 'vue'
 
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   EllipsisVertical,
   ImageMinus,
   ImageOff,
   LayoutTemplate,
   Map as MapIcon,
+  MapPin,
   Maximize,
   Minus,
   Pencil,
   Plus,
+  SlidersHorizontal,
   Trash2,
   Undo2,
   X,
@@ -54,9 +65,11 @@ import {
 } from '@/components/ui/responsive-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueMarkerGlyph from '@/components/venue-map/VenueMarkerGlyph.vue'
 import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
 import VenueMarkerPill from '@/components/venue-map/VenueMarkerPill.vue'
+import VenuePinHint from '@/components/venue-map/VenuePinHint.vue'
 import VenuePlanSwitcher from '@/components/venue-map/VenuePlanSwitcher.vue'
 import VenuePlanUpload from '@/components/venue-map/VenuePlanUpload.vue'
 import VenueShapeLayer from '@/components/venue-map/VenueShapeLayer.vue'
@@ -120,6 +133,10 @@ import { planSize, planSurfaceClass, sortShapes } from '@/lib/venue-shapes'
  * where an admin flips into editing in place. `embedded` is the latter: no
  * heading, the editor fills its parent's height, and the `actions` slot (the
  * page's "Done" button) sits at the end of the plan row.
+ *
+ * Below the `lg` breakpoint the plan gets the whole height: the plans are a
+ * menu, the tools sit under the plan (in thumb reach), and the side panel is a
+ * bottom sheet over the plan that opens on demand (see "Phone sheet" below).
  *
  * In a demo (`sandbox`) the server refuses picture uploads, so the editor says
  * so instead of offering an upload that can only fail. Drawing is allowed.
@@ -596,6 +613,8 @@ function onSvgPointerDown(event: PointerEvent) {
  */
 function onSelectShape(shape: { id: string }, event: MouseEvent | KeyboardEvent) {
   if (event instanceof MouseEvent && tool.value !== 'select') return
+  // Placing a pin: the tap is for the pin (the plan's click handler), not the shape.
+  if (event instanceof MouseEvent && placing.value) return
   editor.select(shape.id)
 }
 
@@ -631,6 +650,8 @@ function startPlacing(next: Placing) {
   placing.value = placing.value?.key === next.key ? null : next
   selectedMarkerId.value = null
   editor.select(null)
+  // On a phone the sheet covers the plan the pin goes on: out of the way.
+  sheetOpen.value = false
   // On a phone the palette sits below the map; bring the map back into view.
   if (placing.value) {
     void nextTick(() => canvasRef.value?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }))
@@ -679,6 +700,8 @@ async function placeAt(point: Point) {
     ;(current.markers ??= []).push(res.data)
     emit('changed')
     placing.value = null
+    // Selected for the arrow keys; the phone sheet stays shut for the next pin.
+    quietSelection = true
     selectedMarkerId.value = res.data.id
     // Focus the new pin, so the arrow keys nudge it straight away; the banner
     // that held focus has just gone.
@@ -700,6 +723,8 @@ function onCanvasClick(event: MouseEvent) {
     return
   }
   if (!placing.value) {
+    // A tap on the plan puts the phone sheet away (a selection also closes it).
+    if (!hasSelection.value) sheetOpen.value = false
     selectedMarkerId.value = null
     if (tool.value === 'select' && pressTarget(event) === null) editor.select(null)
     return
@@ -897,6 +922,90 @@ function onMarkerPointerUp(event: PointerEvent) {
   })
 }
 
+// ── Phone sheet ───────────────────────────────────────────────────────────
+/**
+ * Below `lg` the side panel is a bottom sheet over the plan. It is shut by
+ * default, so the plan has the whole height, and opens with the "Pins &
+ * picture" button on the plan, or on its own when a shape or pin is tapped
+ * with the select tool, or a text is started. A drag selects without opening
+ * it, and so does a freshly drawn shape or placed pin (the next one is drawn
+ * or placed on the plan). On a wide screen it is a plain side panel and
+ * `sheetOpen` changes nothing.
+ */
+const sheetOpen = ref(false)
+const hasSelection = computed(
+  () => !!selectedShape.value || !!selectedMarker.value || draft.value?.tool === 'label',
+)
+/** A pointer is down: wait for it to come up, since a drag must not open the sheet. */
+let pressing = false
+let openAfterPress = false
+/** The next selection is the editor's own (a pin just placed), not a tap. */
+let quietSelection = false
+
+watch(
+  () => [selectedShapeId.value, selectedMarkerId.value, draft.value?.tool === 'label'] as const,
+  ([shapeId, markerId, label], [prevShape, prevMarker, prevLabel]) => {
+    const picked =
+      (!!shapeId && shapeId !== prevShape && tool.value === 'select') ||
+      (!!markerId && markerId !== prevMarker)
+    const quiet = quietSelection
+    quietSelection = false
+    if (label && !prevLabel) sheetOpen.value = true
+    else if (!picked || quiet) return
+    else if (pressing) openAfterPress = true
+    else sheetOpen.value = true
+  },
+)
+
+// Another tool: the plan (and the Deko strip) need the room.
+watch(tool, () => {
+  sheetOpen.value = false
+})
+
+// Nothing selected any more: the sheet showed only that, so it goes too.
+watch(hasSelection, (has) => {
+  if (!has) sheetOpen.value = false
+})
+
+useEventListener(
+  window,
+  'pointerdown',
+  () => {
+    pressing = true
+    openAfterPress = false
+  },
+  { capture: true },
+)
+useEventListener(
+  window,
+  'pointerup',
+  () => {
+    const dragged = editor.dragging.value || !!drag?.moved
+    pressing = false
+    if (openAfterPress && !dragged && hasSelection.value) sheetOpen.value = true
+    openAfterPress = false
+  },
+  { capture: true },
+)
+useEventListener(
+  window,
+  'pointercancel',
+  () => {
+    pressing = false
+    openAfterPress = false
+  },
+  { capture: true },
+)
+
+const sheetTitle = computed(() =>
+  hasSelection.value ? t('mapEditor.sheet.selection') : t('mapEditor.sheet.pins'),
+)
+
+/** The "Pins & picture" button on the plan; the drawing hints and bars take the bottom otherwise. */
+const showSheetButton = computed(
+  () => !sheetOpen.value && !placing.value && !lineDraft.value && tool.value !== 'prop',
+)
+
 // ── Keyboard (pins) ───────────────────────────────────────────────────────
 const NUDGE = 0.005
 const NUDGE_LARGE = 0.02
@@ -964,6 +1073,11 @@ onBeforeUnmount(() => {
   for (const id of [...nudgeTimers.keys()]) flushNudge(id)
   editor.flushNudge()
 })
+
+// The menu trigger sits inside a HintTooltip, so it anchors to the tooltip,
+// not to its own menu: the menu content is told where the button is, or it
+// opens off-screen (reka-ui finds an anchor through the nearest popup root).
+const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsButton')
 </script>
 
 <template>
@@ -986,21 +1100,26 @@ onBeforeUnmount(() => {
         v-if="!loading && !loadError && plans.length > 0"
         v-model="planModel"
         :plans="plans"
+        compact
         class="min-w-0 flex-1"
       >
         <template #trailing>
           <DropdownMenu v-if="plan">
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                :aria-label="t('mapEditor.plans.actions')"
-                data-testid="plan-actions"
-              >
-                <EllipsisVertical />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <HintTooltip :label="t('mapEditor.plans.actions')">
+              <DropdownMenuTrigger as-child>
+                <Button
+                  ref="planActionsButton"
+                  variant="outline"
+                  size="icon-sm"
+                  class="max-lg:size-9"
+                  :aria-label="t('mapEditor.plans.actions')"
+                  data-testid="plan-actions"
+                >
+                  <EllipsisVertical />
+                </Button>
+              </DropdownMenuTrigger>
+            </HintTooltip>
+            <DropdownMenuContent align="end" :reference="planActionsButton?.$el">
               <DropdownMenuItem data-testid="plan-rename" @select="openRename">
                 <Pencil />
                 {{ t('mapEditor.plans.rename') }}
@@ -1045,6 +1164,7 @@ onBeforeUnmount(() => {
           <Button
             variant="outline"
             size="sm"
+            class="max-lg:size-9 max-lg:px-0"
             :aria-label="t('mapEditor.plans.add')"
             data-testid="plan-add"
             @click="openCreate"
@@ -1092,15 +1212,17 @@ onBeforeUnmount(() => {
 
     <div
       v-else-if="plan"
-      class="grid gap-4"
+      class="relative grid gap-4"
       :class="
         embedded
-          ? 'min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1'
+          ? 'min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]'
           : 'lg:grid-cols-[minmax(0,1fr)_18rem]'
       "
     >
       <div class="flex min-h-0 min-w-0 flex-col gap-2">
+        <!-- On a phone the tools go under the plan, in thumb reach. -->
         <VenueEditorToolbar
+          class="max-lg:order-last"
           :tool="tool"
           :snap-enabled="snapEnabled"
           :can-undo="history.canUndo.value"
@@ -1219,6 +1341,7 @@ onBeforeUnmount(() => {
               :selected-vertex="selectedVertex"
             />
           </svg>
+          <VenuePinHint :container="svgRef" />
 
           <div v-if="hasImage && imageLoading" class="absolute inset-0" role="status">
             <Skeleton class="h-full w-full rounded-none" />
@@ -1239,12 +1362,14 @@ onBeforeUnmount(() => {
             role="status"
             data-testid="placement-banner"
           >
-            <span class="min-w-0 flex-1">{{
+            <!-- Too narrow for text and buttons side by side: the buttons wrap below. -->
+            <span class="min-w-0 grow basis-48">{{
               t('mapEditor.place.banner', { name: placing.name })
             }}</span>
             <Button
               size="sm"
               variant="secondary"
+              class="ml-auto"
               :disabled="creatingMarker"
               data-testid="placement-centre"
               @click="placeInCentre"
@@ -1311,45 +1436,98 @@ onBeforeUnmount(() => {
             v-if="tool === 'prop'"
             :model-value="activeProp"
             mode="stamp"
-            class="absolute bottom-2 left-2 right-12"
+            class="absolute right-12 bottom-2 left-2 pointer-coarse:right-14"
             @update:model-value="editor.pickProp"
             @pick-line="editor.pickLinePreset"
             @pick-area="editor.pickAreaPreset"
           />
 
+          <!-- Phones: the side panel is a sheet; this opens it. -->
+          <Button
+            v-if="showSheetButton"
+            size="sm"
+            variant="secondary"
+            class="absolute bottom-2 left-2 h-10 max-w-[calc(100%-4.5rem)] border shadow-md lg:hidden"
+            aria-controls="map-editor-panel"
+            :aria-expanded="false"
+            data-testid="editor-sheet-open"
+            @click="sheetOpen = true"
+          >
+            <SlidersHorizontal v-if="hasSelection" />
+            <MapPin v-else />
+            <span class="truncate">{{ sheetTitle }}</span>
+          </Button>
+
           <div class="absolute right-2 bottom-2 flex flex-col gap-1">
-            <Button
-              size="icon-sm"
-              variant="secondary"
-              class="shadow"
-              :aria-label="t('venueMap.canvas.zoomIn')"
-              @click="panZoom.zoomIn()"
-            >
-              <Plus />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="secondary"
-              class="shadow"
-              :aria-label="t('venueMap.canvas.zoomOut')"
-              @click="panZoom.zoomOut()"
-            >
-              <Minus />
-            </Button>
-            <Button
-              size="icon-sm"
-              variant="secondary"
-              class="shadow"
-              :aria-label="t('venueMap.canvas.reset')"
-              @click="panZoom.reset()"
-            >
-              <Maximize />
-            </Button>
+            <HintTooltip :label="t('venueMap.canvas.zoomIn')" side="left">
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                class="shadow pointer-coarse:size-10"
+                :aria-label="t('venueMap.canvas.zoomIn')"
+                @click="panZoom.zoomIn()"
+              >
+                <Plus />
+              </Button>
+            </HintTooltip>
+            <HintTooltip :label="t('venueMap.canvas.zoomOut')" side="left">
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                class="shadow pointer-coarse:size-10"
+                :aria-label="t('venueMap.canvas.zoomOut')"
+                @click="panZoom.zoomOut()"
+              >
+                <Minus />
+              </Button>
+            </HintTooltip>
+            <HintTooltip :label="t('venueMap.canvas.reset')" side="left">
+              <Button
+                size="icon-sm"
+                variant="secondary"
+                class="shadow pointer-coarse:size-10"
+                :aria-label="t('venueMap.canvas.reset')"
+                @click="panZoom.reset()"
+              >
+                <Maximize />
+              </Button>
+            </HintTooltip>
           </div>
         </div>
       </div>
 
-      <aside class="space-y-4" :class="embedded ? 'min-h-0 overflow-y-auto pb-1' : ''">
+      <!--
+        Wide screens: the column beside the plan. Phones: a bottom sheet over
+        the plan (and its tools), shut until asked for.
+      -->
+      <aside
+        id="map-editor-panel"
+        class="space-y-4 max-lg:absolute max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-20 max-lg:max-h-[60%] max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:rounded-t-xl max-lg:border max-lg:bg-background max-lg:px-3 max-lg:pb-3 max-lg:shadow-2xl"
+        :class="[embedded ? 'min-h-0 overflow-y-auto pb-1' : '', sheetOpen ? '' : 'max-lg:hidden']"
+        :aria-label="sheetTitle"
+        data-testid="editor-panel"
+      >
+        <div
+          class="bg-background sticky top-0 z-10 -mx-3 flex items-center gap-2 border-b px-3 py-1.5 lg:hidden"
+        >
+          <span
+            class="bg-muted absolute top-1 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full"
+            aria-hidden="true"
+          />
+          <p class="min-w-0 flex-1 truncate pt-1 text-sm font-semibold">{{ sheetTitle }}</p>
+          <HintTooltip :label="t('mapEditor.sheet.hide')">
+            <Button
+              size="icon"
+              variant="ghost"
+              class="mt-1"
+              :aria-label="t('mapEditor.sheet.hide')"
+              data-testid="editor-sheet-close"
+              @click="sheetOpen = false"
+            >
+              <ChevronDown />
+            </Button>
+          </HintTooltip>
+        </div>
         <VenueShapeInspector
           v-if="selectedShape || draft?.tool === 'label'"
           ref="inspectorRef"
@@ -1438,7 +1616,10 @@ onBeforeUnmount(() => {
           </Button>
         </section>
 
-        <div class="rounded-lg border p-3">
+        <div
+          class="rounded-lg border p-3 max-lg:border-0 max-lg:p-0"
+          :class="hasSelection ? 'max-lg:hidden' : ''"
+        >
           <VenueMarkerPalette
             :locations="locations"
             :placed-location-ids="placedLocationIds"
@@ -1450,8 +1631,11 @@ onBeforeUnmount(() => {
         </div>
 
         <section
-          class="space-y-2 rounded-lg border p-3"
-          :class="wantsPicture.has(plan.id) && !hasImage ? 'ring-primary/40 ring-2' : ''"
+          class="space-y-2 rounded-lg border p-3 max-lg:rounded-none max-lg:border-0 max-lg:border-t max-lg:px-0 max-lg:pb-0"
+          :class="[
+            wantsPicture.has(plan.id) && !hasImage ? 'ring-primary/40 ring-2' : '',
+            hasSelection ? 'max-lg:hidden' : '',
+          ]"
           :aria-label="t('mapEditor.picture.title')"
           data-testid="picture-card"
         >

@@ -18,6 +18,14 @@ import i18n from '@/locales/i18n'
  * the empty state, renaming and deleting from a card, and the thumbnail.
  */
 
+// The template menus' tooltips (reka-ui) measure themselves when they open on
+// focus or hover; jsdom has no ResizeObserver.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 const api = {
   get: vi.fn(),
   post: vi.fn(),

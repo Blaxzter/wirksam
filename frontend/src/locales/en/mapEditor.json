@@ -46,7 +46,7 @@
         "labelPlaceholder": "e.g. Main hall",
         "pathHint": "Tap to add points. Double-tap or press Finish to end the line.",
         "polygonHint": "Tap to add corners. Tap the first corner or press Close shape to finish.",
-        "propHint": "Tap the map to add: {name}. Press Esc when you're done.",
+        "propHint": "Tap the map to add: {name}. Done? Tap the arrow.",
         "rectHint": "Drag to draw a rectangle.",
         "saved": "All changes saved",
         "saving": "Saving…",
@@ -146,6 +146,11 @@
         "tab": "Map",
         "title": "Venue map"
     },
+    "sheet": {
+        "hide": "Hide",
+        "pins": "Pins & picture",
+        "selection": "Selection"
+    },
     "templates": {
         "actions": "Options for template “{name}”",
         "createdFrom": "Map added from the template. Now place your pins.",
@@ -169,6 +174,7 @@
     },
     "tools": {
         "label": "Text",
+        "more": "More",
         "path": "Line",
         "polygon": "Shape",
         "prop": "Decoration",

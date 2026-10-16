@@ -56,8 +56,13 @@ test.describe('Venue map – helper view', () => {
       .toBeLessThanOrEqual(0)
     // Nothing booked yet, so nothing is highlighted.
     await expect(pin.getByTestId('marker-highlight')).toHaveCount(0)
+    // Hovering a pin names it in the app's tooltip (no native title).
+    await pin.hover()
+    await expect(page.getByTestId('map-pin-hint')).toContainText(location.name)
+    await expect(pin.locator('title')).toHaveCount(0)
 
     await pin.click()
+    await expect(page.getByTestId('map-pin-hint')).toHaveCount(0)
     const sheet = page.getByTestId('location-sheet')
     await expect(sheet.getByTestId('location-sheet-title')).toHaveText(location.name)
     await expect(sheet.getByTestId('location-description-body').locator('strong')).toHaveText(

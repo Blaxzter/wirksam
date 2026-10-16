@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useFormatters } from '@/composables/useFormatters'
 
 import Button from '@/components/ui/button/Button.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 export interface DayShiftEntry {
   slotId: string
@@ -131,13 +132,15 @@ defineExpose({ totalHidden, maxShiftCount })
   <div class="flex h-full flex-col">
     <!-- Header row: arrows + day labels -->
     <div class="flex items-center">
-      <button
-        class="flex w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-        :aria-label="t('duties.tasks.quickView.previousDays')"
-        @click="emit('previous')"
-      >
-        <ChevronLeft class="h-4 w-4" />
-      </button>
+      <HintTooltip :label="t('duties.tasks.quickView.previousDays')">
+        <button
+          class="flex w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+          :aria-label="t('duties.tasks.quickView.previousDays')"
+          @click="emit('previous')"
+        >
+          <ChevronLeft class="h-4 w-4" />
+        </button>
+      </HintTooltip>
 
       <div class="grid flex-1" :style="{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }">
         <div
@@ -161,13 +164,15 @@ defineExpose({ totalHidden, maxShiftCount })
         </div>
       </div>
 
-      <button
-        class="flex w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-        :aria-label="t('duties.tasks.quickView.nextDays')"
-        @click="emit('next')"
-      >
-        <ChevronRight class="h-4 w-4" />
-      </button>
+      <HintTooltip :label="t('duties.tasks.quickView.nextDays')">
+        <button
+          class="flex w-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+          :aria-label="t('duties.tasks.quickView.nextDays')"
+          @click="emit('next')"
+        >
+          <ChevronRight class="h-4 w-4" />
+        </button>
+      </HintTooltip>
     </div>
 
     <!-- Shift grid: no arrows, grows to fill -->

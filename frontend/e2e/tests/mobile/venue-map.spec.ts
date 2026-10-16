@@ -79,10 +79,39 @@ test.describe('Venue map – on a phone', () => {
     const plan = await createVenuePlan(page, seeded.event.id, { name: 'Skizze', canvas: 'square' })
     await page.goto(`/app/event-settings/${seeded.event.id}?tab=map`)
     const editor = page.getByTestId('venue-map-editor')
-    await editor.getByTestId('plan-switcher').getByRole('button', { name: 'Skizze' }).tap()
+    // Plans are a menu on a phone; chips would be cut off.
+    await editor.getByTestId('plan-switcher-menu').tap()
+    await page.getByTestId(`plan-switcher-option-${plan.id}`).tap()
+    await expect(editor.getByTestId('plan-switcher-menu')).toHaveText('Skizze')
     const canvas = editor.getByTestId('editor-canvas')
     await expect(canvas).toBeVisible()
     await expect(editor.getByTestId('draw-hint')).toBeVisible()
+
+    // Every tool fits the width (redo and snapping sit in "More"), touch-sized.
+    const viewport = page.viewportSize()!
+    const more = (await editor.getByTestId('tool-more').boundingBox())!
+    expect(more.x + more.width).toBeLessThanOrEqual(viewport.width)
+    expect(more.height).toBeGreaterThanOrEqual(40)
+
+    // "More" opens on screen, next to its button (a menu behind a hint once
+    // opened off the top of the page).
+    await editor.getByTestId('tool-more').tap()
+    await expect(page.getByTestId('tool-snap-menu')).toBeVisible()
+    const snap = (await page.getByTestId('tool-snap-menu').boundingBox())!
+    expect(snap.y).toBeGreaterThanOrEqual(0)
+    expect(snap.y + snap.height).toBeLessThanOrEqual(viewport.height)
+    expect(snap.x).toBeGreaterThanOrEqual(0)
+    expect(snap.x + snap.width).toBeLessThanOrEqual(viewport.width)
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('tool-snap-menu')).toHaveCount(0)
+
+    // The side panel is a sheet over the plan, shut until asked for.
+    const panel = editor.getByTestId('editor-panel')
+    await expect(panel).toBeHidden()
+    await editor.getByTestId('editor-sheet-open').tap()
+    await expect(panel.getByTestId('marker-palette')).toBeVisible()
+    await panel.getByTestId('editor-sheet-close').tap()
+    await expect(panel).toBeHidden()
 
     await editor.getByTestId('tool-polygon').tap()
     const box = (await canvas.boundingBox())!

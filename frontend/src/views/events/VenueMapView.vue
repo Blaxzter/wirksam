@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import {
+  type ComponentPublicInstance,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch,
+} from 'vue'
 
 import {
   Check,
@@ -51,6 +59,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Toggle } from '@/components/ui/toggle'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueLocationDetails from '@/components/venue-map/VenueLocationDetails.vue'
 import VenueLocationSheet from '@/components/venue-map/VenueLocationSheet.vue'
 import VenueMapCanvas from '@/components/venue-map/VenueMapCanvas.vue'
@@ -639,6 +648,11 @@ const planHasLandmarks = computed(() =>
 
 // Last, so everything init() touches is declared.
 watch(eventId, () => void init(), { immediate: true })
+
+// The menu trigger sits inside a HintTooltip, so it anchors to the tooltip,
+// not to its own menu: the menu content is told where the button is, or it
+// opens off-screen (reka-ui finds an anchor through the nearest popup root).
+const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
 </script>
 
 <template>
@@ -681,17 +695,18 @@ watch(eventId, () => void init(), { immediate: true })
         <div v-else class="hidden flex-1 lg:block" />
 
         <!-- Small screens: an icon until tapped; the field would be too narrow to read. -->
-        <Button
-          v-if="plans.length > 0 && !searchOpen"
-          variant="outline"
-          size="icon"
-          class="size-9 shrink-0 lg:hidden"
-          :aria-label="t('venueMap.view.search')"
-          data-testid="map-search-open"
-          @click="openSearch"
-        >
-          <Search class="size-4" />
-        </Button>
+        <HintTooltip v-if="plans.length > 0 && !searchOpen" :label="t('venueMap.view.search')">
+          <Button
+            variant="outline"
+            size="icon"
+            class="size-9 shrink-0 lg:hidden"
+            :aria-label="t('venueMap.view.search')"
+            data-testid="map-search-open"
+            @click="openSearch"
+          >
+            <Search class="size-4" />
+          </Button>
+        </HintTooltip>
         <div v-if="!searchOpen" class="flex-1 lg:hidden" />
 
         <div
@@ -760,30 +775,33 @@ watch(eventId, () => void init(), { immediate: true })
             </li>
           </ul>
         </div>
-        <Button
-          v-if="searchOpen"
-          variant="ghost"
-          size="icon"
-          class="size-9 shrink-0 lg:hidden"
-          :aria-label="t('venueMap.view.closeSearch')"
-          data-testid="map-search-close"
-          @mousedown.prevent
-          @click="closeSearch"
-        >
-          <X class="size-4" />
-        </Button>
+        <HintTooltip v-if="searchOpen" :label="t('venueMap.view.closeSearch')">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="size-9 shrink-0 lg:hidden"
+            :aria-label="t('venueMap.view.closeSearch')"
+            data-testid="map-search-close"
+            @mousedown.prevent
+            @click="closeSearch"
+          >
+            <X class="size-4" />
+          </Button>
+        </HintTooltip>
 
-        <Toggle
-          v-if="plans.length > 0"
-          v-model="myShiftsOn"
-          variant="outline"
-          class="hidden h-9 shrink-0 lg:inline-flex"
-          :title="t('venueMap.view.myShiftsHint')"
-          data-testid="map-my-shifts"
-        >
-          <Star />
-          {{ t('venueMap.view.myShifts') }}
-        </Toggle>
+        <!-- The tooltip's data-state overrides the Toggle's "on", so the
+             pressed look keys off aria-pressed instead. -->
+        <HintTooltip v-if="plans.length > 0" :label="t('venueMap.view.myShiftsHint')">
+          <Toggle
+            v-model="myShiftsOn"
+            variant="outline"
+            class="aria-pressed:bg-accent aria-pressed:text-accent-foreground hidden h-9 shrink-0 lg:inline-flex"
+            data-testid="map-my-shifts"
+          >
+            <Star />
+            {{ t('venueMap.view.myShifts') }}
+          </Toggle>
+        </HintTooltip>
 
         <div
           class="flex shrink-0 items-center"
@@ -791,17 +809,19 @@ watch(eventId, () => void init(), { immediate: true })
           role="group"
           :aria-label="t('venueMap.view.day.label')"
         >
-          <Button
-            variant="ghost"
-            size="icon"
-            class="size-9"
-            :disabled="!canGoPrev"
-            :aria-label="t('venueMap.view.day.prev')"
-            data-testid="map-day-prev"
-            @click="moveDay(-1)"
-          >
-            <ChevronLeft class="size-4" />
-          </Button>
+          <HintTooltip :label="t('venueMap.view.day.prev')" :disabled="!canGoPrev">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-9"
+              :disabled="!canGoPrev"
+              :aria-label="t('venueMap.view.day.prev')"
+              data-testid="map-day-prev"
+              @click="moveDay(-1)"
+            >
+              <ChevronLeft class="size-4" />
+            </Button>
+          </HintTooltip>
           <span
             class="relative min-w-[5.5rem] text-center text-sm font-medium tabular-nums lg:min-w-28"
             aria-live="polite"
@@ -815,49 +835,54 @@ watch(eventId, () => void init(), { immediate: true })
               data-testid="map-day-loading"
             />
           </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="size-9"
-            :disabled="!canGoNext"
-            :aria-label="t('venueMap.view.day.next')"
-            data-testid="map-day-next"
-            @click="moveDay(1)"
-          >
-            <ChevronRight class="size-4" />
-          </Button>
+          <HintTooltip :label="t('venueMap.view.day.next')" :disabled="!canGoNext">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-9"
+              :disabled="!canGoNext"
+              :aria-label="t('venueMap.view.day.next')"
+              data-testid="map-day-next"
+              @click="moveDay(1)"
+            >
+              <ChevronRight class="size-4" />
+            </Button>
+          </HintTooltip>
         </div>
 
         <!-- Always in sight for admins: icon only on a small screen. -->
-        <Button
-          v-if="canManage"
-          variant="outline"
-          size="sm"
-          class="h-9 shrink-0 max-lg:w-9 max-lg:px-0"
-          :class="searchOpen ? 'max-lg:hidden' : ''"
-          :title="t('venueMap.view.edit')"
-          data-testid="map-edit"
-          @click="startEditing"
-        >
-          <Pencil />
-          <span class="max-lg:sr-only">{{ t('venueMap.view.edit') }}</span>
-        </Button>
+        <HintTooltip v-if="canManage" :label="t('venueMap.view.edit')">
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-9 shrink-0 max-lg:w-9 max-lg:px-0"
+            :class="searchOpen ? 'max-lg:hidden' : ''"
+            data-testid="map-edit"
+            @click="startEditing"
+          >
+            <Pencil />
+            <span class="max-lg:sr-only">{{ t('venueMap.view.edit') }}</span>
+          </Button>
+        </HintTooltip>
 
         <!-- Small screens: what does not fit in the row. -->
         <DropdownMenu v-if="plans.length > 0">
-          <DropdownMenuTrigger as-child>
-            <Button
-              variant="outline"
-              size="icon"
-              class="size-9 shrink-0 lg:hidden"
-              :class="searchOpen ? 'hidden' : ''"
-              :aria-label="t('venueMap.view.more')"
-              data-testid="map-more"
-            >
-              <EllipsisVertical class="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="w-56">
+          <HintTooltip :label="t('venueMap.view.more')">
+            <DropdownMenuTrigger as-child>
+              <Button
+                ref="moreButton"
+                variant="outline"
+                size="icon"
+                class="size-9 shrink-0 lg:hidden"
+                :class="searchOpen ? 'hidden' : ''"
+                :aria-label="t('venueMap.view.more')"
+                data-testid="map-more"
+              >
+                <EllipsisVertical class="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </HintTooltip>
+          <DropdownMenuContent align="end" class="w-56" :reference="moreButton?.$el">
             <template v-if="plans.length > 1 && activePlan">
               <DropdownMenuLabel>{{ t('venueMap.planSwitcher.label') }}</DropdownMenuLabel>
               <DropdownMenuRadioGroup
@@ -950,36 +975,42 @@ watch(eventId, () => void init(), { immediate: true })
             role="group"
             :aria-label="t('venueMap.view.mapControls')"
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-10 rounded-none border-b md:size-9"
-              :aria-label="t('venueMap.canvas.zoomIn')"
-              data-testid="map-zoom-in"
-              @click="canvas?.zoomIn()"
-            >
-              <Plus class="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-10 rounded-none border-b md:size-9"
-              :aria-label="t('venueMap.canvas.zoomOut')"
-              data-testid="map-zoom-out"
-              @click="canvas?.zoomOut()"
-            >
-              <Minus class="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-10 rounded-none md:size-9"
-              :aria-label="t('venueMap.canvas.reset')"
-              data-testid="map-zoom-reset"
-              @click="canvas?.reset()"
-            >
-              <Maximize class="size-4" />
-            </Button>
+            <HintTooltip :label="t('venueMap.canvas.zoomIn')" side="left">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-10 rounded-none border-b md:size-9"
+                :aria-label="t('venueMap.canvas.zoomIn')"
+                data-testid="map-zoom-in"
+                @click="canvas?.zoomIn()"
+              >
+                <Plus class="size-4" />
+              </Button>
+            </HintTooltip>
+            <HintTooltip :label="t('venueMap.canvas.zoomOut')" side="left">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-10 rounded-none border-b md:size-9"
+                :aria-label="t('venueMap.canvas.zoomOut')"
+                data-testid="map-zoom-out"
+                @click="canvas?.zoomOut()"
+              >
+                <Minus class="size-4" />
+              </Button>
+            </HintTooltip>
+            <HintTooltip :label="t('venueMap.canvas.reset')" side="left">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-10 rounded-none md:size-9"
+                :aria-label="t('venueMap.canvas.reset')"
+                data-testid="map-zoom-reset"
+                @click="canvas?.reset()"
+              >
+                <Maximize class="size-4" />
+              </Button>
+            </HintTooltip>
           </div>
 
           <!-- Legend. It sits on the plan like the pills do, so it takes the
@@ -991,9 +1022,7 @@ watch(eventId, () => void init(), { immediate: true })
             :class="planSurfaceClass(activePlan)"
             data-testid="map-legend"
           >
-            <p
-              class="text-map-pill-ink-soft text-[11px] font-semibold tracking-wide uppercase"
-            >
+            <p class="text-map-pill-ink-soft text-[11px] font-semibold tracking-wide uppercase">
               {{ t('venueMap.legend.title', { day: dataDayLabel }) }}
             </p>
             <ul
@@ -1039,15 +1068,17 @@ watch(eventId, () => void init(), { immediate: true })
                 {{ t('venueMap.view.landmarkHint') }}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="size-8 shrink-0"
-              :aria-label="t('venueMap.view.close')"
-              @click="clearSelection"
-            >
-              <X class="size-4" />
-            </Button>
+            <HintTooltip :label="t('venueMap.view.close')">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 shrink-0"
+                :aria-label="t('venueMap.view.close')"
+                @click="clearSelection"
+              >
+                <X class="size-4" />
+              </Button>
+            </HintTooltip>
           </div>
         </div>
 
@@ -1141,11 +1172,7 @@ watch(eventId, () => void init(), { immediate: true })
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody class="pb-4">
-          <VenuePlaceOverview
-            :items="placeItems"
-            :day-label="dataDayLabel"
-            @select="selectPlace"
-          />
+          <VenuePlaceOverview :items="placeItems" :day-label="dataDayLabel" @select="selectPlace" />
         </ResponsiveDialogBody>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

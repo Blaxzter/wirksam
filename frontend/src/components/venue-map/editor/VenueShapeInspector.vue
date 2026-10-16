@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueDecorPalette from '@/components/venue-map/editor/VenueDecorPalette.vue'
 import VenueStylePicker from '@/components/venue-map/editor/VenueStylePicker.vue'
 
@@ -235,15 +236,17 @@ const canRemoveVertex = computed(() => {
           {{ heading }}
         </p>
       </div>
-      <Button
-        size="icon-sm"
-        variant="ghost"
-        :aria-label="t('mapEditor.marker.close')"
-        data-testid="shape-inspector-close"
-        @click="emit('close')"
-      >
-        <X />
-      </Button>
+      <HintTooltip :label="t('mapEditor.marker.close')">
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          :aria-label="t('mapEditor.marker.close')"
+          data-testid="shape-inspector-close"
+          @click="emit('close')"
+        >
+          <X />
+        </Button>
+      </HintTooltip>
     </div>
 
     <template v-if="isProp">
@@ -267,17 +270,18 @@ const canRemoveVertex = computed(() => {
           >
         </div>
         <div class="flex items-center gap-2">
-          <Button
-            size="icon-sm"
-            variant="outline"
-            :aria-label="t('mapEditor.inspector.prop.rotateLeft')"
-            :title="`${t('mapEditor.inspector.prop.rotateLeft')} (Q)`"
-            aria-keyshortcuts="Q"
-            data-testid="prop-rotate-left"
-            @click="turnBy(-ROTATION_STEP)"
-          >
-            <RotateCcw />
-          </Button>
+          <HintTooltip :label="`${t('mapEditor.inspector.prop.rotateLeft')} (Q)`">
+            <Button
+              size="icon-sm"
+              variant="outline"
+              :aria-label="t('mapEditor.inspector.prop.rotateLeft')"
+              aria-keyshortcuts="Q"
+              data-testid="prop-rotate-left"
+              @click="turnBy(-ROTATION_STEP)"
+            >
+              <RotateCcw />
+            </Button>
+          </HintTooltip>
           <input
             id="map-editor-prop-rotation"
             v-model.number="rotation"
@@ -289,17 +293,18 @@ const canRemoveVertex = computed(() => {
             data-testid="prop-rotation"
             @change="onRotationCommit"
           />
-          <Button
-            size="icon-sm"
-            variant="outline"
-            :aria-label="t('mapEditor.inspector.prop.rotateRight')"
-            :title="`${t('mapEditor.inspector.prop.rotateRight')} (E)`"
-            aria-keyshortcuts="E"
-            data-testid="prop-rotate-right"
-            @click="turnBy(ROTATION_STEP)"
-          >
-            <RotateCw />
-          </Button>
+          <HintTooltip :label="`${t('mapEditor.inspector.prop.rotateRight')} (E)`">
+            <Button
+              size="icon-sm"
+              variant="outline"
+              :aria-label="t('mapEditor.inspector.prop.rotateRight')"
+              aria-keyshortcuts="E"
+              data-testid="prop-rotate-right"
+              @click="turnBy(ROTATION_STEP)"
+            >
+              <RotateCw />
+            </Button>
+          </HintTooltip>
         </div>
       </div>
 

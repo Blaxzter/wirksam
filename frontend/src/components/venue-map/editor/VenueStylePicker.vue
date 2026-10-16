@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
+import HintTooltip from '@/components/utils/HintTooltip.vue'
+
 import {
   LABEL_STYLES,
   PATH_STYLES_FIRST,
@@ -40,7 +42,11 @@ const styles = computed<readonly ShapeStyle[]>(() => {
   return SHAPE_STYLES
 })
 
-const buttons = ref<HTMLButtonElement[]>([])
+const buttons = ref<(HTMLButtonElement | null)[]>([])
+
+function setButton(index: number, el: unknown) {
+  buttons.value[index] = (el as HTMLButtonElement | null) ?? null
+}
 
 function choose(style: ShapeStyle) {
   if (style !== props.modelValue) emit('update:modelValue', style)
@@ -66,62 +72,61 @@ function onKeydown(event: KeyboardEvent, index: number) {
     :aria-labelledby="labelledby"
     data-testid="style-picker"
   >
-    <button
-      v-for="(style, i) in styles"
-      :key="style"
-      ref="buttons"
-      type="button"
-      role="radio"
-      :aria-checked="style === modelValue"
-      :tabindex="style === modelValue ? 0 : -1"
-      :title="t(shapeStyleLabelKey(style))"
-      :aria-label="t(shapeStyleLabelKey(style))"
-      class="focus-visible:ring-ring/50 flex flex-col items-center gap-1 rounded-md border p-1 text-[11px] leading-tight outline-none focus-visible:ring-[3px]"
-      :class="
-        style === modelValue
-          ? 'border-primary bg-primary/10 text-foreground font-medium'
-          : 'hover:bg-accent text-foreground/80 border-transparent'
-      "
-      :data-testid="`style-${style}`"
-      @click="choose(style)"
-      @keydown="onKeydown($event, i)"
-    >
-      <svg viewBox="0 0 32 20" class="map-ground h-5 w-8 rounded-sm" aria-hidden="true">
-        <g
-          class="venue-shape"
-          :class="shapeStyleClass(style)"
-          :data-kind="kind === 'path' ? 'path' : 'rect'"
-        >
-          <polyline
-            v-if="kind === 'path'"
-            points="3,15 14,6 29,12"
-            class="vs-body"
-            fill="none"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="stroke-width: 5px"
-          />
-          <text
-            v-else-if="kind === 'label'"
-            x="16"
-            y="11"
-            text-anchor="middle"
-            dominant-baseline="central"
-            font-size="12"
-            font-weight="700"
-            stroke-width="2"
-            paint-order="stroke"
-            class="venue-shape-label vs-label-kind"
+    <HintTooltip v-for="(style, i) in styles" :key="style" :label="t(shapeStyleLabelKey(style))">
+      <button
+        :ref="(el) => setButton(i, el)"
+        type="button"
+        role="radio"
+        :aria-checked="style === modelValue"
+        :tabindex="style === modelValue ? 0 : -1"
+        :aria-label="t(shapeStyleLabelKey(style))"
+        class="focus-visible:ring-ring/50 flex flex-col items-center gap-1 rounded-md border p-1 text-[11px] leading-tight outline-none focus-visible:ring-[3px]"
+        :class="
+          style === modelValue
+            ? 'border-primary bg-primary/10 text-foreground font-medium'
+            : 'hover:bg-accent text-foreground/80 border-transparent'
+        "
+        :data-testid="`style-${style}`"
+        @click="choose(style)"
+        @keydown="onKeydown($event, i)"
+      >
+        <svg viewBox="0 0 32 20" class="map-ground h-5 w-8 rounded-sm" aria-hidden="true">
+          <g
+            class="venue-shape"
             :class="shapeStyleClass(style)"
+            :data-kind="kind === 'path' ? 'path' : 'rect'"
           >
-            Aa
-          </text>
-          <rect v-else x="3" y="3" width="26" height="14" rx="2" class="vs-body" />
-        </g>
-      </svg>
-      <span class="line-clamp-2 w-full break-words hyphens-auto">{{
-        t(shapeStyleLabelKey(style))
-      }}</span>
-    </button>
+            <polyline
+              v-if="kind === 'path'"
+              points="3,15 14,6 29,12"
+              class="vs-body"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="stroke-width: 5px"
+            />
+            <text
+              v-else-if="kind === 'label'"
+              x="16"
+              y="11"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-size="12"
+              font-weight="700"
+              stroke-width="2"
+              paint-order="stroke"
+              class="venue-shape-label vs-label-kind"
+              :class="shapeStyleClass(style)"
+            >
+              Aa
+            </text>
+            <rect v-else x="3" y="3" width="26" height="14" rx="2" class="vs-body" />
+          </g>
+        </svg>
+        <span class="line-clamp-2 w-full break-words hyphens-auto">{{
+          t(shapeStyleLabelKey(style))
+        }}</span>
+      </button>
+    </HintTooltip>
   </div>
 </template>
