@@ -18,13 +18,16 @@
     "booking": {
         "already_exists": "Du hast bereits eine Buchung für diese Schicht",
         "forbidden": "Du kannst nur deine eigenen Buchungen verwalten",
-        "slot_full": "Diese Dienstschicht ist ausgebucht"
+        "slot_full": "Diese Dienstschicht ist ausgebucht",
+        "time_conflict": "Diese Schicht überschneidet sich mit einer Ihrer gebuchten Schichten",
+        "time_conflict_with": "Diese Schicht überschneidet sich mit Ihrer Schicht „{name}“ ({when})"
     },
     "event": {
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
         "forbidden": "Dafür hast du in dieser Veranstaltung keine Berechtigung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
-        "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
+        "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden.",
+        "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung."
     },
     "location": {
         "name_taken": "In dieser Veranstaltung gibt es schon einen Ort mit diesem Namen.",
@@ -88,5 +91,8 @@
         "image_not_found": "Diese Vorlage hat kein Bild.",
         "limit_reached": "Du kannst bis zu 20 Vorlagen behalten. Lösche zuerst eine, die du nicht mehr brauchst: Unter „+ Plan hinzufügen“ wählst du „Vorlage verwenden“ und öffnest das Menü (⋮) der Vorlage.",
         "not_found": "Diese Vorlage wurde nicht gefunden. Vielleicht wurde sie inzwischen gelöscht."
+    },
+    "work_log": {
+        "not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er bereits gelöscht."
     }
 }

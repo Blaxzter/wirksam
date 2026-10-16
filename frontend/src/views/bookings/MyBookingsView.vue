@@ -30,6 +30,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
+import MyHoursCard from '@/components/bookings/MyHoursCard.vue'
 
 import type { BookingReadWithShift, MyBookingsListResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -43,6 +44,7 @@ const route = useRoute()
 
 const bookings = ref<BookingReadWithShift[]>([])
 const loading = ref(false)
+const hoursCard = ref<InstanceType<typeof MyHoursCard> | null>(null)
 
 const openBookingDetail = (booking: BookingReadWithShift) => {
   router.push({ name: 'booking-detail', params: { bookingId: booking.id } })
@@ -250,7 +252,7 @@ const handleCancel = async (booking: BookingReadWithShift) => {
   try {
     await del({ url: `/bookings/${booking.id}` })
     toast.success(t('duties.bookings.cancelSuccess'))
-    await loadBookings()
+    await Promise.all([loadBookings(), hoursCard.value?.reload()])
   } catch (error) {
     toastApiError(error)
   }
@@ -334,6 +336,8 @@ onMounted(loadBookings)
         </TooltipProvider>
       </div>
     </div>
+
+    <MyHoursCard ref="hoursCard" />
 
     <!-- Search & Filter -->
     <div class="flex flex-wrap items-center gap-4">

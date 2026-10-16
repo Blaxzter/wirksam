@@ -9,6 +9,7 @@ from app.crud.booking import booking as crud_booking
 from app.crud.event import event as crud_event
 from app.crud.shift import shift as crud_shift
 from app.crud.task import task as crud_task
+from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import apply_location, resolve_location
@@ -84,6 +85,7 @@ async def list_shifts(
         restrict_to_event_ids=visible_event_ids,
     )
     enriched = [await _enrich_shift(session, s, user_id=current_user.id) for s in items]
+    await mark_collisions(session, user_id=current_user.id, entries=enriched)
     total = await crud_shift.get_count_filtered(
         session,
         task_id=task_id,
@@ -113,7 +115,9 @@ async def get_shift(
         raise_problem(404, code="task.not_found", detail="Task not found")
     event = await crud_event.get(session, db_task.event_id, raise_404_error=True)
     await require_event_visible(_current_user, session, event)
-    return await _enrich_shift(session, shift, user_id=_current_user.id)
+    read = await _enrich_shift(session, shift, user_id=_current_user.id)
+    await mark_collisions(session, user_id=_current_user.id, entries=[read])
+    return read
 
 
 @router.post("/", response_model=ShiftRead, status_code=201)

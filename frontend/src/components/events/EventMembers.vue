@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { Crown, LogOut, ShieldCheck, UserMinus, Users } from '@lucide/vue'
+import { Clock, Crown, LogOut, ShieldCheck, UserMinus, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -19,6 +19,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import type { EventMemberRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { type AssignableEventRole, type EventRole, roleLabelKey } from '@/lib/event-roles'
+import { formatHours } from '@/lib/format'
 
 const props = defineProps<{
   eventId: string
@@ -27,6 +28,8 @@ const props = defineProps<{
   canEdit?: boolean
   /** True when the viewer owns the event — gates transfer and stricter actions. */
   isOwner?: boolean
+  /** Worked minutes per user id. Admins only; omitted, no badge is shown. */
+  hoursByUser?: Record<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -167,6 +170,17 @@ function roleIcon(role: EventRole) {
           </div>
 
           <div class="flex shrink-0 items-center gap-2">
+            <Badge
+              v-if="hoursByUser && hoursByUser[member.user_id]"
+              variant="outline"
+              class="gap-1 tabular-nums"
+              :title="t('duties.hours.memberBadge')"
+              data-testid="member-hours-badge"
+            >
+              <Clock class="h-3 w-3" />
+              {{ t('duties.hours.unit', { value: formatHours(hoursByUser[member.user_id]!) }) }}
+            </Badge>
+
             <!-- The owner's role is fixed; it moves only through a transfer. -->
             <Badge v-if="member.role === 'owner'" variant="secondary" class="gap-1">
               <Crown class="h-3 w-3" />

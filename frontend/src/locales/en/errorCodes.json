@@ -18,13 +18,16 @@
     "booking": {
         "already_exists": "You already have a booking for this shift",
         "forbidden": "You can only manage your own bookings",
-        "slot_full": "This duty shift is fully booked"
+        "slot_full": "This duty shift is fully booked",
+        "time_conflict": "This shift overlaps one of your booked shifts",
+        "time_conflict_with": "This shift overlaps your shift “{name}” ({when})"
     },
     "event": {
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
         "forbidden": "You do not have permission to do this in this event.",
         "not_found": "That event could not be found.",
-        "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
+        "sandbox_not_featurable": "A demo event cannot be featured on the home screen.",
+        "member_not_found": "That person is not a member of this event."
     },
     "location": {
         "name_taken": "There is already a location with this name in this event.",
@@ -88,5 +91,8 @@
         "image_not_found": "This template has no picture.",
         "limit_reached": "You can keep up to 20 templates. Delete one you no longer need first: under “+ Add map”, choose “Start from a template” and open the template’s menu (⋮).",
         "not_found": "That template could not be found. It may have been deleted in the meantime."
+    },
+    "work_log": {
+        "not_found": "That entry could not be found. It may have been deleted already."
     }
 }

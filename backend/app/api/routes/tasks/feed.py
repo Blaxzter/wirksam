@@ -13,6 +13,7 @@ from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
+from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
 from app.logic.permissions import get_event_role
 from app.models.booking import Booking
@@ -109,7 +110,11 @@ async def _query_shifts_with_bookings(
 
     query = query.order_by(col(Shift.date), col(Shift.start_time))
     result = await session.execute(query)
-    return [(row.task_id, _row_to_shift(row)) for row in result.all()]
+    pairs = [(row.task_id, _row_to_shift(row)) for row in result.all()]
+    await mark_collisions(
+        session, user_id=user_id, entries=[entry for _, entry in pairs]
+    )
+    return pairs
 
 
 async def _query_shifts_first_available(
@@ -155,6 +160,11 @@ async def _query_shifts_first_available(
     window_starts: dict[uuid.UUID, dt.date] = {}
     for row in result.all():
         shifts_by_task[row.task_id].append(_row_to_shift(row))
+    await mark_collisions(
+        session,
+        user_id=user_id,
+        entries=[e for entries in shifts_by_task.values() for e in entries],
+    )
 
     # Derive window starts from the CTE result (query it once more, lightweight)
     fd_query = select(

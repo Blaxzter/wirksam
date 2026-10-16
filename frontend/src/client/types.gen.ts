@@ -1473,6 +1473,10 @@ export type FeedShiftEntry = {
    * Is Booked By Me
    */
   is_booked_by_me?: boolean
+  /**
+   * Collides With My Booking
+   */
+  collides_with_my_booking?: boolean
 }
 
 /**
@@ -2960,6 +2964,10 @@ export type ShiftRead = {
    * Is Booked By Me
    */
   is_booked_by_me?: boolean
+  /**
+   * Collides With My Booking
+   */
+  collides_with_my_booking?: boolean
 }
 
 /**
@@ -5242,6 +5250,209 @@ export type VerifyEmailRequest = {
    * Secret from the verification link
    */
   token: string
+}
+
+/**
+ * VolunteerHours
+ *
+ * One person's hours in one event.
+ *
+ * ``shift_minutes`` counts confirmed bookings on shifts that have already
+ * ended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes
+ * into ``total_minutes`` — hours are what someone *has* worked.
+ */
+export type VolunteerHours = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Avatar Etag
+   */
+  avatar_etag?: string | null
+  /**
+   * Role
+   *
+   * Current role in the event; None once they have left it
+   */
+  role?: 'owner' | 'admin' | 'member' | null
+  /**
+   * Shift Count
+   */
+  shift_count: number
+  /**
+   * Shift Minutes
+   */
+  shift_minutes: number
+  /**
+   * Upcoming Shift Count
+   */
+  upcoming_shift_count: number
+  /**
+   * Upcoming Shift Minutes
+   */
+  upcoming_shift_minutes: number
+  /**
+   * Untimed Shift Count
+   *
+   * Worked shifts with no start or end time, counted as 0 minutes
+   */
+  untimed_shift_count: number
+  /**
+   * Manual Minutes
+   */
+  manual_minutes: number
+  /**
+   * Total Minutes
+   */
+  total_minutes: number
+}
+
+/**
+ * VolunteerHoursDetail
+ */
+export type VolunteerHoursDetail = {
+  summary: VolunteerHours
+  /**
+   * Shifts
+   */
+  shifts: Array<WorkedShift>
+  /**
+   * Work Logs
+   */
+  work_logs: Array<WorkLogRead>
+}
+
+/**
+ * WorkLogCreate
+ */
+export type WorkLogCreate = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Minutes
+   */
+  minutes: number
+  /**
+   * Description
+   */
+  description: string
+}
+
+/**
+ * WorkLogRead
+ */
+export type WorkLogRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Minutes
+   */
+  minutes: number
+  /**
+   * Description
+   */
+  description: string
+  /**
+   * Created By Id
+   */
+  created_by_id?: string | null
+  /**
+   * Created By Name
+   */
+  created_by_name?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+}
+
+/**
+ * WorkLogUpdate
+ */
+export type WorkLogUpdate = {
+  /**
+   * Date
+   */
+  date?: string | null
+  /**
+   * Minutes
+   */
+  minutes?: number | null
+  /**
+   * Description
+   */
+  description?: string | null
+}
+
+/**
+ * WorkedShift
+ */
+export type WorkedShift = {
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Shift Id
+   */
+  shift_id: string
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Minutes
+   */
+  minutes: number
+  /**
+   * Completed
+   */
+  completed: boolean
 }
 
 export type ValidationErrorItem = {
@@ -11371,6 +11582,377 @@ export type EventsDecideJoinRequestResponses = {
 
 export type EventsDecideJoinRequestResponse =
   EventsDecideJoinRequestResponses[keyof EventsDecideJoinRequestResponses]
+
+export type WorkHoursListEventHoursData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/hours'
+}
+
+export type WorkHoursListEventHoursErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type WorkHoursListEventHoursError =
+  WorkHoursListEventHoursErrors[keyof WorkHoursListEventHoursErrors]
+
+export type WorkHoursListEventHoursResponses = {
+  /**
+   * Response Work-Hours-List Event Hours
+   *
+   * Successful Response
+   */
+  200: Array<VolunteerHours>
+}
+
+export type WorkHoursListEventHoursResponse =
+  WorkHoursListEventHoursResponses[keyof WorkHoursListEventHoursResponses]
+
+export type WorkHoursExportEventHoursData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/hours/export'
+}
+
+export type WorkHoursExportEventHoursErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type WorkHoursExportEventHoursError =
+  WorkHoursExportEventHoursErrors[keyof WorkHoursExportEventHoursErrors]
+
+export type WorkHoursExportEventHoursResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
+export type WorkHoursGetVolunteerHoursData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/hours/{user_id}'
+}
+
+export type WorkHoursGetVolunteerHoursErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type WorkHoursGetVolunteerHoursError =
+  WorkHoursGetVolunteerHoursErrors[keyof WorkHoursGetVolunteerHoursErrors]
+
+export type WorkHoursGetVolunteerHoursResponses = {
+  /**
+   * Successful Response
+   */
+  200: VolunteerHoursDetail
+}
+
+export type WorkHoursGetVolunteerHoursResponse =
+  WorkHoursGetVolunteerHoursResponses[keyof WorkHoursGetVolunteerHoursResponses]
+
+export type WorkHoursCreateWorkLogData = {
+  body: WorkLogCreate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/work-logs'
+}
+
+export type WorkHoursCreateWorkLogErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type WorkHoursCreateWorkLogError =
+  WorkHoursCreateWorkLogErrors[keyof WorkHoursCreateWorkLogErrors]
+
+export type WorkHoursCreateWorkLogResponses = {
+  /**
+   * Successful Response
+   */
+  201: WorkLogRead
+}
+
+export type WorkHoursCreateWorkLogResponse =
+  WorkHoursCreateWorkLogResponses[keyof WorkHoursCreateWorkLogResponses]
+
+export type WorkHoursDeleteWorkLogData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Work Log Id
+     */
+    work_log_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/work-logs/{work_log_id}'
+}
+
+export type WorkHoursDeleteWorkLogErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type WorkHoursDeleteWorkLogError =
+  WorkHoursDeleteWorkLogErrors[keyof WorkHoursDeleteWorkLogErrors]
+
+export type WorkHoursDeleteWorkLogResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type WorkHoursDeleteWorkLogResponse =
+  WorkHoursDeleteWorkLogResponses[keyof WorkHoursDeleteWorkLogResponses]
+
+export type WorkHoursUpdateWorkLogData = {
+  body: WorkLogUpdate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Work Log Id
+     */
+    work_log_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/work-logs/{work_log_id}'
+}
+
+export type WorkHoursUpdateWorkLogErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type WorkHoursUpdateWorkLogError =
+  WorkHoursUpdateWorkLogErrors[keyof WorkHoursUpdateWorkLogErrors]
+
+export type WorkHoursUpdateWorkLogResponses = {
+  /**
+   * Successful Response
+   */
+  200: WorkLogRead
+}
+
+export type WorkHoursUpdateWorkLogResponse =
+  WorkHoursUpdateWorkLogResponses[keyof WorkHoursUpdateWorkLogResponses]
 
 export type InvitationsPreviewInvitationData = {
   body?: never

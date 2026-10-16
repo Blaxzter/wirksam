@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CalendarCheck,
   CalendarPlus,
+  CalendarX2,
   Check,
   ChevronDown,
   EllipsisVertical,
@@ -359,8 +360,14 @@ const handleShiftClick = async (shift: ShiftRead) => {
       }
       myBookings.value = myBookings.value.filter((b) => b.id !== booking.id)
       toast.success(t('duties.bookings.cancelSuccess'))
+      // Freeing this time may lift the clash marker from other shifts.
+      void loadShifts()
     } else {
       if (isShiftFull(shift)) return
+      if (shift.collides_with_my_booking) {
+        toast.error(t('errorCodes.booking.time_conflict'))
+        return
+      }
       const confirmed = await confirm(t('duties.bookings.bookConfirm'))
       if (!confirmed) return
       const res = await post<{ data: BookingRead }>({
@@ -378,6 +385,8 @@ const handleShiftClick = async (shift: ShiftRead) => {
         shift: null,
       } as MyBookingsListResponse['items'][number])
       toast.success(t('duties.bookings.bookSuccess'))
+      // The new booking may make other shifts clash with it.
+      void loadShifts()
     }
   } catch (error) {
     toastApiError(error)
@@ -963,15 +972,33 @@ onMounted(async () => {
                         ? 'ring-2 ring-primary bg-primary/5'
                         : isShiftFull(shift)
                           ? 'opacity-40 cursor-not-allowed'
-                          : 'hover:ring-1 hover:ring-primary/40',
+                          : shift.collides_with_my_booking
+                            ? 'opacity-50 cursor-not-allowed border-dashed border-destructive/50'
+                            : 'hover:ring-1 hover:ring-primary/40',
                       busyShiftId === shift.id ? 'opacity-60 pointer-events-none' : '',
                     ]"
+                    :title="
+                      shift.collides_with_my_booking
+                        ? t('duties.shifts.detail.clashesWithMine')
+                        : undefined
+                    "
                     @click="handleShiftClick(shift)"
                   >
                     <CardContent class="px-3 py-2">
                       <!-- Booked checkmark -->
                       <div v-if="myBookedShiftIds.has(shift.id)" class="absolute top-1.5 right-1.5">
                         <Check class="h-4 w-4 text-primary" />
+                      </div>
+                      <!-- Overlaps a shift the user already holds -->
+                      <div
+                        v-else-if="shift.collides_with_my_booking"
+                        class="absolute top-1.5 right-1.5"
+                        :data-testid="'shift-clash-' + shift.id"
+                      >
+                        <CalendarX2
+                          class="h-4 w-4 text-destructive"
+                          :aria-label="t('duties.shifts.detail.clashesWithMine')"
+                        />
                       </div>
 
                       <!-- Expand button (visible on hover) -->

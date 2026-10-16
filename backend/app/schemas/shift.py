@@ -41,6 +41,8 @@ class ShiftRead(ShiftBase):
     updated_at: dt.datetime
     current_bookings: int = 0
     is_booked_by_me: bool = False
+    #: Overlaps a shift the user has already booked, so booking it would fail.
+    collides_with_my_booking: bool = False
 
 
 class ShiftListResponse(BaseModel):

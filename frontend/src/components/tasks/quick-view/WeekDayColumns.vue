@@ -16,6 +16,8 @@ export interface DayShiftEntry {
   currentBookings?: number
   maxBookings?: number
   isBookedByMe?: boolean
+  /** Overlaps a shift the user already holds, so booking it would be refused. */
+  collidesWithMyBooking?: boolean
 }
 
 export interface DayColumn {
@@ -96,6 +98,9 @@ function slotClasses(shift: DayShiftEntry): string {
   if (shift.isBookedByMe) {
     return 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-400 font-semibold hover:bg-green-500/25'
   }
+  if (shift.collidesWithMyBooking) {
+    return 'border-dashed border-destructive/50 text-destructive opacity-70 hover:opacity-90 hover:bg-destructive/10'
+  }
   if (slotHasCapacity(shift)) {
     return 'border-primary/30 text-primary hover:bg-primary/10'
   }
@@ -121,6 +126,7 @@ function tourBookable(day: DayColumn, shift: DayShiftEntry): 'true' | 'false' {
 
 function slotCountClasses(shift: DayShiftEntry): string {
   if (shift.isBookedByMe) return 'text-green-600/70 dark:text-green-400/70'
+  if (shift.collidesWithMyBooking) return 'text-destructive/80'
   if (slotHasCapacity(shift)) return 'text-primary'
   return 'text-muted-foreground'
 }
@@ -202,6 +208,9 @@ defineExpose({ totalHidden, maxShiftCount })
               size="sm"
               class="h-auto w-full px-1.5 py-1 text-xs"
               :class="slotClasses(shift)"
+              :title="
+                shift.collidesWithMyBooking ? t('duties.shifts.detail.clashesWithMine') : undefined
+              "
               @click="emit('clickShift', shift.slotId)"
             >
               <div class="flex w-full flex-col items-center gap-0.5">
