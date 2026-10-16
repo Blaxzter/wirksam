@@ -842,7 +842,7 @@ describe('VenueMapEditor: decoration', () => {
     await wrapper.find('[data-testid="tool-prop"]').trigger('click')
     const palette = wrapper.find('[data-testid="decor-palette"]')
     expect(palette.exists()).toBe(true)
-    expect(palette.text()).toContain("It isn't a place and has no shifts.")
+    expect(palette.text()).not.toContain("has no shifts")
     expect(wrapper.find('[data-testid="draw-hint"]').text()).toContain('Esc')
 
     await wrapper.find('[data-testid="decor-item-conifer"]').trigger('click')
