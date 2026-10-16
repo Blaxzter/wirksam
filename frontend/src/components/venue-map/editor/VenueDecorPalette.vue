@@ -96,10 +96,13 @@ const itemSize = computed(() =>
 <template>
   <div
     v-if="mode === 'stamp'"
-    class="bg-background/95 flex flex-col gap-1 rounded-md border p-1.5 shadow-md"
+    class="bg-background/95 rounded-md border p-1 shadow-md"
     data-testid="decor-palette"
   >
-    <div class="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5">
+    <!-- The padding keeps the chosen item's ring inside the scroll box, which clips. -->
+    <div
+      class="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:thin]"
+    >
       <div
         class="flex shrink-0 items-center gap-1.5"
         role="radiogroup"
@@ -186,9 +189,6 @@ const itemSize = computed(() =>
         </button>
       </div>
     </div>
-    <p class="text-muted-foreground px-0.5 text-xs" data-testid="decor-note">
-      {{ t('mapEditor.decor.note') }}
-    </p>
   </div>
 
   <div

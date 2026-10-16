@@ -34,7 +34,6 @@
             "path": "Path",
             "water": "Stream"
         },
-        "note": "Decoration only helps people find their way. It isn't a place and has no shifts.",
         "title": "Decoration"
     },
     "draw": {

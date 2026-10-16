@@ -986,7 +986,6 @@ describe('VenueDecorPalette', () => {
       props: { modelValue: null, mode: 'picker', disabled: true },
       global: { plugins: [i18n] },
     })
-    expect(wrapper.find('[data-testid="decor-note"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="decor-line-hedge"]').exists()).toBe(false)
     // Nothing chosen: the first one takes the Tab stop.
     expect(wrapper.find('[data-testid="decor-type-tree"]').attributes('tabindex')).toBe('0')
