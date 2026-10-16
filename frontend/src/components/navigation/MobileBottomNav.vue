@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { type Component, computed, ref } from 'vue'
+import { type Component, computed, ref, watch } from 'vue'
 
 import {
+  ArrowLeftRight,
   BarChart3,
   Bell,
   BookCheck,
@@ -10,12 +11,13 @@ import {
   CalendarRange,
   Database,
   House,
+  Map as MapIcon,
   Menu,
   Sparkles,
   Users,
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
@@ -32,7 +34,6 @@ import {
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
 const { hasNewVersions } = useChangelogStatus()
@@ -43,55 +44,81 @@ interface MoreItem {
   routeName: string
   labelKey: string
   icon: Component
+  query?: Record<string, string>
 }
 
 /**
- * Everything the desktop sidebar offers that the three tabs do not. Phones have
- * no sidebar button, so this sheet is the only way to these pages.
+ * Every page the desktop sidebar offers that the three tabs do not, in the
+ * sidebar's groups. Phones have no sidebar, so this sheet is the one place for
+ * pages; the avatar menu in the header keeps only what is about the user
+ * (account, notifications, theme, sign out), as on desktop.
  */
-const moreItems = computed<MoreItem[]>(() => {
-  const items: MoreItem[] = [
+const moreGroups = computed<MoreItem[][]>(() => {
+  const event: MoreItem[] = [
     { routeName: 'home', labelKey: 'navigation.sidebar.items.home.label', icon: House },
+  ]
+  // Same rule as the sidebar: only once the event has a plan with a picture.
+  if ((authStore.selectedEvent?.venue_plan_count ?? 0) > 0) {
+    event.push({
+      routeName: 'event-map',
+      labelKey: 'navigation.sidebar.items.venueMap.label',
+      icon: MapIcon,
+    })
+  }
+  event.push(
     {
       routeName: 'availability',
       labelKey: 'navigation.sidebar.items.availability.label',
       icon: CalendarCheck,
     },
-  ]
+    {
+      routeName: 'select-event',
+      labelKey: 'duties.selectEvent.changeEvent',
+      icon: ArrowLeftRight,
+      query: { mode: 'switch' },
+    },
+  )
+
+  const manage: MoreItem[] = []
   if (authStore.isManager) {
-    items.push(
+    manage.push(
       { routeName: 'reporting', labelKey: 'admin.reporting.title', icon: BarChart3 },
       { routeName: 'my-events', labelKey: 'admin.events.title', icon: CalendarRange },
     )
   }
   if (authStore.isAdmin) {
-    items.push(
+    manage.push(
       { routeName: 'admin-users', labelKey: 'admin.users.title', icon: Users },
       { routeName: 'admin-demo-data', labelKey: 'admin.demoData.title', icon: Database },
     )
   }
-  items.push({ routeName: 'changelog', labelKey: 'changelog.title', icon: Sparkles })
-  return items
+
+  const app: MoreItem[] = [{ routeName: 'changelog', labelKey: 'changelog.title', icon: Sparkles }]
+  return [event, manage, app].filter((group) => group.length > 0)
 })
 
 // Home is where the app opens, so "More" lighting up there would read as if the
 // user had wandered somewhere.
 const moreRoutes = computed(
-  () => new Set(moreItems.value.map((item) => item.routeName).filter((name) => name !== 'home')),
+  () =>
+    new Set(
+      moreGroups.value
+        .flat()
+        .map((item) => item.routeName)
+        .filter((name) => name !== 'home'),
+    ),
 )
 
-function openPage(routeName: string) {
-  moreOpen.value = false
-  void router.push({ name: routeName })
-}
+// The entries are real links, so the tap itself navigates; the sheet closes on
+// that tap and, as a backstop, whenever the route changes underneath it.
+watch(
+  () => route.fullPath,
+  () => {
+    moreOpen.value = false
+  },
+)
 
-const TASK_ROUTES = new Set([
-  'tasks',
-  'task-create',
-  'task-edit',
-  'task-detail',
-  'task-add-shifts',
-])
+const TASK_ROUTES = new Set(['tasks', 'task-create', 'task-edit', 'task-detail', 'task-add-shifts'])
 const BOOKING_ROUTES = new Set(['my-bookings', 'booking-detail'])
 const INBOX_ROUTES = new Set(['notifications'])
 
@@ -190,24 +217,31 @@ const notificationDisplayCount = computed(() => {
           {{ t('navigation.mobileBottomNav.moreDescription') }}
         </DrawerDescription>
       </DrawerHeader>
-      <ul class="overflow-y-auto px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <li v-for="item in moreItems" :key="item.routeName">
-          <button
-            type="button"
-            class="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
-            :class="route.name === item.routeName ? 'bg-accent/50 font-medium' : ''"
-            :data-testid="`mobile-more-${item.routeName}`"
-            @click="openPage(item.routeName)"
-          >
-            <component :is="item.icon" class="size-5 shrink-0 text-muted-foreground" />
-            <span class="flex-1">{{ t(item.labelKey) }}</span>
-            <span
-              v-if="item.routeName === 'changelog' && hasNewVersions"
-              class="size-2 rounded-full bg-primary"
-            />
-          </button>
-        </li>
-      </ul>
+      <div class="overflow-y-auto px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <ul
+          v-for="(group, index) in moreGroups"
+          :key="index"
+          :class="index > 0 ? 'mt-1 border-t pt-1' : ''"
+        >
+          <li v-for="item in group" :key="item.routeName">
+            <RouterLink
+              :to="{ name: item.routeName, query: item.query }"
+              class="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
+              :class="route.name === item.routeName ? 'bg-accent/50 font-medium' : ''"
+              :aria-current="route.name === item.routeName ? 'page' : undefined"
+              :data-testid="`mobile-more-${item.routeName}`"
+              @click="moreOpen = false"
+            >
+              <component :is="item.icon" class="size-5 shrink-0 text-muted-foreground" />
+              <span class="flex-1">{{ t(item.labelKey) }}</span>
+              <span
+                v-if="item.routeName === 'changelog' && hasNewVersions"
+                class="size-2 rounded-full bg-primary"
+              />
+            </RouterLink>
+          </li>
+        </ul>
+      </div>
     </DrawerContent>
   </Drawer>
 </template>

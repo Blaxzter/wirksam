@@ -93,6 +93,10 @@ const mobileParent = computed(() => {
         </BreadcrumbList>
       </Breadcrumb>
 
+      <!-- A page can put its own control in the free space here (the venue map
+           its plan picker) with <Teleport defer to="#page-header-slot">. -->
+      <div id="page-header-slot" class="flex min-w-0 flex-1 items-center" />
+
       <div class="ml-auto hidden md:block">
         <NotificationBell />
       </div>

@@ -41,10 +41,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -694,6 +690,17 @@ const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
         </div>
         <div v-else class="hidden flex-1 lg:block" />
 
+        <!-- Small screens: the plan picker sits in the header's free space, as in the editor. -->
+        <Teleport v-if="plans.length > 1 && activePlan" defer to="#page-header-slot">
+          <VenuePlanSwitcher
+            :model-value="activePlan.id"
+            :plans="plans"
+            compact
+            class="max-w-full lg:hidden"
+            @update:model-value="onPlanChange"
+          />
+        </Teleport>
+
         <!-- Small screens: an icon until tapped; the field would be too narrow to read. -->
         <HintTooltip v-if="plans.length > 0 && !searchOpen" :label="t('venueMap.view.search')">
           <Button
@@ -883,23 +890,6 @@ const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
             </DropdownMenuTrigger>
           </HintTooltip>
           <DropdownMenuContent align="end" class="w-56" :reference="moreButton?.$el">
-            <template v-if="plans.length > 1 && activePlan">
-              <DropdownMenuLabel>{{ t('venueMap.planSwitcher.label') }}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                :model-value="activePlan.id"
-                @update:model-value="(id) => onPlanChange(String(id))"
-              >
-                <DropdownMenuRadioItem
-                  v-for="p in plans"
-                  :key="p.id"
-                  :value="p.id"
-                  :data-testid="`map-menu-plan-${p.id}`"
-                >
-                  {{ p.name }}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-            </template>
             <DropdownMenuItem data-testid="map-menu-places" @select="overviewOpen = true">
               <List />
               {{ t('venueMap.panel.overviewTitle') }}

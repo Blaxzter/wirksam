@@ -1,25 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { BadgeCheck, Bell, Globe, LogOut, Moon, Sun } from '@lucide/vue'
 import { useColorMode } from '@vueuse/core'
-import {
-  BadgeCheck,
-  Bell,
-  CalendarRange,
-  Globe,
-  LogOut,
-  Map as MapIcon,
-  Moon,
-  Sun,
-} from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-
-import { useAvatarUrl } from '@/composables/useAvatarUrl'
 
 import { useAuthStore } from '@/stores/auth'
 
-import InstallAppMenuItem from '@/components/navigation/InstallAppMenuItem.vue'
-import LegalMenuLinks from '@/components/navigation/LegalMenuLinks.vue'
+import { useAvatarUrl } from '@/composables/useAvatarUrl'
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -31,14 +20,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+import InstallAppMenuItem from '@/components/navigation/InstallAppMenuItem.vue'
+import LegalMenuLinks from '@/components/navigation/LegalMenuLinks.vue'
+
 const authStore = useAuthStore()
 const mode = useColorMode()
 useI18n()
 
 const user = computed(() => authStore.user)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-// Same rule as the sidebar: only once the event has a plan with a picture.
-const hasVenueMap = computed(() => (authStore.selectedEvent?.venue_plan_count ?? 0) > 0)
 
 const displayName = computed(
   () => user.value?.name || user.value?.nickname || user.value?.email || 'User',
@@ -116,29 +106,6 @@ const initials = computed(() => {
         >
           <Bell />
           {{ $t('navigation.user.actions.notifications') }}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          v-if="hasVenueMap"
-          data-testid="mobile-user-venue-map"
-          @click="$router.push({ name: 'event-map' })"
-        >
-          <MapIcon />
-          {{ $t('navigation.user.actions.venueMap') }}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          data-testid="mobile-user-change-event"
-          @click="$router.push({ name: 'select-event', query: { mode: 'switch' } })"
-        >
-          <CalendarRange />
-          {{ $t('duties.selectEvent.changeEvent') }}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          v-if="authStore.isManager"
-          data-testid="mobile-user-manage-events"
-          @click="$router.push({ name: 'my-events' })"
-        >
-          <CalendarRange />
-          {{ $t('admin.events.title') }}
         </DropdownMenuItem>
         <InstallAppMenuItem />
         <DropdownMenuItem @click="$router.push({ name: 'landing' })">

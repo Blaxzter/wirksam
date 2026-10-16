@@ -1101,11 +1101,26 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
       v-if="embedded || (!loading && !loadError && plans.length > 0)"
       class="flex min-w-0 items-center gap-2"
     >
+      <!-- On the map page the plan picker takes the header's free space on
+           small screens, where the map itself shows its picker too. -->
+      <Teleport
+        v-if="embedded && !loading && !loadError && plans.length > 0"
+        defer
+        to="#page-header-slot"
+      >
+        <VenuePlanSwitcher
+          v-model="planModel"
+          :plans="plans"
+          compact
+          class="max-w-full lg:hidden"
+        />
+      </Teleport>
       <VenuePlanSwitcher
         v-if="!loading && !loadError && plans.length > 0"
         v-model="planModel"
         :plans="plans"
         compact
+        :hide-menu="embedded"
         class="min-w-0 flex-1"
       >
         <template #trailing>

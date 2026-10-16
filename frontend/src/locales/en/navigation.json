@@ -58,12 +58,11 @@
         "actions": {
             "account": "Account",
             "installApp": "Install app",
-            "landingPage": "Landing page",
+            "landingPage": "WirkSam website",
             "logout": "Log out",
             "notifications": "Notifications",
             "switchToDark": "Switch to dark mode",
-            "switchToLight": "Switch to light mode",
-            "venueMap": "Map"
+            "switchToLight": "Switch to light mode"
         },
         "install": {
             "iosSteps": "In Safari, tap the Share button, then choose “Add to Home Screen”. WirkSam then opens like an app, without the browser around it.",

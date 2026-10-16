@@ -34,12 +34,12 @@ test.afterEach(async ({ adminPage }) => {
 })
 
 test.describe('Venue map – on a phone', () => {
-  test('the user menu leads to the map', async ({ disposablePage: page }) => {
+  test('"More" leads to the map', async ({ disposablePage: page }) => {
     expect(page.viewportSize()?.width).toBeLessThan(768)
 
     await page.goto('/app/home')
-    await page.getByTestId('mobile-user-menu').click()
-    await page.getByTestId('mobile-user-venue-map').click()
+    await page.getByTestId('mobile-nav-more').click()
+    await page.getByTestId('mobile-more-event-map').click()
 
     await expect(page).toHaveURL(/\/app\/map/)
     await expect(page.getByTestId(`map-marker-${seeded.location.id}`)).toBeVisible()

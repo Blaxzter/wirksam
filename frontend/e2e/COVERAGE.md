@@ -612,7 +612,7 @@ Not yet covered, and not currently tracked by an issue:
 #### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
 
 - **Venue map – on a phone** (4)
-  - the user menu leads to the map
+  - "More" leads to the map
   - a tapped place opens as a bottom sheet
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet

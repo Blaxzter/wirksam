@@ -25,14 +25,16 @@ import ChipNav from '@/components/utils/ChipNav.vue'
  *
  * `compact` (the editor): below the `lg` breakpoint the chips give way to one
  * button with the plan's name and a menu of all plans, since chips cut off at
- * phone width.
+ * phone width. `hideMenu` leaves that button out, for when the page shows it
+ * somewhere else (the embedded editor puts it in the page header).
  */
 const props = withDefaults(
   defineProps<{
     plans: ReadonlyArray<{ id: string; name: string }>
     compact?: boolean
+    hideMenu?: boolean
   }>(),
-  { compact: false },
+  { compact: false, hideMenu: false },
 )
 
 const selectedId = defineModel<string | null>({ default: null })
@@ -74,7 +76,7 @@ const menuValue = computed({
       class="min-w-0 flex-1"
       :class="compact ? 'max-lg:hidden' : ''"
     />
-    <DropdownMenu v-if="compact">
+    <DropdownMenu v-if="compact && !hideMenu">
       <DropdownMenuTrigger as-child>
         <Button
           variant="outline"

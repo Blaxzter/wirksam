@@ -58,12 +58,11 @@
         "actions": {
             "account": "Konto",
             "installApp": "App installieren",
-            "landingPage": "Startseite",
+            "landingPage": "WirkSam-Website",
             "logout": "Abmelden",
             "notifications": "Benachrichtigungen",
             "switchToDark": "Zum dunklen Design wechseln",
-            "switchToLight": "Zum hellen Design wechseln",
-            "venueMap": "Lageplan"
+            "switchToLight": "Zum hellen Design wechseln"
         },
         "install": {
             "iosSteps": "Tippe in Safari auf „Teilen“ und wähle dann „Zum Home-Bildschirm“. WirkSam öffnet sich danach wie eine App, ohne den Browser drumherum.",

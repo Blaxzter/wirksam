@@ -84,7 +84,7 @@ function goToChangelog() {
 
       <div
         class="flex-1 p-4 pt-0"
-        :class="fullHeight ? 'flex min-h-0 flex-col pb-0' : undefined"
+        :class="fullHeight ? 'flex min-h-0 flex-col' : undefined"
         data-testid="main-content"
       >
         <ErrorBoundary>
