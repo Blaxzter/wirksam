@@ -49,6 +49,24 @@ async function usePolicy(page: Page, policy: Policy): Promise<void> {
   )
 }
 
+/**
+ * Go to `path` the way a link inside the app would, keeping the session.
+ *
+ * These are the only specs signed in with a real session rather than the
+ * `X-Test-User-Email` bypass, and in CI that session cannot survive a reload:
+ * the page is on `localhost:4173`, the API on `backend:8787`, two different
+ * sites, so the browser never sends the `SameSite=Lax` refresh cookie back.
+ * The router reacts to `popstate` by navigating to the new URL, guards and all;
+ * a `null` state makes it treat the entry as new instead of reading a
+ * position off it.
+ */
+async function navigateInApp(page: Page, path: string): Promise<void> {
+  await page.evaluate((target) => {
+    window.history.pushState(null, '', target)
+    window.dispatchEvent(new PopStateEvent('popstate', { state: null }))
+  }, path)
+}
+
 async function fillRegistration(page: Page, email: string, name = 'Mode Tester'): Promise<void> {
   await page.getByTestId('input-name').fill(name)
   await page.getByTestId('input-email').fill(email)
@@ -88,7 +106,10 @@ test.describe('Registration modes – approval queue', () => {
     await expect(page.getByTestId('page-heading')).toHaveText(
       'Your account is waiting for approval',
     )
-    await page.goto('/app/home')
+    // An in-app navigation, not `page.goto`: CI serves the API from another
+    // site (`backend:8787` beside `localhost:4173`), so the lax refresh cookie
+    // never reaches it and a full reload would simply sign this account out.
+    await navigateInApp(page, '/app/home')
     await expect(page).toHaveURL(/\/account-pending/)
 
     const id = await userIdByEmail(adminUser.email, email)
@@ -117,7 +138,8 @@ test.describe('Registration modes – approval queue', () => {
       reason: 'Only for members of the parish.',
     })
 
-    await page.reload()
+    // "Check again", not a reload: see the note on `navigateInApp`.
+    await page.getByTestId('btn-check-approval').click()
     await expect(page.getByTestId('page-heading')).toHaveText('Your registration was not approved')
     await expect(page.getByTestId('suspension-reason')).toContainText(
       'Only for members of the parish.',
@@ -187,9 +209,7 @@ test.describe('Registration modes – invitation only', () => {
 })
 
 test.describe('Registration modes – allowed domains', () => {
-  test('the form names the domains and refuses any other address', async ({
-    page,
-  }, testInfo) => {
+  test('the form names the domains and refuses any other address', async ({ page }, testInfo) => {
     await pinBrowserPreferences(page)
     await usePolicy(page, { mode: 'open', allowed_domains: ['gemeinde.de'] })
 
