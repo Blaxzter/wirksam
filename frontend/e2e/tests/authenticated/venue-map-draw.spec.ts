@@ -362,6 +362,75 @@ test.describe('Decorating a venue map', () => {
     expect(shapes).toHaveLength(0)
   })
 
+  test('turn and resize a tree with its grips on the map, one step each', async ({
+    disposablePage: page,
+  }) => {
+    const plan = await createVenuePlan(page, event.id, { name: 'Wiese' })
+    await page.goto(`/app/event-settings/${event.id}?tab=map`)
+    const editor = page.getByTestId('venue-map-editor')
+    const canvas = editor.getByTestId('editor-canvas')
+    await expect(canvas).toBeVisible()
+
+    await editor.getByTestId('tool-prop').click()
+    await editor.getByTestId('decor-item-tree').click()
+    const spot = await at(canvas, 0.5, 0.45)
+    let saved = nextBatch(page)
+    await page.mouse.click(spot.x, spot.y)
+    await saved
+    await page.keyboard.press('Escape')
+    const tree = editor.locator('[data-kind="prop"][data-prop="tree"]')
+    const start = Number(await tree.getAttribute('data-rotation'))
+    const id = (await getPlanShapes(page, plan.id)).shapes[0]!.id
+
+    const hit = (await tree.locator('.vs-prop-hit').boundingBox())!
+    const c = { x: hit.x + hit.width / 2, y: hit.y + hit.height / 2 }
+    const middle = async (l: Locator) => {
+      const b = (await l.boundingBox())!
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+    }
+
+    // ── The round grip, dragged a quarter turn clockwise with Shift (15° steps) ──
+    const grip = await middle(editor.getByTestId('handle-rotate').locator('circle').nth(1))
+    const r = Math.hypot(grip.x - c.x, grip.y - c.y)
+    const a0 = Math.atan2(grip.x - c.x, c.y - grip.y)
+    const turned = (start + 90) % 360
+    saved = nextBatch(page)
+    await page.mouse.move(grip.x, grip.y)
+    await page.mouse.down()
+    await page.keyboard.down('Shift')
+    for (let i = 1; i <= 6; i++) {
+      const a = a0 + (i / 6) * (Math.PI / 2)
+      await page.mouse.move(c.x + r * Math.sin(a), c.y - r * Math.cos(a))
+    }
+    // Live on the map, with the angle beside it, before anything is saved.
+    await expect(tree).toHaveAttribute('data-rotation', String(turned))
+    await expect(editor.getByTestId('grip-badge')).toHaveText(`${turned}°`)
+    await page.mouse.up()
+    await page.keyboard.up('Shift')
+    await saved
+    await expect(editor.getByTestId('grip-badge')).toHaveCount(0)
+
+    // ── The corner grip, dragged twice as far from the centre ──
+    const corner = await middle(editor.getByTestId('handle-scale').locator('rect'))
+    saved = nextBatch(page)
+    await page.mouse.move(corner.x, corner.y)
+    await page.mouse.down()
+    await page.mouse.move(c.x + (corner.x - c.x) * 2, c.y + (corner.y - c.y) * 2, { steps: 5 })
+    await page.mouse.up()
+    await saved
+    let { shapes } = await getPlanShapes(page, plan.id)
+    expect(shapes[0]).toMatchObject({ id, rotation: turned })
+    expect(shapes[0]!.scale).toBeGreaterThan(1.8)
+    expect(shapes[0]!.scale).toBeLessThan(2.2)
+
+    // ── One Ctrl+Z takes back the whole resize, the turn stays ──
+    saved = nextBatch(page)
+    await page.keyboard.press('Control+z')
+    await saved
+    ;({ shapes } = await getPlanShapes(page, plan.id))
+    expect(shapes[0]).toMatchObject({ id, rotation: turned, scale: 1 })
+  })
+
   test('a hedge line from the palette', async ({ disposablePage: page }) => {
     const plan = await createVenuePlan(page, event.id, { name: 'Wiese' })
     await page.goto(`/app/event-settings/${event.id}?tab=map`)

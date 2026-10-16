@@ -35,6 +35,8 @@ import { useI18n } from 'vue-i18n'
 
 import wirksamLightLogo from '@/assets/logo/wirksam-light.svg'
 
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
+
 import AuthShiftMotif from '@/components/auth/AuthShiftMotif.vue'
 
 /** One per auth screen. Names match the `auth.*` locale keys they read. */
@@ -103,6 +105,12 @@ const POINTS: Record<AuthHeroVariant, readonly (readonly [string, LucideIcon])[]
  * dark green the moment the app is in dark mode.
  */
 const visualLogo = wirksamLightLogo
+
+/**
+ * The wordmark leads back to the landing page, as it does everywhere else.
+ * Without one, `/` redirects straight back here, so it stays a plain image.
+ */
+const landingEnabled = isSwitchOn(useAppConfig().LANDING_ENABLED)
 
 const points = computed(() => POINTS[props.variant])
 
@@ -184,7 +192,14 @@ const showMotif = computed(() => props.variant === 'login' || props.variant === 
     <!-- MOBILE: the whole pane. Real content rather than `aria-hidden`, since
          it is the only place the product is named on this screen. -->
     <div class="flex items-center gap-3 px-5 py-3.5 sm:px-8 lg:hidden">
-      <img :src="visualLogo" alt="WirkSam" class="h-6 w-auto shrink-0" />
+      <component
+        :is="landingEnabled ? 'RouterLink' : 'span'"
+        :to="landingEnabled ? { name: 'landing' } : undefined"
+        data-testid="link-logo-home"
+        class="inline-flex rounded-sm focus-visible:ring-2 focus-visible:ring-hero-foreground focus-visible:outline-none"
+      >
+        <img :src="visualLogo" alt="WirkSam" class="h-6 w-auto shrink-0" />
+      </component>
     </div>
 
     <!-- DESKTOP: hidden from assistive tech. Every word of it is a pitch, and a
@@ -207,11 +222,17 @@ const showMotif = computed(() => props.variant === 'login' || props.variant === 
       tabindex="-1"
       class="hidden min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-8 outline-none lg:flex xl:p-12"
     >
-      <img
-        :src="visualLogo"
-        alt=""
-        class="h-9 w-auto shrink-0 animate-auth-rise self-start motion-reduce:animate-none"
-      />
+      <!-- A pointer shortcut only: this subtree is `aria-hidden`, so the link
+           must stay out of the tab order (`tabindex="-1"`). Keyboard and
+           screen-reader users get the "back to home" link above the form. -->
+      <component
+        :is="landingEnabled ? 'RouterLink' : 'span'"
+        :to="landingEnabled ? { name: 'landing' } : undefined"
+        tabindex="-1"
+        class="shrink-0 animate-auth-rise self-start motion-reduce:animate-none"
+      >
+        <img :src="visualLogo" alt="" class="h-9 w-auto" />
+      </component>
 
       <!-- `my-auto` rather than a fixed top margin: on a tall window the block
            sits centred, and on a short one it simply stops centring instead of

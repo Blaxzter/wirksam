@@ -54,6 +54,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   update: [patch: VenueShapeUpdate]
+  /** A slider is being dragged: show this on the map now, save on `update`. */
+  preview: [patch: Pick<VenueShapeUpdate, 'rotation' | 'scale'>]
   duplicate: []
   delete: []
   reorder: [direction: 1 | -1]
@@ -76,7 +78,10 @@ const isProp = computed(() => props.shape?.kind === 'prop')
 const propType = computed<PropType | null>(() =>
   isPropType(props.shape?.prop) ? props.shape.prop : null,
 )
-/** Slider values while dragging; committed on `change`. */
+/**
+ * Slider values. Every `input` previews on the map (`preview`), the `change`
+ * at the release commits (`update`) — one undo step and one save per drag.
+ */
 const rotation = ref(0)
 const scale = ref(DEFAULT_PROP_SCALE)
 watch(
@@ -102,14 +107,35 @@ function turnBy(delta: number) {
   emit('update', { rotation: normaliseRotation((props.shape?.rotation ?? 0) + delta) })
 }
 
-function onRotationCommit() {
-  const value = normaliseRotation(rotation.value)
-  if (value !== (props.shape?.rotation ?? 0)) emit('update', { rotation: value })
+/** The slider's value, read from the event so it never lags behind `v-model`. */
+function sliderValue(event: Event, fallback: number): number {
+  const value = Number((event.target as HTMLInputElement | null)?.value)
+  return Number.isFinite(value) ? value : fallback
 }
 
-function onScaleCommit() {
-  const value = Math.round(scale.value * 1000) / 1000
-  if (value !== (props.shape?.scale ?? DEFAULT_PROP_SCALE)) emit('update', { scale: value })
+function onRotationInput(event: Event) {
+  emit('preview', { rotation: normaliseRotation(sliderValue(event, rotation.value)) })
+}
+
+/**
+ * Always reported: after a live preview the shape already shows the value, so
+ * comparing with it would never commit. The editor drops a patch that changes
+ * nothing.
+ */
+function onRotationCommit(event: Event) {
+  emit('update', { rotation: normaliseRotation(sliderValue(event, rotation.value)) })
+}
+
+function roundScale(value: number): number {
+  return Math.round(value * 1000) / 1000
+}
+
+function onScaleInput(event: Event) {
+  emit('preview', { scale: roundScale(sliderValue(event, scale.value)) })
+}
+
+function onScaleCommit(event: Event) {
+  emit('update', { scale: roundScale(sliderValue(event, scale.value)) })
 }
 
 function onPropType(prop: PropType) {
@@ -291,6 +317,7 @@ const canRemoveVertex = computed(() => {
             step="1"
             class="accent-primary min-w-0 flex-1"
             data-testid="prop-rotation"
+            @input="onRotationInput"
             @change="onRotationCommit"
           />
           <HintTooltip :label="`${t('mapEditor.inspector.prop.rotateRight')} (E)`">
@@ -325,6 +352,7 @@ const canRemoveVertex = computed(() => {
             step="0.05"
             class="accent-primary min-w-0 flex-1"
             data-testid="prop-scale"
+            @input="onScaleInput"
             @change="onScaleCommit"
           />
           <Button
@@ -337,7 +365,13 @@ const canRemoveVertex = computed(() => {
             {{ t('mapEditor.inspector.prop.resetSize') }}
           </Button>
         </div>
-        <p class="text-muted-foreground text-xs">{{ t('mapEditor.inspector.prop.keysHint') }}</p>
+        <p class="text-muted-foreground text-xs" data-testid="prop-handles-hint">
+          {{ t('mapEditor.inspector.prop.handlesHint') }}
+        </p>
+        <!-- No keyboard on a phone: the keys are no help there. -->
+        <p class="text-muted-foreground text-xs pointer-coarse:hidden" data-testid="prop-keys-hint">
+          {{ t('mapEditor.inspector.prop.keysHint') }}
+        </p>
       </div>
     </template>
 

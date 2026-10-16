@@ -19,8 +19,18 @@
  * than in each view: these screens sit outside the pre-auth shell that normally
  * carries them, and somebody who cannot read "Passwort vergessen?" has to be
  * able to change the language *before* signing in.
+ *
+ * The one way out that is not part of the flow is "back to home", above the
+ * badge (and the wordmark in the hero pane goes to the same place). It is the
+ * first tab stop on the page, which the "at most fifteen" budget absorbs. With
+ * the landing page switched off, `/` would only bounce back to sign-in, so the
+ * link is not drawn at all.
  */
 import type { Component } from 'vue'
+
+import { ArrowLeftIcon } from '@lucide/vue'
+
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 
 import AuthHeroPane, { type AuthHeroVariant } from '@/components/auth/AuthHeroPane.vue'
 import AuthShellFooter from '@/components/auth/AuthShellFooter.vue'
@@ -58,6 +68,8 @@ defineSlots<{
   /** "Already have an account?" and friends, under a hairline rule. */
   footer?: () => unknown
 }>()
+
+const landingEnabled = isSwitchOn(useAppConfig().LANDING_ENABLED)
 </script>
 
 <template>
@@ -76,6 +88,16 @@ defineSlots<{
     <main class="order-last flex flex-1 flex-col lg:order-none lg:min-h-0 lg:overflow-y-auto">
       <div class="flex flex-1 items-center justify-center px-5 py-10 sm:px-8 sm:py-14">
         <div class="w-full max-w-sm">
+          <RouterLink
+            v-if="landingEnabled"
+            :to="{ name: 'landing' }"
+            data-testid="link-back-home"
+            class="-ml-1 mb-6 inline-flex items-center gap-1.5 rounded-sm px-1 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <ArrowLeftIcon class="size-4" aria-hidden="true" />
+            {{ $t('auth.backToHome') }}
+          </RouterLink>
+
           <div class="mb-8 animate-auth-rise motion-reduce:animate-none">
             <span
               v-if="icon"

@@ -72,6 +72,7 @@
         "newLabel": "Neuer Text",
         "order": "Reihenfolge",
         "prop": {
+            "handlesHint": "Oder zieh auf der Karte: Der runde Griff dreht, das kleine Quadrat ändert die Größe.",
             "keysHint": "Tasten: Q und E drehen, + und − ändern die Größe.",
             "resetSize": "Normale Größe",
             "rotateLeft": "Nach links drehen",

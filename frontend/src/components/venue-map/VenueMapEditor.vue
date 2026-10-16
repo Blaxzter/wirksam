@@ -473,6 +473,7 @@ function pressTarget(event: Event): PressTarget {
     if (kind === 'resize' && RECT_HANDLES.includes(arg as RectHandle)) {
       return { type: 'handle', handle: { kind, handle: arg as RectHandle } }
     }
+    if (kind === 'rotate' || kind === 'scale') return { type: 'handle', handle: { kind } }
     return { type: 'handle', handle: { kind: 'label' } }
   }
   const id = el.closest('[data-shape-id]')?.getAttribute('data-shape-id')
@@ -624,7 +625,8 @@ function onSvgDoubleClick(event: MouseEvent) {
 
 useEventListener(window, 'pointermove', (e: PointerEvent) => editor.onPointerMove(e))
 useEventListener(window, 'pointerup', (e: PointerEvent) => {
-  if (editor.dragging.value) swallowClick = true
+  // Also after Escape cancelled the drag mid-press: that release is no click on the plan.
+  if (editor.dragging.value || editor.pressWasCancelled()) swallowClick = true
   editor.onPointerUp(e)
 })
 useEventListener(window, 'pointercancel', (e: PointerEvent) => editor.onPointerCancel(e))
@@ -950,8 +952,11 @@ watch(
       (!!markerId && markerId !== prevMarker)
     const quiet = quietSelection
     quietSelection = false
+    // A decoration is turned and sized with its grips on the plan, which the
+    // sheet would cover; its details stay one tap away on the "Selection" button.
+    const decoration = !!shapeId && selectedShape.value?.kind === 'prop'
     if (label && !prevLabel) sheetOpen.value = true
-    else if (!picked || quiet) return
+    else if (!picked || quiet || decoration) return
     else if (pressing) openAfterPress = true
     else sheetOpen.value = true
   },
@@ -1333,12 +1338,16 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
               </template>
             </g>
             <VenueEditHandles
-              v-if="selectedShape && tool === 'select' && selectedShape.kind !== 'prop'"
+              v-if="
+                selectedShape &&
+                (tool === 'select' || (tool === 'prop' && selectedShape.kind === 'prop'))
+              "
               :shape="selectedShape"
               :width="width"
               :height="height"
               :units-per-pixel="unitsPerPixel"
               :selected-vertex="selectedVertex"
+              :active-grip="editor.activeGrip.value"
             />
           </svg>
           <VenuePinHint :container="svgRef" />
@@ -1538,6 +1547,7 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
           :width="width"
           :height="height"
           @update="(p) => editor.updateSelected(p)"
+          @preview="(p) => editor.previewSelected(p)"
           @duplicate="editor.duplicateSelected()"
           @delete="editor.deleteSelected()"
           @reorder="(d) => editor.reorderSelected(d)"

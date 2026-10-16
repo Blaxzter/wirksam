@@ -268,7 +268,7 @@ const hasValue = computed(() => props.dateFrom !== null)
                     :class="
                       cn(
                         buttonVariants({ variant: 'ghost' }),
-                        'size-8 p-0 font-normal cursor-default',
+                        'size-8 p-0 font-normal cursor-pointer',
                         // Today — always has a ring so it's visible inside the cell, not overlapping neighbors
                         'data-[today]:ring-2 data-[today]:ring-inset data-[today]:ring-blue-500',
                         // Highlighted (hover preview range)

@@ -4,9 +4,9 @@
  *
  * The screen is a split: the pitch on the left, this form on the right, and no
  * navigation anywhere. Someone being asked for a password should not also be
- * offered a bar full of places to go instead — the only ways out are the two
- * links below the form, one to recover a forgotten password and one to create
- * an account.
+ * offered a bar full of places to go instead — besides "back to home" above
+ * the heading (drawn by `AuthShell`), the only ways out are the two links below
+ * the form, one to recover a forgotten password and one to create an account.
  */
 import { computed, ref } from 'vue'
 

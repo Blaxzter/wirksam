@@ -3,7 +3,11 @@ import { computed } from 'vue'
 
 import { useMediaQuery } from '@vueuse/core'
 
+import type { PropGrip } from '@/composables/useShapeEditor'
+
 import type { VenueShapeRead } from '@/client/types.gen'
+import { DEFAULT_PROP_SCALE, propPlacement } from '@/lib/venue-decor'
+import { pointAtAngle, propGrips, propRingRadius, resizeCursor } from '@/lib/venue-prop-handles'
 import { RECT_HANDLES, edgeMidpoints, rectHandlePoint } from '@/lib/venue-shape-edit'
 import { labelAnchor, labelLayout } from '@/lib/venue-shapes'
 
@@ -13,16 +17,23 @@ import { labelAnchor, labelLayout } from '@/lib/venue-shapes'
  * - a rect: eight resize handles (corners and edge midpoints);
  * - a polygon or path: one handle per vertex, plus a small "+" on every edge
  *   that inserts a vertex there when pressed;
- * - a decoration (prop): nothing — the shape layer draws its selection ring,
- *   and it is moved by dragging the glyph itself;
+ * - a decoration (prop): a round rotate grip on a stalk beyond the selection
+ *   ring (the shape layer draws the ring), pointing where the glyph's top
+ *   points, and a square resize grip on the ring at its bottom right. Both
+ *   turn with the glyph. While one is dragged (`activeGrip`) a small badge on
+ *   the far side of the glyph — away from the finger — shows the angle or
+ *   size. The glyph itself is moved by dragging it;
  * - any other shape with a caption except a text: a "T" handle that moves the
  *   caption (`label_x`/`label_y`); it sits just below the caption, and the
  *   caption follows the pointer's movement.
  *
  * The handles only *mark* where a press should go: each carries a
- * `data-handle` attribute (`resize:nw`, `vertex:2`, `insert:0`, `label`) that
- * the editor reads from the event target. On a coarse pointer each gets an
- * invisible 16 px hit circle around its 7 px dot.
+ * `data-handle` attribute (`resize:nw`, `vertex:2`, `insert:0`, `label`,
+ * `rotate`, `scale`) that the editor reads from the event target. Every size
+ * is in CSS pixels times `unitsPerPixel`, so the grips keep their size on
+ * screen at any zoom. On a coarse pointer each gets an invisible hit circle
+ * around its small dot (20 px radius for a decoration's grips, ≥ 40 px across);
+ * the resize grip's circle is pushed outwards so it never covers the glyph.
  */
 const props = defineProps<{
   shape: VenueShapeRead
@@ -30,12 +41,53 @@ const props = defineProps<{
   height: number
   unitsPerPixel: number
   selectedVertex?: number | null
+  /** The decoration grip being dragged, for its live badge. */
+  activeGrip?: PropGrip | null
 }>()
 
 const coarse = useMediaQuery('(pointer: coarse)')
 const upp = computed(() => props.unitsPerPixel)
 const r = computed(() => 7 * upp.value)
 const hit = computed(() => (coarse.value ? 16 : 9) * upp.value)
+
+/** Stalk length of the rotate grip (px), a bit longer for fingers. */
+const STALK_PX = { fine: 20, coarse: 28 }
+
+const prop = computed(() => {
+  const s = props.shape
+  if (s.kind !== 'prop') return null
+  const place = propPlacement(s, props.width, props.height)
+  const centre = { x: place.x, y: place.y }
+  // Same ring as the shape layer's selection ring.
+  const ring = propRingRadius(place.radiusUnits, upp.value)
+  const stalk = (coarse.value ? STALK_PX.coarse : STALK_PX.fine) * upp.value
+  const hit = (coarse.value ? 20 : 11) * upp.value
+  // The resize grip's hit circle is kept off the glyph (see `resizeHit`).
+  const grips = propGrips(centre, place.rotation, ring, stalk, place.radiusUnits, hit)
+  return {
+    centre,
+    rotation: place.rotation,
+    ...grips,
+    hit,
+    cursor: resizeCursor(grips.resizeAngle),
+  }
+})
+
+/** The live value of the grip being dragged, on the far side of the glyph. */
+const badge = computed(() => {
+  const p = prop.value
+  const grip = props.activeGrip
+  if (!p || !grip) return null
+  const text =
+    grip === 'rotate'
+      ? `${Math.round(p.rotation)}°`
+      : `${Math.round((props.shape.scale ?? DEFAULT_PROP_SCALE) * 100)} %`
+  const away = (grip === 'rotate' ? p.rotation : p.resizeAngle) + 180
+  const at = pointAtAngle(p.centre, away, p.ring + 18 * upp.value)
+  const w = (text.length * 6.5 + 12) * upp.value
+  const h = 18 * upp.value
+  return { text, x: at.x, y: at.y, w, h }
+})
 
 const u = (p: readonly number[]) => ({ x: p[0]! * props.width, y: p[1]! * props.height })
 
@@ -134,6 +186,79 @@ const CURSORS: Record<string, string> = {
         :stroke-width="1.5 * upp"
       />
     </g>
+
+    <template v-if="prop">
+      <line
+        :x1="prop.stalk.x"
+        :y1="prop.stalk.y"
+        :x2="prop.rotate.x"
+        :y2="prop.rotate.y"
+        class="stroke-map-select"
+        :stroke-width="1.5 * upp"
+        pointer-events="none"
+      />
+      <g
+        data-handle="rotate"
+        data-testid="handle-rotate"
+        :data-active="activeGrip === 'rotate' ? 'true' : undefined"
+        :class="activeGrip === 'rotate' ? 'cursor-grabbing' : 'cursor-grab'"
+      >
+        <circle :cx="prop.rotate.x" :cy="prop.rotate.y" :r="prop.hit" fill="transparent" />
+        <circle
+          :cx="prop.rotate.x"
+          :cy="prop.rotate.y"
+          :r="6 * upp"
+          :class="
+            activeGrip === 'rotate' ? 'fill-map-select stroke-card' : 'fill-card stroke-map-select'
+          "
+          :stroke-width="1.5 * upp"
+        />
+      </g>
+      <g
+        data-handle="scale"
+        data-testid="handle-scale"
+        :data-active="activeGrip === 'scale' ? 'true' : undefined"
+        :style="{ cursor: prop.cursor }"
+      >
+        <circle
+          :cx="prop.resizeHit.x"
+          :cy="prop.resizeHit.y"
+          :r="prop.hit"
+          fill="transparent"
+        />
+        <rect
+          :x="prop.resize.x - r / 2"
+          :y="prop.resize.y - r / 2"
+          :width="r"
+          :height="r"
+          :transform="`rotate(${prop.rotation} ${prop.resize.x} ${prop.resize.y})`"
+          :class="
+            activeGrip === 'scale' ? 'fill-map-select stroke-card' : 'fill-card stroke-map-select'
+          "
+          :stroke-width="1.5 * upp"
+        />
+      </g>
+      <g v-if="badge" pointer-events="none" data-testid="grip-badge">
+        <rect
+          :x="badge.x - badge.w / 2"
+          :y="badge.y - badge.h / 2"
+          :width="badge.w"
+          :height="badge.h"
+          :rx="badge.h / 2"
+          class="fill-map-select"
+        />
+        <text
+          :x="badge.x"
+          :y="badge.y"
+          :font-size="11 * upp"
+          text-anchor="middle"
+          dominant-baseline="central"
+          class="fill-card font-semibold tabular-nums select-none"
+        >
+          {{ badge.text }}
+        </text>
+      </g>
+    </template>
 
     <g v-if="label" data-handle="label" data-testid="handle-label" class="cursor-move">
       <circle :cx="label.x" :cy="label.y" :r="hit" fill="transparent" />

@@ -1146,3 +1146,170 @@ describe('decoration (prop) tool', () => {
     expect(server[0]).toMatchObject({ id: 'tree-1', prop: 'conifer', rotation: 0, scale: 1 })
   })
 })
+
+describe('decoration grips and live preview', () => {
+  /** A tree at (300, 300) px on the 1000×1000 plan, selected. */
+  function setupTree(overrides: Partial<VenueShapeRead> = {}) {
+    const ctx = setup([
+      shape('t', {
+        kind: 'prop',
+        style: 'green',
+        points: [[0.3, 0.3]],
+        prop: 'tree',
+        rotation: 0,
+        scale: 1,
+        ...overrides,
+      }),
+    ])
+    ctx.editor.select('t')
+    return ctx
+  }
+  const ROTATE: PressTarget = { type: 'handle', handle: { kind: 'rotate' } }
+  const SCALE: PressTarget = { type: 'handle', handle: { kind: 'scale' } }
+
+  it('turns with the rotate grip: live while dragging, one command on release', () => {
+    const { editor, commands } = setupTree({ rotation: 10 })
+    // Grabbed straight above the centre, dragged to its right: +90°.
+    editor.onPointerDown(ev(300, 250), ROTATE)
+    expect(editor.panFilter(ev(300, 250), ROTATE)).toBe(false)
+    editor.onPointerMove(ev(320, 260))
+    editor.onPointerMove(ev(350, 300))
+    expect(editor.activeGrip.value).toBe('rotate')
+    expect(editor.selected.value?.rotation).toBe(100)
+    expect(commands).toHaveLength(0)
+    editor.onPointerUp(ev(350, 300))
+    expect(editor.activeGrip.value).toBeNull()
+    expect(commands).toEqual([
+      { label: 'drag-rotate', ops: [{ op: 'update', id: 't', patch: { rotation: 100 } }] },
+    ])
+  })
+
+  it('snaps the turn to 15° with Shift', () => {
+    const { editor, commands } = setupTree()
+    editor.onPointerDown(ev(300, 250), ROTATE)
+    // 50° clockwise from up.
+    const x = 300 + 50 * Math.sin((50 * Math.PI) / 180)
+    const y = 300 - 50 * Math.cos((50 * Math.PI) / 180)
+    editor.onPointerMove(ev(x, y, { shiftKey: true }))
+    expect(editor.selected.value?.rotation).toBe(45)
+    editor.onPointerUp(ev(x, y))
+    expect(lastOp(commands)).toEqual({ op: 'update', id: 't', patch: { rotation: 45 } })
+  })
+
+  it('resizes with the corner grip around the centre, clamped, and remembers the size', () => {
+    const { editor, commands } = setupTree()
+    editor.onPointerDown(ev(320, 320), SCALE)
+    editor.onPointerMove(ev(330, 330))
+    expect(editor.activeGrip.value).toBe('scale')
+    expect(editor.selected.value?.scale).toBe(1.5)
+    // Far out: never past the largest size; right on the centre: the smallest.
+    editor.onPointerMove(ev(900, 900))
+    expect(editor.selected.value?.scale).toBe(4)
+    editor.onPointerMove(ev(300, 300))
+    expect(editor.selected.value?.scale).toBe(0.25)
+    editor.onPointerMove(ev(340, 340))
+    editor.onPointerUp(ev(340, 340))
+    expect(commands).toEqual([
+      { label: 'drag-scale', ops: [{ op: 'update', id: 't', patch: { scale: 2 } }] },
+    ])
+    expect(editor.lastPropScale.value).toEqual({ tree: 2 })
+  })
+
+  it('does nothing for a grip press without movement, or on a shape that is no decoration', () => {
+    const { editor, commands } = setupTree()
+    editor.onPointerDown(ev(300, 250), ROTATE)
+    editor.onPointerUp(ev(301, 250))
+    expect(commands).toHaveLength(0)
+    expect(editor.selectedId.value).toBe('t')
+
+    const room = setup([shape('r')])
+    room.editor.select('r')
+    drag(room.editor, [200, 200], [250, 250], ROTATE)
+    expect(room.commands).toHaveLength(0)
+  })
+
+  it('takes the grips with the Deko tool too, without panning or placing', () => {
+    const { editor, commands } = setupTree()
+    editor.setTool('prop')
+    expect(editor.panFilter(ev(300, 250), ROTATE)).toBe(false)
+    drag(editor, [300, 250], [350, 300], ROTATE)
+    expect(commands).toEqual([
+      { label: 'drag-rotate', ops: [{ op: 'update', id: 't', patch: { rotation: 90 } }] },
+    ])
+  })
+
+  it('measures a resize from the glyph edge at least, so a press near the centre does not jump', () => {
+    const { editor } = setupTree()
+    // Pressed 2 units off the centre, then 40 units out.
+    editor.onPointerDown(ev(302, 300), SCALE)
+    editor.onPointerMove(ev(342, 300))
+    const scale = editor.selected.value?.scale ?? 0
+    expect(scale).toBeGreaterThan(1)
+    expect(scale).toBeLessThan(4)
+    editor.onPointerUp(ev(342, 300))
+  })
+
+  it('remembers that Escape cancelled the drag of the current press', () => {
+    const { editor, commands } = setupTree()
+    expect(editor.pressWasCancelled()).toBe(false)
+    editor.onPointerDown(ev(300, 250), ROTATE)
+    editor.onPointerMove(ev(350, 300))
+    expect(key(editor, 'Escape')).toBe(true)
+    expect(editor.dragging.value).toBe(false)
+    expect(editor.pressWasCancelled()).toBe(true)
+    editor.onPointerUp(ev(350, 300))
+    expect(commands).toHaveLength(0)
+    expect(editor.selectedId.value).toBe('t')
+    // The next press starts afresh.
+    editor.onPointerDown(ev(300, 250), ROTATE)
+    expect(editor.pressWasCancelled()).toBe(false)
+    editor.onPointerUp(ev(300, 250))
+    // Cancelling with no drag going on is no cancelled press.
+    editor.abortGesture()
+    expect(editor.pressWasCancelled()).toBe(false)
+  })
+
+  it('drops a grip drag on cancel', () => {
+    const { editor, commands } = setupTree()
+    editor.onPointerDown(ev(300, 250), ROTATE)
+    editor.onPointerMove(ev(350, 300))
+    editor.onPointerCancel(ev(350, 300))
+    expect(editor.activeGrip.value).toBeNull()
+    expect(editor.selected.value?.rotation).toBe(0)
+    expect(commands).toHaveLength(0)
+  })
+
+  it('previews slider values at once and commits them as one step', () => {
+    vi.useFakeTimers()
+    const { editor, commands } = setupTree()
+    expect(editor.previewSelected({ scale: 1.5 })).toBe(true)
+    expect(editor.previewSelected({ scale: 9 })).toBe(true)
+    expect(editor.previewSelected({ rotation: 370 })).toBe(true)
+    expect(editor.selected.value).toMatchObject({ scale: 4, rotation: 10 })
+    // Held: no timer commits it while the slider is still down.
+    vi.advanceTimersByTime(NUDGE_DELAY * 5)
+    expect(commands).toHaveLength(0)
+    // The release reports the final value; the preview becomes one step.
+    expect(editor.updateSelected({ scale: 4 })).toBe(false)
+    expect(commands).toEqual([
+      { label: 'nudge', ops: [{ op: 'update', id: 't', patch: { rotation: 10, scale: 4 } }] },
+    ])
+    expect(editor.lastPropScale.value).toEqual({ tree: 4 })
+  })
+
+  it('previews only a decoration', () => {
+    const { editor, commands } = setup([shape('r')])
+    expect(editor.previewSelected({ scale: 2 })).toBe(false)
+    editor.select('r')
+    expect(editor.previewSelected({ rotation: 30 })).toBe(false)
+    expect(commands).toHaveLength(0)
+  })
+
+  it('commits a held preview before an undo', () => {
+    const { editor, commands, undo } = setupTree()
+    editor.previewSelected({ rotation: 45 })
+    editor.undo()
+    expect(commands).toHaveLength(1)
+    expect(undo).toHaveBeenCalledOnce()
+  })
+})

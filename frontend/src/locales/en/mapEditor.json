@@ -72,6 +72,7 @@
         "newLabel": "New text",
         "order": "Order",
         "prop": {
+            "handlesHint": "Or drag on the map: the round grip turns it, the small square changes the size.",
             "keysHint": "Keys: Q and E turn it, + and − change the size.",
             "resetSize": "Normal size",
             "rotateLeft": "Turn left",

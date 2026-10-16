@@ -10,7 +10,16 @@ import {
   ROTATION_STEP,
   clampPropScale,
   normaliseRotation,
+  propPlacement,
 } from '@/lib/venue-decor'
+import {
+  type XY,
+  angleFromCentre,
+  distance,
+  rotationFromDrag,
+  scaleFromDrag,
+  scaleStartDistance,
+} from '@/lib/venue-prop-handles'
 import {
   MIN_POINTS,
   PROP_STYLE,
@@ -58,11 +67,18 @@ export type HandleTarget =
   | { kind: 'resize'; handle: RectHandle }
   | { kind: 'insert'; edgeIndex: number }
   | { kind: 'label' }
+  /** The round grip above a selected decoration. */
+  | { kind: 'rotate' }
+  /** The corner grip on a selected decoration's ring. */
+  | { kind: 'scale' }
 export type PressTarget =
   { type: 'handle'; handle: HandleTarget } | { type: 'shape'; id: string } | null
 
+/** A grip of a selected decoration that is being dragged (for its live badge). */
+export type PropGrip = 'rotate' | 'scale'
+
 type Drag = {
-  kind: 'move' | 'vertex' | 'resize' | 'label'
+  kind: 'move' | 'vertex' | 'resize' | 'label' | PropGrip
   pointerId: number
   id: string
   /** The shape as it was before the drag — what the command diffs against. */
@@ -76,6 +92,11 @@ type Drag = {
   moved: boolean
   /** Commit even without movement (a vertex inserted by pressing "+"). */
   force: boolean
+  /** A decoration's centre in plan units (rotate and scale drags). */
+  centre: XY
+  /** The pointer's angle round, and distance from, `centre` at the press. */
+  startAngle: number
+  startDistance: number
 }
 
 type Tap = { pointerId: number; startClient: { x: number; y: number }; moved: boolean }
@@ -176,6 +197,8 @@ export function useShapeEditor(options: ShapeEditorOptions) {
   const spaceHeld = ref(false)
   const override = shallowRef<VenueShapeRead | null>(null)
   const dragging = ref(false)
+  /** The decoration grip being dragged right now, if any. */
+  const activeGrip = ref<PropGrip | null>(null)
   /** The style each kind was last given, so the next one starts like it. */
   const lastStyle = ref<Record<ShapeKind, ShapeStyle>>({ ...NEW_SHAPE_STYLE })
   /** The decoration the Deko tool places. */
@@ -307,6 +330,9 @@ export function useShapeEditor(options: ShapeEditorOptions) {
 
   /** Change fields of the selected shape as one undoable step. */
   function updateSelected(patch: VenueShapeUpdate, label = 'edit') {
+    // A live preview (a slider being dragged) is committed first: the patch
+    // that ends it then usually changes nothing more, so it is one step.
+    flushNudge()
     const shape = selected.value
     if (!shape) return false
     let next = { ...shape, ...patch } as VenueShapeRead
@@ -420,7 +446,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
    * committed as one command once the keys rest for `NUDGE_DELAY` (or anything
    * else happens). Moves, turns and size changes of one burst add up.
    */
-  function editTransient(change: (shape: VenueShapeRead) => VenueShapeRead): boolean {
+  function editTransient(change: (shape: VenueShapeRead) => VenueShapeRead, hold = false): boolean {
     const shape = selected.value
     if (!shape || drag) return false
     if (!nudge || nudge.id !== shape.id) {
@@ -429,8 +455,26 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     }
     override.value = change(override.value ?? shape)
     clearTimeout(nudgeTimer)
-    nudgeTimer = setTimeout(flushNudge, NUDGE_DELAY)
+    nudgeTimer = hold ? undefined : setTimeout(flushNudge, NUDGE_DELAY)
     return true
+  }
+
+  /**
+   * Show the selected decoration turned or resized at once, without saving: a
+   * slider of the side panel calls this on every `input`. The preview is held
+   * (no timer) until `flushNudge` or `updateSelected` commits it, which the
+   * slider's `change` does — one undo step and one save per drag.
+   */
+  function previewSelected(patch: Pick<VenueShapeUpdate, 'rotation' | 'scale'>): boolean {
+    if (selected.value?.kind !== 'prop') return false
+    return editTransient(
+      (s) => ({
+        ...s,
+        ...(patch.rotation != null ? { rotation: normaliseRotation(patch.rotation) } : {}),
+        ...(patch.scale != null ? { scale: roundScale(clampPropScale(patch.scale)) } : {}),
+      }),
+      true,
+    )
   }
 
   function nudgeSelected(stepsX: number, stepsY: number) {
@@ -564,10 +608,26 @@ export function useShapeEditor(options: ShapeEditorOptions) {
   }
 
   // ── Drags ───────────────────────────────────────────────────────────────
+  /**
+   * Set when a drag is cancelled (Escape, a tool change) while its pointer is
+   * still down; cleared by the next press. The release that follows still
+   * fires a click, which the host must not read as a click on the plan.
+   */
+  let cancelledThisPress = false
+
+  /** Whether the current (or last) press had its drag cancelled. */
+  function pressWasCancelled(): boolean {
+    return cancelledThisPress
+  }
+
   function cancelDrag() {
-    if (drag) override.value = null
+    if (drag) {
+      override.value = null
+      cancelledThisPress = true
+    }
     drag = null
     dragging.value = false
+    activeGrip.value = null
   }
 
   function abortGesture() {
@@ -584,6 +644,10 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     let index = -1
     let handle: RectHandle = 'se'
     let force = false
+    const { W, H } = options.size()
+    const at0 = shape.points[0]
+    const centre: XY = { x: (at0?.[0] ?? 0) * W, y: (at0?.[1] ?? 0) * H }
+    const press: XY = { x: start[0] * W, y: start[1] * H }
     if (target?.type === 'handle') {
       const h = target.handle
       if (h.kind === 'vertex') {
@@ -593,6 +657,9 @@ export function useShapeEditor(options: ShapeEditorOptions) {
       } else if (h.kind === 'resize') {
         kind = 'resize'
         handle = h.handle
+      } else if (h.kind === 'rotate' || h.kind === 'scale') {
+        if (shape.kind !== 'prop') return
+        kind = h.kind
       } else if (h.kind === 'insert') {
         kind = 'vertex'
         index = h.edgeIndex + 1
@@ -616,6 +683,13 @@ export function useShapeEditor(options: ShapeEditorOptions) {
       startClient: { x: e.clientX, y: e.clientY },
       moved: false,
       force,
+      centre,
+      startAngle: angleFromCentre(centre, press),
+      // Measured from the glyph's edge at least, so a press near the centre cannot jump.
+      startDistance:
+        kind === 'scale'
+          ? scaleStartDistance(distance(centre, press), propPlacement(shape, W, H).radiusUnits)
+          : distance(centre, press),
     }
   }
 
@@ -647,6 +721,17 @@ export function useShapeEditor(options: ShapeEditorOptions) {
       next = moveVertex(d.base, d.index, q)
     } else if (d.kind === 'resize') {
       next = resizeRect(d.base, d.handle, snap(p, e.altKey, vertexCandidates(d.id)))
+    } else if (d.kind === 'rotate') {
+      const at: XY = { x: p[0] * W, y: p[1] * H }
+      const turn = angleFromCentre(d.centre, at)
+      next = {
+        ...d.base,
+        rotation: rotationFromDrag(d.base.rotation ?? 0, d.startAngle, turn, e.shiftKey),
+      }
+    } else if (d.kind === 'scale') {
+      const at: XY = { x: p[0] * W, y: p[1] * H }
+      const reach = distance(d.centre, at)
+      next = { ...d.base, scale: scaleFromDrag(d.base.scale ?? 1, d.startDistance, reach) }
     } else {
       // The caption follows the pointer's movement, wherever its handle was grabbed.
       const a = labelAnchor(d.base, W, H)
@@ -660,14 +745,18 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     const d = drag
     drag = null
     dragging.value = false
+    activeGrip.value = null
     snapHit.value = null
     if (!d) return
     const result = override.value
     override.value = null
     if (!result || (!d.moved && !d.force)) return
     const patch = diffShape(d.origin, result)
-    if (patch)
-      options.execute({ label: `drag-${d.kind}`, ops: [{ op: 'update', id: d.id, patch }] })
+    if (!patch) return
+    options.execute({ label: `drag-${d.kind}`, ops: [{ op: 'update', id: d.id, patch }] })
+    if (result.kind === 'prop' && patch.scale != null && result.prop) {
+      rememberScale(result.prop, patch.scale)
+    }
   }
 
   // ── Pointer events ──────────────────────────────────────────────────────
@@ -680,8 +769,9 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     if (e.pointerType === 'mouse' && e.button === 1) return true
     if (e.pointerType === 'mouse' && e.button !== 0) return false
     if (spaceHeld.value) return true
-    // The Deko tool places with a tap, so a drag may pan — except on a decoration.
-    if (tool.value === 'prop') return !isPropTarget(target)
+    // The Deko tool places with a tap, so a drag may pan — except on a
+    // decoration or one of its grips.
+    if (tool.value === 'prop') return !isPropTarget(target) && target?.type !== 'handle'
     if (tool.value !== 'select') return false
     return target === null
   }
@@ -693,6 +783,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
 
   function onPointerDown(e: PointerLike, target: PressTarget = null) {
     down.add(e.pointerId)
+    cancelledThisPress = false
     if (down.size > 1) {
       // A second finger: this is a pinch, not an edit.
       abortGesture()
@@ -702,8 +793,10 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     if (spaceHeld.value) return
     flushNudge()
 
-    // With the Deko tool a press on a decoration picks it up, like the select tool.
-    if (tool.value === 'select' || (tool.value === 'prop' && isPropTarget(target))) {
+    // With the Deko tool a press on a decoration (or its grips) picks it up,
+    // like the select tool.
+    const pickUp = isPropTarget(target) || target?.type === 'handle'
+    if (tool.value === 'select' || (tool.value === 'prop' && pickUp)) {
       if (!target) return
       const id = target.type === 'shape' ? target.id : selectedId.value
       const shape = displayShapes.value.find((s) => s.id === id)
@@ -731,6 +824,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
         if (dist <= DRAG_THRESHOLD) return
         drag.moved = true
         dragging.value = true
+        if (drag.kind === 'rotate' || drag.kind === 'scale') activeGrip.value = drag.kind
       }
       dragTo(e)
       return
@@ -961,6 +1055,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     snapHit,
     spaceHeld,
     dragging,
+    activeGrip,
     override,
     displayShapes,
     grid,
@@ -973,6 +1068,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     pickLinePreset,
     pickAreaPreset,
     panFilter,
+    pressWasCancelled,
     onPointerDown,
     onPointerMove,
     onPointerUp,
@@ -995,6 +1091,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     nudgeSelected,
     rotateSelected,
     scaleSelected,
+    previewSelected,
     setSelectedRotation,
     setSelectedScale,
     flushNudge,

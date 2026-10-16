@@ -874,14 +874,17 @@ describe('VenueMapEditor: decoration', () => {
     expect(inspector.find('[data-testid="prop-scale"]').exists()).toBe(true)
     expect(inspector.find('[data-testid="style-picker"]').exists()).toBe(false)
     expect(inspector.find('[data-testid="shape-link"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="edit-handles"]').exists()).toBe(false)
+    // Its grips, even while stamping: turn and size, nothing else.
+    expect(wrapper.find('[data-testid="handle-rotate"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="handle-scale"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid^="handle-resize-"]').exists()).toBe(false)
 
     // Esc is "done": back to selecting, the palette goes away.
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
     expect(wrapper.find('[data-testid="decor-palette"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="edit-handles"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="handle-rotate"]').exists()).toBe(true)
   })
 
   it('turns, resizes and retypes the selected decoration from the side panel', async () => {
@@ -926,6 +929,220 @@ describe('VenueMapEditor: decoration', () => {
       { op: 'update', id: 'tree-1', patch: { rotation: 90 } },
       { op: 'update', id: 'tree-1', patch: { prop: 'tent', style: 'area' } },
     ])
+  })
+
+  async function selectTree() {
+    plans = [blankPlan({ shapes: [treeShape()], shapes_revision: 2 })]
+    serverShapes = [treeShape()]
+    serverRevision = 2
+    const wrapper = await mountEditor()
+    const glyph = wrapper.find('[data-testid="venue-shape-tree-1"]').element
+    pointer(glyph, 'pointerdown', 500, 250)
+    pointer(glyph, 'pointerup', 500, 250)
+    await flushPromises()
+    return wrapper
+  }
+
+  /** Where a grip is drawn (its first circle or square), in client = plan units. */
+  function gripAt(wrapper: Awaited<ReturnType<typeof mountEditor>>, testid: string) {
+    const el = wrapper.find(`[data-testid="${testid}"]`)
+    const circle = el.find('circle').element
+    return {
+      el: el.element,
+      x: Number(circle.getAttribute('cx')),
+      y: Number(circle.getAttribute('cy')),
+    }
+  }
+
+  /** One step of a slider drag: `input` only (`setValue` would also fire `change`). */
+  async function slide(
+    slider: ReturnType<Awaited<ReturnType<typeof mountEditor>>['find']>,
+    value: string,
+  ) {
+    ;(slider.element as HTMLInputElement).value = value
+    await slider.trigger('input')
+  }
+
+  it('shows a slider drag on the map at once, and saves it once on release', async () => {
+    const wrapper = await selectTree()
+    const tree = () => wrapper.find('[data-testid="venue-shape-tree-1"]')
+    const scale = wrapper.find('[data-testid="prop-scale"]')
+    // Every `input` while dragging moves the tree on the map…
+    await slide(scale, '1.5')
+    await slide(scale, '2')
+    expect(tree().attributes('data-scale')).toBe('2')
+    expect(wrapper.find('[data-testid="prop-scale-value"]').text()).toBe('200 %')
+    // …but nothing is saved until the slider is let go.
+    await flushPromises()
+    expect(batchCalls()).toHaveLength(0)
+    await scale.trigger('change')
+    await flushPromises()
+    const rotation = wrapper.find('[data-testid="prop-rotation"]')
+    await slide(rotation, '30')
+    await slide(rotation, '45')
+    expect(tree().attributes('data-rotation')).toBe('45')
+    await rotation.trigger('change')
+    await flushPromises()
+    expect(batchCalls().map((c) => c.body.ops)).toEqual([
+      [{ op: 'update', id: 'tree-1', patch: { scale: 2 } }],
+      [{ op: 'update', id: 'tree-1', patch: { rotation: 45 } }],
+    ])
+
+    // One undo step per slider drag.
+    await wrapper.find('[data-testid="tool-undo"]').trigger('click')
+    await flushPromises()
+    expect(tree().attributes('data-rotation')).toBe('0')
+    expect(tree().attributes('data-scale')).toBe('2')
+  })
+
+  it('turns the decoration with its round grip, live, in one step', async () => {
+    const wrapper = await selectTree()
+    const tree = () => wrapper.find('[data-testid="venue-shape-tree-1"]')
+    const grip = gripAt(wrapper, 'handle-rotate')
+    // Straight above the tree, which is not turned.
+    expect(grip.x).toBeCloseTo(500)
+    expect(grip.y).toBeLessThan(250)
+
+    pointer(grip.el, 'pointerdown', grip.x, grip.y)
+    // To the right of the tree: a quarter turn, shown at once with its angle.
+    pointer(grip.el, 'pointermove', 600, 252)
+    pointer(grip.el, 'pointermove', 600, 250)
+    await flushPromises()
+    expect(tree().attributes('data-rotation')).toBe('90')
+    expect(wrapper.find('[data-testid="grip-badge"]').text()).toBe('90°')
+    expect(wrapper.find('[data-testid="handle-rotate"]').attributes('data-active')).toBe('true')
+    expect(batchCalls()).toHaveLength(0)
+    pointer(grip.el, 'pointerup', 600, 250)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="grip-badge"]').exists()).toBe(false)
+    expect(batchCalls().map((c) => c.body.ops)).toEqual([
+      [{ op: 'update', id: 'tree-1', patch: { rotation: 90 } }],
+    ])
+    // The panel follows, and the tree stays selected.
+    expect(wrapper.find('[data-testid="prop-rotation-value"]').text()).toBe('90°')
+    expect(tree().attributes('data-selected')).toBe('true')
+
+    // Shift snaps to 15° steps.
+    const again = gripAt(wrapper, 'handle-rotate')
+    pointer(again.el, 'pointerdown', again.x, again.y)
+    const shifted = new PointerEvent('pointermove', {
+      bubbles: true,
+      clientX: 500 + 100 * Math.cos((10 * Math.PI) / 180),
+      clientY: 250 + 100 * Math.sin((10 * Math.PI) / 180),
+      pointerId: 1,
+      pointerType: 'mouse',
+      shiftKey: true,
+    })
+    again.el.dispatchEvent(shifted)
+    await flushPromises()
+    expect(tree().attributes('data-rotation')).toBe('105')
+    pointer(again.el, 'pointerup', 0, 0)
+    await flushPromises()
+
+    await wrapper.find('[data-testid="tool-undo"]').trigger('click')
+    await flushPromises()
+    expect(tree().attributes('data-rotation')).toBe('90')
+  })
+
+  it('resizes the decoration with its corner grip, live, in one step', async () => {
+    const wrapper = await selectTree()
+    const tree = () => wrapper.find('[data-testid="venue-shape-tree-1"]')
+    const grip = gripAt(wrapper, 'handle-scale')
+    // Bottom right of the tree.
+    expect(grip.x).toBeGreaterThan(500)
+    expect(grip.y).toBeGreaterThan(250)
+
+    pointer(grip.el, 'pointerdown', grip.x, grip.y)
+    // Twice as far from the centre: twice the size.
+    const far = { x: 500 + (grip.x - 500) * 2, y: 250 + (grip.y - 250) * 2 }
+    pointer(grip.el, 'pointermove', far.x, far.y)
+    await flushPromises()
+    expect(tree().attributes('data-scale')).toBe('2')
+    expect(wrapper.find('[data-testid="grip-badge"]').text()).toBe('200 %')
+    // Way out: no bigger than the largest size.
+    pointer(grip.el, 'pointermove', 990, 490)
+    await flushPromises()
+    expect(tree().attributes('data-scale')).toBe('4')
+    pointer(grip.el, 'pointermove', far.x, far.y)
+    pointer(grip.el, 'pointerup', far.x, far.y)
+    await flushPromises()
+    expect(batchCalls().map((c) => c.body.ops)).toEqual([
+      [{ op: 'update', id: 'tree-1', patch: { scale: 2 } }],
+    ])
+    expect(wrapper.find('[data-testid="prop-scale-value"]').text()).toBe('200 %')
+  })
+
+  it('keeps the resize grip hit circle off the glyph, so a press there moves it', async () => {
+    const original = window.matchMedia
+    // A finger: the grips get their large hit circles.
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('coarse'),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia
+    try {
+      const wrapper = await selectTree()
+      const tree = () => wrapper.find('[data-testid="venue-shape-tree-1"]')
+      const hit = wrapper.find('[data-testid="handle-scale"] circle').element
+      const cx = Number(hit.getAttribute('cx'))
+      const cy = Number(hit.getAttribute('cy'))
+      const r = Number(hit.getAttribute('r'))
+      // The tree's centre is well outside the grip's circle.
+      expect(Math.hypot(cx - 500, cy - 250)).toBeGreaterThan(r)
+      // The visible square is still inside it.
+      const square = wrapper.find('[data-testid="handle-scale"] rect').element
+      const sx = Number(square.getAttribute('x')) + Number(square.getAttribute('width')) / 2
+      const sy = Number(square.getAttribute('y')) + Number(square.getAttribute('height')) / 2
+      expect(Math.hypot(cx - sx, cy - sy)).toBeLessThan(r)
+
+      // A drag from the glyph moves it and leaves its size alone.
+      const glyph = tree().element
+      pointer(glyph, 'pointerdown', 500, 250)
+      pointer(glyph, 'pointermove', 540, 210)
+      pointer(glyph, 'pointerup', 540, 210)
+      await flushPromises()
+      const ops = batchCalls().map((c) => c.body.ops)
+      expect(ops).toHaveLength(1)
+      expect(ops[0]).toEqual([
+        { op: 'update', id: 'tree-1', patch: { points: expect.any(Array) } },
+      ])
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
+  it('keeps the decoration selected when Escape cancels a grip drag released on the ground', async () => {
+    const wrapper = await selectTree()
+    const tree = () => wrapper.find('[data-testid="venue-shape-tree-1"]')
+    const grip = gripAt(wrapper, 'handle-rotate')
+    pointer(grip.el, 'pointerdown', grip.x, grip.y)
+    pointer(grip.el, 'pointermove', 600, 250)
+    await flushPromises()
+    expect(tree().attributes('data-rotation')).toBe('90')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(tree().attributes('data-rotation')).toBe('0')
+
+    // Let go far from the tree: the browser's click lands on the empty plan.
+    const svg = wrapper.find('[data-testid="editor-canvas"]').element
+    pointer(svg, 'pointerup', 900, 450)
+    svg.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 900, clientY: 450 }))
+    await flushPromises()
+    expect(tree().attributes('data-selected')).toBe('true')
+    expect(wrapper.find('[data-testid="handle-rotate"]').exists()).toBe(true)
+    expect(batchCalls()).toHaveLength(0)
+
+    // A plain tap on the ground afterwards still clears the selection.
+    pointer(svg, 'pointerdown', 900, 450)
+    pointer(svg, 'pointerup', 900, 450)
+    svg.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 900, clientY: 450 }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="handle-rotate"]').exists()).toBe(false)
   })
 
   it('draws a hedge from the line presets, and starts a sandpit', async () => {
@@ -1131,6 +1348,30 @@ describe('VenueMapEditor: the phone sheet', () => {
     await wrapper.get('[data-testid="tool-prop"]').trigger('click')
     await flushPromises()
     expect(isShut(wrapper)).toBe(true)
+  })
+
+  it('stays shut for a picked decoration, so its grips stay in reach', async () => {
+    const tree = rectShape({
+      id: 'tree-1',
+      kind: 'prop',
+      style: 'green',
+      points: [[0.5, 0.5]],
+      label: null,
+      prop: 'tree',
+      rotation: 0,
+      scale: 1,
+    })
+    plans = [blankPlan({ shapes: [tree] })]
+    serverShapes = [tree]
+    const wrapper = await mountEditor()
+    await wrapper.get('[data-testid="venue-shape-tree-1"]').trigger('click')
+    await flushPromises()
+    expect(isShut(wrapper)).toBe(true)
+    expect(wrapper.get('[data-testid="editor-sheet-open"]').text()).toBe('Selection')
+
+    await wrapper.get('[data-testid="editor-sheet-open"]').trigger('click')
+    expect(isShut(wrapper)).toBe(false)
+    expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
   })
 
   it('shuts when a tap on the plan finds nothing to select', async () => {

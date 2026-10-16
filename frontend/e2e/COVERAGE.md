@@ -44,13 +44,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 233     |
+| `chromium`   | 28         | 234     |
 | `member`     | 3          | 25      |
 | `mobile`     | 2          | 10      |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 32      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **55**     | **403** |
+| **Total**    | **55**     | **404** |
 
 ## Inventory
 
@@ -152,7 +152,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 233 tests
+### Project `chromium` — 28 files, 234 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -532,13 +532,14 @@ Not yet covered, and not currently tracked by an issue:
   - Create button is visible for admin
   - Create button navigates to create page
 
-#### `frontend/e2e/tests/authenticated/venue-map-draw.spec.ts` — 4 tests
+#### `frontend/e2e/tests/authenticated/venue-map-draw.spec.ts` — 5 tests
 
 - **Drawing a venue map** (2)
   - draw, label, link, undo, redo, delete — and it persists
   - edit in place on the map page: the second plan, a new corner, back to the map
-- **Decorating a venue map** (2)
+- **Decorating a venue map** (3)
   - place a tree, turn it, undo, reload, delete
+  - turn and resize a tree with its grips on the map, one step each
   - a hedge line from the palette
 
 #### `frontend/e2e/tests/authenticated/venue-map-editor.spec.ts` — 1 test
