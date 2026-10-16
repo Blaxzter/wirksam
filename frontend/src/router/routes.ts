@@ -381,10 +381,14 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           name: 'invite-accept',
           component: () => import('@/views/events/InviteAcceptView.vue'),
         },
+        // Both describe the signed-in account, so both need one: without it the
+        // view has no status to read and fell back to "not approved", telling a
+        // signed-out visitor their registration had been turned down.
         {
           path: 'account-suspended',
           name: 'account-suspended',
           component: () => import('@/views/AccountSuspendedView.vue'),
+          beforeEnter: authGuard,
         },
         // Same screen, other reason: the account is waiting in (or was turned
         // away from) the approval queue. The view reads which from the store.
@@ -392,6 +396,7 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           path: 'account-pending',
           name: 'account-pending',
           component: () => import('@/views/AccountSuspendedView.vue'),
+          beforeEnter: authGuard,
         },
       ],
     },
