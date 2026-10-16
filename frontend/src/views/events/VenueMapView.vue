@@ -697,6 +697,7 @@ const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
             :plans="plans"
             compact
             class="max-w-full lg:hidden"
+            data-testid="plan-switcher-header"
             @update:model-value="onPlanChange"
           />
         </Teleport>

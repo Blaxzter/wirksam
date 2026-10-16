@@ -1113,6 +1113,7 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
           :plans="plans"
           compact
           class="max-w-full lg:hidden"
+          data-testid="plan-switcher-header"
         />
       </Teleport>
       <VenuePlanSwitcher
