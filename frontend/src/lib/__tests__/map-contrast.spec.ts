@@ -99,6 +99,9 @@ const STYLES = [
   'parking',
   'path',
   'wall',
+  'hedge',
+  'fence',
+  'sand',
 ] as const
 
 const THEMES = { light, dark } as const
@@ -190,6 +193,23 @@ describe('the .map-light set', () => {
     )
     for (const name of themed) {
       expect([name, dark.get(name) !== light.get(name)]).toEqual([name, true])
+    }
+  })
+})
+
+describe('the decoration tokens', () => {
+  // Decoration is no indicator, so it is not paired; it only has to parse, so
+  // a typo cannot silently drop a tree's colour.
+  const names = (t: Tokens) => [...t.keys()].filter((k) => k.startsWith('--map-decor-'))
+
+  it.each(Object.entries(THEMES))('parse in %s', (_name, tokens) => {
+    expect(names(tokens).length).toBeGreaterThanOrEqual(17)
+    for (const name of names(tokens)) {
+      if (name === '--map-decor-shadow') {
+        expect(tokens.get(name)).toMatch(/^rgb\(\s*[\d.]+\s+[\d.]+\s+[\d.]+\s*\/\s*[\d.]+\s*\)$/)
+      } else {
+        expect(() => colour(tokens, name)).not.toThrow()
+      }
     }
   })
 })

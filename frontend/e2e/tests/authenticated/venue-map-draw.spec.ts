@@ -1,7 +1,8 @@
 /**
  * E2E tests for drawing a venue map in the app (#185 phase 2): event settings
  * → "Map" tab → a blank plan, then rectangles, shapes, lines and texts, with
- * undo/redo, deleting, and a reload to prove it all persisted.
+ * undo/redo, deleting, and a reload to prove it all persisted. Decoration too:
+ * a tree from the Deko palette, turned and undone, and a hedge line.
  *
  * Runs as a disposable organiser in an event of their own (see e2e/CLAUDE.md):
  * the sidebar's "Map" entry follows the selected event's `venue_plan_count`.
@@ -296,5 +297,95 @@ test.describe('Drawing a venue map', () => {
     const viewBox = (await drawn.boundingBox())!
     await page.mouse.click(viewBox.x + viewBox.width * 0.3, viewBox.y + viewBox.height * 0.7)
     await expect(page).toHaveURL(new RegExp(`location=${location.id}`))
+  })
+})
+
+test.describe('Decorating a venue map', () => {
+  test('place a tree, turn it, undo, reload, delete', async ({ disposablePage: page }) => {
+    const plan = await createVenuePlan(page, event.id, { name: 'Wiese' })
+    await page.goto(`/app/event-settings/${event.id}?tab=map`)
+    const editor = page.getByTestId('venue-map-editor')
+    const canvas = editor.getByTestId('editor-canvas')
+    await expect(canvas).toBeVisible()
+
+    // ── The Deko tool, a tree, a tap in the middle ──
+    await editor.getByTestId('tool-prop').click()
+    await expect(editor.getByTestId('decor-palette')).toBeVisible()
+    await editor.getByTestId('decor-item-tree').click()
+    await expect(editor.getByTestId('decor-item-tree')).toHaveAttribute('aria-checked', 'true')
+    const centre = await at(canvas, 0.5, 0.45)
+    let saved = nextBatch(page)
+    await page.mouse.click(centre.x, centre.y)
+    expect((await saved).ok()).toBe(true)
+
+    const tree = editor.locator('[data-kind="prop"][data-prop="tree"]')
+    await expect(tree).toHaveCount(1)
+    const start = Number(await tree.getAttribute('data-rotation'))
+    let { shapes } = await getPlanShapes(page, plan.id)
+    expect(shapes).toHaveLength(1)
+    expect(shapes[0]).toMatchObject({ kind: 'prop', prop: 'tree', rotation: start, scale: 1 })
+    const id = shapes[0]!.id
+
+    // ── Turned twice from the side panel, one saved step each ──
+    for (let i = 0; i < 2; i++) {
+      saved = nextBatch(page)
+      await editor.getByTestId('prop-rotate-right').click()
+      await saved
+    }
+    await expect(tree).toHaveAttribute('data-rotation', String((start + 30) % 360))
+
+    // ── Ctrl+Z takes back one turn ──
+    saved = nextBatch(page)
+    await page.keyboard.press('Control+z')
+    await saved
+    const turned = (start + 15) % 360
+    await expect(tree).toHaveAttribute('data-rotation', String(turned))
+    await expect(editor.getByTestId('draw-save-state')).toContainText(/saved|gespeichert/i)
+    ;({ shapes } = await getPlanShapes(page, plan.id))
+    expect(shapes[0]).toMatchObject({ id, rotation: turned })
+
+    // ── It survives a reload ──
+    await page.reload()
+    const reloaded = page.locator(`[data-testid="venue-shape-${id}"]`)
+    await expect(reloaded).toHaveAttribute('data-prop', 'tree')
+    await expect(reloaded).toHaveAttribute('data-rotation', String(turned))
+
+    // ── Selected by a click, removed with Delete ──
+    const box = (await reloaded.boundingBox())!
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    await expect(page.getByTestId('shape-inspector')).toBeVisible()
+    await expect(page.getByTestId('prop-rotation')).toBeVisible()
+    saved = nextBatch(page)
+    await page.keyboard.press('Delete')
+    await saved
+    ;({ shapes } = await getPlanShapes(page, plan.id))
+    expect(shapes).toHaveLength(0)
+  })
+
+  test('a hedge line from the palette', async ({ disposablePage: page }) => {
+    const plan = await createVenuePlan(page, event.id, { name: 'Wiese' })
+    await page.goto(`/app/event-settings/${event.id}?tab=map`)
+    const editor = page.getByTestId('venue-map-editor')
+    const canvas = editor.getByTestId('editor-canvas')
+    await expect(canvas).toBeVisible()
+
+    await editor.getByTestId('tool-prop').click()
+    await editor.getByTestId('decor-line-hedge').click()
+    await expect(editor.getByTestId('tool-path')).toHaveAttribute('aria-pressed', 'true')
+    for (const [fx, fy] of [
+      [0.2, 0.3],
+      [0.7, 0.3],
+    ] as const) {
+      const p = await at(canvas, fx, fy)
+      await page.mouse.click(p.x, p.y)
+    }
+    const saved = nextBatch(page)
+    await page.keyboard.press('Enter')
+    expect((await saved).ok()).toBe(true)
+
+    const { shapes } = await getPlanShapes(page, plan.id)
+    expect(shapes).toHaveLength(1)
+    expect(shapes[0]).toMatchObject({ kind: 'path', style: 'hedge', stroke_width: 0.016 })
+    await expect(editor.getByTestId(`venue-shape-${shapes[0]!.id}`)).toHaveClass(/vs-hedge/)
   })
 })

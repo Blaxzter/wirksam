@@ -3,7 +3,7 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 from pydantic import ValidationError
@@ -11,11 +11,13 @@ from pydantic_core import PydanticCustomError
 
 from app.logic.venue_shapes import (
     DEFAULT_STROKE_WIDTH,
+    PROP_STYLE,
+    PROP_TYPES,
     round_point,
     shape_anchor,
     validate_geometry,
 )
-from app.schemas.venue_map import VenueShapeCreate
+from app.schemas.venue_map import PropType, ShapeStyle, VenueShapeCreate
 
 CASES_FILE = Path(__file__).parent.parent / "fixtures" / "shape_anchor_cases.json"
 
@@ -23,6 +25,7 @@ CASES_FILE = Path(__file__).parent.parent / "fixtures" / "shape_anchor_cases.jso
 def _geometry(**overrides: Any):
     args: dict[str, Any] = {
         "kind": "rect",
+        "style": "room",
         "points": [[0.1, 0.1], [0.5, 0.5]],
         "label": None,
         "stroke_width": None,
@@ -51,11 +54,16 @@ class TestValidateGeometry:
             ("path", 1),
             ("path", 501),
             ("label", 2),
+            ("prop", 0),
+            ("prop", 2),
         ],
     )
     def test_points_count(self, kind: str, count: int) -> None:
         points = [[i / 1000, i / 1000] for i in range(count)]
-        assert _code(kind=kind, points=points, label="x") == "venue_shape.points_count"
+        assert (
+            _code(kind=kind, points=points, label="x", prop="tree")
+            == "venue_shape.points_count"
+        )
 
     @pytest.mark.parametrize(
         ("kind", "count"),
@@ -98,13 +106,23 @@ class TestValidateGeometry:
 
     @pytest.mark.parametrize(
         ("kind", "points"),
-        [("path", [[0, 0], [1, 1]]), ("label", [[0.5, 0.5]])],
+        [
+            ("path", [[0, 0], [1, 1]]),
+            ("label", [[0.5, 0.5]]),
+            ("prop", [[0.5, 0.5]]),
+        ],
     )
     def test_only_areas_link_to_a_place(
         self, kind: str, points: list[list[float]]
     ) -> None:
         assert (
-            _code(kind=kind, points=points, label="x", location_id=uuid.uuid4())
+            _code(
+                kind=kind,
+                points=points,
+                label="x",
+                location_id=uuid.uuid4(),
+                prop="tree",
+            )
             == "venue_shape.link_not_allowed"
         )
 
@@ -124,6 +142,96 @@ class TestValidateGeometry:
 
     def test_round_point(self) -> None:
         assert round_point((0.123456789, 1)) == [0.12346, 1.0]
+
+
+def _prop(**overrides: Any):
+    args: dict[str, Any] = {"kind": "prop", "points": [[0.3, 0.4]], "prop": "tree"}
+    args.update(overrides)
+    return _geometry(**args)
+
+
+class TestProps:
+    def test_defaults(self) -> None:
+        geometry = _prop()
+        assert geometry.points == [[0.3, 0.4]]
+        assert geometry.prop == "tree"
+        assert geometry.rotation == 0.0
+        assert geometry.scale == 1.0
+        assert geometry.stroke_width is None
+
+    def test_needs_a_prop_type(self) -> None:
+        assert _code(kind="prop", points=[[0.3, 0.4]]) == "venue_shape.prop_required"
+
+    @pytest.mark.parametrize("scale", [0.2, 4.1, 0.0, -1.0])
+    def test_scale_out_of_range(self, scale: float) -> None:
+        with pytest.raises(PydanticCustomError) as exc:
+            _prop(scale=scale)
+        assert exc.value.type == "venue_shape.prop_scale"
+        assert exc.value.context == {"low": 0.25, "high": 4.0}
+
+    @pytest.mark.parametrize("scale", [0.25, 4.0, 1.23456])
+    def test_scale_in_range_is_rounded(self, scale: float) -> None:
+        assert _prop(scale=scale).scale == round(scale, 3)
+
+    @pytest.mark.parametrize(
+        ("rotation", "expected"),
+        [
+            (-90, 270.0),
+            (360, 0.0),
+            (725, 5.0),
+            (12.34, 12.3),
+            (359.96, 0.0),
+            (-0.04, 0.0),
+            (None, 0.0),
+        ],
+    )
+    def test_rotation_is_normalised(
+        self, rotation: float | None, expected: float
+    ) -> None:
+        assert _prop(rotation=rotation).rotation == expected
+
+    def test_style_is_forced_to_the_family(self) -> None:
+        assert _prop(style="wall").style == "green"
+        assert _prop(style="wall", prop="bench").style == "furniture"
+        assert _prop(style="wall", prop="tent").style == "area"
+
+    def test_stroke_width_is_dropped(self) -> None:
+        assert _prop(stroke_width=0.05).stroke_width is None
+
+    def test_a_caption_is_allowed(self) -> None:
+        assert _prop(label="Info").points
+
+    @pytest.mark.parametrize(
+        ("kind", "points"),
+        [
+            ("rect", [[0.1, 0.1], [0.5, 0.5]]),
+            ("polygon", [[0, 0], [1, 0], [0, 1]]),
+            ("path", [[0, 0], [1, 1]]),
+            ("label", [[0.5, 0.5]]),
+        ],
+    )
+    def test_other_kinds_drop_prop_fields(
+        self, kind: str, points: list[list[float]]
+    ) -> None:
+        geometry = _geometry(
+            kind=kind,
+            points=points,
+            label="x",
+            style="wall",
+            prop="tree",
+            rotation=90,
+            scale=2,
+        )
+        assert geometry.style == "wall"
+        assert (geometry.prop, geometry.rotation, geometry.scale) == (None, None, None)
+
+    def test_prop_type_literal_matches_the_logic(self) -> None:
+        assert get_args(PropType) == PROP_TYPES
+        assert set(PROP_STYLE) == set(PROP_TYPES)
+        assert set(PROP_STYLE.values()) <= set(get_args(ShapeStyle))
+
+    def test_anchor_is_the_point(self) -> None:
+        assert shape_anchor("prop", [[0.3, 0.4]]) == (0.3, 0.4)
 
 
 class TestShapeAnchor:
@@ -160,6 +268,39 @@ class TestCreateSchema:
                 {"kind": "label", "style": "room", "points": [[0.5, 0.5]]}
             )
         assert exc.value.errors()[0]["type"] == "venue_shape.label_required"
+
+    def test_prop_through_the_schema(self) -> None:
+        shape = VenueShapeCreate.model_validate(
+            {
+                "kind": "prop",
+                "style": "wall",
+                "points": [[0.5, 0.5]],
+                "prop": "conifer",
+                "rotation": -90,
+                "scale": 1.5,
+                "stroke_width": 0.05,
+            }
+        )
+        assert shape.style == "green"
+        assert (shape.prop, shape.rotation, shape.scale) == ("conifer", 270.0, 1.5)
+        assert shape.stroke_width is None
+
+    def test_prop_schema_rejects_unknown_types_and_wild_rotations(self) -> None:
+        base = {"kind": "prop", "style": "green", "points": [[0.5, 0.5]]}
+        with pytest.raises(ValidationError):
+            VenueShapeCreate.model_validate({**base, "prop": "palm"})
+        with pytest.raises(ValidationError):
+            VenueShapeCreate.model_validate({**base, "prop": "tree", "rotation": 725})
+        with pytest.raises(ValidationError) as exc:
+            VenueShapeCreate.model_validate(base)
+        assert exc.value.errors()[0]["type"] == "venue_shape.prop_required"
+
+    def test_new_styles_are_accepted(self) -> None:
+        for style in ("hedge", "fence", "sand"):
+            shape = VenueShapeCreate.model_validate(
+                {"kind": "path", "style": style, "points": [[0, 0], [0.5, 0.5]]}
+            )
+            assert shape.style == style
 
     def test_coordinates_stay_in_range(self) -> None:
         with pytest.raises(ValidationError):

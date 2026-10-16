@@ -149,7 +149,8 @@ class VenueShape(Base, table=True):
     like marker coordinates: a rect is its two corners (min, max), a polygon
     3..500 vertices (implicitly closed), a path 2..500 vertices (open, with a
     ``stroke_width`` as a fraction of the plan's shorter side), a label one
-    point. ``style`` is a preset token the client maps to theme colours, never
+    point, a prop one point with a prop type, rotation and scale (decoration,
+    never a place). ``style`` is a preset token the client maps to theme colours, never
     a free colour. All of that is enforced by the schema, as for markers.
     """
 
@@ -189,7 +190,7 @@ class VenueShape(Base, table=True):
     )
     kind: str = Field(
         sa_column=sa.Column(sa.String(16), nullable=False),
-        description="rect, polygon, path, label",
+        description="rect, polygon, path, label, prop",
     )
     style: str = Field(
         sa_column=sa.Column(sa.String(16), nullable=False),
@@ -216,6 +217,21 @@ class VenueShape(Base, table=True):
         default=None,
         sa_column=sa.Column(sa.Float, nullable=True),
         description="Paths only: line width as a fraction of the plan's shorter side",
+    )
+    prop: str | None = Field(
+        default=None,
+        sa_column=sa.Column(sa.String(16), nullable=True),
+        description="Props only: tree, conifer, bush, ...",
+    )
+    rotation: float | None = Field(
+        default=None,
+        sa_column=sa.Column(sa.Float, nullable=True),
+        description="Props only: degrees clockwise, 0 <= r < 360",
+    )
+    scale: float | None = Field(
+        default=None,
+        sa_column=sa.Column(sa.Float, nullable=True),
+        description="Props only: size factor, 0.25..4",
     )
     sort_order: int = Field(
         default=0,

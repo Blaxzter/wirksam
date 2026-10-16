@@ -76,6 +76,8 @@
         "link_not_allowed": "Only rectangles and shapes can be linked to a place.",
         "not_found": "That drawing could not be found. It may have been deleted in the meantime.",
         "points_count": "This drawing has too few or too many points.",
+        "prop_required": "Choose what kind of decoration this is.",
+        "prop_scale": "This size isn't possible.",
         "revision_conflict": "Someone else changed this map in the meantime. We loaded the latest version.",
         "stroke_width": "That line width is not possible.",
         "too_many": "This map has reached the limit of 500 drawings.",

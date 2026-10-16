@@ -29,6 +29,7 @@ mailed even by a future code path that forgets to check the ``sandbox|`` prefix.
 """
 
 import datetime as dt
+import math
 import uuid
 
 import pytest
@@ -40,8 +41,10 @@ from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic.notifications.registry import classification_for_code
 from app.logic.sandbox.seed import guest_display_name
 from app.logic.sandbox.venue_plan_shapes import (
+    HEIGHT,
     PLAN_KEYS,
     SPOTS,
+    WIDTH,
     demo_shapes,
     label_text,
 )
@@ -866,6 +869,42 @@ class TestSeededVenueMap:
                 assert markers[SPOTS[key][spec.link_spot]] == shape.location_id
             assert linked >= 3
 
+    async def test_decoration_is_seeded_as_props(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Props carry their glyph, rotation and size; nothing else does, and
+        no prop is linked to a place."""
+        plans = sorted(
+            await _plans(db_session, test_sandbox), key=lambda p: p.sort_order
+        )
+        for key, plan in zip(PLAN_KEYS, plans, strict=True):
+            shapes = list(
+                (
+                    await db_session.execute(
+                        select(VenueShape)
+                        .where(col(VenueShape.plan_id) == plan.id)
+                        .order_by(col(VenueShape.sort_order))
+                    )
+                ).scalars()
+            )
+            props = 0
+            for spec, shape in zip(demo_shapes(key), shapes, strict=True):
+                if spec.kind != "prop":
+                    assert (shape.prop, shape.rotation, shape.scale) == (
+                        None,
+                        None,
+                        None,
+                    )
+                    continue
+                props += 1
+                assert shape.location_id is None
+                assert (shape.prop, shape.rotation, shape.scale) == (
+                    spec.prop,
+                    spec.rotation,
+                    spec.scale,
+                )
+            assert props > 10
+
     async def test_the_drawing_is_in_the_language_the_visitor_clicked(
         self, db_session: AsyncSession, make_sandbox: SandboxFactory
     ) -> None:
@@ -905,7 +944,7 @@ def test_every_demo_shape_is_one_the_editor_could_have_made(
     batch endpoint uses; a demo shape the editor would refuse to save is one it
     may also fail to draw."""
     specs = demo_shapes(key)  # pyright: ignore[reportArgumentType]
-    assert 20 < len(specs) < 60
+    assert 20 < len(specs) < 130
     for spec in specs:
         assert len(spec.points) < 100
         VenueShapeCreate(
@@ -918,10 +957,51 @@ def test_every_demo_shape_is_one_the_editor_could_have_made(
             label_y=spec.label_at[1] if spec.label_at else None,
             stroke_width=spec.stroke_width,
             location_id=uuid.uuid4() if spec.link_spot else None,
+            prop=spec.prop,  # pyright: ignore[reportArgumentType]
+            rotation=spec.rotation if spec.prop else None,
+            scale=spec.scale if spec.prop else None,
         )
         if spec.link_spot is not None:
             assert spec.link_spot in SPOTS[key]  # pyright: ignore[reportArgumentType]
     assert demo_shapes(key) is specs  # pyright: ignore[reportArgumentType]
+
+
+def test_the_outdoor_plan_has_real_trees() -> None:
+    """Trees are drawn as tree glyphs, not as green twelve-sided polygons."""
+    specs = demo_shapes("outdoor")
+    trees = [s for s in specs if s.kind == "prop" and s.prop in ("tree", "conifer")]
+    assert len(trees) >= 12
+    assert not [
+        s
+        for s in specs
+        if s.kind == "polygon" and s.style == "green" and len(s.points) == 12
+    ]
+
+
+@pytest.mark.parametrize("key", PLAN_KEYS)
+def test_decor_keeps_clear_of_the_pins(key: str) -> None:
+    """Decoration must never crowd a pill: at least 40 canvas px from every
+    pin, unless it is the very thing the pin stands on (``under_pin``)."""
+    spots = SPOTS[key]  # pyright: ignore[reportArgumentType]
+    props = [s for s in demo_shapes(key) if s.kind == "prop"]  # pyright: ignore[reportArgumentType]
+    assert props
+    for spec in props:
+        if spec.under_pin:
+            continue
+        x, y = spec.points[0]
+        for name, (px, py) in spots.items():
+            distance = math.hypot((x - px) * WIDTH, (y - py) * HEIGHT)
+            assert distance >= 40, (spec.prop, spec.points[0], name, distance)
+
+
+@pytest.mark.parametrize("key", PLAN_KEYS)
+def test_every_prop_is_on_the_canvas(key: str) -> None:
+    props = [s for s in demo_shapes(key) if s.kind == "prop"]  # pyright: ignore[reportArgumentType]
+    assert props
+    for spec in props:
+        assert spec.prop is not None
+        ((x, y),) = spec.points
+        assert 0 <= x <= 1 and 0 <= y <= 1, spec
 
 
 # ── The two tracks ────────────────────────────────────────────────

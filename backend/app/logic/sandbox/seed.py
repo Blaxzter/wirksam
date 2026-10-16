@@ -725,6 +725,9 @@ async def _seed_venue_plan(
                     label_x=shape.label_at[0] if shape.label_at else None,
                     label_y=shape.label_at[1] if shape.label_at else None,
                     stroke_width=shape.stroke_width,
+                    prop=shape.prop,
+                    rotation=shape.rotation if shape.prop else None,
+                    scale=shape.scale if shape.prop else None,
                     sort_order=order,
                 )
             )

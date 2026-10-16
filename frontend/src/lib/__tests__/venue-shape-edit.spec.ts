@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { VenueShapeRead } from '@/client/types.gen'
 import {
+  MIN_POINTS,
+  PROP_STYLE,
   type Pt,
   RECT_HANDLES,
   type ShapeOp,
@@ -624,5 +626,101 @@ describe('ops', () => {
     expect(reorderOps(list, 'c', 1)).toEqual([])
     expect(reorderOps(list, 'a', -1)).toEqual([])
     expect(reorderOps(list, 'nope', 1)).toEqual([])
+  })
+})
+
+describe('decoration (prop)', () => {
+  const tree = (overrides: Partial<VenueShapeRead> = {}) =>
+    shape({
+      kind: 'prop',
+      style: 'green',
+      points: [[0.5, 0.5]],
+      prop: 'tree',
+      rotation: 30,
+      scale: 1.5,
+      ...overrides,
+    })
+
+  it('has one point and is never a snap target', () => {
+    expect(MIN_POINTS.prop).toBe(1)
+    expect(shapeVertices(tree())).toEqual([])
+  })
+
+  it('has a family style for every type', () => {
+    expect(PROP_STYLE.tree).toBe('green')
+    expect(PROP_STYLE.lamp).toBe('furniture')
+    expect(PROP_STYLE.tent).toBe('area')
+  })
+
+  it('moves within the plan, and a copy keeps type, turn and size', () => {
+    expect(moveShape(tree(), 0.8, -0.9).points).toEqual([[1, 0]])
+    expect(duplicateShape(tree(), 'c', { dx: 0.04, dy: 0.04 }, 7)).toMatchObject({
+      id: 'c',
+      points: [[0.54, 0.54]],
+      prop: 'tree',
+      rotation: 30,
+      scale: 1.5,
+      sort_order: 7,
+    })
+  })
+
+  it('diffs and inverts type, turn and size', () => {
+    const before = tree()
+    const after = tree({ prop: 'conifer', rotation: 45, scale: 2 })
+    expect(diffShape(before, after)).toEqual({ prop: 'conifer', rotation: 45, scale: 2 })
+    expect(diffShape(before, tree())).toBeNull()
+    const inverse = invertOps(
+      [{ op: 'update', id: 's1', patch: { rotation: 45, scale: 2 } }],
+      new Map([['s1', before]]),
+    )
+    expect(inverse).toEqual([{ op: 'update', id: 's1', patch: { rotation: 30, scale: 1.5 } }])
+  })
+
+  it('re-creates a deleted decoration with all its fields', () => {
+    const before = tree()
+    const [create] = invertOps([{ op: 'delete', id: 's1' }], new Map([['s1', before]]))
+    expect(create).toEqual({ op: 'create', shape: shapeToCreate(before) })
+    expect(shapeToCreate(before)).toMatchObject({ prop: 'tree', rotation: 30, scale: 1.5 })
+    // Other kinds do not send the decoration fields at all.
+    expect(shapeToCreate(shape())).not.toHaveProperty('prop')
+    expect(applyOps([], [create!], 'p1')).toEqual([before])
+  })
+
+  it('applies creates and updates like the server', () => {
+    const [created] = applyOps(
+      [],
+      [
+        {
+          op: 'create',
+          shape: { id: 'n', kind: 'prop', style: 'green', points: [[0.2, 0.3]], prop: 'bush' },
+        },
+      ],
+      'p1',
+    )
+    expect(created).toMatchObject({ prop: 'bush', rotation: 0, scale: 1, stroke_width: null })
+    const [rect] = applyOps(
+      [],
+      [
+        {
+          op: 'create',
+          shape: {
+            id: 'r',
+            kind: 'rect',
+            style: 'room',
+            points: [
+              [0, 0],
+              [0.1, 0.1],
+            ],
+          },
+        },
+      ],
+    )
+    expect(rect).not.toHaveProperty('prop')
+    // An explicit null cannot clear them.
+    const [updated] = applyOps(
+      [created!],
+      [{ op: 'update', id: 'n', patch: { prop: null, rotation: null, scale: 2 } }],
+    )
+    expect(updated).toMatchObject({ prop: 'bush', rotation: 0, scale: 2 })
   })
 })

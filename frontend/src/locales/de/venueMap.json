@@ -45,20 +45,40 @@
     "planSwitcher": {
         "label": "Plan auswählen"
     },
+    "props": {
+        "bench": "Bank",
+        "bike_rack": "Fahrradständer",
+        "bin": "Mülleimer",
+        "bush": "Busch",
+        "conifer": "Nadelbaum",
+        "flowers": "Blumenbeet",
+        "lamp": "Laterne",
+        "parasol": "Sonnenschirm",
+        "picnic_table": "Biertischgarnitur",
+        "plant": "Topfpflanze",
+        "round_table": "Runder Tisch",
+        "sign": "Schild",
+        "tent": "Pavillon",
+        "tree": "Laubbaum"
+    },
     "shapeKinds": {
         "label": "Text",
         "path": "Linie",
         "polygon": "Form",
+        "prop": "Deko",
         "rect": "Rechteck"
     },
     "shapeStyles": {
         "area": "Fläche",
         "building": "Gebäude",
+        "fence": "Zaun",
         "furniture": "Möbel",
         "green": "Grünfläche",
+        "hedge": "Hecke",
         "parking": "Parken",
         "path": "Weg",
         "room": "Raum",
+        "sand": "Sand",
         "stage": "Bühne",
         "wall": "Wand",
         "water": "Wasser"

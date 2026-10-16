@@ -1806,6 +1806,18 @@ class TestCloneLocationsAndVenueMap:
                 points=[[0, 0], [1, 0], [0, 1]],
             )
         )
+        db_session.add(
+            VenueShape(
+                plan_id=blank_plan.id,
+                kind="prop",
+                style="green",
+                points=[[0.5, 0.5]],
+                prop="conifer",
+                rotation=105.5,
+                scale=1.75,
+                sort_order=1,
+            )
+        )
         await db_session.flush()
 
         r = await async_client.post(
@@ -1853,8 +1865,16 @@ class TestCloneLocationsAndVenueMap:
                 old.label_size,
             )
             assert new.stroke_width == old.stroke_width
-        [area] = (await shapes_of(garden.id)).scalars().all()
+        [area, tree] = (await shapes_of(garden.id)).scalars().all()
         assert area.location_id is None
+        # Decoration keeps its type, rotation and size.
+        assert (tree.kind, tree.prop, tree.rotation, tree.scale) == (
+            "prop",
+            "conifer",
+            105.5,
+            1.75,
+        )
+        assert area.prop is None
 
     async def test_event_without_locations_reports_zero(
         self,

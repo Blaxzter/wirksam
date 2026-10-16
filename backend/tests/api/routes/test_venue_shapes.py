@@ -607,3 +607,198 @@ class TestBatchLimits:
         )
         assert r.status_code == 422
         assert [e["type"] for e in r.json()["errors"]] == ["venue_shape.label_required"]
+
+
+# ── Decoration (props) ─────────────────────────────────────────────────────
+
+TREE: dict[str, Any] = {
+    "kind": "prop",
+    "style": "green",
+    "points": [[0.4, 0.5]],
+    "prop": "tree",
+    "rotation": 30,
+    "scale": 1.25,
+}
+
+
+def _update(shape_id: Any, **patch: Any) -> dict[str, Any]:
+    return {"op": "update", "id": str(shape_id), "patch": patch}
+
+
+@pytest.mark.asyncio
+class TestProps:
+    async def test_create_and_read_back(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+    ) -> None:
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_create(TREE, style="wall", stroke_width=0.05, label="Old oak")],
+        )
+        assert r.status_code == 200, r.text
+        (tree,) = r.json()["shapes"]
+        assert tree["kind"] == "prop"
+        assert tree["style"] == "green"  # forced to the family
+        assert (tree["prop"], tree["rotation"], tree["scale"]) == ("tree", 30.0, 1.25)
+        assert tree["stroke_width"] is None
+        assert tree["label"] == "Old oak"
+
+        r = await async_client.get(f"{API}/venue-plans/{blank_plan.id}/shapes")
+        assert r.status_code == 200, r.text
+        assert r.json()["shapes"][0] == tree
+
+    async def test_other_kinds_never_carry_prop_fields(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+    ) -> None:
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_create(prop="tree", rotation=90, scale=2)],
+        )
+        assert r.status_code == 200, r.text
+        rect = r.json()["shapes"][0]
+        assert (rect["prop"], rect["rotation"], rect["scale"]) == (None, None, None)
+        assert rect["style"] == "room"
+
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_update(rect["id"], prop="bench", rotation=10, scale=3)],
+        )
+        assert r.status_code == 200, r.text
+        rect = r.json()["shapes"][0]
+        assert (rect["prop"], rect["rotation"], rect["scale"]) == (None, None, None)
+
+    @pytest.mark.parametrize(
+        ("extra", "code"),
+        [
+            ({"prop": None}, "venue_shape.prop_required"),
+            ({"scale": 4.5}, "venue_shape.prop_scale"),
+            ({"points": [[0.1, 0.1], [0.2, 0.2]]}, "venue_shape.points_count"),
+        ],
+    )
+    async def test_create_errors(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+        extra: dict[str, Any],
+        code: str,
+    ) -> None:
+        r = await _batch(async_client, blank_plan.id, [_create(TREE, **extra)])
+        assert r.status_code == 422, r.text
+        assert [e["type"] for e in r.json()["errors"]] == [code]
+
+    async def test_a_prop_is_never_a_place(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+        test_location: Location,
+    ) -> None:
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_create(TREE, location_id=str(test_location.id))],
+        )
+        assert r.status_code == 422, r.text
+        assert [e["type"] for e in r.json()["errors"]] == [
+            "venue_shape.link_not_allowed"
+        ]
+
+        r = await _batch(async_client, blank_plan.id, [_create(TREE)])
+        tree_id = r.json()["shapes"][0]["id"]
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_update(tree_id, location_id=str(test_location.id))],
+        )
+        assert r.status_code == 422, r.text
+        assert r.json()["code"] == "venue_shape.link_not_allowed"
+
+    async def test_updates(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+    ) -> None:
+        r = await _batch(async_client, blank_plan.id, [_create(TREE)])
+        tree_id = r.json()["shapes"][0]["id"]
+
+        # Rotation only: everything else stays.
+        r = await _batch(async_client, blank_plan.id, [_update(tree_id, rotation=-15)])
+        assert r.status_code == 200, r.text
+        shape = r.json()["shapes"][0]
+        assert (shape["prop"], shape["rotation"], shape["scale"]) == (
+            "tree",
+            345.0,
+            1.25,
+        )
+        assert shape["points"] == [[0.4, 0.5]]
+
+        # Another type keeps the point, rotation and scale; a style patch and
+        # explicit nulls are ignored.
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_update(tree_id, prop="bench", style="water", scale=None, rotation=None)],
+        )
+        assert r.status_code == 200, r.text
+        shape = r.json()["shapes"][0]
+        assert (shape["prop"], shape["rotation"], shape["scale"]) == (
+            "bench",
+            345.0,
+            1.25,
+        )
+        assert shape["style"] == "furniture"
+        assert shape["points"] == [[0.4, 0.5]]
+
+        r = await _batch(async_client, blank_plan.id, [_update(tree_id, scale=0.1)])
+        assert r.status_code == 422, r.text
+        assert r.json()["code"] == "venue_shape.prop_scale"
+
+    async def test_undo_of_a_delete_recreates_it(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+    ) -> None:
+        r = await _batch(async_client, blank_plan.id, [_create(TREE)])
+        before = r.json()["shapes"][0]
+        r = await _batch(
+            async_client, blank_plan.id, [{"op": "delete", "id": before["id"]}]
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["shapes"] == []
+
+        recreate = {
+            k: before[k]
+            for k in ("id", "kind", "style", "points", "prop", "rotation", "scale")
+        }
+        r = await _batch(
+            async_client,
+            blank_plan.id,
+            [_create(recreate, sort_order=before["sort_order"])],
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["shapes"][0] == before
+
+    async def test_props_count_towards_the_shape_limit(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        blank_plan: VenuePlan,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("app.logic.venue_shapes.MAX_SHAPES_PER_PLAN", 2)
+        r = await _batch(async_client, blank_plan.id, [_create(), _create(TREE)])
+        assert r.status_code == 200, r.text
+        r = await _batch(async_client, blank_plan.id, [_create(TREE)])
+        assert r.status_code == 422
+        assert r.json()["code"] == "venue_shape.too_many"

@@ -1,16 +1,19 @@
 // @vitest-environment jsdom
+import { flushPromises } from '@vue/test-utils'
 import { effectScope, nextTick, ref } from 'vue'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  DEFAULT_PATH_WIDTH,
   NUDGE_DELAY,
   type PointerLike,
   type PressTarget,
+  type ShapeEditorOptions,
   isEditableTarget,
   useShapeEditor,
 } from '@/composables/useShapeEditor'
-import type { ShapeCommand } from '@/composables/useShapeHistory'
+import { type ShapeCommand, useShapeHistory } from '@/composables/useShapeHistory'
 
 import type { VenueShapeRead } from '@/client/types.gen'
 import { type ShapeOp, applyOps, materialiseOps } from '@/lib/venue-shape-edit'
@@ -42,7 +45,7 @@ function shape(id: string, overrides: Partial<VenueShapeRead> = {}): VenueShapeR
 
 let scope: ReturnType<typeof effectScope>
 
-function setup(initial: VenueShapeRead[] = []) {
+function setup(initial: VenueShapeRead[] = [], extra: Partial<ShapeEditorOptions> = {}) {
   const shapes = ref<VenueShapeRead[]>(initial)
   const commands: ShapeCommand[] = []
   const undo = vi.fn()
@@ -67,6 +70,7 @@ function setup(initial: VenueShapeRead[] = []) {
       redo,
       newId,
       onLabelDraft,
+      ...extra,
     }),
   )!
   return { editor, shapes, commands, undo, redo, onLabelDraft }
@@ -832,5 +836,313 @@ describe('isEditableTarget', () => {
     Object.defineProperty(div, 'isContentEditable', { value: true })
     expect(isEditableTarget(div)).toBe(true)
     expect(isEditableTarget(document.createElement('div'))).toBe(false)
+  })
+})
+
+describe('decoration (prop) tool', () => {
+  const tree = (id: string, overrides: Partial<VenueShapeRead> = {}) =>
+    shape(id, {
+      kind: 'prop',
+      style: 'green',
+      points: [[0.3, 0.3]],
+      prop: 'tree',
+      rotation: 0,
+      scale: 1,
+      ...overrides,
+    })
+
+  it('D picks the tool, and pickProp the decoration', () => {
+    const { editor } = setup()
+    expect(key(editor, 'd')).toBe(true)
+    expect(editor.tool.value).toBe('prop')
+    expect(editor.activeProp.value).toBe('tree')
+    editor.setTool('select')
+    editor.pickProp('conifer')
+    expect(editor.tool.value).toBe('prop')
+    expect(editor.activeProp.value).toBe('conifer')
+    // Picking another one keeps the tool as it is.
+    editor.pickProp('bench')
+    expect(editor.activeProp.value).toBe('bench')
+  })
+
+  it('places the active decoration where tapped, unsnapped, and keeps the tool', () => {
+    const { editor, commands, shapes } = setup([], { random: () => 0.5 })
+    editor.pickProp('tree')
+    click(editor, 123, 457)
+    expect(lastOp(commands)).toEqual({
+      op: 'create',
+      shape: {
+        id: 'n1',
+        kind: 'prop',
+        style: 'green',
+        points: [[0.123, 0.457]],
+        prop: 'tree',
+        rotation: 180,
+        scale: 1,
+      },
+    })
+    expect(commands.at(-1)!.label).toBe('create-prop')
+    expect(editor.tool.value).toBe('prop')
+    expect(editor.selectedId.value).toBe('n1')
+    expect(shapes.value[0]).toMatchObject({ prop: 'tree', rotation: 180, scale: 1 })
+
+    // A bench is placed straight, in its family's style, at the last size used.
+    editor.lastPropScale.value = { bench: 1.5 }
+    editor.pickProp('bench')
+    click(editor, 500, 500)
+    expect(lastOp(commands)).toMatchObject({
+      shape: { prop: 'bench', style: 'furniture', rotation: 0, scale: 1.5 },
+    })
+  })
+
+  it('does not place on a drag, nor off the plan', () => {
+    const { editor, commands } = setup()
+    editor.setTool('prop')
+    editor.onPointerDown(ev(100, 100))
+    editor.onPointerMove(ev(150, 150))
+    editor.onPointerUp(ev(150, 150))
+    click(editor, -10, 500)
+    click(editor, 500, 1001)
+    expect(commands).toHaveLength(0)
+  })
+
+  it('pans on the ground but not on a decoration', () => {
+    const { editor } = setup([tree('a'), shape('r')])
+    editor.setTool('prop')
+    expect(editor.panFilter(ev(0, 0, { pointerType: 'touch' }))).toBe(true)
+    expect(editor.panFilter(ev(0, 0), { type: 'shape', id: 'r' })).toBe(true)
+    expect(editor.panFilter(ev(0, 0), { type: 'shape', id: 'a' })).toBe(false)
+  })
+
+  it('a press on a decoration picks it up instead of placing another', () => {
+    const { editor, commands, shapes } = setup([tree('a')])
+    editor.setTool('prop')
+    drag(editor, [300, 300], [333, 347], { type: 'shape', id: 'a' })
+    expect(commands.map((c) => c.label)).toEqual(['drag-move'])
+    expect(shapes.value).toHaveLength(1)
+    // Moved exactly, without snapping to the 10 px grid.
+    expect(shapes.value[0]!.points).toEqual([[0.333, 0.347]])
+    expect(editor.selectedId.value).toBe('a')
+  })
+
+  it('moves with the select tool without snapping; Shift keeps one axis', () => {
+    const { editor, shapes } = setup([tree('a'), shape('r')])
+    drag(editor, [300, 300], [306, 302], { type: 'shape', id: 'a' })
+    expect(shapes.value.find((s) => s.id === 'a')!.points).toEqual([[0.306, 0.302]])
+    drag(editor, [306, 302], [356, 312], { type: 'shape', id: 'a' }, { shiftKey: true })
+    expect(shapes.value.find((s) => s.id === 'a')!.points).toEqual([[0.356, 0.302]])
+  })
+
+  it('shows a ghost under the pointer while hovering the plan', () => {
+    const { editor } = setup()
+    editor.onPointerMove(ev(200, 200))
+    expect(editor.propHover.value).toBeNull()
+    editor.setTool('prop')
+    editor.onPointerMove(ev(200, 300))
+    expect(editor.propHover.value).toEqual([0.2, 0.3])
+    editor.onPointerMove(ev(1200, 300))
+    expect(editor.propHover.value).toBeNull()
+    editor.onPointerMove(ev(200, 300))
+    editor.onPointerLeave()
+    expect(editor.propHover.value).toBeNull()
+    editor.onPointerMove(ev(200, 300))
+    editor.setTool('select')
+    expect(editor.propHover.value).toBeNull()
+  })
+
+  it('turns and resizes with Q/E and +/-, one burst being one step', () => {
+    vi.useFakeTimers()
+    const { editor, commands } = setup([tree('a'), shape('r')])
+    editor.select('r')
+    // Only a decoration turns.
+    expect(key(editor, 'e', { code: 'KeyE' })).toBe(false)
+    expect(editor.rotateSelected(15)).toBe(false)
+    expect(editor.scaleSelected(2)).toBe(false)
+    editor.select('a')
+    expect(key(editor, 'e', { code: 'KeyE' })).toBe(true)
+    expect(key(editor, 'e', { code: 'KeyE' })).toBe(true)
+    expect(key(editor, 'Q', { code: 'KeyQ', shiftKey: true })).toBe(true)
+    expect(key(editor, '+')).toBe(true)
+    expect(key(editor, '=')).toBe(true)
+    expect(commands).toHaveLength(0)
+    expect(editor.displayShapes.value[0]).toMatchObject({ rotation: 29, scale: 1.21 })
+    vi.advanceTimersByTime(NUDGE_DELAY + 10)
+    expect(commands).toHaveLength(1)
+    expect(lastOp(commands)).toEqual({
+      op: 'update',
+      id: 'a',
+      patch: { rotation: 29, scale: 1.21 },
+    })
+    expect(editor.lastPropScale.value.tree).toBe(1.21)
+
+    // Turning left past 0 wraps; shrinking stops at the smallest size.
+    key(editor, 'q', { code: 'KeyQ' })
+    key(editor, 'q', { code: 'KeyQ' })
+    for (let i = 0; i < 40; i++) key(editor, '-')
+    vi.advanceTimersByTime(NUDGE_DELAY + 10)
+    expect(lastOp(commands)).toEqual({
+      op: 'update',
+      id: 'a',
+      patch: { rotation: 359, scale: 0.25 },
+    })
+  })
+
+  it('sets an exact turn and size as one step each', () => {
+    const { editor, commands } = setup([tree('a'), shape('r')])
+    editor.select('r')
+    expect(editor.setSelectedRotation(90)).toBe(false)
+    expect(editor.setSelectedScale(2)).toBe(false)
+    editor.select('a')
+    expect(editor.setSelectedRotation(-90)).toBe(true)
+    expect(editor.setSelectedScale(9)).toBe(true)
+    expect(editor.setSelectedScale(4)).toBe(false)
+    expect(commands.map((c) => c.label)).toEqual(['rotate', 'scale'])
+    expect(commands.map((c) => c.ops[0])).toEqual([
+      { op: 'update', id: 'a', patch: { rotation: 270 } },
+      { op: 'update', id: 'a', patch: { scale: 4 } },
+    ])
+    expect(editor.lastPropScale.value.tree).toBe(4)
+  })
+
+  it('changing the type keeps place, turn and size, and follows the family style', () => {
+    const { editor, commands } = setup([tree('a', { rotation: 30, scale: 1.5 })])
+    editor.select('a')
+    expect(editor.updateSelected({ prop: 'tent' })).toBe(true)
+    expect(lastOp(commands)).toEqual({
+      op: 'update',
+      id: 'a',
+      patch: { prop: 'tent', style: 'area' },
+    })
+    // A decoration never changes what the next rect looks like.
+    expect(editor.lastStyle.value).toMatchObject({ rect: 'room', prop: 'green' })
+    expect(editor.updateSelected({ style: 'wall' })).toBe(false)
+  })
+
+  it('draws a hedge or a fence from a line preset', () => {
+    const { editor, commands } = setup()
+    editor.pickLinePreset('hedge')
+    expect(editor.tool.value).toBe('path')
+    click(editor, 100, 100)
+    click(editor, 300, 100)
+    expect(key(editor, 'Enter')).toBe(true)
+    expect(lastOp(commands)).toMatchObject({
+      shape: { kind: 'path', style: 'hedge', stroke_width: 0.016 },
+    })
+    editor.pickLinePreset('fence')
+    click(editor, 100, 200)
+    click(editor, 300, 200)
+    key(editor, 'Enter')
+    expect(lastOp(commands)).toMatchObject({ shape: { style: 'fence', stroke_width: 0.008 } })
+  })
+
+  it('forgets a line preset width once the tool changes', () => {
+    const { editor, commands } = setup()
+    editor.pickLinePreset('fence')
+    click(editor, 100, 100)
+    click(editor, 300, 100)
+    key(editor, 'Enter')
+    editor.updateSelected({ style: 'path' })
+    editor.setTool('select')
+    editor.setTool('path')
+    click(editor, 100, 200)
+    click(editor, 300, 200)
+    key(editor, 'Enter')
+    expect(lastOp(commands)).toMatchObject({
+      shape: { kind: 'path', style: 'path', stroke_width: DEFAULT_PATH_WIDTH },
+    })
+  })
+
+  it('gives a plain line the width of its decor style after a preset', () => {
+    const { editor, commands } = setup()
+    editor.pickLinePreset('hedge')
+    editor.setTool('path')
+    click(editor, 100, 100)
+    click(editor, 300, 100)
+    key(editor, 'Enter')
+    expect(lastOp(commands)).toMatchObject({ shape: { style: 'hedge', stroke_width: 0.016 } })
+    // The palette's wide path is one-shot as well; the plain Line tool keeps the default.
+    editor.pickLinePreset('path')
+    click(editor, 100, 200)
+    click(editor, 300, 200)
+    key(editor, 'Enter')
+    expect(lastOp(commands)).toMatchObject({ shape: { style: 'path', stroke_width: 0.03 } })
+    editor.setTool('path')
+    click(editor, 100, 300)
+    click(editor, 300, 300)
+    key(editor, 'Enter')
+    expect(lastOp(commands)).toMatchObject({
+      shape: { style: 'path', stroke_width: DEFAULT_PATH_WIDTH },
+    })
+  })
+
+  it('draws a sandpit from the area preset', () => {
+    const { editor, commands } = setup()
+    editor.pickAreaPreset('sand')
+    expect(editor.tool.value).toBe('polygon')
+    click(editor, 100, 100)
+    click(editor, 300, 100)
+    click(editor, 300, 300)
+    key(editor, 'Enter')
+    expect(lastOp(commands)).toMatchObject({ shape: { kind: 'polygon', style: 'sand' } })
+  })
+
+  it('Escape leaves the tool and keeps the last decoration selected', () => {
+    const { editor } = setup()
+    editor.setTool('prop')
+    click(editor, 500, 500)
+    expect(editor.selectedId.value).toBe('n1')
+    expect(key(editor, 'Escape')).toBe(true)
+    expect(editor.tool.value).toBe('select')
+    expect(editor.selectedId.value).toBe('n1')
+    expect(key(editor, 'Escape')).toBe(true)
+    expect(editor.selectedId.value).toBeNull()
+  })
+
+  it('undo removes a placed decoration and redo brings back the same one', async () => {
+    let server: VenueShapeRead[] = []
+    let n = 0
+    const history = useShapeHistory({
+      send: async (planId, ops, rev) => {
+        server = applyOps(server, ops, planId)
+        return { plan_id: planId, shapes: server, revision: rev + 1 }
+      },
+      onConflict: () => {},
+      newId: () => `h${++n}`,
+    })
+    history.reset('p1', [], 0)
+    scope = effectScope()
+    const editor = scope.run(() =>
+      useShapeEditor({
+        shapes: () => history.shapes.value,
+        size: () => ({ W: 1000, H: 1000 }),
+        upp: () => 1,
+        toPoint: (x, y) => [x / 1000, y / 1000],
+        execute: (cmd) => history.execute(cmd),
+        undo: () => history.undo(),
+        redo: () => history.redo(),
+        newId: () => 'tree-1',
+        random: () => 0,
+      }),
+    )!
+    editor.pickProp('conifer')
+    click(editor, 400, 600)
+    await flushPromises()
+    const placed = history.shapes.value[0]
+    expect(placed).toMatchObject({
+      id: 'tree-1',
+      kind: 'prop',
+      prop: 'conifer',
+      rotation: 0,
+      scale: 1,
+      points: [[0.4, 0.6]],
+    })
+    key(editor, 'z', { ctrlKey: true })
+    await flushPromises()
+    expect(history.shapes.value).toHaveLength(0)
+    expect(server).toHaveLength(0)
+    key(editor, 'z', { ctrlKey: true, shiftKey: true })
+    await flushPromises()
+    expect(history.shapes.value).toEqual([placed])
+    expect(server[0]).toMatchObject({ id: 'tree-1', prop: 'conifer', rotation: 0, scale: 1 })
   })
 })

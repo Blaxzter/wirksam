@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
-import { BringToFront, Copy, SendToBack, Trash2, X } from '@lucide/vue'
+import { BringToFront, Copy, RotateCcw, RotateCw, SendToBack, Trash2, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
@@ -9,9 +9,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 
+import VenueDecorPalette from '@/components/venue-map/editor/VenueDecorPalette.vue'
 import VenueStylePicker from '@/components/venue-map/editor/VenueStylePicker.vue'
 
 import type { LocationRead, VenueShapeRead, VenueShapeUpdate } from '@/client/types.gen'
+import {
+  DEFAULT_PROP_SCALE,
+  PROP_SCALE_RANGE,
+  type PropType,
+  ROTATION_STEP,
+  isPropType,
+  normaliseRotation,
+  propLabelKey,
+} from '@/lib/venue-decor'
 import {
   LINKABLE_KINDS,
   MAX_LABEL_LENGTH,
@@ -22,8 +32,9 @@ import {
 /**
  * The side panel for the selected drawing: its look, caption, caption size
  * and position, line width (lines), linked place (rectangles and shapes),
- * order, duplicate and delete. Also asks for the words of a text that was
- * just placed (`labelDraft`).
+ * order, duplicate and delete. A decoration (prop) gets its type, turn and
+ * size instead of look and place: it is never a place. Also asks for the
+ * words of a text that was just placed (`labelDraft`).
  *
  * It only reports what should change (`update` with a patch); the editor
  * turns that into one undoable step. Text fields report on change, Enter or
@@ -60,6 +71,49 @@ const strokeWidth = ref(0.02)
 const linkable = computed(
   () => !!props.shape && (LINKABLE_KINDS as readonly string[]).includes(props.shape.kind),
 )
+const isProp = computed(() => props.shape?.kind === 'prop')
+const propType = computed<PropType | null>(() =>
+  isPropType(props.shape?.prop) ? props.shape.prop : null,
+)
+/** Slider values while dragging; committed on `change`. */
+const rotation = ref(0)
+const scale = ref(DEFAULT_PROP_SCALE)
+watch(
+  () => [props.shape?.rotation, props.shape?.scale] as const,
+  ([r, k]) => {
+    rotation.value = r ?? 0
+    scale.value = k ?? DEFAULT_PROP_SCALE
+  },
+  { immediate: true },
+)
+
+const heading = computed(() => {
+  const s = props.shape
+  if (!s) return ''
+  if (s.kind === 'prop') {
+    const name = s.label?.trim() || t(propLabelKey(s.prop ?? ''))
+    return `${t('mapEditor.inspector.prop.title')} · ${name}`
+  }
+  return s.label?.trim() || t(shapeKindLabelKey(s.kind))
+})
+
+function turnBy(delta: number) {
+  emit('update', { rotation: normaliseRotation((props.shape?.rotation ?? 0) + delta) })
+}
+
+function onRotationCommit() {
+  const value = normaliseRotation(rotation.value)
+  if (value !== (props.shape?.rotation ?? 0)) emit('update', { rotation: value })
+}
+
+function onScaleCommit() {
+  const value = Math.round(scale.value * 1000) / 1000
+  if (value !== (props.shape?.scale ?? DEFAULT_PROP_SCALE)) emit('update', { scale: value })
+}
+
+function onPropType(prop: PropType) {
+  if (prop !== props.shape?.prop) emit('update', { prop })
+}
 const LABEL_SIZES = ['sm', 'md', 'lg'] as const
 
 watch(
@@ -177,8 +231,8 @@ const canRemoveVertex = computed(() => {
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">
         <p class="text-muted-foreground text-xs">{{ t('mapEditor.inspector.title') }}</p>
-        <p class="truncate font-medium">
-          {{ shape.label?.trim() || t(shapeKindLabelKey(shape.kind)) }}
+        <p class="truncate font-medium" data-testid="shape-inspector-heading">
+          {{ heading }}
         </p>
       </div>
       <Button
@@ -192,7 +246,97 @@ const canRemoveVertex = computed(() => {
       </Button>
     </div>
 
-    <div class="space-y-1.5">
+    <template v-if="isProp">
+      <div class="space-y-1.5">
+        <p id="map-editor-prop-type" class="text-sm font-medium">
+          {{ t('mapEditor.inspector.prop.type') }}
+        </p>
+        <VenueDecorPalette
+          :model-value="propType"
+          mode="picker"
+          labelledby="map-editor-prop-type"
+          @update:model-value="onPropType"
+        />
+      </div>
+
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between gap-2">
+          <Label for="map-editor-prop-rotation">{{ t('mapEditor.inspector.prop.rotation') }}</Label>
+          <span class="text-muted-foreground text-xs tabular-nums" data-testid="prop-rotation-value"
+            >{{ Math.round(rotation) }}°</span
+          >
+        </div>
+        <div class="flex items-center gap-2">
+          <Button
+            size="icon-sm"
+            variant="outline"
+            :aria-label="t('mapEditor.inspector.prop.rotateLeft')"
+            :title="`${t('mapEditor.inspector.prop.rotateLeft')} (Q)`"
+            aria-keyshortcuts="Q"
+            data-testid="prop-rotate-left"
+            @click="turnBy(-ROTATION_STEP)"
+          >
+            <RotateCcw />
+          </Button>
+          <input
+            id="map-editor-prop-rotation"
+            v-model.number="rotation"
+            type="range"
+            min="0"
+            max="359"
+            step="1"
+            class="accent-primary min-w-0 flex-1"
+            data-testid="prop-rotation"
+            @change="onRotationCommit"
+          />
+          <Button
+            size="icon-sm"
+            variant="outline"
+            :aria-label="t('mapEditor.inspector.prop.rotateRight')"
+            :title="`${t('mapEditor.inspector.prop.rotateRight')} (E)`"
+            aria-keyshortcuts="E"
+            data-testid="prop-rotate-right"
+            @click="turnBy(ROTATION_STEP)"
+          >
+            <RotateCw />
+          </Button>
+        </div>
+      </div>
+
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between gap-2">
+          <Label for="map-editor-prop-scale">{{ t('mapEditor.inspector.prop.size') }}</Label>
+          <span class="text-muted-foreground text-xs tabular-nums" data-testid="prop-scale-value"
+            >{{ Math.round(scale * 100) }} %</span
+          >
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            id="map-editor-prop-scale"
+            v-model.number="scale"
+            type="range"
+            :min="PROP_SCALE_RANGE[0]"
+            :max="PROP_SCALE_RANGE[1]"
+            step="0.05"
+            class="accent-primary min-w-0 flex-1"
+            data-testid="prop-scale"
+            @change="onScaleCommit"
+          />
+          <Button
+            size="xs"
+            variant="ghost"
+            :disabled="(shape.scale ?? DEFAULT_PROP_SCALE) === DEFAULT_PROP_SCALE"
+            data-testid="prop-scale-reset"
+            @click="emit('update', { scale: DEFAULT_PROP_SCALE })"
+          >
+            {{ t('mapEditor.inspector.prop.resetSize') }}
+          </Button>
+        </div>
+        <p class="text-muted-foreground text-xs">{{ t('mapEditor.inspector.prop.keysHint') }}</p>
+      </div>
+    </template>
+
+    <div v-else class="space-y-1.5">
       <p id="map-editor-shape-style" class="text-sm font-medium">
         {{ t('mapEditor.inspector.style') }}
       </p>
@@ -236,7 +380,7 @@ const canRemoveVertex = computed(() => {
           {{ t(`mapEditor.inspector.labelSizes.${size}`) }}
         </Button>
       </div>
-      <template v-if="shape.kind !== 'label'">
+      <template v-if="shape.kind !== 'label' && shape.kind !== 'prop'">
         <p class="text-muted-foreground text-xs">{{ t('mapEditor.inspector.moveLabelHint') }}</p>
         <Button
           v-if="shape.label_x != null"

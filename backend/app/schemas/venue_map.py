@@ -2,7 +2,7 @@
 
 import datetime as dt
 import uuid
-from typing import Annotated, Final, Literal
+from typing import Annotated, Final, Literal, cast
 
 from pydantic import (
     BaseModel,
@@ -98,7 +98,7 @@ class VenueMarkerRead(BaseModel):
 
 # ── Shapes ─────────────────────────────────────────────────────────────────
 
-ShapeKind = Literal["rect", "polygon", "path", "label"]
+ShapeKind = Literal["rect", "polygon", "path", "label", "prop"]
 ShapeStyle = Literal[
     "building",
     "room",
@@ -110,6 +110,31 @@ ShapeStyle = Literal[
     "parking",
     "path",
     "wall",
+    "hedge",
+    "fence",
+    "sand",
+]
+# Decoration glyphs, in the order of ``app.logic.venue_shapes.PROP_TYPES``
+# (a test keeps the two in step).
+PropType = Literal[
+    "tree",
+    "conifer",
+    "bush",
+    "flowers",
+    "plant",
+    "bench",
+    "picnic_table",
+    "round_table",
+    "bin",
+    "bike_rack",
+    "sign",
+    "parasol",
+    "tent",
+    "lamp",
+]
+PropRotation = Annotated[
+    float,
+    Field(ge=-720, le=720, description="Props only: degrees clockwise"),
 ]
 LabelSize = Literal["sm", "md", "lg"]
 CanvasPreset = Literal["landscape", "portrait", "square"]
@@ -156,6 +181,13 @@ class VenueShapeCreate(BaseModel):
     sort_order: SortOrder | None = Field(
         default=None, description="z order; left out, the shape goes on top"
     )
+    prop: PropType | None = Field(
+        default=None, description="Props only (required there): the glyph"
+    )
+    rotation: PropRotation | None = None
+    scale: float | None = Field(
+        default=None, description="Props only: size factor, 0.25..4 (default 1)"
+    )
 
     @field_validator("label")
     @classmethod
@@ -166,15 +198,25 @@ class VenueShapeCreate(BaseModel):
     def _geometry(self) -> "VenueShapeCreate":
         geometry = validate_geometry(
             kind=self.kind,
+            style=self.style,
             points=self.points,
             label=self.label,
             stroke_width=self.stroke_width,
             location_id=self.location_id,
             label_x=self.label_x,
             label_y=self.label_y,
+            prop=self.prop,
+            rotation=self.rotation,
+            scale=self.scale,
         )
         self.points = geometry.points
         self.stroke_width = geometry.stroke_width
+        # A prop's style is its family's (always a ShapeStyle); the prop
+        # itself comes back as sent, so both casts only narrow the type.
+        self.style = cast(ShapeStyle, geometry.style)
+        self.prop = cast(PropType | None, geometry.prop)
+        self.rotation = geometry.rotation
+        self.scale = geometry.scale
         return self
 
 
@@ -182,8 +224,9 @@ class VenueShapeUpdate(BaseModel):
     """Partial update; the merged shape is re-validated as a whole.
 
     ``kind`` cannot change (delete and re-create instead). An explicit ``null``
-    for ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as
-    those cannot be cleared.
+    for ``style``, ``points``, ``label_size``, ``sort_order``, ``prop``,
+    ``rotation`` or ``scale`` is ignored, as those cannot be cleared. A style
+    patch on a prop is overridden by the prop's own style.
     """
 
     style: ShapeStyle | None = None
@@ -197,6 +240,9 @@ class VenueShapeUpdate(BaseModel):
     stroke_width: float | None = None
     location_id: uuid.UUID | None = None
     sort_order: SortOrder | None = None
+    prop: PropType | None = None
+    rotation: PropRotation | None = None
+    scale: float | None = None
 
     @field_validator("label")
     @classmethod
@@ -253,6 +299,9 @@ class VenueShapeRead(BaseModel):
     stroke_width: float | None = None
     location_id: uuid.UUID | None = None
     sort_order: int
+    prop: PropType | None = None
+    rotation: float | None = None
+    scale: float | None = None
 
 
 class VenuePlanShapesRead(BaseModel):

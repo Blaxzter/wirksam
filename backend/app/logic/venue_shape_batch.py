@@ -39,7 +39,11 @@ TOO_MANY = "venue_shape.too_many"
 TOO_MANY_POINTS = "venue_shape.too_many_points"
 
 # Fields that cannot be cleared: an explicit null for them is ignored.
-_NOT_NULLABLE = frozenset({"style", "points", "label_size", "sort_order"})
+# ``prop``, ``rotation`` and ``scale`` always have a value on a prop and none
+# on any other kind, so a null for them never means anything either.
+_NOT_NULLABLE = frozenset(
+    {"style", "points", "label_size", "sort_order", "prop", "rotation", "scale"}
+)
 
 
 def _now() -> datetime:
@@ -76,6 +80,9 @@ def _merge_update(
         "stroke_width": shape.stroke_width,
         "location_id": shape.location_id,
         "sort_order": shape.sort_order,
+        "prop": shape.prop,
+        "rotation": shape.rotation,
+        "scale": shape.scale,
     }
     for field in patch.model_fields_set:
         value = getattr(patch, field)
@@ -85,17 +92,26 @@ def _merge_update(
     try:
         geometry = venue_shapes.validate_geometry(
             kind=shape.kind,
+            style=merged["style"],
             points=merged["points"],
             label=merged["label"],
             stroke_width=merged["stroke_width"],
             location_id=merged["location_id"],
             label_x=merged["label_x"],
             label_y=merged["label_y"],
+            prop=merged["prop"],
+            rotation=merged["rotation"],
+            scale=merged["scale"],
         )
     except PydanticCustomError as exc:
         raise_problem(422, code=exc.type, detail=f"ops[{index}]: {exc.message()}")
     merged["points"] = geometry.points
     merged["stroke_width"] = geometry.stroke_width
+    # A style patch on a prop is overridden by its family's style, on purpose.
+    merged["style"] = geometry.style
+    merged["prop"] = geometry.prop
+    merged["rotation"] = geometry.rotation
+    merged["scale"] = geometry.scale
     return merged
 
 
@@ -179,6 +195,9 @@ async def apply_batch(
                     label_x=data.label_x,
                     label_y=data.label_y,
                     stroke_width=data.stroke_width,
+                    prop=data.prop,
+                    rotation=data.rotation,
+                    scale=data.scale,
                     sort_order=sort_order,
                 )
                 session.add(shape)

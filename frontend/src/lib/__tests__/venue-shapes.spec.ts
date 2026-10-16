@@ -6,13 +6,16 @@ import {
   DEFAULT_STROKE_WIDTH,
   DEFAULT_STYLE,
   LABEL_SIZE_FRACTION,
+  LABEL_STYLES,
   LINKABLE_KINDS,
   MAX_LABEL_LENGTH,
   MAX_POINTS_PER_SHAPE,
   MAX_SHAPES_PER_PLAN,
+  PATH_STYLES_FIRST,
   type RenderShape,
   SHAPE_KINDS,
   SHAPE_STYLES,
+  isProp,
   isVirtualMarkerId,
   labelAnchor,
   labelFontUnits,
@@ -58,10 +61,17 @@ function shape(overrides: Partial<RenderShape> = {}): RenderShape {
 
 describe('vocabulary', () => {
   it('lists every style, kind and default', () => {
-    expect(SHAPE_STYLES).toHaveLength(10)
-    expect(SHAPE_KINDS).toEqual(['rect', 'polygon', 'path', 'label'])
+    expect(SHAPE_STYLES).toHaveLength(13)
+    expect(SHAPE_STYLES.slice(-3)).toEqual(['hedge', 'fence', 'sand'])
+    expect(SHAPE_KINDS).toEqual(['rect', 'polygon', 'path', 'label', 'prop'])
     expect(LINKABLE_KINDS).toEqual(['rect', 'polygon'])
-    expect(DEFAULT_STYLE).toEqual({ rect: 'room', polygon: 'area', path: 'path', label: 'room' })
+    expect(DEFAULT_STYLE).toEqual({
+      rect: 'room',
+      polygon: 'area',
+      path: 'path',
+      label: 'room',
+      prop: 'green',
+    })
     expect(LABEL_SIZE_FRACTION.sm).toBeLessThan(LABEL_SIZE_FRACTION.md)
     expect(LABEL_SIZE_FRACTION.md).toBeLessThan(LABEL_SIZE_FRACTION.lg)
     expect(DEFAULT_STROKE_WIDTH).toBe(0.02)
@@ -73,6 +83,67 @@ describe('vocabulary', () => {
     expect(shapeKindLabelKey('path')).toBe('venueMap.shapeKinds.path')
     for (const style of SHAPE_STYLES) expect(shapeStyleClass(style)).toBe(`vs-${style}`)
     expect(shapeStyleClass('neon')).toBe('vs-room')
+  })
+
+  it('offers captions no line-only styles, and paths their line styles first', () => {
+    expect(LABEL_STYLES).not.toContain('wall')
+    expect(LABEL_STYLES).not.toContain('fence')
+    expect(LABEL_STYLES).not.toContain('hedge')
+    expect(LABEL_STYLES).toContain('sand')
+    expect(LABEL_STYLES).toHaveLength(10)
+    expect(PATH_STYLES_FIRST.slice(0, 5)).toEqual(['path', 'water', 'hedge', 'fence', 'wall'])
+    expect([...PATH_STYLES_FIRST].sort()).toEqual([...SHAPE_STYLES].sort())
+  })
+
+  it('tells decoration apart', () => {
+    expect(isProp({ kind: 'prop' })).toBe(true)
+    expect(isProp({ kind: 'label' })).toBe(false)
+  })
+})
+
+describe('props', () => {
+  // A tree at scale 1 on a 1600×1000 plan: 0.055 · 1000 / 48 units per local
+  // unit, radius 24 local units → 27.5 plan units.
+  const tree = shape({
+    kind: 'prop',
+    style: 'green',
+    prop: 'tree',
+    rotation: 0,
+    scale: 1,
+    points: [[0.5, 0.5]],
+  })
+
+  it('anchors at its point', () => {
+    expect(shapeAnchor('prop', [[0.3, 0.4]])).toEqual({ x: 0.3, y: 0.4 })
+  })
+
+  it('is bounded by its glyph radius, per axis', () => {
+    const b = shapeBounds(tree, 1600, 1000)
+    expect(b.x0).toBeCloseTo(0.5 - 27.5 / 1600)
+    expect(b.x1).toBeCloseTo(0.5 + 27.5 / 1600)
+    expect(b.y0).toBeCloseTo(0.5 - 27.5 / 1000)
+    expect(b.y1).toBeCloseTo(0.5 + 27.5 / 1000)
+    const doubled = shapeBounds({ ...tree, scale: 2 }, 1600, 1000)
+    expect(doubled.y1).toBeCloseTo(0.5 + 55 / 1000)
+    expect(shapeBounds(tree, 0, 0)).toEqual({ x0: 0.5, y0: 0.5, x1: 0.5, y1: 0.5 })
+  })
+
+  it('captions just below the glyph unless placed', () => {
+    const at = labelAnchor({ ...tree, label: 'Old oak' }, 1600, 1000, 20)
+    expect(at.x).toBeCloseTo(0.5)
+    expect(at.y).toBeCloseTo(0.5 + (27.5 + 14) / 1000)
+    expect(labelAnchor({ ...tree, label_x: 0.1, label_y: 0.2 }, 1600, 1000)).toEqual({
+      x: 0.1,
+      y: 0.2,
+    })
+    expect(labelAnchor(tree, 1600, 0, 20)).toEqual({ x: 0.5, y: 0.5 })
+  })
+
+  it('never hides a caption for want of width', () => {
+    const long = { ...tree, label: 'A very long caption for a very small bin', prop: 'bin' as const }
+    const layout = labelLayout(long, 1600, 1000, 1)
+    expect(layout.visible).toBe(true)
+    expect(layout.x).toBeCloseTo(800)
   })
 })
 

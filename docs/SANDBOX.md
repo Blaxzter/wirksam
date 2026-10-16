@@ -38,7 +38,11 @@ pictures. `logic/sandbox/venue_plan_shapes.py` lists them shape by shape,
 language-free; the seeder resolves the captions. Every marker is placed from its
 `SPOTS` table, the same numbers the shapes are built from, so a pin always sits
 on the feature it names, and the demo rooms that stand for a place (main hall,
-café counter, food stalls, ...) are linked to it through the same spots. Today's
+café counter, food stalls, ...) are linked to it through the same spots. Both
+plans also carry decoration (trees, gazebos, benches, hedges, a fence, ...),
+drawn as `prop` shapes and decorative line styles; a prop is never a place, and
+`test_decor_keeps_clear_of_the_pins` keeps it at least 40 px from every pin
+unless it is marked `under_pin` (a gazebo under its stall's pill). Today's
 shifts at the pinned places are filled to fixed shares rather than at random
 (`today_fill` in `seed.py`), so the map's staffing colours always show a mix of
 full, partly staffed and short. Every other map edit (plans, markers,

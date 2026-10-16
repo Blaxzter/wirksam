@@ -32,8 +32,48 @@ DEFAULT_STROKE_WIDTH: Final = 0.02
 # JSON short.
 _DECIMALS: Final = 5
 
-# Only areas can stand for a place; a line or a caption cannot be tapped open.
+# Only areas can stand for a place; a line, a caption or a decoration cannot
+# be tapped open.
 LINKABLE_KINDS: Final = frozenset({"rect", "polygon"})
+
+# Decoration ("props"): pre-drawn glyphs that help people find their way. They
+# are never a place. The order is the palette's and the schema literal's.
+PROP_TYPES: Final = (
+    "tree",
+    "conifer",
+    "bush",
+    "flowers",
+    "plant",
+    "bench",
+    "picnic_table",
+    "round_table",
+    "bin",
+    "bike_rack",
+    "sign",
+    "parasol",
+    "tent",
+    "lamp",
+)
+# The style a prop is stored with: its caption ink and its fallback colour.
+# The server forces it, so a prop's style never disagrees with its type.
+PROP_STYLE: Final[dict[str, str]] = {
+    "tree": "green",
+    "conifer": "green",
+    "bush": "green",
+    "flowers": "green",
+    "plant": "green",
+    "bench": "furniture",
+    "picnic_table": "furniture",
+    "round_table": "furniture",
+    "bin": "furniture",
+    "bike_rack": "furniture",
+    "sign": "furniture",
+    "lamp": "furniture",
+    "parasol": "area",
+    "tent": "area",
+}
+PROP_SCALE_RANGE: Final = (0.25, 4.0)
+DEFAULT_PROP_SCALE: Final = 1.0
 
 POINTS_COUNT: Final = "venue_shape.points_count"
 LABEL_REQUIRED: Final = "venue_shape.label_required"
@@ -41,6 +81,8 @@ STROKE_WIDTH: Final = "venue_shape.stroke_width"
 LINK_NOT_ALLOWED: Final = "venue_shape.link_not_allowed"
 TOO_SMALL: Final = "venue_shape.too_small"
 LABEL_ANCHOR: Final = "venue_shape.label_anchor"
+PROP_REQUIRED: Final = "venue_shape.prop_required"
+PROP_SCALE: Final = "venue_shape.prop_scale"
 
 # (minimum, maximum) number of points per kind.
 _POINT_COUNTS: Final[dict[str, tuple[int, int]]] = {
@@ -48,6 +90,7 @@ _POINT_COUNTS: Final[dict[str, tuple[int, int]]] = {
     "polygon": (3, MAX_POINTS_PER_SHAPE),
     "path": (2, MAX_POINTS_PER_SHAPE),
     "label": (1, 1),
+    "prop": (1, 1),
 }
 
 
@@ -56,6 +99,11 @@ class NormalisedGeometry(NamedTuple):
 
     points: list[list[float]]
     stroke_width: float | None
+    #: The stored style: as sent, except for a prop (its family's style).
+    style: str
+    prop: str | None = None
+    rotation: float | None = None
+    scale: float | None = None
 
 
 def round_point(p: Sequence[float]) -> list[float]:
@@ -65,18 +113,25 @@ def round_point(p: Sequence[float]) -> list[float]:
 def validate_geometry(
     *,
     kind: str,
+    style: str,
     points: Sequence[Sequence[float]],
     label: str | None,
     stroke_width: float | None,
     location_id: uuid.UUID | None,
     label_x: float | None,
     label_y: float | None,
+    prop: str | None = None,
+    rotation: float | None = None,
+    scale: float | None = None,
 ) -> NormalisedGeometry:
     """Check a whole shape and return its normalised geometry.
 
     A rect's two corners come back sorted into (min, max) and every point is
     rounded. A path without a width gets :data:`DEFAULT_STROKE_WIDTH`; every
-    other kind has none, whatever was sent. Raises ``PydanticCustomError``
+    other kind has none, whatever was sent. A prop needs its type; its
+    rotation is normalised to ``[0, 360)`` and its style forced to its family's
+    (:data:`PROP_STYLE`), while every other kind drops prop, rotation and scale
+    silently, like ``stroke_width``. Raises ``PydanticCustomError``
     with a ``venue_shape.*`` code, so the same rule reports the same code
     whether it fires in the request schema or after a merge in the batch.
     """
@@ -118,7 +173,36 @@ def validate_geometry(
                 {"low": low_w, "high": high_w},
             )
         width_out = round(width_out, _DECIMALS)
-    return NormalisedGeometry(points=normalised, stroke_width=width_out)
+
+    if kind != "prop":
+        return NormalisedGeometry(
+            points=normalised, stroke_width=width_out, style=style
+        )
+
+    if prop is None:
+        raise PydanticCustomError(
+            PROP_REQUIRED, "Choose what kind of decoration this is"
+        )
+    scale_out = DEFAULT_PROP_SCALE if scale is None else float(scale)
+    low_s, high_s = PROP_SCALE_RANGE
+    if not (low_s <= scale_out <= high_s):
+        raise PydanticCustomError(
+            PROP_SCALE,
+            "The size must be between {low} and {high}",
+            {"low": low_s, "high": high_s},
+        )
+    rotation_out = round(float(rotation or 0.0) % 360, 1)
+    if rotation_out >= 360:
+        # 359.96 % 360 rounds up to a full turn.
+        rotation_out = 0.0
+    return NormalisedGeometry(
+        points=normalised,
+        stroke_width=None,
+        style=PROP_STYLE.get(prop, style),
+        prop=prop,
+        rotation=rotation_out,
+        scale=round(scale_out, 3),
+    )
 
 
 def _bbox_centre(points: Sequence[Sequence[float]]) -> tuple[float, float]:
@@ -165,7 +249,7 @@ def shape_anchor(kind: str, points: Sequence[Sequence[float]]) -> tuple[float, f
     """Where a shape's pill or caption sits, in normalised plan coordinates.
 
     rect: centre. polygon: area centroid (bbox centre when degenerate). path:
-    halfway along its length. label: its point. Must match the frontend's
+    halfway along its length. label and prop: its point. Must match the frontend's
     ``shapeAnchor`` in ``src/lib/venue-shapes.ts``; both are tested against
     ``tests/fixtures/shape_anchor_cases.json``.
     """
@@ -173,6 +257,6 @@ def shape_anchor(kind: str, points: Sequence[Sequence[float]]) -> tuple[float, f
         return _polygon_centroid(points)
     if kind == "path":
         return _path_midpoint(points)
-    if kind == "label":
+    if kind in ("label", "prop"):
         return (points[0][0], points[0][1])
     return _bbox_centre(points)

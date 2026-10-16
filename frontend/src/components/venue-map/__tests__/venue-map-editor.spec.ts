@@ -2,10 +2,11 @@
 import { flushPromises, mount } from '@vue/test-utils'
 
 import { createPinia, setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import VenueMapEditor from '@/components/venue-map/VenueMapEditor.vue'
 import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
+import VenueDecorPalette from '@/components/venue-map/editor/VenueDecorPalette.vue'
 
 import type {
   LocationRead,
@@ -686,5 +687,235 @@ describe('VenueMarkerPalette', () => {
       global: { plugins: [i18n] },
     })
     expect(wrapper.text()).toContain('All locations are on this map.')
+  })
+})
+
+describe('VenueMapEditor: decoration', () => {
+  function treeShape(overrides: Partial<VenueShapeRead> = {}): VenueShapeRead {
+    return rectShape({
+      id: 'tree-1',
+      kind: 'prop',
+      style: 'green',
+      points: [[0.5, 0.5]],
+      label: null,
+      prop: 'tree',
+      rotation: 0,
+      scale: 1,
+      ...overrides,
+    })
+  }
+
+  it('names the decoration in a grammatical German hint', async () => {
+    i18n.global.locale.value = 'de'
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="tool-prop"]').trigger('click')
+    expect(wrapper.find('[data-testid="draw-hint"]').text()).toBe(
+      'Tipp auf den Plan, um etwas hinzuzufügen: Laubbaum. Mit Esc bist du fertig.',
+    )
+  })
+
+  it('shows the palette with the tool and stamps the chosen decoration', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+    onTestFinished(() => random.mockRestore())
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    expect(wrapper.find('[data-testid="decor-palette"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="tool-prop"]').trigger('click')
+    const palette = wrapper.find('[data-testid="decor-palette"]')
+    expect(palette.exists()).toBe(true)
+    expect(palette.text()).toContain("It isn't a place and has no shifts.")
+    expect(wrapper.find('[data-testid="draw-hint"]').text()).toContain('Esc')
+
+    await wrapper.find('[data-testid="decor-item-conifer"]').trigger('click')
+    expect(wrapper.find('[data-testid="decor-item-conifer"]').attributes('aria-checked')).toBe(
+      'true',
+    )
+
+    const svg = wrapper.find('[data-testid="editor-canvas"]').element
+    pointer(svg, 'pointerdown', 500, 250)
+    pointer(svg, 'pointerup', 500, 250)
+    await flushPromises()
+    expect(batchCalls()[0]!.body.ops[0]).toMatchObject({
+      op: 'create',
+      shape: { kind: 'prop', prop: 'conifer', style: 'green', points: [[0.5, 0.5]], rotation: 0 },
+    })
+    // Still stamping, and the new one is selected with its own controls.
+    expect(wrapper.find('[data-testid="tool-prop"]').attributes('aria-pressed')).toBe('true')
+    const inspector = wrapper.find('[data-testid="shape-inspector"]')
+    expect(inspector.find('[data-testid="prop-rotation"]').exists()).toBe(true)
+    expect(inspector.find('[data-testid="prop-scale"]').exists()).toBe(true)
+    expect(inspector.find('[data-testid="style-picker"]').exists()).toBe(false)
+    expect(inspector.find('[data-testid="shape-link"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="edit-handles"]').exists()).toBe(false)
+
+    // Esc is "done": back to selecting, the palette goes away.
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="decor-palette"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="edit-handles"]').exists()).toBe(false)
+  })
+
+  it('turns, resizes and retypes the selected decoration from the side panel', async () => {
+    plans = [blankPlan({ shapes: [treeShape()], shapes_revision: 2 })]
+    serverShapes = [treeShape()]
+    serverRevision = 2
+    const wrapper = await mountEditor()
+    const glyph = wrapper.find('[data-testid="venue-shape-tree-1"]').element
+    pointer(glyph, 'pointerdown', 500, 250)
+    pointer(glyph, 'pointerup', 500, 250)
+    await flushPromises()
+    const inspector = () => wrapper.find('[data-testid="shape-inspector"]')
+    expect(inspector().find('[data-testid="shape-inspector-heading"]').text()).toContain(
+      'Decoration ·',
+    )
+
+    await inspector().find('[data-testid="prop-rotate-right"]').trigger('click')
+    await flushPromises()
+    await inspector().find('[data-testid="prop-rotate-left"]').trigger('click')
+    await flushPromises()
+    await inspector().find('[data-testid="prop-rotate-left"]').trigger('click')
+    await flushPromises()
+    const slider = inspector().find('[data-testid="prop-scale"]')
+    await slider.setValue('2')
+    await slider.trigger('change')
+    await flushPromises()
+    expect(inspector().find('[data-testid="prop-scale-value"]').text()).toBe('200 %')
+    await inspector().find('[data-testid="prop-scale-reset"]').trigger('click')
+    await flushPromises()
+    const rotation = inspector().find('[data-testid="prop-rotation"]')
+    await rotation.setValue('90')
+    await rotation.trigger('change')
+    await flushPromises()
+    await inspector().find('[data-testid="decor-type-tent"]').trigger('click')
+    await flushPromises()
+    expect(batchCalls().map((c) => c.body.ops[0])).toEqual([
+      { op: 'update', id: 'tree-1', patch: { rotation: 15 } },
+      { op: 'update', id: 'tree-1', patch: { rotation: 0 } },
+      { op: 'update', id: 'tree-1', patch: { rotation: 345 } },
+      { op: 'update', id: 'tree-1', patch: { scale: 2 } },
+      { op: 'update', id: 'tree-1', patch: { scale: 1 } },
+      { op: 'update', id: 'tree-1', patch: { rotation: 90 } },
+      { op: 'update', id: 'tree-1', patch: { prop: 'tent', style: 'area' } },
+    ])
+  })
+
+  it('draws a hedge from the line presets, and starts a sandpit', async () => {
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))
+    await flushPromises()
+    await wrapper.find('[data-testid="decor-line-hedge"]').trigger('click')
+    expect(wrapper.find('[data-testid="tool-path"]').attributes('aria-pressed')).toBe('true')
+    const svg = wrapper.find('[data-testid="editor-canvas"]').element
+    for (const [x, y] of [
+      [100, 100],
+      [300, 100],
+    ]) {
+      pointer(svg, 'pointerdown', x!, y!)
+      pointer(svg, 'pointerup', x!, y!)
+    }
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await flushPromises()
+    expect(batchCalls()[0]!.body.ops[0]).toMatchObject({
+      shape: { kind: 'path', style: 'hedge', stroke_width: 0.016 },
+    })
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'd' }))
+    await flushPromises()
+    await wrapper.find('[data-testid="decor-area-sand"]').trigger('click')
+    expect(wrapper.find('[data-testid="tool-polygon"]').attributes('aria-pressed')).toBe('true')
+  })
+})
+
+describe('VenueDecorPalette', () => {
+  it('moves the choice with the arrow keys, keeping them from the editor', async () => {
+    const wrapper = mount(VenueDecorPalette, {
+      props: { modelValue: 'tree', mode: 'stamp' },
+      global: { plugins: [i18n] },
+      attachTo: document.body,
+    })
+    mounted.push(wrapper)
+    const outer = vi.fn()
+    document.addEventListener('keydown', outer)
+    const tree = wrapper.find('[data-testid="decor-item-tree"]')
+    expect(tree.attributes('tabindex')).toBe('0')
+    expect(wrapper.find('[data-testid="decor-item-bench"]').attributes('tabindex')).toBe('-1')
+    await tree.trigger('keydown', { key: 'ArrowRight' })
+    await tree.trigger('keydown', { key: 'ArrowLeft' })
+    await tree.trigger('keydown', { key: 'End' })
+    await tree.trigger('keydown', { key: 'Home' })
+    await tree.trigger('keydown', { key: 'x' })
+    expect(wrapper.emitted('update:modelValue')).toEqual([
+      ['conifer'],
+      ['lamp'],
+      ['lamp'],
+      ['tree'],
+    ])
+    // Only the unrelated key reached the document.
+    expect(outer).toHaveBeenCalledTimes(1)
+    document.removeEventListener('keydown', outer)
+
+    await wrapper.find('[data-testid="decor-line-water"]').trigger('click')
+    await wrapper.find('[data-testid="decor-area-sand"]').trigger('click')
+    expect(wrapper.emitted('pick-line')).toEqual([['water']])
+    expect(wrapper.emitted('pick-area')).toEqual([['sand']])
+  })
+
+  it('is a grid of types in the side panel, and does nothing while disabled', async () => {
+    const wrapper = mount(VenueDecorPalette, {
+      props: { modelValue: null, mode: 'picker', disabled: true },
+      global: { plugins: [i18n] },
+    })
+    expect(wrapper.find('[data-testid="decor-note"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="decor-line-hedge"]').exists()).toBe(false)
+    // Nothing chosen: the first one takes the Tab stop.
+    expect(wrapper.find('[data-testid="decor-type-tree"]').attributes('tabindex')).toBe('0')
+    await wrapper.find('[data-testid="decor-type-bench"]').trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    await wrapper.setProps({ disabled: false, modelValue: 'bench' })
+    await wrapper.find('[data-testid="decor-type-bench"]').trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    await wrapper.find('[data-testid="decor-type-bin"]').trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([['bin']])
+  })
+})
+
+describe('VenueMapEditor: decoration on top of a room', () => {
+  it('places the tree on the room and keeps the tree selected', async () => {
+    plans = [blankPlan({ shapes: [rectShape()], shapes_revision: 1 })]
+    serverShapes = [rectShape()]
+    serverRevision = 1
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="tool-prop"]').trigger('click')
+    const room = wrapper.find('[data-testid="venue-shape-shape-1"] .vs-body').element
+    pointer(room, 'pointerdown', 200, 100)
+    pointer(room, 'pointerup', 200, 100)
+    room.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 200, clientY: 100 }))
+    await flushPromises()
+    const create = batchCalls()[0]!.body.ops[0] as { op: string; shape: { id: string } }
+    expect(create).toMatchObject({ op: 'create', shape: { kind: 'prop', points: [[0.2, 0.2]] } })
+    expect(wrapper.find('[data-testid="shape-inspector-heading"]').text()).toContain('Decoration ·')
+    // Enter on a focused shape still selects it.
+    const shape = wrapper.find('[data-testid="venue-shape-shape-1"]')
+    await shape.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.find('[data-testid="shape-inspector-heading"]').text()).toBe('Hall')
+  })
+})
+
+describe('VenueMapEditor: decoration ghost', () => {
+  it('shows a faint copy of the decoration under the pointer, gone when it leaves', async () => {
+    plans = [blankPlan()]
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="tool-prop"]').trigger('click')
+    await wrapper.find('[data-testid="decor-item-bench"]').trigger('click')
+    pointer(window as unknown as Element, 'pointermove', 400, 200)
+    await flushPromises()
+    const ghost = wrapper.find('[data-testid="draw-prop-ghost"]')
+    expect(ghost.attributes('data-prop')).toBe('bench')
+    expect(ghost.find('[data-prop="bench"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="editor-canvas"]').trigger('pointerleave')
+    expect(wrapper.find('[data-testid="draw-prop-ghost"]').exists()).toBe(false)
   })
 })

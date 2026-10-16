@@ -548,6 +548,9 @@ class CRUDVenueMap:
                     label_x=shape.label_x,
                     label_y=shape.label_y,
                     stroke_width=shape.stroke_width,
+                    prop=shape.prop,
+                    rotation=shape.rotation,
+                    scale=shape.scale,
                     sort_order=shape.sort_order,
                 )
             )

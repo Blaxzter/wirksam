@@ -3,12 +3,16 @@ import { computed, useId } from 'vue'
 
 import type { Draft } from '@/composables/useShapeEditor'
 
+import VenuePropGlyph from '@/components/venue-map/VenuePropGlyph.vue'
+
+import { type PropType, propPlacement } from '@/lib/venue-decor'
 import type { Pt } from '@/lib/venue-shape-edit'
 
 /**
  * What is being drawn, before it is a shape: the grid, the rubber band of a
  * rect, a polygon or path in progress with its line to the pointer, a placed
- * text waiting for its words, and the point the pointer snaps to.
+ * text waiting for its words, the point the pointer snaps to, and — with the
+ * Deko tool — a faint ghost of the decoration where a tap would put it.
  *
  * Drawn in plan units inside the editor's SVG; lines and dots keep a constant
  * screen size through `unitsPerPixel`. Never takes pointer events.
@@ -21,6 +25,8 @@ const props = defineProps<{
   unitsPerPixel: number
   /** Normalised grid step; the dots show only while snapping is on. */
   grid: { gx: number; gy: number } | null
+  /** The decoration a tap would place, and where (normalised). */
+  propGhost?: { prop: PropType; at: Pt; scale?: number } | null
 }>()
 
 const patternId = `venue-grid-${useId()}`
@@ -64,6 +70,17 @@ const line = computed(() => {
     vertices: d.points.map(toUnits),
     canClose: d.tool === 'polygon' && d.points.length >= 3,
   }
+})
+
+const ghost = computed(() => {
+  const g = props.propGhost
+  if (!g) return null
+  const placement = propPlacement(
+    { points: [g.at], prop: g.prop, rotation: 0, scale: g.scale ?? 1 },
+    props.width,
+    props.height,
+  )
+  return { prop: g.prop, transform: placement.body }
 })
 
 const labelAt = computed(() => (props.draft?.tool === 'label' ? toUnits(props.draft.at) : null))
@@ -148,6 +165,10 @@ const snap = computed(() =>
         class="stroke-map-select"
         :stroke-width="2 * upp"
       />
+    </g>
+
+    <g v-if="ghost" opacity="0.5" data-testid="draw-prop-ghost" :data-prop="ghost.prop">
+      <VenuePropGlyph :prop="ghost.prop" :transform="ghost.transform" :show-shadow="false" />
     </g>
 
     <g v-if="snap" data-testid="draw-snap" :data-kind="snap.kind">

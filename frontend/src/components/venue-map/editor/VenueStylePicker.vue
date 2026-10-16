@@ -4,6 +4,8 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
+  LABEL_STYLES,
+  PATH_STYLES_FIRST,
   SHAPE_STYLES,
   type ShapeKind,
   type ShapeStyle,
@@ -16,8 +18,9 @@ import {
  * classes as the map, so a swatch shows exactly what the shape will look like
  * in the current theme. A radio group — arrow keys move the choice.
  *
- * A text can not be a wall (wall ink is meant for a dark wall, not for the
- * ground), so `kind: 'label'` leaves that one out.
+ * A text can not be a wall, a hedge or a fence (their ink is meant for a
+ * line, not for the ground), so `kind: 'label'` leaves those out. A line
+ * lists its line looks (path, stream, hedge, fence, wall) first.
  */
 const props = defineProps<{
   modelValue: ShapeStyle
@@ -31,9 +34,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const styles = computed(() =>
-  props.kind === 'label' ? SHAPE_STYLES.filter((s) => s !== 'wall') : [...SHAPE_STYLES],
-)
+const styles = computed<readonly ShapeStyle[]>(() => {
+  if (props.kind === 'label') return LABEL_STYLES
+  if (props.kind === 'path') return PATH_STYLES_FIRST
+  return SHAPE_STYLES
+})
 
 const buttons = ref<HTMLButtonElement[]>([])
 

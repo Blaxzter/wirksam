@@ -2313,7 +2313,7 @@ export const zVenuePlanUpdate = z.object({
 export const zVenueShapeCreate = z
   .object({
     id: z.uuid().nullish(),
-    kind: z.enum(['rect', 'polygon', 'path', 'label']),
+    kind: z.enum(['rect', 'polygon', 'path', 'label', 'prop']),
     style: z.enum([
       'building',
       'room',
@@ -2325,6 +2325,9 @@ export const zVenueShapeCreate = z
       'parking',
       'path',
       'wall',
+      'hedge',
+      'fence',
+      'sand',
     ]),
     points: z
       .array(z.tuple([z.number().gte(0).lte(1), z.number().gte(0).lte(1)]))
@@ -2337,6 +2340,33 @@ export const zVenueShapeCreate = z
     stroke_width: z.number().nullish(),
     location_id: z.uuid().nullish(),
     sort_order: z.int().gte(-1000000).lte(1000000).nullish(),
+    prop: z
+      .enum([
+        'tree',
+        'conifer',
+        'bush',
+        'flowers',
+        'plant',
+        'bench',
+        'picnic_table',
+        'round_table',
+        'bin',
+        'bike_rack',
+        'sign',
+        'parasol',
+        'tent',
+        'lamp',
+      ])
+      .nullish(),
+    rotation: z
+      .number()
+      .gte(-720)
+      .lte(720)
+      .register(z.globalRegistry, {
+        description: 'Props only: degrees clockwise',
+      })
+      .nullish(),
+    scale: z.number().nullish(),
   })
   .register(z.globalRegistry, {
     description: 'A new shape. The whole geometry is checked by ``validate_geometry``.',
@@ -2356,7 +2386,7 @@ export const zShapeCreateOp = z.object({
 export const zVenueShapeRead = z.object({
   id: z.uuid(),
   plan_id: z.uuid(),
-  kind: z.enum(['rect', 'polygon', 'path', 'label']),
+  kind: z.enum(['rect', 'polygon', 'path', 'label', 'prop']),
   style: z.enum([
     'building',
     'room',
@@ -2368,6 +2398,9 @@ export const zVenueShapeRead = z.object({
     'parking',
     'path',
     'wall',
+    'hedge',
+    'fence',
+    'sand',
   ]),
   points: z.array(z.array(z.number())),
   label: z.string().nullish(),
@@ -2377,6 +2410,26 @@ export const zVenueShapeRead = z.object({
   stroke_width: z.number().nullish(),
   location_id: z.uuid().nullish(),
   sort_order: z.int(),
+  prop: z
+    .enum([
+      'tree',
+      'conifer',
+      'bush',
+      'flowers',
+      'plant',
+      'bench',
+      'picnic_table',
+      'round_table',
+      'bin',
+      'bike_rack',
+      'sign',
+      'parasol',
+      'tent',
+      'lamp',
+    ])
+    .nullish(),
+  rotation: z.number().nullish(),
+  scale: z.number().nullish(),
 })
 
 /**
@@ -2460,8 +2513,9 @@ export const zVenuePlanShapesRead = z.object({
  * Partial update; the merged shape is re-validated as a whole.
  *
  * ``kind`` cannot change (delete and re-create instead). An explicit ``null``
- * for ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as
- * those cannot be cleared.
+ * for ``style``, ``points``, ``label_size``, ``sort_order``, ``prop``,
+ * ``rotation`` or ``scale`` is ignored, as those cannot be cleared. A style
+ * patch on a prop is overridden by the prop's own style.
  */
 export const zVenueShapeUpdate = z
   .object({
@@ -2477,6 +2531,9 @@ export const zVenueShapeUpdate = z
         'parking',
         'path',
         'wall',
+        'hedge',
+        'fence',
+        'sand',
       ])
       .nullish(),
     points: z
@@ -2491,10 +2548,37 @@ export const zVenueShapeUpdate = z
     stroke_width: z.number().nullish(),
     location_id: z.uuid().nullish(),
     sort_order: z.int().gte(-1000000).lte(1000000).nullish(),
+    prop: z
+      .enum([
+        'tree',
+        'conifer',
+        'bush',
+        'flowers',
+        'plant',
+        'bench',
+        'picnic_table',
+        'round_table',
+        'bin',
+        'bike_rack',
+        'sign',
+        'parasol',
+        'tent',
+        'lamp',
+      ])
+      .nullish(),
+    rotation: z
+      .number()
+      .gte(-720)
+      .lte(720)
+      .register(z.globalRegistry, {
+        description: 'Props only: degrees clockwise',
+      })
+      .nullish(),
+    scale: z.number().nullish(),
   })
   .register(z.globalRegistry, {
     description:
-      'Partial update; the merged shape is re-validated as a whole.\n\n``kind`` cannot change (delete and re-create instead). An explicit ``null``\nfor ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as\nthose cannot be cleared.',
+      "Partial update; the merged shape is re-validated as a whole.\n\n``kind`` cannot change (delete and re-create instead). An explicit ``null``\nfor ``style``, ``points``, ``label_size``, ``sort_order``, ``prop``,\n``rotation`` or ``scale`` is ignored, as those cannot be cleared. A style\npatch on a prop is overridden by the prop's own style.",
   })
 
 /**

@@ -133,6 +133,21 @@
   --vs-stroke: var(--map-shape-wall-stroke);
   --vs-ink: var(--map-shape-wall-ink);
 }
+.vs-hedge {
+  --vs-fill: var(--map-shape-hedge-fill);
+  --vs-stroke: var(--map-shape-hedge-stroke);
+  --vs-ink: var(--map-shape-hedge-ink);
+}
+.vs-fence {
+  --vs-fill: var(--map-shape-fence-fill);
+  --vs-stroke: var(--map-shape-fence-stroke);
+  --vs-ink: var(--map-shape-fence-ink);
+}
+.vs-sand {
+  --vs-fill: var(--map-shape-sand-fill);
+  --vs-stroke: var(--map-shape-sand-stroke);
+  --vs-ink: var(--map-shape-sand-ink);
+}
 
 .venue-shape,
 .venue-shape-label {
@@ -144,7 +159,9 @@
   --vs-halo: var(--map-canvas);
 }
 
-.vs-wall.vs-label-kind {
+.vs-wall.vs-label-kind,
+.vs-hedge.vs-label-kind,
+.vs-fence.vs-label-kind {
   --vs-ink: var(--map-ink);
 }
 
@@ -240,6 +257,121 @@
   stroke: var(--vs-halo);
   font-weight: 600;
   letter-spacing: 0.01em;
+}
+
+/* ── Textures and decoration ─────────────────────────────────────────────
+   Line textures ride on a second copy of a shape's geometry; their widths
+   are plan units set inline. Decoration glyphs (`VenuePropGlyph.vue`) are
+   geometry in TS and colour here: one `.vp-<paint>` per paint. Line-paint
+   widths come from attributes (local units), never from CSS. */
+.vs-fence:not([data-kind='path']) > .vs-body {
+  fill: transparent;
+  stroke: var(--vs-fill);
+  vector-effect: none;
+}
+.vs-fence-posts {
+  fill: var(--map-decor-wood-dk);
+  pointer-events: none;
+}
+.vs-hedge-dots {
+  fill: none;
+  stroke: var(--map-decor-leaf-hi);
+  stroke-linecap: round;
+  opacity: 0.9;
+  pointer-events: none;
+  vector-effect: none;
+}
+.vs-ripple {
+  fill: none;
+  stroke: var(--map-decor-water-hi);
+  stroke-linecap: round;
+  opacity: 0.8;
+  pointer-events: none;
+}
+.vs-cast {
+  fill: var(--map-decor-shadow);
+  stroke: none;
+  pointer-events: none;
+}
+.vp-shadow {
+  fill: var(--map-decor-shadow);
+}
+.vp-leaf {
+  fill: var(--map-decor-leaf);
+}
+.vp-leaf-hi {
+  fill: var(--map-decor-leaf-hi);
+}
+.vp-conifer {
+  fill: var(--map-decor-conifer);
+}
+.vp-conifer-hi {
+  fill: var(--map-decor-conifer-hi);
+}
+.vp-bloom {
+  fill: var(--map-decor-bloom);
+}
+.vp-bloom-2 {
+  fill: var(--map-decor-bloom-2);
+}
+.vp-wood {
+  fill: var(--map-decor-wood);
+}
+.vp-wood-dk {
+  fill: var(--map-decor-wood-dk);
+}
+.vp-fabric {
+  fill: var(--map-decor-fabric);
+}
+.vp-fabric-shade {
+  fill: var(--map-decor-fabric-shade);
+}
+.vp-accent {
+  fill: var(--map-decor-accent);
+}
+.vp-metal {
+  fill: var(--map-decor-metal);
+}
+.vp-stone {
+  fill: var(--map-decor-stone);
+}
+.vp-lamp {
+  fill: var(--map-decor-lamp);
+}
+.vp-glow {
+  fill: var(--map-decor-glow);
+  opacity: 0.85;
+}
+.vp-rib,
+.vp-line-wood,
+.vp-line-metal,
+.vp-line-light {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.vp-rib {
+  stroke: var(--map-decor-shadow);
+}
+.vp-line-wood {
+  stroke: var(--map-decor-wood-dk);
+}
+.vp-line-metal {
+  stroke: var(--map-decor-metal);
+}
+.vp-line-light {
+  stroke: var(--map-decor-fabric);
+}
+.vs-prop-hit {
+  fill: transparent;
+}
+.venue-prop-shape:focus {
+  outline: none;
+}
+.venue-prop-shape:focus-visible .vs-prop-hit {
+  stroke: var(--map-select);
+  stroke-width: 2px;
+  vector-effect: non-scaling-stroke;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -540,6 +672,33 @@
   --map-shape-wall-fill: oklch(0.48 0.02 70);
   --map-shape-wall-stroke: transparent;
   --map-shape-wall-ink: oklch(0.97 0.01 80);
+  --map-shape-hedge-fill: oklch(0.68 0.075 140);
+  --map-shape-hedge-stroke: oklch(0.56 0.07 142);
+  --map-shape-hedge-ink: oklch(0.25 0.05 140);
+  --map-shape-fence-fill: oklch(0.72 0.05 62);
+  --map-shape-fence-stroke: oklch(0.58 0.055 60);
+  --map-shape-fence-ink: oklch(0.30 0.02 65);
+  --map-shape-sand-fill: oklch(0.91 0.04 90);
+  --map-shape-sand-stroke: oklch(0.78 0.05 85);
+  --map-shape-sand-ink: oklch(0.38 0.04 80);
+  /* Decoration (trees, benches, tents): muted, never an indicator. */
+  --map-decor-leaf: oklch(0.67 0.075 140);
+  --map-decor-leaf-hi: oklch(0.75 0.07 132);
+  --map-decor-conifer: oklch(0.58 0.06 160);
+  --map-decor-conifer-hi: oklch(0.68 0.06 155);
+  --map-decor-bloom: oklch(0.74 0.08 15);
+  --map-decor-bloom-2: oklch(0.87 0.07 95);
+  --map-decor-wood: oklch(0.70 0.055 65);
+  --map-decor-wood-dk: oklch(0.56 0.055 60);
+  --map-decor-fabric: oklch(0.95 0.012 85);
+  --map-decor-fabric-shade: oklch(0.88 0.015 80);
+  --map-decor-accent: oklch(0.72 0.07 40);
+  --map-decor-metal: oklch(0.62 0.01 250);
+  --map-decor-stone: oklch(0.80 0.015 80);
+  --map-decor-lamp: oklch(0.40 0.015 60);
+  --map-decor-glow: oklch(0.97 0.04 90);
+  --map-decor-water-hi: oklch(0.93 0.03 225);
+  --map-decor-shadow: rgb(40 50 30 / 0.18);
 }
 
 .dark {
@@ -594,6 +753,33 @@
   --map-shape-wall-fill: oklch(0.62 0.012 155);
   --map-shape-wall-stroke: transparent;
   --map-shape-wall-ink: oklch(0.17 0.01 155);
+  --map-shape-hedge-fill: oklch(0.40 0.055 145);
+  --map-shape-hedge-stroke: oklch(0.33 0.05 145);
+  --map-shape-hedge-ink: oklch(0.92 0.04 140);
+  --map-shape-fence-fill: oklch(0.42 0.035 65);
+  --map-shape-fence-stroke: oklch(0.36 0.03 62);
+  --map-shape-fence-ink: oklch(0.90 0.01 155);
+  --map-shape-sand-fill: oklch(0.33 0.025 85);
+  --map-shape-sand-stroke: oklch(0.45 0.03 85);
+  --map-shape-sand-ink: oklch(0.88 0.02 85);
+  /* Decoration (trees, benches, tents): muted, never an indicator. */
+  --map-decor-leaf: oklch(0.45 0.065 145);
+  --map-decor-leaf-hi: oklch(0.52 0.06 138);
+  --map-decor-conifer: oklch(0.40 0.055 165);
+  --map-decor-conifer-hi: oklch(0.47 0.05 160);
+  --map-decor-bloom: oklch(0.56 0.07 15);
+  --map-decor-bloom-2: oklch(0.66 0.06 95);
+  --map-decor-wood: oklch(0.48 0.04 65);
+  --map-decor-wood-dk: oklch(0.40 0.035 60);
+  --map-decor-fabric: oklch(0.50 0.012 155);
+  --map-decor-fabric-shade: oklch(0.43 0.012 155);
+  --map-decor-accent: oklch(0.50 0.06 40);
+  --map-decor-metal: oklch(0.55 0.01 250);
+  --map-decor-stone: oklch(0.45 0.01 155);
+  --map-decor-lamp: oklch(0.85 0.05 90);
+  --map-decor-glow: oklch(0.36 0.035 85);
+  --map-decor-water-hi: oklch(0.40 0.05 235);
+  --map-decor-shadow: rgb(0 0 0 / 0.40);
 }
 
 /* Classic palette — light (monochrome, original shadcn look) */
@@ -789,6 +975,33 @@
     --map-shape-wall-fill: oklch(0.48 0.02 70) !important;
     --map-shape-wall-stroke: transparent !important;
     --map-shape-wall-ink: oklch(0.97 0.01 80) !important;
+    --map-shape-hedge-fill: oklch(0.68 0.075 140) !important;
+    --map-shape-hedge-stroke: oklch(0.56 0.07 142) !important;
+    --map-shape-hedge-ink: oklch(0.25 0.05 140) !important;
+    --map-shape-fence-fill: oklch(0.72 0.05 62) !important;
+    --map-shape-fence-stroke: oklch(0.58 0.055 60) !important;
+    --map-shape-fence-ink: oklch(0.30 0.02 65) !important;
+    --map-shape-sand-fill: oklch(0.91 0.04 90) !important;
+    --map-shape-sand-stroke: oklch(0.78 0.05 85) !important;
+    --map-shape-sand-ink: oklch(0.38 0.04 80) !important;
+    /* Decoration. */
+    --map-decor-leaf: oklch(0.67 0.075 140) !important;
+    --map-decor-leaf-hi: oklch(0.75 0.07 132) !important;
+    --map-decor-conifer: oklch(0.58 0.06 160) !important;
+    --map-decor-conifer-hi: oklch(0.68 0.06 155) !important;
+    --map-decor-bloom: oklch(0.74 0.08 15) !important;
+    --map-decor-bloom-2: oklch(0.87 0.07 95) !important;
+    --map-decor-wood: oklch(0.70 0.055 65) !important;
+    --map-decor-wood-dk: oklch(0.56 0.055 60) !important;
+    --map-decor-fabric: oklch(0.95 0.012 85) !important;
+    --map-decor-fabric-shade: oklch(0.88 0.015 80) !important;
+    --map-decor-accent: oklch(0.72 0.07 40) !important;
+    --map-decor-metal: oklch(0.62 0.01 250) !important;
+    --map-decor-stone: oklch(0.80 0.015 80) !important;
+    --map-decor-lamp: oklch(0.40 0.015 60) !important;
+    --map-decor-glow: oklch(0.97 0.04 90) !important;
+    --map-decor-water-hi: oklch(0.93 0.03 225) !important;
+    --map-decor-shadow: rgb(40 50 30 / 0.18) !important;
   }
 
   @page {

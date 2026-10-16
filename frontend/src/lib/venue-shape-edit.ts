@@ -30,7 +30,38 @@ export type Bounds = { x0: number; y0: number; x1: number; y1: number }
 export const MIN_RECT_SIZE = 0.002
 export const MAX_POINTS = 500
 /** Fewest points each kind may have. */
-export const MIN_POINTS: Record<ShapeKind, number> = { rect: 2, polygon: 3, path: 2, label: 1 }
+export const MIN_POINTS: Record<ShapeKind, number> = {
+  rect: 2,
+  polygon: 3,
+  path: 2,
+  label: 1,
+  prop: 1,
+}
+type PropType = NonNullable<VenueShapeRead['prop']>
+type ShapeStyle = VenueShapeRead['style']
+
+/**
+ * The style the server stores a decoration with (`PROP_STYLE` in
+ * `app/logic/venue_shapes.py`): its caption ink. The editor sends it along, so
+ * the optimistic view already matches what comes back.
+ */
+export const PROP_STYLE: Readonly<Record<PropType, ShapeStyle>> = {
+  tree: 'green',
+  conifer: 'green',
+  bush: 'green',
+  flowers: 'green',
+  plant: 'green',
+  bench: 'furniture',
+  picnic_table: 'furniture',
+  round_table: 'furniture',
+  bin: 'furniture',
+  bike_rack: 'furniture',
+  sign: 'furniture',
+  lamp: 'furniture',
+  parasol: 'area',
+  tent: 'area',
+}
+
 /** Vertex snapping radius, CSS px. */
 export const SNAP_RADIUS_PX = 8
 export const RECT_HANDLES: readonly RectHandle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']
@@ -46,6 +77,9 @@ const EDITABLE_FIELDS = [
   'stroke_width',
   'location_id',
   'sort_order',
+  'prop',
+  'rotation',
+  'scale',
 ] as const satisfies readonly (keyof VenueShapeRead & keyof VenueShapeUpdate)[]
 
 type EditableField = (typeof EDITABLE_FIELDS)[number]
@@ -94,8 +128,12 @@ export function rectCorners(points: readonly (readonly number[])[]): Pt[] {
   ]
 }
 
-/** Every point another point may snap to: rect corners, polygon and path vertices. */
+/**
+ * Every point another point may snap to: rect corners, polygon and path
+ * vertices, a text's point. A decoration is never a snap target.
+ */
 export function shapeVertices(shape: Pick<VenueShapeRead, 'kind' | 'points'>): Pt[] {
+  if (shape.kind === 'prop') return []
   if (shape.kind === 'rect') return rectCorners(shape.points)
   return shape.points.map((p) => [p[0]!, p[1]!])
 }
@@ -380,6 +418,9 @@ export function shapeToCreate(shape: VenueShapeRead): VenueShapeCreate {
     stroke_width: shape.stroke_width ?? null,
     location_id: shape.location_id ?? null,
     sort_order: shape.sort_order,
+    ...(shape.kind === 'prop'
+      ? { prop: shape.prop ?? null, rotation: shape.rotation ?? null, scale: shape.scale ?? null }
+      : {}),
   }
 }
 
@@ -413,6 +454,10 @@ function readFromCreate(
     stroke_width: create.kind === 'path' ? (create.stroke_width ?? 0.02) : null,
     location_id: create.location_id ?? null,
     sort_order: create.sort_order ?? sortOrder,
+    // Only a decoration carries these (the server drops them on every other kind).
+    ...(create.kind === 'prop'
+      ? { prop: create.prop ?? null, rotation: create.rotation ?? 0, scale: create.scale ?? 1 }
+      : {}),
   }
 }
 
@@ -424,7 +469,13 @@ function mergePatch(shape: VenueShapeRead, patch: VenueShapeUpdate): VenueShapeR
     // The server ignores an explicit null for these: they cannot be cleared.
     if (
       value == null &&
-      (field === 'style' || field === 'points' || field === 'label_size' || field === 'sort_order')
+      (field === 'style' ||
+        field === 'points' ||
+        field === 'label_size' ||
+        field === 'sort_order' ||
+        field === 'prop' ||
+        field === 'rotation' ||
+        field === 'scale')
     ) {
       continue
     }

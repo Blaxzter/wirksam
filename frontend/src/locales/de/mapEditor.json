@@ -16,6 +16,25 @@
         "submit": "Plan anlegen",
         "title": "Neuer Plan"
     },
+    "decor": {
+        "areas": {
+            "sand": "Sand"
+        },
+        "groups": {
+            "event": "Fest",
+            "furniture": "Möbel",
+            "lines": "Linien & Flächen",
+            "nature": "Pflanzen"
+        },
+        "lines": {
+            "fence": "Zaun",
+            "hedge": "Hecke",
+            "path": "Weg",
+            "water": "Bach"
+        },
+        "note": "Deko hilft nur bei der Orientierung. Sie ist kein Ort und hat keine Schichten.",
+        "title": "Deko"
+    },
     "draw": {
         "cancel": "Abbrechen",
         "closeShape": "Form schließen",
@@ -26,6 +45,7 @@
         "labelPlaceholder": "z. B. Große Halle",
         "pathHint": "Tipp, um Punkte zu setzen. Doppeltipp oder „Fertig“ beendet die Linie.",
         "polygonHint": "Tipp, um Ecken zu setzen. Tipp auf die erste Ecke oder auf „Form schließen“, um fertig zu werden.",
+        "propHint": "Tipp auf den Plan, um etwas hinzuzufügen: {name}. Mit Esc bist du fertig.",
         "rectHint": "Zieh ein Rechteck auf.",
         "saved": "Alles gespeichert",
         "saving": "Wird gespeichert…",
@@ -50,6 +70,16 @@
         "moveLabelHint": "Zieh den kleinen Text-Griff auf dem Plan, um die Beschriftung zu verschieben.",
         "newLabel": "Neuer Text",
         "order": "Reihenfolge",
+        "prop": {
+            "keysHint": "Tasten: Q und E drehen, + und − ändern die Größe.",
+            "resetSize": "Normale Größe",
+            "rotateLeft": "Nach links drehen",
+            "rotateRight": "Nach rechts drehen",
+            "rotation": "Drehung",
+            "size": "Größe",
+            "title": "Deko",
+            "type": "Art"
+        },
         "removePoint": "Ausgewählten Punkt entfernen",
         "resetLabel": "Beschriftung zurücksetzen",
         "strokeWidth": "Linienbreite",
@@ -119,10 +149,11 @@
         "label": "Text",
         "path": "Linie",
         "polygon": "Fläche",
+        "prop": "Deko",
         "rect": "Rechteck",
         "redo": "Wiederholen",
         "select": "Auswählen",
-        "shortcutsHint": "Tastenkürzel: V Auswählen, R Rechteck, P Fläche, L Linie, T Text, G Einrasten. Strg+Z macht Zeichenschritte rückgängig (keine Markierungen).",
+        "shortcutsHint": "Tastenkürzel: V Auswählen, R Rechteck, P Fläche, L Linie, T Text, D Deko, G Einrasten. Bei ausgewählter Deko: Q/E drehen, +/− Größe. Strg+Z macht Zeichenschritte rückgängig (keine Markierungen).",
         "snap": "Am Raster einrasten",
         "title": "Zeichenwerkzeuge",
         "undo": "Rückgängig"

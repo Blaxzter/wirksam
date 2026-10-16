@@ -13,6 +13,11 @@ food stalls, car park).
 Every spot a marker sits on is written down once in ``SPOTS``, and the shapes
 below are built from the same numbers, so a pin always lands on the feature
 drawn for it. Coordinates are fractions of the 1600 x 1000 canvas.
+
+Both plans carry decoration too (trees, gazebos, benches, hedges, ...), drawn
+as ``prop`` shapes and decorative line styles exactly as the editor's Deko tool
+makes them. Decoration is never a place, so it stays clear of the pins unless
+it is the very thing a pin stands on (a gazebo under its stall's pill).
 """
 
 import functools
@@ -20,6 +25,8 @@ import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Final, Literal
+
+from app.logic.venue_shapes import PROP_STYLE
 
 WIDTH: Final = 1600
 HEIGHT: Final = 1000
@@ -29,7 +36,7 @@ PLAN_KEYS: Final[tuple[PlanKey, ...]] = ("indoor", "outdoor")
 
 Box = tuple[float, float, float, float]
 Point = tuple[float, float]
-ShapeKind = Literal["rect", "polygon", "path", "label"]
+ShapeKind = Literal["rect", "polygon", "path", "label", "prop"]
 LabelSize = Literal["sm", "md", "lg"]
 
 # ── Shared geometry: fractions of the canvas, (left, top, right, bottom) ──
@@ -150,6 +157,12 @@ class ShapeSpec:
     #: A ``SPOTS`` key: the seeder links the shape to the location whose
     #: marker uses that spot.
     link_spot: str | None = None
+    #: Props only: the glyph, its rotation (degrees clockwise) and size factor.
+    prop: str | None = None
+    rotation: float = 0.0
+    scale: float = 1.0
+    #: The decor deliberately sits under a pin (a tent under its stall's pill).
+    under_pin: bool = False
 
 
 def label_text(key: str, lang: str) -> str:
@@ -208,11 +221,38 @@ def ngon(
 
 
 def _path(points: Sequence[Point], width_px: float) -> ShapeSpec:
+    return _line(points, "path", width_px, smooth=True)
+
+
+def _line(
+    points: Sequence[Point], style: str, width_px: float, smooth: bool = False
+) -> ShapeSpec:
+    """A path of ``style``, ``width_px`` canvas px wide (a hedge, a fence)."""
     return ShapeSpec(
         kind="path",
-        style="path",
-        points=tuple(_smooth(points)),
+        style=style,
+        points=tuple(_smooth(points) if smooth else points),
         stroke_width=width_px / HEIGHT,
+    )
+
+
+def prop(
+    kind: str,
+    at: Point,
+    *,
+    rotation: float = 0.0,
+    scale: float = 1.0,
+    under_pin: bool = False,
+) -> ShapeSpec:
+    """A piece of decoration: a tree, a bench, a gazebo ..."""
+    return ShapeSpec(
+        kind="prop",
+        style=PROP_STYLE[kind],
+        points=(at,),
+        prop=kind,
+        rotation=rotation,
+        scale=scale,
+        under_pin=under_pin,
     )
 
 
@@ -321,17 +361,49 @@ def _indoor() -> list[ShapeSpec]:
         rect(CAFE_COUNTER, "furniture", link_spot="cafe_counter"),
         _label((_center(CAFE_COUNTER)[0], CAFE_COUNTER[3] + 0.03), "cafe", "furniture"),
     ]
-    for at in (
-        (0.115, 0.50),
-        (0.175, 0.53),
-        (0.115, 0.60),
-        (0.235, 0.58),
-        (0.175, 0.635),
-    ):
-        shapes.append(ngon(at, 15, 10, "furniture"))
     shapes += [
         rect(WELCOME_DESK, "furniture", link_spot="welcome_desk"),
         ngon(INFO_DESK_AT, 24, 16, "furniture"),
+    ]
+
+    # Decoration, drawn above every room by the renderer whatever its order.
+    # Café tables in the foyer.
+    for at, rotation in (
+        ((0.115, 0.50), 0),
+        ((0.175, 0.53), 20),
+        ((0.115, 0.60), 40),
+        ((0.235, 0.58), 10),
+        ((0.175, 0.635), 30),
+    ):
+        shapes.append(prop("round_table", at, rotation=rotation, scale=1.4))
+    # Potted plants: either side of the main door, in the foyer corner, in the
+    # hall's corners and on the stage's front corners.
+    # A pot is small at the true size, so the demo draws them a bit large to
+    # read at the fitted zoom.
+    for at in (
+        (0.165, 0.805),
+        (0.265, 0.805),
+        (0.085, 0.43),
+        (0.47, 0.80),
+        (0.855, 0.80),
+    ):
+        shapes.append(prop("plant", at, scale=1.9))
+    for at in ((0.545, 0.16), (0.78, 0.16)):
+        shapes.append(prop("plant", at, scale=1.4))
+    # Outside: trees along the street, the east side and the north strip.
+    shapes += [
+        prop("tree", (0.08, 0.893), scale=0.75),
+        prop("tree", (0.40, 0.893), rotation=90, scale=0.8),
+        prop("tree", (0.55, 0.893), rotation=200, scale=0.75),
+        prop("tree", (0.70, 0.893), rotation=45, scale=0.8),
+        prop("tree", (0.95, 0.15), scale=0.85),
+        prop("conifer", (0.95, 0.35), rotation=15, scale=0.9),
+        prop("bush", (0.95, 0.80)),
+        prop("bench", (0.95, 0.525)),
+        prop("bush", (0.20, 0.035), scale=1.5),
+        prop("bush", (0.55, 0.035), rotation=90, scale=1.5),
+        prop("bush", (0.75, 0.035), rotation=200, scale=1.5),
+        prop("bike_rack", (0.32, 0.893), scale=1.1),
     ]
     return shapes
 
@@ -374,7 +446,14 @@ def _outdoor() -> list[ShapeSpec]:
     # The meadow, with walkways looping through it from the gate.
     stalls_x = _center(STALLS_ROW)[0]
     shapes += [
-        rect(MEADOW, "green", label_key="meadow", label_at=(0.47, 0.665)),
+        rect(MEADOW, "green", label_key="meadow", label_at=(0.756, 0.665)),
+        # Hedges along the meadow's bottom and left edges, open at both gates.
+        _line([(0.35, 0.70), (0.548, 0.70)], "hedge", 16),
+        _line([(0.602, 0.70), (0.84, 0.70)], "hedge", 16),
+        _line([(0.35, 0.07), (0.35, 0.228)], "hedge", 16),
+        _line([(0.35, 0.292), (0.35, 0.70)], "hedge", 16),
+        # A fence along the car park's right side.
+        _line([(0.297, 0.50), (0.297, 0.86)], "fence", 8),
         _path(
             [(gate_x, gate_y), (gate_x, 0.50), (stalls_x, 0.38), (stalls_x, 0.21)], 34
         ),
@@ -383,29 +462,19 @@ def _outdoor() -> list[ShapeSpec]:
         _path([(stalls_x, 0.33), (0.70, 0.33), (0.74, 0.24), FIRST_AID_TENT_AT], 24),
     ]
 
-    # Food stalls: the row as an area, a booth for each stall on top.
+    # Food stalls: the row as an area; a gazebo for each stall comes with
+    # the decoration below.
     s_l, s_t, s_r, s_b = STALLS_ROW
     shapes.append(
         rect(
             STALLS_ROW,
             "area",
             label_key="stalls",
-            label_at=(_center(STALLS_ROW)[0], s_t - 0.025),
+            label_at=(_center(STALLS_ROW)[0], s_b + 0.03),
             label_size="sm",
             link_spot="food_stalls",
         )
     )
-    booths = 5
-    booth_w = (s_r - s_l - 0.01 * (booths - 1)) / booths
-    for i in range(booths):
-        left = s_l + i * (booth_w + 0.01)
-        shapes.append(rect((left, s_t, left + booth_w, s_b), "furniture"))
-    # Beer tables between the stalls and the kids' corner.
-    for row in range(3):
-        by = 0.37 + row * 0.035
-        for bx in (0.6, 0.652):
-            shapes.append(rect((bx, by, bx + 0.045, by + 0.013), "furniture"))
-
     shapes += [
         ngon(
             KIDS_CORNER_AT,
@@ -417,7 +486,8 @@ def _outdoor() -> list[ShapeSpec]:
             label_size="sm",
             link_spot="kids_corner",
         ),
-        ngon(FIRST_AID_TENT_AT, 36, 14, "furniture"),
+        # A sandpit in the kids' corner, beside its pin.
+        ngon((0.712, 0.538), 22, 14, "sand"),
         rect(OUT_TOILETS, "room"),
         rect(OUT_BUILDING, "building", label_key="building"),
         rect(
@@ -436,22 +506,71 @@ def _outdoor() -> list[ShapeSpec]:
         ),
     ]
 
-    # Trees along the meadow edge and the street.
-    for at, r in (
-        ((0.33, 0.07), 26),
-        ((0.86, 0.10), 30),
-        ((0.865, 0.40), 26),
-        ((0.85, 0.62), 34),
-        ((0.33, 0.47), 22),
-        ((0.505, 0.80), 26),
-        ((0.62, 0.82), 30),
-        ((0.74, 0.79), 26),
-        ((0.82, 0.83), 22),
-        ((0.31, 0.88), 20),
-    ):
-        shapes.append(ngon(at, r, 12, "green"))
-
     shapes.append(_label((gate_x + 0.07, gate_y + 0.035), "gate"))
+
+    # Decoration, drawn above every area by the renderer whatever its order.
+    # Trees along the meadow edge, the river and the street.
+    shapes += [
+        prop("tree", (0.33, 0.07), scale=0.96),
+        prop("conifer", (0.86, 0.10), rotation=20, scale=1.25),
+        prop("tree", (0.865, 0.40), rotation=140, scale=0.96),
+        prop("tree", (0.85, 0.62), rotation=60, scale=1.26),
+        prop("conifer", (0.33, 0.47), rotation=40, scale=0.92),
+        prop("tree", (0.505, 0.80), rotation=200, scale=0.96),
+        prop("tree", (0.62, 0.82), rotation=100, scale=1.1),
+        prop("conifer", (0.74, 0.79), rotation=10, scale=1.08),
+        prop("tree", (0.82, 0.83), rotation=300, scale=0.81),
+        prop("tree", (0.31, 0.88), rotation=250, scale=0.74),
+        prop("tree", (0.875, 0.25), rotation=80, scale=0.9),
+        prop("conifer", (0.87, 0.53), scale=0.9),
+        prop("tree", (0.875, 0.74), rotation=170, scale=0.85),
+        prop("tree", (0.10, 0.893), rotation=30, scale=0.78),
+        prop("tree", (0.22, 0.893), rotation=210, scale=0.72),
+        prop("bush", (0.885, 0.86)),
+        prop("bush", (0.88, 0.045), rotation=90, scale=0.9),
+        prop("bush", (0.315, 0.43), scale=0.8),
+    ]
+    # A gazebo for each food stall, the middle one under the stalls' pill.
+    booths = 5
+    booth_w = (s_r - s_l - 0.01 * (booths - 1)) / booths
+    for i in range(booths):
+        left = s_l + i * (booth_w + 0.01)
+        shapes.append(
+            prop(
+                "tent",
+                (left + booth_w / 2, (s_t + s_b) / 2),
+                scale=1.1,
+                under_pin=True,
+            )
+        )
+    # Beer tables between the stalls and the kids' corner, with parasols.
+    for by in (0.385, 0.43):
+        for bx in (0.60, 0.645, 0.69):
+            shapes.append(prop("picnic_table", (bx, by), scale=1.3))
+    for at in ((0.6225, 0.4075), (0.6675, 0.4075)):
+        shapes.append(prop("parasol", at, scale=0.95))
+    # The first-aid gazebo carries its own pin.
+    shapes.append(prop("tent", FIRST_AID_TENT_AT, scale=1.12, under_pin=True))
+    # Benches by the walkway and the side path, lamps, bike racks, bins,
+    # flower beds and a sign at the gate.
+    shapes += [
+        prop("bench", (0.598, 0.58), rotation=90),
+        prop("bench", (0.552, 0.58), rotation=270),
+        prop("bench", (0.44, 0.335), rotation=27),
+        *(
+            prop("lamp", at, scale=1.2)
+            for at in ((0.592, 0.655), (0.592, 0.55), (0.45, 0.912), (0.70, 0.912))
+        ),
+        prop("bike_rack", (0.38, 0.81), rotation=90, scale=1.3),
+        prop("bike_rack", (0.45, 0.81), rotation=90, scale=1.3),
+        prop("bin", (0.51, 0.225)),
+        prop("bin", (0.405, 0.545)),
+        prop("flowers", (0.315, 0.13)),
+        prop("flowers", (0.315, 0.35), rotation=30),
+        prop("flowers", (0.625, 0.737)),
+        prop("flowers", (0.66, 0.737), rotation=60),
+        prop("sign", (0.495, 0.742)),
+    ]
     return shapes
 
 

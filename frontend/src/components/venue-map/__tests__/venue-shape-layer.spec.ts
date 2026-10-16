@@ -116,7 +116,7 @@ describe('VenueShapeLayer', () => {
   it('draws every caption after every shape', () => {
     const wrapper = render()
     const layers = wrapper.findAll('[data-layer]').map((l) => l.attributes('data-layer'))
-    expect(layers).toEqual(['shapes', 'shape-labels'])
+    expect(layers).toEqual(['shapes', 'props', 'shape-labels'])
     const labels = wrapper.get('[data-layer="shape-labels"]')
     expect(labels.attributes('pointer-events')).toBe('none')
     expect(labels.findAll('text').map((t) => t.text())).toEqual(['Hall', 'Walkway', 'Gate'])
@@ -248,5 +248,226 @@ describe('VenueShapeLayer', () => {
       { global: { plugins: [i18n] } },
     )
     expect(wrapper.get('[data-testid="venue-shape-broken"]').find('rect').exists()).toBe(false)
+  })
+  it('renders the pre-existing styles as before, plus a building cast', () => {
+    const styles = [
+      'building',
+      'room',
+      'area',
+      'stage',
+      'furniture',
+      'green',
+      'water',
+      'parking',
+      'path',
+      'wall',
+    ] as const
+    const shapes = styles.flatMap((style) => [
+      shape({ id: `${style}-rect`, style }),
+      shape({
+        id: `${style}-path`,
+        kind: 'path',
+        style,
+        points: [
+          [0, 0],
+          [1, 1],
+        ],
+        stroke_width: 0.02,
+      }),
+    ])
+    const wrapper = mount(
+      {
+        render: () =>
+          h('svg', [h(VenueShapeLayer, { shapes, width: 1000, height: 1000, unitsPerPixel: 1 })]),
+      },
+      { global: { plugins: [i18n] } },
+    )
+    const tags = (id: string) =>
+      wrapper
+        .get(`[data-testid="venue-shape-${id}"]`)
+        .findAll('*')
+        .map((el) => `${el.element.tagName}.${el.classes().join('.')}`)
+    for (const style of styles) {
+      expect([style, tags(`${style}-rect`)]).toEqual([
+        style,
+        style === 'building' ? ['rect.vs-cast', 'rect.vs-body'] : ['rect.vs-body'],
+      ])
+      expect([style, tags(`${style}-path`)]).toEqual([
+        style,
+        style === 'water' ? ['polyline.vs-body', 'polyline.vs-ripple'] : ['polyline.vs-body'],
+      ])
+    }
+    const cast = wrapper.get('[data-testid="venue-shape-building-rect"] .vs-cast')
+    expect(cast.attributes('transform')).toBe('translate(4 6)')
+  })
+
+  it('textures water, hedges and fences in plan units', () => {
+    const line = (id: string, style: RenderShape['style']) =>
+      shape({
+        id,
+        kind: 'path',
+        style,
+        points: [
+          [0, 0.5],
+          [1, 0.5],
+        ],
+        stroke_width: 0.01,
+      })
+    const wrapper = render({
+      shapes: [
+        line('stream', 'water'),
+        line('hedge', 'hedge'),
+        line('fence', 'fence'),
+        shape({ id: 'hedge-block', style: 'hedge' }),
+        shape({ id: 'pen', style: 'fence', location_id: 'loc-pen' }),
+        shape({
+          id: 'pit',
+          kind: 'polygon',
+          style: 'sand',
+          points: [
+            [0.1, 0.1],
+            [0.2, 0.1],
+            [0.15, 0.2],
+          ],
+        }),
+      ],
+    })
+    const g = (id: string) => wrapper.get(`[data-testid="venue-shape-${id}"]`)
+    // sw = 0.01 · 1000 = 10 plan units.
+    expect(g('stream').get('.vs-ripple').attributes('style')).toContain('stroke-dasharray: 8 15')
+    expect(g('hedge').get('polyline.vs-hedge-dots').attributes('style')).toContain(
+      'stroke-width: 4.5px',
+    )
+    expect(g('hedge-block').get('polygon.vs-hedge-dots').attributes('points')).toBe(
+      '100,100 500,100 500,500 100,500',
+    )
+    // The rail thins out and gets square posts every max(4·sw, 12) = 40 units.
+    expect(g('fence').get('.vs-body').attributes('style')).toContain('stroke-width: 3.5px')
+    const posts = g('fence').get('path.vs-fence-posts').attributes('d')!
+    expect(posts.match(/M/g)).toHaveLength(26)
+    // A fenced area: outline and posts all round (perimeter 1600 / 30 → 53).
+    expect(g('pen').get('.vs-body').attributes('style')).toContain('stroke-width: 3px')
+    expect(g('pen').get('.vs-fence-posts').attributes('d')!.match(/M/g)).toHaveLength(53)
+    expect(g('pit').classes()).toContain('vs-sand')
+    expect(g('pit').findAll('*').map((el) => el.element.tagName)).toEqual(['polygon'])
+  })
+})
+
+describe('VenueShapeLayer decoration', () => {
+  const prop = (
+    id: string,
+    kind: NonNullable<RenderShape['prop']>,
+    overrides: Partial<RenderShape> = {},
+  ) =>
+    shape({
+      id,
+      kind: 'prop',
+      style: 'green',
+      prop: kind,
+      rotation: 0,
+      scale: 1,
+      points: [[0.5, 0.5]],
+      ...overrides,
+    })
+  // The tent comes first in sort_order but is tall, so it is drawn after the bench.
+  const decor = [
+    prop('tent', 'tent', { sort_order: 0, style: 'area', rotation: 30 }),
+    prop('bench', 'bench', { sort_order: 9, style: 'furniture', label: 'Rest' }),
+    prop('oak', 'tree', { sort_order: 1, scale: 2 }),
+  ]
+
+  function renderDecor(props: Partial<Props> = {}) {
+    return render({ shapes: [room, ...decor], ...props })
+  }
+
+  it('draws props in their own layer, ground tier before tall', () => {
+    const wrapper = renderDecor()
+    const layer = wrapper.get('[data-layer="props"]')
+    expect(layer.attributes('pointer-events')).toBe('none')
+    expect(layer.findAll('.venue-prop-shape').map((g) => g.attributes('data-shape-id'))).toEqual([
+      'bench',
+      'tent',
+      'oak',
+    ])
+    // Not in the ground layer.
+    expect(wrapper.get('[data-layer="shapes"]').find('[data-kind="prop"]').exists()).toBe(false)
+    const tent = wrapper.get('[data-testid="venue-shape-tent"]')
+    expect(tent.attributes()).toMatchObject({
+      'data-kind': 'prop',
+      'data-prop': 'tent',
+      'data-rotation': '30',
+      'data-scale': '1',
+      'aria-hidden': 'true',
+    })
+    expect(tent.attributes('role')).toBeUndefined()
+    expect(tent.find('.vs-prop-hit').exists()).toBe(false)
+    // Shadow, then body, each with its transform.
+    const groups = tent.findAll('.venue-prop > g')
+    expect(groups[0]!.classes()).toContain('vp-shadows')
+    expect(groups[1]!.attributes('transform')).toMatch(/^translate\(500 500\) rotate\(30\) scale/)
+    expect(tent.find('.vp-fabric').exists()).toBe(true)
+  })
+
+  it('stays inert in linked mode', async () => {
+    const wrapper = renderDecor({ interactive: 'linked' })
+    expect(wrapper.get('[data-layer="props"]').attributes('pointer-events')).toBe('none')
+    await wrapper.get('[data-testid="venue-shape-oak"]').trigger('click')
+    await wrapper.get('[data-testid="venue-shape-oak"]').trigger('pointerdown')
+    const layer = wrapper.getComponent(VenueShapeLayer)
+    expect(layer.emitted('select-shape')).toBeUndefined()
+    expect(layer.emitted('shape-pointerdown')).toBeUndefined()
+  })
+
+  it('captions a prop below its glyph, on the ground', () => {
+    const wrapper = renderDecor()
+    const caption = wrapper.get('[data-testid="venue-shape-label-bench"]')
+    expect(caption.text()).toBe('Rest')
+    expect(caption.classes()).toEqual(expect.arrayContaining(['vs-furniture', 'vs-label-kind']))
+    expect(Number(caption.attributes('y'))).toBeGreaterThan(500)
+  })
+
+  it('makes props named, focusable buttons in the editor', async () => {
+    const wrapper = renderDecor({ interactive: 'all', selectedShapeIds: ['oak'] })
+    expect(wrapper.get('[data-layer="props"]').attributes('pointer-events')).toBeUndefined()
+    const oak = wrapper.get('[data-testid="venue-shape-oak"]')
+    expect(oak.attributes()).toMatchObject({
+      role: 'button',
+      tabindex: '0',
+      'aria-label': 'Decoration: Tree',
+      'aria-pressed': 'true',
+    })
+    expect(wrapper.get('[data-testid="venue-shape-bench"]').attributes('aria-label')).toBe(
+      'Decoration: Rest',
+    )
+    // tree radius 24 · k (0.055 · 1000 · 2 / 48) = 55 units; the ring sits 4px further out.
+    expect(Number(oak.get('.vs-prop-hit').attributes('r'))).toBeCloseTo(55)
+    expect(Number(oak.get('.vs-sel-outer').attributes('r'))).toBeCloseTo(59)
+    expect(oak.find('.vs-sel-inner').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="venue-shape-bench"]').find('.vs-sel-outer').exists()).toBe(
+      false,
+    )
+
+    await oak.trigger('pointerdown')
+    await oak.trigger('click')
+    await oak.trigger('keydown', { key: 'Enter' })
+    const layer = wrapper.getComponent(VenueShapeLayer)
+    expect(layer.emitted('shape-pointerdown')![0]![0]).toMatchObject({ id: 'oak' })
+    expect(layer.emitted('select-shape')!.map(([s]) => (s as RenderShape).id)).toEqual([
+      'oak',
+      'oak',
+    ])
+
+    i18n.global.locale.value = 'de'
+    await wrapper.vm.$nextTick()
+    expect(oak.attributes('aria-label')).toBe('Deko: Laubbaum')
+  })
+
+  it('gives a tiny prop a finger-sized hit area', () => {
+    const wrapper = render({
+      shapes: [prop('bin', 'bin', { style: 'furniture' })],
+      interactive: 'all',
+      unitsPerPixel: 3,
+    })
+    expect(wrapper.get('.vs-prop-hit').attributes('r')).toBe('30')
   })
 })

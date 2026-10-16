@@ -13,7 +13,9 @@ import { labelAnchor, labelLayout } from '@/lib/venue-shapes'
  * - a rect: eight resize handles (corners and edge midpoints);
  * - a polygon or path: one handle per vertex, plus a small "+" on every edge
  *   that inserts a vertex there when pressed;
- * - any shape with a caption except a text: a "T" handle that moves the
+ * - a decoration (prop): nothing — the shape layer draws its selection ring,
+ *   and it is moved by dragging the glyph itself;
+ * - any other shape with a caption except a text: a "T" handle that moves the
  *   caption (`label_x`/`label_y`); it sits just below the caption, and the
  *   caption follows the pointer's movement.
  *
@@ -51,7 +53,7 @@ const inserts = computed(() =>
 
 const label = computed(() => {
   const s = props.shape
-  if (s.kind === 'label' || !s.label?.trim()) return null
+  if (s.kind === 'label' || s.kind === 'prop' || !s.label?.trim()) return null
   const a = labelAnchor(s, props.width, props.height)
   // Just below the caption, so the grip never hides the words.
   const { fontUnits } = labelLayout(s, props.width, props.height, upp.value)

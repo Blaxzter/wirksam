@@ -10,6 +10,7 @@ import {
   Redo2,
   Spline,
   Square,
+  Trees,
   Type,
   Undo2,
 } from '@lucide/vue'
@@ -21,8 +22,8 @@ import { Button } from '@/components/ui/button'
 
 /**
  * The drawing tools above the editor's canvas: select, rectangle, shape
- * (polygon), line (path), text, snapping, undo and redo, and whether the last
- * edits are saved yet. Every button names its shortcut (`aria-keyshortcuts`
+ * (polygon), line (path), text, decoration (prop), snapping, undo and redo,
+ * and whether the last edits are saved yet. Every button names its shortcut (`aria-keyshortcuts`
  * and the tooltip); the shortcuts themselves live in `useShapeEditor`.
  */
 defineProps<{
@@ -49,6 +50,7 @@ const TOOLS: { tool: Tool; icon: Component; key: string }[] = [
   { tool: 'polygon', icon: Pentagon, key: 'P' },
   { tool: 'path', icon: Spline, key: 'L' },
   { tool: 'label', icon: Type, key: 'T' },
+  { tool: 'prop', icon: Trees, key: 'D' },
 ]
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iP(hone|ad)/.test(navigator.platform)

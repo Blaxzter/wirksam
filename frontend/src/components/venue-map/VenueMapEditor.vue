@@ -59,6 +59,7 @@ import VenueMarkerPill from '@/components/venue-map/VenueMarkerPill.vue'
 import VenuePlanSwitcher from '@/components/venue-map/VenuePlanSwitcher.vue'
 import VenuePlanUpload from '@/components/venue-map/VenuePlanUpload.vue'
 import VenueShapeLayer from '@/components/venue-map/VenueShapeLayer.vue'
+import VenueDecorPalette from '@/components/venue-map/editor/VenueDecorPalette.vue'
 import VenueDrawPreview from '@/components/venue-map/editor/VenueDrawPreview.vue'
 import VenueEditHandles from '@/components/venue-map/editor/VenueEditHandles.vue'
 import VenueEditorToolbar from '@/components/venue-map/editor/VenueEditorToolbar.vue'
@@ -76,6 +77,7 @@ import type {
   VenuePlanShapesRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { propLabelKey } from '@/lib/venue-decor'
 import {
   GENERIC_MARKER_KINDS,
   type MarkerKind,
@@ -97,7 +99,8 @@ import { planSize, planSurfaceClass, sortShapes } from '@/lib/venue-shapes'
  * an uploaded picture, and can be drawn on either way. On top go the pins.
  *
  * Drawing (`useShapeEditor` + `useShapeHistory`): tools for select,
- * rectangle, shape, line and text; snapping to a grid and to corners; every
+ * rectangle, shape, line, text and decoration (trees, benches, tents, … from
+ * a palette strip over the plan; never a place); snapping to a grid and to corners; every
  * step is one undoable command (Ctrl+Z / Ctrl+Shift+Z), saved optimistically
  * through the batch endpoint and rolled back if the server says no. Pins keep
  * their own endpoints and are not part of the undo history.
@@ -107,9 +110,9 @@ import { planSize, planSurfaceClass, sortShapes } from '@/lib/venue-shapes'
  *   middle button or Space+drag pans; the wheel zooms;
  * - touch: one finger draws or drags, two pinch; polygons and lines get a
  *   bar with "Undo point", "Close shape"/"Finish" and "Cancel";
- * - keyboard: tools by letter (V R P L T, G for snapping), shapes are buttons
- *   (Tab, Enter), arrows nudge, Delete removes, `[`/`]` reorder; pins as
- *   before.
+ * - keyboard: tools by letter (V R P L T D, G for snapping), shapes are
+ *   buttons (Tab, Enter), arrows nudge, Delete removes, `[`/`]` reorder, Q/E
+ *   turn and +/- resize a decoration; pins as before.
  *
  * Two homes: the "Map" tab of the event settings, and the map page itself,
  * where an admin flips into editing in place. `embedded` is the latter: no
@@ -450,6 +453,8 @@ const {
   spaceHeld,
   displayShapes,
   grid,
+  activeProp,
+  propHover,
 } = editor
 
 // Two fingers on the plan: whatever one finger started is a pinch now.
@@ -487,6 +492,17 @@ function markerName(marker: VenueMarkerRead): string {
   return marker.label ? `${marker.label} (${kind})` : kind
 }
 
+/** The Deko tool's ghost: the decoration a tap would place, under the pointer. */
+const propGhost = computed(() =>
+  tool.value === 'prop' && propHover.value
+    ? {
+        prop: activeProp.value,
+        at: propHover.value,
+        scale: editor.lastPropScale.value[activeProp.value] ?? 1,
+      }
+    : null,
+)
+
 const lineDraft = computed(() => {
   const d = draft.value
   return d && (d.tool === 'polygon' || d.tool === 'path') ? d : null
@@ -500,6 +516,9 @@ const toolHint = computed(() => {
   if (tool.value === 'polygon') return t('mapEditor.draw.polygonHint')
   if (tool.value === 'path') return t('mapEditor.draw.pathHint')
   if (tool.value === 'label') return t('mapEditor.draw.labelHint')
+  if (tool.value === 'prop') {
+    return t('mapEditor.draw.propHint', { name: t(propLabelKey(activeProp.value)) })
+  }
   return isBlankAndEmpty.value ? t('mapEditor.draw.emptyHint') : null
 })
 
@@ -522,6 +541,16 @@ function onSvgPointerDown(event: PointerEvent) {
   swallowClick = false
   if (placing.value) return
   editor.onPointerDown(event, pressTarget(event))
+}
+
+/**
+ * A shape asks to be selected (a click on it, or Enter). With a drawing tool
+ * the press already did what the tool does — placed a tree on a room, added a
+ * corner on it — so its click must not select the room instead.
+ */
+function onSelectShape(shape: { id: string }, event: MouseEvent | KeyboardEvent) {
+  if (event instanceof MouseEvent && tool.value !== 'select') return
+  editor.select(shape.id)
 }
 
 function onSvgDoubleClick(event: MouseEvent) {
@@ -1083,7 +1112,7 @@ onBeforeUnmount(() => {
               interactive="all"
               :selected-shape-ids="selectedShapeId ? [selectedShapeId] : []"
               :location-names="locationNameRecord"
-              @select-shape="(shape) => editor.select(shape.id)"
+              @select-shape="onSelectShape"
             />
             <VenueDrawPreview
               :draft="draft"
@@ -1091,7 +1120,8 @@ onBeforeUnmount(() => {
               :width="width"
               :height="height"
               :units-per-pixel="unitsPerPixel"
-              :grid="snapEnabled && tool !== 'select' ? grid : null"
+              :grid="snapEnabled && tool !== 'select' && tool !== 'prop' ? grid : null"
+              :prop-ghost="propGhost"
             />
             <g :class="tool !== 'select' ? 'pointer-events-none' : undefined">
               <template v-for="marker in markers" :key="marker.id">
@@ -1127,7 +1157,7 @@ onBeforeUnmount(() => {
               </template>
             </g>
             <VenueEditHandles
-              v-if="selectedShape && tool === 'select'"
+              v-if="selectedShape && tool === 'select' && selectedShape.kind !== 'prop'"
               :shape="selectedShape"
               :width="width"
               :height="height"
@@ -1221,6 +1251,17 @@ onBeforeUnmount(() => {
               {{ t('mapEditor.draw.cancel') }}
             </Button>
           </div>
+
+          <!-- The Deko tool's stamps; the zoom buttons keep their column on the right. -->
+          <VenueDecorPalette
+            v-if="tool === 'prop'"
+            :model-value="activeProp"
+            mode="stamp"
+            class="absolute bottom-2 left-2 right-12"
+            @update:model-value="editor.pickProp"
+            @pick-line="editor.pickLinePreset"
+            @pick-area="editor.pickAreaPreset"
+          />
 
           <div class="absolute right-2 bottom-2 flex flex-col gap-1">
             <Button

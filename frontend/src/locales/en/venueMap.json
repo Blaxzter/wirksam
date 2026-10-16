@@ -45,20 +45,40 @@
     "planSwitcher": {
         "label": "Choose a map"
     },
+    "props": {
+        "bench": "Bench",
+        "bike_rack": "Bike rack",
+        "bin": "Bin",
+        "bush": "Bush",
+        "conifer": "Conifer",
+        "flowers": "Flower bed",
+        "lamp": "Lamp post",
+        "parasol": "Parasol",
+        "picnic_table": "Beer table and benches",
+        "plant": "Potted plant",
+        "round_table": "Round table",
+        "sign": "Sign",
+        "tent": "Gazebo",
+        "tree": "Tree"
+    },
     "shapeKinds": {
         "label": "Text",
         "path": "Line",
         "polygon": "Shape",
+        "prop": "Decoration",
         "rect": "Rectangle"
     },
     "shapeStyles": {
         "area": "Area",
         "building": "Building",
+        "fence": "Fence",
         "furniture": "Furniture",
         "green": "Green space",
+        "hedge": "Hedge",
         "parking": "Parking",
         "path": "Walkway",
         "room": "Room",
+        "sand": "Sand",
         "stage": "Stage",
         "wall": "Wall",
         "water": "Water"

@@ -4704,7 +4704,7 @@ export type VenueShapeCreate = {
   /**
    * Kind
    */
-  kind: 'rect' | 'polygon' | 'path' | 'label'
+  kind: 'rect' | 'polygon' | 'path' | 'label' | 'prop'
   /**
    * Style
    */
@@ -4719,6 +4719,9 @@ export type VenueShapeCreate = {
     | 'parking'
     | 'path'
     | 'wall'
+    | 'hedge'
+    | 'fence'
+    | 'sand'
   /**
    * Points
    */
@@ -4757,6 +4760,37 @@ export type VenueShapeCreate = {
    * z order; left out, the shape goes on top
    */
   sort_order?: number | null
+  /**
+   * Prop
+   *
+   * Props only (required there): the glyph
+   */
+  prop?:
+    | 'tree'
+    | 'conifer'
+    | 'bush'
+    | 'flowers'
+    | 'plant'
+    | 'bench'
+    | 'picnic_table'
+    | 'round_table'
+    | 'bin'
+    | 'bike_rack'
+    | 'sign'
+    | 'parasol'
+    | 'tent'
+    | 'lamp'
+    | null
+  /**
+   * Rotation
+   */
+  rotation?: number | null
+  /**
+   * Scale
+   *
+   * Props only: size factor, 0.25..4 (default 1)
+   */
+  scale?: number | null
 }
 
 /**
@@ -4774,7 +4808,7 @@ export type VenueShapeRead = {
   /**
    * Kind
    */
-  kind: 'rect' | 'polygon' | 'path' | 'label'
+  kind: 'rect' | 'polygon' | 'path' | 'label' | 'prop'
   /**
    * Style
    */
@@ -4789,6 +4823,9 @@ export type VenueShapeRead = {
     | 'parking'
     | 'path'
     | 'wall'
+    | 'hedge'
+    | 'fence'
+    | 'sand'
   /**
    * Points
    */
@@ -4821,6 +4858,33 @@ export type VenueShapeRead = {
    * Sort Order
    */
   sort_order: number
+  /**
+   * Prop
+   */
+  prop?:
+    | 'tree'
+    | 'conifer'
+    | 'bush'
+    | 'flowers'
+    | 'plant'
+    | 'bench'
+    | 'picnic_table'
+    | 'round_table'
+    | 'bin'
+    | 'bike_rack'
+    | 'sign'
+    | 'parasol'
+    | 'tent'
+    | 'lamp'
+    | null
+  /**
+   * Rotation
+   */
+  rotation?: number | null
+  /**
+   * Scale
+   */
+  scale?: number | null
 }
 
 /**
@@ -4829,8 +4893,9 @@ export type VenueShapeRead = {
  * Partial update; the merged shape is re-validated as a whole.
  *
  * ``kind`` cannot change (delete and re-create instead). An explicit ``null``
- * for ``style``, ``points``, ``label_size`` or ``sort_order`` is ignored, as
- * those cannot be cleared.
+ * for ``style``, ``points``, ``label_size``, ``sort_order``, ``prop``,
+ * ``rotation`` or ``scale`` is ignored, as those cannot be cleared. A style
+ * patch on a prop is overridden by the prop's own style.
  */
 export type VenueShapeUpdate = {
   /**
@@ -4847,6 +4912,9 @@ export type VenueShapeUpdate = {
     | 'parking'
     | 'path'
     | 'wall'
+    | 'hedge'
+    | 'fence'
+    | 'sand'
     | null
   /**
    * Points
@@ -4880,6 +4948,33 @@ export type VenueShapeUpdate = {
    * Sort Order
    */
   sort_order?: number | null
+  /**
+   * Prop
+   */
+  prop?:
+    | 'tree'
+    | 'conifer'
+    | 'bush'
+    | 'flowers'
+    | 'plant'
+    | 'bench'
+    | 'picnic_table'
+    | 'round_table'
+    | 'bin'
+    | 'bike_rack'
+    | 'sign'
+    | 'parasol'
+    | 'tent'
+    | 'lamp'
+    | null
+  /**
+   * Rotation
+   */
+  rotation?: number | null
+  /**
+   * Scale
+   */
+  scale?: number | null
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { VenueMarkerRead, VenuePlanRead, VenueShapeRead } from '@/client/types.gen'
 
+import { propPlacement } from './venue-decor'
 import { estimateTextWidth } from './venue-map'
 
 /**
@@ -33,6 +34,9 @@ export type RenderShape = Pick<
   | 'stroke_width'
   | 'location_id'
   | 'sort_order'
+  | 'prop'
+  | 'rotation'
+  | 'scale'
 >
 
 /** A normalised bounding box, sorted (`x0 <= x1`, `y0 <= y1`). */
@@ -50,13 +54,32 @@ export const SHAPE_STYLES = [
   'parking',
   'path',
   'wall',
+  'hedge',
+  'fence',
+  'sand',
 ] as const satisfies readonly ShapeStyle[]
+
+/** The styles a free caption (label kind) can take: no line-only styles. */
+export const LABEL_STYLES = SHAPE_STYLES.filter(
+  (s) => s !== 'wall' && s !== 'fence' && s !== 'hedge',
+) as readonly ShapeStyle[]
+
+/** The order for a path's style picker: the line styles first. */
+export const PATH_STYLES_FIRST: readonly ShapeStyle[] = [
+  'path',
+  'water',
+  'hedge',
+  'fence',
+  'wall',
+  ...SHAPE_STYLES.filter((s) => !['path', 'water', 'hedge', 'fence', 'wall'].includes(s)),
+]
 
 export const SHAPE_KINDS = [
   'rect',
   'polygon',
   'path',
   'label',
+  'prop',
 ] as const satisfies readonly ShapeKind[]
 
 /** The kinds that can be linked to a location (they enclose an area). */
@@ -68,6 +91,7 @@ export const DEFAULT_STYLE: Record<ShapeKind, ShapeStyle> = {
   polygon: 'area',
   path: 'path',
   label: 'room',
+  prop: 'green',
 }
 
 /** Caption size as a share of the plan's shorter side, in plan units. */
@@ -121,6 +145,9 @@ const STYLE_CLASSES: Record<ShapeStyle, string> = {
   parking: 'vs-parking',
   path: 'vs-path',
   wall: 'vs-wall',
+  hedge: 'vs-hedge',
+  fence: 'vs-fence',
+  sand: 'vs-sand',
 }
 
 export function shapeStyleClass(style: string): string {
@@ -188,6 +215,12 @@ export function rectBounds(points: readonly (readonly number[])[]): Bounds {
  */
 export function shapeBounds(shape: RenderShape, W = 1, H = 1): Bounds {
   const b = pointsBounds(shape.points)
+  if (shape.kind === 'prop') {
+    const r = propPlacement(shape, W, H).radiusUnits
+    const rx = W > 0 ? r / W : 0
+    const ry = H > 0 ? r / H : 0
+    return { x0: b.x0 - rx, y0: b.y0 - ry, x1: b.x1 + rx, y1: b.y1 + ry }
+  }
   if (shape.kind !== 'path') return b
   const half = ((shape.stroke_width ?? DEFAULT_STROKE_WIDTH) * Math.min(W, H)) / 2
   const hx = W > 0 ? half / W : 0
@@ -253,7 +286,7 @@ function pathMidpoint(points: readonly (readonly number[])[]): { x: number; y: n
  * Where a shape's pill or caption sits, in normalised coordinates.
  *
  * rect: centre. polygon: area centroid (bbox centre when degenerate). path:
- * halfway along its length. label: its point. Must match the backend's
+ * halfway along its length. label and prop: its point. Must match the backend's
  * `shape_anchor` (`app/logic/venue_shapes.py`); both are tested against
  * `backend/tests/fixtures/shape_anchor_cases.json`.
  */
@@ -264,8 +297,13 @@ export function shapeAnchor(
   if (points.length === 0) return { x: 0, y: 0 }
   if (kind === 'polygon') return polygonCentroid(points)
   if (kind === 'path') return pathMidpoint(points)
-  if (kind === 'label') return { x: points[0]![0]!, y: points[0]![1]! }
+  if (kind === 'label' || kind === 'prop') return { x: points[0]![0]!, y: points[0]![1]! }
   return bboxCentre(points)
+}
+
+/** Whether a shape is decoration (a prop): never a place, drawn in its own layer. */
+export function isProp(shape: Pick<RenderShape, 'kind'>): boolean {
+  return shape.kind === 'prop'
 }
 
 function isLinkedArea(shape: RenderShape): boolean {
@@ -288,7 +326,8 @@ export function labelFontUnits(
  * An explicit anchor (`label_x`/`label_y`) wins. A linked area carries its
  * pill at the centre, so its caption sits bottom-centre inside the box
  * instead; `fontUnits` (default: the nominal size) sets how far up from the
- * bottom edge. Everything else is captioned at its {@link shapeAnchor}.
+ * bottom edge. A prop's caption sits just below its glyph. Everything else
+ * is captioned at its {@link shapeAnchor}.
  */
 export function labelAnchor(
   shape: RenderShape,
@@ -301,6 +340,11 @@ export function labelAnchor(
     const b = pointsBounds(shape.points)
     const lift = H > 0 ? (0.6 * fontUnits) / H : 0
     return { x: (b.x0 + b.x1) / 2, y: Math.max(b.y0 + (b.y1 - b.y0) / 2, b.y1 - lift) }
+  }
+  if (shape.kind === 'prop') {
+    const at = shapeAnchor(shape.kind, shape.points)
+    const r = propPlacement(shape, W, H).radiusUnits
+    return { x: at.x, y: at.y + (H > 0 ? (r + 0.7 * fontUnits) / H : 0) }
   }
   return shapeAnchor(shape.kind, shape.points)
 }
@@ -322,8 +366,8 @@ export type LabelLayout = {
  * `[minPx, maxPx]` so it stays readable zoomed out and calm zoomed in. A
  * caption that would be under 4px at its nominal size is hidden. An area's
  * caption that is wider than the area shrinks to fit, down to `minPx`; below
- * that it is hidden (it appears as you zoom in). Paths and free labels are
- * never hidden by width.
+ * that it is hidden (it appears as you zoom in). Paths, free labels and props
+ * are never hidden by width.
  */
 export function labelLayout(
   shape: RenderShape,

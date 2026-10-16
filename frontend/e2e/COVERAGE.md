@@ -44,13 +44,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 27         | 230     |
+| `chromium`   | 27         | 232     |
 | `member`     | 3          | 25      |
 | `mobile`     | 2          | 9       |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 32      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **54**     | **399** |
+| **Total**    | **54**     | **401** |
 
 ## Inventory
 
@@ -152,7 +152,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 27 files, 230 tests
+### Project `chromium` — 27 files, 232 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -532,11 +532,14 @@ Not yet covered, and not currently tracked by an issue:
   - Create button is visible for admin
   - Create button navigates to create page
 
-#### `frontend/e2e/tests/authenticated/venue-map-draw.spec.ts` — 2 tests
+#### `frontend/e2e/tests/authenticated/venue-map-draw.spec.ts` — 4 tests
 
 - **Drawing a venue map** (2)
   - draw, label, link, undo, redo, delete — and it persists
   - edit in place on the map page: the second plan, a new corner, back to the map
+- **Decorating a venue map** (2)
+  - place a tree, turn it, undo, reload, delete
+  - a hedge line from the palette
 
 #### `frontend/e2e/tests/authenticated/venue-map-editor.spec.ts` — 1 test
 

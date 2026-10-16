@@ -16,6 +16,25 @@
         "submit": "Create map",
         "title": "New map"
     },
+    "decor": {
+        "areas": {
+            "sand": "Sand"
+        },
+        "groups": {
+            "event": "Event",
+            "furniture": "Furniture",
+            "lines": "Lines & areas",
+            "nature": "Plants"
+        },
+        "lines": {
+            "fence": "Fence",
+            "hedge": "Hedge",
+            "path": "Path",
+            "water": "Stream"
+        },
+        "note": "Decoration only helps people find their way. It isn't a place and has no shifts.",
+        "title": "Decoration"
+    },
     "draw": {
         "cancel": "Cancel",
         "closeShape": "Close shape",
@@ -26,6 +45,7 @@
         "labelPlaceholder": "e.g. Main hall",
         "pathHint": "Tap to add points. Double-tap or press Finish to end the line.",
         "polygonHint": "Tap to add corners. Tap the first corner or press Close shape to finish.",
+        "propHint": "Tap the map to add: {name}. Press Esc when you're done.",
         "rectHint": "Drag to draw a rectangle.",
         "saved": "All changes saved",
         "saving": "Saving…",
@@ -50,6 +70,16 @@
         "moveLabelHint": "Drag the small text handle on the map to move the label.",
         "newLabel": "New text",
         "order": "Order",
+        "prop": {
+            "keysHint": "Keys: Q and E turn it, + and − change the size.",
+            "resetSize": "Normal size",
+            "rotateLeft": "Turn left",
+            "rotateRight": "Turn right",
+            "rotation": "Rotation",
+            "size": "Size",
+            "title": "Decoration",
+            "type": "Type"
+        },
         "removePoint": "Remove selected point",
         "resetLabel": "Reset label position",
         "strokeWidth": "Line width",
@@ -119,10 +149,11 @@
         "label": "Text",
         "path": "Line",
         "polygon": "Shape",
+        "prop": "Decoration",
         "rect": "Rectangle",
         "redo": "Redo",
         "select": "Select",
-        "shortcutsHint": "Shortcuts: V select, R rectangle, P shape, L line, T text, G snapping. Ctrl+Z undoes drawing steps (not pins).",
+        "shortcutsHint": "Shortcuts: V select, R rectangle, P shape, L line, T text, D decoration, G snapping. With a decoration selected: Q/E turn, +/− size. Ctrl+Z undoes drawing steps (not pins).",
         "snap": "Snap to grid",
         "title": "Drawing tools",
         "undo": "Undo"

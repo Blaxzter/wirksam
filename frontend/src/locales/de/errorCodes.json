@@ -76,6 +76,8 @@
         "link_not_allowed": "Nur Rechtecke und Flächen können mit einem Ort verknüpft werden.",
         "not_found": "Diese Zeichnung wurde nicht gefunden. Vielleicht wurde sie inzwischen gelöscht.",
         "points_count": "Diese Zeichnung hat zu wenige oder zu viele Punkte.",
+        "prop_required": "Wähle aus, was für eine Deko das ist.",
+        "prop_scale": "Diese Größe geht nicht.",
         "revision_conflict": "Jemand anderes hat diesen Plan inzwischen geändert. Wir haben den neuesten Stand geladen.",
         "stroke_width": "Diese Linienbreite geht nicht.",
         "too_many": "Dieser Plan hat die Grenze von 500 Zeichnungen erreicht.",

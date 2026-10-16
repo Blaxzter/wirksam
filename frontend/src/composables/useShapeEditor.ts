@@ -4,7 +4,16 @@ import type { ShapeCommand } from '@/composables/useShapeHistory'
 
 import type { VenueShapeRead, VenueShapeUpdate } from '@/client/types.gen'
 import {
+  LINE_PRESETS,
+  PROP_META,
+  type PropType,
+  ROTATION_STEP,
+  clampPropScale,
+  normaliseRotation,
+} from '@/lib/venue-decor'
+import {
   MIN_POINTS,
+  PROP_STYLE,
   type Pt,
   type RectHandle,
   SNAP_RADIUS_PX,
@@ -34,7 +43,8 @@ import {
 } from '@/lib/venue-shape-edit'
 import { labelAnchor } from '@/lib/venue-shapes'
 
-export type Tool = 'select' | 'rect' | 'polygon' | 'path' | 'label'
+export type Tool = 'select' | 'rect' | 'polygon' | 'path' | 'label' | 'prop'
+export type LinePresetKey = keyof typeof LINE_PRESETS
 export type ShapeStyle = VenueShapeRead['style']
 
 export type Draft =
@@ -81,6 +91,7 @@ export const TOOL_KEYS: Record<string, Tool> = {
   p: 'polygon',
   l: 'path',
   t: 'label',
+  d: 'prop',
 }
 
 /** The style a new shape of each kind starts with (= `DEFAULT_STYLE` of the renderer). */
@@ -89,9 +100,14 @@ export const NEW_SHAPE_STYLE: Record<ShapeKind, ShapeStyle> = {
   polygon: 'area',
   path: 'path',
   label: 'room',
+  prop: 'green',
 }
 
 export const DEFAULT_PATH_WIDTH = 0.02
+/** Q/E with Shift turn a decoration by this much instead of `ROTATION_STEP`. */
+export const FINE_ROTATION_STEP = 1
+/** `+`/`-` grow or shrink a decoration by this factor. */
+export const SCALE_STEP = 1.1
 
 export type PointerLike = Pick<
   PointerEvent,
@@ -113,6 +129,16 @@ export interface ShapeEditorOptions {
   newId?: () => string
   /** A label was placed and waits for its text. */
   onLabelDraft?: () => void
+  /** Random number in [0, 1) for the turn of a new tree or bush (tests pass their own). */
+  random?: () => number
+}
+
+function roundScale(scale: number): number {
+  return Math.round(scale * 1000) / 1000
+}
+
+function roundPt(p: Pt): Pt {
+  return [Math.round(p[0] * 1e5) / 1e5, Math.round(p[1] * 1e5) / 1e5]
 }
 
 export function isEditableTarget(target: EventTarget | null): boolean {
@@ -139,6 +165,7 @@ export function isEditableTarget(target: EventTarget | null): boolean {
  */
 export function useShapeEditor(options: ShapeEditorOptions) {
   const newId = options.newId ?? newShapeId
+  const random = options.random ?? Math.random
 
   const tool = ref<Tool>('select')
   const selectedId = ref<string | null>(null)
@@ -151,6 +178,17 @@ export function useShapeEditor(options: ShapeEditorOptions) {
   const dragging = ref(false)
   /** The style each kind was last given, so the next one starts like it. */
   const lastStyle = ref<Record<ShapeKind, ShapeStyle>>({ ...NEW_SHAPE_STYLE })
+  /** The decoration the Deko tool places. */
+  const activeProp = ref<PropType>('tree')
+  /** The size each kind of decoration was last given, so the next one matches. */
+  const lastPropScale = ref<Partial<Record<PropType, number>>>({})
+  /**
+   * Width the Deko palette picked for the lines drawn next. One-shot: any
+   * `setTool` clears it, after which a new line's width follows its style.
+   */
+  const pathPreset = ref<{ style: ShapeStyle; strokeWidth: number } | null>(null)
+  /** Where the Deko tool would place, for its ghost preview (normalised). */
+  const propHover = ref<Pt | null>(null)
 
   let drag: Drag | null = null
   let tap: Tap | null = null
@@ -197,7 +235,29 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     flushNudge()
     cancelDraft()
     cancelDrag()
+    propHover.value = null
+    pathPreset.value = null
     tool.value = next
+  }
+
+  /** The Deko tool with `prop` ready to place. */
+  function pickProp(prop: PropType) {
+    if (tool.value !== 'prop') setTool('prop')
+    activeProp.value = prop
+  }
+
+  /** The line tool, drawing a hedge, a fence, a stream or a path. */
+  function pickLinePreset(key: LinePresetKey) {
+    const preset = LINE_PRESETS[key]
+    setTool('path')
+    lastStyle.value = { ...lastStyle.value, path: preset.style }
+    pathPreset.value = { style: preset.style, strokeWidth: preset.strokeWidth }
+  }
+
+  /** The shape tool, drawing an area of `style` (a sandpit). */
+  function pickAreaPreset(style: Extract<ShapeStyle, 'sand'>) {
+    setTool('polygon')
+    lastStyle.value = { ...lastStyle.value, polygon: style }
   }
 
   function toggleSnap() {
@@ -207,18 +267,25 @@ export function useShapeEditor(options: ShapeEditorOptions) {
   function createShape(
     kind: ShapeKind,
     points: Pt[],
-    extra: { label?: string | null; label_size?: 'sm' | 'md' | 'lg' } = {},
+    extra: {
+      label?: string | null
+      label_size?: 'sm' | 'md' | 'lg'
+      prop?: PropType
+      rotation?: number
+      scale?: number
+    } = {},
   ) {
     const id = newId()
+    const style = kind === 'prop' && extra.prop ? PROP_STYLE[extra.prop] : lastStyle.value[kind]
     const ops = run(`create-${kind}`, [
       {
         op: 'create',
         shape: {
           id,
           kind,
-          style: lastStyle.value[kind],
+          style,
           points,
-          ...(kind === 'path' ? { stroke_width: DEFAULT_PATH_WIDTH } : {}),
+          ...(kind === 'path' ? { stroke_width: newLineWidth(style) } : {}),
           ...extra,
         },
       },
@@ -227,17 +294,57 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     return ops ? id : null
   }
 
+  /**
+   * Width of a new line: the palette preset while it is active, else the
+   * preset width of a decor line style (hedge, fence, stream), else the default.
+   */
+  function newLineWidth(style: ShapeStyle): number {
+    if (pathPreset.value) return pathPreset.value.strokeWidth
+    if (style !== 'path' && style in LINE_PRESETS)
+      return LINE_PRESETS[style as LinePresetKey].strokeWidth
+    return DEFAULT_PATH_WIDTH
+  }
+
   /** Change fields of the selected shape as one undoable step. */
   function updateSelected(patch: VenueShapeUpdate, label = 'edit') {
     const shape = selected.value
     if (!shape) return false
-    const next = { ...shape, ...patch } as VenueShapeRead
+    let next = { ...shape, ...patch } as VenueShapeRead
     if (shape.kind === 'label' && !next.label?.trim()) return false
+    if (shape.kind === 'prop') {
+      // A decoration's look follows its type; it keeps its place, turn and size.
+      next = {
+        ...next,
+        style: next.prop ? PROP_STYLE[next.prop] : shape.style,
+        rotation: normaliseRotation(next.rotation ?? 0),
+        scale: roundScale(clampPropScale(next.scale ?? 1)),
+      }
+    }
     const diff = diffShape(shape, next)
     if (!diff) return false
-    if (diff.style) lastStyle.value = { ...lastStyle.value, [shape.kind]: diff.style }
+    if (diff.style && shape.kind !== 'prop') {
+      lastStyle.value = { ...lastStyle.value, [shape.kind]: diff.style }
+    }
     run(label, [{ op: 'update', id: shape.id, patch: diff }])
+    if (shape.kind === 'prop' && diff.scale != null && next.prop)
+      rememberScale(next.prop, diff.scale)
     return true
+  }
+
+  function rememberScale(prop: PropType, scale: number) {
+    lastPropScale.value = { ...lastPropScale.value, [prop]: scale }
+  }
+
+  /** Turn the selected decoration to `deg` degrees (clockwise), as one step. */
+  function setSelectedRotation(deg: number) {
+    if (selected.value?.kind !== 'prop') return false
+    return updateSelected({ rotation: normaliseRotation(deg) }, 'rotate')
+  }
+
+  /** Give the selected decoration size factor `scale`, as one step. */
+  function setSelectedScale(scale: number) {
+    if (selected.value?.kind !== 'prop') return false
+    return updateSelected({ scale: roundScale(clampPropScale(scale)) }, 'scale')
   }
 
   function deleteSelected() {
@@ -307,19 +414,46 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     options.redo()
   }
 
-  // ── Nudging ─────────────────────────────────────────────────────────────
-  function nudgeSelected(stepsX: number, stepsY: number) {
+  // ── Nudging, turning, resizing by key ───────────────────────────────────
+  /**
+   * A transient edit of the selected shape: shown from `override` at once, and
+   * committed as one command once the keys rest for `NUDGE_DELAY` (or anything
+   * else happens). Moves, turns and size changes of one burst add up.
+   */
+  function editTransient(change: (shape: VenueShapeRead) => VenueShapeRead): boolean {
     const shape = selected.value
     if (!shape || drag) return false
     if (!nudge || nudge.id !== shape.id) {
       flushNudge()
       nudge = { id: shape.id, origin: shape }
     }
-    const { gx, gy } = grid.value
-    override.value = moveShape(override.value ?? shape, stepsX * gx, stepsY * gy)
+    override.value = change(override.value ?? shape)
     clearTimeout(nudgeTimer)
     nudgeTimer = setTimeout(flushNudge, NUDGE_DELAY)
     return true
+  }
+
+  function nudgeSelected(stepsX: number, stepsY: number) {
+    const { gx, gy } = grid.value
+    return editTransient((s) => moveShape(s, stepsX * gx, stepsY * gy))
+  }
+
+  /** Turn the selected decoration by `deltaDeg` (clockwise); a burst is one step. */
+  function rotateSelected(deltaDeg: number) {
+    if (selected.value?.kind !== 'prop') return false
+    return editTransient((s) => ({
+      ...s,
+      rotation: normaliseRotation((s.rotation ?? 0) + deltaDeg),
+    }))
+  }
+
+  /** Grow (`factor` > 1) or shrink the selected decoration; a burst is one step. */
+  function scaleSelected(factor: number) {
+    if (selected.value?.kind !== 'prop') return false
+    return editTransient((s) => ({
+      ...s,
+      scale: roundScale(clampPropScale((s.scale ?? 1) * factor)),
+    }))
   }
 
   function flushNudge() {
@@ -332,7 +466,11 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     override.value = null
     if (!moved) return
     const patch = diffShape(pending.origin, moved)
-    if (patch) options.execute({ label: 'nudge', ops: [{ op: 'update', id: pending.id, patch }] })
+    if (!patch) return
+    options.execute({ label: 'nudge', ops: [{ op: 'update', id: pending.id, patch }] })
+    if (moved.kind === 'prop' && patch.scale != null && moved.prop) {
+      rememberScale(moved.prop, patch.scale)
+    }
   }
 
   // ── Snapping ────────────────────────────────────────────────────────────
@@ -490,6 +628,11 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     if (d.kind === 'move') {
       const raw: [number, number] = [p[0] - d.start[0], p[1] - d.start[1]]
       const [lx, ly] = e.shiftKey ? axisLock(raw[0], raw[1], W, H) : raw
+      if (d.origin.kind === 'prop') {
+        // Decoration goes exactly where it is put: no snapping.
+        override.value = moveShape(d.origin, lx, ly)
+        return
+      }
       // Snap the shape's first corner, and move the whole shape by as much.
       const anchor = shapeVertices(d.origin)[0]!
       const target = snap([anchor[0] + lx, anchor[1] + ly], e.altKey, vertexCandidates(d.id))
@@ -537,8 +680,15 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     if (e.pointerType === 'mouse' && e.button === 1) return true
     if (e.pointerType === 'mouse' && e.button !== 0) return false
     if (spaceHeld.value) return true
+    // The Deko tool places with a tap, so a drag may pan — except on a decoration.
+    if (tool.value === 'prop') return !isPropTarget(target)
     if (tool.value !== 'select') return false
     return target === null
+  }
+
+  function isPropTarget(target: PressTarget): boolean {
+    if (target?.type !== 'shape') return false
+    return displayShapes.value.some((s) => s.id === target.id && s.kind === 'prop')
   }
 
   function onPointerDown(e: PointerLike, target: PressTarget = null) {
@@ -552,7 +702,8 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     if (spaceHeld.value) return
     flushNudge()
 
-    if (tool.value === 'select') {
+    // With the Deko tool a press on a decoration picks it up, like the select tool.
+    if (tool.value === 'select' || (tool.value === 'prop' && isPropTarget(target))) {
       if (!target) return
       const id = target.type === 'shape' ? target.id : selectedId.value
       const shape = displayShapes.value.find((s) => s.id === id)
@@ -606,10 +757,33 @@ export function useShapeEditor(options: ShapeEditorOptions) {
       draft.value = { ...d, hover }
       return
     }
+    if (tool.value === 'prop') {
+      if (down.size === 0) {
+        const p = pointOf(e)
+        propHover.value = isOnPlan(p) ? p : null
+      }
+      return
+    }
     if (tool.value !== 'select' && down.size === 0) {
       // Hovering with a drawing tool: show where a click would snap to.
       snap(pointOf(e), e.altKey, vertexCandidates(null))
     }
+  }
+
+  function isOnPlan(p: Pt): boolean {
+    return p[0] >= 0 && p[0] <= 1 && p[1] >= 0 && p[1] <= 1
+  }
+
+  /** Place the active decoration where the tap landed (no snapping). */
+  function placeProp(e: PointerLike) {
+    const p = pointOf(e)
+    if (!isOnPlan(p)) return null
+    const prop = activeProp.value
+    const rotation = PROP_META[prop].randomRotation
+      ? Math.floor(random() * (360 / ROTATION_STEP)) * ROTATION_STEP
+      : 0
+    const scale = lastPropScale.value[prop] ?? 1
+    return createShape('prop', [roundPt(p)], { prop, rotation, scale })
   }
 
   function onPointerUp(e: PointerLike) {
@@ -632,6 +806,8 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     if (t.moved) return
     if (tool.value === 'polygon' || tool.value === 'path') {
       addDraftPoint(e)
+    } else if (tool.value === 'prop') {
+      placeProp(e)
     } else if (tool.value === 'label') {
       draft.value = { tool: 'label', at: snap(pointOf(e), e.altKey, []) }
       snapHit.value = null
@@ -655,6 +831,7 @@ export function useShapeEditor(options: ShapeEditorOptions) {
 
   /** The pointer left the plan: no snap indicator, no rubber band to nowhere. */
   function onPointerLeave() {
+    propHover.value = null
     if (!drag && !tap) snapHit.value = null
     const d = draft.value
     if (d && (d.tool === 'polygon' || d.tool === 'path') && d.hover) {
@@ -703,6 +880,12 @@ export function useShapeEditor(options: ShapeEditorOptions) {
       spaceHeld.value = true
       return true
     }
+    if (selected.value?.kind === 'prop' && (tool.value === 'select' || tool.value === 'prop')) {
+      const turn = ({ KeyQ: -1, KeyE: 1 } as Record<string, number>)[e.code]
+      if (turn) return rotateSelected(turn * (e.shiftKey ? FINE_ROTATION_STEP : ROTATION_STEP))
+      if (key === '+' || key === '=') return scaleSelected(SCALE_STEP)
+      if (key === '-' || key === '_') return scaleSelected(1 / SCALE_STEP)
+    }
     const toolKey = TOOL_KEYS[key.toLowerCase()]
     if (toolKey && key.length === 1) {
       setTool(toolKey)
@@ -724,6 +907,12 @@ export function useShapeEditor(options: ShapeEditorOptions) {
       }
       if (selectedVertex.value != null) {
         selectedVertex.value = null
+        return true
+      }
+      // "Press Esc when you're done": one press leaves the Deko tool, and the
+      // decoration placed last stays selected for the side panel.
+      if (tool.value === 'prop') {
+        setTool('select')
         return true
       }
       if (selectedId.value) {
@@ -776,6 +965,13 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     displayShapes,
     grid,
     lastStyle,
+    activeProp,
+    lastPropScale,
+    pathPreset,
+    propHover,
+    pickProp,
+    pickLinePreset,
+    pickAreaPreset,
     panFilter,
     onPointerDown,
     onPointerMove,
@@ -797,6 +993,10 @@ export function useShapeEditor(options: ShapeEditorOptions) {
     duplicateSelected,
     reorderSelected,
     nudgeSelected,
+    rotateSelected,
+    scaleSelected,
+    setSelectedRotation,
+    setSelectedScale,
     flushNudge,
     undo,
     redo,

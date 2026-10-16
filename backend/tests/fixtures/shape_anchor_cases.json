@@ -12,6 +12,7 @@
     { "name": "path: halfway by length lands in the first segment", "kind": "path", "points": [[0, 0], [0.6, 0], [0.6, 0.2]], "expected": [0.4, 0] },
     { "name": "path: halfway by length lands in the second segment", "kind": "path", "points": [[0, 0], [0.2, 0], [0.2, 0.6]], "expected": [0.2, 0.2] },
     { "name": "path: zero length gives its first point", "kind": "path", "points": [[0.3, 0.3], [0.3, 0.3]], "expected": [0.3, 0.3] },
-    { "name": "label: its point", "kind": "label", "points": [[0.7, 0.8]], "expected": [0.7, 0.8] }
+    { "name": "label: its point", "kind": "label", "points": [[0.7, 0.8]], "expected": [0.7, 0.8] },
+    { "name": "prop: its point", "kind": "prop", "points": [[0.3, 0.4]], "expected": [0.3, 0.4] }
   ]
 }
