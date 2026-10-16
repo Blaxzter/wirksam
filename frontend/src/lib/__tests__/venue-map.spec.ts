@@ -18,6 +18,7 @@ import {
   sharedLocationId,
   staffingLabelKey,
   staffingStatus,
+  templateImageUrl,
   toNormalised,
   unitsPerPixel,
   viewBoxToString,
@@ -79,6 +80,19 @@ describe('planImageUrl', () => {
     ['null etag', { id: 'p1', image_etag: null }],
   ])('is null for %s', (_label, plan) => {
     expect(planImageUrl(plan)).toBeNull()
+  })
+})
+
+describe('templateImageUrl', () => {
+  it('points at the template picture with the etag as a cache buster', () => {
+    expect(templateImageUrl({ id: 't1', image_etag: 'abc' })).toBe(
+      `${import.meta.env.VITE_API_URL}/venue-templates/t1/image?v=abc`,
+    )
+  })
+
+  it('is null without a picture', () => {
+    expect(templateImageUrl(null)).toBeNull()
+    expect(templateImageUrl({ id: 't1', image_etag: null })).toBeNull()
   })
 })
 

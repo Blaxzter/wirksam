@@ -44,13 +44,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 28      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 27         | 232     |
+| `chromium`   | 28         | 233     |
 | `member`     | 3          | 25      |
-| `mobile`     | 2          | 9       |
+| `mobile`     | 2          | 10      |
 | `multi-user` | 4          | 54      |
 | `public`     | 7          | 32      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **54**     | **401** |
+| **Total**    | **55**     | **403** |
 
 ## Inventory
 
@@ -152,7 +152,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 27 files, 232 tests
+### Project `chromium` — 28 files, 233 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -546,6 +546,11 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue map editor** (1)
   - add a plan, upload a picture, place and drag pins
 
+#### `frontend/e2e/tests/authenticated/venue-map-templates.spec.ts` — 1 test
+
+- **Venue plan templates** (1)
+  - save a plan as a template, start a new plan from it, rename and delete it
+
 ### Project `member` — 3 files, 25 tests
 
 #### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
@@ -590,7 +595,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 2 files, 9 tests
+### Project `mobile` — 2 files, 10 tests
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 
@@ -603,12 +608,13 @@ Not yet covered, and not currently tracked by an issue:
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
 
-#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 3 tests
+#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
 
-- **Venue map – on a phone** (3)
+- **Venue map – on a phone** (4)
   - the user menu leads to the map
   - a tapped place opens as a bottom sheet
   - an organiser draws a shape by tapping, finished with "Close shape"
+  - an organiser starts a plan from a template and manages it in the sheet
 
 ### Project `multi-user` — 4 files, 54 tests
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { VenueMarkerRead, VenueShapeRead } from '@/client/types.gen'
+import type { VenueMarkerRead, VenueShapeRead, VenueTemplateShape } from '@/client/types.gen'
 import { estimateTextWidth } from '@/lib/venue-map'
 import {
   DEFAULT_STROKE_WIDTH,
@@ -31,6 +31,7 @@ import {
   shapeStyleClass,
   shapeStyleLabelKey,
   sortShapes,
+  templateRenderShapes,
   toPlanUnits,
   virtualMarkers,
 } from '@/lib/venue-shapes'
@@ -164,6 +165,35 @@ describe('plans', () => {
     expect(planSurfaceClass({ image_etag: 'e' })).toBe('map-light')
     expect(planSurfaceClass({ image_etag: null })).toBe('')
     expect(planSurfaceClass(null)).toBe('')
+  })
+})
+
+describe('templates', () => {
+  it('fills in what a template shape does not store, in drawing order', () => {
+    const shapes: VenueTemplateShape[] = [
+      {
+        id: 'b',
+        kind: 'rect',
+        style: 'room',
+        points: [
+          [0, 0],
+          [0.5, 0.5],
+        ],
+        sort_order: 2,
+      },
+      {
+        id: 'a',
+        kind: 'label',
+        style: 'room',
+        points: [[0.2, 0.2]],
+        label: 'Hall',
+        label_size: 'lg',
+      },
+    ]
+    const out = templateRenderShapes(shapes)
+    expect(out.map((s) => s.id)).toEqual(['a', 'b'])
+    expect(out[0]).toMatchObject({ label_size: 'lg', sort_order: 1, location_id: null })
+    expect(out[1]).toMatchObject({ label_size: 'md', sort_order: 2, location_id: null })
   })
 })
 

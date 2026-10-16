@@ -47,6 +47,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from app.models.venue_template import VenueTemplate, VenueTemplateImage
 
 logger = get_logger(__name__)
 
@@ -167,7 +168,22 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
     #    tokens. Deleting their sessions explicitly first means a guest whose
     #    demo is purged mid-request stops being authenticated immediately
     #    rather than at the end of their fifteen-minute access token.
+    #    Venue templates hang off the account, not the event, so steps 1-4
+    #    never reach them: they go here, image bytes first, before the users
+    #    (their FK cascades too; spelled out like the venue map above so the
+    #    largest rows a guest can own visibly go).
     if guest_ids:
+        template_ids = select(col(VenueTemplate.id)).where(
+            col(VenueTemplate.user_id).in_(guest_ids)
+        )
+        await db.execute(
+            delete(VenueTemplateImage).where(
+                col(VenueTemplateImage.template_id).in_(template_ids)
+            )
+        )
+        await db.execute(
+            delete(VenueTemplate).where(col(VenueTemplate.user_id).in_(guest_ids))
+        )
         await db.execute(
             delete(AuthSession).where(col(AuthSession.user_id).in_(guest_ids))
         )

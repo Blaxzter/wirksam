@@ -7,6 +7,7 @@ import {
   EllipsisVertical,
   ImageMinus,
   ImageOff,
+  LayoutTemplate,
   Map as MapIcon,
   Maximize,
   Minus,
@@ -64,10 +65,10 @@ import VenueDrawPreview from '@/components/venue-map/editor/VenueDrawPreview.vue
 import VenueEditHandles from '@/components/venue-map/editor/VenueEditHandles.vue'
 import VenueEditorToolbar from '@/components/venue-map/editor/VenueEditorToolbar.vue'
 import VenuePlanCreateDialog, {
-  type PlanAspect,
-  type PlanCreateMode,
+  type PlanCreateValue,
 } from '@/components/venue-map/editor/VenuePlanCreateDialog.vue'
 import VenueShapeInspector from '@/components/venue-map/editor/VenueShapeInspector.vue'
+import VenueTemplateNameDialog from '@/components/venue-map/editor/VenueTemplateNameDialog.vue'
 
 import type {
   LocationRead,
@@ -75,6 +76,7 @@ import type {
   VenueMarkerRead,
   VenuePlanRead,
   VenuePlanShapesRead,
+  VenueTemplateRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { propLabelKey } from '@/lib/venue-decor'
@@ -213,6 +215,7 @@ const planModel = computed({
 
 // "Add map": name, and blank canvas or picture.
 const createOpen = ref(false)
+const createDialog = ref<InstanceType<typeof VenuePlanCreateDialog> | null>(null)
 const creating = ref(false)
 /** Plans created with "Use a picture": the side panel offers the upload big. */
 const wantsPicture = ref(new Set<string>())
@@ -221,24 +224,37 @@ function openCreate() {
   createOpen.value = true
 }
 
-async function createPlan(value: { name: string; mode: PlanCreateMode; canvas: PlanAspect }) {
+async function createPlan(value: PlanCreateValue) {
   if (creating.value) return
   creating.value = true
+  const fromTemplate = value.mode === 'template' && !!value.templateId
   try {
     const res = await post<{ data: VenuePlanRead }>({
       url: `/events/${props.eventId}/venue-plans`,
-      body: { name: value.name, canvas: value.canvas },
+      // A template brings its own canvas.
+      body: fromTemplate
+        ? { name: value.name, template_id: value.templateId }
+        : { name: value.name, canvas: value.canvas },
     })
     plans.value.push(res.data)
     if (value.mode === 'picture') wantsPicture.value.add(res.data.id)
     await selectPlan(res.data.id)
     createOpen.value = false
-    toast.success(t('mapEditor.plans.created'))
     emit('changed')
+    if (fromTemplate) {
+      // The drawing is there already; what is left is placing the pins.
+      toast.success(t('mapEditor.templates.createdFrom'))
+      void refreshEventCounts()
+    } else {
+      toast.success(t('mapEditor.plans.created'))
+    }
     // A blank plan opens ready to draw.
     if (value.mode === 'blank') editor.setTool('rect')
   } catch (error) {
-    toastApiError(error)
+    const { code } = toastApiError(error)
+    if (fromTemplate && value.templateId && code === 'venue_template.not_found') {
+      createDialog.value?.templateGone(value.templateId)
+    }
   } finally {
     creating.value = false
   }
@@ -271,6 +287,36 @@ async function submitRename() {
     toastApiError(error)
   } finally {
     savingName.value = false
+  }
+}
+
+// "Save as template…": a copy of this plan's drawing and picture (no pins,
+// no place links) in my own templates, to start plans from in any event.
+const saveTemplateOpen = ref(false)
+const savingTemplate = ref(false)
+
+function openSaveTemplate() {
+  if (plan.value) saveTemplateOpen.value = true
+}
+
+async function submitSaveTemplate(name: string) {
+  const current = plan.value
+  if (!current || savingTemplate.value) return
+  savingTemplate.value = true
+  try {
+    // The template is copied from what the server holds: save every step first.
+    editor.flushNudge()
+    await history.flush()
+    await post<{ data: VenueTemplateRead }>({
+      url: `/venue-plans/${current.id}/save-as-template`,
+      body: { name },
+    })
+    toast.success(t('mapEditor.templates.saved'))
+    saveTemplateOpen.value = false
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    savingTemplate.value = false
   }
 }
 
@@ -959,6 +1005,14 @@ onBeforeUnmount(() => {
                 <Pencil />
                 {{ t('mapEditor.plans.rename') }}
               </DropdownMenuItem>
+              <DropdownMenuItem
+                :disabled="!hasImage && history.shapes.value.length === 0"
+                data-testid="plan-save-template"
+                @select="openSaveTemplate"
+              >
+                <LayoutTemplate />
+                {{ t('mapEditor.templates.save') }}
+              </DropdownMenuItem>
               <template v-if="plans.length > 1">
                 <DropdownMenuItem
                   :disabled="planIndex <= 0"
@@ -1455,10 +1509,21 @@ onBeforeUnmount(() => {
     </div>
 
     <VenuePlanCreateDialog
+      ref="createDialog"
       v-model:open="createOpen"
       :sandbox="sandbox"
       :saving="creating"
       @submit="createPlan"
+    />
+
+    <VenueTemplateNameDialog
+      v-model:open="saveTemplateOpen"
+      :title="t('mapEditor.templates.saveTitle')"
+      :description="t('mapEditor.templates.saveDescription')"
+      :submit-label="t('mapEditor.templates.saveSubmit')"
+      :initial-name="plan?.name ?? ''"
+      :saving="savingTemplate"
+      @submit="submitSaveTemplate"
     />
 
     <ResponsiveDialog v-model:open="renameDialog.open">

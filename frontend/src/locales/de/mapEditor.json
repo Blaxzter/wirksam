@@ -8,12 +8,14 @@
         "aspectLabel": "Form der Zeichenfläche",
         "blank": "Selbst zeichnen",
         "blankHint": "Starte mit einer leeren Fläche und zeichne Räume, Wege und Beschriftungen.",
-        "description": "Gib dem Plan einen Namen und wähle, ob du ihn selbst zeichnest oder ein Bild verwendest.",
+        "description": "Gib dem Plan einen Namen und wähle, wie du startest: selbst zeichnen, mit einer deiner Vorlagen oder mit einem Bild.",
         "name": "Name",
         "picture": "Bild verwenden",
         "pictureHint": "Lade einen Grundriss oder ein Foto vom Lageplan hoch. Du kannst trotzdem darauf zeichnen.",
         "pictureSandbox": "Nicht in der Demo. In deiner eigenen Veranstaltung kannst du hier ein Bild hochladen.",
         "submit": "Plan anlegen",
+        "template": "Vorlage verwenden",
+        "templateHint": "Übernimm die Zeichnung eines Plans, den du als Vorlage gespeichert hast. Die Markierungen setzt du danach.",
         "title": "Neuer Plan"
     },
     "decor": {
@@ -144,6 +146,27 @@
         "description": "Lade einen Plan deines Veranstaltungsorts hoch und markiere, wo was ist. Helfende finden ihn unter „Lageplan“ und wenn sie eine Schicht öffnen.",
         "tab": "Lageplan",
         "title": "Lageplan"
+    },
+    "templates": {
+        "actions": "Optionen für die Vorlage „{name}“",
+        "createdFrom": "Plan aus der Vorlage hinzugefügt. Setz jetzt deine Markierungen.",
+        "delete": "Vorlage löschen",
+        "deleteConfirm": "Die Vorlage „{name}“ löschen? Pläne, die du schon daraus angelegt hast, bleiben, wie sie sind.",
+        "deleted": "Vorlage gelöscht",
+        "empty": "Noch keine Vorlagen",
+        "emptyHint": "Öffne einen Plan, den du gezeichnet hast, und wähle in seinem Menü (⋮) „Als Vorlage speichern“. Dann kannst du in all deinen Veranstaltungen neue Pläne daraus anlegen.",
+        "loadError": "Deine Vorlagen konnten nicht geladen werden.",
+        "name": "Name",
+        "pickLabel": "Deine Vorlagen",
+        "rename": "Umbenennen",
+        "renameDescription": "Nur du siehst deine Vorlagen.",
+        "renameTitle": "Vorlage umbenennen",
+        "renamed": "Vorlage umbenannt",
+        "save": "Als Vorlage speichern…",
+        "saveDescription": "Speichert die Zeichnung und das Bild dieses Plans, ohne Markierungen. Daraus kannst du in all deinen Veranstaltungen neue Pläne anlegen. Spätere Änderungen an diesem Plan ändern die Vorlage nicht.",
+        "saveSubmit": "Vorlage speichern",
+        "saveTitle": "Als Vorlage speichern",
+        "saved": "Als Vorlage gespeichert. Du findest sie unter „+ Plan hinzufügen“."
     },
     "tools": {
         "label": "Text",

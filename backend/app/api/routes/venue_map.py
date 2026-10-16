@@ -26,10 +26,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
+from app.api.routes.venue_templates import load_own_template
 from app.core.errors import raise_problem
 from app.crud.event import event as crud_event
 from app.crud.location import location as crud_location
 from app.crud.venue_map import venue_map as crud_venue_map
+from app.crud.venue_template import venue_template as crud_venue_template
 from app.logic.images import MAX_INPUT_BYTES, ImageProcessingError
 from app.logic.locations import resolve_location
 from app.logic.permissions import (
@@ -61,6 +63,12 @@ from app.schemas.venue_map import (
     VenueShapeBatch,
     VenueShapeRead,
     marker_kind_mismatch,
+)
+from app.schemas.venue_template import (
+    MAX_TEMPLATES_PER_USER,
+    TEMPLATE_LIMIT_REACHED,
+    VenueTemplateCreate,
+    VenueTemplateRead,
 )
 
 router = APIRouter(tags=["venue-map"])
@@ -216,12 +224,23 @@ async def create_venue_plan(
     session: DBDep,
     current_user: CurrentUser,
 ) -> VenuePlanRead:
-    """Add a blank plan after the event's existing ones.
+    """Add a plan after the event's existing ones.
 
-    ``canvas`` picks the aspect of the drawing area (landscape 1600 x 1000,
+    ``canvas`` picks the aspect of a blank drawing area (landscape 1600 x 1000,
     portrait 1000 x 1600, square 1200 x 1200); a picture can be uploaded later.
+
+    With ``template_id`` the plan starts as a copy of one of the caller's
+    templates instead: its canvas, picture and drawing, but no pins (a
+    template has none). Someone else's template is a 404
+    ``venue_template.not_found``.
     """
     event = await _admin_event(current_user, session, event_id)
+    if body.template_id is not None:
+        template = await load_own_template(session, current_user, body.template_id)
+        plan = await crud_venue_template.create_plan(
+            session, template=template, event_id=event.id, name=body.name
+        )
+        return await _plan_read(session, plan)
     plan = await crud_venue_map.create_plan(
         session, event_id=event.id, name=body.name, canvas=body.canvas
     )
@@ -272,6 +291,42 @@ async def delete_venue_plan(
     plan = await _load_plan(session, plan_id)
     await _admin_event(current_user, session, plan.event_id)
     await crud_venue_map.delete_plan(session, plan=plan)
+
+
+@router.post(
+    "/venue-plans/{plan_id}/save-as-template",
+    response_model=VenueTemplateRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def save_venue_plan_as_template(
+    plan_id: uuid.UUID,
+    body: VenueTemplateCreate,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> VenueTemplateRead:
+    """Save a copy of the plan's drawing as one of the caller's templates.
+
+    The canvas, the picture and the shapes are copied; the pins are not, and
+    areas lose their link to a place, since both belong to this event. Later
+    changes to the plan do not reach the template, nor the other way round.
+    Needs the same event admin role as editing the plan. At most
+    ``MAX_TEMPLATES_PER_USER`` (20) per account, beyond that 409
+    ``venue_template.limit_reached``.
+    """
+    plan = await _load_plan(session, plan_id)
+    await _admin_event(current_user, session, plan.event_id)
+    await crud_venue_template.lock_owner(session, user_id=current_user.id)
+    count = await crud_venue_template.count_for_user(session, user_id=current_user.id)
+    if count >= MAX_TEMPLATES_PER_USER:
+        raise_problem(
+            409,
+            code=TEMPLATE_LIMIT_REACHED,
+            detail=f"You can keep at most {MAX_TEMPLATES_PER_USER} templates",
+        )
+    template = await crud_venue_template.create_from_plan(
+        session, user_id=current_user.id, plan=plan, name=body.name
+    )
+    return crud_venue_template.read(template)
 
 
 # ── Plan image ─────────────────────────────────────────────────────────────

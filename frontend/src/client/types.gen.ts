@@ -4549,6 +4549,12 @@ export type VenuePlanCreate = {
    * Aspect of the blank canvas; it cannot be changed later
    */
   canvas?: 'landscape' | 'portrait' | 'square'
+  /**
+   * Template Id
+   *
+   * Start from one of the caller's templates: its canvas, picture and drawing are copied in and ``canvas`` is ignored
+   */
+  template_id?: string | null
 }
 
 /**
@@ -4978,6 +4984,253 @@ export type VenueShapeUpdate = {
 }
 
 /**
+ * VenueTemplateCreate
+ */
+export type VenueTemplateCreate = {
+  /**
+   * Name
+   */
+  name: string
+}
+
+/**
+ * VenueTemplateRead
+ *
+ * A template with its drawing, for the preview and the thumbnail.
+ */
+export type VenueTemplateRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Shape Count
+   *
+   * How many shapes it draws
+   */
+  shape_count?: number
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Shapes
+   *
+   * In drawing order (``sort_order``)
+   */
+  shapes?: Array<VenueTemplateShape>
+  /**
+   * Width
+   *
+   * Effective width: the image's, else the canvas's
+   */
+  readonly width: number
+  /**
+   * Height
+   *
+   * Effective height: the image's, else the canvas's
+   */
+  readonly height: number
+}
+
+/**
+ * VenueTemplateShape
+ *
+ * One shape of a template's drawing.
+ *
+ * A ``VenueShape`` without its plan and without a location link: a template
+ * belongs to no event, so it cannot point at one of its places. The geometry
+ * is checked by the same ``validate_geometry`` as a plan's shapes, both when
+ * the snapshot is stored and when it is read back.
+ */
+export type VenueTemplateShape = {
+  /**
+   * Id
+   *
+   * Stable within the template; a list key
+   */
+  id: string
+  /**
+   * Kind
+   */
+  kind: 'rect' | 'polygon' | 'path' | 'label' | 'prop'
+  /**
+   * Style
+   */
+  style:
+    | 'building'
+    | 'room'
+    | 'area'
+    | 'stage'
+    | 'furniture'
+    | 'green'
+    | 'water'
+    | 'parking'
+    | 'path'
+    | 'wall'
+    | 'hedge'
+    | 'fence'
+    | 'sand'
+  /**
+   * Points
+   */
+  points: Array<[number, number]>
+  /**
+   * Label
+   */
+  label?: string | null
+  /**
+   * Label Size
+   */
+  label_size?: 'sm' | 'md' | 'lg'
+  /**
+   * Label X
+   */
+  label_x?: number | null
+  /**
+   * Label Y
+   */
+  label_y?: number | null
+  /**
+   * Stroke Width
+   */
+  stroke_width?: number | null
+  /**
+   * Prop
+   */
+  prop?:
+    | 'tree'
+    | 'conifer'
+    | 'bush'
+    | 'flowers'
+    | 'plant'
+    | 'bench'
+    | 'picnic_table'
+    | 'round_table'
+    | 'bin'
+    | 'bike_rack'
+    | 'sign'
+    | 'parasol'
+    | 'tent'
+    | 'lamp'
+    | null
+  /**
+   * Rotation
+   */
+  rotation?: number | null
+  /**
+   * Scale
+   */
+  scale?: number | null
+  /**
+   * Sort Order
+   *
+   * z order, ascending
+   */
+  sort_order?: number
+}
+
+/**
+ * VenueTemplateSummary
+ *
+ * A template as the picker lists it: no shapes, just enough to show it.
+ */
+export type VenueTemplateSummary = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Shape Count
+   *
+   * How many shapes it draws
+   */
+  shape_count?: number
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Width
+   *
+   * Effective width: the image's, else the canvas's
+   */
+  readonly width: number
+  /**
+   * Height
+   *
+   * Effective height: the image's, else the canvas's
+   */
+  readonly height: number
+}
+
+/**
+ * VenueTemplateUpdate
+ */
+export type VenueTemplateUpdate = {
+  /**
+   * Name
+   */
+  name?: string | null
+}
+
+/**
  * VerifyEmailRequest
  *
  * Redeem a verification link.
@@ -5375,6 +5628,112 @@ export type VenuePlanReadWritable = {
    * In drawing order (``sort_order``)
    */
   shapes?: Array<VenueShapeRead>
+}
+
+/**
+ * VenueTemplateRead
+ *
+ * A template with its drawing, for the preview and the thumbnail.
+ */
+export type VenueTemplateReadWritable = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Shape Count
+   *
+   * How many shapes it draws
+   */
+  shape_count?: number
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * Shapes
+   *
+   * In drawing order (``sort_order``)
+   */
+  shapes?: Array<VenueTemplateShape>
+}
+
+/**
+ * VenueTemplateSummary
+ *
+ * A template as the picker lists it: no shapes, just enough to show it.
+ */
+export type VenueTemplateSummaryWritable = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Canvas Width
+   */
+  canvas_width: number
+  /**
+   * Canvas Height
+   */
+  canvas_height: number
+  /**
+   * Image Etag
+   */
+  image_etag?: string | null
+  /**
+   * Image Width
+   */
+  image_width?: number | null
+  /**
+   * Image Height
+   */
+  image_height?: number | null
+  /**
+   * Shape Count
+   *
+   * How many shapes it draws
+   */
+  shape_count?: number
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
 }
 
 export type HealthHealthCheckData = {
@@ -11809,6 +12168,66 @@ export type VenueMapUpdateVenuePlanResponses = {
 export type VenueMapUpdateVenuePlanResponse =
   VenueMapUpdateVenuePlanResponses[keyof VenueMapUpdateVenuePlanResponses]
 
+export type VenueMapSaveVenuePlanAsTemplateData = {
+  body: VenueTemplateCreate
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-plans/{plan_id}/save-as-template'
+}
+
+export type VenueMapSaveVenuePlanAsTemplateErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueMapSaveVenuePlanAsTemplateError =
+  VenueMapSaveVenuePlanAsTemplateErrors[keyof VenueMapSaveVenuePlanAsTemplateErrors]
+
+export type VenueMapSaveVenuePlanAsTemplateResponses = {
+  /**
+   * Successful Response
+   */
+  201: VenueTemplateRead
+}
+
+export type VenueMapSaveVenuePlanAsTemplateResponse =
+  VenueMapSaveVenuePlanAsTemplateResponses[keyof VenueMapSaveVenuePlanAsTemplateResponses]
+
 export type VenueMapDeleteVenuePlanImageData = {
   body?: never
   path: {
@@ -12285,6 +12704,300 @@ export type VenueMapBatchVenuePlanShapesResponses = {
 
 export type VenueMapBatchVenuePlanShapesResponse =
   VenueMapBatchVenuePlanShapesResponses[keyof VenueMapBatchVenuePlanShapesResponses]
+
+export type VenueTemplatesListVenueTemplatesData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/venue-templates'
+}
+
+export type VenueTemplatesListVenueTemplatesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueTemplatesListVenueTemplatesError =
+  VenueTemplatesListVenueTemplatesErrors[keyof VenueTemplatesListVenueTemplatesErrors]
+
+export type VenueTemplatesListVenueTemplatesResponses = {
+  /**
+   * Response Venue-Templates-List Venue Templates
+   *
+   * Successful Response
+   */
+  200: Array<VenueTemplateSummary>
+}
+
+export type VenueTemplatesListVenueTemplatesResponse =
+  VenueTemplatesListVenueTemplatesResponses[keyof VenueTemplatesListVenueTemplatesResponses]
+
+export type VenueTemplatesDeleteVenueTemplateData = {
+  body?: never
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-templates/{template_id}'
+}
+
+export type VenueTemplatesDeleteVenueTemplateErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueTemplatesDeleteVenueTemplateError =
+  VenueTemplatesDeleteVenueTemplateErrors[keyof VenueTemplatesDeleteVenueTemplateErrors]
+
+export type VenueTemplatesDeleteVenueTemplateResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type VenueTemplatesDeleteVenueTemplateResponse =
+  VenueTemplatesDeleteVenueTemplateResponses[keyof VenueTemplatesDeleteVenueTemplateResponses]
+
+export type VenueTemplatesGetVenueTemplateData = {
+  body?: never
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-templates/{template_id}'
+}
+
+export type VenueTemplatesGetVenueTemplateErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueTemplatesGetVenueTemplateError =
+  VenueTemplatesGetVenueTemplateErrors[keyof VenueTemplatesGetVenueTemplateErrors]
+
+export type VenueTemplatesGetVenueTemplateResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenueTemplateRead
+}
+
+export type VenueTemplatesGetVenueTemplateResponse =
+  VenueTemplatesGetVenueTemplateResponses[keyof VenueTemplatesGetVenueTemplateResponses]
+
+export type VenueTemplatesUpdateVenueTemplateData = {
+  body: VenueTemplateUpdate
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-templates/{template_id}'
+}
+
+export type VenueTemplatesUpdateVenueTemplateErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueTemplatesUpdateVenueTemplateError =
+  VenueTemplatesUpdateVenueTemplateErrors[keyof VenueTemplatesUpdateVenueTemplateErrors]
+
+export type VenueTemplatesUpdateVenueTemplateResponses = {
+  /**
+   * Successful Response
+   */
+  200: VenueTemplateRead
+}
+
+export type VenueTemplatesUpdateVenueTemplateResponse =
+  VenueTemplatesUpdateVenueTemplateResponses[keyof VenueTemplatesUpdateVenueTemplateResponses]
+
+export type VenueTemplatesGetVenueTemplateImageData = {
+  body?: never
+  path: {
+    /**
+     * Template Id
+     */
+    template_id: string
+  }
+  query?: never
+  url: '/api/v1/venue-templates/{template_id}/image'
+}
+
+export type VenueTemplatesGetVenueTemplateImageErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VenueTemplatesGetVenueTemplateImageError =
+  VenueTemplatesGetVenueTemplateImageErrors[keyof VenueTemplatesGetVenueTemplateImageErrors]
+
+export type VenueTemplatesGetVenueTemplateImageResponses = {
+  /**
+   * The template image
+   */
+  200: unknown
+}
 
 export type NotificationsListNotificationTypesData = {
   body?: never

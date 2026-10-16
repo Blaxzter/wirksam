@@ -13,6 +13,7 @@ import type {
   VenueMarkerRead,
   VenuePlanRead,
   VenueShapeRead,
+  VenueTemplateSummary,
 } from '@/client/types.gen'
 import { type ShapeOp, applyOps } from '@/lib/venue-shape-edit'
 import i18n from '@/locales/i18n'
@@ -113,6 +114,19 @@ function rectShape(overrides: Partial<VenueShapeRead> = {}): VenueShapeRead {
   }
 }
 
+const templateSummary: VenueTemplateSummary = {
+  id: 'tpl-1',
+  name: 'Festwiese',
+  canvas_width: 1000,
+  canvas_height: 500,
+  image_etag: null,
+  shape_count: 0,
+  created_at: stamp,
+  updated_at: stamp,
+  width: 1000,
+  height: 500,
+}
+
 /** The server side of the batch endpoint: apply the ops for real. */
 let serverShapes: VenueShapeRead[] = []
 let serverRevision = 0
@@ -142,6 +156,9 @@ beforeEach(() => {
       if (url.endsWith('/venue-plans')) {
         return { data: blankPlan({ id: 'plan-new', name: body.name! }) }
       }
+      if (url.endsWith('/save-as-template')) {
+        return { data: { ...templateSummary, name: body.name!, shapes: [] } }
+      }
       throw new Error(`unexpected POST ${url}`)
     },
   )
@@ -152,6 +169,8 @@ beforeEach(() => {
       }
     }
     if (url.endsWith('/locations')) return { data: [foyer, kitchen] }
+    if (url === '/venue-templates') return { data: [templateSummary] }
+    if (url.startsWith('/venue-templates/')) return { data: { ...templateSummary, shapes: [] } }
     throw new Error(`unexpected GET ${url}`)
   })
   fetchMock.mockResolvedValue({ ok: true, status: 200, blob: async () => new Blob(['x']) })
@@ -439,6 +458,105 @@ describe('VenueMapEditor: creating plans', () => {
     await flushPromises()
     expect(q('plan-create-picture').querySelector('input')!.disabled).toBe(true)
     expect(wrapper.find('[data-testid="draw-toolbar"]').exists()).toBe(true)
+  })
+})
+
+describe('VenueMapEditor: templates', () => {
+  /** Open the plan menu (by keyboard: jsdom) and pick an entry. */
+  async function planMenu(item: string) {
+    q('plan-actions').dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' }))
+    await flushPromises()
+    return q(item)
+  }
+
+  it('creates a plan from a template and opens it for placing pins', async () => {
+    plans = []
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="plan-add"]').trigger('click')
+    await flushPromises()
+    q('plan-create-template').querySelector('input')!.click()
+    await flushPromises()
+    q('template-card-tpl-1')
+      .querySelector<HTMLInputElement>('[data-testid="template-pick"]')!
+      .click()
+    await flushPromises()
+    q('plan-name-save').click()
+    await flushPromises()
+
+    expect(api.post).toHaveBeenCalledWith({
+      url: '/events/e1/venue-plans',
+      body: { name: 'Festwiese', template_id: 'tpl-1' },
+    })
+    expect(wrapper.find('[data-testid="editor-canvas"]').exists()).toBe(true)
+    // Not a drawing tool: the drawing is there, the pins are next.
+    expect(q('tool-select').getAttribute('aria-pressed')).toBe('true')
+    expect(wrapper.emitted('changed')).toBeTruthy()
+  })
+
+  it('reloads the templates when the picked one was deleted meanwhile', async () => {
+    plans = []
+    const wrapper = await mountEditor()
+    await wrapper.find('[data-testid="plan-add"]').trigger('click')
+    await flushPromises()
+    q('plan-create-template').querySelector('input')!.click()
+    await flushPromises()
+    q('template-card-tpl-1')
+      .querySelector<HTMLInputElement>('[data-testid="template-pick"]')!
+      .click()
+    await flushPromises()
+
+    api.post.mockRejectedValueOnce(
+      Object.assign(new Error('gone'), {
+        isAxiosError: true,
+        response: {
+          status: 404,
+          data: { status: 404, title: 'x', code: 'venue_template.not_found' },
+        },
+      }),
+    )
+    const listLoads = () =>
+      api.get.mock.calls.filter((c) => c[0].url === '/venue-templates').length
+    const before = listLoads()
+    q('plan-name-save').click()
+    await flushPromises()
+
+    expect(listLoads()).toBe(before + 1)
+    // The dead pick is dropped, so "Create" waits for a new one.
+    expect(q<HTMLButtonElement>('plan-name-save').disabled).toBe(true)
+  })
+
+  it('saves the plan as a template after its pending drawing steps', async () => {
+    plans = [blankPlan({ shapes: [rectShape()], shapes_revision: 1 })]
+    await mountEditor()
+    ;(await planMenu('plan-save-template')).click()
+    await flushPromises()
+    expect(q<HTMLInputElement>('template-name-input').value).toBe('Grounds')
+    await typeInto('template-name-input', 'Gelände Vorlage')
+    q('template-name-save').click()
+    await flushPromises()
+    expect(api.post).toHaveBeenCalledWith({
+      url: '/venue-plans/plan-1/save-as-template',
+      body: { name: 'Gelände Vorlage' },
+    })
+    expect(document.querySelector('[data-testid="template-name-dialog"]')).toBeNull()
+  })
+
+  it('keeps the dialog open when the template cannot be saved', async () => {
+    plans = [makePlan()]
+    await mountEditor()
+    api.post.mockRejectedValueOnce(new Error('limit'))
+    ;(await planMenu('plan-save-template')).click()
+    await flushPromises()
+    q('template-name-save').click()
+    await flushPromises()
+    expect(document.querySelector('[data-testid="template-name-dialog"]')).not.toBeNull()
+  })
+
+  it('has nothing to save from a plan with no drawing and no picture', async () => {
+    plans = [blankPlan()]
+    await mountEditor()
+    const item = await planMenu('plan-save-template')
+    expect(item.getAttribute('data-disabled')).not.toBeNull()
   })
 })
 

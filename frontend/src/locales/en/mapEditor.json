@@ -8,12 +8,14 @@
         "aspectLabel": "Shape of the drawing area",
         "blank": "Draw it yourself",
         "blankHint": "Start with an empty area and draw rooms, paths and labels.",
-        "description": "Name the map and choose whether to draw it yourself or start from a picture.",
+        "description": "Name the map and choose how to start: draw it yourself, use one of your templates or a picture.",
         "name": "Name",
         "picture": "Use a picture",
         "pictureHint": "Upload a floor plan or a photo of a site map. You can still draw on top of it.",
         "pictureSandbox": "Not in the demo. In your own event you can upload a picture here.",
         "submit": "Create map",
+        "template": "Start from a template",
+        "templateHint": "Copy the drawing of a map you saved as a template. You place the pins afterwards.",
         "title": "New map"
     },
     "decor": {
@@ -144,6 +146,27 @@
         "description": "Upload a plan of your venue and pin where everything is. Helpers find it under “Map” and when they open a shift.",
         "tab": "Map",
         "title": "Venue map"
+    },
+    "templates": {
+        "actions": "Options for template “{name}”",
+        "createdFrom": "Map added from the template. Now place your pins.",
+        "delete": "Delete template",
+        "deleteConfirm": "Delete the template “{name}”? Maps you already made from it stay as they are.",
+        "deleted": "Template deleted",
+        "empty": "No templates yet",
+        "emptyHint": "Open a map you have drawn and choose “Save as template” in its menu (⋮). You can then start new maps from it in all your events.",
+        "loadError": "Your templates could not be loaded.",
+        "name": "Name",
+        "pickLabel": "Your templates",
+        "rename": "Rename",
+        "renameDescription": "Only you can see your templates.",
+        "renameTitle": "Rename template",
+        "renamed": "Template renamed",
+        "save": "Save as template…",
+        "saveDescription": "Saves the drawing and the picture of this map, without pins. You can then start new maps from it in all your events. Changing this map later does not change the template.",
+        "saveSubmit": "Save template",
+        "saveTitle": "Save as template",
+        "saved": "Saved as template. You’ll find it under “+ Add map”."
     },
     "tools": {
         "label": "Text",

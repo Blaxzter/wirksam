@@ -1,4 +1,9 @@
-import type { VenueMarkerRead, VenuePlanRead, VenueShapeRead } from '@/client/types.gen'
+import type {
+  VenueMarkerRead,
+  VenuePlanRead,
+  VenueShapeRead,
+  VenueTemplateShape,
+} from '@/client/types.gen'
 
 import { propPlacement } from './venue-decor'
 import { estimateTextWidth } from './venue-map'
@@ -159,6 +164,22 @@ export function planSize(plan: Pick<VenuePlanRead, 'width' | 'height'>): { W: nu
   const W = plan.width > 0 ? plan.width : 0
   const H = plan.height > 0 ? plan.height : 0
   return W && H ? { W, H } : { ...FALLBACK_SIZE }
+}
+
+/**
+ * A template's shapes, ready for `VenueShapeLayer`: in drawing order, with the
+ * fields a template does not store filled in. A template belongs to no event,
+ * so nothing in it links to a place.
+ */
+export function templateRenderShapes(shapes: readonly VenueTemplateShape[]): RenderShape[] {
+  return sortShapes(
+    shapes.map((shape, index) => ({
+      ...shape,
+      label_size: shape.label_size ?? 'md',
+      sort_order: shape.sort_order ?? index,
+      location_id: null,
+    })),
+  )
 }
 
 /** A plan counts as a map once it has a picture or at least one shape. */

@@ -319,6 +319,13 @@ class VenuePlanCreate(BaseModel):
         default="landscape",
         description="Aspect of the blank canvas; it cannot be changed later",
     )
+    template_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Start from one of the caller's templates: its canvas, picture and "
+            "drawing are copied in and ``canvas`` is ignored"
+        ),
+    )
 
 
 class VenuePlanUpdate(BaseModel):

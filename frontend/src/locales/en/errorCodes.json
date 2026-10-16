@@ -83,5 +83,10 @@
         "too_many": "This map has reached the limit of 500 drawings.",
         "too_many_points": "This map has too many points in its drawings. Simplify them or delete a few.",
         "too_small": "This rectangle is too small. Drag a bit further."
+    },
+    "venue_template": {
+        "image_not_found": "This template has no picture.",
+        "limit_reached": "You can keep up to 20 templates. Delete one you no longer need first: under “+ Add map”, choose “Start from a template” and open the template’s menu (⋮).",
+        "not_found": "That template could not be found. It may have been deleted in the meantime."
     }
 }

@@ -2287,6 +2287,7 @@ export const zVenuePlanCreate = z.object({
     })
     .optional()
     .default('landscape'),
+  template_id: z.uuid().nullish(),
 })
 
 /**
@@ -2608,6 +2609,186 @@ export const zVenueShapeBatch = z
   })
 
 /**
+ * VenueTemplateCreate
+ */
+export const zVenueTemplateCreate = z.object({
+  name: z.string().min(1).max(120),
+})
+
+/**
+ * VenueTemplateShape
+ *
+ * One shape of a template's drawing.
+ *
+ * A ``VenueShape`` without its plan and without a location link: a template
+ * belongs to no event, so it cannot point at one of its places. The geometry
+ * is checked by the same ``validate_geometry`` as a plan's shapes, both when
+ * the snapshot is stored and when it is read back.
+ */
+export const zVenueTemplateShape = z
+  .object({
+    id: z.uuid().register(z.globalRegistry, {
+      description: 'Stable within the template; a list key',
+    }),
+    kind: z.enum(['rect', 'polygon', 'path', 'label', 'prop']),
+    style: z.enum([
+      'building',
+      'room',
+      'area',
+      'stage',
+      'furniture',
+      'green',
+      'water',
+      'parking',
+      'path',
+      'wall',
+      'hedge',
+      'fence',
+      'sand',
+    ]),
+    points: z
+      .array(z.tuple([z.number().gte(0).lte(1), z.number().gte(0).lte(1)]))
+      .min(1)
+      .max(500),
+    label: z.string().max(120).nullish(),
+    label_size: z.enum(['sm', 'md', 'lg']).optional().default('md'),
+    label_x: z.number().gte(0).lte(1).nullish(),
+    label_y: z.number().gte(0).lte(1).nullish(),
+    stroke_width: z.number().nullish(),
+    prop: z
+      .enum([
+        'tree',
+        'conifer',
+        'bush',
+        'flowers',
+        'plant',
+        'bench',
+        'picnic_table',
+        'round_table',
+        'bin',
+        'bike_rack',
+        'sign',
+        'parasol',
+        'tent',
+        'lamp',
+      ])
+      .nullish(),
+    rotation: z
+      .number()
+      .gte(-720)
+      .lte(720)
+      .register(z.globalRegistry, {
+        description: 'Props only: degrees clockwise',
+      })
+      .nullish(),
+    scale: z.number().nullish(),
+    sort_order: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'z order, ascending',
+      })
+      .optional()
+      .default(0),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "One shape of a template's drawing.\n\nA ``VenueShape`` without its plan and without a location link: a template\nbelongs to no event, so it cannot point at one of its places. The geometry\nis checked by the same ``validate_geometry`` as a plan's shapes, both when\nthe snapshot is stored and when it is read back.",
+  })
+
+/**
+ * VenueTemplateRead
+ *
+ * A template with its drawing, for the preview and the thumbnail.
+ */
+export const zVenueTemplateRead = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    canvas_width: z.int(),
+    canvas_height: z.int(),
+    image_etag: z.string().nullish(),
+    image_width: z.int().nullish(),
+    image_height: z.int().nullish(),
+    shape_count: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'How many shapes it draws',
+      })
+      .optional()
+      .default(0),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+    shapes: z
+      .array(zVenueTemplateShape)
+      .register(z.globalRegistry, {
+        description: 'In drawing order (``sort_order``)',
+      })
+      .optional(),
+    width: z
+      .int()
+      .register(z.globalRegistry, {
+        description: "Effective width: the image's, else the canvas's",
+      })
+      .readonly(),
+    height: z
+      .int()
+      .register(z.globalRegistry, {
+        description: "Effective height: the image's, else the canvas's",
+      })
+      .readonly(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A template with its drawing, for the preview and the thumbnail.',
+  })
+
+/**
+ * VenueTemplateSummary
+ *
+ * A template as the picker lists it: no shapes, just enough to show it.
+ */
+export const zVenueTemplateSummary = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    canvas_width: z.int(),
+    canvas_height: z.int(),
+    image_etag: z.string().nullish(),
+    image_width: z.int().nullish(),
+    image_height: z.int().nullish(),
+    shape_count: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'How many shapes it draws',
+      })
+      .optional()
+      .default(0),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+    width: z
+      .int()
+      .register(z.globalRegistry, {
+        description: "Effective width: the image's, else the canvas's",
+      })
+      .readonly(),
+    height: z
+      .int()
+      .register(z.globalRegistry, {
+        description: "Effective height: the image's, else the canvas's",
+      })
+      .readonly(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A template as the picker lists it: no shapes, just enough to show it.',
+  })
+
+/**
+ * VenueTemplateUpdate
+ */
+export const zVenueTemplateUpdate = z.object({
+  name: z.string().min(1).max(120).nullish(),
+})
+
+/**
  * VerifyEmailRequest
  *
  * Redeem a verification link.
@@ -2807,6 +2988,68 @@ export const zVenueMapReadWritable = z.object({
     })
     .optional(),
 })
+
+/**
+ * VenueTemplateRead
+ *
+ * A template with its drawing, for the preview and the thumbnail.
+ */
+export const zVenueTemplateReadWritable = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    canvas_width: z.int(),
+    canvas_height: z.int(),
+    image_etag: z.string().nullish(),
+    image_width: z.int().nullish(),
+    image_height: z.int().nullish(),
+    shape_count: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'How many shapes it draws',
+      })
+      .optional()
+      .default(0),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+    shapes: z
+      .array(zVenueTemplateShape)
+      .register(z.globalRegistry, {
+        description: 'In drawing order (``sort_order``)',
+      })
+      .optional(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A template with its drawing, for the preview and the thumbnail.',
+  })
+
+/**
+ * VenueTemplateSummary
+ *
+ * A template as the picker lists it: no shapes, just enough to show it.
+ */
+export const zVenueTemplateSummaryWritable = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    canvas_width: z.int(),
+    canvas_height: z.int(),
+    image_etag: z.string().nullish(),
+    image_width: z.int().nullish(),
+    image_height: z.int().nullish(),
+    shape_count: z
+      .int()
+      .register(z.globalRegistry, {
+        description: 'How many shapes it draws',
+      })
+      .optional()
+      .default(0),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A template as the picker lists it: no shapes, just enough to show it.',
+  })
 
 /**
  * Successful Response
@@ -3926,6 +4169,17 @@ export const zVenueMapUpdateVenuePlanPath = z.object({
  */
 export const zVenueMapUpdateVenuePlanResponse = zVenuePlanRead
 
+export const zVenueMapSaveVenuePlanAsTemplateBody = zVenueTemplateCreate
+
+export const zVenueMapSaveVenuePlanAsTemplatePath = z.object({
+  plan_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueMapSaveVenuePlanAsTemplateResponse = zVenueTemplateRead
+
 export const zVenueMapDeleteVenuePlanImagePath = z.object({
   plan_id: z.uuid(),
 })
@@ -4002,6 +4256,52 @@ export const zVenueMapBatchVenuePlanShapesPath = z.object({
  * Successful Response
  */
 export const zVenueMapBatchVenuePlanShapesResponse = zVenuePlanShapesRead
+
+/**
+ * Response Venue-Templates-List Venue Templates
+ *
+ * Successful Response
+ */
+export const zVenueTemplatesListVenueTemplatesResponse = z
+  .array(zVenueTemplateSummary)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zVenueTemplatesDeleteVenueTemplatePath = z.object({
+  template_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueTemplatesDeleteVenueTemplateResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zVenueTemplatesGetVenueTemplatePath = z.object({
+  template_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueTemplatesGetVenueTemplateResponse = zVenueTemplateRead
+
+export const zVenueTemplatesUpdateVenueTemplateBody = zVenueTemplateUpdate
+
+export const zVenueTemplatesUpdateVenueTemplatePath = z.object({
+  template_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVenueTemplatesUpdateVenueTemplateResponse = zVenueTemplateRead
+
+export const zVenueTemplatesGetVenueTemplateImagePath = z.object({
+  template_id: z.uuid(),
+})
 
 /**
  * Response Notifications-List Notification Types

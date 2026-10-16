@@ -9,12 +9,15 @@ import { expect, test } from '../../fixtures.js'
 import {
   type MappedEvent,
   addMember,
+  api,
+  batchShapes,
   createVenuePlan,
   deleteEvent,
   deleteTask,
   getPlanShapes,
   seedMappedEvent,
   setSelectedEvent,
+  uniqueName,
 } from '../../helpers/api.js'
 
 let seeded: MappedEvent
@@ -103,5 +106,74 @@ test.describe('Venue map – on a phone', () => {
     expect(shapes[0]).toMatchObject({ kind: 'polygon', style: 'area' })
     expect(shapes[0]!.points).toHaveLength(3)
     await expect(canvas.getByTestId(`venue-shape-${shapes[0]!.id}`)).toBeVisible()
+  })
+
+  test('an organiser starts a plan from a template and manages it in the sheet', async ({
+    adminPage: page,
+  }) => {
+    // The worker admin is shared: its template is made here and always removed.
+    const source = await createVenuePlan(page, seeded.event.id, { name: 'Quelle' })
+    await batchShapes(page, source.id, [
+      {
+        op: 'create',
+        shape: {
+          id: crypto.randomUUID(),
+          kind: 'rect',
+          style: 'stage',
+          points: [
+            [0.2, 0.2],
+            [0.6, 0.6],
+          ],
+        },
+      },
+    ])
+    const name = uniqueName('Vorlage')
+    const template = await api<{ id: string }>(
+      page,
+      'POST',
+      `/venue-plans/${source.id}/save-as-template`,
+      { name },
+    )
+    try {
+      await page.goto(`/app/event-settings/${seeded.event.id}?tab=map`)
+      const editor = page.getByTestId('venue-map-editor')
+      await expect(editor.getByTestId('editor-canvas')).toBeVisible()
+
+      await editor.getByTestId('plan-add').tap()
+      await page.getByTestId('plan-create-template').tap()
+      const card = page.getByTestId(`template-card-${template.id}`)
+      await expect(card).toBeVisible()
+      // Two cards per row inside the bottom sheet, never wider than the screen.
+      const viewport = page.viewportSize()!
+      const cardBox = (await card.boundingBox())!
+      expect(cardBox.width).toBeLessThan(viewport.width / 2)
+      expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(viewport.width)
+
+      // Rename in a second sheet on top of the first.
+      await card.getByTestId('template-actions').tap()
+      await page.getByTestId('template-rename').tap()
+      const renamed = `${name} neu`
+      await page.getByTestId('template-name-input').fill(renamed)
+      await page.getByTestId('template-name-save').tap()
+      await expect(page.getByTestId('template-name-dialog')).toHaveCount(0)
+      await expect(card).toContainText(renamed)
+
+      await card.locator('label').tap()
+      await expect(page.getByTestId('plan-name-input')).toHaveValue(renamed)
+      await page.getByTestId('plan-name-save').tap()
+      await expect(
+        editor.getByTestId('plan-switcher').getByRole('button', { name: renamed }),
+      ).toBeVisible()
+
+      // Delete it again, after the confirmation.
+      await editor.getByTestId('plan-add').tap()
+      await page.getByTestId('plan-create-template').tap()
+      await card.getByTestId('template-actions').tap()
+      await page.getByTestId('template-delete').tap()
+      await page.getByTestId('btn-dialog-confirm').tap()
+      await expect(card).toHaveCount(0)
+    } finally {
+      await api(page, 'DELETE', `/venue-templates/${template.id}`).catch(() => {})
+    }
   })
 })

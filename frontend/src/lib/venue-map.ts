@@ -34,6 +34,18 @@ export function planImageUrl(
   return `${import.meta.env.VITE_API_URL}/venue-plans/${plan.id}/image?v=${plan.image_etag}`
 }
 
+/**
+ * The URL of a venue template's picture (see {@link planImageUrl}), or `null`
+ * when it has none. Templates are private to their owner, so this too is
+ * loaded through `useAuthedImage`.
+ */
+export function templateImageUrl(
+  template: { id: string; image_etag?: string | null } | null | undefined,
+): string | null {
+  if (!template?.image_etag) return null
+  return `${import.meta.env.VITE_API_URL}/venue-templates/${template.id}/image?v=${template.image_etag}`
+}
+
 /** Every marker kind, in the order pickers list them. */
 export const MARKER_KINDS = [
   'location',

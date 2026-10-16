@@ -83,5 +83,10 @@
         "too_many": "Dieser Plan hat die Grenze von 500 Zeichnungen erreicht.",
         "too_many_points": "Die Zeichnungen auf diesem Plan haben zu viele Punkte. Vereinfache sie oder lösche ein paar davon.",
         "too_small": "Dieses Rechteck ist zu klein. Zieh es etwas größer auf."
+    },
+    "venue_template": {
+        "image_not_found": "Diese Vorlage hat kein Bild.",
+        "limit_reached": "Du kannst bis zu 20 Vorlagen behalten. Lösche zuerst eine, die du nicht mehr brauchst: Unter „+ Plan hinzufügen“ wählst du „Vorlage verwenden“ und öffnest das Menü (⋮) der Vorlage.",
+        "not_found": "Diese Vorlage wurde nicht gefunden. Vielleicht wurde sie inzwischen gelöscht."
     }
 }

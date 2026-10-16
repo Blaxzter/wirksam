@@ -18,6 +18,7 @@ from app.api.routes import (
     tasks,
     users,
     venue_map,
+    venue_templates,
 )
 from app.core.config import settings
 
@@ -39,6 +40,7 @@ api_router.include_router(events.router)
 api_router.include_router(invitations.router)
 api_router.include_router(locations.router)
 api_router.include_router(venue_map.router)
+api_router.include_router(venue_templates.router)
 api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(reporting.router)

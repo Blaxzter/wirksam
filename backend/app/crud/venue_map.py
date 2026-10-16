@@ -2,13 +2,13 @@ import uuid
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import date, datetime, timezone
-from typing import cast
+from typing import Any, cast
 
 import sqlalchemy as sa
-from sqlalchemy import func, select
+from sqlalchemy import CursorResult, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
+from sqlmodel import SQLModel, col
 
 from app.logic.images import NormalizedImage
 from app.models.booking import Booking
@@ -40,6 +40,74 @@ _SHAPE_ORDER = (
 )
 # The longer side of a canvas that replaces a removed picture.
 _CANVAS_LONG_SIDE = 1600
+
+
+def drawing_fields(shape: VenueShape) -> dict[str, Any]:
+    """A shape's drawing, without its plan, its id or its location link.
+
+    What every copy of a drawing carries over: the event clone, saving a plan
+    as a template and starting a plan from one.
+    """
+    return {
+        "kind": shape.kind,
+        "style": shape.style,
+        "points": [list(p) for p in shape.points],
+        "label": shape.label,
+        "label_size": shape.label_size,
+        "label_x": shape.label_x,
+        "label_y": shape.label_y,
+        "stroke_width": shape.stroke_width,
+        "prop": shape.prop,
+        "rotation": shape.rotation,
+        "scale": shape.scale,
+        "sort_order": shape.sort_order,
+    }
+
+
+async def copy_image_bytes(
+    session: AsyncSession,
+    *,
+    source: type[SQLModel],
+    source_key: str,
+    source_id: uuid.UUID,
+    target: type[SQLModel],
+    target_key: str,
+    target_id: uuid.UUID,
+    now: datetime,
+) -> bool:
+    """Copy one image row between the image tables, inside the database.
+
+    ``source``/``target`` are image models (``VenuePlanImage``,
+    ``VenueTemplateImage``) and ``*_key`` their owner column. One
+    ``INSERT ... SELECT``, so the bytes are never pulled into Python. The
+    target's owner row must already be flushed. Returns whether a row was
+    copied (False when the source has no image).
+    """
+    src = cast(sa.Table, sa.inspect(source).local_table)
+    dst = cast(sa.Table, sa.inspect(target).local_table)
+    result = await session.execute(
+        sa.insert(dst).from_select(
+            [
+                "id",
+                "created_at",
+                "updated_at",
+                target_key,
+                "data",
+                "content_type",
+                "etag",
+            ],
+            select(
+                func.gen_random_uuid(),
+                sa.literal(now, sa.DateTime()),
+                sa.literal(now, sa.DateTime()),
+                sa.literal(target_id, sa.Uuid[uuid.UUID]()),
+                src.c.data,
+                src.c.content_type,
+                src.c.etag,
+            ).where(src.c[source_key] == source_id),
+        )
+    )
+    return cast(CursorResult[Any], result).rowcount > 0
 
 
 class CRUDVenueMap:
@@ -132,16 +200,11 @@ class CRUDVenueMap:
         canvas: CanvasPreset = "landscape",
     ) -> VenuePlan:
         """Append a blank plan of the ``canvas`` aspect after the event's others."""
-        current_max = await session.scalar(
-            select(func.max(col(VenuePlan.sort_order))).where(
-                col(VenuePlan.event_id) == event_id
-            )
-        )
         canvas_width, canvas_height = CANVAS_PRESETS[canvas]
         plan = VenuePlan(
             event_id=event_id,
             name=name,
-            sort_order=0 if current_max is None else current_max + 1,
+            sort_order=await self.next_sort_order(session, event_id=event_id),
             canvas_width=canvas_width,
             canvas_height=canvas_height,
         )
@@ -149,6 +212,17 @@ class CRUDVenueMap:
         await session.flush()
         await session.refresh(plan)
         return plan
+
+    async def next_sort_order(
+        self, session: AsyncSession, *, event_id: uuid.UUID
+    ) -> int:
+        """The ``sort_order`` that puts a new plan after the event's others."""
+        current_max = await session.scalar(
+            select(func.max(col(VenuePlan.sort_order))).where(
+                col(VenuePlan.event_id) == event_id
+            )
+        )
+        return 0 if current_max is None else current_max + 1
 
     async def rename_plan(
         self, session: AsyncSession, *, plan: VenuePlan, name: str
@@ -479,29 +553,16 @@ class CRUDVenueMap:
         # rows it points at must be in the database first.
         await session.flush()
 
-        images = cast(sa.Table, sa.inspect(VenuePlanImage).local_table)
         for old_plan_id, new_plan_id in plan_map.items():
-            await session.execute(
-                sa.insert(images).from_select(
-                    [
-                        "id",
-                        "created_at",
-                        "updated_at",
-                        "plan_id",
-                        "data",
-                        "content_type",
-                        "etag",
-                    ],
-                    select(
-                        func.gen_random_uuid(),
-                        sa.literal(now, sa.DateTime()),
-                        sa.literal(now, sa.DateTime()),
-                        sa.literal(new_plan_id, sa.Uuid[uuid.UUID]()),
-                        images.c.data,
-                        images.c.content_type,
-                        images.c.etag,
-                    ).where(images.c.plan_id == old_plan_id),
-                )
+            await copy_image_bytes(
+                session,
+                source=VenuePlanImage,
+                source_key="plan_id",
+                source_id=old_plan_id,
+                target=VenuePlanImage,
+                target_key="plan_id",
+                target_id=new_plan_id,
+                now=now,
             )
 
         markers = await self.list_markers_for_plans(session, plan_ids=list(plan_map))
@@ -540,18 +601,7 @@ class CRUDVenueMap:
                         if shape.location_id is not None
                         else None
                     ),
-                    kind=shape.kind,
-                    style=shape.style,
-                    points=[list(p) for p in shape.points],
-                    label=shape.label,
-                    label_size=shape.label_size,
-                    label_x=shape.label_x,
-                    label_y=shape.label_y,
-                    stroke_width=shape.stroke_width,
-                    prop=shape.prop,
-                    rotation=shape.rotation,
-                    scale=shape.scale,
-                    sort_order=shape.sort_order,
+                    **drawing_fields(shape),
                 )
             )
         await session.flush()

@@ -48,7 +48,11 @@ shifts at the pinned places are filled to fixed shares rather than at random
 full, partly staffed and short. Every other map edit (plans, markers,
 locations, drawing shapes through `POST /venue-plans/{id}/shapes/batch`, and
 removing a picture) stays allowed, so a manager can still try the editor. Only
-the upload is refused.
+the upload is refused. Saving a plan as a venue template and starting a plan
+from one are allowed too: a template is owned by the guest account rather than
+the event, so the purge removes it with the guest (see the teardown below), and
+a guest's templates can carry no picture because the guest could never upload
+one.
 
 The inbox is the one part of the seed that exists because of a guard rather
 than in spite of one. `NotificationService` drops a sandbox recipient *before*
@@ -114,9 +118,15 @@ leaves the orphans described above.
                                                 locations go after the rows
                                                 pointing at them
 6. events                                    — invitations and join requests cascade
-7. auth_sessions, then users                 — last, always; notifications,
+7. venue_template_images, venue_templates
+   (by guest), auth_sessions, then users     — last, always; notifications,
                                                 avatars and tokens cascade from
-                                                the guest
+                                                the guest. Templates belong to
+                                                the account, not the event, so
+                                                steps 1-6 never reach them; their
+                                                FK cascades from the user too,
+                                                deleted explicitly so they
+                                                visibly go
 ```
 
 Two traps are worth stating explicitly:
@@ -181,6 +191,7 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `logic/notifications/triggers.py::dispatch_task_published` | hard stop — that fan-out reaches every active account on the installation |
 | `api/routes/auth.py` | change-password and resend-verification return 403 `sandbox.not_available` |
 | `api/routes/venue_map.py` | plan image upload returns 403 `sandbox.upload_disabled`. Locations, plans, markers and shapes need no guard of their own: every one of them belongs to one event and is only reachable through `require_event_visible` |
+| `api/routes/venue_templates.py` | venue templates belong to one account and answer 404 to everyone else, the superadmin included, so a guest's templates are invisible without a guard of their own |
 
 Note what is deliberately **not** blocked: member role changes and join-request
 decisions. The manager tour walks a visitor through both, and neither sends mail
