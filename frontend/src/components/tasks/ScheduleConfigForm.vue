@@ -92,7 +92,7 @@ const outsideEventWindow = computed(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-2 gap-4" data-testid="input-daily-window">
     <div class="space-y-2">
       <Label>{{ t('duties.tasks.createView.schedule.defaultStartTime') }}</Label>
       <TimePicker v-model="defaultStartTime" />
@@ -124,7 +124,7 @@ const outsideEventWindow = computed(() => {
         </SelectContent>
       </Select>
     </div>
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="input-people-per-shift">
       <Label>{{ t('duties.tasks.createView.schedule.peoplePerShift') }}</Label>
       <Input v-model.number="peoplePerShift" type="number" min="1" />
     </div>

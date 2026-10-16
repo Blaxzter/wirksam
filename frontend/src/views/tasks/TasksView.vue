@@ -308,7 +308,11 @@ onMounted(loadTasks)
     </div>
 
     <!-- Search & Filter (hidden for calendar — it has its own navigation) -->
-    <div v-if="filters.viewMode !== 'calendar'" class="flex flex-wrap items-center gap-4">
+    <div
+      v-if="filters.viewMode !== 'calendar'"
+      data-testid="task-board-filters"
+      class="flex flex-wrap items-center gap-4"
+    >
       <div class="relative flex-1">
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input

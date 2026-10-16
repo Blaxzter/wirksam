@@ -178,7 +178,7 @@ const daysWord = computed(() => t('duties.availability.days'))
     </div>
 
     <!-- Mode-specific content -->
-    <div v-if="mode === 'fully_available'">
+    <div v-if="mode === 'fully_available'" data-testid="availability-editor">
       <div
         class="bg-primary/10 border-primary rounded-lg border-[1.5px] border-dashed p-6 text-center"
       >
@@ -191,7 +191,7 @@ const daysWord = computed(() => t('duties.availability.days'))
       </div>
     </div>
 
-    <div v-else-if="mode === 'time_range'">
+    <div v-else-if="mode === 'time_range'" data-testid="availability-editor">
       <DailyWindowPicker
         :days="days"
         :from="dailyFrom"
@@ -203,7 +203,7 @@ const daysWord = computed(() => t('duties.availability.days'))
       />
     </div>
 
-    <div v-else>
+    <div v-else data-testid="availability-editor">
       <AvailabilityPaintGrid
         :days="days"
         :hours="hours"

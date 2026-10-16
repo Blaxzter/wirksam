@@ -6,17 +6,28 @@
  * than the subject of a step. That is why the chapters are named after ideas
  * and not after routes:
  *
- *   `yourEvent`    — you are already on some of this event
+ *   `yourEvent`    — you are already on some of this event, and some of it
+ *                    is still short of people
  *                    (`home`)
- *   `theJobs`      — what a job is, and what the board is showing you
+ *   `theJobs`      — what a job is, how to narrow the board down, and what
+ *                    one row of it is showing you
  *                    (`tasks`)
- *   `takingAShift` — open one, see who is on it, take it in a single press
+ *   `takingAShift` — open one, see where it is and who is on it, take it in a
+ *                    single press
  *                    (`tasks`, then inside `ShiftDetailDialog`)
  *   `keepingTrack` — what you said yes to, and how to be found by the rest
  *                    (`my-bookings`, `availability`, back to `home`)
  *
- * Nine steps across four routes, all four of which `engine.spec.ts`'s memory
- * router already registers.
+ * Nineteen steps across four routes, all four of which `engine.spec.ts`'s
+ * memory router already registers.
+ *
+ * ── One element per step ─────────────────────────────────────────────────────
+ * The track used to explain a whole screen from one highlight: the copy for a
+ * task row named the job panel, the day columns and the scroll behaviour while
+ * pointing at the row as a whole. Each of those is its own step now, anchored
+ * on the part the words are about, so a paragraph never has to say "on the
+ * left" or "just above" to tell the visitor where to look. Consecutive steps on
+ * one route cost no navigation — the engine only moves the highlight.
  *
  * ── Where the welcome went ───────────────────────────────────────────────────
  * The track used to open on a step that said hello while highlighting the page
@@ -127,6 +138,24 @@ export const helperTrack = defineTrack('helper', [
     side: 'bottom',
   },
   {
+    id: 'myShifts',
+    chapter: 'yourEvent',
+    route: 'home',
+    // `v-if="laterShifts.length > 0"`: the seeder books the guest onto two
+    // upcoming shifts, so the card is there for a demo, but a guest who has
+    // handed one back sees only the next-shift card — hence the short wait.
+    element: '[data-testid="dashboard-my-shifts"]',
+    anchorTimeout: 1500,
+    side: 'top',
+  },
+  {
+    id: 'openShifts',
+    chapter: 'yourEvent',
+    route: 'home',
+    element: '[data-testid="dashboard-open-shifts"]',
+    side: 'top',
+  },
+  {
     id: 'jobsIntro',
     chapter: 'theJobs',
     route: 'tasks',
@@ -137,15 +166,37 @@ export const helperTrack = defineTrack('helper', [
     before: () => resetTaskBoard(),
   },
   {
-    id: 'jobRow',
+    id: 'boardFilters',
     chapter: 'theJobs',
     route: 'tasks',
-    element: '[data-testid="task-row"]',
+    // The search box and the filter menu together: the copy is about narrowing
+    // the board down, and the two do that between them.
+    element: '[data-testid="task-board-filters"]',
     waitFor: TASK_LIST,
     side: 'bottom',
-    // Repeated from the step before, because a visitor who arrives here by Back
-    // — or after `TasksView` has mirrored a filter into the query string and
+    // Repeated on every board step, because a visitor who arrives by Back — or
+    // after `TasksView` has mirrored a filter into the query string and
     // remounted — has to land on the same board the copy describes.
+    before: () => resetTaskBoard(),
+  },
+  {
+    id: 'jobInfo',
+    chapter: 'theJobs',
+    route: 'tasks',
+    // The job half of the first row, not the row: the day columns beside it
+    // are the next step's subject.
+    element: '[data-testid="task-row-info"]',
+    waitFor: TASK_LIST,
+    side: 'bottom',
+    before: () => resetTaskBoard(),
+  },
+  {
+    id: 'jobDays',
+    chapter: 'theJobs',
+    route: 'tasks',
+    element: '[data-testid="task-row-days"]',
+    waitFor: TASK_LIST,
+    side: 'bottom',
     before: () => resetTaskBoard(),
   },
   {
@@ -155,6 +206,46 @@ export const helperTrack = defineTrack('helper', [
     element: BOOKABLE_CHIP,
     waitFor: TASK_LIST,
     side: 'right',
+  },
+  {
+    id: 'shiftHeader',
+    chapter: 'takingAShift',
+    route: 'tasks',
+    // The title line, which carries the taken/needed badge beside it and the
+    // date underneath — the three things the copy names.
+    element: '[data-testid="shift-detail-title"]',
+    waitFor: SHIFT_FOOTER,
+    inOverlay: true,
+    side: 'top',
+    before: openShiftDialog,
+  },
+  {
+    id: 'shiftPlace',
+    chapter: 'takingAShift',
+    route: 'tasks',
+    // The location panel only renders when the place has something written
+    // about it. The tour's shift is on the seeder's first task, whose location
+    // always has, so it is there for a demo; anywhere else the short wait
+    // degrades the step to a centred card.
+    element: '[data-testid="shift-location-details"]',
+    anchorTimeout: 1500,
+    inOverlay: true,
+    side: 'top',
+    before: openShiftDialog,
+  },
+  {
+    id: 'shiftMap',
+    chapter: 'takingAShift',
+    route: 'tasks',
+    // Its own step rather than a clause of the one above: the popover for the
+    // location panel lands on the map, so copy about both could only ever
+    // point at one of them. Same condition as above — the seeder pins the
+    // first task's location on the venue plan.
+    element: '[data-testid="shift-mini-map"]',
+    anchorTimeout: 1500,
+    inOverlay: true,
+    side: 'top',
+    before: openShiftDialog,
   },
   {
     id: 'shiftRoster',
@@ -202,6 +293,18 @@ export const helperTrack = defineTrack('helper', [
     side: 'top',
   },
   {
+    id: 'myHours',
+    chapter: 'keepingTrack',
+    route: 'my-bookings',
+    query: { range: 'all' },
+    // `v-if="detail"`, so the card is late rather than absent: it renders once
+    // its own request has come back.
+    element: '[data-testid="my-hours-card"]',
+    waitFor: PAGE_HEADING,
+    anchorTimeout: 3000,
+    side: 'bottom',
+  },
+  {
     id: 'availability',
     chapter: 'keepingTrack',
     route: 'availability',
@@ -212,6 +315,27 @@ export const helperTrack = defineTrack('helper', [
     element: '[data-testid="availability-mode-picker"]',
     waitFor: PAGE_HEADING,
     side: 'bottom',
+  },
+  {
+    id: 'availabilityEditor',
+    chapter: 'keepingTrack',
+    route: 'availability',
+    // Whichever of the three editors the chosen mode renders; all three carry
+    // the same testid, and only one is ever mounted.
+    element: '[data-testid="availability-editor"]',
+    waitFor: PAGE_HEADING,
+    side: 'top',
+  },
+  {
+    id: 'availabilitySave',
+    chapter: 'keepingTrack',
+    route: 'availability',
+    // Disabled until something changes, which the copy says out loud rather
+    // than leaving the visitor to wonder why it is grey.
+    element: '[data-testid="btn-save"]',
+    waitFor: PAGE_HEADING,
+    side: 'bottom',
+    align: 'end',
   },
   {
     id: 'finish',

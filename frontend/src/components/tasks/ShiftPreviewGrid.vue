@@ -37,7 +37,12 @@ const { formatDateLabel } = useFormatters()
 
 <template>
   <div class="space-y-4">
-    <div v-for="[dateStr, shifts] in shiftsByDate" :key="dateStr" class="space-y-2">
+    <div
+      v-for="[dateStr, shifts] in shiftsByDate"
+      :key="dateStr"
+      data-testid="preview-day"
+      class="space-y-2"
+    >
       <div class="flex items-center gap-2">
         <p class="font-medium">{{ formatDateLabel(dateStr) }}</p>
         <Badge variant="outline">

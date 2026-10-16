@@ -203,7 +203,7 @@ test.describe('guided tour', () => {
   test('the helper track runs to the end across routes', async ({ page }) => {
     await startDemo(page, 'helper')
 
-    const routes = await walk(page, 15)
+    const routes = await walk(page, 25)
 
     // It got somewhere, and it crossed route boundaries to do it.
     expect(routes.length).toBeGreaterThanOrEqual(5)
@@ -219,7 +219,7 @@ test.describe('guided tour', () => {
   test('the organiser track covers the management screens', async ({ page }) => {
     await startDemo(page, 'manager')
 
-    const routes = await walk(page, 20)
+    const routes = await walk(page, 30)
 
     expect(routes.length).toBeGreaterThanOrEqual(8)
     expect(routes.some((r) => r.includes('/app/tasks'))).toBe(true)
@@ -280,7 +280,7 @@ test.describe('guided tour', () => {
     // `data-tour-bookable` on the chip and a seeder that holds one upcoming
     // shift open, and neither is worth anything without the other, so the
     // assertion has to be made from out here where both are in play.
-    expect(await walkTo(page, 'bookIt', 15)).toBe(true)
+    expect(await walkTo(page, 'bookIt', 25)).toBe(true)
 
     const footer = page.getByTestId('shift-detail-footer')
     await expect(footer).toHaveClass(ANCHOR_CLASS)
@@ -311,13 +311,13 @@ test.describe('guided tour', () => {
     await startDemo(page, 'helper')
     await expect(page.locator('.driver-popover-title')).toBeVisible({ timeout: 20_000 })
 
-    // Five presses reach `shiftRoster`, whose `before()` hook has to click a
+    // Eight presses reach `shiftHeader`, whose `before()` hook has to click a
     // shift chip and wait for the dialog's footer — comfortably the slowest
     // transition in the track, and the one this is really about. The others are
     // here because a route push, and the scroll settle every step now waits on
     // before it highlights anything, are slow enough to click through as well.
     const busy: boolean[] = []
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
       const before = await stepNumber(page)
 
       busy.push(await pressNextImpatiently(page))
@@ -330,7 +330,7 @@ test.describe('guided tour', () => {
     // task as the click, so a transition that did not mark itself busy is a
     // transition in which a second press would have walked the store forward
     // unseen — which is the bug, whether or not the counter happened to recover.
-    expect(busy).toEqual([true, true, true, true, true])
+    expect(busy).toEqual(Array.from({ length: 8 }, () => true))
 
     await exitDemo(page)
   })

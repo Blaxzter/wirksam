@@ -7,14 +7,25 @@
  *
  *   `whereThingsStand` — what is asking for you this week
  *                        (`home`)
- *   `theJobs`          — what a job is, and how staffing reads at a glance
+ *   `theJobs`          — what a job is, how staffing reads at a glance, and
+ *                        where a new one starts
  *                        (`tasks`)
- *   `buildingAJob`     — the form the whole board came out of
+ *   `buildingAJob`     — the form the whole board came out of, one control at
+ *                        a time
  *                        (`task-create`, prefilled)
  *   `peopleAndNumbers` — who is in it, how it went, back to the start
  *                        (`event-settings`, `reporting`, `home`)
  *
- * Ten steps across five routes.
+ * Twenty-two steps across five routes.
+ *
+ * ── One element per step ─────────────────────────────────────────────────────
+ * The track used to explain a screen from one highlight: a single step named
+ * the daily window, the shift length and the head count while pointing at the
+ * length alone, and another described the join request, the member list and
+ * the invitation card from one member row. Each of those is its own step now,
+ * anchored on the control the words are about. Consecutive steps on one route
+ * cost no navigation — the engine only moves the highlight — so the extra
+ * steps are cheap to walk through.
  *
  * ── Where the welcome went ───────────────────────────────────────────────────
  * The greeting is `SandboxWelcomeDialog.vue` now, shown before this track
@@ -25,18 +36,23 @@
  *
  * ── The create form, opened one section at a time ────────────────────────────
  * `TaskCreateView` is a five-section accordion, `type="single" collapsible`, and
- * the copy used to name fields that were folded away. Each of the three form
- * steps now opens its own section through `openSection()` before the anchor is
- * resolved, and opening one closes the last, which is the right motion walking
- * down a form and means no step has to close anything. The hook is
- * `data-state`-guarded, which matters more than it looks: `activeSection` starts
- * on `'details'`, so an unguarded click on an already-open section *collapses*
- * it.
+ * the copy used to name fields that were folded away. Each form step opens its
+ * own section through `openSection()` before the anchor is resolved, and
+ * opening one closes the last, which is the right motion walking down a form
+ * and means no step has to close anything. The hook is `data-state`-guarded,
+ * which matters more than it looks: `activeSection` starts on `'details'`, so
+ * an unguarded click on an already-open section *collapses* it — and several
+ * steps in a row now share a section.
  *
  * The anchors inside the form are the controls the copy is actually about —
  * `input-task-date-mode`, `input-shift-duration`, `preview-summary` — rather
  * than the section wrappers, which are taller than the viewport once open and
- * would send driver.js into pinning the card over its own stage.
+ * would send driver.js into pinning the card over its own stage. The same goes
+ * for the preview list: `preview-day` is the first day of it, not all of them.
+ *
+ * The event section is the one the tour walks past. The prefill has already
+ * chosen the demo's event, `formIntro` says so, and a step pointing at a
+ * settled radio button would ask the visitor to read a choice nobody is making.
  *
  * ── This track's one prose-only step ─────────────────────────────────────────
  * Each track gets exactly one breath, placed where it buys the most. The
@@ -47,7 +63,7 @@
  * anchor — the folding is explained before anything starts rearranging.
  */
 import { resetTaskBoard } from '@/tour/preconditions'
-import { defineTrack } from '@/tour/types'
+import { type TourStepContext, defineTrack } from '@/tour/types'
 
 const TASK_LIST = '[data-testid="task-list"]'
 const PAGE_HEADING = '[data-testid="main-content"] [data-testid="page-heading"]'
@@ -78,9 +94,22 @@ const PEOPLE_TAB = { tab: 'people' }
  * The preview section is the climax of this chapter, and an empty form produces
  * `totalShifts === 0` and a "no shifts yet" placeholder where the count should
  * be. The view fills itself in from this flag — gated on the account being a
- * sandbox one — so the three form steps describe a form that has an answer.
+ * sandbox one — so the form steps describe a form that has an answer.
  */
 const PREFILL = { tour: 'prefill' }
+
+/**
+ * A `before()` hook that opens one form section.
+ *
+ * Awaited in a block body rather than returned: the engine needs the promise
+ * this hook itself returns, and `openSection` resolves with the section element
+ * instead.
+ */
+function inSection(testId: string) {
+  return async ({ openSection }: TourStepContext): Promise<void> => {
+    await openSection(testId)
+  }
+}
 
 export const managerTrack = defineTrack('manager', [
   {
@@ -98,10 +127,12 @@ export const managerTrack = defineTrack('manager', [
     side: 'bottom',
   },
   {
-    id: 'jobRow',
+    id: 'jobInfo',
     chapter: 'theJobs',
     route: 'tasks',
-    element: '[data-testid="task-row"]',
+    // The job half of the first row: the copy is about what an organiser
+    // describes once, and the day columns beside it are what wirksam made of it.
+    element: '[data-testid="task-row-info"]',
     waitFor: TASK_LIST,
     side: 'bottom',
     // The organiser's board is at the mercy of the same persisted filters as
@@ -121,6 +152,20 @@ export const managerTrack = defineTrack('manager', [
     before: () => resetTaskBoard(),
   },
   {
+    id: 'newJob',
+    chapter: 'theJobs',
+    route: 'tasks',
+    // The header button exists from `xl` up and the floating one below it,
+    // which is not the engine's `md` split — so this is a preference, and the
+    // engine falls back to whichever of the two actually has a box.
+    element: '[data-testid="btn-create-task"]',
+    mobileElement: '[data-testid="fab-create-task"]',
+    waitFor: TASK_LIST,
+    side: 'bottom',
+    align: 'end',
+    before: () => resetTaskBoard(),
+  },
+  {
     id: 'formIntro',
     chapter: 'buildingAJob',
     route: 'task-create',
@@ -131,29 +176,51 @@ export const managerTrack = defineTrack('manager', [
     waitFor: '[data-testid="section-task-details"]',
   },
   {
+    id: 'taskDetails',
+    chapter: 'buildingAJob',
+    route: 'task-create',
+    query: PREFILL,
+    // The name field, the first of the four the section holds: a short anchor
+    // at the top of it, so the card can sit below and the rest stays readable.
+    element: '[data-testid="input-task-name"]',
+    side: 'bottom',
+    before: inSection('section-task-details'),
+  },
+  {
     id: 'taskDates',
     chapter: 'buildingAJob',
     route: 'task-create',
     query: PREFILL,
     element: '[data-testid="input-task-date-mode"]',
     side: 'bottom',
-    // Awaited in a block body rather than returned: the engine needs the
-    // promise this hook itself returns, and `openSection` resolves with the
-    // section element instead. Same shape in the two steps below.
-    before: async ({ openSection }) => {
-      await openSection('section-task-dates')
-    },
+    before: inSection('section-task-dates'),
   },
   {
-    id: 'generateShifts',
+    id: 'dailyWindow',
+    chapter: 'buildingAJob',
+    route: 'task-create',
+    query: PREFILL,
+    element: '[data-testid="input-daily-window"]',
+    side: 'bottom',
+    before: inSection('section-schedule'),
+  },
+  {
+    id: 'shiftLength',
     chapter: 'buildingAJob',
     route: 'task-create',
     query: PREFILL,
     element: '[data-testid="input-shift-duration"]',
     side: 'bottom',
-    before: async ({ openSection }) => {
-      await openSection('section-schedule')
-    },
+    before: inSection('section-schedule'),
+  },
+  {
+    id: 'peoplePerShift',
+    chapter: 'buildingAJob',
+    route: 'task-create',
+    query: PREFILL,
+    element: '[data-testid="input-people-per-shift"]',
+    side: 'bottom',
+    before: inSection('section-schedule'),
   },
   {
     id: 'shiftPreview',
@@ -165,9 +232,40 @@ export const managerTrack = defineTrack('manager', [
     // to be taller than the viewport on any event worth previewing.
     element: '[data-testid="preview-summary"]',
     side: 'bottom',
-    before: async ({ openSection }) => {
-      await openSection('section-preview')
-    },
+    before: inSection('section-preview'),
+  },
+  {
+    id: 'excludeShift',
+    chapter: 'buildingAJob',
+    route: 'task-create',
+    query: PREFILL,
+    // One day of the list — the first match — for the reason above.
+    element: '[data-testid="preview-day"]',
+    side: 'top',
+    before: inSection('section-preview'),
+  },
+  {
+    id: 'saveJob',
+    chapter: 'buildingAJob',
+    route: 'task-create',
+    query: PREFILL,
+    element: '[data-testid="btn-submit"]',
+    side: 'top',
+    align: 'end',
+    before: inSection('section-preview'),
+  },
+  {
+    id: 'joinRequest',
+    chapter: 'peopleAndNumbers',
+    route: 'event-settings',
+    query: PEOPLE_TAB,
+    // The seeder leaves one pending request for the manager variant. A visitor
+    // who answered it from the dashboard has none left, and the step then
+    // degrades to a centred card whose copy still reads.
+    element: '[data-testid="join-request-row"]',
+    waitFor: PAGE_HEADING,
+    anchorTimeout: 3000,
+    side: 'bottom',
   },
   {
     id: 'people',
@@ -175,11 +273,28 @@ export const managerTrack = defineTrack('manager', [
     route: 'event-settings',
     query: PEOPLE_TAB,
     // One row rather than the members card: the copy is about what a row says
-    // about a person, and it can point at the join request above and the
-    // invitation card below without having to anchor on either.
+    // about a person.
     element: '[data-testid="event-member-row"]',
     waitFor: PAGE_HEADING,
     side: 'bottom',
+  },
+  {
+    id: 'memberHours',
+    chapter: 'peopleAndNumbers',
+    route: 'event-settings',
+    query: PEOPLE_TAB,
+    element: '[data-testid="section-event-hours"]',
+    waitFor: PAGE_HEADING,
+    side: 'top',
+  },
+  {
+    id: 'invitations',
+    chapter: 'peopleAndNumbers',
+    route: 'event-settings',
+    query: PEOPLE_TAB,
+    element: '[data-testid="section-event-invitations"]',
+    waitFor: PAGE_HEADING,
+    side: 'top',
   },
   {
     id: 'reporting',
@@ -190,6 +305,38 @@ export const managerTrack = defineTrack('manager', [
     element: '[data-testid="stat-fill-rate"]',
     waitFor: '[data-testid="section-overview"]',
     side: 'bottom',
+  },
+  {
+    id: 'topVolunteers',
+    chapter: 'peopleAndNumbers',
+    route: 'reporting',
+    // Both charts are `v-if` on having data. The seeded history always gives
+    // them some, so the short wait is for a real event that has none yet.
+    element: '[data-testid="chart-top-volunteers"]',
+    waitFor: '[data-testid="section-overview"]',
+    anchorTimeout: 1500,
+    side: 'top',
+  },
+  {
+    id: 'busiestTimes',
+    chapter: 'peopleAndNumbers',
+    route: 'reporting',
+    element: '[data-testid="chart-busiest-times"]',
+    waitFor: '[data-testid="section-overview"]',
+    anchorTimeout: 1500,
+    side: 'top',
+  },
+  {
+    id: 'export',
+    chapter: 'peopleAndNumbers',
+    route: 'reporting',
+    // Below `sm` the export sits in an overflow menu; its trigger is the
+    // closest thing on screen to the button the copy names.
+    element: '[data-testid="btn-export"]',
+    mobileElement: '[data-testid="btn-export-menu"]',
+    waitFor: '[data-testid="section-overview"]',
+    side: 'bottom',
+    align: 'end',
   },
   {
     id: 'finish',

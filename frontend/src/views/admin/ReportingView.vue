@@ -189,6 +189,7 @@ onMounted(() => {
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button
+              data-testid="btn-export-menu"
               variant="outline"
               size="sm"
               class="sm:hidden"
@@ -226,10 +227,12 @@ onMounted(() => {
         <div class="grid gap-4 lg:grid-cols-2">
           <ReportingTopVolunteers
             v-if="data.top_volunteers.length > 0"
+            data-testid="chart-top-volunteers"
             :volunteers="data.top_volunteers"
           />
           <ReportingBusiestTimes
             v-if="data.bookings_by_hour?.length > 0"
+            data-testid="chart-busiest-times"
             :hours="data.bookings_by_hour"
           />
         </div>

@@ -75,7 +75,9 @@ const FALLBACK_STEP = TOUR_TRACKS.helper.steps[LABELLED_INDEX + 1]
  */
 const DASHBOARD_DOM = `
   <div data-testid="main-content"><h1 data-testid="page-heading">Dashboard</h1></div>
-  <div data-testid="dashboard-next-shift">Saturday, 09:00</div>`
+  <div data-testid="dashboard-next-shift">Saturday, 09:00</div>
+  <div data-testid="dashboard-my-shifts">Sunday, 14:00</div>
+  <div data-testid="dashboard-open-shifts">Café counter, 2 places left</div>`
 
 function makeRouter() {
   return createRouter({

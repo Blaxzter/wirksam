@@ -170,6 +170,7 @@ watch(
     <div class="flex flex-col md:flex-row md:min-h-[260px]">
       <!-- Top/Left: Task Info -->
       <div
+        data-testid="task-row-info"
         class="flex cursor-pointer flex-col justify-between border-b p-4 md:w-56 md:shrink-0 md:border-b-0 md:border-r"
         @click="emit('navigate', task)"
       >
@@ -230,7 +231,7 @@ watch(
       </div>
 
       <!-- Right: Week Day Columns -->
-      <div class="flex min-h-0 flex-1 flex-col p-2">
+      <div data-testid="task-row-days" class="flex min-h-0 flex-1 flex-col p-2">
         <WeekDayColumns
           ref="weekColumns"
           :days="days"
