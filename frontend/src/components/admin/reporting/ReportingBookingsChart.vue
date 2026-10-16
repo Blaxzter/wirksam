@@ -88,12 +88,12 @@ const tickFormat = (i: number) => data.value[i]?.label ?? ''
 <template>
   <Card>
     <CardHeader>
-      <div class="flex items-start justify-between gap-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <CardTitle>{{ t('admin.reporting.bookingsByMonth.title') }}</CardTitle>
           <CardDescription>{{ t('admin.reporting.bookingsByMonth.description') }}</CardDescription>
         </div>
-        <div class="flex rounded-md border overflow-hidden shrink-0">
+        <div class="flex self-start rounded-md border overflow-hidden shrink-0">
           <Button
             variant="ghost"
             size="sm"

@@ -58,7 +58,7 @@ function barSize(count: number): string {
 <template>
   <Card class="flex flex-col">
     <CardHeader>
-      <div class="flex items-start justify-between gap-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <CardTitle>{{ t('admin.reporting.busiestTimes.title') }}</CardTitle>
           <CardDescription>{{ t('admin.reporting.busiestTimes.description') }}</CardDescription>

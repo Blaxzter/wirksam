@@ -20,8 +20,8 @@ import {
 import ReportingBookingsChart from '@/components/admin/reporting/ReportingBookingsChart.vue'
 import ReportingBusiestTimes from '@/components/admin/reporting/ReportingBusiestTimes.vue'
 import ReportingCategoryBreakdown from '@/components/admin/reporting/ReportingCategoryBreakdown.vue'
-import ReportingTaskFillRates from '@/components/admin/reporting/ReportingTaskFillRates.vue'
 import ReportingOverviewCards from '@/components/admin/reporting/ReportingOverviewCards.vue'
+import ReportingTaskFillRates from '@/components/admin/reporting/ReportingTaskFillRates.vue'
 import ReportingTopVolunteers from '@/components/admin/reporting/ReportingTopVolunteers.vue'
 
 import type { ReportingResponse } from '@/client/types.gen'
@@ -218,7 +218,7 @@ onMounted(() => {
     <template v-else-if="data">
       <ReportingOverviewCards data-testid="section-overview" :overview="data.overview" />
 
-      <div data-testid="section-charts">
+      <div data-testid="section-charts" class="space-y-6">
         <ReportingBookingsChart
           v-if="data.bookings_trend?.length > 0"
           :trend="data.bookings_trend"
