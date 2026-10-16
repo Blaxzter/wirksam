@@ -5,7 +5,6 @@ import { Sparkles } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import {
   type RouteLocationNormalizedLoadedGeneric,
-  RouterLink,
   RouterView,
   useRoute,
   useRouter,
@@ -92,24 +91,6 @@ function goToChangelog() {
           <RouterView :key="routeViewKey(route)" />
         </ErrorBoundary>
       </div>
-
-      <footer
-        data-testid="layout-footer"
-        class="flex items-center justify-center gap-3 px-4 py-1.5 text-xs text-muted-foreground"
-      >
-        <RouterLink :to="{ name: 'privacy' }" class="hover:text-muted-foreground transition-colors">
-          {{ $t('preauth.layout.footer.privacy') }}
-        </RouterLink>
-        <RouterLink :to="{ name: 'terms' }" class="hover:text-muted-foreground transition-colors">
-          {{ $t('preauth.layout.footer.terms') }}
-        </RouterLink>
-        <RouterLink
-          :to="{ name: 'impressum' }"
-          class="hover:text-muted-foreground transition-colors"
-        >
-          {{ $t('preauth.layout.footer.impressum') }}
-        </RouterLink>
-      </footer>
     </SidebarInset>
 
     <MobileBottomNav />

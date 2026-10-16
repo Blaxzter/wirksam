@@ -19,6 +19,7 @@ import { useAvatarUrl } from '@/composables/useAvatarUrl'
 import { useAuthStore } from '@/stores/auth'
 
 import InstallAppMenuItem from '@/components/navigation/InstallAppMenuItem.vue'
+import LegalMenuLinks from '@/components/navigation/LegalMenuLinks.vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -150,6 +151,8 @@ const initials = computed(() => {
         <LogOut />
         {{ $t('navigation.user.actions.logout') }}
       </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <LegalMenuLinks />
     </DropdownMenuContent>
   </DropdownMenu>
 </template>

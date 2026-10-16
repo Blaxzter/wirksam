@@ -538,6 +538,24 @@ onBeforeUnmount(refreshEditedEvent)
 const searchQuery = ref('')
 const searchFocused = ref(false)
 const activeResult = ref(0)
+/** Small screens: the search hides behind an icon and takes the whole row while open. */
+const searchOpen = ref(false)
+
+async function openSearch() {
+  searchOpen.value = true
+  await nextTick()
+  document.querySelector<HTMLInputElement>('[data-testid="map-search"]')?.focus()
+}
+
+function closeSearch() {
+  searchQuery.value = ''
+  searchOpen.value = false
+}
+
+function onSearchBlur() {
+  searchFocused.value = false
+  if (!searchQuery.value.trim()) searchOpen.value = false
+}
 
 const planNames = computed(() => new Map(plans.value.map((p) => [p.id, p.name])))
 
@@ -583,6 +601,7 @@ watch(searchQuery, () => (activeResult.value = 0))
 function pickResult(result: SearchResult) {
   searchQuery.value = ''
   searchFocused.value = false
+  searchOpen.value = false
   ;(document.activeElement as HTMLElement | null)?.blur()
   if (result.marker) void showMarker(result.marker)
   else if (result.location) openLocation(result.location)
@@ -600,7 +619,8 @@ function onSearchKey(event: KeyboardEvent) {
     event.preventDefault()
     pickResult(searchResults.value[activeResult.value])
   } else if (event.key === 'Escape') {
-    searchQuery.value = ''
+    if (searchQuery.value) searchQuery.value = ''
+    else closeSearch()
   }
 }
 
@@ -660,7 +680,25 @@ watch(eventId, () => void init(), { immediate: true })
         </div>
         <div v-else class="hidden flex-1 lg:block" />
 
-        <div v-if="plans.length > 0" class="relative min-w-0 flex-1 lg:w-56 lg:flex-none">
+        <!-- Small screens: an icon until tapped; the field would be too narrow to read. -->
+        <Button
+          v-if="plans.length > 0 && !searchOpen"
+          variant="outline"
+          size="icon"
+          class="size-9 shrink-0 lg:hidden"
+          :aria-label="t('venueMap.view.search')"
+          data-testid="map-search-open"
+          @click="openSearch"
+        >
+          <Search class="size-4" />
+        </Button>
+        <div v-if="!searchOpen" class="flex-1 lg:hidden" />
+
+        <div
+          v-if="plans.length > 0"
+          class="relative min-w-0 flex-1 lg:block lg:w-56 lg:flex-none"
+          :class="searchOpen ? 'block' : 'hidden'"
+        >
           <Search
             class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
           />
@@ -679,7 +717,7 @@ watch(eventId, () => void init(), { immediate: true })
             "
             data-testid="map-search"
             @focus="searchFocused = true"
-            @blur="searchFocused = false"
+            @blur="onSearchBlur"
             @keydown="onSearchKey"
           />
           <ul
@@ -722,6 +760,18 @@ watch(eventId, () => void init(), { immediate: true })
             </li>
           </ul>
         </div>
+        <Button
+          v-if="searchOpen"
+          variant="ghost"
+          size="icon"
+          class="size-9 shrink-0 lg:hidden"
+          :aria-label="t('venueMap.view.closeSearch')"
+          data-testid="map-search-close"
+          @mousedown.prevent
+          @click="closeSearch"
+        >
+          <X class="size-4" />
+        </Button>
 
         <Toggle
           v-if="plans.length > 0"
@@ -737,7 +787,7 @@ watch(eventId, () => void init(), { immediate: true })
 
         <div
           class="flex shrink-0 items-center"
-          :class="plans.length === 0 ? 'ml-auto' : ''"
+          :class="[plans.length === 0 ? 'ml-auto' : '', searchOpen ? 'max-lg:hidden' : '']"
           role="group"
           :aria-label="t('venueMap.view.day.label')"
         >
@@ -784,6 +834,7 @@ watch(eventId, () => void init(), { immediate: true })
           variant="outline"
           size="sm"
           class="h-9 shrink-0 max-lg:w-9 max-lg:px-0"
+          :class="searchOpen ? 'max-lg:hidden' : ''"
           :title="t('venueMap.view.edit')"
           data-testid="map-edit"
           @click="startEditing"
@@ -799,6 +850,7 @@ watch(eventId, () => void init(), { immediate: true })
               variant="outline"
               size="icon"
               class="size-9 shrink-0 lg:hidden"
+              :class="searchOpen ? 'hidden' : ''"
               :aria-label="t('venueMap.view.more')"
               data-testid="map-more"
             >

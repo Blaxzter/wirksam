@@ -102,6 +102,7 @@
     "title": "Map",
     "view": {
         "close": "Close",
+        "closeSearch": "Close search",
         "day": {
             "label": "Day shown",
             "next": "Next day",

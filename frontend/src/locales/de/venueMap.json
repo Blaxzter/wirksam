@@ -102,6 +102,7 @@
     "title": "Lageplan",
     "view": {
         "close": "Schließen",
+        "closeSearch": "Suche schließen",
         "day": {
             "label": "Angezeigter Tag",
             "next": "Nächster Tag",
