@@ -228,6 +228,17 @@
             },
             "title": "Alles, was ein Dienstplan braucht"
         },
+        "feedback": {
+            "accountHint": "Beide öffnen ein kurzes Formular auf GitHub, dafür brauchst du ein kostenloses GitHub-Konto. Kein Konto?",
+            "bugButton": "Fehler melden",
+            "emailLink": "Schreib uns einfach eine E-Mail.",
+            "emailSubject": "Feedback zu WirkSam",
+            "eyebrow": "Feedback",
+            "featureButton": "Funktion vorschlagen",
+            "githubButton": "Auf GitHub ansehen",
+            "lede": "WirkSam wächst mit den Teams, die es nutzen. Erzähl uns, was eure Veranstaltung braucht oder was dich gestört hat.",
+            "title": "Fehlt dir etwas?"
+        },
         "finalCta": {
             "button": "Veranstaltung starten",
             "demoButton": "Demo-Veranstaltung ansehen",
@@ -335,6 +346,7 @@
         "appName": "WirkSam",
         "footer": {
             "copyright": "© 2026 WirkSam. Gemeinsam Wirken.",
+            "github": "Quellcode auf GitHub",
             "impressum": "Impressum",
             "privacy": "Datenschutz",
             "terms": "Nutzungsbedingungen",

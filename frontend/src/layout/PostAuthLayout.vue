@@ -77,7 +77,7 @@ function goToChangelog() {
   >
     <AppSidebar :open="open" />
     <SidebarInset
-      class="flex flex-col pb-16 md:pb-0"
+      class="flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0"
       :class="fullHeight ? 'min-h-0 overflow-hidden' : undefined"
     >
       <PostAuthHeader />

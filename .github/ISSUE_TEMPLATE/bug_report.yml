@@ -1,0 +1,41 @@
+name: Bug report
+description: Something in WirkSam doesn't work as it should.
+labels: ["bug"]
+body:
+    - type: textarea
+      id: what
+      attributes:
+          label: What happened?
+          description: And what you expected to happen instead.
+      validations:
+          required: true
+    - type: textarea
+      id: steps
+      attributes:
+          label: Steps to reproduce
+          placeholder: |
+              1. Open an event
+              2. Click on ...
+              3. See ...
+    - type: input
+      id: version
+      attributes:
+          label: Version
+          description: Shown in the footer of the start page, e.g. "Version 0.21.0".
+    - type: input
+      id: environment
+      attributes:
+          label: Browser and device
+          placeholder: Firefox 131 on Windows, Safari on iPhone, ...
+    - type: dropdown
+      id: deployment
+      attributes:
+          label: Where are you using WirkSam?
+          options:
+              - The hosted version
+              - A self-hosted deployment
+    - type: textarea
+      id: context
+      attributes:
+          label: Screenshots or anything else
+          description: Please don't include other people's personal data.

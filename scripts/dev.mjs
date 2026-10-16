@@ -5,7 +5,8 @@
  *
  *   1. Postgres + Adminer in Docker (waits until the DB is healthy)
  *   2. Alembic migrations
- *   3. Backend (uvicorn --reload) and frontend (vite) side by side, with
+ *   3. Dev login + demo data (`just seed`, a no-op once they exist)
+ *   4. Backend (uvicorn --reload) and frontend (vite) side by side, with
  *      their output interleaved and prefixed
  *
  * Ctrl+C stops backend and frontend; the DB container keeps running so the
@@ -13,6 +14,7 @@
  *
  * Flags:
  *   --no-migrate   skip `alembic upgrade head`
+ *   --no-seed      skip the demo seed
  *
  * Everything is served on http://wirksam.localhost (browsers resolve any
  * *.localhost name to loopback, no hosts-file entry needed) on two fixed,
@@ -38,6 +40,7 @@ const IS_WINDOWS = process.platform === 'win32';
 
 const args = new Set(process.argv.slice(2));
 const migrate = !args.has('--no-migrate');
+const seed = !args.has('--no-seed');
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -129,6 +132,11 @@ run('docker compose up db adminer -d --wait');
 if (migrate) {
     console.log('\n▶ Running migrations...');
     run('uv run --directory backend alembic upgrade head');
+}
+
+if (seed) {
+    console.log('\n▶ Seeding dev login + demo data...');
+    run('uv run --directory backend python -m app.scripts.seed_demo');
 }
 
 console.log(`\n▶ Frontend ${FRONTEND_URL}`);

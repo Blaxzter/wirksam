@@ -13,6 +13,7 @@ import LandingAudience from '@/components/landing/LandingAudience.vue'
 import LandingCta from '@/components/landing/LandingCta.vue'
 import LandingFaq from '@/components/landing/LandingFaq.vue'
 import LandingFeatures from '@/components/landing/LandingFeatures.vue'
+import LandingFeedback from '@/components/landing/LandingFeedback.vue'
 import LandingHero from '@/components/landing/LandingHero.vue'
 import LandingJourney from '@/components/landing/LandingJourney.vue'
 import LandingSectionNav from '@/components/landing/LandingSectionNav.vue'
@@ -71,6 +72,7 @@ function openDemo() {
     <LandingFeatures />
     <LandingAbout />
     <LandingFaq :demo-enabled="sandboxStore.enabled" />
+    <LandingFeedback />
 
     <LandingCta
       :is-authenticated="authStore.isAuthenticated"

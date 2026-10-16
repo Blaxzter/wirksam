@@ -12,7 +12,7 @@ default:
 # ── Development ───────────────────────────────────────────────
 
 # Start the whole dev environment in one terminal (mode defaults to dev_mode).
-# local: DB + Adminer in Docker, migrations, then backend and frontend side by side.
+# local: DB + Adminer in Docker, migrations, demo seed, then backend and frontend side by side.
 dev mode=dev_mode:
     if [ "{{mode}}" = "docker" ]; then docker compose watch; elif [ "{{mode}}" = "local" ]; then node scripts/dev.mjs; else echo "Unknown mode '{{mode}}'. Use 'docker' or 'local'." && exit 1; fi
 
@@ -124,9 +124,10 @@ migration message:
 check-migrations:
     cd backend && uv run alembic upgrade head && uv run alembic check
 
-# Seed the database with demo data
-seed:
-    cd backend && uv run python -m app.scripts.initial_data
+# Seed a dev admin login (dev@example.com / devpassword) and demo data.
+# Idempotent — skips what already exists; `just seed --force` adds another batch.
+seed *args:
+    uv run --directory backend python -m app.scripts.seed_demo {{args}}
 
 # ── Code Generation ──────────────────────────────────────────
 

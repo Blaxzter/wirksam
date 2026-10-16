@@ -1,10 +1,5 @@
 blank_issues_enabled: true
 contact_links:
     - name: Security Contact
-      about: Please report security vulnerabilities to mail@fabraham.dev
-    - name: Question or Problem
-      about: Ask a question or ask about a problem in GitHub Discussions.
-      url: https://github.com/Blaxzter/fastapi-vue-fullstack-template/discussions/categories/q-a
-    - name: Feature Request
-      about: To suggest an idea or ask about a feature, please start with a question saying what you would like to achieve. There might be a way to do it already.
-      url: https://github.com/Blaxzter/fastapi-vue-fullstack-template/discussions/categories/q-a
+      about: Please report security vulnerabilities privately to mail@fabraham.dev, not as a public issue.
+      url: mailto:mail@fabraham.dev

@@ -51,14 +51,15 @@ const mobileParent = computed(() => {
     class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear event-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
   >
     <div class="flex flex-1 items-center gap-2 px-4">
+      <!-- Phones reach the rest of the app through the bottom nav's "More" tab. -->
       <HintTooltip :label="t('navigation.sidebar.toggle')" side="bottom">
         <SidebarTrigger
           data-testid="btn-sidebar-toggle"
-          class="-ml-1"
+          class="-ml-1 hidden md:inline-flex"
           :aria-label="t('navigation.sidebar.toggle')"
         />
       </HintTooltip>
-      <Separator orientation="vertical" class="mr-2 h-4" />
+      <Separator orientation="vertical" class="mr-2 hidden h-4 md:block" />
 
       <!-- Mobile: show parent crumb as back link -->
       <Button

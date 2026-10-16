@@ -25,9 +25,9 @@
     "event": {
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
         "forbidden": "Dafür hast du in dieser Veranstaltung keine Berechtigung.",
+        "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
-        "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden.",
-        "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung."
+        "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
     "location": {
         "name_taken": "In dieser Veranstaltung gibt es schon einen Ort mit diesem Namen.",

@@ -25,9 +25,9 @@
     "event": {
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
         "forbidden": "You do not have permission to do this in this event.",
+        "member_not_found": "That person is not a member of this event.",
         "not_found": "That event could not be found.",
-        "sandbox_not_featurable": "A demo event cannot be featured on the home screen.",
-        "member_not_found": "That person is not a member of this event."
+        "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
     "location": {
         "name_taken": "There is already a location with this name in this event.",

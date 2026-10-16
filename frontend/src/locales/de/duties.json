@@ -448,6 +448,68 @@
             }
         }
     },
+    "hours": {
+        "detail": {
+            "addedBy": "eingetragen von {name}",
+            "delete": "Eintrag löschen",
+            "deleteConfirm": "Diesen Eintrag löschen? Die Stunden werden von der Summe abgezogen.",
+            "deleted": "Eintrag gelöscht",
+            "description": "Insgesamt {total} — {shifts} aus Schichten, {manual} von Hand eingetragen.",
+            "edit": "Eintrag bearbeiten",
+            "entriesHeading": "Zusätzliche Stunden",
+            "noEntries": "Keine von Hand eingetragenen Stunden.",
+            "noShifts": "Keine gebuchten Schichten in dieser Veranstaltung.",
+            "noTimes": "ohne Uhrzeit",
+            "shiftsHeading": "Schichten",
+            "title": "Stunden von {name}",
+            "upcoming": "Geplant"
+        },
+        "event": {
+            "add": "Stunden eintragen",
+            "empty": "In dieser Veranstaltung hat noch niemand eine Schicht geleistet.",
+            "export": "CSV exportieren",
+            "formerMember": "nicht mehr in der Veranstaltung",
+            "manual": "Zusätzlich",
+            "openDetails": "Stunden von {name} anzeigen",
+            "shiftHours": "Schichtstunden",
+            "shifts": "Schichten",
+            "subtitle": "Abgeschlossene Schichten plus von Hand eingetragene Stunden. Schichten, die noch nicht vorbei sind, zählen noch nicht.",
+            "title": "Geleistete Stunden",
+            "total": "Gesamt",
+            "untimed": "{count} Schicht ohne Start- oder Endzeit zählt als 0 Std. | {count} Schichten ohne Start- oder Endzeit zählen als 0 Std.",
+            "volunteer": "Helfer:in"
+        },
+        "form": {
+            "createTitle": "Stunden eintragen",
+            "created": "Stunden eingetragen",
+            "date": "Datum",
+            "description": "Für Arbeit, die keine Schicht abdeckt — Aufbau am Vortag, eine Besorgung, eine Schicht, die jemand ohne Buchung übernommen hat.",
+            "editTitle": "Eintrag bearbeiten",
+            "hours": "Stunden",
+            "hoursHint": "Dezimalstunden, z. B. 1,5 für anderthalb Stunden. Höchstens 24.",
+            "invalid": "Bitte Helfer:in, Datum, zwischen 0 und 24 Stunden und eine kurze Beschreibung angeben.",
+            "member": "Helfer:in",
+            "memberPlaceholder": "Helfer:in auswählen",
+            "note": "Was wurde gemacht",
+            "notePlaceholder": "z. B. Stühle am Vortag aufgebaut",
+            "save": "Speichern",
+            "updated": "Eintrag aktualisiert"
+        },
+        "memberBadge": "Geleistete Stunden",
+        "my": {
+            "empty": "Noch keine Stunden. Sie erscheinen hier, sobald deine erste Schicht vorbei ist.",
+            "fromShifts": "Aus Schichten",
+            "hideDetails": "Aufschlüsselung ausblenden",
+            "manual": "Zusätzlich",
+            "shiftCount": "{count} Schicht | {count} Schichten",
+            "showDetails": "Aufschlüsselung anzeigen",
+            "subtitle": "Deine geleistete Zeit in dieser Veranstaltung",
+            "title": "Meine Stunden",
+            "total": "Gesamt",
+            "upcoming": "Noch geplant"
+        },
+        "unit": "{value} Std."
+    },
     "selectEvent": {
         "changeEvent": "Veranstaltung wechseln",
         "discover": {
@@ -752,67 +814,5 @@
             "calendar": "Kalender",
             "list": "Liste"
         }
-    },
-    "hours": {
-        "unit": "{value} Std.",
-        "my": {
-            "title": "Meine Stunden",
-            "subtitle": "Deine geleistete Zeit in dieser Veranstaltung",
-            "total": "Gesamt",
-            "fromShifts": "Aus Schichten",
-            "manual": "Zusätzlich",
-            "upcoming": "Noch geplant",
-            "shiftCount": "{count} Schicht | {count} Schichten",
-            "empty": "Noch keine Stunden. Sie erscheinen hier, sobald deine erste Schicht vorbei ist.",
-            "showDetails": "Aufschlüsselung anzeigen",
-            "hideDetails": "Aufschlüsselung ausblenden"
-        },
-        "event": {
-            "title": "Geleistete Stunden",
-            "subtitle": "Abgeschlossene Schichten plus von Hand eingetragene Stunden. Schichten, die noch nicht vorbei sind, zählen noch nicht.",
-            "export": "CSV exportieren",
-            "add": "Stunden eintragen",
-            "volunteer": "Helfer:in",
-            "shifts": "Schichten",
-            "shiftHours": "Schichtstunden",
-            "manual": "Zusätzlich",
-            "total": "Gesamt",
-            "formerMember": "nicht mehr in der Veranstaltung",
-            "untimed": "{count} Schicht ohne Start- oder Endzeit zählt als 0 Std. | {count} Schichten ohne Start- oder Endzeit zählen als 0 Std.",
-            "empty": "In dieser Veranstaltung hat noch niemand eine Schicht geleistet.",
-            "openDetails": "Stunden von {name} anzeigen"
-        },
-        "detail": {
-            "title": "Stunden von {name}",
-            "description": "Insgesamt {total} — {shifts} aus Schichten, {manual} von Hand eingetragen.",
-            "shiftsHeading": "Schichten",
-            "entriesHeading": "Zusätzliche Stunden",
-            "noShifts": "Keine gebuchten Schichten in dieser Veranstaltung.",
-            "noEntries": "Keine von Hand eingetragenen Stunden.",
-            "upcoming": "Geplant",
-            "noTimes": "ohne Uhrzeit",
-            "addedBy": "eingetragen von {name}",
-            "edit": "Eintrag bearbeiten",
-            "delete": "Eintrag löschen",
-            "deleteConfirm": "Diesen Eintrag löschen? Die Stunden werden von der Summe abgezogen.",
-            "deleted": "Eintrag gelöscht"
-        },
-        "form": {
-            "createTitle": "Stunden eintragen",
-            "editTitle": "Eintrag bearbeiten",
-            "description": "Für Arbeit, die keine Schicht abdeckt — Aufbau am Vortag, eine Besorgung, eine Schicht, die jemand ohne Buchung übernommen hat.",
-            "member": "Helfer:in",
-            "memberPlaceholder": "Helfer:in auswählen",
-            "date": "Datum",
-            "hours": "Stunden",
-            "hoursHint": "Dezimalstunden, z. B. 1,5 für anderthalb Stunden. Höchstens 24.",
-            "note": "Was wurde gemacht",
-            "notePlaceholder": "z. B. Stühle am Vortag aufgebaut",
-            "save": "Speichern",
-            "created": "Stunden eingetragen",
-            "updated": "Eintrag aktualisiert",
-            "invalid": "Bitte Helfer:in, Datum, zwischen 0 und 24 Stunden und eine kurze Beschreibung angeben."
-        },
-        "memberBadge": "Geleistete Stunden"
     }
 }
