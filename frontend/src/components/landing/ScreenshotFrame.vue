@@ -39,7 +39,17 @@ const { src, onError, failed } = useScreenshotSource(() => props.name)
       <span class="size-2.5 rounded-full bg-muted-foreground/25" />
     </span>
 
-    <img :src="src" :alt="alt" loading="lazy" decoding="async" class="w-full" @error="onError" />
+    <!-- Every screenshot is 1440x900; the size reserves the space before it loads. -->
+    <img
+      :src="src"
+      :alt="alt"
+      width="1440"
+      height="900"
+      loading="lazy"
+      decoding="async"
+      class="h-auto w-full"
+      @error="onError"
+    />
 
     <!-- Affordance, revealed on hover and whenever the frame has focus. -->
     <span

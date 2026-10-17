@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { extname, join, posix, resolve } from 'node:path'
 import { URL, fileURLToPath } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import type { Plugin } from 'vite'
 
 function changelogPlugin(): Plugin {
@@ -44,6 +44,29 @@ function prerenderedPreviewPlugin(): Plugin {
   }
 }
 
+/**
+ * `<link rel="preconnect">` to the API when it lives on another origin
+ * (wirksam.app → api.wirksam.app), so the connection is open by the time the
+ * app makes its first request. No `crossorigin`: that first request is the
+ * cookie-carrying refresh, and a credentialed request only reuses a connection
+ * opened without it. A relative `VITE_API_URL` is same-origin and needs none.
+ */
+function apiPreconnectPlugin(apiUrl: string | undefined): Plugin {
+  return {
+    name: 'api-preconnect',
+    transformIndexHtml() {
+      if (!apiUrl || !/^https?:\/\//.test(apiUrl)) return []
+      return [
+        {
+          tag: 'link',
+          attrs: { rel: 'preconnect', href: new URL(apiUrl).origin },
+          injectTo: 'head',
+        },
+      ]
+    },
+  }
+}
+
 function getGitVersion(): { version: string; date: string } {
   // In Docker builds, APP_VERSION is passed as an env var since .git is not available
   if (process.env.APP_VERSION && process.env.APP_VERSION !== 'dev') {
@@ -61,6 +84,7 @@ function getGitVersion(): { version: string; date: string } {
 // https://vite.dev/config/
 export default defineConfig(async ({ mode }) => {
   const gitInfo = getGitVersion()
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
 
   return {
     define: {
@@ -74,6 +98,7 @@ export default defineConfig(async ({ mode }) => {
     plugins: [
       changelogPlugin(),
       prerenderedPreviewPlugin(),
+      apiPreconnectPlugin(process.env.VITE_API_URL ?? env.VITE_API_URL),
       vue(),
       tailwindcss(),
       ...(mode === 'development'
