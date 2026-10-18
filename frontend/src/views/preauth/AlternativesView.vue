@@ -14,7 +14,7 @@ import ScreenshotFrame from '@/components/landing/ScreenshotFrame.vue'
 import ScreenshotLightbox from '@/components/landing/ScreenshotLightbox.vue'
 import SectionHeading from '@/components/landing/SectionHeading.vue'
 
-import { COMPARED_TOOLS, COMPARISON_SCREENSHOTS } from '@/lib/content-pages'
+import { COMPARED_TOOLS, COMPARISON_SCREENSHOTS, type ComparedTool } from '@/lib/content-pages'
 
 /**
  * WirkSam next to the other ways of planning volunteers. The table does not
@@ -29,6 +29,9 @@ const A = 'preauth.alternatives'
 
 /** Shown without the scheme, so a long help-centre URL still wraps sensibly. */
 const linkLabel = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+
+/** The sources below a card, without the homepage the card header already links to. */
+const extraSources = (tool: ComparedTool) => tool.sources.filter((source) => source !== tool.url)
 
 const gallery = computed<ScreenshotItem[]>(() =>
   COMPARISON_SCREENSHOTS.map((shot) => ({
@@ -104,17 +107,17 @@ const zoomed = ref<number | null>(null)
           </p>
 
           <!-- Pushed to the bottom so the cards in a row line their sources up. -->
-          <div class="mt-auto pt-5">
+          <div v-if="extraSources(tool).length" class="mt-auto pt-5">
             <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {{ t(`${A}.fit.sourcesLabel`) }}
             </p>
-            <ul class="mt-1.5 space-y-1 text-xs">
-              <li v-for="source in tool.sources" :key="source" class="break-all">
+            <ul class="mt-1.5 text-xs">
+              <li v-for="source in extraSources(tool)" :key="source" class="break-all">
                 <a
                   :href="source"
                   target="_blank"
                   rel="noopener nofollow"
-                  class="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  class="inline-block py-1 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
                 >
                   {{ linkLabel(source) }}
                 </a>

@@ -72,19 +72,24 @@ function openDemo() {
     <LandingFeatures />
     <LandingAbout />
     <LandingFaq :demo-enabled="sandboxStore.enabled">
-      <p class="mt-8 text-center text-sm text-muted-foreground">
-        {{ t('preauth.landing.faq.more') }}
-        <RouterLink :to="{ name: 'alternatives' }" class="font-medium text-primary hover:underline">
+      <div
+        class="mt-8 flex flex-col items-center gap-2 text-center text-sm text-muted-foreground sm:flex-row sm:justify-center sm:gap-3"
+      >
+        <span>{{ t('preauth.landing.faq.more') }}</span>
+        <RouterLink
+          :to="{ name: 'alternatives' }"
+          class="font-medium text-primary underline underline-offset-2"
+        >
           {{ t('preauth.content.related.pages.alternatives.title') }}
         </RouterLink>
-        ·
+        <span class="hidden sm:inline" aria-hidden="true">·</span>
         <RouterLink
           :to="{ name: 'use-case-club-festival' }"
-          class="font-medium text-primary hover:underline"
+          class="font-medium text-primary underline underline-offset-2"
         >
           {{ t('preauth.content.related.pages.clubFestival.title') }}
         </RouterLink>
-      </p>
+      </div>
     </LandingFaq>
     <LandingFeedback />
 

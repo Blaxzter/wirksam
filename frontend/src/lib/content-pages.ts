@@ -116,6 +116,8 @@ export const COMPARED_TOOLS: readonly ComparedTool[] = [
     sources: [
       'https://doodle.com/en/premium/',
       'https://help.doodle.com/en/articles/9457222-sign-up-sheet-faq',
+      'https://help.doodle.com/en/articles/9457187',
+      'https://help.doodle.com/en/articles/10308840',
       'https://doodle.com/en/privacy-policy/',
     ],
   },
@@ -126,6 +128,7 @@ export const COMPARED_TOOLS: readonly ComparedTool[] = [
       'https://support.google.com/docs/answer/2494822?hl=en',
       'https://support.google.com/docs/answer/91588?hl=en',
       'https://support.microsoft.com/en-us/office/share-files-and-folders-in-onedrive-9fcc2f7d-de0c-4cec-93b0-a82024800c07',
+      'https://support.microsoft.com/en-us/office/share-a-document-with-no-sign-in-necessary-8d0dc009-4207-4a91-b051-356948579732',
     ],
   },
 ]

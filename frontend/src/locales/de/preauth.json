@@ -20,12 +20,12 @@
         },
         "hero": {
             "eyebrow": "Im Vergleich",
-            "lede": "Es gibt mehrere gute Wege, Helfende für eine Veranstaltung einzuteilen. Hier steht WirkSam neben fünf davon, auch neben solchen, die für manche Veranstaltungen besser passen, damit ihr das Werkzeug findet, das zu eurer passt.",
+            "lede": "Es gibt mehrere gute Wege, Helfende für eine Veranstaltung einzuteilen. Hier steht WirkSam neben fünf davon, auch neben solchen, die für manche Veranstaltungen besser geeignet sind. So findet ihr das Werkzeug, das zu eurem Fest passt.",
             "title": "WirkSam und die Alternativen"
         },
         "screenshots": {
             "eyebrow": "Selbst ansehen",
-            "lede": "Urteilt selbst über die Oberfläche: Das sind Bildschirmfotos aus der App.",
+            "lede": "Das sind Bildschirmfotos aus der App, damit ihr euch ein Bild von der Oberfläche machen könnt.",
             "title": "So sieht WirkSam aus"
         },
         "table": {
@@ -39,7 +39,7 @@
         "tools": {
             "doodle": {
                 "cells": {
-                    "account": "Zum Eintragen nicht, zum späteren Ändern schon",
+                    "account": "Nein, weder zum Eintragen noch zum Ändern (über den Link in der Bestätigungsmail)",
                     "hosting": "Daten in Irland; der kostenlose Tarif zeigt personalisierte Werbung",
                     "languages": "Mehrere, darunter Deutsch und Englisch",
                     "openSource": "Nein",
@@ -47,8 +47,8 @@
                     "reminders": "Bestätigung per E-Mail; automatische Erinnerungen mit Pro",
                     "selfHost": "Nein"
                 },
-                "goodFit": "Ihr braucht schnell eine Liste für einen einzelnen Nachmittag mit einer Handvoll Zeitfenster, und alle kennen Doodle-Links schon. Eigene Fragen und ein Excel-Export sind dabei.",
-                "lessSuited": "Ihr plant Schichten über mehrere Tage und Bereiche. Der kostenlose Tarif ist begrenzt und zeigt allen Werbung, Erinnerungen und weitere Organisierende kosten extra, und wer die eigene Eintragung später ändern will, braucht ein Doodle-Konto.",
+                "goodFit": "Ihr braucht schnell eine Liste für einen einzelnen Nachmittag mit einer Handvoll Zeitfenster, und alle kennen Doodle-Links schon. Ihr könnt eigene Fragen stellen, und laut Doodle-Hilfe lassen sich die Eintragungen nach Excel exportieren; mit welchem Tarif, steht dort nicht.",
+                "lessSuited": "Ihr plant Schichten über mehrere Tage und Bereiche. Der kostenlose Tarif ist begrenzt und zeigt allen Werbung, und Erinnerungen und weitere Organisierende kosten extra.",
                 "name": "Doodle (Sign-up Sheets)",
                 "summary": "Neben den bekannten Terminumfragen bietet Doodle Sign-up Sheets: Ihr veröffentlicht Zeitfenster mit einer Obergrenze für jedes, und die Leute tragen sich über einen geteilten Link ohne Konto ein."
             },
@@ -60,7 +60,7 @@
                     "openSource": "Ja (GPL-2.0)",
                     "price": "Kostenlos, ihr betreibt den Server selbst",
                     "reminders": "E-Mail bei geänderten Schichten, wenn gewünscht; Kalenderexport",
-                    "selfHost": "Ja, anders geht es nicht"
+                    "selfHost": "Ja; eine gehostete Version gibt es nur für Chaos-Events"
                 },
                 "goodFit": "Eure Veranstaltung hat Hunderte oder Tausende Helfende in Teams, jemand bei euch kann einen PHP- und MySQL-Server betreuen, und ihr braucht Ankunftserfassung, Arbeitsnachweise, Belohnungen oder ein Programm, das aus pretalx importiert wird. Es lief schon beim 37C3, 38C3, 39C3 und anderen großen Veranstaltungen.",
                 "lessSuited": "Ihr organisiert ein kleineres Vereinsfest, und niemand kann einen Server einrichten und pflegen. Eine Installation ist offenbar auf eine Veranstaltung ausgelegt, die Begriffe rund um Engel wirken außerhalb der Hackerszene ungewohnt, und eine automatische Erinnerung vor der Schicht haben wir nicht gefunden.",
@@ -73,12 +73,12 @@
                     "hosting": "Hetzner in Deutschland, Schweizer DSG und DSGVO, Analyse mit PostHog",
                     "languages": "Website auf Deutsch, Englisch, Französisch und Italienisch; Sprachen der App nicht angegeben",
                     "openSource": "Nein",
-                    "price": "Kostenlos für 1 Veranstaltung mit 20 Schichten, Bezahltarife ab 169 CHF im Jahr",
+                    "price": "Kostenlos für 1 Veranstaltung mit 20 Schichten und 20 Einsätzen, Bezahltarife ab 169 CHF im Jahr",
                     "reminders": "Per E-Mail, mit Bezahltarif auch per WhatsApp",
                     "selfHost": "Nein"
                 },
                 "goodFit": "Ihr wollt Erinnerungen per WhatsApp, einen Check-in per QR-Code mit Anwesenheit in Echtzeit oder eine Einteilung nach Verfügbarkeit auf einer Planungstafel, und euer Budget reicht für einen Jahrestarif. Jede Person wählt E-Mail oder WhatsApp, und klappt WhatsApp nicht, kommt die Nachricht per E-Mail.",
-                "lessSuited": "Eure Veranstaltung braucht mehr als 20 Schichten, und es gibt kein Budget: Dort endet der kostenlose Tarif, der Small-Tarif deckt eine Veranstaltung im Jahr ab, und beliebig viele kosten 390 CHF im Jahr. Die Preise sind in Franken, der Code ist nicht offen, und selbst betreiben lässt es sich nicht.",
+                "lessSuited": "Eure Veranstaltung braucht mehr als 20 Schichten oder 20 Einsätze, und es gibt kein Budget: Dort endet der kostenlose Tarif, der Small-Tarif deckt eine Veranstaltung im Jahr ab, und beliebig viele kosten 390 CHF im Jahr. Die Preise sind in Franken, der Code ist nicht offen, und selbst betreiben lässt es sich nicht.",
                 "name": "helferplanung.app",
                 "summary": "Eine Online-Helferplanung aus der Schweiz für Vereine, Festivals und Sportveranstaltungen. Helfende tragen sich über einen Link oder QR-Code ein, ohne Konto und ohne App."
             },
@@ -86,20 +86,20 @@
                 "cells": {
                     "account": "Nein, Eintragen per Link oder QR-Code",
                     "hosting": "Hetzner in Deutschland, Vertrag zur Auftragsverarbeitung inklusive",
-                    "languages": "Deutsch",
+                    "languages": "Deutsch (die Website bietet keine andere Sprache an)",
                     "openSource": "Nein",
                     "price": "19 € pro veröffentlichter Veranstaltung",
                     "reminders": "Bestätigung und Erinnerung per E-Mail",
                     "selfHost": "Nein"
                 },
                 "goodFit": "Ihr feiert ein oder zwei Feste im Jahr, eure Helfenden sollen kein Konto brauchen, und ein fester Preis pro Veranstaltung ist in Ordnung. Es kennt Stände und Kuchenspenden, exportiert nach PDF und Excel und holt die Helfenden vom letzten Jahr mit einem Klick zurück.",
-                "lessSuited": "Ihr habt viele kleine Veranstaltungen im Jahr, denn jede veröffentlichte kostet 19 €. Die Oberfläche gibt es nur auf Deutsch, der Code ist nicht offen, und auf einem eigenen Server könnt ihr es nicht betreiben.",
+                "lessSuited": "Ihr habt viele kleine Veranstaltungen im Jahr, denn jede veröffentlichte kostet 19 €. Website und App gibt es offenbar nur auf Deutsch, der Code ist nicht offen, und auf einem eigenen Server könnt ihr es nicht betreiben.",
                 "name": "Helferstube",
                 "summary": "Ein deutsches Online-Werkzeug für Helferlisten bei Vereinsfesten wie Kirmes, Schützenfest und Karneval. Ihr legt Stände, Schichten und Kuchenspenden an, und die Helfenden tragen sich über einen Link oder QR-Code ein."
             },
             "spreadsheet": {
                 "cells": {
-                    "account": "Google Tabellen: nein, mit offenem Bearbeitungslink. Excel im Web: ja",
+                    "account": "Nein, mit offenem Bearbeitungslink (bei Konten von Firma oder Schule kann das gesperrt sein)",
                     "hosting": "Cloud von Google oder Microsoft; die Datenschutzpflichten liegen bei euch",
                     "languages": "Viele, darunter Deutsch und Englisch",
                     "openSource": "Nein",
@@ -107,8 +107,8 @@
                     "reminders": "Keine eingebaut",
                     "selfHost": "Nein"
                 },
-                "goodFit": "Eine kleine, einmalige Veranstaltung mit wenigen Schichten, bei der sich alle kennen. Es gibt nichts zu lernen, jedes Layout geht, und es kostet nichts.",
-                "lessSuited": "Mehr als eine Handvoll Helfende. Nichts verhindert, dass eine Schicht überbucht oder ein Name gelöscht wird, alle mit dem Link sehen die Kontaktdaten aller, und niemand wird erinnert.",
+                "goodFit": "Ihr plant eine kleine, einmalige Veranstaltung mit wenigen Schichten, und alle kennen sich. Es gibt nichts zu lernen, jedes Layout geht, und es kostet nichts.",
+                "lessSuited": "Ihr habt mehr als eine Handvoll Helfende. Nichts verhindert, dass eine Schicht überbucht oder ein Name gelöscht wird, alle mit dem Link sehen die Kontaktdaten aller, und niemand wird erinnert.",
                 "name": "Geteilte Tabelle",
                 "summary": "Eine Google-Tabelle oder Excel-Datei, die alle bearbeiten dürfen und in der sich Helfende in die Schichtzeilen eintragen. Kleine Vereine, Schulen und Elterngruppen fangen oft so an."
             },
@@ -744,7 +744,7 @@
                         "title": "Eure Mitglieder einladen"
                     },
                     "nextYear": {
-                        "description": "Kopiert die Veranstaltung auf die Termine im nächsten Jahr. Stände, Schichten und Zeiten kommen mit und landen auf denselben Wochentagen, die Eintragungen starten leer.",
+                        "description": "Kopiert die Veranstaltung auf die Termine im nächsten Jahr. Stände, Schichten und Zeiten kommen mit und landen auf denselben Wochentagen. Eingetragen ist noch niemand.",
                         "screenshotAlt": "Die Seite zum Kopieren einer Veranstaltung: die Aufgaben vom letzten Mal mit ihrer Schichtzahl, alle angehakt für die neuen Termine.",
                         "title": "Nächstes Jahr mit dem Plan von diesem Jahr starten"
                     },
