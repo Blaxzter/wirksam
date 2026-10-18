@@ -68,6 +68,12 @@ const goBackToHome = () => {
         <p class="text-muted-foreground">{{ $t('preauth.terms.availability.description') }}</p>
       </section>
 
+      <!-- Limits and shutdown -->
+      <section class="space-y-3">
+        <h2 class="text-2xl font-semibold">{{ $t('preauth.terms.discontinuation.title') }}</h2>
+        <p class="text-muted-foreground">{{ $t('preauth.terms.discontinuation.description') }}</p>
+      </section>
+
       <!-- Liability -->
       <section class="space-y-3">
         <h2 class="text-2xl font-semibold">{{ $t('preauth.terms.liability.title') }}</h2>

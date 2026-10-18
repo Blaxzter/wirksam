@@ -3,7 +3,6 @@
         "breadcrumb": "Alternativen",
         "criteria": {
             "account": "Konto für Helfende",
-            "hosting": "Hosting und Datenschutz",
             "languages": "Sprachen",
             "openSource": "Open Source",
             "price": "Preis",
@@ -30,9 +29,9 @@
         },
         "table": {
             "asOf": "Stand: Oktober 2026, Angaben ohne Gewähr. Preise und Funktionen ändern sich, schaut vor der Entscheidung auf die Seiten der Anbieter. Die Quellen stehen unten bei jedem Werkzeug.",
-            "caption": "Werkzeuge für die Helferplanung im Vergleich nach Preis, Konto, Open Source, Selbstbetrieb, Datenschutz, Sprachen und Erinnerungen",
+            "caption": "Werkzeuge für die Helferplanung im Vergleich nach Preis, Konto, Open Source, Selbstbetrieb, Sprachen und Erinnerungen",
             "eyebrow": "Auf einen Blick",
-            "lede": "Was jedes Werkzeug kostet, ob Helfende ein Konto brauchen und wo eure Daten liegen.",
+            "lede": "Was jedes Werkzeug kostet, ob Helfende ein Konto brauchen und ob ihr es selbst betreiben könnt.",
             "title": "Die Fakten nebeneinander",
             "toolColumn": "Werkzeug"
         },
@@ -40,7 +39,6 @@
             "doodle": {
                 "cells": {
                     "account": "Nein, weder zum Eintragen noch zum Ändern (über den Link in der Bestätigungsmail)",
-                    "hosting": "Daten in Irland; der kostenlose Tarif zeigt personalisierte Werbung",
                     "languages": "Mehrere, darunter Deutsch und Englisch",
                     "openSource": "Nein",
                     "price": "Kostenlos mit Werbung; Pro 11 $ pro Person und Monat bei jährlicher Zahlung",
@@ -55,7 +53,6 @@
             "engelsystem": {
                 "cells": {
                     "account": "Ja",
-                    "hosting": "Auf eurem eigenen Server, also eure Wahl",
                     "languages": "Deutsch, Englisch",
                     "openSource": "Ja (GPL-2.0)",
                     "price": "Kostenlos, ihr betreibt den Server selbst",
@@ -70,7 +67,6 @@
             "helferplanung": {
                 "cells": {
                     "account": "Nein, Eintragen per Link oder QR-Code",
-                    "hosting": "Hetzner in Deutschland, Schweizer DSG und DSGVO, Analyse mit PostHog",
                     "languages": "Website auf Deutsch, Englisch, Französisch und Italienisch; Sprachen der App nicht angegeben",
                     "openSource": "Nein",
                     "price": "Kostenlos für 1 Veranstaltung mit 20 Schichten und 20 Einsätzen, Bezahltarife ab 169 CHF im Jahr",
@@ -85,7 +81,6 @@
             "helferstube": {
                 "cells": {
                     "account": "Nein, Eintragen per Link oder QR-Code",
-                    "hosting": "Hetzner in Deutschland, Vertrag zur Auftragsverarbeitung inklusive",
                     "languages": "Deutsch (die Website bietet keine andere Sprache an)",
                     "openSource": "Nein",
                     "price": "19 € pro veröffentlichter Veranstaltung",
@@ -100,7 +95,6 @@
             "spreadsheet": {
                 "cells": {
                     "account": "Nein, mit offenem Bearbeitungslink (bei Konten von Firma oder Schule kann das gesperrt sein)",
-                    "hosting": "Cloud von Google oder Microsoft; die Datenschutzpflichten liegen bei euch",
                     "languages": "Viele, darunter Deutsch und Englisch",
                     "openSource": "Nein",
                     "price": "Kostenlos mit Google- oder Microsoft-Konto",
@@ -115,7 +109,6 @@
             "wirksam": {
                 "cells": {
                     "account": "Ja, ein kostenloses Konto",
-                    "hosting": "Betrieben aus Deutschland nach DSGVO, ohne Tracking und Werbung",
                     "languages": "Deutsch, Englisch",
                     "openSource": "Ja (MIT)",
                     "price": "Kostenlos, keine Bezahlversion",
@@ -583,7 +576,7 @@
     },
     "seo": {
         "alternatives": {
-            "description": "WirkSam neben Engelsystem, Helferstube, helferplanung.app, Doodle und einer geteilten Tabelle: Preis, Konto, Open Source, Selbstbetrieb, Datenschutz, Sprachen und Erinnerungen, und wofür sich welches Werkzeug eignet.",
+            "description": "WirkSam neben Engelsystem, Helferstube, helferplanung.app, Doodle und einer geteilten Tabelle: Preis, Konto, Open Source, Selbstbetrieb, Sprachen und Erinnerungen, und wofür sich welches Werkzeug eignet.",
             "title": "Helferplanung im Vergleich: WirkSam, Engelsystem, Helferstube, Doodle"
         },
         "changelog": {
@@ -634,6 +627,10 @@
             "description": "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren. Die aktuelle Fassung ist stets auf dieser Seite verfügbar. Die weitere Nutzung von WirkSam nach Änderungen gilt als Zustimmung zu den aktualisierten Bedingungen.",
             "title": "Änderungen dieser Bedingungen"
         },
+        "discontinuation": {
+            "description": "WirkSam läuft auf einem einzelnen Server und wird in der Freizeit betreut. Wir können den Dienst deshalb einschränken, zum Beispiel neue Registrierungen pausieren, keine neuen Veranstaltungen mehr annehmen oder die Zahl der Veranstaltungen pro Konto begrenzen. Wir können den gehosteten Dienst auch ganz einstellen. Eine Einstellung kündigen wir per E-Mail und auf dieser Seite an, in der Regel mindestens vier Wochen vorher, damit Sie Ihre Planung rechtzeitig sichern können. Der Quellcode bleibt öffentlich verfügbar, sodass Sie WirkSam auf einem eigenen Server weiter betreiben können.",
+            "title": "Einschränkung und Einstellung"
+        },
         "lastUpdated": "Letzte Aktualisierung: Oktober 2026",
         "law": {
             "description": "Diese Bedingungen unterliegen dem Recht der Bundesrepublik Deutschland.",
@@ -644,7 +641,7 @@
             "title": "Haftungsbeschränkung"
         },
         "scope": {
-            "description": "WirkSam ist eine kostenlose, nicht-kommerzielle Plattform zur Koordination ehrenamtlicher Dienstpläne bei kirchlichen Veranstaltungen und Gemeindearbeit. Mit der Erstellung eines Kontos und der Nutzung der Plattform stimmen Sie diesen Bedingungen zu.",
+            "description": "WirkSam ist eine kostenlose, nicht-kommerzielle Plattform zur Koordination ehrenamtlicher Schichtpläne bei Veranstaltungen, in Vereinen, Gemeinden und anderen Gruppen. Mit der Erstellung eines Kontos und der Nutzung der Plattform stimmen Sie diesen Bedingungen zu.",
             "title": "Geltungsbereich"
         },
         "termination": {

@@ -59,7 +59,6 @@ export const COMPARISON_CRITERIA = [
   'account',
   'openSource',
   'selfHost',
-  'hosting',
   'languages',
   'reminders',
 ] as const
