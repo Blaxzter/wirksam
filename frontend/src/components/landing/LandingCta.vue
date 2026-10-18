@@ -11,6 +11,8 @@ defineProps<{
   isAuthenticated: boolean
   /** Whether the deployment offers demo sessions at all — see `stores/sandbox.ts`. */
   demoEnabled: boolean
+  /** A content page's own heading; the landing page's otherwise. */
+  title?: string
 }>()
 const emit = defineEmits<{ signIn: []; dashboard: []; demo: [] }>()
 
@@ -22,7 +24,7 @@ const { t } = useI18n()
     <SectionHeading
       tone="hero"
       :eyebrow="t('preauth.landing.finalCta.eyebrow')"
-      :title="t('preauth.landing.finalCta.title')"
+      :title="title ?? t('preauth.landing.finalCta.title')"
       :lede="t('preauth.landing.finalCta.lede')"
     />
 

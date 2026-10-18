@@ -35,6 +35,18 @@ test.describe('a11y – public pages', () => {
     await expectNoA11yViolations(page, { label: 'privacy (/privacy)' })
   })
 
+  test('comparison page has no serious or critical violations', async ({ page }) => {
+    await page.goto('/alternatives')
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    await expectNoA11yViolations(page, { label: 'comparison (/alternatives)' })
+  })
+
+  test('club festival page has no serious or critical violations', async ({ page }) => {
+    await page.goto('/de/use-cases/club-festival')
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    await expectNoA11yViolations(page, { label: 'club festival (/de/use-cases/club-festival)' })
+  })
+
   test('the screenshot viewer has no serious or critical violations', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('page-heading')).toBeVisible()

@@ -154,8 +154,53 @@ function faqEntries(locale, config) {
   }))
 }
 
+/** FAQPage JSON-LD from `{ question, answer }` pairs. */
+function faqPage(url, locale, entries) {
+  return {
+    '@type': 'FAQPage',
+    '@id': `${url}#faq`,
+    inLanguage: locale,
+    mainEntity: entries.map(({ question, answer }) => ({
+      '@type': 'Question',
+      name: question,
+      acceptedAnswer: { '@type': 'Answer', text: answer },
+    })),
+  }
+}
+
+/** Home › page, for the pages below the landing page (`breadcrumbKey` in seo.ts). */
+function breadcrumbList(page, locale, url) {
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': `${url}#breadcrumb`,
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'WirkSam',
+        item: absolute(localizedPath('/', locale)),
+      },
+      { '@type': 'ListItem', position: 2, name: t(locale, page.breadcrumbKey), item: url },
+    ],
+  }
+}
+
 function structuredData(page, locale, url, config) {
-  if (page.routeName !== 'landing') return []
+  if (page.routeName !== 'landing') {
+    const graph = [
+      page.breadcrumbKey && breadcrumbList(page, locale, url),
+      page.faq &&
+        faqPage(
+          url,
+          locale,
+          page.faq.keys.map((key) => ({
+            question: t(locale, `${page.faq.base}.${key}.question`),
+            answer: t(locale, `${page.faq.base}.${key}.answer`),
+          })),
+        ),
+    ].filter(Boolean)
+    return graph.length ? [jsonLd({ '@context': 'https://schema.org', '@graph': graph })] : []
+  }
   const description = t(locale, 'preauth.seo.landing.description')
   return [
     jsonLd({
@@ -184,16 +229,7 @@ function structuredData(page, locale, url, config) {
           license: 'https://opensource.org/licenses/MIT',
           sameAs: [REPOSITORY],
         },
-        {
-          '@type': 'FAQPage',
-          '@id': `${url}#faq`,
-          inLanguage: locale,
-          mainEntity: faqEntries(locale, config).map(({ question, answer }) => ({
-            '@type': 'Question',
-            name: question,
-            acceptedAnswer: { '@type': 'Answer', text: answer },
-          })),
-        },
+        faqPage(url, locale, faqEntries(locale, config)),
       ],
     }),
   ]

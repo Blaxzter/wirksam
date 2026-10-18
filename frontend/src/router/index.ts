@@ -6,6 +6,7 @@ import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 import { authGuard as sessionAuthGuard } from '@/composables/useAuth'
 
 import { SANDBOX_ENDED_KEY, authSession } from '@/lib/auth-session'
+import { publicPageFor } from '@/lib/seo'
 
 import { createRoutes } from './routes'
 
@@ -109,9 +110,10 @@ router.beforeEach(async (to) => {
   // signs everybody out on every reload.
   if (!isE2eBypass) await authSession.bootstrap()
 
-  // A deployment without the landing page (`LANDING_ENABLED=false`) sends `/`
-  // where the visitor would go from it anyway: in, or to the sign-in screen.
-  if (routeName === 'landing' && !landingEnabled()) {
+  // A deployment without the landing page (`LANDING_ENABLED=false`) sends `/`,
+  // and the content pages that go with it (`requires` in lib/seo.ts), where the
+  // visitor would go from there anyway: in, or to the sign-in screen.
+  if (publicPageFor(routeName)?.requires === 'LANDING_ENABLED' && !landingEnabled()) {
     return authStore.isAuthenticated ? { name: 'home' } : { name: 'login' }
   }
 

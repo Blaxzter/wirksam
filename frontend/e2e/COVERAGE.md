@@ -42,19 +42,19 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 28      |
+| `a11y`       | 5          | 30      |
 | `auth`       | 5          | 20      |
 | `chromium`   | 28         | 234     |
 | `member`     | 3          | 25      |
 | `mobile`     | 2          | 10      |
 | `multi-user` | 4          | 54      |
-| `public`     | 7          | 32      |
+| `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **55**     | **404** |
+| **Total**    | **56**     | **416** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 28 tests
+### Project `a11y` — 5 files, 30 tests
 
 #### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 11 tests
 
@@ -99,12 +99,14 @@ Not yet covered, and not currently tracked by an issue:
 - **a11y – member task detail** (1)
   - task detail
 
-#### `frontend/e2e/tests/a11y/public-pages.spec.ts` — 4 tests
+#### `frontend/e2e/tests/a11y/public-pages.spec.ts` — 6 tests
 
-- **a11y – public pages** (4)
+- **a11y – public pages** (6)
   - landing page has no serious or critical violations
   - landing page volunteer journey has no serious or critical violations
   - privacy page has no serious or critical violations
+  - comparison page has no serious or critical violations
+  - club festival page has no serious or critical violations
   - the screenshot viewer has no serious or critical violations
 
 ### Project `auth` — 5 files, 20 tests
@@ -700,7 +702,24 @@ Not yet covered, and not currently tracked by an issue:
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
 
-### Project `public` — 7 files, 32 tests
+### Project `public` — 8 files, 42 tests
+
+#### `frontend/e2e/tests/public/content-pages.spec.ts` — 10 tests
+
+- **comparison page** (4)
+  - shows the comparison table with its date and sources
+  - is served in German under /de
+  - turns into one card per tool on a phone, without sideways scrolling
+  - links on to the club festival page
+- **club festival page** (3)
+  - answers first, then walks through the steps and the FAQ
+  - stays in German when following a related link
+  - offers the demo next to the sign-up
+- **links into the content pages** (1)
+  - the footer of every public page links to both
+- **content pages under runtime switches** (2)
+  - without the demo there is no demo button
+  - without the landing page they lead to sign-in and leave the footer
 
 #### `frontend/e2e/tests/public/how-it-works.spec.ts` — 2 tests
 

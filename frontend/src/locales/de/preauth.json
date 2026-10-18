@@ -1,4 +1,154 @@
 {
+    "alternatives": {
+        "breadcrumb": "Alternativen",
+        "criteria": {
+            "account": "Konto für Helfende",
+            "hosting": "Hosting und Datenschutz",
+            "languages": "Sprachen",
+            "openSource": "Open Source",
+            "price": "Preis",
+            "reminders": "Erinnerungen",
+            "selfHost": "Selbst betreiben"
+        },
+        "fit": {
+            "eyebrow": "Was zu euch passt",
+            "goodFitLabel": "Passt gut, wenn",
+            "lede": "Jedes dieser Werkzeuge ist für manche Veranstaltungen eine gute Wahl. Hier steht, für welche.",
+            "lessSuitedLabel": "Passt weniger, wenn",
+            "sourcesLabel": "Quellen",
+            "title": "Wann welches Werkzeug sinnvoll ist"
+        },
+        "hero": {
+            "eyebrow": "Im Vergleich",
+            "lede": "Es gibt mehrere gute Wege, Helfende für eine Veranstaltung einzuteilen. Hier steht WirkSam neben fünf davon, auch neben solchen, die für manche Veranstaltungen besser passen, damit ihr das Werkzeug findet, das zu eurer passt.",
+            "title": "WirkSam und die Alternativen"
+        },
+        "screenshots": {
+            "eyebrow": "Selbst ansehen",
+            "lede": "Urteilt selbst über die Oberfläche: Das sind Bildschirmfotos aus der App.",
+            "title": "So sieht WirkSam aus"
+        },
+        "table": {
+            "asOf": "Stand: Oktober 2026, Angaben ohne Gewähr. Preise und Funktionen ändern sich, schaut vor der Entscheidung auf die Seiten der Anbieter. Die Quellen stehen unten bei jedem Werkzeug.",
+            "caption": "Werkzeuge für die Helferplanung im Vergleich nach Preis, Konto, Open Source, Selbstbetrieb, Datenschutz, Sprachen und Erinnerungen",
+            "eyebrow": "Auf einen Blick",
+            "lede": "Was jedes Werkzeug kostet, ob Helfende ein Konto brauchen und wo eure Daten liegen.",
+            "title": "Die Fakten nebeneinander",
+            "toolColumn": "Werkzeug"
+        },
+        "tools": {
+            "doodle": {
+                "cells": {
+                    "account": "Zum Eintragen nicht, zum späteren Ändern schon",
+                    "hosting": "Daten in Irland; der kostenlose Tarif zeigt personalisierte Werbung",
+                    "languages": "Mehrere, darunter Deutsch und Englisch",
+                    "openSource": "Nein",
+                    "price": "Kostenlos mit Werbung; Pro 11 $ pro Person und Monat bei jährlicher Zahlung",
+                    "reminders": "Bestätigung per E-Mail; automatische Erinnerungen mit Pro",
+                    "selfHost": "Nein"
+                },
+                "goodFit": "Ihr braucht schnell eine Liste für einen einzelnen Nachmittag mit einer Handvoll Zeitfenster, und alle kennen Doodle-Links schon. Eigene Fragen und ein Excel-Export sind dabei.",
+                "lessSuited": "Ihr plant Schichten über mehrere Tage und Bereiche. Der kostenlose Tarif ist begrenzt und zeigt allen Werbung, Erinnerungen und weitere Organisierende kosten extra, und wer die eigene Eintragung später ändern will, braucht ein Doodle-Konto.",
+                "name": "Doodle (Sign-up Sheets)",
+                "summary": "Neben den bekannten Terminumfragen bietet Doodle Sign-up Sheets: Ihr veröffentlicht Zeitfenster mit einer Obergrenze für jedes, und die Leute tragen sich über einen geteilten Link ohne Konto ein."
+            },
+            "engelsystem": {
+                "cells": {
+                    "account": "Ja",
+                    "hosting": "Auf eurem eigenen Server, also eure Wahl",
+                    "languages": "Deutsch, Englisch",
+                    "openSource": "Ja (GPL-2.0)",
+                    "price": "Kostenlos, ihr betreibt den Server selbst",
+                    "reminders": "E-Mail bei geänderten Schichten, wenn gewünscht; Kalenderexport",
+                    "selfHost": "Ja, anders geht es nicht"
+                },
+                "goodFit": "Eure Veranstaltung hat Hunderte oder Tausende Helfende in Teams, jemand bei euch kann einen PHP- und MySQL-Server betreuen, und ihr braucht Ankunftserfassung, Arbeitsnachweise, Belohnungen oder ein Programm, das aus pretalx importiert wird. Es lief schon beim 37C3, 38C3, 39C3 und anderen großen Veranstaltungen.",
+                "lessSuited": "Ihr organisiert ein kleineres Vereinsfest, und niemand kann einen Server einrichten und pflegen. Eine Installation ist offenbar auf eine Veranstaltung ausgelegt, die Begriffe rund um Engel wirken außerhalb der Hackerszene ungewohnt, und eine automatische Erinnerung vor der Schicht haben wir nicht gefunden.",
+                "name": "Engelsystem",
+                "summary": "Open-Source-Software für Helfende und Schichten bei großen Veranstaltungen, entstanden für die Veranstaltungen des Chaos Computer Club wie Congress und Camp. Helfende heißen dort Engel und sind in Engeltypen gruppiert."
+            },
+            "helferplanung": {
+                "cells": {
+                    "account": "Nein, Eintragen per Link oder QR-Code",
+                    "hosting": "Hetzner in Deutschland, Schweizer DSG und DSGVO, Analyse mit PostHog",
+                    "languages": "Website auf Deutsch, Englisch, Französisch und Italienisch; Sprachen der App nicht angegeben",
+                    "openSource": "Nein",
+                    "price": "Kostenlos für 1 Veranstaltung mit 20 Schichten, Bezahltarife ab 169 CHF im Jahr",
+                    "reminders": "Per E-Mail, mit Bezahltarif auch per WhatsApp",
+                    "selfHost": "Nein"
+                },
+                "goodFit": "Ihr wollt Erinnerungen per WhatsApp, einen Check-in per QR-Code mit Anwesenheit in Echtzeit oder eine Einteilung nach Verfügbarkeit auf einer Planungstafel, und euer Budget reicht für einen Jahrestarif. Jede Person wählt E-Mail oder WhatsApp, und klappt WhatsApp nicht, kommt die Nachricht per E-Mail.",
+                "lessSuited": "Eure Veranstaltung braucht mehr als 20 Schichten, und es gibt kein Budget: Dort endet der kostenlose Tarif, der Small-Tarif deckt eine Veranstaltung im Jahr ab, und beliebig viele kosten 390 CHF im Jahr. Die Preise sind in Franken, der Code ist nicht offen, und selbst betreiben lässt es sich nicht.",
+                "name": "helferplanung.app",
+                "summary": "Eine Online-Helferplanung aus der Schweiz für Vereine, Festivals und Sportveranstaltungen. Helfende tragen sich über einen Link oder QR-Code ein, ohne Konto und ohne App."
+            },
+            "helferstube": {
+                "cells": {
+                    "account": "Nein, Eintragen per Link oder QR-Code",
+                    "hosting": "Hetzner in Deutschland, Vertrag zur Auftragsverarbeitung inklusive",
+                    "languages": "Deutsch",
+                    "openSource": "Nein",
+                    "price": "19 € pro veröffentlichter Veranstaltung",
+                    "reminders": "Bestätigung und Erinnerung per E-Mail",
+                    "selfHost": "Nein"
+                },
+                "goodFit": "Ihr feiert ein oder zwei Feste im Jahr, eure Helfenden sollen kein Konto brauchen, und ein fester Preis pro Veranstaltung ist in Ordnung. Es kennt Stände und Kuchenspenden, exportiert nach PDF und Excel und holt die Helfenden vom letzten Jahr mit einem Klick zurück.",
+                "lessSuited": "Ihr habt viele kleine Veranstaltungen im Jahr, denn jede veröffentlichte kostet 19 €. Die Oberfläche gibt es nur auf Deutsch, der Code ist nicht offen, und auf einem eigenen Server könnt ihr es nicht betreiben.",
+                "name": "Helferstube",
+                "summary": "Ein deutsches Online-Werkzeug für Helferlisten bei Vereinsfesten wie Kirmes, Schützenfest und Karneval. Ihr legt Stände, Schichten und Kuchenspenden an, und die Helfenden tragen sich über einen Link oder QR-Code ein."
+            },
+            "spreadsheet": {
+                "cells": {
+                    "account": "Google Tabellen: nein, mit offenem Bearbeitungslink. Excel im Web: ja",
+                    "hosting": "Cloud von Google oder Microsoft; die Datenschutzpflichten liegen bei euch",
+                    "languages": "Viele, darunter Deutsch und Englisch",
+                    "openSource": "Nein",
+                    "price": "Kostenlos mit Google- oder Microsoft-Konto",
+                    "reminders": "Keine eingebaut",
+                    "selfHost": "Nein"
+                },
+                "goodFit": "Eine kleine, einmalige Veranstaltung mit wenigen Schichten, bei der sich alle kennen. Es gibt nichts zu lernen, jedes Layout geht, und es kostet nichts.",
+                "lessSuited": "Mehr als eine Handvoll Helfende. Nichts verhindert, dass eine Schicht überbucht oder ein Name gelöscht wird, alle mit dem Link sehen die Kontaktdaten aller, und niemand wird erinnert.",
+                "name": "Geteilte Tabelle",
+                "summary": "Eine Google-Tabelle oder Excel-Datei, die alle bearbeiten dürfen und in der sich Helfende in die Schichtzeilen eintragen. Kleine Vereine, Schulen und Elterngruppen fangen oft so an."
+            },
+            "wirksam": {
+                "cells": {
+                    "account": "Ja, ein kostenloses Konto",
+                    "hosting": "Betrieben aus Deutschland nach DSGVO, ohne Tracking und Werbung",
+                    "languages": "Deutsch, Englisch",
+                    "openSource": "Ja (MIT)",
+                    "price": "Kostenlos, keine Bezahlversion",
+                    "reminders": "Vor jeder Schicht per E-Mail, Browser-Push oder Telegram",
+                    "selfHost": "Ja, mit Docker Compose, oder ihr nutzt wirksam.app"
+                },
+                "goodFit": "Ihr plant mehrere Veranstaltungen im Jahr und wollt nicht pro Veranstaltung zahlen, eure Helfenden kommen wieder und behalten ein Konto, und ihr wollt die Software notfalls selbst betreiben können.",
+                "lessSuited": "Eure Helfenden wollen kein Konto anlegen, auch kein kostenloses. Ihr braucht einen Check-in vor Ort, Nachrichten per WhatsApp oder andere Sprachen als Deutsch und Englisch. Oder die Veranstaltung ist so groß, dass ihr Tausende Helfende in Teams koordiniert: Dafür ist das Engelsystem gebaut.",
+                "name": "WirkSam",
+                "summary": "Eine kostenlose Web-App für Schichtpläne mit Ehrenamtlichen. Wer organisiert, beschreibt jede Aufgabe einmal, und die Schichten entstehen daraus. Die Helfenden buchen, was ihnen passt, und werden vor jeder Schicht erinnert."
+            }
+        }
+    },
+    "content": {
+        "breadcrumbLabel": "Brotkrümelnavigation",
+        "related": {
+            "pages": {
+                "alternatives": {
+                    "description": "WirkSam neben Engelsystem, Helferstube, helferplanung.app, Doodle und einer geteilten Tabelle, und wann ein anderes Werkzeug besser passt.",
+                    "title": "WirkSam und die Alternativen"
+                },
+                "clubFestival": {
+                    "description": "Stände, Aufbau und Abbau, Einladungen und Erinnerungen: ein Festwochenende Schritt für Schritt geplant.",
+                    "title": "Helferplan fürs Vereinsfest"
+                },
+                "landing": {
+                    "description": "Wie es für Organisierende und Helfende funktioniert, alle Funktionen und die Fragen, die vor dem Start meistens kommen.",
+                    "title": "Alles über WirkSam"
+                }
+            },
+            "title": "Weiterlesen"
+        }
+    },
     "cookieNotice": {
         "dismiss": "OK",
         "learnMore": "Mehr zum Datenschutz",
@@ -95,7 +245,7 @@
                     "question": "Brauchen Helfende ein Konto?"
                 },
                 "audience": {
-                    "answer": "Für alle, die eine Veranstaltung mit Ehrenamtlichen besetzen müssen: Gemeinden, kirchliche Feste wie Pfingsten oder den Kirchentag, Jugendgruppen, Vereine und Verbände. Die Organisation plant die Schichten und behält den Überblick, die Helfenden tragen sich ein und sehen ihre eigenen Schichten an einem Ort.",
+                    "answer": "Für alle, die eine Veranstaltung mit Ehrenamtlichen besetzen müssen: Vereine und Verbände, Feste und Festivals, Schulen, Jugendgruppen, Gemeinden und kirchliche Feste wie Pfingsten oder den Kirchentag. Die Organisation plant die Schichten und behält den Überblick, die Helfenden tragen sich ein und sehen ihre eigenen Schichten an einem Ort.",
                     "question": "Für wen ist WirkSam?"
                 },
                 "calendar": {
@@ -140,6 +290,7 @@
                 }
             },
             "lede": "Die kurzen Antworten auf das, was die meisten vor dem Start wissen wollen.",
+            "more": "Noch am Vergleichen?",
             "title": "Häufige Fragen"
         },
         "features": {
@@ -345,6 +496,8 @@
     "layout": {
         "appName": "WirkSam",
         "footer": {
+            "alternatives": "Alternativen im Vergleich",
+            "clubFestival": "Für Vereinsfeste",
             "copyright": "© 2026 WirkSam. Gemeinsam Wirken.",
             "github": "Quellcode auf GitHub",
             "impressum": "Impressum",
@@ -429,9 +582,17 @@
         "title": "Datenschutzerklärung"
     },
     "seo": {
+        "alternatives": {
+            "description": "WirkSam neben Engelsystem, Helferstube, helferplanung.app, Doodle und einer geteilten Tabelle: Preis, Konto, Open Source, Selbstbetrieb, Datenschutz, Sprachen und Erinnerungen, und wofür sich welches Werkzeug eignet.",
+            "title": "Helferplanung im Vergleich: WirkSam, Engelsystem, Helferstube, Doodle"
+        },
         "changelog": {
             "description": "Was ist neu in WirkSam: jede Version der Schichtplanung für Ehrenamtliche, mit ihren Funktionen und Korrekturen.",
             "title": "Änderungsprotokoll · WirkSam"
+        },
+        "clubFestival": {
+            "description": "So plant ihr die Helfenden für Vereinsfest, Sommerfest oder Sportfest: Stände als Aufgaben anlegen, Schichten erzeugen lassen, per Link einladen, und alle tragen sich selbst ein, mit Erinnerung vor jeder Schicht. Kostenlos.",
+            "title": "Helferplan fürs Vereinsfest online erstellen · WirkSam"
         },
         "impressum": {
             "description": "Wer WirkSam betreibt und wie du Kontakt aufnimmst.",
@@ -439,7 +600,7 @@
         },
         "landing": {
             "description": "Plant eure Schichten gemeinsam: Veranstaltung anlegen, Schichten erzeugen, Team einladen, und alle buchen ihre Plätze selbst, mit Erinnerung per E-Mail, Push oder Telegram. Kostenlos, ohne Tracking, nach DSGVO.",
-            "title": "WirkSam: kostenlose Schichtplanung für Ehrenamtliche in Kirche und Gemeinde"
+            "title": "WirkSam: kostenlose Schichtplanung für Ehrenamtliche, Vereine und Veranstaltungen"
         },
         "privacy": {
             "description": "Welche Daten WirkSam speichert, wozu, und wie du sie einsehen, berichtigen oder löschen kannst.",
@@ -500,6 +661,112 @@
                 "respectful": "Respektvoll gegenüber anderen Nutzern und Organisatoren zu sein."
             },
             "title": "Zulässige Nutzung"
+        }
+    },
+    "useCases": {
+        "clubFestival": {
+            "breadcrumb": "Vereinsfest",
+            "ctaTitle": "Bereit für euer nächstes Vereinsfest?",
+            "faq": {
+                "eyebrow": "Fragen",
+                "items": {
+                    "account": {
+                        "answer": "Ja, mit einem kostenlosen Konto aus E-Mail-Adresse und Passwort. So gehört jede Buchung zu einer Person, und die Erinnerung kommt bei ihr an. Wer einen Einladungslink öffnet, meldet sich an und ist dabei. Wenn eure Helfenden auf keinen Fall ein Konto wollen, passt ein Werkzeug, bei dem man sich über einen einfachen Link einträgt, besser. Unsere Vergleichsseite nennt einige.",
+                        "question": "Müssen sich Helfende registrieren?"
+                    },
+                    "cancellations": {
+                        "answer": "Die Person sagt ihre Schicht in der App ab, und der Platz ist sofort wieder frei. Ihr seht ihn in der Übersicht als offen und könnt gezielt nachfragen. Damit Schichten gar nicht erst vergessen werden, bekommt jede Person vorher eine Erinnerung.",
+                        "question": "Was passiert, wenn jemand kurzfristig absagt?"
+                    },
+                    "headcount": {
+                        "answer": "Das hängt davon ab, wie viel los ist. Überlegt für jeden Stand, wie viele Leute zur vollsten Stunde gleichzeitig gebraucht werden, und plant mit dieser Zahl. Schichten von zwei bis drei Stunden lassen sich leichter besetzen als ein halber Tag. In WirkSam stellt ihr Schichtlänge und Personenzahl pro Aufgabe ein, und einzelne Tage können andere Zeiten bekommen.",
+                        "question": "Wie viele Helfende brauche ich pro Stand, und wie lang sollte eine Schicht sein?"
+                    },
+                    "helperList": {
+                        "answer": "Legt in WirkSam eine Veranstaltung mit den Festtagen an und für jeden Stand eine Aufgabe mit Zeiten, Schichtlänge und Personenzahl. Die Schichten entstehen daraus. Dann ladet ihr eure Helfenden per Link oder E-Mail ein, und sie tragen sich selbst ein. Das ist kostenlos, und eine Vorlage braucht ihr nicht.",
+                        "question": "Wie erstelle ich eine Helferliste für unser Vereinsfest?"
+                    },
+                    "setup": {
+                        "answer": "Als eigene Aufgaben mit eigenen Zeiten, zum Beispiel Aufbau am Freitag ab 14 Uhr und Abbau am Sonntag ab 20 Uhr. Dann sehen alle, dass auch dafür Leute gebraucht werden, und der Abbau bleibt nicht an den wenigen hängen, die am Ende noch da sind.",
+                        "question": "Wie plane ich Aufbau und Abbau mit ein?"
+                    },
+                    "share": {
+                        "answer": "Ja. WirkSam druckt einen Dienstplan pro Aufgabe oder für die ganze Veranstaltung. Online bleibt der Plan trotzdem aktuell, und alle Eingeladenen sehen dieselbe Fassung.",
+                        "question": "Kann ich den Plan ausdrucken und im Vereinsheim aushängen?"
+                    }
+                },
+                "lede": "Was Organisierende vor dem Fest meistens wissen wollen.",
+                "title": "Helferplanung fürs Vereinsfest"
+            },
+            "hero": {
+                "eyebrow": "Für Vereinsfeste",
+                "lede": "Mit WirkSam legt ihr jeden Stand eures Vereinsfests als Aufgabe an, lasst die Schichten daraus erzeugen und schickt euren Helfenden einen Link. Sie tragen sich selbst ein, ihr seht jederzeit, wo noch jemand fehlt, und vor jeder Schicht kommt eine Erinnerung. Das funktioniert genauso für Sommerfest, Sportfest oder Jubiläum und kostet nichts.",
+                "title": "Helferplan fürs Vereinsfest: Schichten online planen"
+            },
+            "pains": {
+                "eyebrow": "Das kennt ihr",
+                "items": {
+                    "chat": {
+                        "description": "Jemand schreibt „Ich mach Samstag Ausschank“ in die Gruppe, drei Nachrichten später weiß keiner mehr, wer was zugesagt hat, und eine Schicht ist doppelt oder gar nicht besetzt.",
+                        "title": "Zusagen gehen im Gruppenchat unter"
+                    },
+                    "gaps": {
+                        "description": "Die Liste hängt im Vereinsheim oder liegt in jemandes Postfach. Welche Schichten noch offen sind, erfährt man nur durch Herumfragen.",
+                        "title": "Niemand sieht die Lücken"
+                    },
+                    "noShows": {
+                        "description": "Zwischen Zusage und Fest liegen Wochen. Ohne Erinnerung geraten Schichten in Vergessenheit, und wenn jemand absagt, erfährt es die falsche Person.",
+                        "title": "Vergessene Schichten und kurzfristige Absagen"
+                    },
+                    "teardown": {
+                        "description": "Die Stände sind sorgfältig geplant, und am Sonntagabend stehen nur noch eine Handvoll Leute da, um das Zelt abzubauen.",
+                        "title": "Aufbau und Abbau werden vergessen"
+                    },
+                    "versions": {
+                        "description": "Jede Änderung wird von Hand eingetragen und neu verschickt, bis niemand mehr weiß, welche Fassung gilt.",
+                        "title": "Drei Fassungen derselben Tabelle"
+                    }
+                },
+                "lede": "Das meiste davon hat dieselbe Ursache: Der Plan steht an zu vielen Stellen gleichzeitig.",
+                "title": "Woran die Helferplanung meistens hakt"
+            },
+            "steps": {
+                "eyebrow": "Schritt für Schritt",
+                "items": {
+                    "gaps": {
+                        "description": "Die Helfenden buchen die Schichten, die ihnen passen. Ihr seht alle Stände auf einmal, könnt volle Schichten ausblenden und wisst genau, wo ihr noch nachfragen müsst.",
+                        "screenshotAlt": "Die Aufgabenliste mit einer Wochenansicht der Schichten daneben, jeweils mit gebuchten und freien Plätzen.",
+                        "title": "Zusehen, wie sich die Lücken schließen"
+                    },
+                    "invite": {
+                        "description": "Fügt eine Liste von E-Mail-Adressen ein oder teilt einen Einladungslink im Vereinsnewsletter oder im Gruppenchat. Bevor die Schichten verteilt werden, können die Mitglieder eintragen, wann sie können.",
+                        "screenshotAlt": "Die Seite „Meine Verfügbarkeit“, auf der Helfende für jeden Tag der Veranstaltung eintragen, wann sie können.",
+                        "title": "Eure Mitglieder einladen"
+                    },
+                    "nextYear": {
+                        "description": "Kopiert die Veranstaltung auf die Termine im nächsten Jahr. Stände, Schichten und Zeiten kommen mit und landen auf denselben Wochentagen, die Eintragungen starten leer.",
+                        "screenshotAlt": "Die Seite zum Kopieren einer Veranstaltung: die Aufgaben vom letzten Mal mit ihrer Schichtzahl, alle angehakt für die neuen Termine.",
+                        "title": "Nächstes Jahr mit dem Plan von diesem Jahr starten"
+                    },
+                    "reminders": {
+                        "description": "Vor jeder Schicht schickt WirkSam eine Erinnerung per E-Mail, Browser-Push oder Telegram. Wer absagen muss, tut das in der App, und der Platz ist wieder frei.",
+                        "screenshotAlt": "Die Benachrichtigungseinstellungen: pro Art eine Zeile, mit Schaltern für E-Mail, Push und Telegram.",
+                        "title": "Alle werden vor ihrer Schicht erinnert"
+                    },
+                    "setup": {
+                        "description": "Plant den Aufbau am Freitagnachmittag und den Abbau am Sonntagabend als eigene Aufgaben, mit eigenen Zeiten und eigener Personenzahl. Auf der Seite einer Aufgabe zeigt jede Schicht, wie viele Plätze belegt sind.",
+                        "screenshotAlt": "Die Seite einer Aufgabe mit ihren Schichten nach Tagen, jede mit der Zahl der gebuchten Plätze.",
+                        "title": "Aufbau und Abbau bekommen eigene Schichten"
+                    },
+                    "stands": {
+                        "description": "Legt die Veranstaltung mit ihren Tagen an und dann für jeden Stand eine Aufgabe: Ausschank von 16 bis 24 Uhr, Schichten zu zwei Stunden, drei Leute pro Schicht. WirkSam rechnet alle Schichten aus und zeigt sie euch als Vorschau, bevor etwas angelegt wird.",
+                        "screenshotAlt": "Das Formular für den Zeitplan neben einer Vorschau aller Schichten, die daraus entstünden.",
+                        "title": "Jeder Stand wird eine Aufgabe"
+                    }
+                },
+                "lede": "Ein Beispiel: ein Fest von Freitag bis Sonntag mit Ausschank, Grill, Kuchenstand und Kasse, dazu Aufbau und Abbau.",
+                "title": "So könnte euer Vereinsfest in WirkSam laufen"
+            }
         }
     }
 }

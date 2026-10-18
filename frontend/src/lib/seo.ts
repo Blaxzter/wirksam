@@ -8,6 +8,7 @@
  * HTML together with the sitemap and `llms.txt`. One list, so a page added here
  * shows up in all of them.
  */
+import { USE_CASES } from '@/lib/content-pages'
 
 export const PUBLIC_LOCALES = ['en', 'de'] as const
 export type PublicLocale = (typeof PUBLIC_LOCALES)[number]
@@ -35,6 +36,17 @@ export interface PublicPage {
    * prerendered nor in the sitemap, and the router sends its URL elsewhere.
    */
   requires?: 'LANDING_ENABLED'
+  /**
+   * Full i18n key of the page's short name. Set on the pages below the landing
+   * page, which the prerender gives a BreadcrumbList.
+   */
+  breadcrumbKey?: string
+  /**
+   * The page's FAQ, mirrored into FAQPage JSON-LD by the prerender: the i18n
+   * key holding the items, and their keys in display order. The landing page's
+   * FAQ is not here because what it shows depends on a runtime switch (`faqKeys`).
+   */
+  faq?: { base: string; keys: readonly string[] }
 }
 
 export const PUBLIC_PAGES: readonly PublicPage[] = [
@@ -46,6 +58,30 @@ export const PUBLIC_PAGES: readonly PublicPage[] = [
     changefreq: 'monthly',
     priority: 1,
     requires: 'LANDING_ENABLED',
+  },
+  // The content pages are about WirkSam itself, the public project, so they go
+  // with the landing page: an app-only deployment has no use for a comparison
+  // with other tools on its own domain.
+  {
+    routeName: 'alternatives',
+    path: '/alternatives',
+    seoKey: 'alternatives',
+    prerender: true,
+    changefreq: 'monthly',
+    priority: 0.8,
+    requires: 'LANDING_ENABLED',
+    breadcrumbKey: 'preauth.alternatives.breadcrumb',
+  },
+  {
+    routeName: USE_CASES.clubFestival.routeName,
+    path: '/use-cases/club-festival',
+    seoKey: 'clubFestival',
+    prerender: true,
+    changefreq: 'monthly',
+    priority: 0.8,
+    requires: 'LANDING_ENABLED',
+    breadcrumbKey: 'preauth.useCases.clubFestival.breadcrumb',
+    faq: { base: 'preauth.useCases.clubFestival.faq.items', keys: USE_CASES.clubFestival.faq },
   },
   {
     routeName: 'preauth-changelog',
