@@ -78,3 +78,35 @@ describe.each([
     expect(item.answer).toBeTruthy()
   })
 })
+
+/** `preauth.a.b` → the value at `a.b` in a preauth locale file. */
+function lookup(messages: unknown, key: string): unknown {
+  return key
+    .replace(/^preauth\./, '')
+    .split('.')
+    .reduce<unknown>(
+      (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+      messages,
+    )
+}
+
+describe('content pages', () => {
+  it('go with the landing page', () => {
+    for (const name of ['alternatives', 'use-case-club-festival']) {
+      expect(publicPageFor(name)?.requires).toBe('LANDING_ENABLED')
+    }
+  })
+
+  it.each([
+    ['en', enPreauth],
+    ['de', dePreauth],
+  ])('resolve their breadcrumb and FAQ keys in %s', (_locale, messages) => {
+    for (const page of PUBLIC_PAGES) {
+      if (page.breadcrumbKey) expect(lookup(messages, page.breadcrumbKey)).toBeTruthy()
+      for (const key of page.faq?.keys ?? []) {
+        expect(lookup(messages, `${page.faq!.base}.${key}.question`)).toBeTruthy()
+        expect(lookup(messages, `${page.faq!.base}.${key}.answer`)).toBeTruthy()
+      }
+    }
+  })
+})

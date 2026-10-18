@@ -66,6 +66,22 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           name: 'how-it-works',
           redirect: { name: 'landing', hash: '#how-it-works' },
         },
+        // Content pages for search: a comparison with other tools, and one page
+        // per kind of event (`lib/content-pages.ts`). Same path in every
+        // language, like the rest of the public shell.
+        {
+          path: 'alternatives',
+          name: 'alternatives',
+          component: () => import('@/views/preauth/AlternativesView.vue'),
+          meta: { fullBleed: true },
+        },
+        {
+          path: 'use-cases/club-festival',
+          name: 'use-case-club-festival',
+          component: () => import('@/views/preauth/UseCaseView.vue'),
+          props: { useCase: 'clubFestival' },
+          meta: { fullBleed: true },
+        },
         {
           path: 'privacy',
           name: 'privacy',

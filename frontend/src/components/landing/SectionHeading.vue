@@ -3,14 +3,15 @@
  * Eyebrow + title + optional lede, centred above a section's content.
  *
  * `level` exists so the heading order stays legal: the landing page has a
- * single `h1` in the hero, and every section below it is an `h2`.
+ * single `h1` in the hero, and every section below it is an `h2`. The content
+ * pages have no hero of their own and use this for their `h1`.
  */
 withDefaults(
   defineProps<{
     eyebrow?: string
     title: string
     lede?: string
-    level?: 'h2' | 'h3'
+    level?: 'h1' | 'h2' | 'h3'
     /** `hero` inverts the eyebrow for use on the dark band. */
     tone?: 'plain' | 'hero'
   }>(),
@@ -29,6 +30,7 @@ withDefaults(
     </p>
     <component
       :is="level"
+      :data-testid="level === 'h1' ? 'page-heading' : undefined"
       class="text-balance text-3xl font-bold tracking-tight sm:text-4xl"
       :class="tone === 'hero' ? 'text-hero-foreground' : 'text-foreground'"
     >
