@@ -534,7 +534,7 @@
             "title": "Data We Collect"
         },
         "intro": "We take the protection of your personal data seriously. This privacy policy explains what data we collect when you use WirkSam, how we use it, and what rights you have.",
-        "lastUpdated": "Last updated: March 2026",
+        "lastUpdated": "Last updated: October 2026",
         "legalBasis": {
             "description": "We process your data based on Art. 6(1)(b) GDPR (performance of a contract) for core account and booking functionality, and Art. 6(1)(f) GDPR (legitimate interest) for security and platform operation. Where we send optional notifications, we rely on your consent (Art. 6(1)(a) GDPR), which you can withdraw at any time in your notification settings.",
             "title": "Legal Basis"
@@ -549,7 +549,7 @@
             "title": "How We Use Your Data"
         },
         "retention": {
-            "description": "Your personal data is stored as long as your account is active. If you request account deletion, we will erase your personal data without undue delay, unless we are legally required to retain it.",
+            "description": "Your personal data is stored as long as your account is active. If you request account deletion, we will erase your personal data without undue delay, unless we are legally required to retain it. If the hosted service is shut down (see the terms of use), we delete all personal data after the announced shutdown date.",
             "title": "Data Retention"
         },
         "rights": {
@@ -624,7 +624,7 @@
             "title": "Bookings & Cancellations"
         },
         "changes": {
-            "description": "We may update these terms from time to time. The current version is always available on this page. Continued use of WirkSam after changes constitutes acceptance of the updated terms.",
+            "description": "We may update these terms, for example when WirkSam gains new features or the law changes. We will email you about changes at least four weeks before they take effect, together with the new text. If you do not agree, you can object by email or delete your account before that date. If you neither object nor delete your account, the updated terms apply from that date; we will point this out again in the email. The current version is always available on this page.",
             "title": "Changes to These Terms"
         },
         "discontinuation": {
