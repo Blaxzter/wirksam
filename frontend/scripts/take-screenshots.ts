@@ -330,6 +330,10 @@ async function capture(page: Page, name: string, mode: string): Promise<void> {
   // Let data fetches and transitions settle. `networkidle` is unusable here —
   // Vite's HMR socket keeps the connection busy and would burn the timeout.
   await page.waitForTimeout(900)
+  // The dev server injects Vue DevTools' floating button; it is not the app.
+  await page.addStyleTag({
+    content: '#__vue-devtools-container__, #vue-inspector-container { display: none !important; }',
+  })
   const path = `${SCREENSHOT_DIR}/${name}-${mode}.png`
   await page.screenshot({ path, type: 'png' })
   console.log(`  saved ${path}`)
@@ -338,6 +342,65 @@ async function capture(page: Page, name: string, mode: string): Promise<void> {
 async function open(page: Page, path: string): Promise<void> {
   await page.goto(`${BASE_URL}${path}`)
   await expect(page.getByTestId('page-heading')).toBeVisible({ timeout: 20_000 })
+}
+
+/**
+ * The venue map, taken from a demo session rather than the seeded festival.
+ *
+ * A plan worth showing is a drawing with rooms, paths and pins on it, and the
+ * demo event already comes with two (`backend/app/logic/sandbox/
+ * venue_plan_shapes.py`). Rebuilding them here through the shape API would be
+ * a second copy of that drawing to keep in step. So this starts a demo the way
+ * a visitor does, as the organiser, and opens the map. The demo's countdown
+ * banner is hidden for the capture; it says nothing about the map.
+ */
+async function captureVenueMap(browser: Browser, mode: (typeof MODES)[number]): Promise<void> {
+  const context = await browser.newContext({ viewport: VIEWPORT })
+  await context.addInitScript(
+    (setup: { lang: string; mode: string }) => {
+      localStorage.setItem('locale', setup.lang)
+      localStorage.setItem('wirksam-palette', 'default')
+      localStorage.setItem('vueuse-color-scheme', setup.mode)
+      localStorage.setItem('wirksam-cookie-notice-dismissed', '1')
+      localStorage.setItem('wirksam-last-seen-changelog', '99.99.99')
+    },
+    { lang: LANG, mode },
+  )
+  const page = await context.newPage()
+  page.setDefaultTimeout(25_000)
+
+  await page.goto(`${BASE_URL}${LANG === 'de' ? '/de' : '/'}`)
+  await page.getByTestId('btn-cta-demo').click()
+  await page.getByTestId('btn-sandbox-role-manager').click()
+  await page.getByTestId('btn-sandbox-start').click()
+  await page.waitForURL(/\/app\//, { timeout: 30_000 })
+  // The welcome dialog offers the guided tour; say no, so neither is on screen.
+  await page
+    .getByTestId('btn-tour-decline')
+    .click({ timeout: 10_000 })
+    .catch(() => undefined)
+  await expect(page.getByTestId('dialog-sandbox-welcome')).toBeHidden()
+
+  await page.goto(`${BASE_URL}/app/map`)
+  await expect(page.locator('[data-testid^="map-marker-"]').first()).toBeVisible()
+  // The banner pushes the page down through `--demo-banner-height` and a
+  // padding on <html> (SandboxBanner.vue); both go with it.
+  const banner = await page.addStyleTag({
+    content: `
+      [data-testid="sandbox-banner"] { display: none !important; }
+      html { padding-top: 0 !important; --demo-banner-height: 0px !important; }
+    `,
+  })
+  await capture(page, 'venue-map', mode)
+
+  // Tidy up rather than leave the demo to the TTL sweep.
+  await banner.evaluate((node) => node.remove())
+  await page
+    .getByTestId('btn-sandbox-exit')
+    .click()
+    .then(() => page.getByTestId('btn-dialog-confirm').click())
+    .catch(() => undefined)
+  await context.close()
 }
 
 // ── Captures ─────────────────────────────────────────────────────────────────
@@ -381,6 +444,11 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
     await capture(page, 'clone-event', mode)
 
     await context.close()
+  }
+
+  for (const mode of MODES) {
+    console.log(`\n${LANG} / ${mode} / venue map`)
+    await captureVenueMap(browser, mode)
   }
 
   console.log(`\nDone [${LANG}].`)

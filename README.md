@@ -7,259 +7,131 @@
 </p>
 
 <p align="center">
-  <em>The volunteer scheduling platform for church events and community service.<br/>Book your shifts for Pfingsten, Kirchentag, and more — effective together.</em>
+  Free shift planning for volunteers at events, in clubs, congregations and other groups.
 </p>
 
 <p align="center">
-  <em>WirkSam — from German "wirksam" (effective) and "zusammen" (together).<br/>Because volunteering works best when we work together.</em>
+  <a href="https://wirksam.app">wirksam.app</a> ·
+  <a href="https://wirksam.app/changelog">Changelog</a> ·
+  <a href="https://wirksam.app/alternatives">Compared with other tools</a> ·
+  <a href="https://wirksam.app/de">Deutsch</a>
 </p>
 
 ---
 
+WirkSam is a web app for planning who works when at a volunteer event. An
+organiser sets up the event, describes each job once (the days, the hours, how
+long a shift lasts and how many people it needs), and WirkSam creates the
+shifts from that. Helpers join through an invitation link, book the shifts that
+suit them and get a reminder before each one.
+
+It is free and non-commercial, has no tracking or ads, and runs in English and
+German. You can use the hosted version at [wirksam.app](https://wirksam.app) or
+run it on your own server.
+
+To look around without an account, open [wirksam.app](https://wirksam.app) and
+choose **Try a demo event**. You get an example event, as a helper or as the
+organiser, and it is deleted again after an hour.
+
 ## Screenshots
 
-### Dashboard
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/public/screenshots/en/dashboard-dark.png" />
+  <img alt="The dashboard: your next shift, the shifts after it, and the shifts that still need people" src="frontend/public/screenshots/en/dashboard-light.png" />
+</picture>
 
-Get a bird's-eye view of your events, bookings, and an interactive calendar — all in one place.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/public/screenshots/en/tasks-dark.png" />
+  <img alt="The task list, each job with a week of shifts beside it and how many places on each are taken" src="frontend/public/screenshots/en/tasks-light.png" />
+</picture>
 
-<img alt="Dashboard" src="frontend/public/screenshots/en/dashboard.png" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/public/screenshots/en/venue-map-dark.png" />
+  <img alt="The venue map: a drawn floor plan with a pin for each place, coloured by how well it is staffed" src="frontend/public/screenshots/en/venue-map-light.png" />
+</picture>
 
-### Events & Slots
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="frontend/public/screenshots/en/shift-schedule-dark.png" />
+  <img alt="The shift schedule form beside a preview of every shift it will create" src="frontend/public/screenshots/en/shift-schedule-light.png" />
+</picture>
 
-Browse all duty events with inline slot previews, search, and smart filters.
+More screenshots, in English and German and in light and dark, are in
+[`frontend/public/screenshots`](frontend/public/screenshots).
 
-<img alt="Events" src="frontend/public/screenshots/en/events.png" />
+## Features
 
-### Event Detail
+- Shifts generated from a pattern: days, daily hours, shift length and people per shift. You can adjust single days or leave shifts out.
+- Helpers book their own shifts and see them in one list. WirkSam refuses a booking that overlaps one they already have.
+- Reminders before every shift by email, browser push or Telegram, whichever the helper reads.
+- Availability: collect who can be there when before you assign anything.
+- A venue map. Upload a floor plan or draw the venue in the app, pin each place where people work, and see how well each one is staffed.
+- Calendar subscription for Google Calendar, Apple Calendar and Outlook.
+- Hours worked per volunteer, counted from their shifts, with a CSV export.
+- Reports on how the work is spread, and printable rosters per job or for the whole event.
+- Copy last year's event onto new dates, with its jobs, shifts and times.
+- Roles per event (owner, organisers, members), private or public events, and join requests for public ones.
+- English and German, light and dark, usable on a phone.
 
-See all available duty slots by day, book with one click, and track availability.
+## Running it yourself
 
-<img alt="Event Detail" src="frontend/public/screenshots/en/event-detail.png" />
-
-### My Bookings
-
-All your confirmed duties in one place — filter by upcoming, this month, or view all.
-
-<img alt="My Bookings" src="frontend/public/screenshots/en/my-bookings.png" />
-
-### Events
-
-Organize related tasks under top-level events like camps, conferences, or festivals for easy management.
-
-<img alt="Events" src="frontend/public/screenshots/en/event-groups.png" />
-
-### Notifications & Preferences
-
-Stay informed with real-time notifications and fine-tune delivery via email, push, or Telegram.
-
-<img alt="Notifications" src="frontend/public/screenshots/en/notification-bell.png" />
-<img alt="Notification Preferences" src="frontend/public/screenshots/en/notification-preferences.png" />
-
-### User Management
-
-Admins can manage users, roles, and approval workflows from a central dashboard.
-
-<img alt="User Management" src="frontend/public/screenshots/en/user-management.png" />
-
-### Event Creation Wizard
-
-Create events step-by-step: details, dates, schedule configuration, and a live slot preview.
-
-<img alt="Create Event - Details" src="frontend/public/screenshots/en/create-step1-details.png" />
-<img alt="Create Event - Dates" src="frontend/public/screenshots/en/create-step2-dates.png" />
-<img alt="Create Event - Schedule" src="frontend/public/screenshots/en/create-step3-schedule.png" />
-<img alt="Create Event - Preview" src="frontend/public/screenshots/en/create-step5-preview.png" />
-
----
-
-## Technology Stack
-
-- **Backend:** [FastAPI](https://fastapi.tiangolo.com) + [SQLModel](https://sqlmodel.tiangolo.com) (async SQLAlchemy) + [PostgreSQL](https://www.postgresql.org) + [Alembic](https://alembic.sqlalchemy.org/) migrations + built-in JWT authentication ([docs/AUTH.md](docs/AUTH.md))
-- **Frontend:** [Vue 3](https://vuejs.org) + TypeScript + [Vite](https://vite.dev) + [Pinia](https://pinia.vuejs.org) + [Vue Router](https://router.vuejs.org) + [Tailwind CSS v4](https://tailwindcss.com) + [shadcn-vue](https://www.shadcn-vue.com/) + [Vue I18n](https://vue-i18n.intlify.dev) (EN/DE)
-- **Testing:** [Pytest](https://pytest.org) (backend) + [Playwright](https://playwright.dev) (E2E)
-- **Infra:** [Docker Compose](https://www.docker.com) + [Traefik](https://traefik.io) reverse proxy + GitHub Actions CI/CD
-- **DX:** Auto-generated TypeScript API client via `@hey-api/openapi-ts`, [Zod](https://zod.dev) + [Vee-Validate](https://vee-validate.logaretm.com) forms, Ruff + basedpyright + ESLint linting
-
-## How To Use It
-
-You can **just fork or clone** this repository and use it as is.
-
-### How to Use a Private Repository
-
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
-
-But you can do the following:
-
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
-
-```bash
-git clone git@github.com:Blaxzter/fastapi-vue-fullstack-template.git my-full-stack
-```
-
-- Enter into the new directory:
-
-```bash
-cd my-full-stack
-```
-
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
-
-```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
-```
-
-- Add this repo as another "remote" to allow you to get updates later:
-
-```bash
-git remote add upstream git@github.com:Blaxzter/fastapi-vue-fullstack-template.git
-```
-
-- Push the code to your new repository:
-
-```bash
-git push -u origin main
-```
-
-### Update From the Original Template
-
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
-
-- Make sure you added the original repository as a remote, you can check it with:
-
-```bash
-git remote -v
-
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:Blaxzter/fastapi-vue-fullstack-template.git (fetch)
-upstream    git@github.com:Blaxzter/fastapi-vue-fullstack-template.git (push)
-```
-
-- Pull the latest changes without merging:
-
-```bash
-git pull --no-commit upstream master
-```
-
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
-
-- If there are conflicts, solve them in your editor.
-
-- Once you are done, commit the changes:
-
-```bash
-git merge --continue
-```
-
-### Clean Up the Template
-
-After cloning, remove sample content you don't need:
-
-```bash
-# Remove example/demo pages only
-just remove-examples
-
-# Remove the project/task sample domain (models, CRUD, routes, views, migrations, tests)
-just remove-domain
-
-# Or do both at once and regenerate the API client
-just clean-template
-```
-
-After cleanup you'll have a clean foundation with auth, user management, health endpoints, base CRUD infrastructure, and all UI components ready for your own features. See [AGENTS.md](./AGENTS.md#template-cleanup) for details on what each step removes and what remains.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
+WirkSam is a FastAPI backend with PostgreSQL and a Vue frontend, packaged with
+Docker Compose. [`docs/deployment.md`](docs/deployment.md) describes a
+production setup behind Traefik, including the environment variables. Before a
+deployment, replace every `changethis` in `.env`; this prints a suitable key:
 
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+Set `SUPERADMIN_EMAILS` to your address, or the deployment has no
+administrator. Who may sign up is controlled by `REGISTRATION_MODE`; see
+[`docs/AUTH.md`](docs/AUTH.md#who-may-register).
 
-## How To Use It - Alternative With Copier
+### Local development
 
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
+You need Docker, [uv](https://docs.astral.sh/uv/), [pnpm](https://pnpm.io),
+Node.js and [just](https://github.com/casey/just).
 
 ```bash
-pip install copier
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+just dev
 ```
 
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
+This starts the database in Docker, runs the migrations, seeds a few demo
+events and starts backend and frontend. The app is at
+`http://wirksam.localhost:47300` and the API docs at
+`http://wirksam.localhost:47301/docs`. Sign in as `dev@example.com` with the
+password `devpassword`.
+
+More in [`docs/development.md`](docs/development.md),
+[`backend/README.md`](backend/README.md) and
+[`frontend/README.md`](frontend/README.md).
+
+## Technology
+
+- Backend: [FastAPI](https://fastapi.tiangolo.com), [SQLModel](https://sqlmodel.tiangolo.com) (async SQLAlchemy), [PostgreSQL](https://www.postgresql.org), [Alembic](https://alembic.sqlalchemy.org/) migrations, built-in JWT authentication ([docs/AUTH.md](docs/AUTH.md))
+- Frontend: [Vue 3](https://vuejs.org), TypeScript, [Vite](https://vite.dev), [Pinia](https://pinia.vuejs.org), [Vue Router](https://router.vuejs.org), [Tailwind CSS v4](https://tailwindcss.com), [shadcn-vue](https://www.shadcn-vue.com/), [Vue I18n](https://vue-i18n.intlify.dev)
+- Tests: [Pytest](https://pytest.org) for the backend, [Playwright](https://playwright.dev) end to end
+- Infrastructure: [Docker Compose](https://www.docker.com), [Traefik](https://traefik.io), GitHub Actions
+
+WirkSam started from a full-stack FastAPI and Vue template. Notes on using it as
+a template for your own project are in [`docs/TEMPLATE.md`](docs/TEMPLATE.md).
+
+## Screenshots for the website and this README
+
+The screenshots come from a script, so they can be regenerated after a UI
+change instead of retaken by hand. They need the backend on port 8787 with
+`TESTING=true` and the frontend on port 5555 with `VITE_E2E_AUTH_BYPASS=true`:
 
 ```bash
-pipx install copier
+just screenshots      # English
+just screenshots de   # German
 ```
 
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
-
-### Generate a Project With Copier
-
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
-
-Go to the directory that will be the parent of your project, and run the command with your project's name:
-
-```bash
-copier copy https://github.com/Blaxzter/fastapi-vue-fullstack-template.git my-awesome-project --trust
-```
-
-If you have `pipx` and you didn't install `copier`, you can run it directly:
-
-```bash
-pipx run copier copy https://github.com/Blaxzter/fastapi-vue-fullstack-template.git my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/Blaxzter/fastapi-vue-fullstack-template.git/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
+A GitHub workflow does the same after each release and opens a pull request
+with the new images.
 
 ## License
 
-WirkSam is licensed under the [MIT License](./LICENSE). You're free to use, modify, and distribute it — just keep the copyright notice.
+WirkSam is licensed under the [MIT License](./LICENSE).
