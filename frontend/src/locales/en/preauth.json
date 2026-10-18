@@ -3,7 +3,6 @@
         "breadcrumb": "Alternatives",
         "criteria": {
             "account": "Helpers need an account",
-            "hosting": "Hosting and data protection",
             "languages": "Languages",
             "openSource": "Open source",
             "price": "Price",
@@ -30,9 +29,9 @@
         },
         "table": {
             "asOf": "As of October 2026. No guarantee of accuracy: prices and features change, so check the providers' own pages before you decide. The sources are listed with each tool below.",
-            "caption": "Volunteer scheduling tools compared by price, accounts, open source, self-hosting, data protection, languages and reminders",
+            "caption": "Volunteer scheduling tools compared by price, accounts, open source, self-hosting, languages and reminders",
             "eyebrow": "At a glance",
-            "lede": "What each tool costs, whether helpers need an account, and where your data lives.",
+            "lede": "What each tool costs, whether helpers need an account, and whether you can run it yourself.",
             "title": "The facts side by side",
             "toolColumn": "Tool"
         },
@@ -40,7 +39,6 @@
             "doodle": {
                 "cells": {
                     "account": "No, neither to sign up nor to change a booking (through the link in the confirmation email)",
-                    "hosting": "Data stored in Ireland; the free plan shows targeted ads",
                     "languages": "Several, including German and English",
                     "openSource": "No",
                     "price": "Free plan with ads; Pro $11 per seat a month, billed yearly",
@@ -55,7 +53,6 @@
             "engelsystem": {
                 "cells": {
                     "account": "Yes",
-                    "hosting": "On your own server, so it is your choice",
                     "languages": "German, English",
                     "openSource": "Yes (GPL-2.0)",
                     "price": "Free; you run your own server",
@@ -70,7 +67,6 @@
             "helferplanung": {
                 "cells": {
                     "account": "No, sign-up by link or QR code",
-                    "hosting": "Hetzner in Germany; Swiss and EU data protection law; PostHog analytics",
                     "languages": "Website in German, English, French and Italian; the app's languages are not stated",
                     "openSource": "No",
                     "price": "Free for 1 event with 20 shifts and 20 helper assignments; paid plans from CHF 169 a year",
@@ -85,7 +81,6 @@
             "helferstube": {
                 "cells": {
                     "account": "No, sign-up by link or QR code",
-                    "hosting": "Hetzner in Germany; data processing agreement included",
                     "languages": "German (the website offers no other language)",
                     "openSource": "No",
                     "price": "€19 per published event",
@@ -100,7 +95,6 @@
             "spreadsheet": {
                 "cells": {
                     "account": "No, with an open edit link (work or school accounts may restrict this)",
-                    "hosting": "Google's or Microsoft's cloud; the data protection duties are yours",
                     "languages": "Many, including German and English",
                     "openSource": "No",
                     "price": "Free with a Google or Microsoft account",
@@ -115,7 +109,6 @@
             "wirksam": {
                 "cells": {
                     "account": "Yes, a free account",
-                    "hosting": "Run from Germany under the GDPR, no tracking or ads",
                     "languages": "German, English",
                     "openSource": "Yes (MIT)",
                     "price": "Free, no paid plan",
@@ -583,7 +576,7 @@
     },
     "seo": {
         "alternatives": {
-            "description": "WirkSam next to Engelsystem, Helferstube, helferplanung.app, Doodle and a shared spreadsheet: price, accounts, open source, self-hosting, data protection, languages and reminders, and when each one fits best.",
+            "description": "WirkSam next to Engelsystem, Helferstube, helferplanung.app, Doodle and a shared spreadsheet: price, accounts, open source, self-hosting, languages and reminders, and when each one fits best.",
             "title": "Volunteer scheduling compared: WirkSam, Engelsystem, Helferstube, Doodle"
         },
         "changelog": {
@@ -634,6 +627,10 @@
             "description": "We may update these terms from time to time. The current version is always available on this page. Continued use of WirkSam after changes constitutes acceptance of the updated terms.",
             "title": "Changes to These Terms"
         },
+        "discontinuation": {
+            "description": "WirkSam runs on a single server and is maintained in spare time. We may therefore limit the service, for example by pausing new registrations, accepting no new events, or capping how many events an account can run. We may also shut the hosted service down entirely. We will announce a shutdown by email and on this site, usually at least four weeks in advance, so you can save your plans in good time. The source code remains openly available, so you can keep running WirkSam on your own server.",
+            "title": "Limits and shutdown"
+        },
         "lastUpdated": "Last updated: October 2026",
         "law": {
             "description": "These terms are governed by the laws of the Federal Republic of Germany.",
@@ -644,7 +641,7 @@
             "title": "Limitation of Liability"
         },
         "scope": {
-            "description": "WirkSam is a free, non-commercial platform for coordinating volunteer rosters for church events and community service. By creating an account and using the platform, you agree to these terms.",
+            "description": "WirkSam is a free, non-commercial platform for coordinating volunteer shifts at events, in clubs, congregations and other groups. By creating an account and using the platform, you agree to these terms.",
             "title": "Scope of Service"
         },
         "termination": {
