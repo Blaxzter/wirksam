@@ -534,7 +534,7 @@
             "title": "Welche Daten wir erheben"
         },
         "intro": "Wir nehmen den Schutz Ihrer persönlichen Daten ernst. Diese Datenschutzerklärung erläutert, welche Daten wir bei der Nutzung von WirkSam erheben, wie wir sie verwenden und welche Rechte Ihnen zustehen.",
-        "lastUpdated": "Letzte Aktualisierung: März 2026",
+        "lastUpdated": "Letzte Aktualisierung: Oktober 2026",
         "legalBasis": {
             "description": "Wir verarbeiten Ihre Daten auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung) für die Konto- und Buchungsfunktionen sowie Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse) für Sicherheit und Plattformbetrieb. Für optionale Benachrichtigungen stützen wir uns auf Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit in Ihren Benachrichtigungseinstellungen widerrufen können.",
             "title": "Rechtsgrundlage"
@@ -549,7 +549,7 @@
             "title": "Wie wir Ihre Daten verwenden"
         },
         "retention": {
-            "description": "Ihre personenbezogenen Daten werden gespeichert, solange Ihr Konto aktiv ist. Wenn Sie die Löschung Ihres Kontos beantragen, löschen wir Ihre personenbezogenen Daten unverzüglich, sofern wir nicht gesetzlich zur Aufbewahrung verpflichtet sind.",
+            "description": "Ihre personenbezogenen Daten werden gespeichert, solange Ihr Konto aktiv ist. Wenn Sie die Löschung Ihres Kontos beantragen, löschen wir Ihre personenbezogenen Daten unverzüglich, sofern wir nicht gesetzlich zur Aufbewahrung verpflichtet sind. Wird der gehostete Dienst eingestellt (siehe Nutzungsbedingungen), löschen wir alle personenbezogenen Daten nach dem angekündigten Einstellungstermin.",
             "title": "Datenspeicherung"
         },
         "rights": {
@@ -624,7 +624,7 @@
             "title": "Buchungen & Stornierungen"
         },
         "changes": {
-            "description": "Wir können diese Bedingungen von Zeit zu Zeit aktualisieren. Die aktuelle Fassung ist stets auf dieser Seite verfügbar. Die weitere Nutzung von WirkSam nach Änderungen gilt als Zustimmung zu den aktualisierten Bedingungen.",
+            "description": "Wir können diese Bedingungen ändern, etwa wenn WirkSam neue Funktionen bekommt oder sich die Rechtslage ändert. Über Änderungen informieren wir Sie mindestens vier Wochen vor ihrem Inkrafttreten per E-Mail, zusammen mit dem neuen Text. Sind Sie nicht einverstanden, können Sie bis dahin per E-Mail widersprechen oder Ihr Konto löschen. Widersprechen Sie nicht und löschen Ihr Konto nicht, gelten die geänderten Bedingungen ab diesem Zeitpunkt; darauf weisen wir in der E-Mail noch einmal hin. Die aktuelle Fassung steht immer auf dieser Seite.",
             "title": "Änderungen dieser Bedingungen"
         },
         "discontinuation": {
