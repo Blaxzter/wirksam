@@ -38,11 +38,12 @@ rm -rf "$HTML_DIR/_prerender"
 
 # The prerendered public pages, sitemap.xml, robots.txt and llms.txt are built
 # with absolute URLs for the public instance (scripts/prerender.mjs). Point them
-# at this deployment instead.
+# at this deployment instead. No -maxdepth: the pages nest as deep as their
+# routes (de/use-cases/<page>/index.html), and _prerender is already gone.
 BUILT_SITE_URL='https://wirksam.app'
 SITE_URL="${FRONTEND_HOST%/}"
 if [ -n "$SITE_URL" ] && [ "$SITE_URL" != "$BUILT_SITE_URL" ]; then
-  find "$HTML_DIR" -maxdepth 3 -type f \( -name '*.html' -o -name '*.xml' -o -name '*.txt' \) \
+  find "$HTML_DIR" -type f \( -name '*.html' -o -name '*.xml' -o -name '*.txt' \) \
     -exec sed -i "s#${BUILT_SITE_URL}#${SITE_URL}#g" {} +
 fi
 

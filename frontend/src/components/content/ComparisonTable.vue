@@ -18,7 +18,12 @@ const cell = (tool: string, criterion: string) =>
 <template>
   <div>
     <div class="hidden overflow-hidden rounded-2xl border bg-card shadow-sm lg:block">
-      <table class="w-full table-fixed text-left text-sm" data-testid="comparison-table">
+      <!-- hyphens-auto: at lg, German compounds such as "Auftragsverarbeitung" are
+           wider than a column and would otherwise run into the next one. -->
+      <table
+        class="w-full table-fixed hyphens-auto break-words text-left text-sm"
+        data-testid="comparison-table"
+      >
         <caption class="sr-only">
           {{
             t('preauth.alternatives.table.caption')

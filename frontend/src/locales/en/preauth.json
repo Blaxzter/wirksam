@@ -25,7 +25,7 @@
         },
         "screenshots": {
             "eyebrow": "See for yourself",
-            "lede": "Judge the interface for yourself: these are screenshots from the app.",
+            "lede": "These are screenshots from the app, so you can judge the interface.",
             "title": "What WirkSam looks like"
         },
         "table": {
@@ -39,7 +39,7 @@
         "tools": {
             "doodle": {
                 "cells": {
-                    "account": "Not to sign up; yes to change a sign-up later",
+                    "account": "No, neither to sign up nor to change a booking (through the link in the confirmation email)",
                     "hosting": "Data stored in Ireland; the free plan shows targeted ads",
                     "languages": "Several, including German and English",
                     "openSource": "No",
@@ -47,8 +47,8 @@
                     "reminders": "Confirmation by email; automatic reminders on Pro",
                     "selfHost": "No"
                 },
-                "goodFit": "You need a quick list for a single afternoon with a handful of slots, and everyone already knows how a Doodle link works. Custom questions and an Excel export are included.",
-                "lessSuited": "You plan shifts across several days and areas. The free plan is limited and shows ads to everyone, reminders and co-organisers need a paid plan, and helpers need a Doodle account to change their own sign-up.",
+                "goodFit": "You need a quick list for a single afternoon with a handful of slots, and everyone already knows how a Doodle link works. You can add your own questions, and Doodle's help describes exporting the sign-ups to Excel, without saying which plan that needs.",
+                "lessSuited": "You plan shifts across several days and areas. The free plan is limited and shows ads to everyone, and reminders and co-organisers need a paid plan.",
                 "name": "Doodle (sign-up sheets)",
                 "summary": "Besides its well-known polls, Doodle offers sign-up sheets: you publish time slots with a limit for each, and people sign up through a shared link without an account."
             },
@@ -60,9 +60,9 @@
                     "openSource": "Yes (GPL-2.0)",
                     "price": "Free; you run your own server",
                     "reminders": "Opt-in email when a shift changes; calendar export",
-                    "selfHost": "Yes, it is the only way to run it"
+                    "selfHost": "Yes; a hosted instance is only offered for Chaos events"
                 },
-                "goodFit": "Your event has hundreds or thousands of helpers in teams, someone on your side can look after a PHP and MySQL server, and you want arrival tracking, worklogs, rewards or a schedule imported from pretalx. It has run 37C3, 38C3, 39C3 and other large events.",
+                "goodFit": "Your event has hundreds or thousands of helpers in teams, someone on your side can look after a PHP and MySQL server, and you want arrival tracking, worklogs, rewards or a schedule imported from pretalx. It has been used at 37C3, 38C3, 39C3 and other large events.",
                 "lessSuited": "You run a smaller club event and nobody can set up and maintain a server. An installation appears to be set up for one event at a time, the angel vocabulary can puzzle people outside the hacker scene, and we found no automatic reminder before a shift.",
                 "name": "Engelsystem",
                 "summary": "Open-source software for helpers and shifts at large events, built for the Chaos Computer Club's events such as Congress and Camp. Helpers are called angels and are grouped into angel types."
@@ -73,12 +73,12 @@
                     "hosting": "Hetzner in Germany; Swiss and EU data protection law; PostHog analytics",
                     "languages": "Website in German, English, French and Italian; the app's languages are not stated",
                     "openSource": "No",
-                    "price": "Free for 1 event with 20 shifts; paid plans from CHF 169 a year",
+                    "price": "Free for 1 event with 20 shifts and 20 helper assignments; paid plans from CHF 169 a year",
                     "reminders": "By email, and by WhatsApp on paid plans",
                     "selfHost": "No"
                 },
-                "goodFit": "You want reminders by WhatsApp, QR-code check-in with live attendance, or assigning helpers by availability on a planning board, and your budget covers a yearly plan. Each helper picks email or WhatsApp, and messages fall back to email.",
-                "lessSuited": "Your event needs more than 20 shifts and there is no budget: the free plan stops there, the Small plan covers one event a year, and unlimited events cost CHF 390 a year. Prices are in Swiss francs, and the software is neither open source nor available to run yourself.",
+                "goodFit": "You want reminders by WhatsApp, QR-code check-in with live attendance, or assigning helpers by availability on a planning board, and your budget covers a yearly plan. Each helper picks email or WhatsApp, and if WhatsApp fails the message goes by email.",
+                "lessSuited": "Your event needs more than 20 shifts or 20 helper assignments and there is no budget: the free plan stops there, the Small plan covers one event a year, and unlimited events cost CHF 390 a year. Prices are in Swiss francs, and the software is neither open source nor available to run yourself.",
                 "name": "helferplanung.app",
                 "summary": "An online volunteer and shift planner from Switzerland for clubs, festivals and sports events. Helpers sign up through a link or QR code, without an account or an app."
             },
@@ -86,20 +86,20 @@
                 "cells": {
                     "account": "No, sign-up by link or QR code",
                     "hosting": "Hetzner in Germany; data processing agreement included",
-                    "languages": "German",
+                    "languages": "German (the website offers no other language)",
                     "openSource": "No",
                     "price": "€19 per published event",
                     "reminders": "Confirmation and reminder by email",
                     "selfHost": "No"
                 },
                 "goodFit": "You hold one or two festivals a year, your helpers shouldn't need an account, and a fixed price per event is fine. It knows about stands and cake donations, exports to PDF and Excel, and brings back last year's helpers with one click.",
-                "lessSuited": "You run many small events a year, since each published one costs €19. The interface is German only, the code is closed, and you cannot run it on your own server.",
+                "lessSuited": "You run many small events a year, since each published one costs €19. The website and app appear to be German only, the code is closed, and you cannot run it on your own server.",
                 "name": "Helferstube",
                 "summary": "A German online tool for helper lists at club festivals such as Kirmes, Schützenfest and carnival. Organisers set up stands, shifts and cake donations, and helpers sign up through a link or QR code."
             },
             "spreadsheet": {
                 "cells": {
-                    "account": "Google Sheets: no, with an open edit link. Excel for the web: yes",
+                    "account": "No, with an open edit link (work or school accounts may restrict this)",
                     "hosting": "Google's or Microsoft's cloud; the data protection duties are yours",
                     "languages": "Many, including German and English",
                     "openSource": "No",
@@ -107,8 +107,8 @@
                     "reminders": "None built in",
                     "selfHost": "No"
                 },
-                "goodFit": "A small one-off event with a few shifts, where everyone knows each other. There is nothing to learn, any layout works, and it costs nothing.",
-                "lessSuited": "More than a handful of helpers. Nothing stops a shift from being overbooked or a name from being deleted, everyone with the link sees everyone's contact details, and nobody gets reminded.",
+                "goodFit": "You run a small one-off event with a few shifts, and everyone knows each other. There is nothing to learn, any layout works, and it costs nothing.",
+                "lessSuited": "You have more than a handful of helpers. Nothing stops a shift from being overbooked or a name from being deleted, everyone with the link sees everyone's contact details, and nobody gets reminded.",
                 "name": "Shared spreadsheet",
                 "summary": "A Google Sheets or Excel file that everyone may edit, where helpers type their names into the shift rows. Small clubs, schools and parent groups often start this way."
             },
@@ -139,7 +139,7 @@
                 },
                 "clubFestival": {
                     "description": "Stands, set-up and teardown, invitations and reminders: a festival weekend planned step by step.",
-                    "title": "Plan the helpers for a club festival"
+                    "title": "Volunteer shifts for a club festival"
                 },
                 "landing": {
                     "description": "How it works for organisers and helpers, all features, and the questions people ask before they start.",
@@ -591,8 +591,8 @@
             "title": "Changelog · WirkSam"
         },
         "clubFestival": {
-            "description": "Plan the helpers for a club festival, summer fête or sports day: set up each stand as a task, let the shifts be created, invite by link, and everyone signs up themselves, with a reminder before every shift. Free.",
-            "title": "Helper rota for your club festival, planned online · WirkSam"
+            "description": "Plan the volunteer shifts for a club festival, summer fête or sports day: set up each stand as a task, generate the shifts, invite helpers by link and let them sign up themselves, with a reminder before every shift. Free.",
+            "title": "Plan your club festival's volunteer roster online · WirkSam"
         },
         "impressum": {
             "description": "Who runs WirkSam and how to get in touch.",
@@ -700,8 +700,8 @@
             },
             "hero": {
                 "eyebrow": "For club festivals",
-                "lede": "In WirkSam you set up each stand at your club festival as a task, let the shifts be created from it, and send your helpers a link. They sign up for themselves, you can see at any time where someone is still missing, and everyone gets a reminder before their shift. It works the same way for a summer fête, a sports day or an anniversary, and it costs nothing.",
-                "title": "Plan the helpers for your club festival online"
+                "lede": "In WirkSam you set up each stand at your club festival as a task, generate the shifts from it, and send your helpers a link. They sign up for themselves, you can see at any time where someone is still missing, and everyone gets a reminder before their shift. It works the same way for a summer fête, a sports day or an anniversary, and it costs nothing.",
+                "title": "Plan your club festival's volunteer shifts online"
             },
             "pains": {
                 "eyebrow": "Sound familiar?",
@@ -711,7 +711,7 @@
                         "title": "Sign-ups get lost in the group chat"
                     },
                     "gaps": {
-                        "description": "The list hangs in the clubhouse or sits in someone's inbox. Which shifts are still open, you only find out by asking around.",
+                        "description": "The list hangs in the clubhouse or sits in someone's inbox, and the only way to find out which shifts are still open is to ask around.",
                         "title": "Nobody sees the gaps"
                     },
                     "noShows": {
@@ -744,7 +744,7 @@
                         "title": "Invite your members"
                     },
                     "nextYear": {
-                        "description": "Copy the event onto next year's dates. Stands, shifts and times come along and land on the same weekdays, and the sign-ups start empty.",
+                        "description": "Copy the event onto next year's dates. Stands, shifts and times come along and land on the same weekdays. Nobody is signed up yet.",
                         "screenshotAlt": "The copy-event screen listing last year's tasks with their shift counts, each ticked to come across to the new dates.",
                         "title": "Next year, start from this year's plan"
                     },
