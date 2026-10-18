@@ -1,0 +1,97 @@
+name: Screenshots
+
+# Retakes the product screenshots (landing page, content pages, README) after
+# a release, so they follow the UI instead of whoever last remembered to run
+# `just screenshots`. The result is a branch and a pull request to look over:
+# the example event is dated relative to the day of the run, so every run
+# changes some pixels, and a person decides whether the change is worth it.
+
+on:
+    release:
+        types:
+            - published
+    workflow_dispatch:
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    screenshots:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: main
+            - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+              with:
+                  package_json_file: frontend/package.json
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version: lts/*
+                  cache: pnpm
+                  cache-dependency-path: frontend/pnpm-lock.yaml
+            - run: pnpm install --frozen-lockfile
+              working-directory: frontend
+            - run: pnpm exec playwright install --with-deps chromium
+              working-directory: frontend
+            - name: Create .env files
+              run: |
+                  cp .env.example .env
+                  cp frontend/.env.example frontend/.env
+            - name: Create external network
+              run: docker network create traefik-net || true
+            # ENVIRONMENT=local in .env.example, so the backend runs with
+            # TESTING on, which the seeding endpoints and the test-user header
+            # need. The override publishes it on localhost:8787.
+            - name: Start backend and wait for healthy
+              run: docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --wait backend
+            - name: Start frontend
+              working-directory: frontend
+              env:
+                  VITE_API_URL: http://localhost:8787/api/v1
+                  VITE_E2E_AUTH_BYPASS: "true"
+              run: |
+                  nohup pnpm exec vite --port 5555 --strictPort > vite.log 2>&1 &
+                  for _ in $(seq 1 60); do
+                      curl -sf http://localhost:5555 > /dev/null && exit 0
+                      sleep 2
+                  done
+                  cat vite.log
+                  exit 1
+            - name: Take screenshots
+              working-directory: frontend
+              env:
+                  CI: "true"
+                  VITE_API_URL: http://localhost:8787/api/v1
+              run: |
+                  LANG=en pnpm exec playwright test --config=scripts/screenshots.config.ts --reporter=list
+                  LANG=de pnpm exec playwright test --config=scripts/screenshots.config.ts --reporter=list
+            - name: Stop stack
+              if: ${{ always() }}
+              run: docker compose -f docker-compose.yml -f docker-compose.override.yml down -v --remove-orphans
+            - name: Open a pull request
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  NAME: ${{ github.event.release.tag_name || github.run_id }}
+              run: |
+                  if git diff --quiet -- frontend/public/screenshots; then
+                      echo "Screenshots unchanged." >> "$GITHUB_STEP_SUMMARY"
+                      exit 0
+                  fi
+                  branch="screenshots/$NAME"
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git switch -c "$branch"
+                  git add frontend/public/screenshots
+                  git commit -m "docs(screenshots): retake for $NAME"
+                  git push origin "$branch"
+                  # Creating the pull request needs "Allow GitHub Actions to
+                  # create and approve pull requests" in the repository's
+                  # Actions settings. Without it the branch is still pushed.
+                  if ! gh pr create --base main --head "$branch" \
+                      --title "docs(screenshots): retake for $NAME" \
+                      --body "Screenshots retaken by the Screenshots workflow after $NAME. Look through the images before merging."; then
+                      echo "Pushed \`$branch\`; open the pull request at ${{ github.server_url }}/${{ github.repository }}/compare/main...$branch" >> "$GITHUB_STEP_SUMMARY"
+                  fi
