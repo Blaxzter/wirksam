@@ -30,7 +30,7 @@ test.describe('landing page', () => {
   test('a screenshot opens in the viewer and pages through the gallery', async ({ page }) => {
     await page.goto('/')
 
-    const frames = page.locator('#features button[aria-label]')
+    const frames = page.locator('#app #features button[aria-label]')
     await frames.first().scrollIntoViewIfNeeded()
     await frames.first().click()
 
@@ -50,7 +50,11 @@ test.describe('landing page', () => {
 
   test('a FAQ answer opens from its question', async ({ page }) => {
     await page.goto('/')
-    const item = page.locator('#faq-cost')
+    // The prerendered copy keeps its ids until the app replaces it, so an id
+    // locator can land on that copy just before it is removed. Test ids are
+    // stripped from it: once the heading is visible, the live page is up.
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    const item = page.locator('#app #faq-cost')
     await item.locator('summary').scrollIntoViewIfNeeded()
     await expect(item.locator('p')).toBeHidden()
     await item.locator('summary').click()
