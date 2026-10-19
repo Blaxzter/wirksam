@@ -56,7 +56,7 @@ test.describe('club festival page', () => {
 
     await expect(page.locator('#how-it-works ol > li')).toHaveCount(6)
 
-    const item = page.locator('#faq-account')
+    const item = page.locator('#app #faq-account')
     await item.locator('summary').scrollIntoViewIfNeeded()
     await expect(item.locator('p')).toBeHidden()
     await item.locator('summary').click()
