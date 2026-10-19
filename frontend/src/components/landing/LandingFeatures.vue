@@ -27,10 +27,11 @@ const { t } = useI18n()
 const rows = [
   { key: 'shifts', screenshot: 'shift-schedule' },
   { key: 'overview', screenshot: 'tasks' },
+  // New rows go after these two: e2e/tests/public/landing.spec.ts names the
+  // first two gallery frames by file, so an earlier position breaks that spec.
+  { key: 'venue', screenshot: 'venue-map' },
   { key: 'bookings', screenshot: 'my-bookings' },
   { key: 'reminders', screenshot: 'notification-preferences' },
-  // Appended, not inserted: e2e/tests/public/landing.spec.ts names the first
-  // two gallery frames by file, so an earlier position breaks that spec.
   { key: 'clone', screenshot: 'clone-event' },
 ] as const
 

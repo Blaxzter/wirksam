@@ -368,6 +368,16 @@
                     },
                     "screenshotAlt": "The shift schedule form beside a live preview of every shift it would create.",
                     "title": "Describe the pattern once"
+                },
+                "venue": {
+                    "description": "Upload a floor plan or draw your venue right in the app, then pin each place where people work. The map shows at a glance where help is still missing.",
+                    "points": {
+                        "0": "Every pin is coloured by how well that place is staffed on the chosen day.",
+                        "1": "Helpers see on the map where their shift is, so nobody has to ask where to go.",
+                        "2": "Several plans per event, for example the building and the outdoor area."
+                    },
+                    "screenshotAlt": "The venue map: a drawn floor plan with a pin for each place, coloured by how well it is staffed, beside a list of all places with their booked slots.",
+                    "title": "See where help is needed"
                 }
             },
             "title": "Everything a roster needs"

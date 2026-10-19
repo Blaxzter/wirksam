@@ -368,6 +368,16 @@
                     },
                     "screenshotAlt": "Das Formular für den Zeitplan neben einer Vorschau aller Schichten, die daraus entstünden.",
                     "title": "Das Muster einmal beschreiben"
+                },
+                "venue": {
+                    "description": "Lade einen Lageplan hoch oder zeichne deinen Veranstaltungsort direkt in der App und setze für jeden Einsatzort einen Pin. Die Karte zeigt auf einen Blick, wo noch Hilfe fehlt.",
+                    "points": {
+                        "0": "Jeder Pin ist danach eingefärbt, wie gut der Ort am gewählten Tag besetzt ist.",
+                        "1": "Helfende sehen auf der Karte, wo ihre Schicht ist, und müssen nicht erst fragen, wohin.",
+                        "2": "Mehrere Pläne pro Veranstaltung, zum Beispiel für das Gebäude und das Außengelände."
+                    },
+                    "screenshotAlt": "Der Lageplan: ein gezeichneter Grundriss mit einem Pin für jeden Ort, eingefärbt nach Besetzung, daneben eine Liste aller Orte mit ihren gebuchten Plätzen.",
+                    "title": "Sehen, wo Hilfe fehlt"
                 }
             },
             "title": "Alles, was ein Dienstplan braucht"
