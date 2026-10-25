@@ -36,7 +36,7 @@ class PushChannel(NotificationChannel):
             return False
 
         try:
-            from pywebpush import WebPushException, webpush  # pyright: ignore[reportMissingTypeStubs]  # noqa: I001
+            from pywebpush import WebPushException, webpush  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]  # noqa: I001
 
             from app.core.db import async_session
             from app.crud.push_subscription import push_subscription as crud_push

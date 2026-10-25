@@ -1,6 +1,6 @@
 import datetime as dt
 import uuid
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from fastapi import APIRouter, BackgroundTasks, Query
 from pydantic import BaseModel, ValidationError
@@ -274,7 +274,9 @@ async def update_event(
             ).where(col(Task.event_id) == event_id)
         )
         row = result.one()
-        earliest_task, latest_task = row[0], row[1]
+        # MIN/MAX over an event with no tasks is NULL, whatever the typed row says.
+        earliest_task = cast(dt.date | None, row[0])
+        latest_task = cast(dt.date | None, row[1])
         if earliest_task is not None and new_start > earliest_task:
             raise_problem(
                 422,

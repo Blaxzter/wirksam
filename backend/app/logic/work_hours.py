@@ -148,7 +148,7 @@ async def _booked_shifts(
         date,
         start,
         end,
-    ) in result.tuples().all():
+    ) in result.all():
         rows.append(
             (
                 booker_id,

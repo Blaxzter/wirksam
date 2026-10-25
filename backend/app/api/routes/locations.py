@@ -270,7 +270,7 @@ async def list_location_shifts(
 
     result = await session.execute(query)
     shifts: list[LocationShiftRead] = []
-    for shift, task_name, current, booking_id in result.tuples().all():
+    for shift, task_name, current, booking_id in result.all():
         # A scalar subquery is NULL when nothing matched, whatever its type says.
         my_booking_id = cast(uuid.UUID | None, booking_id)
         shifts.append(

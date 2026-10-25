@@ -71,7 +71,7 @@ class CRUDVenueTemplate:
             VenueTemplateSummary.model_validate(template).model_copy(
                 update={"shape_count": int(shape_count)}
             )
-            for template, shape_count in result.tuples().all()
+            for template, shape_count in result.all()
         ]
 
     def shapes_of(self, template: VenueTemplate) -> list[VenueTemplateShape]:

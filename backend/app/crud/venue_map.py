@@ -291,7 +291,7 @@ class CRUDVenueMap:
             )
             .group_by(col(VenuePlan.event_id))
         )
-        return dict(result.tuples().all())
+        return dict(result.all())
 
     # ── Images ─────────────────────────────────────────────────────────────
 
@@ -476,7 +476,7 @@ class CRUDVenueMap:
                 open_shifts=int(open_shifts),
             )
             for location_id, shift_count, booked_total, capacity, open_shifts in (
-                result.tuples().all()
+                result.all()
             )
             if location_id is not None
         ]

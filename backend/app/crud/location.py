@@ -109,35 +109,27 @@ class CRUDLocation:
         at its centroid, so a drawn room shows up in mini-maps too.
         """
         marker_rows = (
-            (
-                await session.execute(
-                    select(VenueMarker, VenuePlan)
-                    .join(VenuePlan, col(VenuePlan.id) == col(VenueMarker.plan_id))
-                    .where(col(VenueMarker.location_id) == location_id)
-                )
+            await session.execute(
+                select(VenueMarker, VenuePlan)
+                .join(VenuePlan, col(VenuePlan.id) == col(VenueMarker.plan_id))
+                .where(col(VenueMarker.location_id) == location_id)
             )
-            .tuples()
-            .all()
-        )
+        ).all()
         shape_rows = (
-            (
-                await session.execute(
-                    select(VenueShape, VenuePlan)
-                    .join(VenuePlan, col(VenuePlan.id) == col(VenueShape.plan_id))
-                    .where(
-                        col(VenueShape.location_id) == location_id,
-                        col(VenueShape.kind).in_(LINKABLE_KINDS),
-                    )
-                    .order_by(
-                        col(VenueShape.sort_order),
-                        col(VenueShape.created_at),
-                        col(VenueShape.id),
-                    )
+            await session.execute(
+                select(VenueShape, VenuePlan)
+                .join(VenuePlan, col(VenuePlan.id) == col(VenueShape.plan_id))
+                .where(
+                    col(VenueShape.location_id) == location_id,
+                    col(VenueShape.kind).in_(LINKABLE_KINDS),
+                )
+                .order_by(
+                    col(VenueShape.sort_order),
+                    col(VenueShape.created_at),
+                    col(VenueShape.id),
                 )
             )
-            .tuples()
-            .all()
-        )
+        ).all()
 
         # (plan, marker id, shape, x, y) per placement.
         placed: list[
@@ -162,9 +154,7 @@ class CRUDLocation:
                     .where(col(VenueShape.plan_id).in_({p.id for p, *_ in placed}))
                     .group_by(col(VenueShape.plan_id))
                 )
-            )
-            .tuples()
-            .all()
+            ).all()
         )
         placed.sort(
             key=lambda row: (row[0].sort_order, row[0].created_at, str(row[0].id))
