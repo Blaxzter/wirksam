@@ -111,3 +111,27 @@ jobs:
                   GHCR_PAT: ${{ secrets.GHCR_PAT }}
                   GHCR_USER: ${{ github.actor }}
                   DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
+    sync-dev:
+        # Releases are cut from main, but dev is the default branch, so
+        # Dependabot and new feature branches start from it. Bring it level with
+        # what just shipped, or it drifts releases behind. Runs only after a
+        # successful deploy; a merge conflict fails this job, not the deploy.
+        needs: deploy
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+
+        steps:
+            - name: Checkout dev
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: dev
+                  fetch-depth: 0
+
+            - name: Merge the released commit into dev
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git merge --no-edit "$GITHUB_SHA"
+                  git push origin dev
