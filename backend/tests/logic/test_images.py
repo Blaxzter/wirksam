@@ -155,6 +155,22 @@ class TestRejections:
         with pytest.raises(ImageProcessingError, match="not a valid image"):
             _plan(b"%PDF-1.7 definitely a floor plan")
 
+    @pytest.mark.parametrize("fmt", ["TIFF", "BMP"])
+    def test_formats_outside_the_allowlist(self, fmt: str) -> None:
+        # Valid images, but Pillow must not even pick a decoder for them.
+        buffer = io.BytesIO()
+        Image.new("RGB", (8, 8)).save(buffer, format=fmt)
+
+        with pytest.raises(ImageProcessingError, match="not a valid image"):
+            _plan(buffer.getvalue())
+
+    @pytest.mark.parametrize("fmt", ["JPEG", "WEBP", "GIF"])
+    def test_formats_inside_the_allowlist(self, fmt: str) -> None:
+        buffer = io.BytesIO()
+        Image.new("RGB", (8, 8)).save(buffer, format=fmt)
+
+        assert _plan(buffer.getvalue()).content_type == "image/webp"
+
 
 class TestDecompressionBombs:
     """Huge declared dimensions in a tiny file are a 400, never a 500."""
