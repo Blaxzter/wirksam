@@ -8,6 +8,7 @@ mocked as well, so no database session is required either.
 
 import json
 import sys
+import threading
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
@@ -24,7 +25,7 @@ from app.logic.notifications.channels.email import (
     EmailChannel,
     _build_html,  # type: ignore[reportPrivateUsage]
 )
-from app.logic.notifications.channels.push import PushChannel
+from app.logic.notifications.channels.push import PUSH_TIMEOUT_SECONDS, PushChannel
 from app.logic.notifications.channels.telegram import (
     TelegramChannel,
     _escape_markdown,  # type: ignore[reportPrivateUsage]
@@ -754,6 +755,7 @@ class TestPushChannel:
         assert payload["icon"] == "/favicon.ico"
         assert call.kwargs["vapid_private_key"] == "test-private-key"
         assert call.kwargs["vapid_claims"] == {"sub": "mailto:push@example.test"}
+        assert call.kwargs["timeout"] == PUSH_TIMEOUT_SECONDS
 
     async def test_send_without_data_uses_empty_payload_data(self) -> None:
         """Test that a missing data dict becomes an empty object in the payload."""
@@ -802,12 +804,92 @@ class TestPushChannel:
         assert result is True
         assert webpush.call_count == 2
 
-    async def test_send_removes_stale_subscription_on_410(self) -> None:
-        """Test that a 410 response removes the endpoint and reports failure."""
+    async def test_send_moves_on_after_a_device_times_out(self) -> None:
+        """Test that a network error on one device still reaches the next one."""
+        user = _make_user()
+        subscriptions = [
+            _make_subscription(ENDPOINT_A, user.id),
+            _make_subscription(ENDPOINT_B, user.id),
+        ]
+        remove = AsyncMock(return_value=True)
+
+        with (
+            _push_settings(),
+            patch("app.core.db.async_session", _FakeSessionFactory()),
+            patch.object(
+                crud_push, "get_by_user", AsyncMock(return_value=subscriptions)
+            ),
+            patch.object(crud_push, "remove_by_endpoint", remove),
+            patch(
+                "pywebpush.webpush", side_effect=[TimeoutError("read timed out"), None]
+            ) as webpush,
+        ):
+            result = await PushChannel().send(
+                recipient=user, title="Title", body="Body"
+            )
+
+        assert result is True
+        assert webpush.call_count == 2
+        remove.assert_not_awaited()
+
+    async def test_send_gives_each_device_its_own_vapid_claims(self) -> None:
+        """Test that the ``aud`` webpush writes for one device never reaches the next."""
+        user = _make_user()
+        subscriptions = [
+            _make_subscription(ENDPOINT_A, user.id),
+            _make_subscription(ENDPOINT_B, user.id),
+        ]
+        seen: list[dict[str, str | int]] = []
+
+        def fake_webpush(**kwargs: object) -> None:
+            claims = kwargs["vapid_claims"]
+            assert isinstance(claims, dict)
+            seen.append(dict(claims))  # pyright: ignore[reportUnknownArgumentType]
+            # What pywebpush does: fill in the push service's origin if missing.
+            claims.setdefault("aud", str(kwargs["subscription_info"]))  # pyright: ignore[reportUnknownMemberType]
+
+        with (
+            _push_settings(),
+            patch("app.core.db.async_session", _FakeSessionFactory()),
+            patch.object(
+                crud_push, "get_by_user", AsyncMock(return_value=subscriptions)
+            ),
+            patch("pywebpush.webpush", side_effect=fake_webpush),
+        ):
+            await PushChannel().send(recipient=user, title="Title", body="Body")
+
+        assert len(seen) == 2
+        assert "aud" not in seen[1]
+
+    async def test_send_runs_webpush_off_the_event_loop(self) -> None:
+        """Test that the blocking webpush call never runs on the event loop thread."""
+        user = _make_user()
+        threads: list[int] = []
+
+        def fake_webpush(**_: object) -> None:
+            threads.append(threading.get_ident())
+
+        with (
+            _push_settings(),
+            patch("app.core.db.async_session", _FakeSessionFactory()),
+            patch.object(
+                crud_push,
+                "get_by_user",
+                AsyncMock(return_value=[_make_subscription(ENDPOINT_A, user.id)]),
+            ),
+            patch("pywebpush.webpush", side_effect=fake_webpush),
+        ):
+            await PushChannel().send(recipient=user, title="Title", body="Body")
+
+        assert threads and threads[0] != threading.get_ident()
+
+    @pytest.mark.parametrize("status", [404, 410])
+    async def test_send_removes_stale_subscription(self, status: int) -> None:
+        """Test that a 404 or 410 response removes the endpoint and reports failure."""
         user = _make_user()
         sessions = _FakeSessionFactory()
         remove = AsyncMock(return_value=True)
-        gone = WebPushException("gone", response=_FakeWebPushResponse(410, "Gone"))
+        gone = WebPushException("gone", response=_FakeWebPushResponse(status, "Gone"))
 
         with (
             _push_settings(),
@@ -830,7 +912,7 @@ class TestPushChannel:
         assert remove.await_args.kwargs["endpoint"] == ENDPOINT_A
         assert sessions.session.commits == 1
 
-    async def test_send_keeps_subscription_on_non_410_error(self) -> None:
+    async def test_send_keeps_subscription_on_other_errors(self) -> None:
         """Test that a transient push error does not delete the subscription."""
         user = _make_user()
         sessions = _FakeSessionFactory()
