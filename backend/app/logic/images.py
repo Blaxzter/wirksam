@@ -18,6 +18,10 @@ MAX_INPUT_BYTES: Final = 20 * 1024 * 1024  # 20 MB
 # Decoded-size cap. A tiny PNG can declare enormous dimensions; this refuses it
 # from the header alone, below Pillow's own (much higher) bomb threshold.
 MAX_PIXELS: Final = 60_000_000
+# The only decoders Pillow may use, matching what the upload pickers offer.
+# Every other plugin (TIFF, EPS via Ghostscript, PDF, FPX, ...) stays out of
+# reach of user input, which is where most of Pillow's advisories live.
+ALLOWED_FORMATS: Final = ("PNG", "JPEG", "WEBP", "GIF")
 
 Encoder = Callable[[Image.Image, int], bytes]
 
@@ -75,7 +79,7 @@ def normalize_image(
         warnings.simplefilter("error", Image.DecompressionBombWarning)
 
         try:
-            with Image.open(io.BytesIO(raw)) as probe:
+            with Image.open(io.BytesIO(raw), formats=ALLOWED_FORMATS) as probe:
                 if probe.width * probe.height > max_pixels:
                     raise ImageProcessingError("Image is too large")
                 probe.verify()
@@ -86,7 +90,7 @@ def normalize_image(
 
         # verify() consumes the file; reopen for actual processing.
         try:
-            with Image.open(io.BytesIO(raw)) as src:
+            with Image.open(io.BytesIO(raw), formats=ALLOWED_FORMATS) as src:
                 if src.format == "JPEG":
                     # Let libjpeg decode at a reduced scale (no smaller than
                     # the target box) instead of decoding full size first.
