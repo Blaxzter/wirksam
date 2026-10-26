@@ -133,7 +133,7 @@
         },
         "invitations": {
             "body": "Lade Leute per E-Mail ein oder erstelle einen Link, den du in einer Gruppe teilen kannst. Wer ihm folgt, ist sofort dabei. Die Demo verschickt keine E-Mails, diese Karte ist also nur zum Anschauen.",
-            "next": "Wie lief es?",
+            "next": "Wer was darf",
             "title": "Mehr Leute dazuholen"
         },
         "jobInfo": {
@@ -191,6 +191,11 @@
         "taskDetails": {
             "body": "Name, Beschreibung, Ort und Kategorie. Das lesen die Helfenden, wenn sie überlegen, ob eine Aufgabe etwas für sie ist. Schreib also, worum es bei der Arbeit wirklich geht.",
             "title": "Worum es geht"
+        },
+        "teamRequests": {
+            "body": "Manche Aufgaben brauchen jemanden mit Vertrauen oder Qualifikation, etwa Kinderbetreuung oder Erste Hilfe. Behalte eine Aufgabe einem Team vor, dann können nur seine Mitglieder sie buchen. Hier fragen Leute den Beitritt an; braucht ein Team einen Nachweis wie ein Führungszeugnis, hakst du vor der Freigabe ab, dass du ihn gesehen hast. WirkSam speichert keine Kopie.",
+            "next": "Wie lief es?",
+            "title": "Teams für besondere Aufgaben"
         },
         "topVolunteers": {
             "body": "Wer die meisten Schichten übernommen hat. Praktisch für ein Dankeschön, und um zu wissen, wen du nächstes Jahr zuerst fragst.",

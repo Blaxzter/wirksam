@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Check, ChevronRight } from '@lucide/vue'
+import { Check, ChevronRight, Lock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -118,7 +118,8 @@ watch(
 
 const isFull = (shift: LocationShiftRead) => (shift.current_bookings ?? 0) >= shift.max_bookings
 
-const canBook = (shift: LocationShiftRead) => !shift.is_booked_by_me && !isFull(shift)
+const canBook = (shift: LocationShiftRead) =>
+  !shift.is_booked_by_me && !isFull(shift) && !shift.locked_by_team
 
 function shiftChipClass(shift: LocationShiftRead) {
   const s = staffingStatus({ booked: shift.current_bookings ?? 0, capacity: shift.max_bookings })
@@ -286,6 +287,23 @@ function onBookingUpdated() {
           <span v-else-if="isFull(shift)" class="text-foreground/75 shrink-0 text-[13px]">
             {{ t('venueMap.sheet.full') }}
           </span>
+          <!--
+            Locked for a team the user is not in: the team's name stays
+            visible (a tooltip never shows on touch), and the button opens the
+            shift, whose dialog joins the team in place.
+          -->
+          <Button
+            v-else-if="shift.locked_by_team"
+            variant="ghost"
+            size="sm"
+            class="text-foreground/75 h-8 max-w-[45%] shrink-0 gap-1 px-2 text-[13px]"
+            :aria-label="t('teamLocks.gate.openShift', { name: shift.team_name })"
+            :data-testid="`sheet-team-locked-${shift.id}`"
+            @click="openShift(shift)"
+          >
+            <Lock class="size-3.5" aria-hidden="true" />
+            <span class="truncate">{{ t('teamLocks.badge.only', { name: shift.team_name }) }}</span>
+          </Button>
           <Button
             v-else-if="canBook(shift)"
             size="sm"
@@ -310,6 +328,7 @@ function onBookingUpdated() {
       :shift-id="detailShiftId"
       priority
       @booking-updated="onBookingUpdated"
+      @team-joined="loadShifts"
     />
   </div>
 </template>

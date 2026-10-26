@@ -140,6 +140,18 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           },
         },
         {
+          // `:eventId?` falls back to the selected event, like event-map.
+          // `?team=<id>` opens and scrolls to one team; it must not remount
+          // the page, hence the fixed view key.
+          path: 'teams/:eventId?',
+          name: 'teams',
+          component: () => import('@/views/events/TeamsView.vue'),
+          meta: {
+            routerViewKey: 'teams',
+            breadcrumbs: [{ title: 'Teams', titleKey: 'teams.page.title' }],
+          },
+        },
+        {
           path: 'print',
           name: 'event-print',
           component: () => import('@/views/events/PrintView.vue'),
@@ -334,18 +346,6 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
             breadcrumbs: [
               { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
               { title: 'Reports', titleKey: 'admin.reporting.title' },
-            ],
-          },
-        },
-        {
-          path: 'admin/demo-data',
-          name: 'admin-demo-data',
-          component: () => import('@/views/admin/DemoDataView.vue'),
-          meta: {
-            requiresRole: 'admin',
-            breadcrumbs: [
-              { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
-              { title: 'Demo Data', titleKey: 'admin.demoData.title' },
             ],
           },
         },

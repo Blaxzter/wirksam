@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Bell, CheckCheck, Settings, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
+import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 
 import { useDialog } from '@/composables/useDialog'
@@ -20,11 +21,22 @@ import HintTooltip from '@/components/utils/HintTooltip.vue'
 const { t } = useI18n()
 const router = useRouter()
 const notificationStore = useNotificationStore()
+const authStore = useAuthStore()
 const { confirmDestructive } = useDialog()
 
 const popoverOpen = ref(false)
 
 const unreadCount = computed(() => notificationStore.unreadCount)
+
+// A new notification may be a team request to decide. The stream only sends
+// the count, so re-read the selected event: its `pending_team_request_count`
+// drives the Teams badge in the sidebar and the More sheet, which should keep
+// up the way this bell does.
+watch(unreadCount, (now, before) => {
+  if (now > before && authStore.selectedEventId) {
+    void authStore.refreshSelectedEvent(authStore.selectedEventId)
+  }
+})
 const hasUnread = computed(() => notificationStore.hasUnread)
 const hasAny = computed(() => notificationStore.notifications.length > 0)
 

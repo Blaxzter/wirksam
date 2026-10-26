@@ -117,8 +117,6 @@ omit = [
     "app/main.py",
     # Dev-only diagnostics router; not mounted outside local development.
     "app/api/routes/debug.py",
-    # Demo/seed content used for sales walkthroughs, not a product code path.
-    "app/api/routes/demo_data.py",
     # Exists only when TESTING=true, to support the E2E suite's Auth0 bypass.
     # Testing the test harness with the test harness is circular; the E2E suite
     # fails loudly if these break.

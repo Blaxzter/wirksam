@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Lock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import type { CalendarTask, TaskBar } from './types'
@@ -64,7 +65,14 @@ const { t } = useI18n()
       @mouseleave="emit('hover', null)"
       @click="emit('navigateTask', bar.task)"
     >
-      <span v-if="bar.isStart || bar.startCol === 0" class="truncate">{{ bar.task.name }}</span>
+      <span v-if="bar.isStart || bar.startCol === 0" class="truncate">
+        <Lock
+          v-if="bar.task.locked_by_team"
+          class="mr-0.5 inline size-3 align-[-2px]"
+          role="img"
+          :aria-label="t('teamLocks.badge.locked', { name: bar.task.team_name ?? '' })"
+        />{{ bar.task.name }}</span
+      >
     </button>
   </div>
 </template>

@@ -17,6 +17,7 @@ from app.logic.locations import (
     unlink_task_children,
 )
 from app.logic.permissions import get_event_role, require_event_role
+from app.logic.teams import ensure_team_in_event, mark_task_locks
 from app.models.shift import Shift
 from app.models.task import Task
 from app.schemas.booking import TaskBookingEntry
@@ -93,8 +94,10 @@ async def list_tasks(
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
     )
+    reads = [TaskRead.model_validate(i) for i in items]
+    await mark_task_locks(session, current_user, reads)
     return TaskListResponse(
-        items=[TaskRead.model_validate(i) for i in items],
+        items=reads,
         total=total,
         skip=skip,
         limit=limit,
@@ -106,7 +109,7 @@ async def get_task(
     task_id: str,
     session: DBDep,
     current_user: CurrentUser,
-) -> Task:
+) -> TaskRead:
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
     role = await get_event_role(current_user, session, db_task.event_id)
     if role is None:
@@ -117,7 +120,9 @@ async def get_task(
         )
     if db_task.status != "published" and role not in ("owner", "admin"):
         raise_problem(403, code="task.not_published", detail="Task is not published")
-    return db_task
+    read = TaskRead.model_validate(db_task)
+    await mark_task_locks(session, current_user, [read])
+    return read
 
 
 @router.post("/", response_model=TaskRead, status_code=201)
@@ -131,6 +136,9 @@ async def create_task(
         session, event_id=task_in.event_id, location_id=task_in.location_id
     )
     apply_location(task_in, loc, task_in.location)
+    await ensure_team_in_event(
+        session, team_id=task_in.team_id, event_id=task_in.event_id
+    )
     task_in.created_by_id = current_user.id
     return await crud_task.create(session, obj_in=task_in)
 
@@ -157,6 +165,15 @@ async def update_task(
         await unlink_task_children(session, db_task.id)
         if "location_id" not in update_data:
             update_data["location_id"] = None
+        # Teams belong to one event too, and unlike a location there is no
+        # text to fall back on: the gate simply goes.
+        if "team_id" not in update_data:
+            update_data["team_id"] = None
+    await ensure_team_in_event(
+        session,
+        team_id=update_data.get("team_id", db_task.team_id),
+        event_id=target_event_id,
+    )
     update_data.update(
         await location_patch(session, db_task, update_data, event_id=target_event_id)
     )

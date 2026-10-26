@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { formatDate, formatHours } from '@/lib/format'
+import { formatDate, formatHours, initials } from '@/lib/format'
 import i18n from '@/locales/i18n'
 
 /**
@@ -102,5 +102,22 @@ describe('formatHours', () => {
   it('rounds to two decimals', () => {
     i18n.global.locale.value = 'en'
     expect(formatHours(10)).toBe('0.17')
+  })
+})
+
+describe('initials', () => {
+  it('takes the first letters of the first two words', () => {
+    expect(initials('Carla Meier')).toBe('CM')
+    expect(initials('anna.schmidt@example.com')).toBe('AS')
+  })
+
+  it('skips a "[DEMO]" style prefix', () => {
+    expect(initials('[DEMO] Carla Meier')).toBe('CM')
+  })
+
+  it('uses two letters of a single word, and "?" for nothing', () => {
+    expect(initials('Marco')).toBe('MA')
+    expect(initials('')).toBe('?')
+    expect(initials(null)).toBe('?')
   })
 })

@@ -61,6 +61,14 @@ function handleNotificationClick(notification: (typeof notifications.value)[0]) 
     if (data.task_id) {
       emit('navigate')
       router.push({ name: 'task-detail', params: { eventId: data.task_id as string } })
+    } else if (data.team_id && data.event_id) {
+      // Team requests and decisions open the Teams page on that team.
+      emit('navigate')
+      router.push({
+        name: 'teams',
+        params: { eventId: data.event_id as string },
+        query: { team: data.team_id as string },
+      })
     } else if (data.event_id) {
       emit('navigate')
       router.push({
@@ -104,6 +112,9 @@ function getNotificationIcon(typeCode: string): string {
     'user.registered': '👤',
     'user.approved': '✓',
     'user.rejected': '✕',
+    'team.join_requested': '🙋',
+    'team.join_approved': '✓',
+    'team.join_declined': '✕',
   }
   return iconMap[typeCode] || '📌'
 }

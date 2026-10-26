@@ -14,6 +14,7 @@ from app.crud.task import task as crud_task
 from app.logic.locations import resolve_location
 from app.logic.permissions import require_event_role
 from app.logic.shift_generator import generate_shifts
+from app.logic.teams import ensure_team_in_event
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.schemas.event import EventRead
@@ -51,6 +52,11 @@ async def create_task_with_shifts(
     loc = await resolve_location(
         session, event_id=payload.event_id, location_id=payload.location_id
     )
+    # A brand-new event has no teams, so this is checked against
+    # ``payload.event_id`` like the location above.
+    await ensure_team_in_event(
+        session, team_id=payload.team_id, event_id=payload.event_id
+    )
     location_text = loc.name if loc else payload.location
     location_id = loc.id if loc else None
     # 1. Optionally create a new event
@@ -73,6 +79,7 @@ async def create_task_with_shifts(
         location=location_text,
         location_id=location_id,
         category=payload.category,
+        team_id=payload.team_id,
         event_id=event_id,
         created_by_id=current_user.id,
     )

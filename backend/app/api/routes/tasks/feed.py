@@ -16,6 +16,7 @@ from app.crud.task import task as crud_task
 from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
 from app.logic.permissions import get_event_role
+from app.logic.teams import bookable_filter, mark_task_locks, team_locks
 from app.models.booking import Booking
 from app.models.shift import Shift
 from app.models.task import Task
@@ -309,6 +310,10 @@ async def task_feed(
         default=None,
         description="Only tasks at this location, or with a shift there",
     ),
+    bookable_only: bool = Query(
+        default=False,
+        description="Leave out tasks reserved for a team the caller is not in",
+    ),
 ) -> TaskFeedResponse:
     """Unified feed endpoint — returns tasks with view-specific embedded data.
 
@@ -332,6 +337,8 @@ async def task_feed(
         effective_event_id = get_user_event_scope(current_user)
 
     booked_by_user_id = str(current_user.id) if my_bookings else None
+    gate = await bookable_filter(session, current_user) if bookable_only else None
+    bookable_team_ids, bookable_admin_event_ids = gate if gate else (None, None)
 
     today = dt.date.today()
     now = dt.datetime.now()
@@ -355,6 +362,8 @@ async def task_feed(
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
         location_id=location_id,
+        bookable_team_ids=bookable_team_ids,
+        bookable_admin_event_ids=bookable_admin_event_ids,
     )
     total = await crud_task.get_count_filtered(
         session,
@@ -368,6 +377,8 @@ async def task_feed(
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
         location_id=location_id,
+        bookable_team_ids=bookable_team_ids,
+        bookable_admin_event_ids=bookable_admin_event_ids,
     )
 
     if not tasks:
@@ -384,6 +395,15 @@ async def task_feed(
         items = await _build_aggregated_feed(
             session, tasks, task_ids, date_from, date_to
         )
+
+    # The team lock is per task, so its shifts share it: one lookup for the
+    # whole page rather than one per shift.
+    locks = await mark_task_locks(session, current_user, items)
+    for item in items:
+        lock = locks.get(item.id)
+        if lock is not None and lock.locked:
+            for entry in item.shifts or []:
+                entry.locked_by_team = True
 
     return TaskFeedResponse(items=items, total=total, skip=skip, limit=limit)
 
@@ -445,6 +465,12 @@ async def get_shift_window(
         date_from=start_date,
         date_to=end_date,
     )
+
+    locks = await team_locks(session, current_user, [db_task.id])
+    lock = locks.get(db_task.id)
+    if lock is not None and lock.locked:
+        for _, entry in pairs:
+            entry.locked_by_team = True
 
     return ShiftWindowResponse(
         shifts=[entry for _, entry in pairs],

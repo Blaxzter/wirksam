@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { ChevronRight, EllipsisVertical, ExternalLink, MapPin, Tag, Users } from '@lucide/vue'
+import { ChevronRight, EllipsisVertical, ExternalLink, Lock, MapPin, Tag, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -34,6 +34,7 @@ import Separator from '@/components/ui/separator/Separator.vue'
 
 import LocationDescription from '@/components/locations/LocationDescription.vue'
 import ShiftRoster from '@/components/tasks/ShiftRoster.vue'
+import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
 import type {
@@ -65,6 +66,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:open': [value: boolean]
   'booking-updated': []
+  /** The user joined (or asked to join) the team the shift is reserved for. */
+  'team-joined': [status: 'approved' | 'pending']
 }>()
 
 const { t } = useI18n()
@@ -231,12 +234,33 @@ const clashesWithMine = computed(
   () => !resolvedMyBooking.value && !!resolvedShift.value?.collides_with_my_booking,
 )
 
+// The user's team status after joining from this dialog, ahead of a reload.
+const joinedStatus = ref<'approved' | 'pending' | null>(null)
+watch(
+  () => [props.open, resolvedShift.value?.id],
+  () => (joinedStatus.value = null),
+)
+
+/** Reserved for a team the user is not (yet) an approved member of. */
+const lockedByTeam = computed(
+  () =>
+    !resolvedMyBooking.value &&
+    !!resolvedShift.value?.locked_by_team &&
+    joinedStatus.value !== 'approved',
+)
+
+const onTeamJoined = (status: 'approved' | 'pending') => {
+  joinedStatus.value = status
+  emit('team-joined', status)
+}
+
 const canBook = computed(() => {
   return (
     !resolvedMyBooking.value &&
     !bookedByMeOnServer.value &&
     !isShiftFull.value &&
-    !clashesWithMine.value
+    !clashesWithMine.value &&
+    !lockedByTeam.value
   )
 })
 
@@ -439,6 +463,29 @@ const navigateToBooking = () => {
         >
           {{ t('duties.shifts.detail.clashesWithMine') }}
         </p>
+        <template v-else-if="lockedByTeam && resolvedShift?.team_id">
+          <p
+            data-testid="shift-team-note"
+            class="text-muted-foreground flex min-w-0 flex-1 items-center gap-1.5 text-sm md:flex-none"
+          >
+            <Lock class="size-3.5 shrink-0" aria-hidden="true" />
+            {{
+              joinedStatus === 'pending' || resolvedShift.my_team_status === 'pending'
+                ? t('teamLocks.join.pendingNamed', { name: resolvedShift.team_name })
+                : t('teamLocks.gate.lockedShift', { name: resolvedShift.team_name })
+            }}
+          </p>
+          <TeamJoinButton
+            :event-id="resolvedShift.event_id"
+            :team-id="resolvedShift.team_id"
+            :team-name="resolvedShift.team_name ?? ''"
+            :requires-approval="resolvedShift.team_requires_approval ?? true"
+            :my-status="joinedStatus ?? resolvedShift.my_team_status"
+            class="h-10 flex-1 md:h-9 md:flex-none"
+            priority
+            @joined="onTeamJoined"
+          />
+        </template>
 
         <Button
           v-if="canBook"

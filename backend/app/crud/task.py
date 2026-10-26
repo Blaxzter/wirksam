@@ -32,6 +32,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
+        bookable_team_ids: list[uuid.UUID] | None = None,
+        bookable_admin_event_ids: list[uuid.UUID] | None = None,
     ) -> Select[Any]:
         if restrict_to_event_ids is not None:
             # A hard AND, unlike also_include_group_ids which widens the status
@@ -46,6 +48,17 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query = query.where(col(Task.is_sandbox).is_(False))
         if event_id is not None:
             query = query.where(col(Task.event_id) == event_id)
+        if bookable_team_ids is not None:
+            # "Only tasks I can book": no team, a team the caller is approved
+            # in, or an event they run (admins pass every team gate). Mirrors
+            # app.logic.permissions.may_book_task for a whole list.
+            query = query.where(
+                or_(
+                    col(Task.team_id).is_(None),
+                    col(Task.team_id).in_(bookable_team_ids),
+                    col(Task.event_id).in_(bookable_admin_event_ids or []),
+                )
+            )
         if location_id is not None:
             # The task itself, or any one of its shifts: a task held in the
             # foyer with one shift at the entrance shows up for both.
@@ -158,6 +171,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
+        bookable_team_ids: list[uuid.UUID] | None = None,
+        bookable_admin_event_ids: list[uuid.UUID] | None = None,
     ) -> list[Task]:
         query = select(Task)
         query = self._apply_common_filters(
@@ -173,6 +188,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
             location_id=location_id,
+            bookable_team_ids=bookable_team_ids,
+            bookable_admin_event_ids=bookable_admin_event_ids,
         )
         order_col = getattr(Task, sort_by)
         query = query.order_by(
@@ -197,6 +214,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
+        bookable_team_ids: list[uuid.UUID] | None = None,
+        bookable_admin_event_ids: list[uuid.UUID] | None = None,
     ) -> int:
         query = select(func.count()).select_from(Task)
         query = self._apply_common_filters(
@@ -212,6 +231,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
             location_id=location_id,
+            bookable_team_ids=bookable_team_ids,
+            bookable_admin_event_ids=bookable_admin_event_ids,
         )
         result = await db.execute(query)
         return result.scalar_one()

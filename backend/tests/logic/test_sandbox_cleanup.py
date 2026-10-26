@@ -40,6 +40,13 @@ from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
+from app.models.event_team import (
+    EventTeam,
+    EventTeamCheck,
+    EventTeamDocument,
+    EventTeamMember,
+    EventTeamRequirement,
+)
 from app.models.location import Location
 from app.models.notification import Notification
 from app.models.shift import Shift
@@ -82,6 +89,8 @@ class _Inventory:
     location_ids: list[uuid.UUID]
     plan_ids: list[uuid.UUID]
     shape_ids: list[uuid.UUID]
+    team_ids: list[uuid.UUID]
+    team_member_ids: list[uuid.UUID]
 
 
 async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
@@ -98,6 +107,14 @@ async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
         ),
         shape_ids=await _ids(
             db, col(VenueShape.id), col(VenueShape.plan_id).in_(plan_ids)
+        ),
+        team_ids=(
+            team_ids := await _ids(
+                db, col(EventTeam.id), col(EventTeam.event_id) == event_id
+            )
+        ),
+        team_member_ids=await _ids(
+            db, col(EventTeamMember.id), col(EventTeamMember.team_id).in_(team_ids)
         ),
         event_id=event_id,
         task_ids=task_ids,
@@ -176,6 +193,25 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
         ),
         "venue_shapes": await _count(
             db, VenueShape, col(VenueShape.id).in_(inv.shape_ids)
+        ),
+        "event_teams": await _count(db, EventTeam, col(EventTeam.id).in_(inv.team_ids)),
+        "event_team_requirements": await _count(
+            db,
+            EventTeamRequirement,
+            col(EventTeamRequirement.team_id).in_(inv.team_ids),
+        ),
+        "event_team_members": await _count(
+            db, EventTeamMember, col(EventTeamMember.id).in_(inv.team_member_ids)
+        ),
+        "event_team_checks": await _count(
+            db,
+            EventTeamCheck,
+            col(EventTeamCheck.member_id).in_(inv.team_member_ids),
+        ),
+        "event_team_documents": await _count(
+            db,
+            EventTeamDocument,
+            col(EventTeamDocument.member_id).in_(inv.team_member_ids),
         ),
         # By plan *and* by location: a marker must not outlive either parent.
         "venue_markers": await _count(
@@ -280,6 +316,56 @@ async def _add_pending_decisions(db: AsyncSession, sandbox: SandboxSetup) -> Use
     return applicant
 
 
+async def _add_team_document(db: AsyncSession, sandbox: SandboxSetup) -> None:
+    """Attach a file to a pending team request in a demo.
+
+    The helper demo seeds no requests (only a manager reviews them), so
+    without this the ``event_team_documents`` line of the census would be
+    vacuously zero. Written by hand like the pending decisions above, so the
+    census does not depend on what the seeder happens to produce.
+    """
+    requirement = (
+        await db.execute(
+            select(EventTeamRequirement)
+            .join(EventTeam, col(EventTeam.id) == col(EventTeamRequirement.team_id))
+            .where(col(EventTeam.event_id) == sandbox.event.id)
+            .limit(1)
+        )
+    ).scalar_one()
+    teammate = (
+        await db.execute(
+            select(User)
+            .join(EventMembership, col(EventMembership.user_id) == col(User.id))
+            .where(
+                col(EventMembership.event_id) == sandbox.event.id,
+                col(User.id) != sandbox.guest.id,
+                col(User.id).not_in(
+                    select(col(EventTeamMember.user_id)).where(
+                        col(EventTeamMember.team_id) == requirement.team_id
+                    )
+                ),
+            )
+            .limit(1)
+        )
+    ).scalar_one()
+    member = EventTeamMember(
+        team_id=requirement.team_id, user_id=teammate.id, status="pending"
+    )
+    db.add(member)
+    await db.flush()
+    db.add(
+        EventTeamDocument(
+            member_id=member.id,
+            requirement_id=requirement.id,
+            filename="card.png",
+            content_type="image/png",
+            size=3,
+            data=b"png",
+        )
+    )
+    await db.flush()
+
+
 async def _add_booking_reminder(db: AsyncSession, *, booking_id: uuid.UUID) -> None:
     """Schedule a reminder against one of the demo's bookings.
 
@@ -316,12 +402,14 @@ class TestPurgeSandbox:
         """Test that every table a demo writes into comes back to zero.
 
         The invitation, the join request and the booking reminder are added on
-        top of the seed so that the census covers all eighteen tables rather
-        than the fifteen a freshly seeded helper demo happens to populate. Every
-        line of it starts non-zero and must end at zero — a count that was
-        never anything but zero proves nothing.
+        top of the seed, and a file on a team request, so that the census
+        covers all twenty-four tables rather than the nineteen a freshly
+        seeded helper demo happens to populate. Every line of it starts
+        non-zero and must end at zero — a count that was never anything but
+        zero proves nothing.
         """
         await _add_pending_decisions(db_session, test_sandbox)
+        await _add_team_document(db_session, test_sandbox)
         inv = await _inventory(db_session, test_sandbox.event.id)
         await _add_booking_reminder(db_session, booking_id=inv.booking_ids[0])
         # Guard the guards: an assertion that "nothing remains" is worthless if
@@ -336,6 +424,7 @@ class TestPurgeSandbox:
         # Both drawn plans, so the sweep is shown to take more than one.
         assert len(inv.plan_ids) == 2, "the seeder must have produced two venue plans"
         assert inv.shape_ids, "the seeder must have drawn the plans"
+        assert inv.team_ids, "the seeder must have produced teams"
         # The demo plans are drawn, not pictures; give one an image anyway, as
         # nothing stops a demo row from having one, so the census below is
         # not vacuously zero for it.
@@ -481,6 +570,7 @@ class TestPurgeSandbox:
         first = await make_sandbox()
         second = await make_sandbox()
         await _add_pending_decisions(db_session, second)
+        await _add_team_document(db_session, second)
         keep = await _inventory(db_session, second.event.id)
         await _add_booking_reminder(db_session, booking_id=keep.booking_ids[0])
         await _add_plan_image(db_session, plan_id=keep.plan_ids[0])

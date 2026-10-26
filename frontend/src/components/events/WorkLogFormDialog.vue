@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import { type DateValue, parseDate } from '@internationalized/date'
 import { Clock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -8,6 +9,7 @@ import { toast } from 'vue-sonner'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import Button from '@/components/ui/button/Button.vue'
+import { DatePicker } from '@/components/ui/date-picker'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -49,6 +51,14 @@ const date = ref('')
 const hours = ref('')
 const note = ref('')
 const saving = ref(false)
+
+// The picker works in DateValues; the payload keeps the ISO string.
+const dateValue = computed({
+  get: (): DateValue | undefined => (date.value ? parseDate(date.value) : undefined),
+  set: (value: DateValue | undefined) => {
+    date.value = value ? value.toString() : ''
+  },
+})
 
 const isEdit = computed(() => !!props.entry)
 const lockedUser = computed(() => props.entry?.user_id ?? props.userId ?? null)
@@ -135,8 +145,10 @@ async function save() {
 
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-2">
-            <Label for="work-log-date">{{ t('duties.hours.form.date') }}</Label>
-            <Input id="work-log-date" v-model="date" type="date" data-testid="work-log-date" />
+            <Label id="work-log-date-label">{{ t('duties.hours.form.date') }}</Label>
+            <div role="group" aria-labelledby="work-log-date-label" data-testid="work-log-date">
+              <DatePicker v-model="dateValue" />
+            </div>
           </div>
           <div class="space-y-2">
             <Label for="work-log-hours">{{ t('duties.hours.form.hours') }}</Label>

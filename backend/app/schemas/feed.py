@@ -22,6 +22,8 @@ class FeedShiftEntry(BaseModel):
     is_booked_by_me: bool = False
     #: Overlaps a shift the user has already booked, so booking it would fail.
     collides_with_my_booking: bool = False
+    #: The task needs a team the user is not an approved member of.
+    locked_by_team: bool = False
 
 
 class FeedTaskItem(TaskRead):

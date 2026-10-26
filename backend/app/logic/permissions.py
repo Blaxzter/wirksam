@@ -8,6 +8,12 @@ every check here so support and moderation stay possible.
 All mutation routes funnel through :func:`require_event_role`; all read routes
 through :func:`require_event_visible`. Keeping those two the only entry points
 is what makes the model auditable — grep for them to find every gate.
+
+Teams add one layer *inside* an event, and only two gates of their own:
+:func:`require_team_manager` (deciding requests, editing a roster) and
+:func:`require_team_for_booking` (booking a shift of a task that requires a
+team). Both let event admins through, so a team can never lock its own event's
+admins out.
 """
 
 import uuid
@@ -16,7 +22,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import raise_problem
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.event_team import event_team as crud_team
 from app.models.event import Event
+from app.models.event_team import EventTeam
+from app.models.task import Task
 from app.models.user import User
 from app.schemas.event_membership import EventRole
 
@@ -98,4 +107,75 @@ async def require_event_visible(
         404,
         code="event.not_found",
         detail="Event not found",
+    )
+
+
+async def can_manage_team(
+    user: User,
+    session: AsyncSession,
+    team: EventTeam,
+) -> bool:
+    """Event admins manage every team; an approved lead manages their own."""
+    role = await get_event_role(user, session, team.event_id)
+    if role_at_least(role, "admin"):
+        return True
+    if role is None:
+        return False
+    return await crud_team.is_approved(
+        session, team_id=team.id, user_id=user.id, role="lead"
+    )
+
+
+async def require_team_manager(
+    user: User,
+    session: AsyncSession,
+    team: EventTeam,
+) -> None:
+    """Raise 403 unless the user may decide requests for and edit this team."""
+    if not await can_manage_team(user, session, team):
+        raise_problem(
+            403,
+            code="team.forbidden",
+            detail="Only this team's leads and the event admins can do this",
+        )
+
+
+async def may_book_task(user: User, session: AsyncSession, task: Task) -> bool:
+    """Whether the team requirement on ``task`` (if any) lets this user book.
+
+    Says nothing about event membership — that is the caller's concern.
+    """
+    if task.team_id is None:
+        return True
+    if role_at_least(await get_event_role(user, session, task.event_id), "admin"):
+        return True
+    return await crud_team.is_approved(session, team_id=task.team_id, user_id=user.id)
+
+
+async def require_team_for_booking(
+    user: User,
+    session: AsyncSession,
+    task: Task,
+) -> None:
+    """Raise 403 ``booking.team_required`` if the task needs a team the user lacks.
+
+    The team is named in the problem body so the client can offer "ask to
+    join" without a second request.
+    """
+    if await may_book_task(user, session, task):
+        return
+    assert task.team_id is not None  # narrowed by may_book_task
+    team = await session.get(EventTeam, task.team_id)
+    raise_problem(
+        403,
+        code="booking.team_required",
+        detail=(
+            f'Only approved members of the team "{team.name}" can book this shift'
+            if team
+            else "Only approved team members can book this shift"
+        ),
+        extensions={
+            "team_id": str(task.team_id),
+            "team_name": team.name if team else None,
+        },
     )

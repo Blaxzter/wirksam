@@ -15,3 +15,15 @@ export function formatHours(minutes: number): string {
     maximumFractionDigits: 2,
   }).format(minutes / 60)
 }
+
+/** Two letters for an avatar fallback, skipping a "[DEMO]" style prefix. */
+export function initials(name: string | null | undefined): string {
+  const words = (name ?? '')
+    .replace(/^\[[^\]]*\]\s*/, '')
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+  if (words.length === 0) return '?'
+  const first = words[0]!.charAt(0)
+  const second = words.length > 1 ? words[1]!.charAt(0) : words[0]!.charAt(1)
+  return (first + second).toUpperCase()
+}

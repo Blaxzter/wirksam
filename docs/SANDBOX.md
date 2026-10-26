@@ -23,9 +23,39 @@ generation config; shifts before, on and after today; five more guest accounts
 as teammates, with availabilities; bookings that leave the rota deliberately
 uneven; a notification inbox for the visitor; the tasks' locations as real
 `locations` rows with a short description each, plus two venue plans (the
-building and the outdoor area) drawn as shapes, with markers on them; and — for the manager role only — one pending
-invitation, one pending join request, and the notification telling them about
-it.
+building and the outdoor area) drawn as shapes, with markers on them; five
+teams (an open Setup crew the visitor is in; the Cash desk, which needs
+approval and locks the wristband check; Shuttle drivers behind a class B
+driving licence; Childcare behind an extended police certificate, which locks
+the kids' games; and First aid behind a first-aid course, with one member whose
+check has expired); and — for the manager role only — one pending invitation,
+one pending join request, the notification telling them about it, the lead of
+the Cash desk, and five team requests to review from four made-up people: Vera
+for the Cash desk and the Shuttle drivers, Jordan for the Cash desk (no note),
+Carla for Childcare (police certificate, no file by design) and Sven for First
+aid with a sample certificate attached.
+
+The sample certificate is a PNG drawn at seed time by
+`logic/sample_document.py`, because a sandbox may not upload a file
+(`sandbox.upload_disabled`). It reads MUSTER / SAMPLE, carries a diagonal
+watermark, names a made-up provider and says it is not a valid certificate.
+Everyone the rota puts on a locked task is an approved member of its team,
+and the visitor is never booked onto one, so the demo shows no booking the team
+gate would have refused.
+
+### The same content as the local dev seed
+
+`just seed` (`app/scripts/seed_demo.py`, run by `just dev` on every start)
+builds this event for the dev login `dev@example.com` through
+`seed.py::seed_dev_event`: the manager variant, but as an ordinary permanent
+event. Nothing in it is a sandbox row — `is_sandbox` is false on the event, its
+tasks and every made-up person, and `sandbox_expires_at` is NULL — so the TTL
+sweep never touches it and the visibility filters below treat it like any other
+event. The made-up people carry the `demo|` subject prefix instead of
+`sandbox|` and have no email address, so they stay undeliverable. The script
+skips while the dev login already owns an event with the seeded name
+(`--force` adds another, dated around today; `--lang de` seeds it in German)
+and refuses to run outside `ENVIRONMENT=local`.
 
 The venue plan exists for the same reason as the inbox: a sandbox may not
 upload an image (`PUT /venue-plans/{id}/image` answers 403
@@ -109,7 +139,12 @@ leaves the orphans described above.
 2. shifts                                       a shift removed first strands the
                                                 booking instead of removing it
 3. shift_batches, then tasks (by event_id)   — never by cascade from the event
-4. user_availabilities, event_memberships
+4. user_availabilities, event_memberships,
+   then event_team_documents, event_team_checks,
+   event_team_members, event_team_requirements,
+   event_teams                               — after the tasks (tasks.team_id);
+                                                leaf first, so a request's
+                                                attached file visibly goes
 5. venue_markers (by plan, then by location),
    venue_shapes, venue_plan_images,
    venue_plans, locations                    — all cascade from the event too;

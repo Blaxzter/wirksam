@@ -9,10 +9,11 @@ import {
   CalendarDays,
   CalendarRange,
   ChevronsUpDown,
-  Database,
   House,
+  Lock,
   Map as MapIcon,
   Users,
+  UsersRound,
 } from '@lucide/vue'
 import { useColorMode } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -126,6 +127,20 @@ function eventBadge(
   return { text: label, tooltip, variant: 'outline' }
 }
 
+/**
+ * A task reserved for a team the viewer is not in: a lock where the count
+ * would be. Its open shifts are not theirs to take, so neither the number nor
+ * a red "starting soon" would help.
+ */
+function lockBadge(teamName: string | null | undefined): NavSubItem['badge'] {
+  return {
+    text: '',
+    icon: Lock,
+    tooltip: t('teamLocks.badge.locked', { name: teamName ?? '' }),
+    variant: 'outline',
+  }
+}
+
 function formatBookingDate(slotDate: string): string {
   const d = new Date(slotDate + 'T00:00:00')
   return d.toLocaleDateString(locale.value, {
@@ -135,6 +150,14 @@ function formatBookingDate(slotDate: string): string {
   })
 }
 
+const showTeams = computed(() => {
+  const event = authStore.selectedEvent
+  if (!event) return false
+  return (event.team_count ?? 0) > 0 || authStore.canManageEvent(event.id)
+})
+/** Team requests this user may decide in the selected event. */
+const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
+
 const navMain = computed(() => {
   const eventItems: NavSubItem[] = sidebarStore.tasks.map((e) => ({
     title: e.name,
@@ -143,7 +166,9 @@ const navMain = computed(() => {
     badge:
       e.status && e.status !== 'published'
         ? statusBadge(e.status)
-        : eventBadge(e.open_shifts, e.next_shift_date ?? null, e.next_shift_start_time ?? null),
+        : e.locked_by_team
+          ? lockBadge(e.team_name)
+          : eventBadge(e.open_shifts, e.next_shift_date ?? null, e.next_shift_start_time ?? null),
   }))
 
   const bookingItems: NavSubItem[] = sidebarStore.bookings.map((b) => ({
@@ -179,6 +204,23 @@ const navMain = computed(() => {
       icon: CalendarCheck,
       routeName: 'availability',
     },
+    // Once the event has a team, or for whoever could create the first one.
+    ...(showTeams.value
+      ? [
+          {
+            title: 'Teams',
+            titleKey: 'teams.nav.label',
+            icon: UsersRound,
+            routeName: 'teams',
+            badge: teamRequestCount.value,
+            badgeLabel: t(
+              'teams.nav.waiting',
+              { count: teamRequestCount.value },
+              teamRequestCount.value,
+            ),
+          },
+        ]
+      : []),
     // Only once the event has a plan with a picture — an empty map is no help.
     ...((authStore.selectedEvent?.venue_plan_count ?? 0) > 0
       ? [
@@ -222,20 +264,12 @@ const navAdmin = computed(() => {
     })
   }
   if (authStore.isAdmin) {
-    items.push(
-      {
-        title: 'User Management',
-        titleKey: 'admin.users.title',
-        icon: Users,
-        routeName: 'admin-users',
-      },
-      {
-        title: 'Demo Data',
-        titleKey: 'admin.demoData.title',
-        icon: Database,
-        routeName: 'admin-demo-data',
-      },
-    )
+    items.push({
+      title: 'User Management',
+      titleKey: 'admin.users.title',
+      icon: Users,
+      routeName: 'admin-users',
+    })
   }
   return items
 })

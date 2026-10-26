@@ -18,7 +18,9 @@
     "booking": {
         "already_exists": "You already have a booking for this shift",
         "forbidden": "You can only manage your own bookings",
+        "rebook_required": "This booking was cancelled. Book the shift again to take it back.",
         "slot_full": "This duty shift is fully booked",
+        "team_required": "Only members of the team for this task can book its shifts. Ask to join the team on the Teams page.",
         "time_conflict": "This shift overlaps one of your booked shifts",
         "time_conflict_with": "This shift overlaps your shift “{name}” ({when})"
     },
@@ -51,7 +53,29 @@
         "not_found": "That shift could not be found."
     },
     "task": {
-        "not_found": "That task could not be found."
+        "not_found": "That task could not be found.",
+        "team_not_in_event": "The team has to belong to the same event as the task."
+    },
+    "team": {
+        "already_member": "That person is already in this team.",
+        "check_expired": "This document is too old and no longer valid. Ask for a newer one.",
+        "check_issued_in_future": "The issue date cannot be in the future.",
+        "check_unknown_requirement": "One of the ticked items is not part of this team any more. Reload the page and try again.",
+        "checks_missing": "Tick every check, with the issue date where asked, before you approve.",
+        "document_not_accepted": "No file can be attached for this check.",
+        "document_not_found": "That file is no longer there. It is deleted once a request has been decided.",
+        "document_too_large": "The file is larger than 5 MB. Please choose a smaller one.",
+        "document_unsupported": "Only PDF files and photos (PNG, JPEG, WebP) can be attached.",
+        "forbidden": "Only this team's leads and the event admins can do this.",
+        "member_not_found": "That person is not in this team.",
+        "name_taken": "This event already has a team with that name.",
+        "not_event_member": "Only people in this event can be added to its teams.",
+        "not_found": "That team could not be found.",
+        "request_decided": "That request has already been decided.",
+        "request_not_found": "That request could not be found.",
+        "request_pending": "Your request to join this team is still waiting for a decision.",
+        "requirement_not_found": "That check is not part of this team any more. Reload the page and try again.",
+        "requirements_need_approval": "A team with checks has to approve who joins. Turn on approval or remove the checks."
     },
     "user": {
         "not_found": "That user could not be found.",

@@ -84,6 +84,18 @@
     "title": "Role Changed",
     "body": "You are now {role} in “{event_name}”."
   },
+  "team.join_requested": {
+    "title": "Team Request",
+    "body": "{name} asked to join the team “{team_name}” in “{event_name}”."
+  },
+  "team.join_approved": {
+    "title": "You're in the Team",
+    "body": "Your request to join the team “{team_name}” in “{event_name}” was approved."
+  },
+  "team.join_declined": {
+    "title": "Team Request Declined",
+    "body": "Your request to join the team “{team_name}” in “{event_name}” was declined."
+  },
   "role.owner": {
     "title": "owner",
     "body": ""

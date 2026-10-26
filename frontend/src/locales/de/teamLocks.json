@@ -1,0 +1,51 @@
+{
+    "attention": {
+        "teamRequests": "{count} Person möchte in ein Team | {count} Personen möchten in ein Team"
+    },
+    "badge": {
+        "locked": "Nur Mitglieder von {name} können diese Schichten buchen",
+        "only": "Nur {name}",
+        "team": "Team: {name}"
+    },
+    "filter": {
+        "bookableOnly": "Nur Aufgaben, die ich buchen kann",
+        "bookableOnlyHint": "Blendet Aufgaben aus, die Teams vorbehalten sind, in denen du nicht bist"
+    },
+    "gate": {
+        "locked": "Nur Mitglieder von {name} können diese Schichten buchen.",
+        "lockedShift": "Nur Mitglieder von {name} können diese Schicht buchen",
+        "manager": "Nur Mitglieder von {name} können diese Schichten buchen. Als Organisator kannst du sie auch buchen.",
+        "member": "Diese Schichten sind für das Team {name}. Du bist dabei und kannst sie buchen.",
+        "openShift": "Nur Mitglieder von {name} können diese Schicht buchen. Öffne sie, um dem Team beizutreten.",
+        "pending": "Du hast angefragt, bei {name} mitzumachen. Sobald deine Anfrage angenommen ist, kannst du diese Schichten buchen.",
+        "pickHint": "Tritt {name} bei, um eine davon zu buchen.",
+        "pickHintAsk": "Frag bei {name} an, um eine davon zu buchen.",
+        "pickHintPending": "Du kannst sie buchen, sobald {name} deine Anfrage angenommen hat."
+    },
+    "join": {
+        "ask": "Bei {name} anfragen",
+        "join": "{name} beitreten",
+        "joined": "Du bist jetzt bei {name} und kannst seine Schichten buchen.",
+        "pending": "Anfrage gesendet",
+        "pendingNamed": "Deine Anfrage bei {name} ist noch offen"
+    },
+    "picker": {
+        "choose": "Team auswählen",
+        "chooseTeam": "Wähle ein Team. Bis dahin können alle in der Veranstaltung diese Schichten buchen.",
+        "createNew": "Neues Team…",
+        "everyone": "Alle in der Veranstaltung",
+        "everyoneHint": "Jedes Mitglied kann buchen.",
+        "loadError": "Die Teams konnten nicht geladen werden.",
+        "members": "{count} Mitglied | {count} Mitglieder",
+        "noEvent": "Wähle zuerst eine Veranstaltung.",
+        "noTeams": "Diese Veranstaltung hat noch keine Teams.",
+        "noTeamsLink": "Lege eines auf der Teams-Seite an",
+        "openTeam": "alle können beitreten",
+        "retry": "Erneut versuchen",
+        "subtitle": "Behalte die Schichten Leuten vor, die du kennst und geprüft hast, etwa für Kasse oder Fahrdienst.",
+        "team": "Nur ein Team",
+        "teamHint": "Andere sehen die Aufgabe, aber gesperrt.",
+        "teamLabel": "Team",
+        "title": "Wer kann buchen"
+    }
+}

@@ -24,11 +24,12 @@ just dev-frontend
 ```
 
 Local mode runs `scripts/dev.mjs`: Docker services, migrations, then `just seed`
-(a dev admin `dev@example.com` / `devpassword` plus `[DEMO]` events; a no-op once
+(a dev admin `dev@example.com` / `devpassword` that owns the public demo's event —
+the sandbox seed's manager variant as an ordinary, permanent event; a no-op once
 they exist), then backend and frontend. Ctrl+C stops backend and frontend (the DB
 container keeps running), and if either one dies the other is stopped too;
 `--no-migrate` / `--no-seed` skip those steps. `just seed --force` adds another
-demo batch.
+demo event dated around today, `just seed --lang de` seeds it in German.
 
 `just test-e2e` also respects `dev_mode`: docker runs Playwright in a container, local runs `pnpm test:e2e` directly.
 
@@ -131,11 +132,26 @@ Identity, from `backend/app/api/deps.py`:
 no remote profile: the access token carries the user id (`sub`) and the session
 id (`jti`) and nothing else, so identity is one primary-key lookup.
 
-Per-event permission, from `backend/app/logic/permissions.py` — these two are
+Per-event permission, from `backend/app/logic/permissions.py` — these are
 the *only* gates, so grepping for them finds every check:
 
 - `require_event_role(user, session, event_id, minimum=...)` — for mutations; raises 403
 - `require_event_visible(user, session, event)` — for reads; raises **404** (not 403) so a private event cannot be probed by id
+
+Inside an event, **teams** (`app/api/routes/teams.py`) add two more gates in the
+same file: `require_team_manager` (team leads and event admins decide requests
+and edit a roster) and `require_team_for_booking` (a task with a `team_id` can
+only be booked by approved members of that team, or event admins —
+`403 booking.team_required`). A team can list **requirements** (police
+certificate, first aid); approving someone needs the decider to tick each one
+(`422 team.checks_missing`), which stores only a check record (who, when,
+issue date, expiry) — **never a copy of the document**. A file a requester
+attaches to a pending request (`PUT …/join/documents/{requirement_id}`, stored
+in Postgres like avatars) is readable by the team's managers and the requester
+only, and deleted as soon as the request is decided or withdrawn. Checks are
+reused only within one event, and an expired one flags the member without
+revoking access. Design note:
+[`docs/plans/2026-10-26-event-teams.md`](docs/plans/2026-10-26-event-teams.md).
 
 For queries, `backend/app/logic/event_scope.py` returns the id list to filter
 by. `None` means unrestricted (superadmin only); an **empty list means "nothing"

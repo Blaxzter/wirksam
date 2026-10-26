@@ -15,8 +15,9 @@ class User(Base, table=True):
     ``subject`` is this application's own opaque identity string, minted at
     registration as ``local|<uuid4hex>``. Two other prefixes are behavioural
     rather than cosmetic and must survive any future rework of this column:
-    ``demo|`` marks the fake accounts ``/demo-data`` generates, which all three
-    notification channels refuse to send to, ``test|`` marks the accounts
+    ``demo|`` marks the made-up teammates ``just seed`` (``scripts.seed_demo``)
+    puts in the local dev event, which all three notification channels refuse
+    to send to, ``test|`` marks the accounts
     ``POST /testing/reset`` is allowed to delete, and ``sandbox|`` marks the
     guest accounts minted by the "try a test event" button, which are purged
     together with their event when its TTL runs out.

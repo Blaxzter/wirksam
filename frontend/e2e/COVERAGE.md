@@ -36,27 +36,26 @@ Not yet covered, and not currently tracked by an issue:
 
 - User-management table pagination — needs enough seeded users to page. Listed in #136 but
   outside its acceptance criteria; the disposable-user fixture this would build on now exists.
-- Demo data creation and deletion.
 
 ## Summary
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 30      |
+| `a11y`       | 5          | 31      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 234     |
+| `chromium`   | 28         | 231     |
 | `member`     | 3          | 25      |
 | `mobile`     | 2          | 10      |
-| `multi-user` | 4          | 54      |
+| `multi-user` | 5          | 60      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **56**     | **416** |
+| **Total**    | **57**     | **420** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 30 tests
+### Project `a11y` — 5 files, 31 tests
 
-#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 11 tests
+#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 12 tests
 
 - **a11y – admin routes** (10)
   - dashboard
@@ -69,6 +68,8 @@ Not yet covered, and not currently tracked by an issue:
   - availability
   - settings
   - admin user management
+- **a11y – admin teams** (1)
+  - teams page and the review dialog
 - **a11y – admin task detail** (1)
   - task detail
 
@@ -154,7 +155,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 234 tests
+### Project `chromium` — 28 files, 231 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -349,25 +350,23 @@ Not yet covered, and not currently tracked by an issue:
   - the feed filter narrows the list to one location
   - shift details render the location’s description
 
-#### `frontend/e2e/tests/authenticated/navigation.spec.ts` — 26 tests
+#### `frontend/e2e/tests/authenticated/navigation.spec.ts` — 23 tests
 
-- **Sidebar – links** (8)
+- **Sidebar – links** (7)
   - shows Home link
   - shows Tasks link
   - shows My Bookings link
   - shows Availability link
   - shows Manage Events link for admin
   - shows User Management link for admin
-  - shows Demo Data link for admin
   - shows user profile button in sidebar
-- **Sidebar – navigation** (7)
+- **Sidebar – navigation** (6)
   - Home link navigates to dashboard
   - Manage Events link navigates to /app/events
   - Tasks link navigates correctly
   - My Bookings link navigates correctly
   - Availability link navigates correctly
   - User Management link navigates correctly
-  - Demo Data link navigates correctly
 - **Breadcrumbs** (2)
   - dashboard shows breadcrumb navigation
   - tasks page shows breadcrumbs
@@ -380,10 +379,9 @@ Not yet covered, and not currently tracked by an issue:
   - navigating to non-existent route shows 404
   - navigating to /404 directly shows not found page
   - 404 page has go home button
-- **Member sidebar – no admin links** (3)
+- **Member sidebar – no admin links** (2)
   - member does not see Manage Events link
   - member does not see User Management link
-  - member does not see Demo Data link
 
 #### `frontend/e2e/tests/authenticated/notifications.spec.ts` — 9 tests
 
@@ -619,7 +617,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 4 files, 54 tests
+### Project `multi-user` — 5 files, 60 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -684,6 +682,17 @@ Not yet covered, and not currently tracked by an issue:
   - the featured event is pinned above the rest of Discover
   - featuring is refused for a private event
   - a member already in the event does not see it offered again
+
+#### `frontend/e2e/tests/multi-user/event-teams.spec.ts` — 6 tests
+
+- **Event teams – setting up** (3)
+  - an organiser creates a team with a requirement from the Teams page
+  - the task form reserves a task for one team
+  - a volunteer sees the Teams page without the organiser controls
+- **Event teams – asking, reviewing and booking** (3)
+  - a non-member cannot book a reserved task
+  - asking with a file, approving after the check, then booking
+  - declining keeps the task locked and deletes the file
 
 #### `frontend/e2e/tests/multi-user/events-availability-cross-user.spec.ts` — 6 tests
 

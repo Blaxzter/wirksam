@@ -5,6 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.schemas.event import EventCreate, EventRead
+from app.schemas.event_team import TeamMemberStatus
 
 TaskStatus = Literal["draft", "published", "archived"]
 
@@ -20,6 +21,8 @@ class TaskBase(BaseModel):
     location: str | None = None
     location_id: uuid.UUID | None = None
     category: str | None = None
+    #: Only approved members of this team may book the task's shifts.
+    team_id: uuid.UUID | None = None
 
     @field_validator("end_date")
     @classmethod
@@ -45,6 +48,7 @@ class TaskUpdate(BaseModel):
     location: str | None = None
     location_id: uuid.UUID | None = None
     category: str | None = None
+    team_id: uuid.UUID | None = None
 
 
 class TaskRead(TaskBase):
@@ -57,6 +61,13 @@ class TaskRead(TaskBase):
     default_end_time: dt.time | None = None
     people_per_shift: int | None = None
     schedule_overrides: list[dict[str, Any]] | None = None
+    #: Viewer-relative, filled in by the read routes (task page and feed) for
+    #: a task with a team: the team's name, whether joining it needs approval,
+    #: the caller's standing in it, and whether that bars them from booking.
+    team_name: str | None = None
+    team_requires_approval: bool | None = None
+    my_team_status: TeamMemberStatus | None = None
+    locked_by_team: bool = False
 
 
 class TaskListResponse(BaseModel):
@@ -142,6 +153,7 @@ class TaskCreateWithShifts(BaseModel):
     location: str | None = None
     location_id: uuid.UUID | None = None
     category: str | None = None
+    team_id: uuid.UUID | None = None
     event_id: uuid.UUID | None = None
     new_event: EventCreate | None = None
     schedule: ShiftGenerationConfig

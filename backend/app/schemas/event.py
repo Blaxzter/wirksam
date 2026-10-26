@@ -83,6 +83,12 @@ class EventRead(EventBase):
     venue_plan_count: int = Field(
         default=0, description="plans with an image or at least one shape"
     )
+    #: Teams in the event; members only (0 for a visitor browsing Discover),
+    #: so the navigation can offer a Teams page only where there is one.
+    team_count: int = 0
+    #: Pending team requests the caller may decide: every one in an event
+    #: they run, those of the teams they lead otherwise.
+    pending_team_request_count: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
     @property

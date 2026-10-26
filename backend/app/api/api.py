@@ -7,7 +7,6 @@ from app.api.routes import (
     bookings,
     calendar_feed,
     dashboard,
-    demo_data,
     events,
     health,
     invitations,
@@ -16,6 +15,7 @@ from app.api.routes import (
     reporting,
     shifts,
     tasks,
+    teams,
     users,
     venue_map,
     venue_templates,
@@ -38,6 +38,7 @@ api_router.include_router(bookings.router)
 api_router.include_router(booking_reminders.router)
 api_router.include_router(calendar_feed.router)
 api_router.include_router(events.router)
+api_router.include_router(teams.router)
 api_router.include_router(work_hours.router)
 api_router.include_router(invitations.router)
 api_router.include_router(locations.router)
@@ -46,7 +47,6 @@ api_router.include_router(venue_templates.router)
 api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(reporting.router)
-api_router.include_router(demo_data.router)
 
 if settings.ENVIRONMENT != "production":
     from app.api.routes import debug

@@ -32,6 +32,7 @@ from app.logic.permissions import (
     require_event_visible,
     role_at_least,
 )
+from app.logic.teams import mark_team_locks
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.location import Location
@@ -288,4 +289,5 @@ async def list_location_shifts(
                 my_booking_id=my_booking_id,
             )
         )
+    await mark_team_locks(session, current_user, shifts)
     return shifts

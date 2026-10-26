@@ -51,12 +51,8 @@ const task = ref<TaskRead | null>(null)
 const event = ref<EventRead | null>(null)
 
 // --- Task event date constraints ---
-const eventMinDate = computed(() =>
-  event.value ? parseDate(event.value.start_date) : undefined,
-)
-const eventMaxDate = computed(() =>
-  event.value ? parseDate(event.value.end_date) : undefined,
-)
+const eventMinDate = computed(() => (event.value ? parseDate(event.value.start_date) : undefined))
+const eventMaxDate = computed(() => (event.value ? parseDate(event.value.end_date) : undefined))
 
 // --- Batch-specific fields ---
 const location = ref('')

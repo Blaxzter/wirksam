@@ -40,6 +40,13 @@ from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.event_team import (
+    EventTeam,
+    EventTeamCheck,
+    EventTeamDocument,
+    EventTeamMember,
+    EventTeamRequirement,
+)
 from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
@@ -141,6 +148,32 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
     await db.execute(
         delete(EventMembership).where(col(EventMembership.event_id) == event_id)
     )
+    #    Teams after the tasks that pointed at them (``tasks.team_id``), and
+    #    leaf first: a request's attached file and the checks, then the member
+    #    rows, then the requirements those two point at, then the teams. All
+    #    of it cascades from the event; spelled out so the files — the only
+    #    bytes a visitor's demo keeps about a person — visibly go.
+    team_ids = select(col(EventTeam.id)).where(col(EventTeam.event_id) == event_id)
+    member_ids = select(col(EventTeamMember.id)).where(
+        col(EventTeamMember.team_id).in_(team_ids)
+    )
+    await db.execute(
+        delete(EventTeamDocument).where(
+            col(EventTeamDocument.member_id).in_(member_ids)
+        )
+    )
+    await db.execute(
+        delete(EventTeamCheck).where(col(EventTeamCheck.member_id).in_(member_ids))
+    )
+    await db.execute(
+        delete(EventTeamMember).where(col(EventTeamMember.team_id).in_(team_ids))
+    )
+    await db.execute(
+        delete(EventTeamRequirement).where(
+            col(EventTeamRequirement.team_id).in_(team_ids)
+        )
+    )
+    await db.execute(delete(EventTeam).where(col(EventTeam.event_id) == event_id))
     #    The venue map: markers, shapes, image bytes, plans, then the
     #    locations. All of it cascades from the event too; spelled out so the
     #    largest rows a demo owns (the drawing, an image if any) visibly go,

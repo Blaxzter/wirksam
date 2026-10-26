@@ -12,6 +12,7 @@ import {
   EllipsisVertical,
   Expand,
   Info,
+  Lock,
   MapPin,
   Pencil,
   Plus,
@@ -19,7 +20,7 @@ import {
   Tag,
   Trash2,
 } from '@lucide/vue'
-import { useI18n } from 'vue-i18n'
+import { I18nT, useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
@@ -61,6 +62,7 @@ import LocationPicker from '@/components/locations/LocationPicker.vue'
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
+import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
@@ -90,6 +92,35 @@ const { confirm, confirmDestructive } = useDialog()
 const eventId = computed(() => route.params.eventId as string)
 
 const canManage = computed(() => authStore.canManageEvent(task.value?.event_id))
+
+/**
+ * The team this task is reserved for, from the task itself: whether the
+ * viewer is locked out, and where their own request stands.
+ */
+const teamGate = computed(() => {
+  const tk = task.value
+  if (!tk?.team_id || !tk.team_name) return null
+  return {
+    id: tk.team_id,
+    name: tk.team_name,
+    locked: !!tk.locked_by_team,
+    requiresApproval: tk.team_requires_approval ?? true,
+    myStatus: tk.my_team_status ?? null,
+  }
+})
+
+/** The line under "Duty shifts" while the task is locked. */
+const teamPickHint = computed(() => {
+  const gate = teamGate.value
+  if (!gate?.locked) return null
+  if (gate.myStatus === 'pending') return t('teamLocks.gate.pickHintPending', { name: gate.name })
+  return gate.requiresApproval
+    ? t('teamLocks.gate.pickHintAsk', { name: gate.name })
+    : t('teamLocks.gate.pickHint', { name: gate.name })
+})
+
+/** Joining (or asking to) changes the lock on the task and every shift. */
+const onTeamJoined = () => Promise.all([loadTask({ quiet: true }), loadShifts()])
 
 const task = ref<TaskRead | null>(null)
 const shifts = ref<ShiftRead[]>([])
@@ -364,6 +395,11 @@ const handleShiftClick = async (shift: ShiftRead) => {
       void loadShifts()
     } else {
       if (isShiftFull(shift)) return
+      if (shift.locked_by_team) {
+        // The dialog explains the lock and offers to join the team.
+        openShiftDetail(shift)
+        return
+      }
       if (shift.collides_with_my_booking) {
         toast.error(t('errorCodes.booking.time_conflict'))
         return
@@ -401,8 +437,9 @@ const batchLabel = (batch: ShiftBatchRead) => {
   return batch.label || `${formatDate(batch.start_date)} – ${formatDate(batch.end_date)}`
 }
 
-const loadTask = async () => {
-  loading.value = true
+const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}) => {
+  // A quiet reload keeps the page on screen instead of the loading state.
+  if (!quiet) loading.value = true
   try {
     const response = await get<{ data: TaskRead }>({
       url: `/tasks/${eventId.value}`,
@@ -598,6 +635,46 @@ onMounted(async () => {
           <Info class="h-4 w-4 text-amber-600 dark:text-amber-400" />
           <AlertDescription>
             {{ t('duties.tasks.draftBanner') }}
+          </AlertDescription>
+        </Alert>
+
+        <!-- Reserved for one team: who can book, and joining in place -->
+        <Alert
+          v-if="teamGate"
+          data-testid="task-team-gate"
+          :class="teamGate.locked ? 'bg-muted/40' : ''"
+        >
+          <Lock class="h-4 w-4" />
+          <AlertDescription
+            class="flex flex-col gap-3 text-foreground sm:flex-row sm:items-center sm:justify-between"
+          >
+            <I18nT
+              :keypath="
+                !teamGate.locked
+                  ? teamGate.myStatus === 'approved'
+                    ? 'teamLocks.gate.member'
+                    : 'teamLocks.gate.manager'
+                  : teamGate.myStatus === 'pending'
+                    ? 'teamLocks.gate.pending'
+                    : 'teamLocks.gate.locked'
+              "
+              tag="span"
+              scope="global"
+            >
+              <template #name>
+                <strong class="font-semibold">{{ teamGate.name }}</strong>
+              </template>
+            </I18nT>
+            <TeamJoinButton
+              v-if="teamGate.locked"
+              :event-id="task.event_id"
+              :team-id="teamGate.id"
+              :team-name="teamGate.name"
+              :requires-approval="teamGate.requiresApproval"
+              :my-status="teamGate.myStatus"
+              class="shrink-0 max-sm:w-full"
+              @joined="onTeamJoined"
+            />
           </AlertDescription>
         </Alert>
 
@@ -875,9 +952,16 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Hint for users with no bookings -->
+        <!-- Hint for users with no bookings; a locked task says how to get in -->
         <p
-          v-if="myBookedShiftsForTask.length === 0 && shifts.length > 0"
+          v-if="teamPickHint && shifts.length > 0"
+          class="text-sm text-muted-foreground"
+          data-testid="task-team-pick-hint"
+        >
+          {{ teamPickHint }}
+        </p>
+        <p
+          v-else-if="myBookedShiftsForTask.length === 0 && shifts.length > 0"
           class="text-sm text-muted-foreground"
         >
           {{ t('duties.tasks.detail.noBookingsYet') }}
@@ -972,15 +1056,19 @@ onMounted(async () => {
                         ? 'ring-2 ring-primary bg-primary/5'
                         : isShiftFull(shift)
                           ? 'opacity-40 cursor-not-allowed'
-                          : shift.collides_with_my_booking
-                            ? 'opacity-50 cursor-not-allowed border-dashed border-destructive/50'
-                            : 'hover:ring-1 hover:ring-primary/40',
+                          : shift.locked_by_team
+                            ? 'border-dashed bg-muted/30 text-muted-foreground shadow-none hover:ring-1 hover:ring-border'
+                            : shift.collides_with_my_booking
+                              ? 'opacity-50 cursor-not-allowed border-dashed border-destructive/50'
+                              : 'hover:ring-1 hover:ring-primary/40',
                       busyShiftId === shift.id ? 'opacity-60 pointer-events-none' : '',
                     ]"
                     :title="
-                      shift.collides_with_my_booking
-                        ? t('duties.shifts.detail.clashesWithMine')
-                        : undefined
+                      shift.locked_by_team && !myBookedShiftIds.has(shift.id)
+                        ? t('teamLocks.gate.lockedShift', { name: shift.team_name })
+                        : shift.collides_with_my_booking
+                          ? t('duties.shifts.detail.clashesWithMine')
+                          : undefined
                     "
                     @click="handleShiftClick(shift)"
                   >
@@ -998,6 +1086,18 @@ onMounted(async () => {
                         <CalendarX2
                           class="h-4 w-4 text-destructive"
                           :aria-label="t('duties.shifts.detail.clashesWithMine')"
+                        />
+                      </div>
+                      <!-- Reserved for a team the user is not in -->
+                      <div
+                        v-else-if="shift.locked_by_team"
+                        class="absolute top-1.5 right-1.5"
+                        :data-testid="'shift-team-locked-' + shift.id"
+                      >
+                        <Lock
+                          class="h-3.5 w-3.5 text-muted-foreground"
+                          role="img"
+                          :aria-label="t('teamLocks.gate.lockedShift', { name: shift.team_name })"
                         />
                       </div>
 
@@ -1176,6 +1276,7 @@ onMounted(async () => {
       :show-task-link="false"
       :my-booking="selectedShift ? (getBookingForShift(selectedShift.id) ?? null) : null"
       @booking-updated="reloadShiftsAndBookings"
+      @team-joined="onTeamJoined"
     />
   </div>
 </template>

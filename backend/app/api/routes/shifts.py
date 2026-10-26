@@ -18,6 +18,7 @@ from app.logic.permissions import (
     require_event_role,
     require_event_visible,
 )
+from app.logic.teams import mark_team_locks
 from app.models.shift import Shift
 from app.schemas.booking import ShiftBookingEntry
 from app.schemas.shift import (
@@ -86,6 +87,7 @@ async def list_shifts(
     )
     enriched = [await _enrich_shift(session, s, user_id=current_user.id) for s in items]
     await mark_collisions(session, user_id=current_user.id, entries=enriched)
+    await mark_team_locks(session, current_user, enriched)
     total = await crud_shift.get_count_filtered(
         session,
         task_id=task_id,
@@ -117,6 +119,7 @@ async def get_shift(
     await require_event_visible(_current_user, session, event)
     read = await _enrich_shift(session, shift, user_id=_current_user.id)
     await mark_collisions(session, user_id=_current_user.id, entries=[read])
+    await mark_team_locks(session, _current_user, [read])
     return read
 
 

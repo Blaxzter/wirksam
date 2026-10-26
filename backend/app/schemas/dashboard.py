@@ -61,6 +61,9 @@ class DashboardAttention(BaseModel):
     """
 
     pending_join_requests: int = 0
+    # Requests to join one of the event's teams; an event admin decides all
+    # of them, so this is the whole queue rather than a lead's share.
+    pending_team_requests: int = 0
     draft_tasks: int = 0
     empty_shifts_soon: int = 0
     short_shifts_soon: int = 0
@@ -90,3 +93,9 @@ class DashboardFeedResponse(BaseModel):
     # Kept top-level: the auth store raises the "people are waiting" toast off
     # this one number, across every event the user administers.
     pending_join_request_count: int = 0
+
+    # Team requests the user may decide, across every event: all of them where
+    # they are an event admin, those of the teams they lead elsewhere. Top
+    # level because a team lead is no organiser and gets no ``attention``, yet
+    # is the one the request is waiting on.
+    pending_team_request_count: int = 0

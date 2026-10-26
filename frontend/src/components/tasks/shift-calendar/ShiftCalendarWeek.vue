@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import { Lock } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
+
 import { useFormatters } from '@/composables/useFormatters'
 
-import TaskBars from './TaskBars.vue'
 import EventBars from './EventBars.vue'
+import TaskBars from './TaskBars.vue'
 import type {
   BookingCalendarItem,
   CalendarDay,
-  CalendarTask,
   CalendarEvent,
+  CalendarTask,
   CalendarWeek,
 } from './types'
 import { isMultiDayTask, isToday } from './types'
 
+const { t } = useI18n()
 const { formatTimeRange } = useFormatters()
 
 defineProps<{
@@ -102,7 +106,12 @@ const emit = defineEmits<{
                   "
                   @click="emit('navigateTask', task)"
                 >
-                  {{ task.name }}
+                  <Lock
+                    v-if="task.locked_by_team"
+                    class="mr-0.5 inline size-3 align-[-2px]"
+                    role="img"
+                    :aria-label="t('teamLocks.badge.locked', { name: task.team_name ?? '' })"
+                  />{{ task.name }}
                 </button>
               </template>
 

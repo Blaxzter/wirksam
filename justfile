@@ -124,8 +124,9 @@ migration message:
 check-migrations:
     cd backend && uv run alembic upgrade head && uv run alembic check
 
-# Seed a dev admin login (dev@example.com / devpassword) and demo data.
-# Idempotent — skips what already exists; `just seed --force` adds another batch.
+# Seed a dev admin login (dev@example.com / devpassword) and the public demo's
+# event (owned by that login, permanent). Idempotent — skips what already exists;
+# `just seed --force` adds another event, `just seed --lang de` seeds it in German.
 seed *args:
     uv run --directory backend python -m app.scripts.seed_demo {{args}}
 

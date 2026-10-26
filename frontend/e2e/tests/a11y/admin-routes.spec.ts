@@ -10,7 +10,11 @@ import { expect, test } from '../../fixtures.js'
 import { expectNoA11yViolations } from '../../helpers/a11y.js'
 import {
   type TaskWithShifts,
+  addMember,
+  api,
+  createEvent,
   createTaskWithShifts,
+  deleteEvent,
   deleteTask,
   uniqueName,
 } from '../../helpers/api.js'
@@ -76,6 +80,39 @@ test.describe('a11y – admin routes', () => {
     await page.goto('/app/admin/users')
     await expect(page.getByTestId('users-table')).toBeVisible()
     await expectNoA11yViolations(page, { label: 'admin users (/app/admin/users)' })
+  })
+})
+
+// The Teams page with something on it: a team with a requirement and a waiting
+// request, then the review dialog. Its own event, so the worker event never
+// gains a team (that would add a sidebar entry to every later scan).
+test.describe('a11y – admin teams', () => {
+  test('teams page and the review dialog', async ({
+    adminPage: page,
+    disposablePage,
+    disposableUser,
+  }) => {
+    const event = await createEvent(page, uniqueName('E2E a11y Teams'), 'published', 'private')
+    try {
+      const team = await api<{ id: string }>(page, 'POST', `/events/${event.id}/teams`, {
+        name: uniqueName('First aid'),
+        requirements: [{ label: 'First aid course', ask_issue_date: true, valid_for_years: 2 }],
+      })
+      await addMember(page, disposablePage, event.id, disposableUser.email)
+      await api(disposablePage, 'POST', `/events/${event.id}/teams/${team.id}/join`, {
+        message: 'I did the course last spring.',
+      })
+
+      await page.goto(`/app/teams/${event.id}`)
+      await expect(page.getByTestId('team-requests')).toBeVisible()
+      await expectNoA11yViolations(page, { label: 'admin teams (/app/teams/:id)' })
+
+      await page.locator('[data-testid^="btn-review-team-request-"]').click()
+      await expect(page.getByTestId('team-review-dialog')).toBeVisible()
+      await expectNoA11yViolations(page, { label: 'team review dialog' })
+    } finally {
+      await deleteEvent(page, event.id).catch(() => {})
+    }
   })
 })
 

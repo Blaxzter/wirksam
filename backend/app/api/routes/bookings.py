@@ -18,6 +18,7 @@ from app.logic.notifications.triggers import (
     dispatch_booking_cobooked,
     dispatch_booking_confirmed,
 )
+from app.logic.permissions import require_team_for_booking
 from app.models.booking import Booking
 from app.models.shift import Shift
 from app.schemas.booking import (
@@ -126,6 +127,9 @@ async def create_booking(
     shift = await crud_shift.get(
         session, str(booking_in.shift_id), raise_404_error=True
     )
+    task = await crud_task.get(session, str(shift.task_id))
+    if task is not None:
+        await require_team_for_booking(current_user, session, task)
 
     existing = await crud_booking.get_by_shift_and_user(
         session, shift_id=shift.id, user_id=current_user.id
@@ -180,8 +184,6 @@ async def create_booking(
         )
         result = await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
 
-    # Load task name for richer notification
-    task = await crud_task.get(session, str(shift.task_id))
     task_name = task.name if task else None
 
     # Dispatch notifications
@@ -252,6 +254,15 @@ async def update_booking(
             403,
             code="booking.forbidden",
             detail="You can only modify your own bookings",
+        )
+    if booking_in.status == "confirmed" and db_booking.status != "confirmed":
+        # Re-confirming a cancelled booking here would skip every check
+        # booking a shift runs: capacity, overlaps and the team gate.
+        # POST /bookings/ reactivates a cancelled row with all of them.
+        raise_problem(
+            422,
+            code="booking.rebook_required",
+            detail="Book the shift again to reactivate a cancelled booking",
         )
     return await crud_booking.update(session, db_obj=db_booking, obj_in=booking_in)
 

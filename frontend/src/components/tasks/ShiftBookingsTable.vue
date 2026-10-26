@@ -42,7 +42,6 @@ const initials = (name: string | null | undefined, email: string | null | undefi
 
 const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
   avatarUrlFor({ id: entry.user_id, avatar_etag: entry.user_avatar_etag ?? null })
-
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { ChevronLeft, ChevronRight, Loader2 } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, Loader2, Lock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFormatters } from '@/composables/useFormatters'
@@ -19,6 +19,8 @@ export interface DayShiftEntry {
   isBookedByMe?: boolean
   /** Overlaps a shift the user already holds, so booking it would be refused. */
   collidesWithMyBooking?: boolean
+  /** Reserved for a team the user is not in; the dialog offers to join. */
+  lockedByTeam?: boolean
 }
 
 export interface DayColumn {
@@ -38,6 +40,8 @@ const props = defineProps<{
   hasMorePrevious?: boolean
   loadingNext?: boolean
   loadingPrevious?: boolean
+  /** The team a locked chip is reserved for, named in its tooltip. */
+  teamName?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -105,6 +109,9 @@ function slotClasses(shift: DayShiftEntry): string {
   if (shift.isBookedByMe) {
     return 'border-green-500/40 bg-green-500/15 text-green-700 dark:text-green-400 font-semibold hover:bg-green-500/25'
   }
+  if (shift.lockedByTeam) {
+    return 'border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted/50'
+  }
   if (shift.collidesWithMyBooking) {
     return 'border-dashed border-destructive/50 text-destructive opacity-70 hover:opacity-90 hover:bg-destructive/10'
   }
@@ -127,12 +134,22 @@ function slotClasses(shift: DayShiftEntry): string {
  */
 function tourBookable(day: DayColumn, shift: DayShiftEntry): 'true' | 'false' {
   if (shift.isBookedByMe) return 'false'
+  if (shift.lockedByTeam) return 'false'
   if (!slotHasCapacity(shift)) return 'false'
   return day.dateStr >= today.value ? 'true' : 'false' // ISO dates compare lexicographically
 }
 
+/** Why a chip cannot be booked, for its tooltip and accessible name. */
+function chipTitle(shift: DayShiftEntry): string | undefined {
+  if (shift.isBookedByMe) return undefined
+  if (shift.lockedByTeam) return t('teamLocks.badge.locked', { name: props.teamName ?? '' })
+  if (shift.collidesWithMyBooking) return t('duties.shifts.detail.clashesWithMine')
+  return undefined
+}
+
 function slotCountClasses(shift: DayShiftEntry): string {
   if (shift.isBookedByMe) return 'text-green-600/70 dark:text-green-400/70'
+  if (shift.lockedByTeam) return 'text-muted-foreground'
   if (shift.collidesWithMyBooking) return 'text-destructive/80'
   if (slotHasCapacity(shift)) return 'text-primary'
   return 'text-muted-foreground'
@@ -295,13 +312,24 @@ defineExpose({ totalHidden, maxShiftCount })
               size="sm"
               class="h-auto w-full px-1.5 py-1 text-xs"
               :class="slotClasses(shift)"
-              :title="
-                shift.collidesWithMyBooking ? t('duties.shifts.detail.clashesWithMine') : undefined
+              :title="chipTitle(shift)"
+              :aria-label="
+                chipTitle(shift)
+                  ? `${formatTime(shift.startTime) || '—'}, ${chipTitle(shift)}`
+                  : undefined
               "
+              :data-team-locked="shift.lockedByTeam && !shift.isBookedByMe ? 'true' : undefined"
               @click="emit('clickShift', shift.slotId)"
             >
               <div class="flex w-full flex-col items-center gap-0.5">
-                <span>{{ formatTime(shift.startTime) || '—' }}</span>
+                <span class="inline-flex items-center gap-1">
+                  {{ formatTime(shift.startTime) || '—' }}
+                  <Lock
+                    v-if="shift.lockedByTeam && !shift.isBookedByMe"
+                    class="size-2.5"
+                    aria-hidden="true"
+                  />
+                </span>
                 <span class="text-[10px] leading-none" :class="slotCountClasses(shift)">
                   {{ shift.currentBookings ?? 0 }}/{{ shift.maxBookings ?? '—' }}
                 </span>

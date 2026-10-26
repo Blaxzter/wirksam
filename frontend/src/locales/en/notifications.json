@@ -230,6 +230,20 @@
                 "name": "Task Published"
             }
         },
+        "team": {
+            "join_approved": {
+                "description": "When your request to join a team is approved",
+                "name": "Team Request Approved"
+            },
+            "join_declined": {
+                "description": "When your request to join a team is declined",
+                "name": "Team Request Declined"
+            },
+            "join_requested": {
+                "description": "When someone asks to join a team you lead or an event you manage",
+                "name": "Team Request"
+            }
+        },
         "user": {
             "approved": {
                 "description": "When an administrator approves your account",

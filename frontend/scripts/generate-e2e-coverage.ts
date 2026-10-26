@@ -212,7 +212,6 @@ function renderHeader(): string[] {
     '',
     '- User-management table pagination — needs enough seeded users to page. Listed in #136 but',
     '  outside its acceptance criteria; the disposable-user fixture this would build on now exists.',
-    '- Demo data creation and deletion.',
     '',
   ]
 }

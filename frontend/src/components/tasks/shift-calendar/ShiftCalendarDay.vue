@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Clock } from '@lucide/vue'
+import { Clock, Lock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFormatters } from '@/composables/useFormatters'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 
-import type { BookingCalendarItem, CalendarDay, CalendarTask, CalendarEvent } from './types'
+import type { BookingCalendarItem, CalendarDay, CalendarEvent, CalendarTask } from './types'
 import { statusVariant } from './types'
 
 const { formatTimeRange } = useFormatters()
@@ -49,6 +49,14 @@ const { t } = useI18n()
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="font-medium truncate">{{ task.name }}</span>
+            <Badge
+              v-if="task.team_name && task.locked_by_team"
+              variant="secondary"
+              class="shrink-0"
+            >
+              <Lock aria-hidden="true" />
+              {{ t('teamLocks.badge.only', { name: task.team_name }) }}
+            </Badge>
             <Badge :variant="statusVariant(task.status)" class="shrink-0">
               {{ t(`duties.tasks.statuses.${task.status ?? 'draft'}`) }}
             </Badge>

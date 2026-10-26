@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
 from app.models.event import Event
+from app.models.event_team import EventTeam, EventTeamMember
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -67,6 +68,7 @@ class TestDashboardFeed:
             "open_places",
             "attention",
             "pending_join_request_count",
+            "pending_team_request_count",
         ):
             assert key in data
 
@@ -339,3 +341,238 @@ class TestDashboardSidebar:
         assert "events" in data
         assert "tasks" in data
         assert "bookings" in data
+
+
+# ---------------------------------------------------------------------------
+# Teams (#179)
+# ---------------------------------------------------------------------------
+
+
+async def _team(
+    db_session: AsyncSession, event: Event, name: str = "Kasse"
+) -> EventTeam:
+    team = EventTeam(event_id=event.id, name=name, requires_approval=True)
+    db_session.add(team)
+    await db_session.flush()
+    await db_session.refresh(team)
+    return team
+
+
+async def _in_team(
+    db_session: AsyncSession,
+    team: EventTeam,
+    user: User,
+    *,
+    status: str = "approved",
+    role: str = "member",
+) -> None:
+    db_session.add(
+        EventTeamMember(team_id=team.id, user_id=user.id, status=status, role=role)
+    )
+    await db_session.flush()
+
+
+async def _applicant(db_session: AsyncSession, tag: str) -> User:
+    user = User(
+        subject=f"local|{tag}",
+        email=f"{tag}@example.com",
+        name=f"Applicant {tag}",
+        roles=[],
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest.mark.asyncio
+class TestDashboardTeams:
+    """Team gates on the open list, and the team requests waiting on the user."""
+
+    async def test_open_shifts_leave_out_what_a_team_locks(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+    ):
+        """A suggestion the user cannot take is a dead end, so it is not made."""
+        team = await _team(db_session, test_event)
+        test_task.team_id = team.id
+        db_session.add(test_task)
+        await _add_shift(db_session, test_task, title="Nur fuer die Kasse")
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        data = r.json()
+        assert data["open_shift_count"] == 0
+        assert data["open_shifts"] == []
+
+    async def test_open_shifts_include_a_team_the_user_is_in(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+        test_user: User,
+    ):
+        team = await _team(db_session, test_event)
+        await _in_team(db_session, team, test_user)
+        test_task.team_id = team.id
+        db_session.add(test_task)
+        shift = await _add_shift(db_session, test_task, title="Kasse frueh")
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert [s["shift_id"] for s in r.json()["open_shifts"]] == [str(shift.id)]
+
+    async def test_a_pending_request_does_not_unlock_the_shift(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+        test_user: User,
+    ):
+        team = await _team(db_session, test_event)
+        await _in_team(db_session, team, test_user, status="pending")
+        test_task.team_id = team.id
+        db_session.add(test_task)
+        await _add_shift(db_session, test_task)
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert r.json()["open_shift_count"] == 0
+
+    async def test_event_admin_still_sees_locked_shifts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+        as_event_admin: None,
+    ):
+        """An event admin passes every team gate, so nothing is hidden from them."""
+        team = await _team(db_session, test_event)
+        test_task.team_id = team.id
+        db_session.add(test_task)
+        await _add_shift(db_session, test_task)
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert r.json()["open_shift_count"] == 1
+
+    async def test_event_admin_counts_every_team_request(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        as_event_admin: None,
+    ):
+        kasse = await _team(db_session, test_event, "Kasse")
+        bar = await _team(db_session, test_event, "Bar")
+        await _in_team(
+            db_session, kasse, await _applicant(db_session, "a1"), status="pending"
+        )
+        await _in_team(
+            db_session, bar, await _applicant(db_session, "a2"), status="pending"
+        )
+        # Already decided: nothing left to do about these.
+        await _in_team(db_session, bar, await _applicant(db_session, "a3"))
+        await _in_team(
+            db_session, bar, await _applicant(db_session, "a4"), status="declined"
+        )
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        data = r.json()
+        assert data["pending_team_request_count"] == 2
+        assert data["attention"]["pending_team_requests"] == 2
+
+    async def test_team_lead_counts_only_their_own_team(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ):
+        """``test_user`` is a plain event member who leads one team."""
+        kasse = await _team(db_session, test_event, "Kasse")
+        bar = await _team(db_session, test_event, "Bar")
+        await _in_team(db_session, kasse, test_user, role="lead")
+        await _in_team(
+            db_session, kasse, await _applicant(db_session, "b1"), status="pending"
+        )
+        await _in_team(
+            db_session, bar, await _applicant(db_session, "b2"), status="pending"
+        )
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        data = r.json()
+        assert data["pending_team_request_count"] == 1
+        # A lead is not an organiser: the count, but no attention block.
+        assert data["attention"] is None
+
+    async def test_plain_member_has_no_team_requests_to_decide(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ):
+        kasse = await _team(db_session, test_event)
+        # Being an ordinary member of the team is not enough to decide.
+        await _in_team(db_session, kasse, test_user)
+        await _in_team(
+            db_session, kasse, await _applicant(db_session, "c1"), status="pending"
+        )
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert r.json()["pending_team_request_count"] == 0
+
+    async def test_attention_is_scoped_to_the_event_in_view(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_event_admin_user: User,
+        as_event_admin: None,
+    ):
+        """The to-do list is about the event in view; the badge is about all."""
+        here = await _team(db_session, test_event, "Hier")
+        there = await _team(db_session, test_draft_event, "Dort")
+        await _in_team(
+            db_session, here, await _applicant(db_session, "d1"), status="pending"
+        )
+        await _in_team(
+            db_session, there, await _applicant(db_session, "d2"), status="pending"
+        )
+        test_event_admin_user.selected_event_id = test_event.id
+        db_session.add(test_event_admin_user)
+        await db_session.flush()
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        data = r.json()
+        assert data["pending_team_request_count"] == 2
+        assert data["attention"]["pending_team_requests"] == 1
+
+    async def test_superadmin_counts_requests_outside_demo_events(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        as_admin: None,
+    ):
+        team = await _team(db_session, test_event)
+        await _in_team(
+            db_session, team, await _applicant(db_session, "e1"), status="pending"
+        )
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert r.json()["pending_team_request_count"] == 1
