@@ -132,6 +132,13 @@ function routeFor(n: NotificationItem) {
   const data = n.data
   if (!data) return null
   if (data.task_id) return { name: 'task-detail', params: { eventId: data.task_id as string } }
+  // Team requests and decisions open the Teams page on that team.
+  if (data.team_id && data.event_id)
+    return {
+      name: 'teams',
+      params: { eventId: data.event_id as string },
+      query: { team: data.team_id as string },
+    }
   if (data.event_id) return { name: 'event-settings', params: { eventId: data.event_id as string } }
   if (data.booking_id) return { name: 'my-bookings' }
   return null

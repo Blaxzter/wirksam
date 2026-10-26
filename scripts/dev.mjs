@@ -5,7 +5,7 @@
  *
  *   1. Postgres + Adminer in Docker (waits until the DB is healthy)
  *   2. Alembic migrations
- *   3. Dev login + demo data (`just seed`, a no-op once they exist)
+ *   3. Dev login + demo event (`just seed`, a no-op once they exist)
  *   4. Backend (uvicorn --reload) and frontend (vite) side by side, with
  *      their output interleaved and prefixed
  *
@@ -135,7 +135,7 @@ if (migrate) {
 }
 
 if (seed) {
-    console.log('\n▶ Seeding dev login + demo data...');
+    console.log('\n▶ Seeding dev login + demo event...');
     run('uv run --directory backend python -m app.scripts.seed_demo');
 }
 

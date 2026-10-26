@@ -12,6 +12,7 @@ interface PersistedFilters {
   focusMode: FocusMode
   myBookingsOnly: boolean
   hideFullShifts: boolean
+  bookableOnly: boolean
   dateFrom: string | null // YYYY-MM-DD or null (= today)
   dateTo: string | null // YYYY-MM-DD or null (= no upper bound)
 }
@@ -33,6 +34,8 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
   const focusMode = ref<FocusMode>(saved.focusMode ?? 'today')
   const myBookingsOnly = ref(saved.myBookingsOnly ?? false)
   const hideFullShifts = ref(saved.hideFullShifts ?? false)
+  /** Leave out tasks reserved for a team the user is not in. Off by default. */
+  const bookableOnly = ref(saved.bookableOnly ?? false)
   /** Custom start date for task filtering. null = today (default). */
   const dateFrom = ref<string | null>(saved.dateFrom ?? null)
   /** Custom end date for task filtering. null = no upper bound. */
@@ -51,6 +54,7 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     focusMode: focusMode.value,
     myBookingsOnly: myBookingsOnly.value,
     hideFullShifts: hideFullShifts.value,
+    bookableOnly: bookableOnly.value,
     dateFrom: dateFrom.value,
     dateTo: dateTo.value,
   }))
@@ -65,6 +69,7 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     let count = 0
     if (myBookingsOnly.value) count++
     if (hideFullShifts.value) count++
+    if (bookableOnly.value) count++
     if (hasCustomDateRange.value) count++
     if (searchQuery.value.trim()) count++
     if (locationId.value) count++
@@ -75,6 +80,7 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     searchQuery.value = ''
     myBookingsOnly.value = false
     hideFullShifts.value = false
+    bookableOnly.value = false
     dateFrom.value = null
     dateTo.value = null
     locationId.value = null
@@ -101,6 +107,7 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     focusMode,
     myBookingsOnly,
     hideFullShifts,
+    bookableOnly,
     dateFrom,
     dateTo,
     locationId,

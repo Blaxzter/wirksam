@@ -78,7 +78,11 @@ const eventWindow = computed(() => {
   const start = toMinutes(props.eventStartTime.slice(0, 5))
   const end = toMinutes(props.eventEndTime.slice(0, 5))
   if (start === null || end === null) return null
-  return { start, end, label: `${props.eventStartTime.slice(0, 5)}–${props.eventEndTime.slice(0, 5)}` }
+  return {
+    start,
+    end,
+    label: `${props.eventStartTime.slice(0, 5)}–${props.eventEndTime.slice(0, 5)}`,
+  }
 })
 
 const outsideEventWindow = computed(() => {
@@ -108,7 +112,9 @@ const outsideEventWindow = computed(() => {
     data-testid="task-outside-event-window"
   >
     <CircleAlert class="text-amber-500 mt-0.5 size-3.5 shrink-0" />
-    <span>{{ t('duties.tasks.createView.schedule.outsideEventWindow', { range: eventWindow.label }) }}</span>
+    <span>{{
+      t('duties.tasks.createView.schedule.outsideEventWindow', { range: eventWindow.label })
+    }}</span>
   </p>
   <div class="grid grid-cols-2 gap-4">
     <div class="space-y-2" data-testid="input-shift-duration">

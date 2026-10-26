@@ -133,7 +133,7 @@
         },
         "invitations": {
             "body": "Invite people by email, or create a link you can share in a group chat. Whoever follows it joins straight away. The demo doesn't send email, so this card is just for looking.",
-            "next": "How did it go?",
+            "next": "Who can do what",
             "title": "Bring more people in"
         },
         "jobInfo": {
@@ -191,6 +191,11 @@
         "taskDetails": {
             "body": "The name, a description, the place and a category. This is what volunteers read when they decide whether a job is for them, so say what the work actually involves.",
             "title": "What the job is"
+        },
+        "teamRequests": {
+            "body": "Some jobs need someone trusted or qualified, like childcare or first aid. Reserve a task for a team and only its members can book it. People ask to join here; where a team needs a check, such as a police certificate, you tick that you've seen it before you approve. WirkSam keeps no copy.",
+            "next": "How did it go?",
+            "title": "Teams for the special jobs"
         },
         "topVolunteers": {
             "body": "Who took on the most shifts. Useful for a thank-you note, and for knowing who to ask first next year.",

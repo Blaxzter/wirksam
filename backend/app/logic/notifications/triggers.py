@@ -644,6 +644,115 @@ async def dispatch_event_join_decided(
         logger.exception("Failed to dispatch %s notification", type_code)
 
 
+# ── Event teams ───────────────────────────────────────────────────
+
+
+async def dispatch_team_join_requested(
+    *,
+    team_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> None:
+    """Tell the people who can decide a team request that one is waiting.
+
+    That is the team's approved leads plus the event's owners and admins — the
+    same set ``require_team_manager`` lets through, minus the platform
+    superadmin, who is not on the hook for every team on the platform (the
+    event join request leaves them out for the same reason). Only called for a
+    request that actually waits: joining an open team needs nobody's attention.
+    """
+    try:
+        from sqlmodel import col, select
+
+        from app.crud.event_membership import event_membership as crud_membership
+        from app.crud.user import user as crud_user
+        from app.models.event_team import EventTeam, EventTeamMember
+
+        async with async_session() as db:
+            team = await db.get(EventTeam, team_id)
+            if team is None:
+                return
+            leads = (
+                await db.execute(
+                    select(col(EventTeamMember.user_id)).where(
+                        col(EventTeamMember.team_id) == team_id,
+                        col(EventTeamMember.status) == "approved",
+                        col(EventTeamMember.role) == "lead",
+                    )
+                )
+            ).scalars()
+            admins = await crud_membership.list_user_ids(
+                db, event_id=team.event_id, minimum_role="admin"
+            )
+            # dict.fromkeys: one notification each, in a stable order, for a
+            # lead who is also an event admin.
+            recipients = [r for r in dict.fromkeys([*leads, *admins]) if r != user_id]
+            if not recipients:
+                return
+
+            applicant = await crud_user.get(db, id=user_id)
+            applicant_name = (
+                (applicant.name or applicant.email or "Someone")
+                if applicant
+                else "Someone"
+            )
+            team_name = team.name
+            event_name = await _event_name(db, team.event_id)
+
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=recipients,
+                type_code="team.join_requested",
+                message_factory=lambda lang: get_message(
+                    "team.join_requested",
+                    lang,
+                    name=applicant_name,
+                    team_name=team_name,
+                    event_name=event_name,
+                ),
+                data={
+                    "event_id": str(team.event_id),
+                    "team_id": str(team_id),
+                    "user_id": str(user_id),
+                },
+                scope_chain=[("event", team.event_id)],
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch team.join_requested notification")
+
+
+async def dispatch_team_join_decided(
+    *,
+    team_id: uuid.UUID,
+    user_id: uuid.UUID,
+    approved: bool,
+) -> None:
+    """Tell someone whether their request to join a team went through."""
+    type_code = "team.join_approved" if approved else "team.join_declined"
+    try:
+        from app.models.event_team import EventTeam
+
+        async with async_session() as db:
+            team = await db.get(EventTeam, team_id)
+            if team is None:
+                return
+            team_name = team.name
+            event_name = await _event_name(db, team.event_id)
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=[user_id],
+                type_code=type_code,
+                message_factory=lambda lang: get_message(
+                    type_code, lang, team_name=team_name, event_name=event_name
+                ),
+                data={"event_id": str(team.event_id), "team_id": str(team_id)},
+                scope_chain=[("event", team.event_id)],
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch %s notification", type_code)
+
+
 async def dispatch_event_role_changed(
     *,
     event_id: uuid.UUID,

@@ -222,6 +222,39 @@ EVENT_ROLE_CHANGED = NotificationTypeDef(
     default_channels=["email", "push"],
 )
 
+# ── Event team notifications ──────────────────────────────────────
+#
+# Filed under "event" rather than a category of their own: a team lives inside
+# one event, and muting an event (scope chain ``("event", id)``) should quiet
+# its teams too.
+
+TEAM_JOIN_REQUESTED = NotificationTypeDef(
+    code="team.join_requested",
+    name="Team Request",
+    description="Notification when someone asks to join a team you lead or an event you manage",
+    category="event",
+    classification="announcement",
+    default_channels=["email", "push"],
+)
+
+TEAM_JOIN_APPROVED = NotificationTypeDef(
+    code="team.join_approved",
+    name="Team Request Approved",
+    description="Notification when your request to join a team is approved",
+    category="event",
+    classification="change",
+    default_channels=["email", "push"],
+)
+
+TEAM_JOIN_DECLINED = NotificationTypeDef(
+    code="team.join_declined",
+    name="Team Request Declined",
+    description="Notification when your request to join a team is declined",
+    category="event",
+    classification="change",
+    default_channels=["email"],
+)
+
 # ── User / admin notifications ────────────────────────────────────
 
 USER_REINSTATED = NotificationTypeDef(
@@ -298,6 +331,9 @@ ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
     EVENT_JOIN_APPROVED,
     EVENT_JOIN_DECLINED,
     EVENT_ROLE_CHANGED,
+    TEAM_JOIN_REQUESTED,
+    TEAM_JOIN_APPROVED,
+    TEAM_JOIN_DECLINED,
     USER_REINSTATED,
     USER_SUSPENDED,
     USER_REGISTERED,

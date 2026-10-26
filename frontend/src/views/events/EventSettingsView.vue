@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Map as MapIcon, MapPin, Pencil, Users } from '@lucide/vue'
+import { Map as MapIcon, MapPin, Pencil, Users, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -47,6 +47,15 @@ const activeTab = ref<Tab>('details')
 
 function readTabFromQuery() {
   const qTab = route.query.tab
+  // Teams moved to a page of their own; old `?tab=teams` links land there.
+  if (qTab === 'teams') {
+    router.replace({
+      name: 'teams',
+      params: { eventId: targetEventId.value ?? undefined },
+      query: typeof route.query.team === 'string' ? { team: route.query.team } : {},
+    })
+    return
+  }
   // "managers" is the old name for this tab; keep old links working.
   if (qTab === 'people' || qTab === 'managers') activeTab.value = 'people'
   else if (qTab === 'locations' || qTab === 'map') activeTab.value = qTab
@@ -88,11 +97,14 @@ const isMember = computed(() =>
  * The tab actually shown: "locations" and "map" are for event admins, so a
  * shared `?tab=map` link falls back to the details for everyone else.
  */
-const shownTab = computed<Tab>(() =>
-  (activeTab.value === 'locations' || activeTab.value === 'map') && !canManage.value
-    ? 'details'
-    : activeTab.value,
-)
+const shownTab = computed<Tab>(() => {
+  if ((activeTab.value === 'locations' || activeTab.value === 'map') && !canManage.value)
+    return 'details'
+  return activeTab.value
+})
+
+/** Requests a lead or admin could decide, across every team they manage. */
+const teamRequestCount = computed(() => event.value?.pending_team_request_count ?? 0)
 
 // On a phone the tab row scrolls sideways: keep the chosen tab in view, so a
 // `?tab=map` link does not open with its tab cut off at the edge.
@@ -259,6 +271,27 @@ onMounted(loadEvent)
         >
           {{ joinRequests.length }}
         </span>
+      </Button>
+      <!-- A shortcut, not a tab: teams have their own page in the main
+           navigation, because volunteers use them and never come here. -->
+      <Button
+        v-if="isMember && targetEventId"
+        variant="ghost"
+        class="shrink-0 rounded-none border-b-2 border-transparent"
+        as-child
+        data-testid="tab-teams"
+      >
+        <RouterLink :to="{ name: 'teams', params: { eventId: targetEventId } }">
+          <UsersRound class="mr-2 h-4 w-4" />
+          {{ t('teams.tab') }}
+          <span
+            v-if="teamRequestCount > 0"
+            class="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground"
+            data-testid="teams-tab-badge"
+          >
+            {{ teamRequestCount }}
+          </span>
+        </RouterLink>
       </Button>
       <template v-if="canManage">
         <Button

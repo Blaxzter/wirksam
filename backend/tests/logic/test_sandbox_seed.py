@@ -48,10 +48,18 @@ from app.logic.sandbox.venue_plan_shapes import (
     demo_shapes,
     label_text,
 )
+from app.logic.team_documents import sniff
 from app.models.booking import Booking
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
+from app.models.event_team import (
+    EventTeam,
+    EventTeamCheck,
+    EventTeamDocument,
+    EventTeamMember,
+    EventTeamRequirement,
+)
 from app.models.location import Location
 from app.models.notification import Notification
 from app.models.shift import Shift
@@ -1298,3 +1306,297 @@ class TestSeededAccounts:
 
         assert len(first_pattern) == len(second_pattern) > 0
         assert first_pattern != second_pattern
+
+
+# ── Teams ─────────────────────────────────────────────────────────
+
+
+async def _team_rows(
+    db: AsyncSession, sandbox: SandboxSetup
+) -> list[tuple[EventTeam, EventTeamMember]]:
+    rows = await db.execute(
+        select(EventTeam, EventTeamMember)
+        .join(EventTeamMember, col(EventTeamMember.team_id) == col(EventTeam.id))
+        .where(col(EventTeam.event_id) == sandbox.event.id)
+    )
+    return [(team, member) for team, member in rows.all()]
+
+
+async def _documents(
+    db: AsyncSession, sandbox: SandboxSetup
+) -> list[EventTeamDocument]:
+    rows = await db.execute(
+        select(EventTeamDocument)
+        .join(
+            EventTeamMember,
+            col(EventTeamMember.id) == col(EventTeamDocument.member_id),
+        )
+        .join(EventTeam, col(EventTeam.id) == col(EventTeamMember.team_id))
+        .where(col(EventTeam.event_id) == sandbox.event.id)
+    )
+    return list(rows.scalars())
+
+
+@pytest.mark.asyncio
+class TestSeededTeams:
+    """Five teams, two locked tasks, and the review flow for a manager."""
+
+    async def test_five_teams_and_two_locked_tasks(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Test that the Teams page and the lock marker have something to show."""
+        teams = list(
+            (
+                await db_session.execute(
+                    select(EventTeam).where(
+                        col(EventTeam.event_id) == test_sandbox.event.id
+                    )
+                )
+            ).scalars()
+        )
+        locked = [t for t in await _tasks(db_session, test_sandbox) if t.team_id]
+
+        by_name = {t.name: t.id for t in teams}
+
+        assert set(by_name) == {
+            "Setup crew",
+            "Cash desk",
+            "Shuttle drivers",
+            "Childcare",
+            "First aid",
+        }
+        assert {t.name: t.team_id for t in locked} == {
+            "Kids' games": by_name["Childcare"],
+            "Wristband check": by_name["Cash desk"],
+        }
+
+    async def test_the_shuttle_drivers_need_a_licence_and_nothing_else(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Test the third kind of requirement: no date, no expiry, no file."""
+        rows = await db_session.execute(
+            select(EventTeamRequirement)
+            .join(EventTeam, col(EventTeam.id) == col(EventTeamRequirement.team_id))
+            .where(
+                col(EventTeam.event_id) == test_sandbox.event.id,
+                col(EventTeam.name) == "Shuttle drivers",
+            )
+        )
+        (requirement,) = rows.scalars().all()
+
+        assert requirement.label == "Driving licence class B"
+        assert requirement.ask_issue_date is False
+        assert requirement.valid_for_years is None
+        assert requirement.accepts_document is False
+
+    async def test_the_helper_is_in_one_team_and_not_the_locked_one(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Test that the helper is in the open team and outside the locked one."""
+        mine = [
+            team.name
+            for team, member in await _team_rows(db_session, test_sandbox)
+            if member.user_id == test_sandbox.guest.id
+        ]
+
+        assert mine == ["Setup crew"]
+
+    async def test_nobody_holds_a_locked_shift_outside_its_team(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        """Test that the rota and the team agree, for both roles.
+
+        A booking on the kids' games by someone not in Childcare is a booking
+        the gate would have refused, exactly the inconsistency a demo must
+        not show. The helper in particular never lands on it.
+        """
+        roles: tuple[SandboxRole, ...] = ("helper", "manager")
+        for role in roles:
+            sandbox = await make_sandbox(role=role)
+            locked = [t for t in await _tasks(db_session, sandbox) if t.team_id]
+            rows = await _team_rows(db_session, sandbox)
+            assert len(locked) == 2
+            for task in locked:
+                holders = set(
+                    (
+                        await db_session.execute(
+                            select(col(Booking.user_id))
+                            .join(Shift, col(Shift.id) == col(Booking.shift_id))
+                            .where(col(Shift.task_id) == task.id)
+                        )
+                    ).scalars()
+                )
+                approved = {
+                    member.user_id
+                    for team, member in rows
+                    if team.id == task.team_id and member.status == "approved"
+                }
+                assert holders, f"{task.name} must have people on it"
+                assert holders <= approved, task.name
+                assert sandbox.guest.id not in holders, task.name
+
+    async def test_every_approved_member_of_a_checked_team_has_a_check(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Test that the roster shows one expired check and no unexplained gaps."""
+        rows = await _team_rows(db_session, test_sandbox)
+        requirement_teams = set(
+            (
+                await db_session.execute(
+                    select(col(EventTeamRequirement.team_id)).where(
+                        col(EventTeamRequirement.team_id).in_(
+                            [team.id for team, _ in rows]
+                        )
+                    )
+                )
+            ).scalars()
+        )
+        checks = {
+            check.member_id: check
+            for check in (
+                await db_session.execute(
+                    select(EventTeamCheck).where(
+                        col(EventTeamCheck.member_id).in_([m.id for _, m in rows])
+                    )
+                )
+            ).scalars()
+        }
+        today = dt.date.today()
+
+        for team, member in rows:
+            if team.id in requirement_teams and member.status == "approved":
+                assert member.id in checks, (team.name, member.user_id)
+        expired = [c for c in checks.values() if c.expires_on and c.expires_on < today]
+        assert len(expired) == 1
+
+    async def test_a_helper_gets_no_team_requests(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Test that requests only a manager could decide are not seeded."""
+        rows = await _team_rows(db_session, test_sandbox)
+
+        assert all(member.status == "approved" for _, member in rows)
+        assert await _documents(db_session, test_sandbox) == []
+
+    async def test_a_manager_has_five_requests_to_review(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        """Test the review flow: who asks for what, with which note and file.
+
+        Vera asks two teams as one person; Jordan asks without a note. The
+        police certificate takes no file, by design; the first-aid request
+        carries the sample certificate, a PNG the upload rules would accept.
+        """
+        sandbox = await make_sandbox(role="manager")
+        rows = await _team_rows(db_session, sandbox)
+        names = {
+            user.id: user.name
+            for user in (await db_session.execute(select(User))).scalars()
+        }
+        pending = sorted(
+            (team.name, names[member.user_id], member.message)
+            for team, member in rows
+            if member.status == "pending"
+        )
+        members = {
+            (team.name, names[member.user_id]): member
+            for team, member in rows
+            if member.status == "pending"
+        }
+        documents = await _documents(db_session, sandbox)
+
+        assert pending == [
+            (
+                "Cash desk",
+                "Jordan Schmidt",
+                None,
+            ),
+            (
+                "Cash desk",
+                "Vera Volunteer",
+                "I did the cash desk at last year's festival.",
+            ),
+            ("Childcare", "Carla Meier", pending[2][2]),
+            ("First aid", "Sven Becker", pending[3][2]),
+            (
+                "Shuttle drivers",
+                "Vera Volunteer",
+                "I can take the minibus on Saturday morning.",
+            ),
+        ]
+        assert pending[2][2] and pending[3][2]
+        assert (
+            members[("Cash desk", "Vera Volunteer")].user_id
+            == members[("Shuttle drivers", "Vera Volunteer")].user_id
+        )
+        assert len(documents) == 1
+        assert documents[0].member_id == members[("First aid", "Sven Becker")].id
+        assert documents[0].content_type == "image/png"
+        assert sniff(documents[0].data) == "png"
+
+    async def test_the_manager_leads_the_cash_desk_and_the_helper_does_not(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        """Test that the organiser decides cash-desk requests as its lead too."""
+        roles: tuple[SandboxRole, ...] = ("manager", "helper")
+        for role in roles:
+            sandbox = await make_sandbox(role=role)
+            mine = {
+                team.name: member.role
+                for team, member in await _team_rows(db_session, sandbox)
+                if member.user_id == sandbox.guest.id
+            }
+            if role == "manager":
+                assert mine == {"Setup crew": "member", "Cash desk": "lead"}
+            else:
+                assert mine == {"Setup crew": "member"}
+
+    async def test_the_requesters_are_guests_of_the_demo(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        """Test that the purge finds the requesters, and nobody can mail them."""
+        sandbox = await make_sandbox(role="manager")
+        requester_ids = [
+            member.user_id
+            for _, member in await _team_rows(db_session, sandbox)
+            if member.status == "pending"
+        ]
+        guests = {guest.id: guest for guest in await _guests(db_session, sandbox)}
+
+        assert requester_ids
+        for user_id in requester_ids:
+            assert user_id in guests
+            assert guests[user_id].is_sandbox
+            assert guests[user_id].email is None
+
+    async def test_it_speaks_the_language_the_visitor_clicked(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        """Test that team names and requirement labels follow the language."""
+        sandbox = await make_sandbox(role="manager", language="de")
+        names = {team.name for team, _ in await _team_rows(db_session, sandbox)}
+        labels = set(
+            (
+                await db_session.execute(
+                    select(col(EventTeamRequirement.label))
+                    .join(
+                        EventTeam,
+                        col(EventTeam.id) == col(EventTeamRequirement.team_id),
+                    )
+                    .where(col(EventTeam.event_id) == sandbox.event.id)
+                )
+            ).scalars()
+        )
+
+        assert names == {
+            "Aufbau",
+            "Kasse",
+            "Fahrdienst",
+            "Kinderbetreuung",
+            "Sanitätsdienst",
+        }
+        assert labels == {
+            "Erweitertes Führungszeugnis",
+            "Erste-Hilfe-Kurs",
+            "Führerschein Klasse B",
+        }

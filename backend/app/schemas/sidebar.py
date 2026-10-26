@@ -17,6 +17,10 @@ class SidebarTask(BaseModel):
     open_shifts: int
     next_shift_date: dt.date | None = None
     next_shift_start_time: dt.time | None = None
+    #: The team the task is reserved for, if any.
+    team_name: str | None = None
+    #: Reserved for a team the viewer is not in (and not an event admin).
+    locked_by_team: bool = False
 
 
 class SidebarBooking(BaseModel):

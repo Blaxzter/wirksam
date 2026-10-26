@@ -1,28 +1,4 @@
 {
-    "demoData": {
-        "create": {
-            "button": "Demodaten erstellen",
-            "description": "Aufgaben, Veranstaltungen, Benutzer und Dienstschichten mit dem Präfix [DEMO] generieren.",
-            "title": "Demodaten erstellen"
-        },
-        "createSuccess": "{tasks} Aufgaben, {events} Gruppen, {users} Benutzer, {shifts} Schichten, {bookings} Buchungen und {availabilities} Verfügbarkeiten erstellt.",
-        "delete": {
-            "button": "Alle Demodaten löschen",
-            "description": "Alle Demodaten aus dem System entfernen.",
-            "info": "Dies löscht alles, was mit [DEMO] gekennzeichnet ist: Aufgaben, Veranstaltungen, Dienstschichten, Buchungen und Demobenutzer.",
-            "title": "Demodaten löschen"
-        },
-        "deleteSuccess": "{tasks} Aufgaben, {events} Gruppen, {users} Benutzer, {shifts} Schichten und {bookings} Buchungen gelöscht.",
-        "fields": {
-            "numEvents": "Anzahl Veranstaltungen",
-            "numShiftsPerTask": "Schichten pro Aufgabe",
-            "numTasks": "Anzahl Aufgaben",
-            "numUsers": "Anzahl Demobenutzer",
-            "publishTasks": "Aufgaben sofort veröffentlichen"
-        },
-        "subtitle": "Demodaten zum Testen erstellen oder entfernen.",
-        "title": "Demodaten"
-    },
     "events": {
         "deleteEvent": "Veranstaltung {name} löschen",
         "editEvent": "Veranstaltung {name} bearbeiten",

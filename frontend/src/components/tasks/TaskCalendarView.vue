@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ShiftCalendar } from '@/components/tasks/shift-calendar'
 import type {
-  CalendarTask,
   CalendarEvent,
+  CalendarTask,
   DateRange,
   ViewMode,
 } from '@/components/tasks/shift-calendar'

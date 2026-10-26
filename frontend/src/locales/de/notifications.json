@@ -230,6 +230,20 @@
                 "name": "Aufgabe veröffentlicht"
             }
         },
+        "team": {
+            "join_approved": {
+                "description": "Wenn deine Anfrage, einem Team beizutreten, angenommen wurde",
+                "name": "Teamanfrage angenommen"
+            },
+            "join_declined": {
+                "description": "Wenn deine Anfrage, einem Team beizutreten, abgelehnt wurde",
+                "name": "Teamanfrage abgelehnt"
+            },
+            "join_requested": {
+                "description": "Wenn jemand einem Team beitreten möchte, das du leitest, oder in einer Veranstaltung, die du verwaltest",
+                "name": "Teamanfrage"
+            }
+        },
         "user": {
             "approved": {
                 "description": "Wenn eine Administratorin oder ein Administrator dein Konto freigibt",

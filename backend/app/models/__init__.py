@@ -15,6 +15,13 @@ from .event import Event
 from .event_invitation import EventInvitation
 from .event_join_request import EventJoinRequest
 from .event_membership import EventMembership
+from .event_team import (
+    EventTeam,
+    EventTeamCheck,
+    EventTeamDocument,
+    EventTeamMember,
+    EventTeamRequirement,
+)
 from .location import Location
 from .notification import (
     Notification,
@@ -47,6 +54,11 @@ __all__ = [
     "EventInvitation",
     "EventJoinRequest",
     "EventMembership",
+    "EventTeam",
+    "EventTeamCheck",
+    "EventTeamDocument",
+    "EventTeamMember",
+    "EventTeamRequirement",
     "Location",
     "Notification",
     "NotificationSubscription",

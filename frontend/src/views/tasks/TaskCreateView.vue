@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
+import TeamPicker from '@/components/events/teams/TeamPicker.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
@@ -63,6 +64,7 @@ const description = ref('')
 const location = ref('')
 const locationId = ref<string | null>(null)
 const category = ref('')
+const teamId = ref<string | null>(null)
 
 // Task event
 const isScopedManagerOnly = computed(() => !authStore.isAdmin && authStore.isEventManager)
@@ -167,6 +169,8 @@ const locationEventId = computed(() =>
 // A location of the previous event would be refused; keep its name as text.
 watch(locationEventId, () => {
   locationId.value = null
+  // Teams belong to one event too, and have no text to fall back on.
+  teamId.value = null
 })
 
 // Clear dates when event changes (constraints may have changed)
@@ -395,6 +399,7 @@ const handleSubmit = async () => {
       location_id: locationEventId.value ? locationId.value : null,
       location: location.value || null,
       category: category.value || null,
+      team_id: locationEventId.value ? teamId.value : null,
       schedule: {
         default_start_time: defaultStartTime.value + ':00',
         default_end_time: defaultEndTime.value + ':00',
@@ -506,6 +511,21 @@ const handleSubmit = async () => {
                 <Input id="task-category" v-model="category" />
               </div>
             </div>
+            <!-- Who can book: only an existing event has teams to choose from -->
+            <section
+              v-if="locationEventId"
+              class="space-y-3 border-t pt-4"
+              data-testid="section-who-can-book"
+              aria-labelledby="who-can-book-heading"
+            >
+              <div class="space-y-0.5">
+                <h3 id="who-can-book-heading" class="font-semibold">
+                  {{ t('teamLocks.picker.title') }}
+                </h3>
+                <p class="text-sm text-muted-foreground">{{ t('teamLocks.picker.subtitle') }}</p>
+              </div>
+              <TeamPicker v-model="teamId" :event-id="locationEventId" input-id="task-team" />
+            </section>
             <div class="flex justify-end pt-2">
               <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{
                 t('common.actions.next')

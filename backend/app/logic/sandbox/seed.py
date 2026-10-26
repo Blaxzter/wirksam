@@ -34,6 +34,16 @@ without it opens an empty form.
 Rows are added with ``db.add`` and a single ``flush`` per stage rather than
 through ``CRUDBase.create``, which flushes and refreshes once per row — the
 difference is a few hundred round trips on every click of the demo button.
+
+The same content doubles as the local dev seed. ``seed_dev_event`` (run by
+``just seed`` through ``scripts.seed_demo``) builds the manager variant as an
+ordinary, permanent event: ``is_sandbox`` is off on the event, its tasks and
+every made-up person, and there is no ``sandbox_expires_at``, so the TTL sweep
+never touches it and the sandbox visibility filters do not hide it. The made-up
+people get the ``demo|`` subject prefix instead of ``sandbox|`` — still in
+``UNDELIVERABLE_SUBJECT_PREFIXES``, and still without an address — so the dev
+event can never notify them either. ``seed_sandbox`` is unchanged by this: the
+mode only switches those flags, the prefix and the event description.
 """
 
 import datetime as dt
@@ -42,10 +52,15 @@ import secrets
 import uuid
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.crud.user_availability import user_availability as crud_user_availability
 from app.logic.notifications.messages import format_time_until, get_message
+from app.logic.sample_document import CONTENT_TYPE as SAMPLE_CONTENT_TYPE
+from app.logic.sample_document import FILENAME as SAMPLE_FILENAME
+from app.logic.sample_document import render_first_aid_sample
 from app.logic.sandbox.venue_plan_shapes import (
     HEIGHT,
     PLAN_KEYS,
@@ -56,12 +71,20 @@ from app.logic.sandbox.venue_plan_shapes import (
     label_text,
 )
 from app.logic.shift_generator import generate_shifts
+from app.logic.team_requirements import add_years
 from app.logic.venue_shapes import round_point
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
+from app.models.event_team import (
+    EventTeam,
+    EventTeamCheck,
+    EventTeamDocument,
+    EventTeamMember,
+    EventTeamRequirement,
+)
 from app.models.location import Location
 from app.models.notification import Notification
 from app.models.shift import Shift
@@ -87,6 +110,11 @@ _TEAMMATE_COUNT = 5
 # The day-before one, because it is the only one whose send moment reliably
 # falls in the past for a shift the visitor has not worked yet.
 _REMINDER_OFFSET_MINUTES = 1440
+
+# Subject prefix of every made-up person, by mode. Both are in
+# ``UNDELIVERABLE_SUBJECT_PREFIXES``; only ``sandbox|`` is purged with its event.
+_SANDBOX_SUBJECT_PREFIX = "sandbox|"
+_DEV_SUBJECT_PREFIX = "demo|"
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +164,8 @@ class _TaskSpec:
     #: that all come out one colour show nothing; ``None`` leaves today to
     #: the random fill like every other day.
     today_fill: float | None = None
+    #: The key of the seeded team (``_TEAMS``) that alone may book this task.
+    team: str | None = None
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -338,6 +368,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=120,
         people_per_shift=2,
         today_fill=0.5,
+        team="cash_desk",
     ),
     _TaskSpec(
         name_en="Kids' games",
@@ -369,6 +400,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=120,
         people_per_shift=2,
         today_fill=0.75,
+        team="childcare",
     ),
     _TaskSpec(
         name_en="Parking marshals",
@@ -457,6 +489,18 @@ _EVENT_DESCRIPTION = {
         "sobald du gehst."
     ),
 }
+_DEV_EVENT_DESCRIPTION = {
+    "en": (
+        "A three-weekend village festival run entirely by volunteers. Made-up "
+        "data from `just seed`, for trying the app locally."
+    ),
+    "de": (
+        "Ein Dorffest über drei Wochenenden, komplett ehrenamtlich gestemmt. "
+        "Erfundene Daten aus `just seed`, zum lokalen Ausprobieren."
+    ),
+}
+#: Every name the seeded event can carry, so the dev seed can find its own.
+SEEDED_EVENT_NAMES: frozenset[str] = frozenset(_EVENT_NAME.values())
 _GUEST_NAME = {"en": "Demo visitor", "de": "Demo-Gast"}
 
 
@@ -483,13 +527,56 @@ async def seed_sandbox(
     ``owner`` must already exist and be flushed — the memberships and the
     ``created_by_id`` below need its id.
     """
+    return await _seed_event(
+        db,
+        owner=owner,
+        role=role,
+        language=language,
+        now=now,
+        sandbox_expires_at=expires_at,
+    )
+
+
+async def seed_dev_event(
+    db: AsyncSession,
+    *,
+    owner: User,
+    language: str,
+    now: dt.datetime,
+) -> Event:
+    """The same event as the manager demo, as an ordinary permanent event.
+
+    For the local dev database (``just seed``): ``owner`` owns it, nothing in
+    it is a sandbox row, and it never expires. See the module docstring.
+    """
+    return await _seed_event(
+        db,
+        owner=owner,
+        role="manager",
+        language=language,
+        now=now,
+        sandbox_expires_at=None,
+    )
+
+
+async def _seed_event(
+    db: AsyncSession,
+    *,
+    owner: User,
+    role: SandboxRole,
+    language: str,
+    now: dt.datetime,
+    sandbox_expires_at: dt.datetime | None,
+) -> Event:
+    """Both entry points. ``sandbox_expires_at=None`` builds a permanent event."""
     lang = "de" if language == "de" else "en"
+    sandbox = sandbox_expires_at is not None
     today = now.date()
     rng = _DeterministicRng(seed=owner.id.int)
 
     event = Event(
         name=_EVENT_NAME[lang],
-        description=_EVENT_DESCRIPTION[lang],
+        description=(_EVENT_DESCRIPTION if sandbox else _DEV_EVENT_DESCRIPTION)[lang],
         start_date=today - dt.timedelta(days=_DAYS_BEFORE_TODAY),
         end_date=today + dt.timedelta(days=_DAYS_AFTER_TODAY),
         default_start_time=dt.time(hour=9),
@@ -500,8 +587,8 @@ async def seed_sandbox(
         # costs nothing.
         visibility="private",
         is_featured=False,
-        is_sandbox=True,
-        sandbox_expires_at=expires_at,
+        is_sandbox=sandbox,
+        sandbox_expires_at=sandbox_expires_at,
         created_by_id=owner.id,
     )
     db.add(event)
@@ -518,7 +605,7 @@ async def seed_sandbox(
         )
     )
 
-    teammates = _build_teammates(lang=lang, count=_TEAMMATE_COUNT)
+    teammates = _build_teammates(lang=lang, count=_TEAMMATE_COUNT, sandbox=sandbox)
     for teammate in teammates:
         db.add(teammate)
     await db.flush()
@@ -527,7 +614,7 @@ async def seed_sandbox(
         db.add(EventMembership(user_id=teammate.id, event_id=event.id, role="member"))
 
     tasks, shifts = await _seed_tasks_and_shifts(
-        db, event=event, owner=owner, lang=lang, today=today
+        db, event=event, owner=owner, lang=lang, today=today, sandbox=sandbox
     )
     guest_bookings = await _seed_bookings(
         db,
@@ -543,8 +630,20 @@ async def seed_sandbox(
     requester: User | None = None
     if role == "manager":
         requester = await _seed_pending_decisions(
-            db, event=event, owner=owner, lang=lang, now=now
+            db, event=event, owner=owner, lang=lang, now=now, sandbox=sandbox
         )
+
+    await _seed_teams(
+        db,
+        event=event,
+        owner=owner,
+        role=role,
+        teammates=teammates,
+        tasks=tasks,
+        lang=lang,
+        now=now,
+        sandbox=sandbox,
+    )
 
     _seed_notifications(
         db,
@@ -568,6 +667,7 @@ async def _seed_tasks_and_shifts(
     owner: User,
     lang: str,
     today: dt.date,
+    sandbox: bool,
 ) -> tuple[list[Task], list[Shift]]:
     """Create each task with a real batch, so the regenerate screen works.
 
@@ -598,7 +698,7 @@ async def _seed_tasks_and_shifts(
             status="published",
             created_by_id=owner.id,
             event_id=event.id,
-            is_sandbox=True,
+            is_sandbox=sandbox,
             location=spec.location(lang),
             location_id=locations[spec.location(lang)].id,
             category=spec.category(lang),
@@ -865,14 +965,25 @@ async def _seed_bookings(
     )
 
     # Today's shifts with a set fill stay as set above: the guest landing on
-    # the one short place would turn its pin from short to half staffed.
+    # the one short place would turn its pin from short to half staffed. A
+    # task only a team may book is left alone too — the helper is not in that
+    # team, and the Teams tour shows them the lock rather than a booking they
+    # could not have made.
+    locked_tasks = {
+        task.id
+        for spec, task in zip(_TASK_SPECS, tasks, strict=True)
+        if spec.team is not None
+    }
     guest_choices = [
         s
         for s in upcoming
-        if s is not tour_shift and not (s.date == today and s.task_id in fill_by_task)
+        if s is not tour_shift
+        and s.task_id not in locked_tasks
+        and not (s.date == today and s.task_id in fill_by_task)
     ]
     held: list[_GuestBooking] = []
-    for shift in _pick_spread(guest_choices, 2) + _pick_spread(past_shifts, 1):
+    past_choices = [s for s in past_shifts if s.task_id not in locked_tasks]
+    for shift in _pick_spread(guest_choices, 2) + _pick_spread(past_choices, 1):
         # Make room for the guest on a shift the loop above already filled — by
         # dropping a teammate rather than by lowering a counter. Nothing has
         # been flushed yet, so expunging the pending row means its INSERT never
@@ -977,6 +1088,7 @@ async def _seed_pending_decisions(
     owner: User,
     lang: str,
     now: dt.datetime,
+    sandbox: bool,
 ) -> User:
     """One invitation and one join request, both still waiting. Returns the applicant.
 
@@ -1000,15 +1112,10 @@ async def _seed_pending_decisions(
             expires_at=now + dt.timedelta(days=14),
         )
     )
-    requester = User(
-        subject=f"sandbox|{uuid.uuid4().hex}",
-        email=None,
-        name="Ellis Vaughan" if lang == "en" else "Elli Vaughan",
-        is_sandbox=True,
-        is_active=True,
-        email_verified=False,
-        preferred_language=lang,
-        roles=[],
+    requester = _stand_in(
+        "Ellis Vaughan" if lang == "en" else "Elli Vaughan",
+        lang=lang,
+        sandbox=sandbox,
     )
     db.add(requester)
     # Flushed before the two rows that point at it. Neither EventJoinRequest nor
@@ -1035,6 +1142,397 @@ async def _seed_pending_decisions(
     # removes them — membership is how ``cleanup`` enumerates the guests.
     db.add(EventMembership(user_id=requester.id, event_id=event.id, role="member"))
     return requester
+
+
+@dataclass(frozen=True, slots=True)
+class _RequirementSpec:
+    label_en: str
+    label_de: str
+    description_en: str | None
+    description_de: str | None
+    ask_issue_date: bool
+    valid_for_years: int | None
+    accepts_document: bool
+
+
+_POLICE_CERTIFICATE = _RequirementSpec(
+    label_en="Extended police certificate",
+    label_de="Erweitertes Führungszeugnis",
+    description_en=(
+        "§72a SGB VIII. Don't keep a copy: WirkSam only saves that you saw it, "
+        "when, and the issue date."
+    ),
+    description_de=(
+        "§72a SGB VIII. Bitte keine Kopie aufbewahren: WirkSam speichert nur, "
+        "dass du es gesehen hast, wann, und das Ausstellungsdatum."
+    ),
+    ask_issue_date=True,
+    valid_for_years=5,
+    accepts_document=False,
+)
+_FIRST_AID_COURSE = _RequirementSpec(
+    label_en="First-aid course",
+    label_de="Erste-Hilfe-Kurs",
+    description_en="At least 9 units, no older than two years.",
+    description_de="Mindestens 9 Unterrichtseinheiten, nicht älter als zwei Jahre.",
+    ask_issue_date=True,
+    valid_for_years=2,
+    accepts_document=True,
+)
+_DRIVING_LICENCE_B = _RequirementSpec(
+    label_en="Driving licence class B",
+    label_de="Führerschein Klasse B",
+    description_en=None,
+    description_de=None,
+    ask_issue_date=False,
+    valid_for_years=None,
+    accepts_document=False,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _TeamSpec:
+    """One seeded team. ``lead`` and ``members`` index ``_TEAMMATE_NAMES``."""
+
+    key: str
+    name_en: str
+    name_de: str
+    description_en: str
+    description_de: str
+    requires_approval: bool
+    requirement: _RequirementSpec | None
+    lead: int | None
+    members: tuple[int, ...]
+    #: A member whose check ran out last year ("needs a new check").
+    expired: int | None = None
+    #: The visitor is in it, so the helper track sees "You're in" somewhere.
+    with_guest: bool = False
+    #: The visitor leads it — manager variant only, so the organiser decides
+    #: its requests as a team lead as well as an event owner.
+    owner_leads: bool = False
+
+
+# Five teams, one of each kind the Teams page shows: an open one the visitor is
+# already in; the cash desk, which needs approval and locks the wristband check
+# (the manager leads it); the shuttle drivers, behind a driving licence that
+# takes neither a date nor a file; childcare, behind an extended police
+# certificate that locks the kids' games; and first aid, whose requirement
+# takes a file.
+_TEAMS: tuple[_TeamSpec, ...] = (
+    _TeamSpec(
+        key="setup",
+        name_en="Setup crew",
+        name_de="Aufbau",
+        description_en="Set up tents, benches and the stage on the first morning.",
+        description_de="Zelte, Bänke und die Bühne am ersten Morgen aufbauen.",
+        requires_approval=False,
+        requirement=None,
+        lead=1,
+        members=(4,),
+        with_guest=True,
+    ),
+    _TeamSpec(
+        key="cash_desk",
+        name_en="Cash desk",
+        name_de="Kasse",
+        description_en=(
+            "Cash desk at the meadow gate. You handle money, so we need to know you."
+        ),
+        description_de=(
+            "Kasse am Wiesentor. Du hast mit Geld zu tun, deshalb müssen wir dich "
+            "kennen."
+        ),
+        requires_approval=True,
+        requirement=None,
+        lead=4,
+        members=(0,),
+        owner_leads=True,
+    ),
+    _TeamSpec(
+        key="shuttle",
+        name_en="Shuttle drivers",
+        name_de="Fahrdienst",
+        description_en="Drive guests between the station and the meadow.",
+        description_de="Gäste zwischen Bahnhof und Festwiese hin- und herfahren.",
+        requires_approval=True,
+        requirement=_DRIVING_LICENCE_B,
+        lead=3,
+        members=(1,),
+    ),
+    _TeamSpec(
+        key="childcare",
+        name_en="Childcare",
+        name_de="Kinderbetreuung",
+        description_en=(
+            "Look after children aged 3 to 10 at the kids' corner. Needs an "
+            "extended police certificate."
+        ),
+        description_de=(
+            "Kinder von 3 bis 10 in der Kinderecke betreuen. Braucht ein "
+            "erweitertes Führungszeugnis."
+        ),
+        requires_approval=True,
+        requirement=_POLICE_CERTIFICATE,
+        lead=0,
+        members=(),
+    ),
+    _TeamSpec(
+        key="first_aid",
+        name_en="First aid",
+        name_de="Sanitätsdienst",
+        description_en=(
+            "First aid at the tent on the meadow. You need a first-aid course "
+            "from the last two years."
+        ),
+        description_de=(
+            "Erste Hilfe im Zelt auf der Festwiese. Du brauchst einen "
+            "Erste-Hilfe-Kurs aus den letzten zwei Jahren."
+        ),
+        requires_approval=True,
+        requirement=_FIRST_AID_COURSE,
+        lead=2,
+        members=(3,),
+        expired=3,
+    ),
+)
+
+# The requests a manager reviews: (team key, name, note by language or
+# ``None``, attaches the sample certificate). A name that asks twice is one
+# person with two requests, as Vera is.
+_TEAM_REQUESTS: tuple[tuple[str, str, dict[str, str] | None, bool], ...] = (
+    (
+        "cash_desk",
+        "Vera Volunteer",
+        {
+            "en": "I did the cash desk at last year's festival.",
+            "de": "Ich habe letztes Jahr beim Fest an der Kasse gestanden.",
+        },
+        False,
+    ),
+    ("cash_desk", "Jordan Schmidt", None, False),
+    (
+        "shuttle",
+        "Vera Volunteer",
+        {
+            "en": "I can take the minibus on Saturday morning.",
+            "de": "Ich kann am Samstagmorgen den Kleinbus fahren.",
+        },
+        False,
+    ),
+    (
+        "childcare",
+        "Carla Meier",
+        {
+            "en": (
+                "I'm a primary school teacher and ran the kids' corner at the "
+                "parish fair two years in a row. I can bring my police "
+                "certificate to the briefing on Thursday."
+            ),
+            "de": (
+                "Ich bin Grundschullehrerin und habe zwei Jahre lang die "
+                "Kinderecke beim Gemeindefest gemacht. Mein Führungszeugnis "
+                "bringe ich am Donnerstag zur Einweisung mit."
+            ),
+        },
+        False,
+    ),
+    (
+        "first_aid",
+        "Sven Becker",
+        {
+            "en": "I did my first-aid course this spring, the certificate is attached.",
+            "de": (
+                "Meinen Erste-Hilfe-Kurs habe ich im Frühjahr gemacht, die "
+                "Bescheinigung hängt an."
+            ),
+        },
+        True,
+    ),
+)
+
+
+async def _seed_teams(
+    db: AsyncSession,
+    *,
+    event: Event,
+    owner: User,
+    role: SandboxRole,
+    teammates: list[User],
+    tasks: list[Task],
+    lang: str,
+    now: dt.datetime,
+    sandbox: bool,
+) -> None:
+    """Five teams, two locked tasks, and — for a manager — requests to review.
+
+    The helper sees tasks they cannot book and teams they can ask to join in
+    place, and has nothing to decide. The manager leads the cash desk and sees
+    the review flow: Vera and Jordan asking for the cash desk, Vera for the
+    shuttle drivers, Carla's request behind a police certificate (no file, by
+    design) and Sven's with a sample first-aid certificate attached, drawn by
+    ``logic.sample_document`` because a sandbox may not upload one. Everyone
+    the rota put on a locked task is an approved member of its team, so no one
+    holds a shift they could not have booked.
+
+    Rows are flushed stage by stage: none of these tables declares an ORM
+    relationship, so the unit of work cannot order their INSERTs (see
+    ``_seed_pending_decisions``).
+    """
+    today = now.date()
+    joined = now - dt.timedelta(days=21)
+
+    teams: dict[str, EventTeam] = {}
+    for spec in _TEAMS:
+        teams[spec.key] = EventTeam(
+            event_id=event.id,
+            name=spec.name_de if lang == "de" else spec.name_en,
+            description=spec.description_de if lang == "de" else spec.description_en,
+            requires_approval=spec.requires_approval,
+        )
+        db.add(teams[spec.key])
+    await db.flush()
+
+    requirements: dict[str, EventTeamRequirement] = {}
+    for spec in _TEAMS:
+        req = spec.requirement
+        if req is None:
+            continue
+        requirements[spec.key] = EventTeamRequirement(
+            team_id=teams[spec.key].id,
+            label=req.label_de if lang == "de" else req.label_en,
+            description=req.description_de if lang == "de" else req.description_en,
+            ask_issue_date=req.ask_issue_date,
+            valid_for_years=req.valid_for_years,
+            accepts_document=req.accepts_document,
+            position=0,
+        )
+        db.add(requirements[spec.key])
+    # Also writes the bookings, which the query below reads back.
+    await db.flush()
+
+    # Whoever the rota put on a locked task joins its team.
+    on_locked: dict[str, set[uuid.UUID]] = {}
+    for spec, task in zip(_TASK_SPECS, tasks, strict=True):
+        if spec.team is None:
+            continue
+        rows = await db.execute(
+            select(col(Booking.user_id))
+            .join(Shift, col(Shift.id) == col(Booking.shift_id))
+            .where(col(Shift.task_id) == task.id)
+        )
+        on_locked.setdefault(spec.team, set()).update(rows.scalars())
+
+    approved: list[tuple[_TeamSpec, EventTeamMember, User]] = []
+    by_id = {teammate.id: teammate for teammate in teammates}
+    by_id[owner.id] = owner
+    for spec in _TEAMS:
+        lead = teammates[spec.lead] if spec.lead is not None else None
+        decider = lead or owner
+        people: list[tuple[User, str]] = []
+        if spec.owner_leads and role == "manager":
+            people.append((owner, "lead"))
+            decider = owner
+        if lead is not None:
+            people.append((lead, "lead"))
+        people += [(teammates[i], "member") for i in spec.members]
+        if spec.with_guest:
+            people.append((owner, "member"))
+        for user_id in sorted(on_locked.get(spec.key, set()), key=str):
+            if user_id in by_id and all(u.id != user_id for u, _ in people):
+                people.append((by_id[user_id], "member"))
+        for user, team_role in people:
+            member = EventTeamMember(
+                team_id=teams[spec.key].id,
+                user_id=user.id,
+                status="approved",
+                role=team_role,
+                decided_by_id=decider.id,
+                decided_by_name=decider.name,
+                decided_at=joined,
+                created_at=joined,
+                updated_at=joined,
+            )
+            db.add(member)
+            approved.append((spec, member, decider))
+
+    pending: list[tuple[str, EventTeamMember, str, bool]] = []
+    if role == "manager":
+        # One account per name: Vera asks two teams, and two requests from
+        # two different Veras would read as a duplicate rather than as keen.
+        requesters: dict[str, User] = {}
+        for _, name, _, _ in _TEAM_REQUESTS:
+            if name not in requesters:
+                requesters[name] = _stand_in(name, lang=lang, sandbox=sandbox)
+        db.add_all(requesters.values())
+        await db.flush()
+        for requester in requesters.values():
+            # A guest of this demo, so the purge finds them by membership.
+            db.add(
+                EventMembership(user_id=requester.id, event_id=event.id, role="member")
+            )
+        asked = now - dt.timedelta(days=2)
+        for team_key, name, note, with_file in _TEAM_REQUESTS:
+            member = EventTeamMember(
+                team_id=teams[team_key].id,
+                user_id=requesters[name].id,
+                status="pending",
+                message=note[lang] if note is not None else None,
+                created_at=asked,
+                updated_at=asked,
+            )
+            db.add(member)
+            pending.append((team_key, member, name, with_file))
+    await db.flush()
+
+    # A check for every approved member of a team with a requirement; the
+    # ``expired`` one's ran out last year, which flags "needs a new check".
+    for position, (spec, member, decider) in enumerate(approved):
+        req = requirements.get(spec.key)
+        if req is None:
+            continue
+        if spec.expired is not None and member.user_id == teammates[spec.expired].id:
+            issued = add_years(today, -3)
+        else:
+            issued = today - dt.timedelta(days=50 + 41 * (position % 8))
+        db.add(
+            EventTeamCheck(
+                member_id=member.id,
+                requirement_id=req.id,
+                checked_by_id=decider.id,
+                checked_by_name=decider.name,
+                checked_at=joined,
+                issued_on=issued if req.ask_issue_date else None,
+                expires_on=(
+                    add_years(issued, req.valid_for_years)
+                    if req.valid_for_years is not None
+                    else None
+                ),
+            )
+        )
+
+    for team_key, member, name, with_file in pending:
+        req = requirements.get(team_key)
+        if not with_file or req is None or not req.accepts_document:
+            continue
+        data = render_first_aid_sample(
+            holder=name, course_date=today - dt.timedelta(days=60)
+        )
+        db.add(
+            EventTeamDocument(
+                member_id=member.id,
+                requirement_id=req.id,
+                filename=SAMPLE_FILENAME,
+                content_type=SAMPLE_CONTENT_TYPE,
+                size=len(data),
+                data=data,
+            )
+        )
+
+    for spec, task in zip(_TASK_SPECS, tasks, strict=True):
+        if spec.team is not None:
+            task.team_id = teams[spec.team].id
+            db.add(task)
+    await db.flush()
 
 
 def _seed_notifications(
@@ -1255,27 +1753,35 @@ def _seed_notifications(
     db.add_all(entries)
 
 
-def _build_teammates(*, lang: str, count: int) -> list[User]:
-    """Fake colleagues.
+def _build_teammates(*, lang: str, count: int, sandbox: bool) -> list[User]:
+    """Fake colleagues."""
+    return [
+        _stand_in(name, lang=lang, sandbox=sandbox)
+        for name, _ in _TEAMMATE_NAMES[:count]
+    ]
+
+
+def _stand_in(name: str, *, lang: str, sandbox: bool) -> User:
+    """One made-up person: a teammate, the join requester or a team requester.
 
     ``email`` is None on every one of them, which is not laziness — it is what
     makes them unmailable by construction. ``send_verify_email`` and
     ``request_password_reset`` both short-circuit on a missing address, so even
-    a future code path that forgets the ``sandbox|`` check cannot reach them.
+    a future code path that forgets the subject-prefix check cannot reach them.
+    The prefix is ``sandbox|`` in a sandbox and ``demo|`` in the dev event;
+    both are undeliverable, only the first also marks a row for the purge.
     """
-    return [
-        User(
-            subject=f"sandbox|{uuid.uuid4().hex}",
-            email=None,
-            name=name,
-            is_sandbox=True,
-            is_active=True,
-            email_verified=False,
-            preferred_language=lang,
-            roles=[],
-        )
-        for name, _ in _TEAMMATE_NAMES[:count]
-    ]
+    prefix = _SANDBOX_SUBJECT_PREFIX if sandbox else _DEV_SUBJECT_PREFIX
+    return User(
+        subject=f"{prefix}{uuid.uuid4().hex}",
+        email=None,
+        name=name,
+        is_sandbox=sandbox,
+        is_active=True,
+        email_verified=False,
+        preferred_language=lang,
+        roles=[],
+    )
 
 
 def _pick_spread(items: list[Shift], wanted: int) -> list[Shift]:

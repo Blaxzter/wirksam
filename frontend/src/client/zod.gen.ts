@@ -55,6 +55,13 @@ export const zAvatarUploadResponse = z.object({
 })
 
 /**
+ * Body_teams-upload_team_document
+ */
+export const zBodyTeamsUploadTeamDocument = z.object({
+  file: z.string(),
+})
+
+/**
  * Body_users-upload_my_avatar
  */
 export const zBodyUsersUploadMyAvatar = z.object({
@@ -237,6 +244,7 @@ export const zChangePasswordRequest = z
 export const zDashboardAttention = z
   .object({
     pending_join_requests: z.int().optional().default(0),
+    pending_team_requests: z.int().optional().default(0),
     draft_tasks: z.int().optional().default(0),
     empty_shifts_soon: z.int().optional().default(0),
     short_shifts_soon: z.int().optional().default(0),
@@ -314,44 +322,11 @@ export const zDashboardFeedResponse = z
     open_places: z.int(),
     attention: zDashboardAttention.nullish(),
     pending_join_request_count: z.int().optional().default(0),
+    pending_team_request_count: z.int().optional().default(0),
   })
   .register(z.globalRegistry, {
     description: 'Everything /app/home renders, in one request.',
   })
-
-/**
- * DemoDataCreatedResponse
- */
-export const zDemoDataCreatedResponse = z.object({
-  events_created: z.int(),
-  tasks_created: z.int(),
-  users_created: z.int(),
-  shifts_created: z.int(),
-  bookings_created: z.int(),
-  availabilities_created: z.int(),
-})
-
-/**
- * DemoDataDeletedResponse
- */
-export const zDemoDataDeletedResponse = z.object({
-  tasks_deleted: z.int(),
-  events_deleted: z.int(),
-  users_deleted: z.int(),
-  shifts_deleted: z.int(),
-  bookings_deleted: z.int(),
-})
-
-/**
- * DemoDataParams
- */
-export const zDemoDataParams = z.object({
-  num_tasks: z.int().gte(1).lte(50).optional().default(10),
-  num_events: z.int().gte(0).lte(10).optional().default(3),
-  num_users: z.int().gte(0).lte(20).optional().default(5),
-  num_shifts_per_task: z.int().gte(1).lte(20).optional().default(4),
-  publish_tasks: z.boolean().optional().default(true),
-})
 
 /**
  * EventCloneAnnounce
@@ -610,6 +585,8 @@ export const zEventRead = z.object({
     })
     .optional()
     .default(0),
+  team_count: z.int().optional().default(0),
+  pending_team_request_count: z.int().optional().default(0),
   can_manage: z.boolean().readonly(),
   is_expired: z.boolean().readonly(),
 })
@@ -635,6 +612,20 @@ export const zEventListResponse = z.object({
   total: z.int(),
   skip: z.int(),
   limit: z.int(),
+})
+
+/**
+ * EventTeamJoin
+ */
+export const zEventTeamJoin = z.object({
+  message: z.string().max(500).nullish(),
+})
+
+/**
+ * EventTeamMemberRoleUpdate
+ */
+export const zEventTeamMemberRoleUpdate = z.object({
+  role: z.enum(['member', 'lead']),
 })
 
 /**
@@ -682,6 +673,7 @@ export const zFeedShiftEntry = z
     current_bookings: z.int().optional().default(0),
     is_booked_by_me: z.boolean().optional().default(false),
     collides_with_my_booking: z.boolean().optional().default(false),
+    locked_by_team: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
     description: 'Lightweight shift for the feed — no title/description, just booking info.',
@@ -704,6 +696,7 @@ export const zFeedTaskItem = z
     location: z.string().nullish(),
     location_id: z.uuid().nullish(),
     category: z.string().nullish(),
+    team_id: z.uuid().nullish(),
     id: z.uuid(),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
@@ -712,6 +705,10 @@ export const zFeedTaskItem = z
     default_end_time: z.iso.time().nullish(),
     people_per_shift: z.int().nullish(),
     schedule_overrides: z.array(z.record(z.string(), z.unknown())).nullish(),
+    team_name: z.string().nullish(),
+    team_requires_approval: z.boolean().nullish(),
+    my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
+    locked_by_team: z.boolean().optional().default(false),
     shifts: z.array(zFeedShiftEntry).nullish(),
     slot_window_start: z.iso.date().nullish(),
     total_shifts: z.int().nullish(),
@@ -870,6 +867,12 @@ export const zLocationShiftRead = z
     current_bookings: z.int().optional().default(0),
     is_booked_by_me: z.boolean().optional().default(false),
     my_booking_id: z.uuid().nullish(),
+    event_id: z.uuid().nullish(),
+    team_id: z.uuid().nullish(),
+    team_name: z.string().nullish(),
+    team_requires_approval: z.boolean().nullish(),
+    my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
+    locked_by_team: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
     description: "A shift at a location on one day, as listed in the map's location sheet.",
@@ -1416,6 +1419,12 @@ export const zShiftRead = z.object({
   current_bookings: z.int().optional().default(0),
   is_booked_by_me: z.boolean().optional().default(false),
   collides_with_my_booking: z.boolean().optional().default(false),
+  event_id: z.uuid().nullish(),
+  team_id: z.uuid().nullish(),
+  team_name: z.string().nullish(),
+  team_requires_approval: z.boolean().nullish(),
+  my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
+  locked_by_team: z.boolean().optional().default(false),
 })
 
 /**
@@ -1546,6 +1555,8 @@ export const zSidebarTask = z.object({
   open_shifts: z.int(),
   next_shift_date: z.iso.date().nullish(),
   next_shift_start_time: z.iso.time().nullish(),
+  team_name: z.string().nullish(),
+  locked_by_team: z.boolean().optional().default(false),
 })
 
 /**
@@ -1587,6 +1598,7 @@ export const zTaskCreate = z.object({
   location: z.string().nullish(),
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
+  team_id: z.uuid().nullish(),
 })
 
 /**
@@ -1601,6 +1613,7 @@ export const zTaskCreateWithShifts = z.object({
   location: z.string().nullish(),
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
+  team_id: z.uuid().nullish(),
   event_id: z.uuid().nullish(),
   new_event: zEventCreate.nullish(),
   schedule: zShiftGenerationConfig,
@@ -1641,6 +1654,7 @@ export const zTaskRead = z.object({
   location: z.string().nullish(),
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
+  team_id: z.uuid().nullish(),
   id: z.uuid(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
@@ -1649,6 +1663,10 @@ export const zTaskRead = z.object({
   default_end_time: z.iso.time().nullish(),
   people_per_shift: z.int().nullish(),
   schedule_overrides: z.array(z.record(z.string(), z.unknown())).nullish(),
+  team_name: z.string().nullish(),
+  team_requires_approval: z.boolean().nullish(),
+  my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
+  locked_by_team: z.boolean().optional().default(false),
 })
 
 /**
@@ -1702,6 +1720,7 @@ export const zTaskUpdate = z.object({
   location: z.string().nullish(),
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
+  team_id: z.uuid().nullish(),
 })
 
 /**
@@ -1717,6 +1736,234 @@ export const zTaskUpdateWithShifts = z.object({
   category: z.string().nullish(),
   schedule: zShiftGenerationConfig,
 })
+
+/**
+ * TeamCheckIn
+ *
+ * The decider ticked this requirement off.
+ *
+ * ``issued_on`` is required when the requirement asks for the issue date
+ * and ignored otherwise.
+ */
+export const zTeamCheckIn = z
+  .object({
+    requirement_id: z.uuid(),
+    issued_on: z.iso.date().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'The decider ticked this requirement off.\n\n``issued_on`` is required when the requirement asks for the issue date\nand ignored otherwise.',
+  })
+
+/**
+ * EventTeamDecision
+ */
+export const zEventTeamDecision = z.object({
+  approve: z.boolean(),
+  checks: z.array(zTeamCheckIn).max(50).optional(),
+})
+
+/**
+ * EventTeamMemberAdd
+ *
+ * Place an event member straight into a team, skipping the request.
+ *
+ * Needs the same checks as approving a request when the team has
+ * requirements.
+ */
+export const zEventTeamMemberAdd = z
+  .object({
+    user_id: z.uuid(),
+    role: z.enum(['member', 'lead']).optional().default('member'),
+    checks: z.array(zTeamCheckIn).max(50).optional(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Place an event member straight into a team, skipping the request.\n\nNeeds the same checks as approving a request when the team has\nrequirements.',
+  })
+
+/**
+ * TeamCheckRead
+ */
+export const zTeamCheckRead = z.object({
+  requirement_id: z.uuid(),
+  label: z.string(),
+  checked_by_name: z.string().nullish(),
+  checked_at: z.iso.datetime(),
+  issued_on: z.iso.date().nullish(),
+  expires_on: z.iso.date().nullish(),
+  expired: z.boolean().optional().default(false),
+  source_team_name: z.string().nullish(),
+})
+
+/**
+ * TeamChecksUpdate
+ *
+ * Record or renew checks for someone already in the team.
+ */
+export const zTeamChecksUpdate = z
+  .object({
+    checks: z.array(zTeamCheckIn).min(1).max(50),
+  })
+  .register(z.globalRegistry, {
+    description: 'Record or renew checks for someone already in the team.',
+  })
+
+/**
+ * TeamDocumentRead
+ *
+ * What is known about an attached file without downloading it.
+ */
+export const zTeamDocumentRead = z
+  .object({
+    requirement_id: z.uuid(),
+    filename: z.string(),
+    content_type: z.string(),
+    size: z.int(),
+    uploaded_at: z.iso.datetime(),
+  })
+  .register(z.globalRegistry, {
+    description: 'What is known about an attached file without downloading it.',
+  })
+
+/**
+ * EventTeamMemberRead
+ */
+export const zEventTeamMemberRead = z.object({
+  id: z.uuid(),
+  team_id: z.uuid(),
+  team_name: z.string().nullish(),
+  user_id: z.uuid(),
+  status: z.enum(['pending', 'approved', 'declined']),
+  role: z.enum(['member', 'lead']),
+  message: z.string().nullish(),
+  created_at: z.iso.datetime(),
+  decided_at: z.iso.datetime().nullish(),
+  decided_by_name: z.string().nullish(),
+  user_name: z.string().nullish(),
+  user_email: z.string().nullish(),
+  user_avatar_etag: z.string().nullish(),
+  checks: z.array(zTeamCheckRead).optional().default([]),
+  needs_recheck: z.boolean().optional().default(false),
+  documents: z.array(zTeamDocumentRead).optional().default([]),
+  reusable_checks: z.array(zTeamCheckRead).optional().default([]),
+  other_team_names: z.array(z.string()).optional().default([]),
+  booked_shift_count: z.int().optional().default(0),
+})
+
+/**
+ * TeamRequirementIn
+ *
+ * One thing a decider has to check before approving a request.
+ *
+ * On an update, an item with an ``id`` edits that requirement and an item
+ * without one adds a new one; requirements left out are deleted together
+ * with the checks recorded against them.
+ */
+export const zTeamRequirementIn = z
+  .object({
+    id: z.uuid().nullish(),
+    label: z.string().min(1).max(200),
+    description: z.string().max(2000).nullish(),
+    ask_issue_date: z.boolean().optional().default(false),
+    valid_for_years: z.int().gte(1).lte(50).nullish(),
+    accepts_document: z.boolean().optional().default(false),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'One thing a decider has to check before approving a request.\n\nOn an update, an item with an ``id`` edits that requirement and an item\nwithout one adds a new one; requirements left out are deleted together\nwith the checks recorded against them.',
+  })
+
+/**
+ * EventTeamCreate
+ */
+export const zEventTeamCreate = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(2000).nullish(),
+  contact: z.string().max(255).nullish(),
+  requires_approval: z.boolean().optional().default(true),
+  requirements: z.array(zTeamRequirementIn).max(10).optional(),
+})
+
+/**
+ * EventTeamUpdate
+ *
+ * Partial update; apply with ``model_dump(exclude_unset=True)``.
+ *
+ * ``requirements`` replaces the whole list when sent (see
+ * :class:`TeamRequirementIn`); leave it out to keep the current ones.
+ */
+export const zEventTeamUpdate = z
+  .object({
+    name: z.string().min(1).max(100).nullish(),
+    description: z.string().max(2000).nullish(),
+    contact: z.string().max(255).nullish(),
+    requires_approval: z.boolean().nullish(),
+    requirements: z.array(zTeamRequirementIn).max(10).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Partial update; apply with ``model_dump(exclude_unset=True)``.\n\n``requirements`` replaces the whole list when sent (see\n:class:`TeamRequirementIn`); leave it out to keep the current ones.',
+  })
+
+/**
+ * TeamRequirementRead
+ */
+export const zTeamRequirementRead = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  description: z.string().nullish(),
+  ask_issue_date: z.boolean(),
+  valid_for_years: z.int().nullish(),
+  accepts_document: z.boolean(),
+})
+
+/**
+ * TeamTaskRead
+ *
+ * A task a team unlocks, for a link to it from the team.
+ */
+export const zTeamTaskRead = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    open_shift_count: z.int().optional().default(0),
+  })
+  .register(z.globalRegistry, {
+    description: 'A task a team unlocks, for a link to it from the team.',
+  })
+
+/**
+ * EventTeamRead
+ *
+ * A team, decorated with what the caller needs to render it.
+ */
+export const zEventTeamRead = z
+  .object({
+    id: z.uuid(),
+    event_id: z.uuid(),
+    name: z.string(),
+    description: z.string().nullish(),
+    contact: z.string().nullish(),
+    requires_approval: z.boolean(),
+    created_at: z.iso.datetime(),
+    requirements: z.array(zTeamRequirementRead).optional().default([]),
+    member_count: z.int().optional().default(0),
+    pending_count: z.int().optional().default(0),
+    task_count: z.int().optional().default(0),
+    tasks: z.array(zTeamTaskRead).optional().default([]),
+    open_shift_count: z.int().optional().default(0),
+    lead_names: z.array(z.string()).optional().default([]),
+    my_status: z.enum(['pending', 'approved', 'declined']).nullish(),
+    my_role: z.enum(['member', 'lead']).nullish(),
+    my_requested_at: z.iso.datetime().nullish(),
+    my_documents: z.array(zTeamDocumentRead).optional().default([]),
+    my_needs_recheck: z.boolean().optional().default(false),
+    can_manage: z.boolean().optional().default(false),
+  })
+  .register(z.globalRegistry, {
+    description: 'A team, decorated with what the caller needs to render it.',
+  })
 
 /**
  * TelegramBindResponse
@@ -2940,6 +3187,8 @@ export const zEventReadWritable = z.object({
     })
     .optional()
     .default(0),
+  team_count: z.int().optional().default(0),
+  pending_team_request_count: z.int().optional().default(0),
 })
 
 /**
@@ -3399,6 +3648,13 @@ export const zTasksTaskFeedQuery = z.object({
   event_id: z.uuid().nullish(),
   all_events: z.boolean().optional().default(false),
   location_id: z.uuid().nullish(),
+  bookable_only: z
+    .boolean()
+    .register(z.globalRegistry, {
+      description: 'Leave out tasks reserved for a team the caller is not in',
+    })
+    .optional()
+    .default(false),
 })
 
 /**
@@ -4103,6 +4359,232 @@ export const zEventsDecideJoinRequestPath = z.object({
  */
 export const zEventsDecideJoinRequestResponse = zEventJoinRequestRead
 
+export const zTeamsListTeamsPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Teams-List Teams
+ *
+ * Successful Response
+ */
+export const zTeamsListTeamsResponse = z.array(zEventTeamRead).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTeamsCreateTeamBody = zEventTeamCreate
+
+export const zTeamsCreateTeamPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsCreateTeamResponse = zEventTeamRead
+
+export const zTeamsDeleteTeamPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsDeleteTeamResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTeamsUpdateTeamBody = zEventTeamUpdate
+
+export const zTeamsUpdateTeamPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsUpdateTeamResponse = zEventTeamRead
+
+export const zTeamsListTeamRequestsPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Teams-List Team Requests
+ *
+ * Successful Response
+ */
+export const zTeamsListTeamRequestsResponse = z
+  .array(zEventTeamMemberRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zTeamsLeaveTeamPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsLeaveTeamResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTeamsJoinTeamBody = zEventTeamJoin
+
+export const zTeamsJoinTeamPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsJoinTeamResponse = zEventTeamMemberRead
+
+export const zTeamsDeleteTeamDocumentPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  requirement_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsDeleteTeamDocumentResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTeamsUploadTeamDocumentBody = zBodyTeamsUploadTeamDocument
+
+export const zTeamsUploadTeamDocumentPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  requirement_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsUploadTeamDocumentResponse = zTeamDocumentRead
+
+export const zTeamsGetTeamDocumentPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  user_id: z.uuid(),
+  requirement_id: z.uuid(),
+})
+
+/**
+ * The attached file
+ */
+export const zTeamsGetTeamDocumentResponse = z.string().register(z.globalRegistry, {
+  description: 'The attached file',
+})
+
+export const zTeamsListTeamMembersPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+})
+
+export const zTeamsListTeamMembersQuery = z.object({
+  status: z.enum(['pending', 'approved', 'declined']).nullish(),
+})
+
+/**
+ * Response Teams-List Team Members
+ *
+ * Successful Response
+ */
+export const zTeamsListTeamMembersResponse = z
+  .array(zEventTeamMemberRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zTeamsAddTeamMemberBody = zEventTeamMemberAdd
+
+export const zTeamsAddTeamMemberPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsAddTeamMemberResponse = zEventTeamMemberRead
+
+export const zTeamsListReusableChecksPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Response Teams-List Reusable Checks
+ *
+ * Successful Response
+ */
+export const zTeamsListReusableChecksResponse = z.array(zTeamCheckRead).register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTeamsRemoveTeamMemberPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsRemoveTeamMemberResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTeamsUpdateTeamMemberRoleBody = zEventTeamMemberRoleUpdate
+
+export const zTeamsUpdateTeamMemberRolePath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsUpdateTeamMemberRoleResponse = zEventTeamMemberRead
+
+export const zTeamsDecideTeamRequestBody = zEventTeamDecision
+
+export const zTeamsDecideTeamRequestPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsDecideTeamRequestResponse = zEventTeamMemberRead
+
+export const zTeamsRecordTeamChecksBody = zTeamChecksUpdate
+
+export const zTeamsRecordTeamChecksPath = z.object({
+  event_id: z.uuid(),
+  team_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTeamsRecordTeamChecksResponse = zEventTeamMemberRead
+
 export const zWorkHoursListEventHoursPath = z.object({
   event_id: z.uuid(),
 })
@@ -4724,18 +5206,6 @@ export const zReportingReportingExportQuery = z.object({
   date_from: z.iso.date().nullish(),
   date_to: z.iso.date().nullish(),
 })
-
-/**
- * Successful Response
- */
-export const zDemoDataDeleteDemoDataResponse = zDemoDataDeletedResponse
-
-export const zDemoDataCreateDemoDataBody = zDemoDataParams
-
-/**
- * Successful Response
- */
-export const zDemoDataCreateDemoDataResponse = zDemoDataCreatedResponse
 
 /**
  * Response Debug-Start Log Capture

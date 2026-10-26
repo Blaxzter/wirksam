@@ -34,6 +34,8 @@ export interface NavSubItem {
     text: string
     tooltip?: string
     variant?: 'default' | 'secondary' | 'destructive' | 'outline'
+    /** Drawn before the text; with no text, `tooltip` is also what a screen reader hears. */
+    icon?: LucideIcon
   }
 }
 
@@ -45,6 +47,12 @@ export interface NavItem {
   icon?: LucideIcon
   isActive?: boolean
   items?: NavSubItem[]
+  /**
+   * A count that wants attention (e.g. team requests to decide), drawn like
+   * the Notifications badge. `badgeLabel` is what a screen reader hears.
+   */
+  badge?: number
+  badgeLabel?: string
 }
 
 const props = defineProps<{
@@ -103,7 +111,15 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
               <component :is="item.icon" v-if="item.icon" />
               <span>{{ resolveTitle(item) }}</span>
               <span
-                v-if="isRouteActive(item.routeName)"
+                v-if="item.badge"
+                class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white"
+                :data-testid="'sidebar-badge-' + item.routeName"
+              >
+                <span aria-hidden="true">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+                <span class="sr-only">{{ item.badgeLabel ?? item.badge }}</span>
+              </span>
+              <span
+                v-else-if="isRouteActive(item.routeName)"
                 class="ml-auto size-1.5 rounded-full bg-foreground"
               />
             </RouterLink>
@@ -170,7 +186,19 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
                             :variant="subItem.badge.variant ?? 'secondary'"
                             class="ml-auto shrink-0 text-[10px] px-1.5 py-0 leading-4"
                           >
+                            <component
+                              :is="subItem.badge.icon"
+                              v-if="subItem.badge.icon"
+                              class="size-3"
+                              aria-hidden="true"
+                            />
                             {{ subItem.badge.text }}
+                            <span
+                              v-if="!subItem.badge.text && subItem.badge.tooltip"
+                              class="sr-only"
+                            >
+                              {{ subItem.badge.tooltip }}
+                            </span>
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent v-if="subItem.badge.tooltip" side="right">

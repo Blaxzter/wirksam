@@ -126,6 +126,22 @@ async function handleVisibleMonth(range: { from: string; to: string }) {
               />
             </div>
 
+            <!-- Hide tasks a team keeps the user from booking. Off by default. -->
+            <div class="flex items-center justify-between gap-3">
+              <Label for="filter-bookable-only" class="cursor-pointer flex-col items-start gap-0.5">
+                <span class="text-sm">{{ t('teamLocks.filter.bookableOnly') }}</span>
+                <span class="text-muted-foreground text-xs font-normal">
+                  {{ t('teamLocks.filter.bookableOnlyHint') }}
+                </span>
+              </Label>
+              <Switch
+                id="filter-bookable-only"
+                data-testid="filter-bookable-only"
+                :model-value="filters.bookableOnly"
+                @update:model-value="filters.bookableOnly = $event"
+              />
+            </div>
+
             <!-- Location -->
             <div v-if="locations.length > 0" class="space-y-1.5">
               <Label for="filter-location" class="text-sm font-normal">

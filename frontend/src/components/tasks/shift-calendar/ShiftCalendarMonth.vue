@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { Lock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
-import TaskBars from './TaskBars.vue'
 import EventBars from './EventBars.vue'
+import TaskBars from './TaskBars.vue'
 import type {
   BookingCalendarItem,
   CalendarDay,
-  CalendarTask,
   CalendarEvent,
+  CalendarTask,
   CalendarWeek,
 } from './types'
 import { isMultiDayTask, isToday } from './types'
@@ -135,7 +136,12 @@ const { t } = useI18n()
                   "
                   @click="emit('navigateTask', task)"
                 >
-                  {{ task.name }}
+                  <Lock
+                    v-if="task.locked_by_team"
+                    class="mr-0.5 inline size-3 align-[-2px]"
+                    role="img"
+                    :aria-label="t('teamLocks.badge.locked', { name: task.team_name ?? '' })"
+                  />{{ task.name }}
                 </button>
               </template>
 
@@ -161,14 +167,10 @@ const { t } = useI18n()
               </template>
 
               <div
-                v-if="
-                  day.tasks.filter((e) => !isMultiDayTask(e)).length + day.bookings.length > 3
-                "
+                v-if="day.tasks.filter((e) => !isMultiDayTask(e)).length + day.bookings.length > 3"
                 class="px-1 text-xs text-muted-foreground cursor-pointer"
               >
-                +{{
-                  day.tasks.filter((e) => !isMultiDayTask(e)).length + day.bookings.length - 3
-                }}
+                +{{ day.tasks.filter((e) => !isMultiDayTask(e)).length + day.bookings.length - 3 }}
                 {{ t('duties.tasks.calendar.more') }}
               </div>
             </div>

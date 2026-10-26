@@ -33,6 +33,7 @@ describe('useTaskFiltersStore', () => {
       expect(store.focusMode).toBe('today')
       expect(store.myBookingsOnly).toBe(false)
       expect(store.hideFullShifts).toBe(false)
+      expect(store.bookableOnly).toBe(false)
       expect(store.dateFrom).toBeNull()
       expect(store.dateTo).toBeNull()
       expect(store.locationId).toBeNull()
@@ -44,12 +45,14 @@ describe('useTaskFiltersStore', () => {
         focusMode: 'first-available',
         myBookingsOnly: true,
         hideFullShifts: true,
+        bookableOnly: true,
         dateFrom: '2026-08-01',
         dateTo: '2026-08-31',
       })
 
       const store = useTaskFiltersStore()
 
+      expect(store.bookableOnly).toBe(true)
       expect(store.viewMode).toBe('calendar')
       expect(store.focusMode).toBe('first-available')
       expect(store.myBookingsOnly).toBe(true)
@@ -103,6 +106,7 @@ describe('useTaskFiltersStore', () => {
         focusMode: 'today',
         myBookingsOnly: true,
         hideFullShifts: false,
+        bookableOnly: false,
         dateFrom: '2026-08-04',
         dateTo: null,
       })
@@ -176,8 +180,9 @@ describe('useTaskFiltersStore', () => {
       store.dateFrom = '2026-08-01'
       store.searchQuery = 'bar'
       store.locationId = 'loc-1'
+      store.bookableOnly = true
 
-      expect(store.activeFilterCount).toBe(5)
+      expect(store.activeFilterCount).toBe(6)
     })
 
     it('ignores a whitespace-only search query', () => {
@@ -209,10 +214,12 @@ describe('useTaskFiltersStore', () => {
       store.dateFrom = '2026-08-01'
       store.dateTo = '2026-08-31'
       store.locationId = 'loc-1'
+      store.bookableOnly = true
 
       store.resetFilters()
 
       expect(store.locationId).toBeNull()
+      expect(store.bookableOnly).toBe(false)
       expect(store.searchQuery).toBe('')
       expect(store.myBookingsOnly).toBe(false)
       expect(store.hideFullShifts).toBe(false)

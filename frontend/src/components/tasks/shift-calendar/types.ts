@@ -13,6 +13,9 @@ export interface CalendarTask {
   location?: string | null
   start_date: string
   end_date: string
+  /** The team the task is reserved for, and whether that locks the viewer out. */
+  team_name?: string | null
+  locked_by_team?: boolean
 }
 
 /** Minimal task event shape used by the calendar. */

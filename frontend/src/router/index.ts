@@ -56,7 +56,6 @@ const SELECTED_EVENT_EXEMPT_ROUTES = new Set<string>([
   'event-clone',
   'event-settings',
   'admin-users',
-  'admin-demo-data',
   'settings',
   'notification-preferences',
   // An invite link has to work before you belong to anything.

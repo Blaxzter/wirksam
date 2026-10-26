@@ -95,6 +95,29 @@ class Task(Base, table=True):
     category: str | None = Field(
         default=None, sa_column=sa.Column(sa.String, nullable=True)
     )
+    # Deferred for the same reason as location_id above: a user delete
+    # cascades to the event, the events->tasks SET NULL rewrites this row and
+    # queues a re-check of team_id, which would fire after the events->teams
+    # CASCADE has removed the team. Pinned by
+    # tests/api/routes/test_teams.py::TestDeletionCascades.
+    team_id: uuid.UUID | None = Field(
+        default=None,
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey(
+                "event_teams.id",
+                ondelete="SET NULL",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            nullable=True,
+            index=True,
+        ),
+        description=(
+            "The team whose approved members may book this task's shifts. "
+            "None means anyone in the event may book."
+        ),
+    )
     shift_duration_minutes: int | None = Field(
         default=None, sa_column=sa.Column(sa.Integer, nullable=True)
     )

@@ -20,6 +20,7 @@ const emit = defineEmits<{
   navigate: [task: FeedTaskItem]
   delete: [task: FeedTaskItem]
   clickShift: [slotId: string, task: FeedTaskItem]
+  teamJoined: []
 }>()
 
 const { t } = useI18n()
@@ -103,6 +104,7 @@ onBeforeUnmount(() => {
       @navigate="emit('navigate', $event)"
       @delete="emit('delete', $event)"
       @click-shift="(slotId, ev) => emit('clickShift', slotId, ev)"
+      @team-joined="emit('teamJoined')"
     />
 
     <!-- Infinite scroll sentinel -->

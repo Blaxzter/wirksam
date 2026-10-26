@@ -14,6 +14,8 @@ from pydantic import (
     field_validator,
 )
 
+from app.schemas.event_team import TeamMemberStatus
+
 # Stripped before the length check, so "   " is rejected as empty rather than
 # stored as a name nobody can pick from a list.
 LocationName = Annotated[
@@ -159,3 +161,10 @@ class LocationShiftRead(BaseModel):
     current_bookings: int = 0
     is_booked_by_me: bool = False
     my_booking_id: uuid.UUID | None = None
+    #: See ShiftRead: the team the task requires, and whether it bars the caller.
+    event_id: uuid.UUID | None = None
+    team_id: uuid.UUID | None = None
+    team_name: str | None = None
+    team_requires_approval: bool | None = None
+    my_team_status: TeamMemberStatus | None = None
+    locked_by_team: bool = False

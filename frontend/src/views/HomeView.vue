@@ -84,6 +84,18 @@ async function loadFeed() {
     feed.value = res.data
     // Join requests waiting on this user, across every event they run.
     authStore.notifyPendingJoinRequests(res.data.pending_join_request_count ?? 0)
+    // The feed counts team requests across every event; the Teams badge
+    // shows the selected event's share. Re-read that whenever either side
+    // has any, so the badge follows the dashboard (none anywhere: nothing
+    // can be stale).
+    const selected = authStore.selectedEvent
+    if (
+      selected &&
+      ((res.data.pending_team_request_count ?? 0) > 0 ||
+        (selected.pending_team_request_count ?? 0) > 0)
+    ) {
+      void authStore.refreshSelectedEvent(selected.id)
+    }
   } catch (error) {
     toastApiError(error)
   } finally {
@@ -126,7 +138,11 @@ onMounted(loadFeed)
 
     <template v-else>
       <!-- Organisers only: the backend sends nothing here for a plain member. -->
-      <AttentionStrip v-if="feed?.attention" :attention="feed.attention" />
+      <AttentionStrip
+        v-if="feed?.attention"
+        :attention="feed.attention"
+        :event-id="feed.event_id"
+      />
 
       <NextShiftCard
         :shift="nextShift"
@@ -309,6 +325,7 @@ onMounted(loadFeed)
       v-model:open="showShiftDetail"
       :shift-id="detailShiftId"
       @booking-updated="loadFeed"
+      @team-joined="loadFeed"
     />
   </div>
 </template>

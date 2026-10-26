@@ -9,16 +9,29 @@
  */
 import { computed } from 'vue'
 
-import { AlertTriangle, ChevronRight, FileEdit, UserPlus, UsersRound } from '@lucide/vue'
+import {
+  AlertTriangle,
+  ChevronRight,
+  FileEdit,
+  ShieldCheck,
+  UserPlus,
+  UsersRound,
+} from '@lucide/vue'
 import type { LucideIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import type { RouteLocationRaw } from 'vue-router'
+
+import { teamsPageLocation } from '@/composables/useTeams'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import type { DashboardAttention } from '@/client'
 
-const props = defineProps<{ attention: DashboardAttention }>()
+const props = defineProps<{
+  attention: DashboardAttention
+  /** The event the counts are for; the team requests link to its Teams page. */
+  eventId?: string | null
+}>()
 
 const { t } = useI18n()
 
@@ -38,6 +51,7 @@ const items = computed<AttentionItem[]>(() => {
     empty_shifts_soon: props.attention.empty_shifts_soon ?? 0,
     short_shifts_soon: props.attention.short_shifts_soon ?? 0,
     pending_join_requests: props.attention.pending_join_requests ?? 0,
+    pending_team_requests: props.attention.pending_team_requests ?? 0,
     draft_tasks: props.attention.draft_tasks ?? 0,
     horizon_days: props.attention.horizon_days ?? 7,
   }
@@ -79,6 +93,19 @@ const items = computed<AttentionItem[]>(() => {
         a.pending_join_requests,
       ),
       to: { name: 'my-events', query: { tab: 'requests' } },
+    })
+  }
+  if (a.pending_team_requests > 0) {
+    out.push({
+      key: 'team-requests',
+      icon: ShieldCheck,
+      urgent: false,
+      label: t(
+        'teamLocks.attention.teamRequests',
+        { count: a.pending_team_requests },
+        a.pending_team_requests,
+      ),
+      to: teamsPageLocation(props.eventId),
     })
   }
   if (a.draft_tasks > 0) {

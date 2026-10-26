@@ -101,6 +101,10 @@
         "current": "Current language",
         "switch": "Switch language"
     },
+    "memberPicker": {
+        "enterToPick": "Enter to pick",
+        "noMatch": "Nobody matches."
+    },
     "states": {
         "error": "Error",
         "info": "Info",

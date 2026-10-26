@@ -17,6 +17,7 @@ from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.event_invitation import invitation_invalid_reason
 from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.event_team import event_team as crud_team
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
@@ -24,6 +25,7 @@ from app.logic.permissions import require_event_role, require_event_visible
 from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.event_team import EventTeam, EventTeamMember, EventTeamRequirement
 from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
@@ -80,10 +82,11 @@ async def decorate_events(
 ) -> list[EventRead]:
     """Attach viewer-relative context to a page of events.
 
-    Member counts, the caller's own role, any pending join request and the
-    number of venue plans with an image are all fetched in one query each
-    rather than per row, so a long Discover list costs a constant number of
-    round trips.
+    Member counts, the caller's own role, any pending join request, the
+    number of venue plans with an image, the number of teams and the team
+    requests the caller may decide are all fetched in one query each rather
+    than per row, so a long Discover list costs a constant number of round
+    trips.
     """
     event_ids = [e.id for e in events]
     if not event_ids:
@@ -110,6 +113,13 @@ async def decorate_events(
     plan_counts = await crud_venue_map.count_visible_plans_by_event(
         session, event_ids=member_of
     )
+    team_counts = await crud_team.team_count_by_event(session, event_ids=member_of)
+    team_requests = await crud_team.decidable_pending_by_event(
+        session,
+        user_id=user.id,
+        admin_event_ids=manageable,
+        member_event_ids=[e for e in member_of if e not in set(manageable)],
+    )
 
     out: list[EventRead] = []
     for e in events:
@@ -119,6 +129,8 @@ async def decorate_events(
         read.join_request_status = request_statuses.get(e.id)
         read.pending_request_count = pending_counts.get(e.id, 0)
         read.venue_plan_count = plan_counts.get(e.id, 0)
+        read.team_count = team_counts.get(e.id, 0)
+        read.pending_team_request_count = team_requests.get(e.id, 0)
         out.append(read)
     return out
 
@@ -848,11 +860,11 @@ async def clone_event(
     delta = new_event.start_date - source.start_date
 
     members_copied = 0
+    copied_rows: list[EventMembership] = []
     if body.copy_members:
         # Built in memory and added in one go: the event is brand new, so
         # ``upsert``'s SELECT can never hit and its per-row flush/refresh would
         # be a round trip per member for nothing. The flush below covers them.
-        copied_rows: list[EventMembership] = []
         for membership, member in await crud_membership.list_members(
             session, event_id=source.id
         ):
@@ -879,6 +891,19 @@ async def clone_event(
         session, source_event_id=source.id, new_event_id=new_event.id
     )
 
+    # Also before the tasks, for ``team_id``. A cloned task pointing at the
+    # source's team would be gated on a roster the new event cannot manage.
+    team_map = await _clone_teams(
+        session,
+        source_event_id=source.id,
+        new_event_id=new_event.id,
+        carry_members=(
+            {r.user_id for r in copied_rows} | {current_user.id}
+            if body.copy_members
+            else set()
+        ),
+    )
+
     new_shifts: list[Shift] = []
     tasks_created = 0
     for entry in body.tasks:
@@ -890,6 +915,7 @@ async def clone_event(
             delta=delta,
             current_user_id=current_user.id,
             location_map=location_map,
+            team_map=team_map,
         )
         tasks_created += 1
         new_shifts.extend(task_shifts)
@@ -927,6 +953,65 @@ async def clone_event(
     )
 
 
+async def _clone_teams(
+    session: DBDep,
+    *,
+    source_event_id: uuid.UUID,
+    new_event_id: uuid.UUID,
+    carry_members: set[uuid.UUID],
+) -> dict[uuid.UUID, uuid.UUID]:
+    """Copy the source's teams and return ``{source team id: new team id}``.
+
+    Requirements come along; checks do not — a certificate seen for one event
+    is not seen for the next, so carried members show up as needing a new
+    check. Approved members come along only if they come along into the event
+    itself (``carry_members``); pending and declined requests never do — they
+    were questions about the source event.
+    """
+    src_teams = await crud_team.list_for_event(session, event_id=source_event_id)
+    src_ids = [t.id for t in src_teams]
+    requirements = await crud_team.requirements_for_teams(session, team_ids=src_ids)
+    approved = await crud_team.approved_rows_for_teams(
+        session, team_ids=src_ids, user_ids=carry_members
+    )
+    team_map: dict[uuid.UUID, uuid.UUID] = {}
+    for src_team in src_teams:
+        new_team = EventTeam(
+            event_id=new_event_id,
+            name=src_team.name,
+            description=src_team.description,
+            contact=src_team.contact,
+            requires_approval=src_team.requires_approval,
+        )
+        session.add(new_team)
+        team_map[src_team.id] = new_team.id
+        for req in requirements.get(src_team.id, []):
+            session.add(
+                EventTeamRequirement(
+                    team_id=new_team.id,
+                    label=req.label,
+                    description=req.description,
+                    ask_issue_date=req.ask_issue_date,
+                    valid_for_years=req.valid_for_years,
+                    accepts_document=req.accepts_document,
+                    position=req.position,
+                )
+            )
+        for member in approved.get(src_team.id, []):
+            session.add(
+                EventTeamMember(
+                    team_id=new_team.id,
+                    user_id=member.user_id,
+                    status="approved",
+                    role=member.role,
+                    decided_at=member.decided_at,
+                    decided_by_id=member.decided_by_id,
+                    decided_by_name=member.decided_by_name,
+                )
+            )
+    return team_map
+
+
 async def _clone_task(
     session: DBDep,
     *,
@@ -936,6 +1021,7 @@ async def _clone_task(
     delta: dt.timedelta,
     current_user_id: uuid.UUID,
     location_map: dict[uuid.UUID, uuid.UUID],
+    team_map: dict[uuid.UUID, uuid.UUID],
 ) -> list[Shift]:
     """Reproduce one source task, its batches and its shifts in ``new_event``.
 
@@ -1011,6 +1097,7 @@ async def _clone_task(
         location=task_location,
         location_id=task_location_id,
         category=_pick(entry.category, src.category),
+        team_id=team_map.get(src.team_id) if src.team_id else None,
         shift_duration_minutes=_pick(
             entry.shift_duration_minutes, src.shift_duration_minutes
         ),
@@ -1365,6 +1452,9 @@ async def remove_member(
         )
 
     await crud_membership.remove(session, user_id=user_id, event_id=event_id)
+    await crud_team.remove_user_from_event_teams(
+        session, user_id=user_id, event_id=event_id
+    )
 
     # Clear the selection so the removed user is not stranded on an event
     # they can no longer open.

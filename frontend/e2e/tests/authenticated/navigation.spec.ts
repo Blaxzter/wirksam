@@ -37,11 +37,6 @@ test.describe('Sidebar – links', () => {
     await expect(page.getByTestId('sidebar-link-admin-users')).toBeVisible()
   })
 
-  test('shows Demo Data link for admin', async ({ adminPage: page }) => {
-    await page.goto('/app/home')
-    await expect(page.getByTestId('sidebar-link-admin-demo-data')).toBeVisible()
-  })
-
   test('shows user profile button in sidebar', async ({ adminPage: page }) => {
     await page.goto('/app/home')
     await expect(page.getByTestId('nav-user-menu')).toBeVisible()
@@ -85,12 +80,6 @@ test.describe('Sidebar – navigation', () => {
     await page.goto('/app/home')
     await page.getByTestId('sidebar-link-admin-users').click()
     await expect(page).toHaveURL(/\/app\/admin\/users/)
-  })
-
-  test('Demo Data link navigates correctly', async ({ adminPage: page }) => {
-    await page.goto('/app/home')
-    await page.getByTestId('sidebar-link-admin-demo-data').click()
-    await expect(page).toHaveURL(/\/app\/admin\/demo-data/)
   })
 })
 
@@ -166,10 +155,5 @@ test.describe('Member sidebar – no admin links', () => {
   test('member does not see User Management link', async ({ memberPage: member }) => {
     await member.goto('/app/home')
     await expect(member.getByTestId('sidebar-link-admin-users')).toBeHidden()
-  })
-
-  test('member does not see Demo Data link', async ({ memberPage: member }) => {
-    await member.goto('/app/home')
-    await expect(member.getByTestId('sidebar-link-admin-demo-data')).toBeHidden()
   })
 })

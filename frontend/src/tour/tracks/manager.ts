@@ -14,9 +14,9 @@
  *                        a time
  *                        (`task-create`, prefilled)
  *   `peopleAndNumbers` — who is in it, how it went, back to the start
- *                        (`event-settings`, `reporting`, `home`)
+ *                        (`event-settings`, `teams`, `reporting`, `home`)
  *
- * Twenty-two steps across five routes.
+ * Twenty-three steps across six routes.
  *
  * ── One element per step ─────────────────────────────────────────────────────
  * The track used to explain a screen from one highlight: a single step named
@@ -295,6 +295,18 @@ export const managerTrack = defineTrack('manager', [
     element: '[data-testid="section-event-invitations"]',
     waitFor: PAGE_HEADING,
     side: 'top',
+  },
+  {
+    id: 'teamRequests',
+    chapter: 'peopleAndNumbers',
+    route: 'teams',
+    // The sandbox seeds five team requests for the manager variant, one with a
+    // sample certificate attached. A visitor who decided them already gets the
+    // centred card, whose copy still reads.
+    element: '[data-testid="team-requests"]',
+    waitFor: PAGE_HEADING,
+    anchorTimeout: 3000,
+    side: 'bottom',
   },
   {
     id: 'reporting',

@@ -18,7 +18,9 @@
     "booking": {
         "already_exists": "Du hast bereits eine Buchung für diese Schicht",
         "forbidden": "Du kannst nur deine eigenen Buchungen verwalten",
+        "rebook_required": "Diese Buchung wurde storniert. Buche die Schicht noch einmal, um sie zurückzuholen.",
         "slot_full": "Diese Dienstschicht ist ausgebucht",
+        "team_required": "Nur Mitglieder des Teams dieser Aufgabe können ihre Schichten buchen. Frag auf der Seite „Teams“ den Beitritt zum Team an.",
         "time_conflict": "Diese Schicht überschneidet sich mit einer Ihrer gebuchten Schichten",
         "time_conflict_with": "Diese Schicht überschneidet sich mit Ihrer Schicht „{name}“ ({when})"
     },
@@ -51,7 +53,29 @@
         "not_found": "Diese Schicht wurde nicht gefunden."
     },
     "task": {
-        "not_found": "Diese Aufgabe wurde nicht gefunden."
+        "not_found": "Diese Aufgabe wurde nicht gefunden.",
+        "team_not_in_event": "Das Team muss zur selben Veranstaltung gehören wie die Aufgabe."
+    },
+    "team": {
+        "already_member": "Diese Person ist bereits in diesem Team.",
+        "check_expired": "Dieses Dokument ist zu alt und nicht mehr gültig. Bitte um ein neueres.",
+        "check_issued_in_future": "Das Ausstellungsdatum darf nicht in der Zukunft liegen.",
+        "check_unknown_requirement": "Einer der abgehakten Punkte gehört nicht mehr zu diesem Team. Lade die Seite neu und versuch es noch einmal.",
+        "checks_missing": "Hake vor der Freigabe jeden Nachweis ab, mit Ausstellungsdatum, wo danach gefragt wird.",
+        "document_not_accepted": "Für diesen Nachweis kann keine Datei angehängt werden.",
+        "document_not_found": "Diese Datei ist nicht mehr da. Sie wird gelöscht, sobald über eine Anfrage entschieden ist.",
+        "document_too_large": "Die Datei ist größer als 5 MB. Bitte wähle eine kleinere.",
+        "document_unsupported": "Nur PDF-Dateien und Fotos (PNG, JPEG, WebP) können angehängt werden.",
+        "forbidden": "Das können nur die Teamleitungen und die Admins der Veranstaltung.",
+        "member_not_found": "Diese Person ist nicht in diesem Team.",
+        "name_taken": "In dieser Veranstaltung gibt es schon ein Team mit diesem Namen.",
+        "not_event_member": "Nur Leute aus dieser Veranstaltung können ihren Teams hinzugefügt werden.",
+        "not_found": "Dieses Team wurde nicht gefunden.",
+        "request_decided": "Über diese Anfrage wurde bereits entschieden.",
+        "request_not_found": "Diese Anfrage wurde nicht gefunden.",
+        "request_pending": "Über deine Anfrage für dieses Team wurde noch nicht entschieden.",
+        "requirement_not_found": "Dieser Nachweis gehört nicht mehr zu diesem Team. Lade die Seite neu und versuch es noch einmal.",
+        "requirements_need_approval": "Ein Team mit Nachweisen muss entscheiden, wer beitritt. Schalte die Freigabe ein oder entferne die Nachweise."
     },
     "user": {
         "not_found": "Dieser Benutzer wurde nicht gefunden.",

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { MapPin, ShieldCheck, Tag, Trash2 } from '@lucide/vue'
+import { Lock, MapPin, ShieldCheck, Tag, Trash2, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
@@ -11,6 +11,7 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
+import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import type { FeedShiftEntry, FeedTaskItem, ShiftWindowResponse } from '@/client/types.gen'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
   navigate: [task: FeedTaskItem]
   delete: [task: FeedTaskItem]
   clickShift: [slotId: string, task: FeedTaskItem]
+  teamJoined: []
 }>()
 
 const { t } = useI18n()
@@ -113,6 +115,7 @@ function toDayEntry(shift: FeedShiftEntry): DayShiftEntry {
     maxBookings: shift.max_bookings,
     isBookedByMe: shift.is_booked_by_me,
     collidesWithMyBooking: shift.collides_with_my_booking,
+    lockedByTeam: shift.locked_by_team,
   }
 }
 
@@ -230,6 +233,29 @@ watch(
             </div>
           </div>
 
+          <!-- Reserved for a team: locked for the viewer, or just labelled -->
+          <Badge
+            v-if="task.team_name"
+            variant="secondary"
+            class="max-w-full text-[11px]"
+            :data-testid="`task-team-badge-${task.id}`"
+            :title="
+              task.locked_by_team
+                ? t('teamLocks.badge.locked', { name: task.team_name })
+                : undefined
+            "
+          >
+            <Lock v-if="task.locked_by_team" aria-hidden="true" />
+            <UsersRound v-else aria-hidden="true" />
+            <span class="truncate">
+              {{
+                task.locked_by_team
+                  ? t('teamLocks.badge.only', { name: task.team_name })
+                  : t('teamLocks.badge.team', { name: task.team_name })
+              }}
+            </span>
+          </Badge>
+
           <p v-if="task.description" class="text-xs text-muted-foreground line-clamp-2 break-words">
             {{ task.description }}
           </p>
@@ -247,7 +273,19 @@ watch(
         </div>
 
         <div class="mt-3 flex items-center justify-between">
-          <span class="text-xs text-muted-foreground">
+          <TeamJoinButton
+            v-if="task.locked_by_team && task.team_id && task.team_name"
+            :event-id="task.event_id"
+            :team-id="task.team_id"
+            :team-name="task.team_name"
+            :requires-approval="task.team_requires_approval ?? true"
+            :my-status="task.my_team_status"
+            variant="link"
+            size="sm"
+            class="h-auto min-w-0 justify-start px-0 text-xs font-semibold whitespace-normal text-left"
+            @joined="emit('teamJoined')"
+          />
+          <span v-else class="text-xs text-muted-foreground">
             {{ t('duties.tasks.quickView.availableShifts', { count: totalAvailableShifts }) }}
           </span>
           <HintTooltip v-if="canManage" :label="t('duties.tasks.delete')">
@@ -272,6 +310,7 @@ watch(
           :visible-days="numDays"
           :expanded="expanded"
           :hide-full-shifts="hideFullShifts"
+          :team-name="task.team_name"
           :has-more-next="hasMoreNext"
           :has-more-previous="hasMorePrevious"
           :loading-next="loadingNext"

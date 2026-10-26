@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 
-import {
-  CalendarDays,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  List,
-} from '@lucide/vue'
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock, List } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -20,13 +13,13 @@ import ShiftCalendarWeek from './ShiftCalendarWeek.vue'
 import type {
   BookingCalendarItem,
   CalendarDay as CalendarDayType,
-  CalendarTask,
   CalendarEvent,
+  CalendarTask,
   CalendarWeek,
   DateRange,
   ViewMode,
 } from './types'
-import { EMPTY_DAY, computeTaskBars, computeEventBars, dateToStr } from './types'
+import { EMPTY_DAY, computeEventBars, computeTaskBars, dateToStr } from './types'
 
 const props = withDefaults(
   defineProps<{
@@ -371,7 +364,11 @@ watch(calendarDate, (d) => emit('update:calendarDate', dateToStr(d)))
       </div>
       <button
         v-else
-        :ref="(el) => { if (entry.isActive) activeMonthBtn = el as HTMLElement }"
+        :ref="
+          (el) => {
+            if (entry.isActive) activeMonthBtn = el as HTMLElement
+          }
+        "
         type="button"
         class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-all"
         :class="

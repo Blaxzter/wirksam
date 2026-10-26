@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trash2 } from '@lucide/vue'
+import { Lock, Trash2 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
@@ -7,6 +7,8 @@ import { useAuthStore } from '@/stores/auth'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import type { TaskRead } from '@/client/types.gen'
@@ -20,6 +22,7 @@ defineProps<{
 const emit = defineEmits<{
   navigate: [task: TaskRead]
   delete: [task: TaskRead]
+  teamJoined: []
 }>()
 
 const { t } = useI18n()
@@ -48,6 +51,26 @@ const authStore = useAuthStore()
         <CardDescription v-if="task.description" class="line-clamp-2 break-words">
           {{ task.description }}
         </CardDescription>
+        <!-- Reserved for a team the viewer is not in -->
+        <div v-if="task.locked_by_team && task.team_id && task.team_name" class="space-y-1 pt-1">
+          <Badge variant="secondary" class="max-w-full" :data-testid="`task-team-badge-${task.id}`">
+            <Lock aria-hidden="true" />
+            <span class="truncate">{{ t('teamLocks.badge.only', { name: task.team_name }) }}</span>
+          </Badge>
+          <div>
+            <TeamJoinButton
+              :event-id="task.event_id"
+              :team-id="task.team_id"
+              :team-name="task.team_name"
+              :requires-approval="task.team_requires_approval ?? true"
+              :my-status="task.my_team_status"
+              variant="link"
+              size="sm"
+              class="h-auto px-0 text-xs font-semibold whitespace-normal"
+              @joined="emit('teamJoined')"
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div class="flex items-center justify-between text-sm text-muted-foreground">

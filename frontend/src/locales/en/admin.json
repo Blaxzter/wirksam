@@ -1,28 +1,4 @@
 {
-    "demoData": {
-        "create": {
-            "button": "Create Demo Data",
-            "description": "Generate tasks, events, users, and duty shifts with a [DEMO] prefix.",
-            "title": "Create Demo Data"
-        },
-        "createSuccess": "Created {tasks} tasks, {events} groups, {users} users, {shifts} shifts, {bookings} bookings, and {availabilities} availabilities.",
-        "delete": {
-            "button": "Delete All Demo Data",
-            "description": "Remove all demo data from the system.",
-            "info": "This deletes everything tagged [DEMO]: tasks, events, duty shifts, bookings, and demo users.",
-            "title": "Delete Demo Data"
-        },
-        "deleteSuccess": "Deleted {tasks} tasks, {events} groups, {users} users, {shifts} shifts, and {bookings} bookings.",
-        "fields": {
-            "numEvents": "Number of Events",
-            "numShiftsPerTask": "Shifts per Task",
-            "numTasks": "Number of Tasks",
-            "numUsers": "Number of Demo Users",
-            "publishTasks": "Publish tasks immediately"
-        },
-        "subtitle": "Create or remove demo data for testing.",
-        "title": "Demo Data"
-    },
     "events": {
         "deleteEvent": "Delete event {name}",
         "editEvent": "Edit event {name}",

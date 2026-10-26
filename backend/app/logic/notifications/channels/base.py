@@ -7,8 +7,8 @@ from app.schemas.notification import NotificationData
 
 # Identity prefixes that must never be sent anything, whatever the channel.
 # All three mark accounts that stand in for a person without being one: the
-# fixtures behind /demo-data, the accounts the E2E reset endpoint owns, and the
-# guests behind the "try a test event" button.
+# made-up teammates ``just seed`` puts in the local dev event, the accounts the
+# E2E reset endpoint owns, and the guests behind the "try a test event" button.
 UNDELIVERABLE_SUBJECT_PREFIXES = ("demo|", "test|", "sandbox|")
 
 

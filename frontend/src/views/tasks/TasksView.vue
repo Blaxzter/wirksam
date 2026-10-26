@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import {
-  Calendar,
-  CalendarClock,
-  CalendarSearch,
-  Grid2x2,
-  List,
-  Plus,
-  Search,
-} from '@lucide/vue'
+import { Calendar, CalendarClock, CalendarSearch, Grid2x2, List, Plus, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -26,14 +18,14 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
+import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import TaskCalendarView from '@/components/tasks/TaskCalendarView.vue'
 import TaskFilterMenu from '@/components/tasks/TaskFilterMenu.vue'
 import TaskListView from '@/components/tasks/TaskListView.vue'
-import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
-import type { DateRange } from '@/components/tasks/shift-calendar'
 import { TaskQuickView } from '@/components/tasks/quick-view'
+import type { DateRange } from '@/components/tasks/shift-calendar'
 
-import type { TaskFeedResponse, EventRead, FeedTaskItem } from '@/client/types.gen'
+import type { EventRead, FeedTaskItem, TaskFeedResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
@@ -64,6 +56,7 @@ function readUrlIntoStore() {
   if (q.search !== undefined) filters.searchQuery = String(q.search)
   if (q.my_bookings !== undefined) filters.myBookingsOnly = q.my_bookings === 'true'
   if (q.hide_full !== undefined) filters.hideFullShifts = q.hide_full === 'true'
+  if (q.bookable !== undefined) filters.bookableOnly = q.bookable === 'true'
   if (q.date_from && /^\d{4}-\d{2}-\d{2}$/.test(String(q.date_from)))
     filters.dateFrom = String(q.date_from)
   if (q.date_to && /^\d{4}-\d{2}-\d{2}$/.test(String(q.date_to))) filters.dateTo = String(q.date_to)
@@ -90,6 +83,7 @@ const urlQuery = computed(() => {
   if (filters.searchQuery.trim()) q.search = filters.searchQuery.trim()
   if (filters.myBookingsOnly) q.my_bookings = 'true'
   if (filters.hideFullShifts) q.hide_full = 'true'
+  if (filters.bookableOnly) q.bookable = 'true'
   if (filters.dateFrom) q.date_from = filters.dateFrom
   if (filters.dateTo) q.date_to = filters.dateTo
   if (filters.locationId) q.location = filters.locationId
@@ -137,6 +131,7 @@ const loadTasks = async () => {
       limit: 100,
     }
     if (filters.myBookingsOnly) query.my_bookings = true
+    if (filters.bookableOnly) query.bookable_only = true
     if (filters.dateFrom) query.date_from = filters.dateFrom
     if (filters.dateTo) query.date_to = filters.dateTo
     if (filters.searchQuery.trim()) query.search = filters.searchQuery.trim()
@@ -172,6 +167,7 @@ watch(
 watch(
   () => [
     filters.myBookingsOnly,
+    filters.bookableOnly,
     filters.viewMode,
     filters.focusMode,
     filters.dateFrom,
@@ -339,12 +335,14 @@ onMounted(loadTasks)
         @navigate="navigateToTask"
         @delete="handleDelete"
         @click-shift="handleClickShift"
+        @team-joined="loadTasks"
       />
       <TaskListView
         v-else-if="filters.viewMode === 'box'"
         :tasks="feedItems"
         @navigate="navigateToTask"
         @delete="handleDelete"
+        @team-joined="loadTasks"
       />
       <TaskCalendarView
         v-else
@@ -353,7 +351,7 @@ onMounted(loadTasks)
         :calendar-view-mode="calViewMode"
         :calendar-date="calDate"
         @navigate="navigateToTask"
-        @navigate-event="navigateToEvent"
+        @navigate-group="navigateToEvent"
         @update:date-range="handleCalendarDateRange"
         @update:calendar-view-mode="calViewMode = $event"
         @update:calendar-date="calDate = $event"
@@ -367,6 +365,7 @@ onMounted(loadTasks)
       :open="showShiftDialog"
       @update:open="showShiftDialog = $event"
       @booking-updated="loadTasks"
+      @team-joined="loadTasks"
     />
 
     <!-- Delete Task Dialog -->

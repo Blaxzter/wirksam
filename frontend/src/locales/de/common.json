@@ -101,6 +101,10 @@
         "current": "Aktuelle Sprache",
         "switch": "Sprache wechseln"
     },
+    "memberPicker": {
+        "enterToPick": "Enter zum Auswählen",
+        "noMatch": "Niemand passt."
+    },
     "states": {
         "error": "Fehler",
         "info": "Info",

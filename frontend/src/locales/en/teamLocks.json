@@ -1,0 +1,51 @@
+{
+    "attention": {
+        "teamRequests": "{count} person wants to join a team | {count} people want to join a team"
+    },
+    "badge": {
+        "locked": "Only members of {name} can book these shifts",
+        "only": "{name} only",
+        "team": "Team: {name}"
+    },
+    "filter": {
+        "bookableOnly": "Only tasks I can book",
+        "bookableOnlyHint": "Hides tasks reserved for teams you're not in"
+    },
+    "gate": {
+        "locked": "Only members of {name} can book these shifts.",
+        "lockedShift": "Only members of {name} can book this shift",
+        "manager": "Only members of {name} can book these shifts. As an organiser you can book them too.",
+        "member": "These shifts are for the team {name}. You're in it, so you can book them.",
+        "openShift": "Only members of {name} can book this shift. Open it to join the team.",
+        "pending": "You asked to join {name}. You can book these shifts once your request is approved.",
+        "pickHint": "Join {name} to book one of these.",
+        "pickHintAsk": "Ask to join {name} to book one of these.",
+        "pickHintPending": "You can book these once {name} has approved your request."
+    },
+    "join": {
+        "ask": "Ask to join {name}",
+        "join": "Join {name}",
+        "joined": "You're in {name} now. You can book its shifts.",
+        "pending": "Request sent",
+        "pendingNamed": "Your request to join {name} is waiting"
+    },
+    "picker": {
+        "choose": "Choose a team",
+        "chooseTeam": "Choose a team. Until you do, everyone in the event can book these shifts.",
+        "createNew": "New team…",
+        "everyone": "Everyone in the event",
+        "everyoneHint": "Any member can book.",
+        "loadError": "The teams could not be loaded.",
+        "members": "{count} member | {count} members",
+        "noEvent": "Choose an event first.",
+        "noTeams": "This event has no teams yet.",
+        "noTeamsLink": "Set one up on the Teams page",
+        "openTeam": "anyone can join",
+        "retry": "Try again",
+        "subtitle": "Reserve the shifts for people you have checked, like the cash desk or drivers.",
+        "team": "Only one team",
+        "teamHint": "Others see the task, locked.",
+        "teamLabel": "Team",
+        "title": "Who can book"
+    }
+}

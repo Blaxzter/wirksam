@@ -10,14 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
+from app.crud.event_team import event_team as crud_team
 from app.logic.event_scope import (
     get_manageable_event_ids,
     get_user_event_scope,
     get_visible_event_ids,
 )
+from app.logic.teams import bookable_filter, team_locks
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_join_request import EventJoinRequest
+from app.models.event_team import EventTeam, EventTeamMember
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -78,9 +81,13 @@ async def dashboard_feed(
         now.time(),
         scope_event_id,
         visible_event_ids,
+        await bookable_filter(session, current_user),
+    )
+    team_requests = await _pending_team_requests_by_event(
+        session, current_user.id, visible_event_ids, manageable_event_ids
     )
     attention = await _load_attention(
-        session, today, scope_event_id, manageable_event_ids
+        session, today, scope_event_id, manageable_event_ids, team_requests
     )
 
     return DashboardFeedResponse(
@@ -96,6 +103,7 @@ async def dashboard_feed(
         pending_join_request_count=await _count_pending_join_requests(
             session, manageable_event_ids
         ),
+        pending_team_request_count=sum(team_requests.values()),
     )
 
 
@@ -173,12 +181,19 @@ async def _load_open_shifts(
     now_time: dt.time,
     scope_event_id: uuid.UUID | None,
     visible_event_ids: list[uuid.UUID] | None,
+    gate: tuple[list[uuid.UUID], list[uuid.UUID]] | None,
 ) -> tuple[list[DashboardOpenShift], int, int]:
     """Upcoming shifts that still have room, soonest first.
 
     Published tasks only: a draft is the organiser's workbench, not something
     to offer a volunteer. Shifts the user is already on are left out - those
     are on the other list, and offering them again reads as a bug.
+
+    So are shifts a team keeps the user from booking. This is a list of
+    suggestions, and suggesting what they cannot take is a dead end; the
+    Tasks page still shows those, with the lock and the way in. ``gate`` is
+    :func:`app.logic.teams.bookable_filter` - ``None`` for the superadmin,
+    whom no team stops.
     """
     taken_sq = _confirmed_count_sq()
     mine_sq = (
@@ -219,6 +234,16 @@ async def _load_open_shifts(
         .order_by(col(Shift.date), col(Shift.start_time), col(Shift.title))
         .limit(SCAN_LIMIT)
     )
+    if gate is not None:
+        team_ids, admin_event_ids = gate
+        # Same rule as crud_task's "only tasks I can book" filter.
+        query = query.where(
+            or_(
+                col(Task.team_id).is_(None),
+                col(Task.team_id).in_(team_ids),
+                col(Task.event_id).in_(admin_event_ids),
+            )
+        )
     rows = (await session.execute(query)).all()
 
     items = [
@@ -247,6 +272,7 @@ async def _load_attention(
     today: dt.date,
     scope_event_id: uuid.UUID | None,
     manageable_event_ids: list[uuid.UUID] | None,
+    team_requests: dict[uuid.UUID, int],
 ) -> DashboardAttention | None:
     """The organiser's counts, or ``None`` for somebody who runs nothing.
 
@@ -295,6 +321,14 @@ async def _load_attention(
         pending_join_requests=await _count_pending_join_requests(
             session, manageable_event_ids, scope_event_id
         ),
+        # Only the events this user runs: a team they merely lead elsewhere is
+        # in the top-level count, not on the organiser's to-do list.
+        pending_team_requests=sum(
+            n
+            for event_id, n in team_requests.items()
+            if (manageable_event_ids is None or event_id in manageable_event_ids)
+            and (scope_event_id is None or event_id == scope_event_id)
+        ),
         draft_tasks=draft_tasks,
         empty_shifts_soon=await count_shifts(taken_sq == 0),
         short_shifts_soon=await count_shifts(
@@ -327,6 +361,41 @@ async def _count_pending_join_requests(
     if scope_event_id is not None:
         query = query.where(col(EventJoinRequest.event_id) == scope_event_id)
     return await _scalar(session, query)
+
+
+async def _pending_team_requests_by_event(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    visible_event_ids: list[uuid.UUID] | None,
+    manageable_event_ids: list[uuid.UUID] | None,
+) -> dict[uuid.UUID, int]:
+    """Team requests waiting on this user, per event.
+
+    Every request in an event they administer, those of teams they lead in the
+    rest - the same split ``require_team_manager`` makes, and the same count
+    ``EventRead.pending_team_request_count`` carries per event. The superadmin
+    (``None``) gets every non-demo event, like the join-request count.
+    """
+    if manageable_event_ids is None or visible_event_ids is None:
+        rows = await session.execute(
+            select(col(EventTeam.event_id), func.count())
+            .select_from(EventTeamMember)
+            .join(EventTeam, col(EventTeam.id) == col(EventTeamMember.team_id))
+            .join(Event, col(Event.id) == col(EventTeam.event_id))
+            .where(
+                col(EventTeamMember.status) == "pending",
+                col(Event.is_sandbox).is_(False),
+            )
+            .group_by(col(EventTeam.event_id))
+        )
+        return dict(rows.all())
+    admin_ids = set(manageable_event_ids)
+    return await crud_team.decidable_pending_by_event(
+        session,
+        user_id=user_id,
+        admin_event_ids=list(admin_ids),
+        member_event_ids=[e for e in visible_event_ids if e not in admin_ids],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -485,6 +554,14 @@ async def dashboard_sidebar(
         event_id=scoped_event_id,
         visible_event_ids=visible_event_ids,
     )
+    # A task reserved for a team the viewer is not in shows a lock instead of
+    # its open-shift count: those shifts are not theirs to take.
+    locks = await team_locks(session, current_user, (t.id for t in tasks))
+    for task in tasks:
+        lock = locks.get(task.id)
+        if lock is not None and lock.team_id is not None:
+            task.team_name = lock.team_name
+            task.locked_by_team = lock.locked
     bookings = await _sidebar_bookings(
         session,
         current_user.id,

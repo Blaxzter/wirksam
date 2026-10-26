@@ -40,6 +40,7 @@ from app.logic.notifications import triggers
 from app.logic.notifications.seeder import seed_notification_types
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.event_team import EventTeam, EventTeamMember
 from app.models.notification import Notification, NotificationSubscription
 from app.models.user import User
 
@@ -1696,4 +1697,309 @@ class TestTriggerErrorHandling:
         with _dispatch_env(db_session):
             await triggers.dispatch_user_reinstated(user_id=test_user.id)
 
+        assert await _rows(db_session) == []
+
+
+# ── team.join_requested / team.join_approved / team.join_declined ──
+
+
+async def _make_team(
+    db: AsyncSession, *, event: Event, name: str = "Kasse"
+) -> EventTeam:
+    team = EventTeam(event_id=event.id, name=name, requires_approval=True)
+    db.add(team)
+    await db.flush()
+    await db.refresh(team)
+    return team
+
+
+async def _team_row(
+    db: AsyncSession,
+    *,
+    team: EventTeam,
+    user_id: uuid.UUID,
+    status: str = "approved",
+    role: str = "member",
+) -> None:
+    db.add(EventTeamMember(team_id=team.id, user_id=user_id, status=status, role=role))
+    await db.flush()
+
+
+@pytest.mark.asyncio
+class TestDispatchTeamJoinRequested:
+    """``team.join_requested`` goes to whoever may decide it: leads and admins."""
+
+    async def test_notifies_team_leads_and_event_admins_only(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+        test_admin_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """Leads and event admins are told; a plain team member is not."""
+        team = await _make_team(db_session, event=test_event)
+        lead = await _make_user(db_session, tag="team-lead")
+        await _join_event(db_session, user_id=lead.id, event_id=test_event.id)
+        await _team_row(db_session, team=team, user_id=lead.id, role="lead")
+        await _team_row(db_session, team=team, user_id=test_user.id)
+        # A lead of *another* team decides nothing here.
+        other = await _make_team(db_session, event=test_event, name="Bar")
+        other_lead = await _make_user(db_session, tag="other-lead")
+        await _team_row(db_session, team=other, user_id=other_lead.id, role="lead")
+        # A pending "lead" row is not a lead yet.
+        pending_lead = await _make_user(db_session, tag="pending-lead")
+        await _team_row(
+            db_session,
+            team=team,
+            user_id=pending_lead.id,
+            status="pending",
+            role="lead",
+        )
+        applicant = await _make_user(db_session, tag="team-applicant")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=applicant.id
+            )
+
+        assert await _recipients(db_session, "team.join_requested") == {
+            lead.id,
+            test_admin_user.id,
+            test_event_admin_user.id,
+        }
+
+    async def test_body_names_applicant_team_and_event(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event, name="Erste Hilfe")
+        applicant = await _make_user(db_session, tag="team-named")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=applicant.id
+            )
+
+        notif = await _single(
+            db_session, "team.join_requested", test_event_admin_user.id
+        )
+        assert notif.title == "Team Request"
+        assert "User team-named" in notif.body
+        assert "Erste Hilfe" in notif.body
+        assert test_event.name in notif.body
+        assert notif.data == {
+            "event_id": str(test_event.id),
+            "team_id": str(team.id),
+            "user_id": str(applicant.id),
+        }
+
+    async def test_german_lead_gets_german_text(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+        lead = await _make_user(db_session, tag="lead-de", language="de")
+        await _team_row(db_session, team=team, user_id=lead.id, role="lead")
+        applicant = await _make_user(db_session, tag="applicant-de")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=applicant.id
+            )
+
+        notif = await _single(db_session, "team.join_requested", lead.id)
+        assert notif.title == "Teamanfrage"
+        assert "möchte dem Team „Kasse“" in notif.body
+
+    async def test_lead_who_is_also_admin_is_told_once(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+        await _team_row(
+            db_session, team=team, user_id=test_event_admin_user.id, role="lead"
+        )
+        applicant = await _make_user(db_session, tag="applicant-once")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=applicant.id
+            )
+
+        await _single(db_session, "team.join_requested", test_event_admin_user.id)
+
+    async def test_applicant_is_never_told_about_their_own_request(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        """An event admin asking to join a team does not notify themselves."""
+        team = await _make_team(db_session, event=test_event)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=test_event_admin_user.id
+            )
+
+        assert test_event_admin_user.id not in await _recipients(
+            db_session, "team.join_requested"
+        )
+
+    async def test_muting_the_event_mutes_its_teams(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+        await _mute(
+            db_session,
+            user_id=test_event_admin_user.id,
+            type_code="team.join_requested",
+            scope_type="event",
+            scope_id=test_event.id,
+        )
+        applicant = await _make_user(db_session, tag="applicant-muted")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=applicant.id
+            )
+
+        assert test_event_admin_user.id not in await _recipients(
+            db_session, "team.join_requested"
+        )
+
+    async def test_deleted_team_sends_nothing(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        """The team can be gone by the time the background task runs."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_requested(
+                team_id=uuid.uuid4(), user_id=test_user.id
+            )
+
+        assert await _rows(db_session) == []
+
+    async def test_failure_is_logged_not_raised(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+        applicant = await _make_user(db_session, tag="applicant-boom")
+
+        with (
+            _dispatch_env(db_session),
+            patch(
+                f"{MODULE}.NotificationService",
+                side_effect=RuntimeError("service down"),
+            ),
+            patch(f"{MODULE}.logger") as mock_logger,
+        ):
+            await triggers.dispatch_team_join_requested(
+                team_id=team.id, user_id=applicant.id
+            )
+
+        assert mock_logger.exception.call_count == 1
+        assert await _rows(db_session) == []
+
+
+@pytest.mark.asyncio
+class TestDispatchTeamJoinDecided:
+    """``team.join_approved`` / ``team.join_declined`` go to the requester."""
+
+    async def test_approval_notifies_only_the_requester(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event, name="Sanitäter")
+        requester = await _make_user(db_session, tag="team-approved")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_decided(
+                team_id=team.id, user_id=requester.id, approved=True
+            )
+
+        assert await _recipients(db_session, "team.join_approved") == {requester.id}
+        assert await _rows(db_session, "team.join_declined") == []
+        notif = await _single(db_session, "team.join_approved", requester.id)
+        assert "Sanitäter" in notif.body
+        assert test_event.name in notif.body
+        assert notif.data == {"event_id": str(test_event.id), "team_id": str(team.id)}
+
+    async def test_decline_uses_the_declined_type_in_german(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+        requester = await _make_user(db_session, tag="team-declined", language="de")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_decided(
+                team_id=team.id, user_id=requester.id, approved=False
+            )
+
+        notif = await _single(db_session, "team.join_declined", requester.id)
+        assert notif.title == "Teamanfrage abgelehnt"
+        assert "wurde abgelehnt" in notif.body
+        assert await _rows(db_session, "team.join_approved") == []
+
+    async def test_deleted_team_sends_nothing(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_join_decided(
+                team_id=uuid.uuid4(), user_id=test_user.id, approved=True
+            )
+
+        assert await _rows(db_session) == []
+
+    async def test_failure_is_logged_not_raised(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+
+        with (
+            _dispatch_env(db_session),
+            patch(
+                f"{MODULE}.NotificationService",
+                side_effect=RuntimeError("service down"),
+            ),
+            patch(f"{MODULE}.logger") as mock_logger,
+        ):
+            await triggers.dispatch_team_join_decided(
+                team_id=team.id, user_id=test_user.id, approved=False
+            )
+
+        assert mock_logger.exception.call_count == 1
         assert await _rows(db_session) == []

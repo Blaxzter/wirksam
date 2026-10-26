@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/responsive-dialog'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
+import TeamPicker from '@/components/events/teams/TeamPicker.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
@@ -47,6 +48,12 @@ import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
 const { formatTime, formatDateLabel } = useFormatters()
+/**
+ * A stored time ("10:00:00") as the schedule form's 24-hour "HH:MM". Not
+ * `formatTime`: that is for display and gives "10:00 AM" on a 12-hour clock,
+ * which the shift preview cannot read, so it would build no shifts at all.
+ */
+const clockValue = (time: string | null | undefined): string => (time ?? '').slice(0, 5)
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -68,6 +75,7 @@ const description = ref('')
 const location = ref('')
 const locationId = ref<string | null>(null)
 const category = ref('')
+const teamId = ref<string | null>(null)
 const startDate = ref<DateValue>()
 const endDate = ref<DateValue>()
 
@@ -246,6 +254,7 @@ const loadTask = async () => {
     // Populate form — use batch config if in batch mode
     name.value = ev.name
     description.value = ev.description ?? ''
+    teamId.value = ev.team_id ?? null
 
     if (batchId.value) {
       // Load batch and use its config
@@ -266,8 +275,8 @@ const loadTask = async () => {
       category.value = src.category ?? ''
       startDate.value = parseDate(src.start_date)
       endDate.value = parseDate(src.end_date)
-      if (src.default_start_time) defaultStartTime.value = formatTime(src.default_start_time)
-      if (src.default_end_time) defaultEndTime.value = formatTime(src.default_end_time)
+      if (src.default_start_time) defaultStartTime.value = clockValue(src.default_start_time)
+      if (src.default_end_time) defaultEndTime.value = clockValue(src.default_end_time)
       if (src.shift_duration_minutes) shiftDurationMinutes.value = src.shift_duration_minutes
       if (src.people_per_shift) peoplePerShift.value = src.people_per_shift
       if (src.remainder_mode) remainderMode.value = src.remainder_mode as RemainderMode
@@ -276,8 +285,8 @@ const loadTask = async () => {
           src.schedule_overrides as Array<{ date: string; start_time: string; end_time: string }>
         ).map((o) => ({
           date: o.date,
-          startTime: formatTime(o.start_time),
-          endTime: formatTime(o.end_time),
+          startTime: clockValue(o.start_time),
+          endTime: clockValue(o.end_time),
         }))
       }
     } else {
@@ -286,8 +295,8 @@ const loadTask = async () => {
       category.value = ev.category ?? ''
       startDate.value = parseDate(ev.start_date)
       endDate.value = parseDate(ev.end_date)
-      if (ev.default_start_time) defaultStartTime.value = formatTime(ev.default_start_time)
-      if (ev.default_end_time) defaultEndTime.value = formatTime(ev.default_end_time)
+      if (ev.default_start_time) defaultStartTime.value = clockValue(ev.default_start_time)
+      if (ev.default_end_time) defaultEndTime.value = clockValue(ev.default_end_time)
       if (ev.shift_duration_minutes) shiftDurationMinutes.value = ev.shift_duration_minutes
       if (ev.people_per_shift) peoplePerShift.value = ev.people_per_shift
       if (ev.schedule_overrides) {
@@ -295,8 +304,8 @@ const loadTask = async () => {
           ev.schedule_overrides as Array<{ date: string; start_time: string; end_time: string }>
         ).map((o) => ({
           date: o.date,
-          startTime: formatTime(o.start_time),
-          endTime: formatTime(o.end_time),
+          startTime: clockValue(o.start_time),
+          endTime: clockValue(o.end_time),
         }))
       }
     }
@@ -325,8 +334,8 @@ const loadTask = async () => {
       const bookingMap = new Map<string, number>()
       const existingKeys = new Set<string>()
       for (const shift of relevantShifts) {
-        const st = formatTime(shift.start_time)
-        const et = formatTime(shift.end_time)
+        const st = clockValue(shift.start_time)
+        const et = clockValue(shift.end_time)
         const key = `${shift.date}|${st}|${et}`
         existingKeys.add(key)
         if ((shift.current_bookings ?? 0) > 0) {
@@ -408,6 +417,11 @@ const handleSubmit = async () => {
   submitting.value = true
 
   try {
+    // The team is a task setting that shift regeneration does not carry, so
+    // it is saved on its own whichever path follows.
+    if (!isBatchMode.value && teamId.value !== (task.value?.team_id ?? null)) {
+      await patch({ url: `/tasks/${eventId.value}`, body: { team_id: teamId.value } })
+    }
     if (!scheduleChanged.value && !isBatchMode.value) {
       // Only details changed — simple PATCH, no shift regeneration
       await patch<{ data: TaskRead }>({
@@ -545,6 +559,17 @@ onMounted(loadTask)
               <Input v-model="category" />
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <!-- Who can book (hidden in batch mode: a team is set on the task) -->
+      <Card v-if="!isBatchMode" data-testid="section-who-can-book">
+        <CardHeader>
+          <CardTitle>{{ t('teamLocks.picker.title') }}</CardTitle>
+          <CardDescription>{{ t('teamLocks.picker.subtitle') }}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TeamPicker v-model="teamId" :event-id="task?.event_id" input-id="task-team" />
         </CardContent>
       </Card>
 

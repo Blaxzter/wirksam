@@ -9,12 +9,12 @@ import {
   CalendarCheck,
   CalendarDays,
   CalendarRange,
-  Database,
   House,
   Map as MapIcon,
   Menu,
   Sparkles,
   Users,
+  UsersRound,
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
@@ -40,11 +40,21 @@ const { hasNewVersions } = useChangelogStatus()
 
 const moreOpen = ref(false)
 
+const showTeams = computed(() => {
+  const event = authStore.selectedEvent
+  if (!event) return false
+  return (event.team_count ?? 0) > 0 || authStore.canManageEvent(event.id)
+})
+/** Team requests this user may decide in the selected event. */
+const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
+
 interface MoreItem {
   routeName: string
   labelKey: string
   icon: Component
   query?: Record<string, string>
+  /** A count to draw on the row, like the Notifications badge. */
+  badge?: number
 }
 
 /**
@@ -57,6 +67,16 @@ const moreGroups = computed<MoreItem[][]>(() => {
   const event: MoreItem[] = [
     { routeName: 'home', labelKey: 'navigation.sidebar.items.home.label', icon: House },
   ]
+  // Same rule as the sidebar: once the event has a team, or for whoever could
+  // create the first one.
+  if (showTeams.value) {
+    event.push({
+      routeName: 'teams',
+      labelKey: 'teams.nav.label',
+      icon: UsersRound,
+      badge: teamRequestCount.value,
+    })
+  }
   // Same rule as the sidebar: only once the event has a plan with a picture.
   if ((authStore.selectedEvent?.venue_plan_count ?? 0) > 0) {
     event.push({
@@ -87,10 +107,7 @@ const moreGroups = computed<MoreItem[][]>(() => {
     )
   }
   if (authStore.isAdmin) {
-    manage.push(
-      { routeName: 'admin-users', labelKey: 'admin.users.title', icon: Users },
-      { routeName: 'admin-demo-data', labelKey: 'admin.demoData.title', icon: Database },
-    )
+    manage.push({ routeName: 'admin-users', labelKey: 'admin.users.title', icon: Users })
   }
 
   const app: MoreItem[] = [{ routeName: 'changelog', labelKey: 'changelog.title', icon: Sparkles }]
@@ -196,12 +213,23 @@ const notificationDisplayCount = computed(() => {
           : 'text-muted-foreground hover:text-foreground'
       "
       :aria-expanded="moreOpen"
+      :aria-label="
+        teamRequestCount > 0
+          ? t('teams.nav.moreWaiting', { count: teamRequestCount }, teamRequestCount)
+          : undefined
+      "
       @click="moreOpen = true"
     >
       <div class="relative">
         <Menu class="size-5" />
+        <!-- Something to decide outranks something new to read. -->
         <span
-          v-if="hasNewVersions"
+          v-if="teamRequestCount > 0"
+          class="absolute -top-0.5 -right-1 size-2 rounded-full bg-red-700"
+          data-testid="mobile-nav-more-dot"
+        />
+        <span
+          v-else-if="hasNewVersions"
           class="absolute -top-0.5 -right-1 size-2 rounded-full bg-primary"
         />
       </div>
@@ -235,7 +263,17 @@ const notificationDisplayCount = computed(() => {
               <component :is="item.icon" class="size-5 shrink-0 text-muted-foreground" />
               <span class="flex-1">{{ t(item.labelKey) }}</span>
               <span
-                v-if="item.routeName === 'changelog' && hasNewVersions"
+                v-if="item.badge"
+                class="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-700 px-1.5 text-[11px] font-bold text-white"
+                :data-testid="`mobile-more-badge-${item.routeName}`"
+              >
+                <span aria-hidden="true">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+                <span class="sr-only">
+                  {{ t('teams.nav.waiting', { count: item.badge }, item.badge) }}
+                </span>
+              </span>
+              <span
+                v-else-if="item.routeName === 'changelog' && hasNewVersions"
                 class="size-2 rounded-full bg-primary"
               />
             </RouterLink>

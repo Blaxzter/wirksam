@@ -135,6 +135,16 @@ export type AvatarUploadResponse = {
 }
 
 /**
+ * Body_teams-upload_team_document
+ */
+export type BodyTeamsUploadTeamDocument = {
+  /**
+   * File
+   */
+  file: Blob | File
+}
+
+/**
  * Body_users-upload_my_avatar
  */
 export type BodyUsersUploadMyAvatar = {
@@ -491,6 +501,10 @@ export type DashboardAttention = {
    */
   pending_join_requests?: number
   /**
+   * Pending Team Requests
+   */
+  pending_team_requests?: number
+  /**
    * Draft Tasks
    */
   draft_tasks?: number
@@ -551,6 +565,10 @@ export type DashboardFeedResponse = {
    * Pending Join Request Count
    */
   pending_join_request_count?: number
+  /**
+   * Pending Team Request Count
+   */
+  pending_team_request_count?: number
 }
 
 /**
@@ -691,88 +709,6 @@ export type DefaultReminderOffsetsUpdate = {
    * Default Reminder Offsets
    */
   default_reminder_offsets: Array<ReminderOffsetEntry>
-}
-
-/**
- * DemoDataCreatedResponse
- */
-export type DemoDataCreatedResponse = {
-  /**
-   * Events Created
-   */
-  events_created: number
-  /**
-   * Tasks Created
-   */
-  tasks_created: number
-  /**
-   * Users Created
-   */
-  users_created: number
-  /**
-   * Shifts Created
-   */
-  shifts_created: number
-  /**
-   * Bookings Created
-   */
-  bookings_created: number
-  /**
-   * Availabilities Created
-   */
-  availabilities_created: number
-}
-
-/**
- * DemoDataDeletedResponse
- */
-export type DemoDataDeletedResponse = {
-  /**
-   * Tasks Deleted
-   */
-  tasks_deleted: number
-  /**
-   * Events Deleted
-   */
-  events_deleted: number
-  /**
-   * Users Deleted
-   */
-  users_deleted: number
-  /**
-   * Shifts Deleted
-   */
-  shifts_deleted: number
-  /**
-   * Bookings Deleted
-   */
-  bookings_deleted: number
-}
-
-/**
- * DemoDataParams
- */
-export type DemoDataParams = {
-  /**
-   * Num Tasks
-   */
-  num_tasks?: number
-  /**
-   * Num Events
-   */
-  num_events?: number
-  /**
-   * Num Users
-   */
-  num_users?: number
-  /**
-   * Num Shifts Per Task
-   */
-  num_shifts_per_task?: number
-  /**
-   * Publish Tasks
-   */
-  publish_tasks?: boolean
 }
 
 /**
@@ -1364,6 +1300,14 @@ export type EventRead = {
    */
   venue_plan_count?: number
   /**
+   * Team Count
+   */
+  team_count?: number
+  /**
+   * Pending Team Request Count
+   */
+  pending_team_request_count?: number
+  /**
    * Can Manage
    */
   readonly can_manage: boolean
@@ -1371,6 +1315,290 @@ export type EventRead = {
    * Is Expired
    */
   readonly is_expired: boolean
+}
+
+/**
+ * EventTeamCreate
+ */
+export type EventTeamCreate = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Contact
+   */
+  contact?: string | null
+  /**
+   * Requires Approval
+   */
+  requires_approval?: boolean
+  /**
+   * Requirements
+   */
+  requirements?: Array<TeamRequirementIn>
+}
+
+/**
+ * EventTeamDecision
+ */
+export type EventTeamDecision = {
+  /**
+   * Approve
+   */
+  approve: boolean
+  /**
+   * Checks
+   */
+  checks?: Array<TeamCheckIn>
+}
+
+/**
+ * EventTeamJoin
+ */
+export type EventTeamJoin = {
+  /**
+   * Message
+   */
+  message?: string | null
+}
+
+/**
+ * EventTeamMemberAdd
+ *
+ * Place an event member straight into a team, skipping the request.
+ *
+ * Needs the same checks as approving a request when the team has
+ * requirements.
+ */
+export type EventTeamMemberAdd = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Role
+   */
+  role?: 'member' | 'lead'
+  /**
+   * Checks
+   */
+  checks?: Array<TeamCheckIn>
+}
+
+/**
+ * EventTeamMemberRead
+ */
+export type EventTeamMemberRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Team Id
+   */
+  team_id: string
+  /**
+   * Team Name
+   */
+  team_name?: string | null
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Status
+   */
+  status: 'pending' | 'approved' | 'declined'
+  /**
+   * Role
+   */
+  role: 'member' | 'lead'
+  /**
+   * Message
+   */
+  message?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Decided At
+   */
+  decided_at?: string | null
+  /**
+   * Decided By Name
+   */
+  decided_by_name?: string | null
+  /**
+   * User Name
+   */
+  user_name?: string | null
+  /**
+   * User Email
+   */
+  user_email?: string | null
+  /**
+   * User Avatar Etag
+   */
+  user_avatar_etag?: string | null
+  /**
+   * Checks
+   */
+  checks?: Array<TeamCheckRead>
+  /**
+   * Needs Recheck
+   */
+  needs_recheck?: boolean
+  /**
+   * Documents
+   */
+  documents?: Array<TeamDocumentRead>
+  /**
+   * Reusable Checks
+   */
+  reusable_checks?: Array<TeamCheckRead>
+  /**
+   * Other Team Names
+   */
+  other_team_names?: Array<string>
+  /**
+   * Booked Shift Count
+   */
+  booked_shift_count?: number
+}
+
+/**
+ * EventTeamMemberRoleUpdate
+ */
+export type EventTeamMemberRoleUpdate = {
+  /**
+   * Role
+   */
+  role: 'member' | 'lead'
+}
+
+/**
+ * EventTeamRead
+ *
+ * A team, decorated with what the caller needs to render it.
+ */
+export type EventTeamRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Contact
+   */
+  contact?: string | null
+  /**
+   * Requires Approval
+   */
+  requires_approval: boolean
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Requirements
+   */
+  requirements?: Array<TeamRequirementRead>
+  /**
+   * Member Count
+   */
+  member_count?: number
+  /**
+   * Pending Count
+   */
+  pending_count?: number
+  /**
+   * Task Count
+   */
+  task_count?: number
+  /**
+   * Tasks
+   */
+  tasks?: Array<TeamTaskRead>
+  /**
+   * Open Shift Count
+   */
+  open_shift_count?: number
+  /**
+   * Lead Names
+   */
+  lead_names?: Array<string>
+  /**
+   * My Status
+   */
+  my_status?: 'pending' | 'approved' | 'declined' | null
+  /**
+   * My Role
+   */
+  my_role?: 'member' | 'lead' | null
+  /**
+   * My Requested At
+   */
+  my_requested_at?: string | null
+  /**
+   * My Documents
+   */
+  my_documents?: Array<TeamDocumentRead>
+  /**
+   * My Needs Recheck
+   */
+  my_needs_recheck?: boolean
+  /**
+   * Can Manage
+   */
+  can_manage?: boolean
+}
+
+/**
+ * EventTeamUpdate
+ *
+ * Partial update; apply with ``model_dump(exclude_unset=True)``.
+ *
+ * ``requirements`` replaces the whole list when sent (see
+ * :class:`TeamRequirementIn`); leave it out to keep the current ones.
+ */
+export type EventTeamUpdate = {
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Contact
+   */
+  contact?: string | null
+  /**
+   * Requires Approval
+   */
+  requires_approval?: boolean | null
+  /**
+   * Requirements
+   */
+  requirements?: Array<TeamRequirementIn> | null
 }
 
 /**
@@ -1477,6 +1705,10 @@ export type FeedShiftEntry = {
    * Collides With My Booking
    */
   collides_with_my_booking?: boolean
+  /**
+   * Locked By Team
+   */
+  locked_by_team?: boolean
 }
 
 /**
@@ -1526,6 +1758,10 @@ export type FeedTaskItem = {
    */
   category?: string | null
   /**
+   * Team Id
+   */
+  team_id?: string | null
+  /**
    * Id
    */
   id: string
@@ -1559,6 +1795,22 @@ export type FeedTaskItem = {
   schedule_overrides?: Array<{
     [key: string]: unknown
   }> | null
+  /**
+   * Team Name
+   */
+  team_name?: string | null
+  /**
+   * Team Requires Approval
+   */
+  team_requires_approval?: boolean | null
+  /**
+   * My Team Status
+   */
+  my_team_status?: 'pending' | 'approved' | 'declined' | null
+  /**
+   * Locked By Team
+   */
+  locked_by_team?: boolean
   /**
    * Shifts
    */
@@ -1887,6 +2139,30 @@ export type LocationShiftRead = {
    * My Booking Id
    */
   my_booking_id?: string | null
+  /**
+   * Event Id
+   */
+  event_id?: string | null
+  /**
+   * Team Id
+   */
+  team_id?: string | null
+  /**
+   * Team Name
+   */
+  team_name?: string | null
+  /**
+   * Team Requires Approval
+   */
+  team_requires_approval?: boolean | null
+  /**
+   * My Team Status
+   */
+  my_team_status?: 'pending' | 'approved' | 'declined' | null
+  /**
+   * Locked By Team
+   */
+  locked_by_team?: boolean
 }
 
 /**
@@ -2968,6 +3244,30 @@ export type ShiftRead = {
    * Collides With My Booking
    */
   collides_with_my_booking?: boolean
+  /**
+   * Event Id
+   */
+  event_id?: string | null
+  /**
+   * Team Id
+   */
+  team_id?: string | null
+  /**
+   * Team Name
+   */
+  team_name?: string | null
+  /**
+   * Team Requires Approval
+   */
+  team_requires_approval?: boolean | null
+  /**
+   * My Team Status
+   */
+  my_team_status?: 'pending' | 'approved' | 'declined' | null
+  /**
+   * Locked By Team
+   */
+  locked_by_team?: boolean
 }
 
 /**
@@ -3193,6 +3493,14 @@ export type SidebarTask = {
    * Next Shift Start Time
    */
   next_shift_start_time?: string | null
+  /**
+   * Team Name
+   */
+  team_name?: string | null
+  /**
+   * Locked By Team
+   */
+  locked_by_team?: boolean
 }
 
 /**
@@ -3263,6 +3571,10 @@ export type TaskCreate = {
    * Category
    */
   category?: string | null
+  /**
+   * Team Id
+   */
+  team_id?: string | null
 }
 
 /**
@@ -3301,6 +3613,10 @@ export type TaskCreateWithShifts = {
    * Category
    */
   category?: string | null
+  /**
+   * Team Id
+   */
+  team_id?: string | null
   /**
    * Event Id
    */
@@ -3436,6 +3752,10 @@ export type TaskRead = {
    */
   category?: string | null
   /**
+   * Team Id
+   */
+  team_id?: string | null
+  /**
    * Id
    */
   id: string
@@ -3469,6 +3789,22 @@ export type TaskRead = {
   schedule_overrides?: Array<{
     [key: string]: unknown
   }> | null
+  /**
+   * Team Name
+   */
+  team_name?: string | null
+  /**
+   * Team Requires Approval
+   */
+  team_requires_approval?: boolean | null
+  /**
+   * My Team Status
+   */
+  my_team_status?: 'pending' | 'approved' | 'declined' | null
+  /**
+   * Locked By Team
+   */
+  locked_by_team?: boolean
 }
 
 /**
@@ -3511,6 +3847,10 @@ export type TaskUpdate = {
    * Category
    */
   category?: string | null
+  /**
+   * Team Id
+   */
+  team_id?: string | null
 }
 
 /**
@@ -3546,6 +3886,189 @@ export type TaskUpdateWithShifts = {
    */
   category?: string | null
   schedule: ShiftGenerationConfig
+}
+
+/**
+ * TeamCheckIn
+ *
+ * The decider ticked this requirement off.
+ *
+ * ``issued_on`` is required when the requirement asks for the issue date
+ * and ignored otherwise.
+ */
+export type TeamCheckIn = {
+  /**
+   * Requirement Id
+   */
+  requirement_id: string
+  /**
+   * Issued On
+   */
+  issued_on?: string | null
+}
+
+/**
+ * TeamCheckRead
+ */
+export type TeamCheckRead = {
+  /**
+   * Requirement Id
+   */
+  requirement_id: string
+  /**
+   * Label
+   */
+  label: string
+  /**
+   * Checked By Name
+   */
+  checked_by_name?: string | null
+  /**
+   * Checked At
+   */
+  checked_at: string
+  /**
+   * Issued On
+   */
+  issued_on?: string | null
+  /**
+   * Expires On
+   */
+  expires_on?: string | null
+  /**
+   * Expired
+   */
+  expired?: boolean
+  /**
+   * Source Team Name
+   */
+  source_team_name?: string | null
+}
+
+/**
+ * TeamChecksUpdate
+ *
+ * Record or renew checks for someone already in the team.
+ */
+export type TeamChecksUpdate = {
+  /**
+   * Checks
+   */
+  checks: Array<TeamCheckIn>
+}
+
+/**
+ * TeamDocumentRead
+ *
+ * What is known about an attached file without downloading it.
+ */
+export type TeamDocumentRead = {
+  /**
+   * Requirement Id
+   */
+  requirement_id: string
+  /**
+   * Filename
+   */
+  filename: string
+  /**
+   * Content Type
+   */
+  content_type: string
+  /**
+   * Size
+   */
+  size: number
+  /**
+   * Uploaded At
+   */
+  uploaded_at: string
+}
+
+/**
+ * TeamRequirementIn
+ *
+ * One thing a decider has to check before approving a request.
+ *
+ * On an update, an item with an ``id`` edits that requirement and an item
+ * without one adds a new one; requirements left out are deleted together
+ * with the checks recorded against them.
+ */
+export type TeamRequirementIn = {
+  /**
+   * Id
+   */
+  id?: string | null
+  /**
+   * Label
+   */
+  label: string
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Ask Issue Date
+   */
+  ask_issue_date?: boolean
+  /**
+   * Valid For Years
+   */
+  valid_for_years?: number | null
+  /**
+   * Accepts Document
+   */
+  accepts_document?: boolean
+}
+
+/**
+ * TeamRequirementRead
+ */
+export type TeamRequirementRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Label
+   */
+  label: string
+  /**
+   * Description
+   */
+  description?: string | null
+  /**
+   * Ask Issue Date
+   */
+  ask_issue_date: boolean
+  /**
+   * Valid For Years
+   */
+  valid_for_years?: number | null
+  /**
+   * Accepts Document
+   */
+  accepts_document: boolean
+}
+
+/**
+ * TeamTaskRead
+ *
+ * A task a team unlocks, for a link to it from the team.
+ */
+export type TeamTaskRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Open Shift Count
+   */
+  open_shift_count?: number
 }
 
 /**
@@ -5610,6 +6133,14 @@ export type EventReadWritable = {
    * plans with an image or at least one shape
    */
   venue_plan_count?: number
+  /**
+   * Team Count
+   */
+  team_count?: number
+  /**
+   * Pending Team Request Count
+   */
+  pending_team_request_count?: number
 }
 
 /**
@@ -7832,6 +8363,12 @@ export type TasksTaskFeedData = {
      * Only tasks at this location, or with a shift there
      */
     location_id?: string | null
+    /**
+     * Bookable Only
+     *
+     * Leave out tasks reserved for a team the caller is not in
+     */
+    bookable_only?: boolean
   }
   url: '/api/v1/tasks/feed'
 }
@@ -11582,6 +12119,1116 @@ export type EventsDecideJoinRequestResponses = {
 
 export type EventsDecideJoinRequestResponse =
   EventsDecideJoinRequestResponses[keyof EventsDecideJoinRequestResponses]
+
+export type TeamsListTeamsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams'
+}
+
+export type TeamsListTeamsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsListTeamsError = TeamsListTeamsErrors[keyof TeamsListTeamsErrors]
+
+export type TeamsListTeamsResponses = {
+  /**
+   * Response Teams-List Teams
+   *
+   * Successful Response
+   */
+  200: Array<EventTeamRead>
+}
+
+export type TeamsListTeamsResponse = TeamsListTeamsResponses[keyof TeamsListTeamsResponses]
+
+export type TeamsCreateTeamData = {
+  body: EventTeamCreate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams'
+}
+
+export type TeamsCreateTeamErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsCreateTeamError = TeamsCreateTeamErrors[keyof TeamsCreateTeamErrors]
+
+export type TeamsCreateTeamResponses = {
+  /**
+   * Successful Response
+   */
+  201: EventTeamRead
+}
+
+export type TeamsCreateTeamResponse = TeamsCreateTeamResponses[keyof TeamsCreateTeamResponses]
+
+export type TeamsDeleteTeamData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}'
+}
+
+export type TeamsDeleteTeamErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsDeleteTeamError = TeamsDeleteTeamErrors[keyof TeamsDeleteTeamErrors]
+
+export type TeamsDeleteTeamResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type TeamsDeleteTeamResponse = TeamsDeleteTeamResponses[keyof TeamsDeleteTeamResponses]
+
+export type TeamsUpdateTeamData = {
+  body: EventTeamUpdate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}'
+}
+
+export type TeamsUpdateTeamErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsUpdateTeamError = TeamsUpdateTeamErrors[keyof TeamsUpdateTeamErrors]
+
+export type TeamsUpdateTeamResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventTeamRead
+}
+
+export type TeamsUpdateTeamResponse = TeamsUpdateTeamResponses[keyof TeamsUpdateTeamResponses]
+
+export type TeamsListTeamRequestsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/requests'
+}
+
+export type TeamsListTeamRequestsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsListTeamRequestsError =
+  TeamsListTeamRequestsErrors[keyof TeamsListTeamRequestsErrors]
+
+export type TeamsListTeamRequestsResponses = {
+  /**
+   * Response Teams-List Team Requests
+   *
+   * Successful Response
+   */
+  200: Array<EventTeamMemberRead>
+}
+
+export type TeamsListTeamRequestsResponse =
+  TeamsListTeamRequestsResponses[keyof TeamsListTeamRequestsResponses]
+
+export type TeamsLeaveTeamData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/join'
+}
+
+export type TeamsLeaveTeamErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsLeaveTeamError = TeamsLeaveTeamErrors[keyof TeamsLeaveTeamErrors]
+
+export type TeamsLeaveTeamResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type TeamsLeaveTeamResponse = TeamsLeaveTeamResponses[keyof TeamsLeaveTeamResponses]
+
+export type TeamsJoinTeamData = {
+  body: EventTeamJoin
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/join'
+}
+
+export type TeamsJoinTeamErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsJoinTeamError = TeamsJoinTeamErrors[keyof TeamsJoinTeamErrors]
+
+export type TeamsJoinTeamResponses = {
+  /**
+   * Successful Response
+   */
+  201: EventTeamMemberRead
+}
+
+export type TeamsJoinTeamResponse = TeamsJoinTeamResponses[keyof TeamsJoinTeamResponses]
+
+export type TeamsDeleteTeamDocumentData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * Requirement Id
+     */
+    requirement_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/join/documents/{requirement_id}'
+}
+
+export type TeamsDeleteTeamDocumentErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsDeleteTeamDocumentError =
+  TeamsDeleteTeamDocumentErrors[keyof TeamsDeleteTeamDocumentErrors]
+
+export type TeamsDeleteTeamDocumentResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type TeamsDeleteTeamDocumentResponse =
+  TeamsDeleteTeamDocumentResponses[keyof TeamsDeleteTeamDocumentResponses]
+
+export type TeamsUploadTeamDocumentData = {
+  body: BodyTeamsUploadTeamDocument
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * Requirement Id
+     */
+    requirement_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/join/documents/{requirement_id}'
+}
+
+export type TeamsUploadTeamDocumentErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsUploadTeamDocumentError =
+  TeamsUploadTeamDocumentErrors[keyof TeamsUploadTeamDocumentErrors]
+
+export type TeamsUploadTeamDocumentResponses = {
+  /**
+   * Successful Response
+   */
+  200: TeamDocumentRead
+}
+
+export type TeamsUploadTeamDocumentResponse =
+  TeamsUploadTeamDocumentResponses[keyof TeamsUploadTeamDocumentResponses]
+
+export type TeamsGetTeamDocumentData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+    /**
+     * Requirement Id
+     */
+    requirement_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members/{user_id}/documents/{requirement_id}'
+}
+
+export type TeamsGetTeamDocumentErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsGetTeamDocumentError = TeamsGetTeamDocumentErrors[keyof TeamsGetTeamDocumentErrors]
+
+export type TeamsGetTeamDocumentResponses = {
+  /**
+   * The attached file
+   */
+  200: Blob | File
+}
+
+export type TeamsGetTeamDocumentResponse =
+  TeamsGetTeamDocumentResponses[keyof TeamsGetTeamDocumentResponses]
+
+export type TeamsListTeamMembersData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+  }
+  query?: {
+    /**
+     * Status
+     */
+    status?: 'pending' | 'approved' | 'declined' | null
+  }
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members'
+}
+
+export type TeamsListTeamMembersErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsListTeamMembersError = TeamsListTeamMembersErrors[keyof TeamsListTeamMembersErrors]
+
+export type TeamsListTeamMembersResponses = {
+  /**
+   * Response Teams-List Team Members
+   *
+   * Successful Response
+   */
+  200: Array<EventTeamMemberRead>
+}
+
+export type TeamsListTeamMembersResponse =
+  TeamsListTeamMembersResponses[keyof TeamsListTeamMembersResponses]
+
+export type TeamsAddTeamMemberData = {
+  body: EventTeamMemberAdd
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members'
+}
+
+export type TeamsAddTeamMemberErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsAddTeamMemberError = TeamsAddTeamMemberErrors[keyof TeamsAddTeamMemberErrors]
+
+export type TeamsAddTeamMemberResponses = {
+  /**
+   * Successful Response
+   */
+  201: EventTeamMemberRead
+}
+
+export type TeamsAddTeamMemberResponse =
+  TeamsAddTeamMemberResponses[keyof TeamsAddTeamMemberResponses]
+
+export type TeamsListReusableChecksData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members/{user_id}/reusable-checks'
+}
+
+export type TeamsListReusableChecksErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsListReusableChecksError =
+  TeamsListReusableChecksErrors[keyof TeamsListReusableChecksErrors]
+
+export type TeamsListReusableChecksResponses = {
+  /**
+   * Response Teams-List Reusable Checks
+   *
+   * Successful Response
+   */
+  200: Array<TeamCheckRead>
+}
+
+export type TeamsListReusableChecksResponse =
+  TeamsListReusableChecksResponses[keyof TeamsListReusableChecksResponses]
+
+export type TeamsRemoveTeamMemberData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members/{user_id}'
+}
+
+export type TeamsRemoveTeamMemberErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsRemoveTeamMemberError =
+  TeamsRemoveTeamMemberErrors[keyof TeamsRemoveTeamMemberErrors]
+
+export type TeamsRemoveTeamMemberResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type TeamsRemoveTeamMemberResponse =
+  TeamsRemoveTeamMemberResponses[keyof TeamsRemoveTeamMemberResponses]
+
+export type TeamsUpdateTeamMemberRoleData = {
+  body: EventTeamMemberRoleUpdate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members/{user_id}'
+}
+
+export type TeamsUpdateTeamMemberRoleErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsUpdateTeamMemberRoleError =
+  TeamsUpdateTeamMemberRoleErrors[keyof TeamsUpdateTeamMemberRoleErrors]
+
+export type TeamsUpdateTeamMemberRoleResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventTeamMemberRead
+}
+
+export type TeamsUpdateTeamMemberRoleResponse =
+  TeamsUpdateTeamMemberRoleResponses[keyof TeamsUpdateTeamMemberRoleResponses]
+
+export type TeamsDecideTeamRequestData = {
+  body: EventTeamDecision
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members/{user_id}/decide'
+}
+
+export type TeamsDecideTeamRequestErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsDecideTeamRequestError =
+  TeamsDecideTeamRequestErrors[keyof TeamsDecideTeamRequestErrors]
+
+export type TeamsDecideTeamRequestResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventTeamMemberRead
+}
+
+export type TeamsDecideTeamRequestResponse =
+  TeamsDecideTeamRequestResponses[keyof TeamsDecideTeamRequestResponses]
+
+export type TeamsRecordTeamChecksData = {
+  body: TeamChecksUpdate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Team Id
+     */
+    team_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/teams/{team_id}/members/{user_id}/checks'
+}
+
+export type TeamsRecordTeamChecksErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TeamsRecordTeamChecksError =
+  TeamsRecordTeamChecksErrors[keyof TeamsRecordTeamChecksErrors]
+
+export type TeamsRecordTeamChecksResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventTeamMemberRead
+}
+
+export type TeamsRecordTeamChecksResponse =
+  TeamsRecordTeamChecksResponses[keyof TeamsRecordTeamChecksResponses]
 
 export type WorkHoursListEventHoursData = {
   body?: never
@@ -15376,116 +17023,6 @@ export type ReportingReportingExportResponses = {
    */
   200: unknown
 }
-
-export type DemoDataDeleteDemoDataData = {
-  body?: never
-  path?: never
-  query?: never
-  url: '/api/v1/demo-data/'
-}
-
-export type DemoDataDeleteDemoDataErrors = {
-  /**
-   * Bad Request
-   */
-  400: ProblemDetails
-  /**
-   * Unauthorized
-   */
-  401: ProblemDetails
-  /**
-   * Forbidden
-   */
-  403: ProblemDetails
-  /**
-   * Not Found
-   */
-  404: ProblemDetails
-  /**
-   * Conflict
-   */
-  409: ProblemDetails
-  /**
-   * Validation Error
-   */
-  422: ProblemDetails
-  /**
-   * Too Many Requests
-   */
-  429: ProblemDetails
-  /**
-   * Internal Server Error
-   */
-  500: ProblemDetails
-}
-
-export type DemoDataDeleteDemoDataError =
-  DemoDataDeleteDemoDataErrors[keyof DemoDataDeleteDemoDataErrors]
-
-export type DemoDataDeleteDemoDataResponses = {
-  /**
-   * Successful Response
-   */
-  200: DemoDataDeletedResponse
-}
-
-export type DemoDataDeleteDemoDataResponse =
-  DemoDataDeleteDemoDataResponses[keyof DemoDataDeleteDemoDataResponses]
-
-export type DemoDataCreateDemoDataData = {
-  body: DemoDataParams
-  path?: never
-  query?: never
-  url: '/api/v1/demo-data/'
-}
-
-export type DemoDataCreateDemoDataErrors = {
-  /**
-   * Bad Request
-   */
-  400: ProblemDetails
-  /**
-   * Unauthorized
-   */
-  401: ProblemDetails
-  /**
-   * Forbidden
-   */
-  403: ProblemDetails
-  /**
-   * Not Found
-   */
-  404: ProblemDetails
-  /**
-   * Conflict
-   */
-  409: ProblemDetails
-  /**
-   * Validation Error
-   */
-  422: ProblemDetails
-  /**
-   * Too Many Requests
-   */
-  429: ProblemDetails
-  /**
-   * Internal Server Error
-   */
-  500: ProblemDetails
-}
-
-export type DemoDataCreateDemoDataError =
-  DemoDataCreateDemoDataErrors[keyof DemoDataCreateDemoDataErrors]
-
-export type DemoDataCreateDemoDataResponses = {
-  /**
-   * Successful Response
-   */
-  200: DemoDataCreatedResponse
-}
-
-export type DemoDataCreateDemoDataResponse =
-  DemoDataCreateDemoDataResponses[keyof DemoDataCreateDemoDataResponses]
 
 export type DebugStartLogCaptureData = {
   body?: never
