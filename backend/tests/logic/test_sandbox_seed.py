@@ -331,7 +331,9 @@ class TestSeededBookings:
         from a generator seeded with the guest's own account id, and one demo
         passing would only prove that one draw happened to be kind.
         """
-        today = dt.date.today()
+        # The seeder's "today" is the UTC date; the local one differs between
+        # local and UTC midnight and would pick a different shift.
+        today = dt.datetime.now(dt.UTC).date()
         roles: tuple[SandboxRole, ...] = ("helper", "manager")
 
         for index in range(8):

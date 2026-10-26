@@ -96,7 +96,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
 if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     import sentry_sdk
 
-    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
+    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), traces_sample_rate=1.0)
 
 
 def custom_openapi() -> dict[str, Any]:

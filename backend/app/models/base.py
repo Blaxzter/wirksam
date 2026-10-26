@@ -2,6 +2,7 @@ import uuid
 from abc import ABC
 from datetime import datetime, timezone
 
+import sqlalchemy as sa
 from sqlmodel import Field, SQLModel
 
 
@@ -28,13 +29,18 @@ class Base(SQLModel, ABC):
         index=True,
     )
 
+    # sa_type pins the naive column. Left to sqlmodel, a bare ``datetime`` maps
+    # to its UTCDateTime (timezone-aware), which refuses the naive values the
+    # whole application stores.
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        sa_type=sa.DateTime,
         description="When this record was created (UTC)",
     )
 
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        sa_type=sa.DateTime,
         description="When this record was last updated (UTC)",
     )
 
@@ -52,6 +58,7 @@ class SoftDeleteBase(Base):
 
     deleted_at: datetime | None = Field(
         default=None,
+        sa_type=sa.DateTime,
         description="When this record was deleted (null if not deleted, UTC)",
     )
 

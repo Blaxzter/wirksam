@@ -1,4 +1,5 @@
 import uuid
+from typing import cast
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +58,7 @@ class CRUDEventMembership:
                 col(EventMembership.user_id) == user_id
             )
         )
-        return {row[0]: row[1] for row in result.all()}
+        return {row[0]: cast(EventRole, row[1]) for row in result.all()}
 
     async def list_event_ids_for_user(
         self,

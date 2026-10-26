@@ -1,5 +1,6 @@
 """Web Push notification channel using pywebpush."""
 
+import asyncio
 import json
 
 from app.core.config import settings
@@ -12,6 +13,9 @@ from app.models.user import User
 from app.schemas.notification import NotificationData
 
 logger = get_logger(__name__)
+
+# Seconds to wait for the push service before giving up on one device.
+PUSH_TIMEOUT_SECONDS = 10
 
 
 class PushChannel(NotificationChannel):
@@ -36,7 +40,7 @@ class PushChannel(NotificationChannel):
             return False
 
         try:
-            from pywebpush import WebPushException, webpush  # pyright: ignore[reportMissingTypeStubs]  # noqa: I001
+            from pywebpush import WebPushException, webpush  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]  # noqa: I001
 
             from app.core.db import async_session
             from app.crud.push_subscription import push_subscription as crud_push
@@ -66,7 +70,11 @@ class PushChannel(NotificationChannel):
 
             for sub in subscriptions:
                 try:
-                    webpush(
+                    # webpush() is a blocking HTTP call with no timeout of its
+                    # own: run it off the event loop, and bound it so a hung
+                    # push service cannot stall the sender.
+                    await asyncio.to_thread(
+                        webpush,  # pyright: ignore[reportUnknownArgumentType]
                         subscription_info={
                             "endpoint": sub.endpoint,
                             "keys": {
@@ -76,15 +84,16 @@ class PushChannel(NotificationChannel):
                         },
                         data=payload,
                         vapid_private_key=settings.VAPID_PRIVATE_KEY,
-                        vapid_claims=vapid_claims,
+                        # A copy per device: webpush() writes the push
+                        # service's origin into ``aud``, and a shared dict would
+                        # sign the next device's push for the wrong service.
+                        vapid_claims=dict(vapid_claims),
+                        timeout=PUSH_TIMEOUT_SECONDS,
                     )
                     any_success = True
                 except WebPushException as e:
-                    response = getattr(e, "response", None)
-                    if (
-                        response is not None
-                        and getattr(response, "status_code", None) == 410
-                    ):
+                    # Both mean the push service no longer knows this endpoint.
+                    if e.status_code in (404, 410):
                         stale_endpoints.append(sub.endpoint)
                         logger.info(
                             f"Removing stale push subscription: {sub.endpoint[:50]}..."
@@ -93,6 +102,12 @@ class PushChannel(NotificationChannel):
                         logger.warning(
                             f"Push failed for endpoint {sub.endpoint[:50]}...: {e}"
                         )
+                except Exception as e:
+                    # Timeouts and connection errors come from requests, not as
+                    # WebPushException; they cost this device only, not the rest.
+                    logger.warning(
+                        f"Push failed for endpoint {sub.endpoint[:50]}...: {e}"
+                    )
 
             # Clean up stale subscriptions
             if stale_endpoints:
