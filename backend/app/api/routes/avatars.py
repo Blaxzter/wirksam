@@ -1,6 +1,6 @@
 """Avatar upload, delete, and serve endpoints.
 
-Avatars are stored as WebP bytes in Postgres. The denormalized ``avatar_etag``
+Avatars are stored as WebP files in ``app.core.storage``. The denormalized ``avatar_etag``
 on the ``users`` row is the canonical version marker — frontends append it as
 a query string so a new upload busts cached browser copies.
 
@@ -15,6 +15,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Request, Response, UploadFile, status
 
 from app.api.deps import CurrentUser, DBDep
+from app.api.files import serve_file
 from app.crud.user_avatar import user_avatar as crud_avatar
 from app.logic.avatar import AvatarProcessingError, normalize_avatar
 from app.schemas.user_avatar import AvatarUploadResponse
@@ -34,7 +35,7 @@ async def upload_my_avatar(
     """Upload a new avatar for the current user.
 
     The image is decoded, EXIF-oriented, resized to 256x256, re-encoded as WebP,
-    and stored in the database. The user's ``avatar_etag`` is updated.
+    and stored. The user's ``avatar_etag`` is updated.
     """
     raw = await file.read()
     try:
@@ -92,8 +93,9 @@ async def get_user_avatar(
             headers={"ETag": etag_header},
         )
 
-    return Response(
-        content=avatar.data,
+    served = await serve_file(
+        session,
+        avatar.storage_key,
         media_type=avatar.content_type,
         headers={
             "ETag": etag_header,
@@ -102,3 +104,9 @@ async def get_user_avatar(
             "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
         },
     )
+    if served is None:
+        logger.error("avatar file missing", extra={"key": avatar.storage_key})
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Avatar not found"
+        )
+    return served

@@ -5,11 +5,17 @@ from datetime import date, datetime, timezone
 from typing import Any, cast
 
 import sqlalchemy as sa
-from sqlalchemy import CursorResult, func, select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel, col
 
+from app.core.storage import (
+    FileKind,
+    drain_after_commit,
+    get_storage,
+    new_key,
+)
 from app.logic.images import NormalizedImage
 from app.models.booking import Booking
 from app.models.location import Location
@@ -64,7 +70,7 @@ def drawing_fields(shape: VenueShape) -> dict[str, Any]:
     }
 
 
-async def copy_image_bytes(
+async def copy_image(
     session: AsyncSession,
     *,
     source: type[SQLModel],
@@ -73,41 +79,46 @@ async def copy_image_bytes(
     target: type[SQLModel],
     target_key: str,
     target_id: uuid.UUID,
+    kind: FileKind,
     now: datetime,
 ) -> bool:
-    """Copy one image row between the image tables, inside the database.
+    """Copy one image between the image tables, file and row.
 
     ``source``/``target`` are image models (``VenuePlanImage``,
-    ``VenueTemplateImage``) and ``*_key`` their owner column. One
-    ``INSERT ... SELECT``, so the bytes are never pulled into Python. The
-    target's owner row must already be flushed. Returns whether a row was
-    copied (False when the source has no image).
+    ``VenueTemplateImage``), ``*_key`` their owner column and ``kind`` the
+    target's storage prefix. The copy gets a file of its own, so deleting
+    either side never takes the other's picture. The target's owner row must
+    already be flushed. Returns whether an image was copied (False when the
+    source has none).
     """
     src = cast(sa.Table, sa.inspect(source).local_table)
     dst = cast(sa.Table, sa.inspect(target).local_table)
-    result = await session.execute(
-        sa.insert(dst).from_select(
-            [
-                "id",
-                "created_at",
-                "updated_at",
-                target_key,
-                "data",
-                "content_type",
-                "etag",
-            ],
-            select(
-                func.gen_random_uuid(),
-                sa.literal(now, sa.DateTime()),
-                sa.literal(now, sa.DateTime()),
-                sa.literal(target_id, sa.Uuid[uuid.UUID]()),
-                src.c.data,
-                src.c.content_type,
-                src.c.etag,
-            ).where(src.c[source_key] == source_id),
+    row = (
+        await session.execute(
+            select(src.c.storage_key, src.c.content_type, src.c.etag).where(
+                src.c[source_key] == source_id
+            )
+        )
+    ).first()
+    if row is None:
+        return False
+    storage_key = new_key(kind)
+    if not await get_storage().copy(session, row.storage_key, storage_key):
+        return False
+    await session.execute(
+        sa.insert(dst).values(
+            {
+                "id": uuid.uuid4(),
+                "created_at": now,
+                "updated_at": now,
+                target_key: target_id,
+                "storage_key": storage_key,
+                "content_type": row.content_type,
+                "etag": row.etag,
+            }
         )
     )
-    return cast(CursorResult[Any], result).rowcount > 0
+    return True
 
 
 class CRUDVenueMap:
@@ -315,15 +326,18 @@ class CRUDVenueMap:
 
         One ``INSERT ... ON CONFLICT (plan_id) DO UPDATE``, so two first
         uploads racing for the same plan both succeed (last one wins) instead
-        of the second tripping the unique index.
+        of the second tripping the unique index. Each upload is a new file;
+        the one it replaces is queued for deletion by the table's trigger.
         """
         now = _now()
+        storage_key = new_key("venue-plans")
+        await get_storage().put(session, storage_key, image.data, image.content_type)
         insert_stmt = pg_insert(VenuePlanImage).values(
             id=uuid.uuid4(),
             created_at=now,
             updated_at=now,
             plan_id=plan.id,
-            data=image.data,
+            storage_key=storage_key,
             content_type=image.content_type,
             etag=image.etag,
         )
@@ -331,7 +345,7 @@ class CRUDVenueMap:
         stmt = insert_stmt.on_conflict_do_update(
             index_elements=["plan_id"],
             set_={
-                "data": excluded.data,
+                "storage_key": excluded.storage_key,
                 "content_type": excluded.content_type,
                 "etag": excluded.etag,
                 "updated_at": excluded.updated_at,
@@ -344,6 +358,7 @@ class CRUDVenueMap:
         )
         row = result.scalars().one()
 
+        drain_after_commit(session)
         plan.image_etag = image.etag
         plan.image_width = image.width
         plan.image_height = image.height
@@ -363,6 +378,7 @@ class CRUDVenueMap:
         image = await self.get_image(session, plan_id=plan.id)
         if image is not None:
             await session.delete(image)
+            drain_after_commit(session)
         if plan.image_width and plan.image_height:
             scale = _CANVAS_LONG_SIDE / max(plan.image_width, plan.image_height)
             plan.canvas_width = max(1, round(plan.image_width * scale))
@@ -549,12 +565,12 @@ class CRUDVenueMap:
                 shapes_revision=0,
             )
             session.add(new_plans[new_id])
-        # The image INSERT ... SELECT below is a Core statement, so the plan
-        # rows it points at must be in the database first.
+        # The image INSERT below is a Core statement, so the plan rows it
+        # points at must be in the database first.
         await session.flush()
 
         for old_plan_id, new_plan_id in plan_map.items():
-            await copy_image_bytes(
+            await copy_image(
                 session,
                 source=VenuePlanImage,
                 source_key="plan_id",
@@ -562,6 +578,7 @@ class CRUDVenueMap:
                 target=VenuePlanImage,
                 target_key="plan_id",
                 target_id=new_plan_id,
+                kind="venue-plans",
                 now=now,
             )
 

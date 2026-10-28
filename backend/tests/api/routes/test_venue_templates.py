@@ -29,6 +29,7 @@ from app.models.venue_template import VenueTemplate, VenueTemplateImage
 from app.schemas.venue_template import MAX_TEMPLATES_PER_USER
 from tests.fixtures.locations import PLAN_HEIGHT, PLAN_WIDTH
 from tests.fixtures.sandbox import SandboxSetup
+from tests.fixtures.storage import drop_file, fetch_file, put_file, stored_bytes
 
 API = "/api/v1"
 
@@ -86,7 +87,7 @@ async def _add_template(
         db.add(
             VenueTemplateImage(
                 template_id=template.id,
-                data=image,
+                storage_key=await put_file(db, "venue-templates", image),
                 content_type="image/webp",
                 etag="a" * 64,
             )
@@ -155,7 +156,10 @@ class TestSaveAsTemplate:
                 )
             )
         ).scalar_one()
-        assert image.data == plan_image.data
+        assert image.storage_key != plan_image.storage_key
+        assert await stored_bytes(db_session, image.storage_key) == await stored_bytes(
+            db_session, plan_image.storage_key
+        )
         assert image.etag == plan_image.etag
 
     async def test_blank_plan_without_picture(
@@ -401,6 +405,7 @@ class TestOwnTemplates:
             == 0
         )
 
+    @pytest.mark.usefixtures("streamed")
     async def test_image_served_to_owner_with_etag(
         self, async_client: AsyncClient, db_session: AsyncSession, test_user: User
     ) -> None:
@@ -419,6 +424,23 @@ class TestOwnTemplates:
         self, async_client: AsyncClient, db_session: AsyncSession, test_user: User
     ) -> None:
         template = await _add_template(db_session, user=test_user)
+        r = await async_client.get(f"{API}/venue-templates/{template.id}/image")
+        assert r.status_code == 404
+        assert r.json()["code"] == "venue_template.image_not_found"
+
+    @pytest.mark.usefixtures("streamed")
+    async def test_template_whose_file_is_gone_404(
+        self, async_client: AsyncClient, db_session: AsyncSession, test_user: User
+    ) -> None:
+        template = await _add_template(db_session, user=test_user, image=b"img")
+        image = (
+            await db_session.execute(
+                select(VenueTemplateImage).where(
+                    col(VenueTemplateImage.template_id) == template.id
+                )
+            )
+        ).scalar_one()
+        await drop_file(db_session, image.storage_key)
         r = await async_client.get(f"{API}/venue-templates/{template.id}/image")
         assert r.status_code == 404
         assert r.json()["code"] == "venue_template.image_not_found"
@@ -486,9 +508,9 @@ class TestCreatePlanFromTemplate:
                 select(VenuePlanImage).where(col(VenuePlanImage.plan_id) == plan_id)
             )
         ).scalar_one()
-        assert image.data == b"webp-bytes"
+        assert await stored_bytes(db_session, image.storage_key) == b"webp-bytes"
 
-        r = await async_client.get(f"{API}/venue-plans/{plan_id}/image")
+        r = await fetch_file(async_client, f"{API}/venue-plans/{plan_id}/image")
         assert r.status_code == 200
         assert r.content == b"webp-bytes"
 

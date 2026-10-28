@@ -1,7 +1,8 @@
 """Files a requester attaches to a team request (a first-aid card, say).
 
-Stored in Postgres like avatars — there is no file server in the stack — and
-deliberately short-lived: the route deletes them once the request is decided.
+Stored like avatars (``app.core.storage``: Postgres, or a private S3 bucket)
+and deliberately short-lived: the row is deleted once the request is decided,
+and its file with it (see ``app.logic.storage_gc``).
 Only PDF and the three common photo formats are accepted, recognised by their
 first bytes rather than by what the browser claims. Photos are re-encoded
 (which also drops their EXIF data, GPS position included); a PDF is kept as

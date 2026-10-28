@@ -24,6 +24,16 @@ permissions:
 jobs:
     test-backend:
         runs-on: ubuntu-latest
+        # The whole suite against each storage backend (app/core/storage.py):
+        # Postgres, and S3 on an in-process moto bucket
+        # (tests/fixtures/storage.py).
+        strategy:
+            fail-fast: false
+            matrix:
+                storage: [postgres, s3]
+        name: test-backend (${{ matrix.storage }})
+        env:
+            TEST_STORAGE_BACKEND: ${{ matrix.storage }}
         steps:
             - name: Checkout
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,7 +77,7 @@ jobs:
             # at a higher bar than the aggregate floor. Pull requests only —
             # there is no meaningful diff for a push to main.
             - name: Diff coverage on changed lines
-              if: github.event_name == 'pull_request'
+              if: github.event_name == 'pull_request' && matrix.storage == 'postgres'
               run: |
                   git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
                   uv run diff-cover coverage.xml \
@@ -78,6 +88,7 @@ jobs:
             - name: Store coverage files
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               with:
-                  name: coverage-html
+                  # smokeshow.yml downloads the Postgres run's report by this name.
+                  name: ${{ matrix.storage == 'postgres' && 'coverage-html' || 'coverage-html-s3' }}
                   path: backend/htmlcov
                   include-hidden-files: true

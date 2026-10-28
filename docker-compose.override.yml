@@ -9,7 +9,14 @@ services:
         ports:
             - "8080:8080"
 
+    garage:
+        restart: "no"
+        ports:
+            - "${GARAGE_PORT:-3900}:3900"
+
     prestart:
+        environment:
+            - S3_ENDPOINT_URL=http://garage:3900
         build:
             context: ./backend
 
@@ -17,6 +24,13 @@ services:
         restart: "no"
         ports:
             - "8787:8787"
+        environment:
+            # .env points a backend on the host at localhost:3900; inside the
+            # stack the garage service is reached by name, while the browser
+            # still reaches it on the host port (CI: by name, from the
+            # Playwright container).
+            - S3_ENDPOINT_URL=http://garage:3900
+            - S3_PUBLIC_ENDPOINT_URL=${S3_PUBLIC_ENDPOINT_URL:-http://localhost:${GARAGE_PORT:-3900}}
         build:
             context: ./backend
         command:

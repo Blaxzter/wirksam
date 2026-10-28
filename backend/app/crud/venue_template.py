@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import QueryableAttribute, defer
 from sqlmodel import col
 
-from app.crud.venue_map import copy_image_bytes, drawing_fields
+from app.core.storage import drain_after_commit
+from app.crud.venue_map import copy_image, drawing_fields
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.models.user import User
 from app.models.venue_plan import VenuePlan, VenuePlanImage, VenueShape
@@ -117,7 +118,7 @@ class CRUDVenueTemplate:
         session.add(template)
         await session.flush()
 
-        copied = await copy_image_bytes(
+        copied = await copy_image(
             session,
             source=VenuePlanImage,
             source_key="plan_id",
@@ -125,6 +126,7 @@ class CRUDVenueTemplate:
             target=VenueTemplateImage,
             target_key="template_id",
             target_id=template.id,
+            kind="venue-templates",
             now=now,
         )
         if copied:
@@ -164,7 +166,7 @@ class CRUDVenueTemplate:
         session.add(plan)
         await session.flush()
 
-        copied = await copy_image_bytes(
+        copied = await copy_image(
             session,
             source=VenueTemplateImage,
             source_key="template_id",
@@ -172,6 +174,7 @@ class CRUDVenueTemplate:
             target=VenuePlanImage,
             target_key="plan_id",
             target_id=plan.id,
+            kind="venue-plans",
             now=now,
         )
         if copied:
@@ -204,9 +207,11 @@ class CRUDVenueTemplate:
         return template
 
     async def delete(self, session: AsyncSession, *, template: VenueTemplate) -> None:
-        """Delete a template; its image row goes with it (DB cascade)."""
+        """Delete a template; its image row goes with it (DB cascade), and the
+        file with the row (the image table's trigger)."""
         await session.delete(template)
         await session.flush()
+        drain_after_commit(session)
 
     async def get_image(
         self, session: AsyncSession, *, template_id: uuid.UUID

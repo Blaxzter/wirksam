@@ -164,6 +164,14 @@ leaves the orphans described above.
                                                 visibly go
 ```
 
+The stored files (the seeded team document, a plan picture, an avatar) need no
+step of their own. Every row that owns one carries a trigger that queues its
+`storage_key` in `storage_deletions` when the row goes, whether it is deleted
+here or by a cascade, inside the purge's own transaction. With the Postgres
+storage backend the bytes go in that same statement; with S3 the purge wakes
+`app/logic/storage_gc.py` after its commit, which deletes the objects. A purge
+that rolls back queues nothing. See [`STORAGE.md`](STORAGE.md).
+
 Two traps are worth stating explicitly:
 
 - **Never delete the guest first.** `events.created_by_id` is `ON DELETE CASCADE`,

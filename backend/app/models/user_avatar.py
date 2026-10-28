@@ -7,7 +7,7 @@ from app.models.base import Base
 
 
 class UserAvatar(Base, table=True):
-    """Locally stored user avatar bytes (WebP, max 256x256)."""
+    """A user's avatar (WebP, max 256x256); the bytes live in ``app.core.storage``."""
 
     __tablename__ = "user_avatars"  # type: ignore[assignment]
 
@@ -21,9 +21,9 @@ class UserAvatar(Base, table=True):
         ),
         description="Owner user ID",
     )
-    data: bytes = Field(
-        sa_column=sa.Column(sa.LargeBinary, nullable=False),
-        description="Image bytes (WebP)",
+    storage_key: str = Field(
+        sa_column=sa.Column(sa.String(255), nullable=False, unique=True, index=True),
+        description="Key of the image bytes in app.core.storage (WebP)",
     )
     content_type: str = Field(
         default="image/webp",
@@ -32,5 +32,5 @@ class UserAvatar(Base, table=True):
     )
     etag: str = Field(
         sa_column=sa.Column(sa.String(64), nullable=False, index=True),
-        description="sha256 hex digest of data; used for HTTP ETag and cache busting",
+        description="sha256 hex digest of the bytes; used for HTTP ETag and cache busting",
     )

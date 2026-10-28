@@ -109,20 +109,27 @@ jobs:
               working-directory: backend
             - run: pnpm install --frozen-lockfile
               working-directory: frontend
+            # Uploaded files go to the Garage container (compose profile "s3"),
+            # so E2E covers the S3 backend; the backend suite covers Postgres.
+            # Images come as signed links, which the browser in the Playwright
+            # container follows to the garage service by name.
             - name: Create .env file
-              run: cp .env.example .env
+              run: |
+                  cp .env.example .env
+                  echo "STORAGE_BACKEND=s3" >> .env
+                  sed -i 's|^S3_PUBLIC_ENDPOINT_URL=.*|S3_PUBLIC_ENDPOINT_URL=http://garage:3900|' .env
             - run: uv run bash scripts/generate-client.sh
               env:
                   VIRTUAL_ENV: backend/.venv
             - name: Create external network
               run: docker network create traefik-net || true
-            - run: docker compose -f docker-compose.yml -f docker-compose.override.yml build
-            - run: docker compose -f docker-compose.yml -f docker-compose.override.yml down -v --remove-orphans
+            - run: docker compose --profile s3 -f docker-compose.yml -f docker-compose.override.yml build
+            - run: docker compose --profile s3 -f docker-compose.yml -f docker-compose.override.yml down -v --remove-orphans
             - name: Start backend and wait for healthy
-              run: docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --wait backend mailcatcher
+              run: docker compose --profile s3 -f docker-compose.yml -f docker-compose.override.yml up -d --wait garage backend mailcatcher
             - name: Run Playwright tests
-              run: docker compose -f docker-compose.yml -f docker-compose.override.yml run --rm playwright npx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-            - run: docker compose -f docker-compose.yml -f docker-compose.override.yml down -v --remove-orphans
+              run: docker compose --profile s3 -f docker-compose.yml -f docker-compose.override.yml run --rm playwright npx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+            - run: docker compose --profile s3 -f docker-compose.yml -f docker-compose.override.yml down -v --remove-orphans
             - name: Upload blob report to GitHub Actions Artifacts
               if: ${{ !cancelled() }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

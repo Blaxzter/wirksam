@@ -56,6 +56,7 @@ from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
+from tests.fixtures.storage import put_file
 
 # ── Counting helpers ──────────────────────────────────────────────
 
@@ -257,7 +258,10 @@ async def _add_plan_image(db: AsyncSession, *, plan_id: uuid.UUID) -> None:
     """
     db.add(
         VenuePlanImage(
-            plan_id=plan_id, data=b"img", content_type="image/webp", etag="e" * 64
+            plan_id=plan_id,
+            storage_key=await put_file(db, "venue-plans", b"img"),
+            content_type="image/webp",
+            etag="e" * 64,
         )
     )
     await db.flush()
@@ -360,7 +364,7 @@ async def _add_team_document(db: AsyncSession, sandbox: SandboxSetup) -> None:
             filename="card.png",
             content_type="image/png",
             size=3,
-            data=b"png",
+            storage_key=await put_file(db, "team-documents", b"png", "image/png"),
         )
     )
     await db.flush()

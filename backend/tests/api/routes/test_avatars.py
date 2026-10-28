@@ -18,6 +18,7 @@ from sqlmodel import col
 from app.crud.user_avatar import user_avatar as crud_avatar
 from app.models.user import User
 from app.models.user_avatar import UserAvatar
+from tests.fixtures.storage import drop_file, stored_bytes
 
 AVATAR_URL = "/api/v1/users/me/avatar"
 
@@ -66,7 +67,8 @@ class TestUploadAvatar:
         assert len(rows) == 1
         assert rows[0].etag == etag
         assert rows[0].content_type == "image/webp"
-        assert len(rows[0].data) > 0
+        stored = await stored_bytes(db_session, rows[0].storage_key)
+        assert stored is not None and len(stored) > 0
 
         await db_session.refresh(test_user)
         assert test_user.avatar_etag == etag
@@ -136,6 +138,7 @@ class TestUploadAvatar:
 class TestServeAvatar:
     """Test suite for GET /api/v1/users/{user_id}/avatar."""
 
+    @pytest.mark.usefixtures("streamed")
     async def test_get_existing_avatar(
         self,
         async_client: AsyncClient,
@@ -146,7 +149,7 @@ class TestServeAvatar:
         upload = await async_client.put(AVATAR_URL, files=png_upload())
         etag = upload.json()["etag"]
         rows = await fetch_rows(db_session, test_user.id)
-        stored = bytes(rows[0].data)
+        stored = await stored_bytes(db_session, rows[0].storage_key)
 
         r = await async_client.get(f"/api/v1/users/{test_user.id}/avatar")
 
@@ -174,6 +177,7 @@ class TestServeAvatar:
         assert r.headers["etag"] == etag_header
         assert r.content == b""
 
+    @pytest.mark.usefixtures("streamed")
     async def test_get_with_non_matching_if_none_match_returns_body(
         self,
         async_client: AsyncClient,
@@ -192,6 +196,7 @@ class TestServeAvatar:
         assert len(r.content) > 0
         assert r.headers["etag"] == etag_header
 
+    @pytest.mark.usefixtures("streamed")
     async def test_get_with_unquoted_if_none_match_returns_body(
         self,
         async_client: AsyncClient,
@@ -219,6 +224,22 @@ class TestServeAvatar:
 
         assert r.status_code == 404
         assert r.json()["detail"] == "Avatar not found"
+
+    @pytest.mark.usefixtures("streamed")
+    async def test_get_avatar_whose_file_is_gone_returns_404(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_user: User,
+    ) -> None:
+        """Test a row whose stored file is missing answers 404, not 500."""
+        await async_client.put(AVATAR_URL, files=png_upload())
+        rows = await fetch_rows(db_session, test_user.id)
+        await drop_file(db_session, rows[0].storage_key)
+
+        r = await async_client.get(f"/api/v1/users/{test_user.id}/avatar")
+
+        assert r.status_code == 404
 
     async def test_get_unknown_user_returns_404(
         self,
@@ -311,7 +332,8 @@ class TestCRUDUserAvatar:
         )
 
         assert created.user_id == test_user.id
-        assert bytes(created.data) == b"first-bytes"
+        first_key = created.storage_key
+        assert await stored_bytes(db_session, first_key) == b"first-bytes"
         assert created.etag == "etag-one"
 
         updated = await crud_avatar.upsert(
@@ -323,7 +345,8 @@ class TestCRUDUserAvatar:
         )
 
         assert updated.id == created.id
-        assert bytes(updated.data) == b"second-bytes"
+        assert updated.storage_key != first_key
+        assert await stored_bytes(db_session, updated.storage_key) == b"second-bytes"
         assert updated.content_type == "image/png"
         assert updated.etag == "etag-two"
         assert len(await fetch_rows(db_session, test_user.id)) == 1

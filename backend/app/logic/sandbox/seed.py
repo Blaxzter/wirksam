@@ -56,6 +56,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.event_team import event_team as crud_team
 from app.crud.user_availability import user_availability as crud_user_availability
 from app.logic.notifications.messages import format_time_until, get_message
 from app.logic.sample_document import CONTENT_TYPE as SAMPLE_CONTENT_TYPE
@@ -1524,7 +1525,9 @@ async def _seed_teams(
                 filename=SAMPLE_FILENAME,
                 content_type=SAMPLE_CONTENT_TYPE,
                 size=len(data),
-                data=data,
+                storage_key=await crud_team.store_document_file(
+                    db, data=data, content_type=SAMPLE_CONTENT_TYPE
+                ),
             )
         )
 

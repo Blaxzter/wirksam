@@ -38,6 +38,7 @@ from tests.fixtures.client import (
     _restore,  # pyright: ignore[reportPrivateUsage]
     _swap_identity,  # pyright: ignore[reportPrivateUsage]
 )
+from tests.fixtures.storage import drop_file
 
 PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
 
@@ -704,7 +705,10 @@ class TestEditingRequirements:
             requirement_id=first_aid.id,
             filename="kurs.pdf",
             content_type="application/pdf",
-            data=PDF,
+            size=len(PDF),
+            storage_key=await crud_team.store_document_file(
+                db_session, data=PDF, content_type="application/pdf"
+            ),
         )
         r = await async_client.patch(
             _url(kids),
@@ -950,7 +954,10 @@ class TestDocuments:
             requirement_id=first_aid.id,
             filename="first.pdf",
             content_type="application/pdf",
-            data=PDF,
+            size=len(PDF),
+            storage_key=await crud_team.store_document_file(
+                db_session, data=PDF, content_type="application/pdf"
+            ),
         )
         real_get = crud_team.get_document
         calls = 0
@@ -1051,7 +1058,10 @@ class TestDocumentAccess:
             requirement_id=first_aid.id,
             filename="kurs.pdf",
             content_type="application/pdf",
-            data=PDF,
+            size=len(PDF),
+            storage_key=await crud_team.store_document_file(
+                db_session, data=PDF, content_type="application/pdf"
+            ),
         )
         return f"{_url(kids)}/members/{test_user.id}/documents/{first_aid.id}"
 
@@ -1082,6 +1092,16 @@ class TestDocumentAccess:
 
     async def test_requester_reads_it(self, async_client: AsyncClient, attached: str):
         assert (await async_client.get(attached)).status_code == 200
+
+    async def test_file_gone_reads_as_not_found(
+        self, async_client: AsyncClient, db_session: AsyncSession, attached: str
+    ):
+        """A row whose stored file is missing answers the same 404."""
+        doc = (await db_session.execute(select(EventTeamDocument))).scalar_one()
+        await drop_file(db_session, doc.storage_key)
+        r = await async_client.get(attached)
+        assert r.status_code == 404
+        assert r.json()["code"] == "team.document_not_found"
 
     async def test_other_member_gets_404(
         self,
@@ -1127,7 +1147,10 @@ class TestDocumentsAreDeleted:
             requirement_id=first_aid.id,
             filename="kurs.pdf",
             content_type="application/pdf",
-            data=PDF,
+            size=len(PDF),
+            storage_key=await crud_team.store_document_file(
+                db_session, data=PDF, content_type="application/pdf"
+            ),
         )
         assert await _documents(db_session) == 1
         return row

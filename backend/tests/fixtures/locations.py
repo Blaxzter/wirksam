@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.event import Event
 from app.models.location import Location
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from tests.fixtures.storage import put_file
 
 PLAN_WIDTH = 800
 PLAN_HEIGHT = 600
@@ -60,7 +61,12 @@ async def test_venue_plan(db_session: AsyncSession, test_event: Event) -> VenueP
     db_session.add(plan)
     await db_session.flush()
     db_session.add(
-        VenuePlanImage(plan_id=plan.id, data=data, content_type="image/png", etag=etag)
+        VenuePlanImage(
+            plan_id=plan.id,
+            storage_key=await put_file(db_session, "venue-plans", data, "image/png"),
+            content_type="image/png",
+            etag=etag,
+        )
     )
     await db_session.flush()
     await db_session.refresh(plan)

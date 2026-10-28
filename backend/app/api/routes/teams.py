@@ -28,6 +28,7 @@ from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DBDep
+from app.api.files import serve_file
 from app.core.errors import raise_problem
 from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
@@ -646,6 +647,11 @@ async def upload_team_document(
     except DocumentError as exc:
         raise_problem(422, code=exc.code, detail=exc.detail)
 
+    # Stored once, before the row: a retry below reuses the same file.
+    storage_key = await crud_team.store_document_file(
+        session, data=prepared.data, content_type=prepared.content_type
+    )
+
     async def store() -> EventTeamDocument:
         return await crud_team.upsert_document(
             session,
@@ -653,7 +659,8 @@ async def upload_team_document(
             requirement_id=requirement.id,
             filename=prepared.filename,
             content_type=prepared.content_type,
-            data=prepared.data,
+            size=len(prepared.data),
+            storage_key=storage_key,
         )
 
     try:
@@ -748,15 +755,22 @@ async def get_team_document(
     )
     if doc is None:
         not_found()
-    return Response(
-        content=doc.data,
+    # Streamed, never a link: a signed link works for whoever holds it, and
+    # these documents are for the team's managers and the requester only.
+    served = await serve_file(
+        session,
+        doc.storage_key,
         media_type=doc.content_type,
         headers={
             "Content-Disposition": content_disposition(doc.filename),
             "X-Content-Type-Options": "nosniff",
             "Cache-Control": "private, no-store",
         },
+        link=False,
     )
+    if served is None:
+        not_found()
+    return served
 
 
 # --- Roster (leads and event admins) -------------------------------------
