@@ -8,6 +8,7 @@ Fixtures are organized by domain for better maintainability:
 - client.py: FastAPI app and HTTP client fixtures
 - sandbox.py: Seeded "try a test event" demos
 - locations.py: Locations, venue plans and markers
+- storage.py: The storage backend (Postgres, or moto S3)
 """
 
 # Import all fixtures so they are available to tests
@@ -51,6 +52,7 @@ from tests.fixtures.sandbox import (
     test_sandbox,
 )
 from tests.fixtures.shifts import test_shift
+from tests.fixtures.storage import moto_storage, storage_backend, streamed
 from tests.fixtures.tasks import test_draft_task, test_task
 from tests.fixtures.users import (
     test_admin_user,

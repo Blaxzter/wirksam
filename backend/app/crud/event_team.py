@@ -9,6 +9,7 @@ from sqlalchemy import ColumnElement, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.core.storage import drain_after_commit, get_storage, new_key
 from app.logic.team_requirements import add_years, label_key
 from app.models.booking import Booking
 from app.models.event_team import (
@@ -435,6 +436,7 @@ class CRUDEventTeam:
                     col(EventTeamDocument.requirement_id) == after.id
                 )
             )
+            drain_after_commit(session)
 
     # --- Members ----------------------------------------------------------
 
@@ -699,6 +701,7 @@ class CRUDEventTeam:
                 col(EventTeamDocument.member_id).in_(pending)
             )
         )
+        drain_after_commit(session)
         result = await session.execute(
             update(EventTeamMember)
             .where(
@@ -871,6 +874,14 @@ class CRUDEventTeam:
         )
         return result.scalar_one_or_none()
 
+    async def store_document_file(
+        self, session: AsyncSession, *, data: bytes, content_type: str
+    ) -> str:
+        """Store the bytes of an attachment; returns the key for ``upsert_document``."""
+        storage_key = new_key("team-documents")
+        await get_storage().put(session, storage_key, data, content_type)
+        return storage_key
+
     async def upsert_document(
         self,
         session: AsyncSession,
@@ -879,9 +890,11 @@ class CRUDEventTeam:
         requirement_id: uuid.UUID,
         filename: str,
         content_type: str,
-        data: bytes,
+        size: int,
+        storage_key: str,
     ) -> EventTeamDocument:
-        """Attach a file to a request, replacing an earlier one for the same check."""
+        """Attach a stored file to a request, replacing an earlier one for the
+        same check (whose file the table's trigger then queues for deletion)."""
         doc = await self.get_document(
             session, member_id=member_id, requirement_id=requirement_id
         )
@@ -891,16 +904,17 @@ class CRUDEventTeam:
                 requirement_id=requirement_id,
                 filename=filename,
                 content_type=content_type,
-                size=len(data),
-                data=data,
+                size=size,
+                storage_key=storage_key,
             )
         else:
             doc.filename = filename
             doc.content_type = content_type
-            doc.size = len(data)
-            doc.data = data
+            doc.size = size
+            doc.storage_key = storage_key
             doc.created_at = _now()
             doc.updated_at = _now()
+            drain_after_commit(session)
         session.add(doc)
         await session.flush()
         return doc
@@ -910,6 +924,7 @@ class CRUDEventTeam:
     ) -> None:
         await session.delete(document)
         await session.flush()
+        drain_after_commit(session)
 
     async def delete_documents(
         self, session: AsyncSession, *, member_id: uuid.UUID
@@ -921,6 +936,7 @@ class CRUDEventTeam:
             )
         )
         await session.flush()
+        drain_after_commit(session)
 
     async def document_meta_for_members(
         self, session: AsyncSession, *, member_ids: list[uuid.UUID]

@@ -25,6 +25,10 @@ an orphan produced some other way is still excluded from every listing.
 Nothing here commits. ``api.deps.get_db`` owns the transaction boundary, so a
 purge that fails half way rolls back whole rather than leaving the very mess
 this module exists to prevent.
+
+Files (avatars, plan and template pictures, team documents) need no step of
+their own: deleting their rows, here or by cascade, fires the trigger that
+queues each file for ``app.logic.storage_gc``, inside this same transaction.
 """
 
 import datetime as dt
@@ -35,6 +39,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.core.logger import get_logger
+from app.core.storage import drain_after_commit
 from app.models.auth_session import AuthSession
 from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
@@ -221,6 +226,9 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
             delete(AuthSession).where(col(AuthSession.user_id).in_(guest_ids))
         )
         await db.execute(delete(User).where(col(User.id).in_(guest_ids)))
+
+    # The files of every row above are queued; delete them once this commits.
+    drain_after_commit(db)
 
     logger.info(
         "sandbox purged",

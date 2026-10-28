@@ -44,7 +44,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
-    """Application lifespan: seed notification types on startup, run reminder poller."""
+    """Application lifespan: seed notification types, run the background loops."""
     import asyncio
     import signal
 
@@ -52,6 +52,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
     from app.core.sse import sse_manager
     from app.logic.notifications.reminder_poller import run_reminder_poller
     from app.logic.notifications.seeder import seed_notification_types
+    from app.logic.storage_gc import run_storage_gc
 
     async with async_session() as session:
         await seed_notification_types(session)
@@ -75,18 +76,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:  # noqa: ARG001
 
     # Start reminder poller as a background task
     poller_task = asyncio.create_task(run_reminder_poller())
+    # Deletes the stored files of rows that were deleted (app/logic/storage_gc.py)
+    storage_gc_task = asyncio.create_task(run_storage_gc())
 
     yield
 
     # Also signal here as a fallback (e.g. programmatic shutdown)
     await sse_manager.shutdown()
 
-    # Cancel reminder poller
-    poller_task.cancel()
-    try:
-        await poller_task
-    except asyncio.CancelledError:
-        pass
+    # Cancel the background loops
+    for task in (poller_task, storage_gc_task):
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     # Restore original signal handlers
     for sig, handler in original_handlers.items():

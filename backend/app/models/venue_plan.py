@@ -10,8 +10,8 @@ from app.models.base import Base
 class VenuePlan(Base, table=True):
     """One floor plan or site map of an event: a picture, a drawing, or both.
 
-    The image bytes live in ``venue_plan_images`` so listing plans never loads
-    a ``bytea``. ``image_etag``, ``image_width`` and ``image_height`` are
+    The image lives in ``venue_plan_images`` (its bytes in ``app.core.storage``)
+    so a plan without one needs no row there. ``image_etag``, ``image_width`` and ``image_height`` are
     denormalised copies the client needs to size the map and bust its cache;
     all three are NULL until an image is uploaded.
 
@@ -68,7 +68,7 @@ class VenuePlan(Base, table=True):
 
 
 class VenuePlanImage(Base, table=True):
-    """Image bytes of a venue plan (WebP). The same shape as ``UserAvatar``."""
+    """The picture of a venue plan (WebP). The same shape as ``UserAvatar``."""
 
     __tablename__ = "venue_plan_images"  # type: ignore[assignment]
 
@@ -81,9 +81,9 @@ class VenuePlanImage(Base, table=True):
             index=True,
         ),
     )
-    data: bytes = Field(
-        sa_column=sa.Column(sa.LargeBinary, nullable=False),
-        description="Image bytes (WebP)",
+    storage_key: str = Field(
+        sa_column=sa.Column(sa.String(255), nullable=False, unique=True, index=True),
+        description="Key of the image bytes in app.core.storage (WebP)",
     )
     content_type: str = Field(
         default="image/webp",
@@ -91,7 +91,7 @@ class VenuePlanImage(Base, table=True):
     )
     etag: str = Field(
         sa_column=sa.Column(sa.String(64), nullable=False, index=True),
-        description="sha256 hex digest of data; used for HTTP ETag and cache busting",
+        description="sha256 hex digest of the bytes; used for HTTP ETag and cache busting",
     )
 
 

@@ -32,6 +32,7 @@ from .notification import (
 )
 from .shift import Shift
 from .shift_batch import ShiftBatch
+from .stored_object import StorageDeletion, StoredObject
 from .task import Task
 from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
@@ -49,6 +50,8 @@ __all__ = [
     "BookingReminder",
     "CalendarFeedToken",
     "Shift",
+    "StorageDeletion",
+    "StoredObject",
     "Task",
     "Event",
     "EventInvitation",

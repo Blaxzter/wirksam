@@ -29,6 +29,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from tests.fixtures.locations import PLAN_HEIGHT, PLAN_WIDTH, make_png
+from tests.fixtures.storage import drop_file
 
 API = "/api/v1"
 
@@ -485,6 +486,7 @@ class TestPlanImageUpload:
 
 @pytest.mark.asyncio
 class TestPlanImageServe:
+    @pytest.mark.usefixtures("streamed")
     async def test_member_gets_bytes_with_private_caching(
         self, async_client: AsyncClient, test_venue_plan: VenuePlan
     ) -> None:
@@ -507,6 +509,7 @@ class TestPlanImageServe:
         assert r.headers["etag"] == etag
         assert r.content == b""
 
+    @pytest.mark.usefixtures("streamed")
     async def test_stale_if_none_match_gets_200(
         self, async_client: AsyncClient, test_venue_plan: VenuePlan
     ) -> None:
@@ -538,6 +541,25 @@ class TestPlanImageServe:
     ) -> None:
         plan = await _add_plan(db_session, test_event, "Empty", 0)
         r = await async_client.get(f"{API}/venue-plans/{plan.id}/image")
+        assert r.status_code == 404
+        assert r.json()["code"] == "venue_plan.image_not_found"
+
+    @pytest.mark.usefixtures("streamed")
+    async def test_image_whose_file_is_gone_404(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_venue_plan: VenuePlan,
+    ) -> None:
+        image = (
+            await db_session.execute(
+                select(VenuePlanImage).where(
+                    col(VenuePlanImage.plan_id) == test_venue_plan.id
+                )
+            )
+        ).scalar_one()
+        await drop_file(db_session, image.storage_key)
+        r = await async_client.get(f"{API}/venue-plans/{test_venue_plan.id}/image")
         assert r.status_code == 404
         assert r.json()["code"] == "venue_plan.image_not_found"
 

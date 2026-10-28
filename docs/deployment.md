@@ -142,6 +142,7 @@ You can set several variables, like:
 - `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 - `FRONTEND_HOST`: The public URL of the frontend. Besides the links in emails, the frontend container uses it to rewrite the absolute URLs in its prerendered pages, `sitemap.xml`, `robots.txt` and `llms.txt` (see below).
 - `SEARCH_INDEXING`: `true` by default. Set it to `false` for a private deployment and `robots.txt` tells every crawler to stay away.
+- `STORAGE_BACKEND`: where uploaded files go, `postgres` (the default) or `s3` for a private bucket on Cloudflare R2, Garage or MinIO, configured with the `S3_*` variables. See [STORAGE.md](STORAGE.md), which also covers moving an existing install's files.
 - `LANDING_ENABLED`: `true` by default. Set it to `false` if the deployment only needs the app: `/` then leads to sign-in, or to the dashboard for someone signed in, and the header drops its links into the landing page. Privacy, terms, impressum and the changelog stay reachable.
 
 ### Search engines and LLM crawlers

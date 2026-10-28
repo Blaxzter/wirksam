@@ -71,6 +71,7 @@ from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueS
 from app.schemas.sandbox import SandboxRole
 from app.schemas.venue_map import VenueShapeCreate
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
+from tests.fixtures.storage import stored_bytes
 
 
 async def _tasks(db: AsyncSession, sandbox: SandboxSetup) -> list[Task]:
@@ -1532,7 +1533,8 @@ class TestSeededTeams:
         assert len(documents) == 1
         assert documents[0].member_id == members[("First aid", "Sven Becker")].id
         assert documents[0].content_type == "image/png"
-        assert sniff(documents[0].data) == "png"
+        stored = await stored_bytes(db_session, documents[0].storage_key)
+        assert stored is not None and sniff(stored) == "png"
 
     async def test_the_manager_leads_the_cash_desk_and_the_helper_does_not(
         self, db_session: AsyncSession, make_sandbox: SandboxFactory

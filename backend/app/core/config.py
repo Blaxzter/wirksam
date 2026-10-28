@@ -257,6 +257,34 @@ class Settings(BaseSettings):
     SANDBOX_TTL_MINUTES: int = 60
     SANDBOX_MAX_ACTIVE: int = 25
 
+    # Where uploaded files (avatars, venue plan pictures, team documents) live.
+    #
+    # * "postgres" keeps the bytes in the ``stored_objects`` table, inside the
+    #   request's transaction. The default, so an existing install changes
+    #   nothing by upgrading.
+    # * "s3" puts them in a bucket of any S3-compatible store: Cloudflare R2,
+    #   Garage, MinIO. The bucket stays private; every file is still served
+    #   through the API and its access check. Files not yet copied over by
+    #   ``python -m app.scripts.move_files_to_s3`` keep being read from
+    #   Postgres, so the switch can happen before the copy.
+    #
+    # Deleting a row never deletes its object directly: a trigger queues the
+    # key in ``storage_deletions`` and ``app/logic/storage_gc.py`` works the
+    # queue. See docs/STORAGE.md.
+    STORAGE_BACKEND: Literal["postgres", "s3"] = "postgres"
+    S3_ENDPOINT_URL: str | None = None
+    S3_REGION: str = "auto"
+    S3_BUCKET: str | None = None
+    S3_ACCESS_KEY_ID: str | None = None
+    S3_SECRET_ACCESS_KEY: str | None = None
+    # The endpoint as a browser reaches it, when that differs from the one the
+    # backend uses (http://garage:3900 inside the stack). Images are handed
+    # out as links signed for this host; empty means S3_ENDPOINT_URL.
+    S3_PUBLIC_ENDPOINT_URL: str | None = None
+    # Seconds between two runs of the deletion queue. A request that deletes
+    # a file also wakes it right after its commit; this is the backstop.
+    STORAGE_GC_INTERVAL_SECONDS: int = 60
+
     # Web Push (VAPID) configuration
     VAPID_PRIVATE_KEY: str | None = None
     VAPID_PUBLIC_KEY: str | None = None
@@ -302,6 +330,14 @@ class Settings(BaseSettings):
                 warnings.warn(message, stacklevel=1)
             else:
                 raise ValueError(message)
+        return self
+
+    @model_validator(mode="after")
+    def _require_s3_settings(self) -> Self:
+        # Fail at boot, not on the first upload: a half-configured bucket would
+        # otherwise only show up as a 500 when somebody changes their avatar.
+        if self.STORAGE_BACKEND == "s3" and not self.S3_BUCKET:
+            raise ValueError("STORAGE_BACKEND=s3 needs S3_BUCKET")
         return self
 
 

@@ -26,6 +26,7 @@ from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from tests.fixtures.storage import stored_bytes
 
 # ``test_event`` runs 2026-06-10 → 2026-06-14. Cloning it to 2027-06-09 is a
 # whole-year move that is deliberately *not* a round number of weeks, so an
@@ -1752,7 +1753,11 @@ class TestCloneLocationsAndVenueMap:
             .all()
         )
         by_plan = {img.plan_id: img for img in images}
-        assert by_plan[plan.id].data == by_plan[test_venue_plan.id].data
+        copy_key = by_plan[plan.id].storage_key
+        assert copy_key != by_plan[test_venue_plan.id].storage_key
+        assert await stored_bytes(db_session, copy_key) == await stored_bytes(
+            db_session, by_plan[test_venue_plan.id].storage_key
+        )
         assert by_plan[plan.id].etag == by_plan[test_venue_plan.id].etag
         assert by_plan[plan.id].content_type == "image/png"
 

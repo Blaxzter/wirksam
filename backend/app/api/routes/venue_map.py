@@ -26,6 +26,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
+from app.api.files import serve_file
 from app.api.routes.venue_templates import load_own_template
 from app.core.errors import raise_problem
 from app.crud.event import event as crud_event
@@ -426,7 +427,14 @@ async def get_venue_plan_image(
     headers = {"ETag": etag_header, "Cache-Control": _IMAGE_CACHE_CONTROL}
     if request.headers.get("if-none-match") == etag_header:
         return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
-    return Response(content=image.data, media_type=image.content_type, headers=headers)
+    served = await serve_file(
+        session, image.storage_key, media_type=image.content_type, headers=headers
+    )
+    if served is None:
+        raise_problem(
+            404, code="venue_plan.image_not_found", detail="The image file is missing"
+        )
+    return served
 
 
 # ── Markers ────────────────────────────────────────────────────────────────

@@ -44,6 +44,10 @@ dependencies = [
     "pywebpush>=2.5.0,<3.0.0",
     "icalendar>=7.3.0,<8.0.0",
     "pillow>=13.0.0,<14.0.0",
+
+    # Uploaded files in S3-compatible object storage (R2, Garage, MinIO) when
+    # STORAGE_BACKEND=s3; see app/core/storage.py. Called from a thread pool.
+    "boto3>=1.40.0,<2.0.0",
 ]
 
 [tool.uv]
@@ -60,6 +64,9 @@ dev-dependencies = [
     # still pass, which is how a codebase drifts down without any single PR
     # looking bad.
     "diff-cover>=10.6.0",
+    # The S3 storage backend under test, in process (STORAGE_BACKEND=s3).
+    "moto[s3]>=5.1.0,<6.0.0",
+    "boto3-stubs[s3]>=1.40.0,<2.0.0",
 ]
 
 [build-system]
@@ -104,8 +111,9 @@ source = ["app"]
 # SQLAlchemy's greenlet boundary and async route bodies read as uncovered
 # (understates the total by ~13 points). Set here rather than on a single
 # command line so every entry point — `just test-backend`, `scripts/test.sh`,
-# and CI — reports the same number.
-concurrency = ["greenlet"]
+# and CI — reports the same number. "thread" because the S3 storage backend
+# runs boto3 in worker threads (app/core/storage.py).
+concurrency = ["greenlet", "thread"]
 # Every entry below is a deliberate, justified exclusion (see #127). Nothing is
 # omitted merely because it is inconvenient to test — if a module contains
 # branching business logic it belongs in the measured denominator, even at a

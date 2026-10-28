@@ -59,7 +59,7 @@ class VenueTemplate(Base, table=True):
 
 
 class VenueTemplateImage(Base, table=True):
-    """Image bytes of a venue template (WebP). The same shape as ``VenuePlanImage``."""
+    """The picture of a venue template (WebP). The same shape as ``VenuePlanImage``."""
 
     __tablename__ = "venue_template_images"  # type: ignore[assignment]
 
@@ -72,9 +72,9 @@ class VenueTemplateImage(Base, table=True):
             index=True,
         ),
     )
-    data: bytes = Field(
-        sa_column=sa.Column(sa.LargeBinary, nullable=False),
-        description="Image bytes (WebP)",
+    storage_key: str = Field(
+        sa_column=sa.Column(sa.String(255), nullable=False, unique=True, index=True),
+        description="Key of the image bytes in app.core.storage (WebP)",
     )
     content_type: str = Field(
         default="image/webp",
@@ -82,5 +82,5 @@ class VenueTemplateImage(Base, table=True):
     )
     etag: str = Field(
         sa_column=sa.Column(sa.String(64), nullable=False, index=True),
-        description="sha256 hex digest of data; used for HTTP ETag and cache busting",
+        description="sha256 hex digest of the bytes; used for HTTP ETag and cache busting",
     )

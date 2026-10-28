@@ -258,4 +258,7 @@ class EventTeamDocument(Base, table=True):
     filename: str = Field(sa_column=sa.Column(sa.String(255), nullable=False))
     content_type: str = Field(sa_column=sa.Column(sa.String(64), nullable=False))
     size: int = Field(sa_column=sa.Column(sa.Integer, nullable=False))
-    data: bytes = Field(sa_column=sa.Column(sa.LargeBinary, nullable=False))
+    storage_key: str = Field(
+        sa_column=sa.Column(sa.String(255), nullable=False, unique=True, index=True),
+        description="Key of the file in app.core.storage",
+    )

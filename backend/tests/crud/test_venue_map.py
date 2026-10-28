@@ -27,6 +27,7 @@ from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.schemas.location import LocationCreate, LocationUpdate
 from app.schemas.venue_map import VenueMarkerCreate
+from tests.fixtures.storage import stored_bytes
 
 
 async def _new_event(session: AsyncSession, owner: User, name: str = "Copy") -> Event:
@@ -303,7 +304,8 @@ class TestCRUDVenuePlans:
 
         assert again.id == row.id
         stored = await crud_venue_map.get_image(db_session, plan_id=plan.id)
-        assert stored is not None and stored.data == b"two"
+        assert stored is not None
+        assert await stored_bytes(db_session, stored.storage_key) == b"two"
         assert (plan.image_etag, plan.image_width, plan.image_height) == (
             "b" * 64,
             200,
@@ -388,7 +390,10 @@ class TestCopyForClone:
         new_image = await crud_venue_map.get_image(db_session, plan_id=copied.id)
         assert src_image is not None and new_image is not None
         assert new_image.id != src_image.id
-        assert new_image.data == src_image.data
+        assert new_image.storage_key != src_image.storage_key
+        assert await stored_bytes(
+            db_session, new_image.storage_key
+        ) == await stored_bytes(db_session, src_image.storage_key)
         assert new_image.etag == src_image.etag
         assert new_image.content_type == src_image.content_type
         assert (

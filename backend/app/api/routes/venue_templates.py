@@ -15,6 +15,7 @@ import uuid
 from fastapi import APIRouter, Request, Response, status
 
 from app.api.deps import CurrentUser, DBDep
+from app.api.files import serve_file
 from app.core.errors import raise_problem
 from app.crud.venue_template import venue_template as crud_venue_template
 from app.models.user import User
@@ -115,4 +116,13 @@ async def get_venue_template_image(
     headers = {"ETag": etag_header, "Cache-Control": _IMAGE_CACHE_CONTROL}
     if request.headers.get("if-none-match") == etag_header:
         return Response(status_code=status.HTTP_304_NOT_MODIFIED, headers=headers)
-    return Response(content=image.data, media_type=image.content_type, headers=headers)
+    served = await serve_file(
+        session, image.storage_key, media_type=image.content_type, headers=headers
+    )
+    if served is None:
+        raise_problem(
+            404,
+            code="venue_template.image_not_found",
+            detail="The image file is missing",
+        )
+    return served

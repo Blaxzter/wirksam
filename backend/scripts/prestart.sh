@@ -11,3 +11,6 @@ alembic upgrade head
 
 # Create initial data in DB
 python app/scripts/initial_data.py
+
+# Let browsers read signed links from the bucket (nothing to do on Postgres)
+python -m app.scripts.setup_bucket
