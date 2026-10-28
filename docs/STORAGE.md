@@ -13,8 +13,14 @@ backend.
 
 | Backend | Bytes in | Use it for |
 | --- | --- | --- |
-| `postgres` (default) | the `stored_objects` table, written in the request's own transaction | small installs; nothing to set up |
-| `s3` | a private bucket of any S3-compatible store: Cloudflare R2, Garage, MinIO | anything with real traffic; keeps the database and its backups small |
+| `s3` (what `.env.example` sets) | a private bucket of any S3-compatible store: the bundled Garage container, Cloudflare R2, MinIO | the normal case; keeps the database and its backups small |
+| `postgres` | the `stored_objects` table, written in the request's own transaction | an install that wants nothing but a database |
+
+A new install that starts from `.env.example` gets Garage: `COMPOSE_PROFILES=s3`
+runs the container and `STORAGE_BACKEND=s3` points the backend at it. An `.env`
+without those lines, from before this existed, stays on `postgres`, which is
+also the backend's own default; [switching](#switching-an-existing-install-to-s3)
+is a separate step.
 
 The rows that own a file (`user_avatars`, `venue_plan_images`,
 `venue_template_images`, `event_team_documents`) hold only a `storage_key`
@@ -95,12 +101,13 @@ removes those.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
+| `COMPOSE_PROFILES` | – | `s3` runs the Garage container; leave it out with R2 or `postgres` |
 | `STORAGE_BACKEND` | `postgres` | `postgres` or `s3` |
-| `S3_ENDPOINT_URL` | – | the store's endpoint; leave empty for AWS itself |
+| `S3_ENDPOINT_URL` | the Garage container | the store's endpoint. Unset, the stack uses `http://garage:3900` and a backend on the host `http://localhost:3900`; AWS itself needs `https://s3.<region>.amazonaws.com` |
 | `S3_REGION` | `auto` | `auto` for R2, `garage` for the bundled Garage |
 | `S3_BUCKET` | – | required with `s3`; the backend refuses to start without it |
-| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | – | a key with read, write and delete on that bucket only |
-| `S3_PUBLIC_ENDPOINT_URL` | – | the store as the browser reaches it, when that is not `S3_ENDPOINT_URL`; links are signed for this host |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | – | a key with read, write and delete on that bucket only. Outside `ENVIRONMENT=local` the backend refuses to start on the key `.env.example` ships with |
+| `S3_PUBLIC_ENDPOINT_URL` | see meaning | the store as the browser reaches it; links are signed for this host. Unset, the stack uses `https://files.<DOMAIN>` for Garage and `S3_ENDPOINT_URL` for any other store |
 | `STORAGE_GC_INTERVAL_SECONDS` | `60` | how often the deletion queue is worked without a nudge |
 
 The client uses path-style addressing and sends checksums only where S3
@@ -108,7 +115,8 @@ requires them, which every one of the stores above accepts.
 
 ### Cloudflare R2 (wirksam.app)
 
-Create a bucket and an R2 API token with *Object Read & Write* on it, then:
+Create a bucket and an R2 API token with *Object Read & Write* on it, remove
+`COMPOSE_PROFILES=s3` and `GARAGE_RPC_SECRET`, then:
 
 ```bash
 STORAGE_BACKEND=s3
@@ -124,12 +132,13 @@ Leave public access and the `r2.dev` URL off, and leave
 for a custom domain, and that endpoint is reachable from browsers anyway. Add
 the CORS rule above unless the token may set it.
 
-### Garage (self-hosted, and local development)
+### Garage (the default, self-hosted)
 
-`docker-compose.yml` has a single-node Garage behind the `s3` profile. On its
-first start it creates `S3_BUCKET` and the key pair from `.env`, so there is
-nothing to set up by hand. `.env.example` carries throwaway values for local
-use; for a real install generate your own:
+`docker-compose.yml` has a single-node Garage behind the `s3` profile, which
+`.env.example` turns on. On its first start it creates `S3_BUCKET` and the key
+pair from `.env`, and `prestart` sets the CORS rule, so there is nothing to set
+up by hand. `.env.example` carries throwaway values that only local
+development may use; for a real install generate your own:
 
 ```bash
 echo "S3_ACCESS_KEY_ID=GK$(openssl rand -hex 12)"
@@ -137,25 +146,26 @@ echo "S3_SECRET_ACCESS_KEY=$(openssl rand -hex 32)"
 echo "GARAGE_RPC_SECRET=$(openssl rand -hex 32)"
 ```
 
-and set `STORAGE_BACKEND=s3`, `S3_REGION=garage`, `S3_ENDPOINT_URL=http://garage:3900`
-(the service name inside the stack) and `S3_PUBLIC_ENDPOINT_URL=https://files.<DOMAIN>`,
-then `docker compose --profile s3 up -d`. Traefik routes `files.<DOMAIN>` to
-Garage's S3 port and passes the `Host` header on unchanged, which the link's
+and point a DNS record for `files.<DOMAIN>` at the server. Traefik routes it
+to Garage's S3 port and passes the `Host` header on unchanged, which the link's
 signature covers; a different proxy must do the same and must not rewrite the
-path.
-Its data lives in the `garage-meta` and `garage-data` volumes; back them up
-with the database.
+path. Leave `S3_ENDPOINT_URL` and `S3_PUBLIC_ENDPOINT_URL` empty: inside the
+stack they default to `http://garage:3900` and `https://files.<DOMAIN>`.
 
-For development with `just dev local` (backend on the host), start only the
-container, `docker compose --profile s3 up -d garage`, and keep
-`S3_ENDPOINT_URL=http://localhost:3900` (`GARAGE_PORT` moves the host port if
-3900 is taken), then run `uv run python -m app.scripts.setup_bucket` once in
-`backend/` for the CORS rule. The Docker dev stack overrides the endpoint to
+The files live in the `garage-meta` and `garage-data` volumes, not in the
+database dump; back them up together with it.
+
+`just dev local` starts the container next to Postgres and sets the CORS rule
+whenever `.env` says `STORAGE_BACKEND=s3`; the backend on the host reaches it
+at `http://localhost:3900` (`GARAGE_PORT` moves the host port if 3900 is taken;
+set `S3_ENDPOINT_URL` to match). The Docker dev stack reaches it as
 `garage:3900` and signs links for `localhost:3900`.
 
 ## Switching an existing install to S3
 
-1. Set the `S3_*` settings and `STORAGE_BACKEND=s3`, and restart the backend.
+1. Set the `S3_*` settings and `STORAGE_BACKEND=s3` (for Garage also
+   `COMPOSE_PROFILES=s3`, the generated keys and the `files.<DOMAIN>` record),
+   and restart the stack.
    New uploads go to the bucket. Files uploaded before are still read from
    `stored_objects`: `S3Storage` falls back to it for a key the bucket does not
    have, so nothing goes missing in between.

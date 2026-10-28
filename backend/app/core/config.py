@@ -16,6 +16,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 
 PROJECT_DIR = Path(__file__).parent.parent.parent.parent
+# The Garage secret .env.example ships with, so local development has a
+# working bucket. A deployment must not keep it (``_require_s3_settings``).
+EXAMPLE_S3_SECRET_ACCESS_KEY = (
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+)
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -260,26 +265,31 @@ class Settings(BaseSettings):
     # Where uploaded files (avatars, venue plan pictures, team documents) live.
     #
     # * "postgres" keeps the bytes in the ``stored_objects`` table, inside the
-    #   request's transaction. The default, so an existing install changes
-    #   nothing by upgrading.
-    # * "s3" puts them in a bucket of any S3-compatible store: Cloudflare R2,
-    #   Garage, MinIO. The bucket stays private; every file is still served
-    #   through the API and its access check. Files not yet copied over by
-    #   ``python -m app.scripts.move_files_to_s3`` keep being read from
-    #   Postgres, so the switch can happen before the copy.
+    #   request's transaction. The default here, so an existing install whose
+    #   .env predates this setting changes nothing by upgrading.
+    # * "s3" puts them in a bucket of any S3-compatible store: the Garage
+    #   container of docker-compose.yml (what .env.example sets up), Cloudflare
+    #   R2, MinIO. The bucket stays private; files are handed out by the API,
+    #   after its access check, as signed links or streamed. Files not yet
+    #   copied over by ``python -m app.scripts.move_files_to_s3`` keep being
+    #   read from Postgres, so the switch can happen before the copy.
     #
     # Deleting a row never deletes its object directly: a trigger queues the
     # key in ``storage_deletions`` and ``app/logic/storage_gc.py`` works the
     # queue. See docs/STORAGE.md.
     STORAGE_BACKEND: Literal["postgres", "s3"] = "postgres"
-    S3_ENDPOINT_URL: str | None = None
+    # Unset: the bundled Garage, as a process on the host reaches it. Inside
+    # the stack docker-compose.yml fills in http://garage:3900 instead. AWS
+    # itself needs its regional endpoint spelled out.
+    S3_ENDPOINT_URL: str = "http://localhost:3900"
     S3_REGION: str = "auto"
     S3_BUCKET: str | None = None
     S3_ACCESS_KEY_ID: str | None = None
     S3_SECRET_ACCESS_KEY: str | None = None
     # The endpoint as a browser reaches it, when that differs from the one the
-    # backend uses (http://garage:3900 inside the stack). Images are handed
-    # out as links signed for this host; empty means S3_ENDPOINT_URL.
+    # backend uses (http://garage:3900 inside the stack, where
+    # docker-compose.yml defaults this to https://files.${DOMAIN}). Images are
+    # handed out as links signed for this host; empty means S3_ENDPOINT_URL.
     S3_PUBLIC_ENDPOINT_URL: str | None = None
     # Seconds between two runs of the deletion queue. A request that deletes
     # a file also wakes it right after its commit; this is the backstop.
@@ -338,6 +348,21 @@ class Settings(BaseSettings):
         # otherwise only show up as a 500 when somebody changes their avatar.
         if self.STORAGE_BACKEND == "s3" and not self.S3_BUCKET:
             raise ValueError("STORAGE_BACKEND=s3 needs S3_BUCKET")
+        # Garage creates its key from .env, and files.${DOMAIN} puts its S3
+        # API on the internet: with the key published in .env.example anyone
+        # could read, overwrite and delete every file. Same rule as SECRET_KEY.
+        if (
+            self.STORAGE_BACKEND == "s3"
+            and self.S3_SECRET_ACCESS_KEY == EXAMPLE_S3_SECRET_ACCESS_KEY
+        ):
+            message = (
+                "S3_SECRET_ACCESS_KEY is the example value from .env.example. "
+                "Generate a key pair as docs/STORAGE.md describes."
+            )
+            if self.ENVIRONMENT == "local":
+                warnings.warn(message, stacklevel=1)
+            else:
+                raise ValueError(message)
         return self
 
 

@@ -239,12 +239,13 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
   `SANDBOX_MAX_ACTIVE` (25) tune the "check out a test event" demo. The first is
   also served to the browser as runtime config, so the landing page never shows
   a button the backend would refuse — see [`docs/SANDBOX.md`](docs/SANDBOX.md)
-- `STORAGE_BACKEND` (`postgres` default, or `s3` with the `S3_*` settings) decides where uploaded
-  files live. Rows hold a `storage_key`; read and write through `app/core/storage.py`, never a
+- `STORAGE_BACKEND` decides where uploaded files live: `.env.example` sets `s3` with the bundled
+  Garage container (`COMPOSE_PROFILES=s3`; `just dev local` starts it), the code default is
+  `postgres`. Rows hold a `storage_key`; read and write through `app/core/storage.py`, never a
   bytes column, and serve a file through `serve_file` in `app/api/files.py` (on S3 it redirects to a
   signed link; team documents pass `link=False`). Deleting a row queues its file by trigger — see
-  [`docs/STORAGE.md`](docs/STORAGE.md).
-  `docker compose --profile s3 up -d garage` gives a local bucket
+  [`docs/STORAGE.md`](docs/STORAGE.md). The backend suite runs on Postgres whatever `.env` says,
+  or on moto with `TEST_STORAGE_BACKEND=s3`
 - `LANDING_ENABLED=false` in root `.env` drops the landing page for an app-only deployment: `/` redirects to sign-in or the dashboard (guard in `router/index.ts`), the prerender writes the empty shell there instead, and the legal pages and changelog stay. Runtime switches are read with `isSwitchOn()` from `composables/useAppConfig.ts`; one that changes a prerendered page also goes into `TOGGLES` in `scripts/prerender.mjs` and the matching `is_off` line in `frontend/docker-entrypoint.sh`
 - `SEARCH_INDEXING=false` in root `.env` makes the frontend container serve a `robots.txt` that disallows everything (for private deployments). `FRONTEND_HOST` also sets the absolute URLs in the prerendered pages and sitemap
 - Local mail (verification, password reset) goes to the mailcatcher container on port 1025; its inbox is at `http://localhost:1080`. With no SMTP configured at all, the link is written to the backend log instead
