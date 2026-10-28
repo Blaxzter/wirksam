@@ -41,7 +41,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.rule=Host(`adminer.${DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
             - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
     # S3-compatible object storage for uploaded files, for STORAGE_BACKEND=s3
@@ -69,7 +69,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.rule=Host(`files.${DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
         command: ["/garage", "server", "--single-node", "--default-bucket"]
         configs:
             - source: garage_toml
@@ -203,7 +203,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`${API_DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
 
     frontend:
         image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
@@ -251,7 +251,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`${DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
 
 volumes:
     app-db-data:
