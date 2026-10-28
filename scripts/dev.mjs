@@ -3,14 +3,15 @@
 /**
  * Start the whole local dev stack from one terminal:
  *
- *   1. Postgres + Adminer in Docker (waits until the DB is healthy)
- *   2. Alembic migrations
+ *   1. Postgres + Adminer in Docker (waits until the DB is healthy), and the
+ *      Garage bucket when .env says STORAGE_BACKEND=s3 (.env.example does)
+ *   2. Alembic migrations, and the bucket's CORS rule
  *   3. Dev login + demo event (`just seed`, a no-op once they exist)
  *   4. Backend (uvicorn --reload) and frontend (vite) side by side, with
  *      their output interleaved and prefixed
  *
- * Ctrl+C stops backend and frontend; the DB container keeps running so the
- * next start is instant (`docker compose stop db adminer` to stop it).
+ * Ctrl+C stops backend and frontend; the containers keep running so the
+ * next start is instant (`docker compose stop db adminer garage` to stop them).
  *
  * Flags:
  *   --no-migrate   skip `alembic upgrade head`
@@ -25,6 +26,7 @@
  */
 
 import { execSync, spawn } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import net from 'node:net';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,6 +43,17 @@ const IS_WINDOWS = process.platform === 'win32';
 const args = new Set(process.argv.slice(2));
 const migrate = !args.has('--no-migrate');
 const seed = !args.has('--no-seed');
+
+/** A value from the root .env (the environment wins, as for the backend). */
+function dotenv(name) {
+    if (process.env[name] !== undefined) return process.env[name];
+    const file = resolve(REPO_ROOT, '.env');
+    if (!existsSync(file)) return undefined;
+    const line = readFileSync(file, 'utf8').split(/\r?\n/).find((l) => l.startsWith(`${name}=`));
+    return line?.slice(name.length + 1).replace(/^["']|["']$/g, '').trim();
+}
+
+const useGarage = dotenv('STORAGE_BACKEND') === 's3';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -126,12 +139,18 @@ for (const [name, port] of [['frontend', FRONTEND_PORT], ['backend', BACKEND_POR
     }
 }
 
-console.log('\n▶ Starting Postgres + Adminer...');
-run('docker compose up db adminer -d --wait');
+console.log(`\n▶ Starting Postgres + Adminer${useGarage ? ' + Garage' : ''}...`);
+run(`docker compose up db adminer${useGarage ? ' garage' : ''} -d --wait`);
 
 if (migrate) {
     console.log('\n▶ Running migrations...');
     run('uv run --directory backend alembic upgrade head');
+}
+
+if (useGarage) {
+    // prestart does this in the Docker stack; images loaded with fetch need it.
+    console.log('\n▶ Letting browsers read the bucket...');
+    run('uv run --directory backend python -m app.scripts.setup_bucket');
 }
 
 if (seed) {

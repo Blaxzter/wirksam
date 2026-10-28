@@ -1,8 +1,9 @@
 """The storage backend the suite runs against.
 
 ``TEST_STORAGE_BACKEND=s3`` runs every test with ``S3Storage`` on a moto
-bucket, in process; unset (the default) uses ``PostgresStorage``, as
-``STORAGE_BACKEND`` does. CI runs the suite both ways.
+bucket, in process; unset (the default) uses ``PostgresStorage``, whatever
+``STORAGE_BACKEND`` in .env says (.env.example picks the Garage container,
+which the suite must not depend on). CI runs the suite both ways.
 """
 
 import os
@@ -50,7 +51,9 @@ def make_moto_storage(bucket: str = TEST_BUCKET) -> S3Storage:
 @pytest.fixture(scope="session", autouse=True)
 def storage_backend() -> Iterator[Storage]:
     if os.environ.get("TEST_STORAGE_BACKEND") != "s3":
-        yield get_storage()
+        storage = PostgresStorage()
+        with storage_in_use(storage):
+            yield storage
         return
     from moto import mock_aws
 

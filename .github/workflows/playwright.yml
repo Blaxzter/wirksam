@@ -109,14 +109,13 @@ jobs:
               working-directory: backend
             - run: pnpm install --frozen-lockfile
               working-directory: frontend
-            # Uploaded files go to the Garage container (compose profile "s3"),
-            # so E2E covers the S3 backend; the backend suite covers Postgres.
-            # Images come as signed links, which the browser in the Playwright
-            # container follows to the garage service by name.
+            # Uploaded files go to the Garage container, as .env.example sets
+            # up, so E2E covers the S3 backend; the backend suite covers
+            # Postgres. Images come as signed links, which the browser in the
+            # Playwright container follows to the garage service by name.
             - name: Create .env file
               run: |
                   cp .env.example .env
-                  echo "STORAGE_BACKEND=s3" >> .env
                   sed -i 's|^S3_PUBLIC_ENDPOINT_URL=.*|S3_PUBLIC_ENDPOINT_URL=http://garage:3900|' .env
             - run: uv run bash scripts/generate-client.sh
               env:

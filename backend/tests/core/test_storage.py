@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.core import storage as storage_module
-from app.core.config import Settings
+from app.core.config import EXAMPLE_S3_SECRET_ACCESS_KEY, Settings
 from app.core.storage import (
     PostgresStorage,
     S3Storage,
@@ -249,6 +249,33 @@ class TestConfiguration:
         """Test STORAGE_BACKEND=s3 without S3_BUCKET fails at startup."""
         with pytest.raises(ValidationError, match="S3_BUCKET"):
             Settings(STORAGE_BACKEND="s3", S3_BUCKET=None)  # type: ignore[call-arg]
+
+    def test_example_key_does_not_boot_a_deployment(self) -> None:
+        """Test a deployment keeping the .env.example S3 secret fails at startup."""
+        with pytest.raises(ValidationError, match="example value"):
+            Settings(  # type: ignore[call-arg]
+                ENVIRONMENT="production",
+                TESTING=False,
+                SECRET_KEY="x" * 32,
+                STORAGE_BACKEND="s3",
+                S3_BUCKET="wirksam",
+                S3_SECRET_ACCESS_KEY=EXAMPLE_S3_SECRET_ACCESS_KEY,
+            )
+
+    def test_example_key_only_warns_locally(self) -> None:
+        """Test local development keeps working on the .env.example S3 secret."""
+        with pytest.warns(UserWarning, match="example value"):
+            Settings(  # type: ignore[call-arg]
+                ENVIRONMENT="local",
+                STORAGE_BACKEND="s3",
+                S3_BUCKET="wirksam",
+                S3_SECRET_ACCESS_KEY=EXAMPLE_S3_SECRET_ACCESS_KEY,
+            )
+
+    def test_endpoint_defaults_to_the_bundled_garage(self) -> None:
+        """Test an unset S3_ENDPOINT_URL means Garage on the host's port 3900."""
+        field = Settings.model_fields["S3_ENDPOINT_URL"]
+        assert field.default == "http://localhost:3900"
 
 
 class TestDrainAfterCommit:

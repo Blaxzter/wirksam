@@ -41,16 +41,16 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.rule=Host(`adminer.${DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
             - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
 
-    # S3-compatible object storage for uploaded files, for STORAGE_BACKEND=s3
-    # without a cloud bucket (docs/STORAGE.md). Off unless the profile is
-    # asked for: `docker compose --profile s3 up -d`. On first start Garage
-    # lays out its single node and creates S3_BUCKET with the key pair from
-    # .env, so nothing has to be set up by hand. Browsers fetch images from it
-    # through signed links at files.${DOMAIN}; set S3_PUBLIC_ENDPOINT_URL to
-    # https://files.${DOMAIN} to match.
+    # S3-compatible object storage for uploaded files (docs/STORAGE.md). It
+    # runs with the "s3" profile, which .env.example turns on through
+    # COMPOSE_PROFILES together with STORAGE_BACKEND=s3; an .env without them
+    # (an install from before, or one on R2) keeps it off. On first start
+    # Garage lays out its single node and creates S3_BUCKET with the key pair
+    # from .env, so nothing has to be set up by hand. Browsers fetch images
+    # from it through signed links at files.${DOMAIN}.
     garage:
         image: dxflrs/garage:v2.4.1
         profiles: ["s3"]
@@ -69,7 +69,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.rule=Host(`files.${DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-files-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
         command: ["/garage", "server", "--single-node", "--default-bucket"]
         configs:
             - source: garage_toml
@@ -113,6 +113,8 @@ services:
         env_file:
             - .env
         environment:
+            # Unset in .env means the garage service, reached by name.
+            - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-http://garage:3900}
             - DOMAIN=${DOMAIN}
             - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
             - ENVIRONMENT=${ENVIRONMENT}
@@ -159,15 +161,18 @@ services:
             - SANDBOX_ENABLED=${SANDBOX_ENABLED:-true}
             - SANDBOX_TTL_MINUTES=${SANDBOX_TTL_MINUTES:-60}
             - SANDBOX_MAX_ACTIVE=${SANDBOX_MAX_ACTIVE:-25}
-            # Uploaded files: "postgres" (default) or "s3" (docs/STORAGE.md).
-            # With the garage service above, S3_ENDPOINT_URL is http://garage:3900.
+            # Uploaded files: "postgres" or "s3" (docs/STORAGE.md). An unset
+            # S3_ENDPOINT_URL means the garage service above, which browsers
+            # reach at files.${DOMAIN}; a store of your own (R2) is reached by
+            # browsers at its own endpoint unless S3_PUBLIC_ENDPOINT_URL says
+            # otherwise.
             - STORAGE_BACKEND=${STORAGE_BACKEND:-postgres}
-            - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
+            - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-http://garage:3900}
             - S3_REGION=${S3_REGION:-auto}
             - S3_BUCKET=${S3_BUCKET:-}
             - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
             - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
-            - S3_PUBLIC_ENDPOINT_URL=${S3_PUBLIC_ENDPOINT_URL:-}
+            - S3_PUBLIC_ENDPOINT_URL=${S3_PUBLIC_ENDPOINT_URL:-${S3_ENDPOINT_URL:-https://files.${DOMAIN}}}
             - POSTGRES_SERVER=db
             - POSTGRES_PORT=5432
             - POSTGRES_DB=${POSTGRES_DB}
@@ -203,7 +208,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`${API_DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
 
     frontend:
         image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}"
@@ -251,7 +256,7 @@ services:
             - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`${DOMAIN?Variable not set}`)
             - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=websecure
             - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
-            - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
 
 volumes:
     app-db-data:

@@ -129,6 +129,7 @@ You can set several variables, like:
 
 - `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
 - `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `fastapi-project-example-com` and `staging-fastapi-project-example-com`.
+- `TRAEFIK_CERT_RESOLVER`: The Traefik certificate resolver the routers ask for their certificate, `letsencrypt` by default (the HTTP challenge from `docker-compose.traefik.yml`). A domain behind the Cloudflare proxy cannot pass that challenge reliably; define a DNS-challenge resolver in Traefik and name it here.
 - `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
 - `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
 - `SMTP_USER`: The SMTP server user to send emails.
@@ -142,7 +143,7 @@ You can set several variables, like:
 - `SENTRY_DSN`: The DSN for Sentry, if you are using it.
 - `FRONTEND_HOST`: The public URL of the frontend. Besides the links in emails, the frontend container uses it to rewrite the absolute URLs in its prerendered pages, `sitemap.xml`, `robots.txt` and `llms.txt` (see below).
 - `SEARCH_INDEXING`: `true` by default. Set it to `false` for a private deployment and `robots.txt` tells every crawler to stay away.
-- `STORAGE_BACKEND`: where uploaded files go, `postgres` (the default) or `s3` for a private bucket on Cloudflare R2, Garage or MinIO, configured with the `S3_*` variables. See [STORAGE.md](STORAGE.md), which also covers moving an existing install's files.
+- `STORAGE_BACKEND`, `COMPOSE_PROFILES` and the `S3_*` variables: where uploaded files go. `.env.example` puts them in the bundled Garage container, served to browsers at `files.<DOMAIN>`; generate its key pair and `GARAGE_RPC_SECRET` as the comment there shows, since the backend refuses to start on the example key. Cloudflare R2 and `postgres` (files in the database) are the alternatives. See [STORAGE.md](STORAGE.md), which also covers moving an existing install's files.
 - `LANDING_ENABLED`: `true` by default. Set it to `false` if the deployment only needs the app: `/` then leads to sign-in, or to the dashboard for someone signed in, and the header drops its links into the landing page. Privacy, terms, impressum and the changelog stay reachable.
 
 ### Search engines and LLM crawlers
@@ -315,6 +316,8 @@ Backend API docs: `https://api.fastapi-project.example.com/docs`
 Backend API base URL: `https://api.fastapi-project.example.com`
 
 Adminer: `https://adminer.fastapi-project.example.com`
+
+Uploaded files (signed links into the Garage bucket): `https://files.fastapi-project.example.com`
 
 ### Staging
 
