@@ -23,6 +23,10 @@ from app.models.task import Task
 from app.models.user import User
 from tests.fixtures.client import act_as
 
+# The fixture shifts are dated in the past; booking refuses an ended shift
+# (booking.shift_over), so this module runs before them.
+pytestmark = pytest.mark.usefixtures("clock_before_fixture_shifts")
+
 
 @pytest_asyncio.fixture
 async def team(db_session: AsyncSession, test_event: Event) -> EventTeam:

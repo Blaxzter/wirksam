@@ -11,6 +11,7 @@ from app.crud.task_manager import task_manager
 from app.crud.user import user
 from app.crud.user_availability import user_availability
 from app.crud.user_token import user_token
+from app.crud.voucher import voucher
 from app.crud.work_log import work_log
 
 __all__ = [
@@ -27,5 +28,6 @@ __all__ = [
     "user",
     "user_availability",
     "user_token",
+    "voucher",
     "work_log",
 ]

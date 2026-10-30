@@ -30,6 +30,8 @@ from app.core.rate_limit import (
     register_limiter,
     resend_verification_limiter,
     reset_password_limiter,
+    voucher_code_limiter,
+    voucher_pass_limiter,
 )
 
 
@@ -141,6 +143,29 @@ class TestOverLimit:
             "type": "urn:problem:auth.rate_limited",
             "detail": "Too many attempts. Please try again in 60 seconds.",
         }
+
+    async def test_that_a_bucket_can_carry_its_own_code(
+        self, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+    ) -> None:
+        """Test that the voucher buckets say voucher.rate_limited, not auth."""
+        monkeypatch.setattr(settings, "TESTING", False)
+        scanning = RateLimiter(limit=1, window_seconds=60, code="voucher.rate_limited")
+        await scanning.check("user-1")
+        with pytest.raises(HTTPException) as exc_info:
+            await scanning.check("user-1")
+        assert exc_info.value.status_code == 429
+        detail: Any = exc_info.value.detail
+        assert detail["code"] == "voucher.rate_limited"
+        assert voucher_code_limiter.code == "voucher.rate_limited"
+        assert voucher_pass_limiter.code == "voucher.rate_limited"
+        assert (voucher_code_limiter.limit, voucher_code_limiter.window_seconds) == (
+            60,
+            60,
+        )
+        assert (voucher_pass_limiter.limit, voucher_pass_limiter.window_seconds) == (
+            20,
+            60,
+        )
 
     async def test_that_it_sets_retry_after(
         self, limiter: RateLimiter, clock: _FakeClock

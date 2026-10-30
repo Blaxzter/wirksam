@@ -1316,6 +1316,14 @@ export type EventRead = {
    */
   pending_team_request_count?: number
   /**
+   * Voucher Task Count
+   */
+  voucher_task_count?: number
+  /**
+   * Voucher Point Count
+   */
+  voucher_point_count?: number
+  /**
    * Can Manage
    */
   readonly can_manage: boolean
@@ -1770,6 +1778,18 @@ export type FeedTaskItem = {
    */
   team_id?: string | null
   /**
+   * Vouchers Per Shift
+   */
+  vouchers_per_shift?: number
+  /**
+   * Is Voucher Point
+   */
+  is_voucher_point?: boolean
+  /**
+   * Is Voucher Desk
+   */
+  is_voucher_desk?: boolean
+  /**
    * Id
    */
   id: string
@@ -1827,6 +1847,10 @@ export type FeedTaskItem = {
    * Managers
    */
   managers?: Array<TaskManagerBrief>
+  /**
+   * Can Redeem
+   */
+  can_redeem?: boolean
   /**
    * Shifts
    */
@@ -2529,6 +2553,76 @@ export type OwnershipTransferResult = {
    * Number of tasks reassigned to the target user
    */
   tasks_transferred: number
+}
+
+/**
+ * PointRedemptionList
+ */
+export type PointRedemptionList = {
+  /**
+   * Items
+   */
+  items: Array<PointRedemptionRead>
+  /**
+   * Total Amount
+   */
+  total_amount: number
+}
+
+/**
+ * PointRedemptionRead
+ *
+ * A redemption made at one point, with whose vouchers it took.
+ */
+export type PointRedemptionRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Kind
+   */
+  kind: 'redemption' | 'adjustment'
+  /**
+   * Amount
+   */
+  amount: number
+  /**
+   * Method
+   */
+  method?: 'code' | 'manual' | null
+  /**
+   * Note
+   */
+  note?: string | null
+  /**
+   * Task Id
+   */
+  task_id?: string | null
+  /**
+   * Task Name
+   */
+  task_name?: string | null
+  /**
+   * Actor Name
+   */
+  actor_name?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * User Name
+   */
+  user_name?: string | null
 }
 
 /**
@@ -3591,6 +3685,18 @@ export type TaskCreate = {
    * Team Id
    */
   team_id?: string | null
+  /**
+   * Vouchers Per Shift
+   */
+  vouchers_per_shift?: number
+  /**
+   * Is Voucher Point
+   */
+  is_voucher_point?: boolean
+  /**
+   * Is Voucher Desk
+   */
+  is_voucher_desk?: boolean
 }
 
 /**
@@ -3633,6 +3739,18 @@ export type TaskCreateWithShifts = {
    * Team Id
    */
   team_id?: string | null
+  /**
+   * Vouchers Per Shift
+   */
+  vouchers_per_shift?: number
+  /**
+   * Is Voucher Point
+   */
+  is_voucher_point?: boolean
+  /**
+   * Is Voucher Desk
+   */
+  is_voucher_desk?: boolean
   /**
    * Event Id
    */
@@ -3808,6 +3926,18 @@ export type TaskRead = {
    */
   team_id?: string | null
   /**
+   * Vouchers Per Shift
+   */
+  vouchers_per_shift?: number
+  /**
+   * Is Voucher Point
+   */
+  is_voucher_point?: boolean
+  /**
+   * Is Voucher Desk
+   */
+  is_voucher_desk?: boolean
+  /**
    * Id
    */
   id: string
@@ -3865,6 +3995,10 @@ export type TaskRead = {
    * Managers
    */
   managers?: Array<TaskManagerBrief>
+  /**
+   * Can Redeem
+   */
+  can_redeem?: boolean
 }
 
 /**
@@ -3911,6 +4045,18 @@ export type TaskUpdate = {
    * Team Id
    */
   team_id?: string | null
+  /**
+   * Vouchers Per Shift
+   */
+  vouchers_per_shift?: number | null
+  /**
+   * Is Voucher Point
+   */
+  is_voucher_point?: boolean | null
+  /**
+   * Is Voucher Desk
+   */
+  is_voucher_desk?: boolean | null
 }
 
 /**
@@ -5915,6 +6061,394 @@ export type VolunteerHoursDetail = {
 }
 
 /**
+ * VoucherAccount
+ */
+export type VoucherAccount = {
+  summary: VoucherBalance
+  /**
+   * Shifts
+   */
+  shifts: Array<VoucherShift>
+  /**
+   * Entries
+   */
+  entries: Array<VoucherEntryRead>
+}
+
+/**
+ * VoucherAdjustmentCreate
+ *
+ * A correction by an event admin: positive adds, negative takes away.
+ */
+export type VoucherAdjustmentCreate = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Amount
+   */
+  amount: number
+  /**
+   * Note
+   */
+  note: string
+}
+
+/**
+ * VoucherAdjustmentUpdate
+ */
+export type VoucherAdjustmentUpdate = {
+  /**
+   * Amount
+   */
+  amount?: number | null
+  /**
+   * Note
+   */
+  note?: string | null
+}
+
+/**
+ * VoucherBalance
+ *
+ * One person's vouchers in one event.
+ */
+export type VoucherBalance = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Avatar Etag
+   */
+  avatar_etag?: string | null
+  /**
+   * Role
+   *
+   * Current role in the event; None once they have left it
+   */
+  role?: 'owner' | 'admin' | 'member' | null
+  /**
+   * Earned
+   */
+  earned: number
+  /**
+   * Upcoming
+   */
+  upcoming: number
+  /**
+   * Redeemed
+   */
+  redeemed: number
+  /**
+   * Adjusted
+   */
+  adjusted: number
+  /**
+   * Balance
+   *
+   * earned - redeemed + adjusted; may be below zero
+   */
+  balance: number
+  /**
+   * Available
+   */
+  available: number
+}
+
+/**
+ * VoucherCheckRequest
+ *
+ * Who is in front of the redeemer: the code they show, or the person.
+ */
+export type VoucherCheckRequest = {
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Code
+   */
+  code?: string | null
+  /**
+   * User Id
+   */
+  user_id?: string | null
+}
+
+/**
+ * VoucherCheckResult
+ */
+export type VoucherCheckResult = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Avatar Etag
+   */
+  avatar_etag?: string | null
+  /**
+   * Available
+   */
+  available: number
+}
+
+/**
+ * VoucherEntryRead
+ *
+ * One redemption or correction in a balance.
+ */
+export type VoucherEntryRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Kind
+   */
+  kind: 'redemption' | 'adjustment'
+  /**
+   * Amount
+   */
+  amount: number
+  /**
+   * Method
+   */
+  method?: 'code' | 'manual' | null
+  /**
+   * Note
+   */
+  note?: string | null
+  /**
+   * Task Id
+   */
+  task_id?: string | null
+  /**
+   * Task Name
+   */
+  task_name?: string | null
+  /**
+   * Actor Name
+   */
+  actor_name?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Updated At
+   */
+  updated_at: string
+}
+
+/**
+ * VoucherPassRead
+ *
+ * A freshly issued code.
+ */
+export type VoucherPassRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Code
+   */
+  code: string
+  /**
+   * Qr Payload
+   */
+  qr_payload: string
+  /**
+   * Expires At
+   */
+  expires_at: string
+  /**
+   * Ttl Seconds
+   */
+  ttl_seconds: number
+  /**
+   * Event Name
+   */
+  event_name: string
+}
+
+/**
+ * VoucherPassStatus
+ */
+export type VoucherPassStatus = {
+  /**
+   * Status
+   */
+  status: 'active' | 'checking' | 'used' | 'expired'
+  /**
+   * Redeemed Amount
+   */
+  redeemed_amount?: number | null
+  /**
+   * Task Name
+   */
+  task_name?: string | null
+  /**
+   * Available
+   */
+  available: number
+}
+
+/**
+ * VoucherPointRead
+ *
+ * A task that takes vouchers, as the caller sees it.
+ */
+export type VoucherPointRead = {
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Location
+   */
+  location?: string | null
+  /**
+   * Can Redeem
+   */
+  can_redeem: boolean
+  /**
+   * Can Redeem Manually
+   */
+  can_redeem_manually: boolean
+  /**
+   * Is Desk
+   */
+  is_desk: boolean
+  /**
+   * Managers
+   */
+  managers: Array<TaskManagerBrief>
+}
+
+/**
+ * VoucherRedeemRequest
+ */
+export type VoucherRedeemRequest = {
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Code
+   */
+  code?: string | null
+  /**
+   * User Id
+   */
+  user_id?: string | null
+  /**
+   * Amount
+   */
+  amount: number
+  /**
+   * Request Id
+   */
+  request_id: string
+}
+
+/**
+ * VoucherRedeemResult
+ */
+export type VoucherRedeemResult = {
+  entry: VoucherEntryRead
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Available
+   */
+  available: number
+  /**
+   * Replayed
+   */
+  replayed?: boolean
+}
+
+/**
+ * VoucherShift
+ *
+ * One confirmed booking on a task that earns vouchers.
+ */
+export type VoucherShift = {
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Shift Id
+   */
+  shift_id: string
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Ends At
+   *
+   * When the shift ends, as naive UTC (the wall clock converted through EVENT_TIMEZONE), the same convention as created_at, so shifts and entries sort on one time line
+   */
+  ends_at: string
+  /**
+   * Vouchers
+   */
+  vouchers: number
+  /**
+   * Completed
+   */
+  completed: boolean
+}
+
+/**
  * WorkLogCreate
  */
 export type WorkLogCreate = {
@@ -6201,6 +6735,14 @@ export type EventReadWritable = {
    * Pending Team Request Count
    */
   pending_team_request_count?: number
+  /**
+   * Voucher Task Count
+   */
+  voucher_task_count?: number
+  /**
+   * Voucher Point Count
+   */
+  voucher_point_count?: number
 }
 
 /**
@@ -13783,6 +14325,753 @@ export type WorkHoursUpdateWorkLogResponses = {
 
 export type WorkHoursUpdateWorkLogResponse =
   WorkHoursUpdateWorkLogResponses[keyof WorkHoursUpdateWorkLogResponses]
+
+export type VouchersGetMyVouchersData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/me'
+}
+
+export type VouchersGetMyVouchersErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersGetMyVouchersError =
+  VouchersGetMyVouchersErrors[keyof VouchersGetMyVouchersErrors]
+
+export type VouchersGetMyVouchersResponses = {
+  /**
+   * Successful Response
+   */
+  200: VoucherAccount
+}
+
+export type VouchersGetMyVouchersResponse =
+  VouchersGetMyVouchersResponses[keyof VouchersGetMyVouchersResponses]
+
+export type VouchersIssueMyPassData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/me/pass'
+}
+
+export type VouchersIssueMyPassErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersIssueMyPassError = VouchersIssueMyPassErrors[keyof VouchersIssueMyPassErrors]
+
+export type VouchersIssueMyPassResponses = {
+  /**
+   * Successful Response
+   */
+  201: VoucherPassRead
+}
+
+export type VouchersIssueMyPassResponse =
+  VouchersIssueMyPassResponses[keyof VouchersIssueMyPassResponses]
+
+export type VouchersGetMyPassStatusData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Pass Id
+     */
+    pass_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/me/pass/{pass_id}'
+}
+
+export type VouchersGetMyPassStatusErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersGetMyPassStatusError =
+  VouchersGetMyPassStatusErrors[keyof VouchersGetMyPassStatusErrors]
+
+export type VouchersGetMyPassStatusResponses = {
+  /**
+   * Successful Response
+   */
+  200: VoucherPassStatus
+}
+
+export type VouchersGetMyPassStatusResponse =
+  VouchersGetMyPassStatusResponses[keyof VouchersGetMyPassStatusResponses]
+
+export type VouchersListVoucherPointsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/points'
+}
+
+export type VouchersListVoucherPointsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersListVoucherPointsError =
+  VouchersListVoucherPointsErrors[keyof VouchersListVoucherPointsErrors]
+
+export type VouchersListVoucherPointsResponses = {
+  /**
+   * Response Vouchers-List Voucher Points
+   *
+   * Successful Response
+   */
+  200: Array<VoucherPointRead>
+}
+
+export type VouchersListVoucherPointsResponse =
+  VouchersListVoucherPointsResponses[keyof VouchersListVoucherPointsResponses]
+
+export type VouchersListPointRedemptionsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Task Id
+     */
+    task_id: string
+  }
+  query?: {
+    /**
+     * Limit
+     */
+    limit?: number
+  }
+  url: '/api/v1/events/{event_id}/vouchers/points/{task_id}/entries'
+}
+
+export type VouchersListPointRedemptionsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersListPointRedemptionsError =
+  VouchersListPointRedemptionsErrors[keyof VouchersListPointRedemptionsErrors]
+
+export type VouchersListPointRedemptionsResponses = {
+  /**
+   * Successful Response
+   */
+  200: PointRedemptionList
+}
+
+export type VouchersListPointRedemptionsResponse =
+  VouchersListPointRedemptionsResponses[keyof VouchersListPointRedemptionsResponses]
+
+export type VouchersCheckVoucherData = {
+  body: VoucherCheckRequest
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/check'
+}
+
+export type VouchersCheckVoucherErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersCheckVoucherError = VouchersCheckVoucherErrors[keyof VouchersCheckVoucherErrors]
+
+export type VouchersCheckVoucherResponses = {
+  /**
+   * Successful Response
+   */
+  200: VoucherCheckResult
+}
+
+export type VouchersCheckVoucherResponse =
+  VouchersCheckVoucherResponses[keyof VouchersCheckVoucherResponses]
+
+export type VouchersRedeemVouchersData = {
+  body: VoucherRedeemRequest
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/redeem'
+}
+
+export type VouchersRedeemVouchersErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersRedeemVouchersError =
+  VouchersRedeemVouchersErrors[keyof VouchersRedeemVouchersErrors]
+
+export type VouchersRedeemVouchersResponses = {
+  /**
+   * Successful Response
+   */
+  201: VoucherRedeemResult
+}
+
+export type VouchersRedeemVouchersResponse =
+  VouchersRedeemVouchersResponses[keyof VouchersRedeemVouchersResponses]
+
+export type VouchersListVoucherBalancesData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/people'
+}
+
+export type VouchersListVoucherBalancesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersListVoucherBalancesError =
+  VouchersListVoucherBalancesErrors[keyof VouchersListVoucherBalancesErrors]
+
+export type VouchersListVoucherBalancesResponses = {
+  /**
+   * Response Vouchers-List Voucher Balances
+   *
+   * Successful Response
+   */
+  200: Array<VoucherBalance>
+}
+
+export type VouchersListVoucherBalancesResponse =
+  VouchersListVoucherBalancesResponses[keyof VouchersListVoucherBalancesResponses]
+
+export type VouchersGetVoucherAccountData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/people/{user_id}'
+}
+
+export type VouchersGetVoucherAccountErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersGetVoucherAccountError =
+  VouchersGetVoucherAccountErrors[keyof VouchersGetVoucherAccountErrors]
+
+export type VouchersGetVoucherAccountResponses = {
+  /**
+   * Successful Response
+   */
+  200: VoucherAccount
+}
+
+export type VouchersGetVoucherAccountResponse =
+  VouchersGetVoucherAccountResponses[keyof VouchersGetVoucherAccountResponses]
+
+export type VouchersCreateVoucherAdjustmentData = {
+  body: VoucherAdjustmentCreate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/adjustments'
+}
+
+export type VouchersCreateVoucherAdjustmentErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersCreateVoucherAdjustmentError =
+  VouchersCreateVoucherAdjustmentErrors[keyof VouchersCreateVoucherAdjustmentErrors]
+
+export type VouchersCreateVoucherAdjustmentResponses = {
+  /**
+   * Successful Response
+   */
+  201: VoucherEntryRead
+}
+
+export type VouchersCreateVoucherAdjustmentResponse =
+  VouchersCreateVoucherAdjustmentResponses[keyof VouchersCreateVoucherAdjustmentResponses]
+
+export type VouchersDeleteVoucherAdjustmentData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Entry Id
+     */
+    entry_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/adjustments/{entry_id}'
+}
+
+export type VouchersDeleteVoucherAdjustmentErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersDeleteVoucherAdjustmentError =
+  VouchersDeleteVoucherAdjustmentErrors[keyof VouchersDeleteVoucherAdjustmentErrors]
+
+export type VouchersDeleteVoucherAdjustmentResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type VouchersDeleteVoucherAdjustmentResponse =
+  VouchersDeleteVoucherAdjustmentResponses[keyof VouchersDeleteVoucherAdjustmentResponses]
+
+export type VouchersUpdateVoucherAdjustmentData = {
+  body: VoucherAdjustmentUpdate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Entry Id
+     */
+    entry_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/adjustments/{entry_id}'
+}
+
+export type VouchersUpdateVoucherAdjustmentErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersUpdateVoucherAdjustmentError =
+  VouchersUpdateVoucherAdjustmentErrors[keyof VouchersUpdateVoucherAdjustmentErrors]
+
+export type VouchersUpdateVoucherAdjustmentResponses = {
+  /**
+   * Successful Response
+   */
+  200: VoucherEntryRead
+}
+
+export type VouchersUpdateVoucherAdjustmentResponse =
+  VouchersUpdateVoucherAdjustmentResponses[keyof VouchersUpdateVoucherAdjustmentResponses]
 
 export type InvitationsPreviewInvitationData = {
   body?: never

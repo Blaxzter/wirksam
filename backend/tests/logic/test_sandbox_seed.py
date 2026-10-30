@@ -38,6 +38,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.crud.venue_map import venue_map as crud_venue_map
+from app.logic import clock, vouchers
 from app.logic.notifications.registry import classification_for_code
 from app.logic.sandbox.seed import guest_display_name
 from app.logic.sandbox.venue_plan_shapes import (
@@ -69,6 +70,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from app.models.voucher import VoucherEntry
 from app.schemas.sandbox import SandboxRole
 from app.schemas.venue_map import VenueShapeCreate
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
@@ -1633,3 +1635,63 @@ class TestSeededTaskManagers:
         assert rows[0].user_id in guests
         assert rows[0].user_id != test_sandbox.guest.id
         assert rows[0].added_by_name == test_sandbox.guest.name
+
+
+# ── Vouchers ───────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestSeededVouchers:
+    """My vouchers has a balance and a history on arrival; two places take them."""
+
+    async def test_every_task_earns_two_and_two_places_take_them(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        tasks = await _tasks(db_session, test_sandbox)
+
+        assert {t.vouchers_per_shift for t in tasks} == {2}
+        assert sorted(t.name for t in tasks if t.is_voucher_point) == [
+            "Café counter",
+            "Welcome desk",
+        ]
+        assert [t.name for t in tasks if t.is_voucher_desk] == ["Welcome desk"]
+
+    async def test_the_cafe_counter_has_someone_in_charge_to_take_them(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        cafe = next(
+            t
+            for t in await _tasks(db_session, test_sandbox)
+            if t.name == "Café counter"
+        )
+        rows = await db_session.execute(
+            select(TaskManager).where(col(TaskManager.task_id) == cafe.id)
+        )
+        assert len(list(rows.scalars())) == 1
+
+    async def test_the_visitor_used_one_and_has_some_left(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        rows = await db_session.execute(
+            select(VoucherEntry).where(
+                col(VoucherEntry.event_id) == test_sandbox.event.id
+            )
+        )
+        entries = list(rows.scalars())
+        assert len(entries) == 1
+        (entry,) = entries
+        assert entry.user_id == test_sandbox.guest.id
+        assert entry.kind == "redemption"
+        assert entry.amount == -1
+        assert entry.method == "code"
+        assert entry.task_name == "Café counter"
+        assert entry.actor_id != test_sandbox.guest.id
+
+        # The visitor's past booking is dated before today, so it is over.
+        later = clock.wall_clock_now()
+        account = await vouchers.account(
+            db_session, test_sandbox.event.id, test_sandbox.guest, now=later
+        )
+        assert account.summary.redeemed == 1
+        assert account.summary.earned >= 2
+        assert account.summary.available >= 1

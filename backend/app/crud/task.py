@@ -279,6 +279,36 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         result = await db.execute(query)
         return result.scalar_one()
 
+    async def voucher_counts_by_event(
+        self, db: AsyncSession, *, event_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, tuple[int, int]]:
+        """``{event_id: (tasks that earn vouchers, points that take them)}``.
+
+        Published tasks only: a draft earns nobody anything yet, and the
+        navigation should not offer a voucher page for it.
+        """
+        if not event_ids:
+            return {}
+        earning = func.count().filter(col(Task.vouchers_per_shift) > 0)
+        points = func.count().filter(col(Task.is_voucher_point).is_(True))
+        rows = await db.execute(
+            select(col(Task.event_id), earning, points)
+            .where(
+                col(Task.event_id).in_(event_ids),
+                col(Task.status) == "published",
+                or_(
+                    col(Task.vouchers_per_shift) > 0,
+                    col(Task.is_voucher_point).is_(True),
+                ),
+            )
+            .group_by(col(Task.event_id))
+        )
+        return {
+            event_id: (int(earn), int(point))
+            for event_id, earn, point in rows.all()
+            if event_id is not None
+        }
+
     async def count_owned_by(self, db: AsyncSession, *, user_id: uuid.UUID) -> int:
         """Count tasks created by the given user."""
         result = await db.execute(

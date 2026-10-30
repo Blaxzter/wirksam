@@ -32,6 +32,14 @@ event admins through as well:
 
 Being in charge only counts while the person is a member of the task's event
 (:func:`task_access`), so a row left behind by someone who left grants nothing.
+
+Vouchers add one gate, :func:`require_voucher_redeemer`, for taking vouchers at
+a task that is a redemption point: event admins, the task's people in charge,
+and whoever has a confirmed booking on one of its shifts that is running now
+(``logic.vouchers.redeem_window``: 30 minutes either side). Redeeming without
+a code, by picking the person, is for admins and people in charge, and for
+staff on shift at a point marked as the volunteer desk
+(:func:`may_redeem_manually`).
 """
 
 import datetime as dt
@@ -46,6 +54,7 @@ from app.crud.booking import booking as crud_booking
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
 from app.crud.task_manager import task_manager as crud_task_manager
+from app.logic.vouchers import in_redeem_window, redeem_window_dates
 from app.logic.work_hours import shift_ends_at
 from app.models.event import Event
 from app.models.event_team import EventTeam
@@ -57,6 +66,10 @@ from app.schemas.event_membership import EventRole
 #: How a caller may manage one task: as an event admin (or the superadmin), or
 #: as one of the task's people in charge.
 TaskAccess = Literal["admin", "manager"]
+
+#: Why a caller may redeem vouchers at a point: as an event admin, as one of
+#: its people in charge, or because they are on a running shift there.
+RedeemerKind = Literal["admin", "manager", "on_shift"]
 
 # Weakest → strongest. Comparing positions in this tuple is the whole hierarchy.
 _ROLE_ORDER: tuple[EventRole, ...] = ("member", "admin", "owner")
@@ -412,3 +425,107 @@ def shift_history_refuses(
         # Already over: moving its end, even to later, rewrites worked hours.
         return True
     return shift_ends_at(date, start, end) <= now
+
+
+# --- Vouchers --------------------------------------------------------------
+
+
+async def on_shift_task_ids(
+    user: User,
+    session: AsyncSession,
+    task_ids: list[uuid.UUID],
+    *,
+    now: dt.datetime,
+) -> set[uuid.UUID]:
+    """Which of ``task_ids`` the user has a confirmed shift running at ``now``.
+
+    "Running" is ``logic.vouchers.redeem_window``: 30 minutes before the start
+    to 30 minutes after the end, all day for a shift without times. ``now`` is
+    the event wall clock (``clock.wall_clock_now()``). One query, so the task
+    reads can ask it for a whole page.
+    """
+    date_from, date_to = redeem_window_dates(now)
+    rows = await crud_booking.confirmed_shift_times(
+        session,
+        user_id=user.id,
+        task_ids=task_ids,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    return {
+        task_id
+        for task_id, date, start, end in rows
+        if in_redeem_window(now, date, start, end)
+    }
+
+
+async def voucher_redeemer_kind(
+    user: User,
+    session: AsyncSession,
+    task: Task,
+    *,
+    now: dt.datetime,
+) -> RedeemerKind | None:
+    """Whether, and why, the user may redeem vouchers at ``task`` right now.
+
+    :func:`task_access` first (event admins, the superadmin, people in charge);
+    then, for an event member, a confirmed booking on a shift of this task
+    whose redeem window contains ``now`` (event wall clock). Says nothing about
+    whether the task *is* a point; the routes check that after this gate.
+    """
+    access = await task_access(user, session, task)
+    if access is not None:
+        return access
+    if await get_event_role(user, session, task.event_id) is None:
+        return None
+    if task.id in await on_shift_task_ids(user, session, [task.id], now=now):
+        return "on_shift"
+    return None
+
+
+def may_redeem_manually(kind: RedeemerKind, task: Task) -> bool:
+    """Redeeming without a code: the person picked from the member list.
+
+    Showing the code is the volunteer's consent, and the full member list is
+    more than a drinks-stand volunteer needs. The volunteer desk is where
+    people without a working phone are sent, so its staff on shift may.
+    """
+    return kind in ("admin", "manager") or (
+        task.is_voucher_point and task.is_voucher_desk
+    )
+
+
+async def require_voucher_redeemer(
+    user: User,
+    session: AsyncSession,
+    task: Task,
+    *,
+    now: dt.datetime,
+    manual: bool = False,
+) -> RedeemerKind:
+    """Raise 403 unless the user may redeem at ``task`` (without a code if ``manual``).
+
+    403 ``voucher.not_allowed`` when :func:`voucher_redeemer_kind` is None;
+    403 ``voucher.manual_not_allowed`` when ``manual`` and
+    :func:`may_redeem_manually` refuses.
+    """
+    kind = await voucher_redeemer_kind(user, session, task, now=now)
+    if kind is None:
+        raise_problem(
+            403,
+            code="voucher.not_allowed",
+            detail=(
+                "Only the event admins, the people in charge and whoever is on "
+                "shift here can take vouchers at this task"
+            ),
+        )
+    if manual and not may_redeem_manually(kind, task):
+        raise_problem(
+            403,
+            code="voucher.manual_not_allowed",
+            detail=(
+                "Only the event admins, the people in charge and the staff of a "
+                "volunteer desk can redeem without a code"
+            ),
+        )
+    return kind

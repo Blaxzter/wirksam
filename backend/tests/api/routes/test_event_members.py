@@ -12,10 +12,12 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.event_membership import event_membership as crud_membership
 from app.logic.permissions import task_access
+from app.logic.vouchers import generate_code
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
@@ -26,6 +28,7 @@ from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
+from app.models.voucher import VoucherEntry, VoucherPass
 
 
 @pytest.mark.asyncio
@@ -987,3 +990,121 @@ class TestUserDeletionCascades:
         assert survivor.event_id is None
         assert await db_session.get(TaskManager, row.id, populate_existing=True)
         assert await task_access(test_user, db_session, survivor) is None
+
+    async def test_deleting_a_volunteer_removes_their_entries_and_passes(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        _voucher_rows(db_session, test_event, volunteer=test_user, actor=None)
+        await db_session.flush()
+
+        await db_session.delete(test_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert await _count(db_session, VoucherEntry) == 0
+        assert await _count(db_session, VoucherPass) == 0
+
+    async def test_deleting_a_redeemer_keeps_their_redemptions(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """``actor_id`` has no foreign key: the debit stays, and so does the
+        name of who took it."""
+        _voucher_rows(
+            db_session, test_event, volunteer=test_user, actor=test_event_admin_user
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_event_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        entry = (
+            await db_session.execute(
+                select(VoucherEntry).where(col(VoucherEntry.kind) == "redemption")
+            )
+        ).scalar_one()
+        assert entry.actor_name == "Manager User"
+        assert entry.amount == -2
+
+    async def test_deleting_the_owner_takes_the_events_vouchers(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_admin_user: User,
+        test_user: User,
+        test_task: Task,
+    ) -> None:
+        """The event cascades, and with it its ledger and codes. A redemption
+        point's ``task_id`` has no foreign key, so the task surviving with no
+        event (and the SET NULL that does to it) does not touch the ledger
+        mid-statement."""
+        test_task.is_voucher_point = True
+        db_session.add(test_task)
+        _voucher_rows(
+            db_session,
+            test_event,
+            volunteer=test_user,
+            actor=test_admin_user,
+            task=test_task,
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert await _count(db_session, VoucherEntry) == 0
+        assert await _count(db_session, VoucherPass) == 0
+
+
+def _voucher_rows(
+    db: AsyncSession,
+    event: Event,
+    *,
+    volunteer: User,
+    actor: User | None,
+    task: Task | None = None,
+) -> None:
+    """One redemption, one correction and one code for ``volunteer``."""
+    db.add_all(
+        [
+            VoucherEntry(
+                event_id=event.id,
+                user_id=volunteer.id,
+                kind="redemption",
+                amount=-2,
+                method="manual",
+                task_id=task.id if task else None,
+                task_name=task.name if task else "Theke",
+                actor_id=actor.id if actor else None,
+                actor_name=actor.name if actor else None,
+            ),
+            VoucherEntry(
+                event_id=event.id,
+                user_id=volunteer.id,
+                kind="adjustment",
+                amount=1,
+                note="Vergessen",
+            ),
+            VoucherPass(
+                event_id=event.id,
+                user_id=volunteer.id,
+                code=generate_code(),
+                expires_at=datetime.datetime(2026, 6, 11, 12, 0),
+            ),
+        ]
+    )
+
+
+async def _count(
+    db: AsyncSession, model: type[VoucherEntry] | type[VoucherPass]
+) -> int:
+    return (await db.execute(select(func.count()).select_from(model))).scalar_one()

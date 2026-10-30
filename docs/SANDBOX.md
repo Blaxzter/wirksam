@@ -29,7 +29,11 @@ approval and locks the wristband check; Shuttle drivers behind a class B
 driving licence; Childcare behind an extended police certificate, which locks
 the kids' games; and First aid behind a first-aid course, with one member whose
 check has expired); one teammate put in charge of the Café counter and the
-Grill stand (`task_managers`); and — for the manager role only — one pending invitation,
+Grill stand (`task_managers`); two vouchers per shift on every task, with the
+Welcome desk (the volunteer desk) and the Café counter taking them, and one
+voucher the visitor already redeemed at the Café counter the day before
+(`voucher_entries`; with the shift behind them that leaves at least one to
+redeem); and — for the manager role only — one pending invitation,
 one pending join request, the notification telling them about it, the lead of
 the Cash desk, and five team requests to review from four made-up people: Vera
 for the Cash desk and the Shuttle drivers, Jordan for the Cash desk (no note),
@@ -142,11 +146,15 @@ leaves the orphans described above.
 3. shift_batches, task_managers, then tasks
    (by event_id)                             — never by cascade from the event
 4. user_availabilities, event_memberships,
+   voucher_passes, voucher_entries,
    then event_team_documents, event_team_checks,
    event_team_members, event_team_requirements,
    event_teams                               — after the tasks (tasks.team_id);
                                                 leaf first, so a request's
-                                                attached file visibly goes
+                                                attached file visibly goes.
+                                                The voucher rows cascade from
+                                                the event and the guests too;
+                                                spelled out like the teams
 5. venue_markers (by plan, then by location),
    venue_shapes, venue_plan_images,
    venue_plans, locations                    — all cascade from the event too;
@@ -228,6 +236,7 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `logic/permissions.py::require_task_visible` | the read gate for one task (task page, its shifts and bookings, `GET /shifts/{id}`): 404 for a task in a sandbox event the caller did not create — the superadmin included, so again placed **before** the role check. Decided on the event, so a task row whose own flag is off is still covered; `Task.is_sandbox` counts for a task whose event is gone |
 | `crud/task.py::CRUDTask.create` | copies `is_sandbox` from the event, so a task the guest creates through `POST /tasks/` or `/tasks/with-shifts` is excluded from the listings above and stops the publish fan-out (`dispatch_task_published`) like a seeded one |
 | `api/routes/shifts.py::get_shift` | ran no permission check at all before this feature; now resolves the task and runs `require_task_visible` |
+| `api/routes/vouchers.py` | every route starts with `require_event_visible`, so balances, codes, points and redemptions of a demo are a 404 for anyone but its guest, the superadmin included; `require_event_role` alone would let the superadmin through |
 | `api/routes/dashboard.py::_sidebar_events` | excludes sandboxes unless the viewer created them — `visible_event_ids` is `None` for the superadmin and so cannot do this job |
 | `api/routes/reporting.py` | every query excludes sandbox tasks when there is no event filter, via `_non_sandbox_tasks()` |
 | `api/routes/events.py::set_event_featured` | 422 `event.sandbox_not_featurable` |

@@ -25,7 +25,10 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
   today's shifts at those places are deliberately full, half full and short,
   because the map colours every pin by the day's staffing; and
 * the first teammate is in charge of two tasks (``in_charge``), so the task
-  pages show "In charge: ..." rather than an empty line.
+  pages show "In charge: ..." rather than an empty line; and
+* every task earns two vouchers per shift, the welcome desk (the volunteer
+  desk) and the café counter take them, and the visitor already used one
+  yesterday, so "My vouchers" has a balance and a history on arrival.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -96,6 +99,7 @@ from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
+from app.models.voucher import VoucherEntry
 from app.schemas.sandbox import SandboxRole
 from app.schemas.user_availability import (
     UserAvailabilityCreate,
@@ -172,6 +176,13 @@ class _TaskSpec:
     team: str | None = None
     #: The first teammate is in charge of this task (``task_managers``).
     in_charge: bool = False
+    #: Vouchers per shift (``tasks.vouchers_per_shift``). Every task earns
+    #: two, so the visitor's past shift shows a balance.
+    vouchers_per_shift: int = 2
+    #: Vouchers can be redeemed here (``tasks.is_voucher_point``).
+    voucher_point: bool = False
+    #: ...and it is the volunteer desk (``tasks.is_voucher_desk``).
+    voucher_desk: bool = False
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -226,6 +237,8 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=120,
         people_per_shift=2,
         today_fill=1.0,
+        voucher_point=True,
+        voucher_desk=True,
     ),
     _TaskSpec(
         name_en="Café counter",
@@ -258,6 +271,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         people_per_shift=2,
         today_fill=0.5,
         in_charge=True,
+        voucher_point=True,
     ),
     _TaskSpec(
         name_en="Stage crew",
@@ -653,6 +667,9 @@ async def _seed_event(
         sandbox=sandbox,
     )
     _seed_task_managers(db, owner=owner, teammates=teammates, tasks=tasks)
+    _seed_vouchers(
+        db, event=event, owner=owner, teammates=teammates, tasks=tasks, now=now
+    )
 
     _seed_notifications(
         db,
@@ -690,6 +707,52 @@ def _seed_task_managers(
                     added_by_name=owner.name,
                 )
             )
+
+
+def _seed_vouchers(
+    db: AsyncSession,
+    *,
+    event: Event,
+    owner: User,
+    teammates: list[User],
+    tasks: list[Task],
+    now: dt.datetime,
+) -> None:
+    """One voucher the visitor already used yesterday, at the café counter.
+
+    With the two they earned on their past shift (``_seed_bookings`` gives
+    them one behind them), "My vouchers" shows a history and something left
+    to redeem. Redeemed by the teammate in charge of the counter, as a stand
+    would. Nothing else is stored: earnings are derived from the bookings.
+    """
+    if not teammates:
+        return
+    point = next(
+        (
+            task
+            for spec, task in zip(_TASK_SPECS, tasks, strict=True)
+            if spec.voucher_point and not spec.voucher_desk
+        ),
+        None,
+    )
+    if point is None:
+        return
+    when = now - dt.timedelta(hours=20)
+    db.add(
+        VoucherEntry(
+            event_id=event.id,
+            user_id=owner.id,
+            kind="redemption",
+            amount=-1,
+            method="code",
+            task_id=point.id,
+            task_name=point.name,
+            actor_id=teammates[0].id,
+            actor_name=teammates[0].name,
+            created_at=when,
+            updated_at=when,
+        )
+    )
 
 
 async def _seed_tasks_and_shifts(
@@ -739,6 +802,9 @@ async def _seed_tasks_and_shifts(
             default_end_time=dt.time(hour=spec.end_hour),
             people_per_shift=spec.people_per_shift,
             schedule_overrides=None,
+            vouchers_per_shift=spec.vouchers_per_shift,
+            is_voucher_point=spec.voucher_point,
+            is_voucher_desk=spec.voucher_point and spec.voucher_desk,
         )
         db.add(task)
         tasks.append(task)

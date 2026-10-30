@@ -1,13 +1,15 @@
 import datetime as dt
 import uuid
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
+from app.logic.work_hours import shift_ends_at
 from app.models.booking import Booking
+from app.models.booking_reminder import BookingReminder
 from app.models.shift import Shift
 from app.models.task import Task
 from app.schemas.booking import BookingCreate, BookingUpdate
@@ -216,6 +218,97 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             await db.flush()
 
         return len(bookings)
+
+    async def cancel_unfinished_bookings_in_event(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: uuid.UUID,
+        event_id: uuid.UUID,
+        now: dt.datetime,
+    ) -> int:
+        """Cancel someone's confirmed bookings on the event's unfinished shifts.
+
+        For a person who leaves (or is removed from) the event: they keep no
+        place on future rotas and do not go on earning hours or vouchers.
+        Bookings on shifts already over stay, because that work happened.
+        ``now`` is the event wall clock; "over" is ``shift_ends_at``. The
+        snapshot fields are written as in :meth:`cancel_bookings_for_shifts`,
+        and pending reminders are cancelled with the booking. Returns how many
+        bookings were cancelled.
+        """
+        result = await db.execute(
+            select(Booking, Shift, col(Task.name))
+            .join(Shift, col(Shift.id) == col(Booking.shift_id))
+            .join(Task, col(Task.id) == col(Shift.task_id))
+            .where(
+                col(Booking.user_id) == user_id,
+                col(Booking.status) == "confirmed",
+                col(Task.event_id) == event_id,
+                # Shifts that end the day before yesterday or earlier are over
+                # whatever their times; the rest is decided below.
+                col(Shift.date) >= now.date() - dt.timedelta(days=1),
+            )
+        )
+        cancelled: list[uuid.UUID] = []
+        for b, shift, task_name in result.all():
+            if shift_ends_at(shift.date, shift.start_time, shift.end_time) <= now:
+                continue
+            b.status = "cancelled"
+            b.cancelled_shift_title = shift.title
+            b.cancelled_shift_date = shift.date
+            b.cancelled_shift_start_time = shift.start_time
+            b.cancelled_shift_end_time = shift.end_time
+            b.cancelled_task_name = task_name
+            db.add(b)
+            cancelled.append(b.id)
+        if cancelled:
+            await db.execute(
+                update(BookingReminder)
+                .where(
+                    col(BookingReminder.booking_id).in_(cancelled),
+                    col(BookingReminder.status) == "pending",
+                )
+                .values(status="cancelled")
+            )
+            await db.flush()
+        return len(cancelled)
+
+    async def confirmed_shift_times(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: uuid.UUID,
+        task_ids: list[uuid.UUID],
+        date_from: dt.date,
+        date_to: dt.date,
+    ) -> list[tuple[uuid.UUID, dt.date, dt.time | None, dt.time | None]]:
+        """``(task_id, date, start, end)`` of someone's confirmed shifts.
+
+        For "is this person on a shift of this task right now": the caller
+        narrows the dates (``logic.vouchers.redeem_window_dates``) and decides
+        with ``logic.vouchers.redeem_window``. Being on a shift is about the
+        booking standing, not about whether it later counts as worked.
+        """
+        if not task_ids:
+            return []
+        result = await db.execute(
+            select(
+                col(Shift.task_id),
+                col(Shift.date),
+                col(Shift.start_time),
+                col(Shift.end_time),
+            )
+            .join(Booking, col(Booking.shift_id) == col(Shift.id))
+            .where(
+                col(Booking.user_id) == user_id,
+                col(Booking.status) == "confirmed",
+                col(Shift.task_id).in_(task_ids),
+                col(Shift.date) >= date_from,
+                col(Shift.date) <= date_to,
+            )
+        )
+        return [(t, d, s, e) for t, d, s, e in result.all()]
 
     async def count_confirmed_for_shifts(
         self,

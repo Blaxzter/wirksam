@@ -89,6 +89,11 @@ class EventRead(EventBase):
     #: Pending team requests the caller may decide: every one in an event
     #: they run, those of the teams they lead otherwise.
     pending_team_request_count: int = 0
+    #: Published tasks that earn vouchers, and published tasks that take them
+    #: (redemption points); members only, like ``team_count``. The navigation
+    #: offers the voucher pages only where either is above zero.
+    voucher_task_count: int = 0
+    voucher_point_count: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
     @property

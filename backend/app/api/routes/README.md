@@ -76,6 +76,11 @@ Inside an event, a few gates in the same file narrow or widen those two:
   task.admin_only_field`; booked shifts that have started are the organisers'
   through `check_shift_history`) and `require_task_visible` (reading one task;
   drafts for admins and the task's people in charge).
+- **Vouchers** (`vouchers.py`) add `require_voucher_redeemer` (taking vouchers
+  at a task flagged `is_voucher_point`: event admins, its people in charge,
+  and whoever is on a running shift there; without a code only admins,
+  people in charge and the staff of a volunteer desk). Every voucher route
+  starts with `require_event_visible`, as `work_hours.py` does.
 
 Grepping those names must keep finding every check, so do not inline an
 equivalent condition.

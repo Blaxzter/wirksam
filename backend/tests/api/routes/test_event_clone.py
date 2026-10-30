@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.logic.notifications import triggers as triggers_module
+from app.logic.vouchers import generate_code
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
@@ -27,6 +28,7 @@ from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from app.models.voucher import VoucherEntry, VoucherPass
 from tests.fixtures.storage import stored_bytes
 
 # ``test_event`` runs 2026-06-10 → 2026-06-14. Cloning it to 2027-06-09 is a
@@ -1128,6 +1130,67 @@ class TestCloneTaskManagers:
 
         [new_task] = await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"]))
         assert await _managers_of(db_session, new_task.id) == []
+
+
+# ── Vouchers ────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestCloneVouchers:
+    """The voucher settings are part of the event again; balances are not."""
+
+    async def test_settings_come_along_and_no_ledger_or_code_does(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_user: User,
+        test_admin_user: User,
+        as_event_admin: None,
+    ):
+        task = source_event["task"]
+        task.vouchers_per_shift = 3
+        task.is_voucher_point = True
+        task.is_voucher_desk = True
+        db_session.add(task)
+        db_session.add_all(
+            [
+                VoucherEntry(
+                    event_id=source_event["event"].id,
+                    user_id=test_user.id,
+                    kind="adjustment",
+                    amount=4,
+                    note="Aufbau",
+                    actor_id=test_admin_user.id,
+                ),
+                VoucherPass(
+                    event_id=source_event["event"].id,
+                    user_id=test_user.id,
+                    code=generate_code(),
+                    expires_at=datetime.datetime(2099, 1, 1),
+                ),
+            ]
+        )
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event, copy_members=True),
+        )
+        assert r.status_code == 201
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+
+        [new_task] = await _tasks_of(db_session, new_event_id)
+        assert new_task.vouchers_per_shift == 3
+        assert new_task.is_voucher_point is True
+        assert new_task.is_voucher_desk is True
+        for model in (VoucherEntry, VoucherPass):
+            count = await db_session.scalar(
+                select(sa_func.count())
+                .select_from(model)
+                .where(col(model.event_id) == new_event_id)
+            )
+            assert count == 0
 
 
 # ── Announcement ────────────────────────────────────────────────────────────

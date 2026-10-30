@@ -41,6 +41,7 @@ from .user_avatar import UserAvatar
 from .user_token import UserToken
 from .venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from .venue_template import VenueTemplate, VenueTemplateImage
+from .voucher import VoucherEntry, VoucherPass
 from .work_log import WorkLog
 
 __all__ = [
@@ -82,5 +83,7 @@ __all__ = [
     "VenueShape",
     "VenueTemplate",
     "VenueTemplateImage",
+    "VoucherEntry",
+    "VoucherPass",
     "WorkLog",
 ]

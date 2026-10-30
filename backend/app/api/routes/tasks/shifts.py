@@ -131,6 +131,9 @@ async def create_task_with_shifts(
         location_id=location_id,
         category=payload.category,
         team_id=payload.team_id,
+        vouchers_per_shift=payload.vouchers_per_shift,
+        is_voucher_point=payload.is_voucher_point,
+        is_voucher_desk=payload.is_voucher_desk,
         event_id=event_id,
         created_by_id=current_user.id,
     )

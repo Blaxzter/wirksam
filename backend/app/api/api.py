@@ -19,6 +19,7 @@ from app.api.routes import (
     users,
     venue_map,
     venue_templates,
+    vouchers,
     work_hours,
 )
 from app.core.config import settings
@@ -40,6 +41,7 @@ api_router.include_router(calendar_feed.router)
 api_router.include_router(events.router)
 api_router.include_router(teams.router)
 api_router.include_router(work_hours.router)
+api_router.include_router(vouchers.router)
 api_router.include_router(invitations.router)
 api_router.include_router(locations.router)
 api_router.include_router(venue_map.router)

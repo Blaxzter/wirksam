@@ -2,13 +2,16 @@ import datetime as dt
 import uuid
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.event import EventCreate, EventRead
 from app.schemas.event_team import TeamMemberStatus
 from app.schemas.task_manager import TaskManagerBrief
 
 TaskStatus = Literal["draft", "published", "archived"]
+
+#: The most vouchers one shift of a task may earn.
+MAX_VOUCHERS_PER_SHIFT = 50
 
 
 class TaskBase(BaseModel):
@@ -24,6 +27,15 @@ class TaskBase(BaseModel):
     category: str | None = None
     #: Only approved members of this team may book the task's shifts.
     team_id: uuid.UUID | None = None
+    #: Vouchers a volunteer earns for each confirmed shift once it is over.
+    #: 0 means none. Earnings are derived from the current value, so a change
+    #: also counts for shifts already worked.
+    vouchers_per_shift: int = Field(default=0, ge=0, le=MAX_VOUCHERS_PER_SHIFT)
+    #: Vouchers can be redeemed here, in the app.
+    is_voucher_point: bool = False
+    #: The volunteer desk: staff on shift may also redeem without a code. Only
+    #: meaningful with ``is_voucher_point``; writes store False without it.
+    is_voucher_desk: bool = False
 
     @field_validator("end_date")
     @classmethod
@@ -36,7 +48,13 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
-    pass
+    @model_validator(mode="after")
+    def desk_needs_point(self) -> "TaskCreate":
+        # Stored False rather than refused: a desk that takes no vouchers is
+        # simply not a desk.
+        if not self.is_voucher_point:
+            self.is_voucher_desk = False
+        return self
 
 
 class TaskUpdate(BaseModel):
@@ -50,6 +68,11 @@ class TaskUpdate(BaseModel):
     location_id: uuid.UUID | None = None
     category: str | None = None
     team_id: uuid.UUID | None = None
+    vouchers_per_shift: int | None = Field(
+        default=None, ge=0, le=MAX_VOUCHERS_PER_SHIFT
+    )
+    is_voucher_point: bool | None = None
+    is_voucher_desk: bool | None = None
 
 
 class TaskRead(TaskBase):
@@ -74,6 +97,10 @@ class TaskRead(TaskBase):
     can_manage: bool = False
     #: The task's people in charge, by name.
     managers: list[TaskManagerBrief] = []
+    #: Viewer-relative: the task takes vouchers and the caller may redeem
+    #: them here right now (an event admin, a person in charge, or on a
+    #: running shift of it).
+    can_redeem: bool = False
 
 
 class TaskListResponse(BaseModel):
@@ -160,6 +187,9 @@ class TaskCreateWithShifts(BaseModel):
     location_id: uuid.UUID | None = None
     category: str | None = None
     team_id: uuid.UUID | None = None
+    vouchers_per_shift: int = Field(default=0, ge=0, le=MAX_VOUCHERS_PER_SHIFT)
+    is_voucher_point: bool = False
+    is_voucher_desk: bool = False
     event_id: uuid.UUID | None = None
     new_event: EventCreate | None = None
     schedule: ShiftGenerationConfig

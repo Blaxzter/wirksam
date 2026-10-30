@@ -589,6 +589,8 @@ export const zEventRead = z.object({
     .default(0),
   team_count: z.int().optional().default(0),
   pending_team_request_count: z.int().optional().default(0),
+  voucher_task_count: z.int().optional().default(0),
+  voucher_point_count: z.int().optional().default(0),
   can_manage: z.boolean().readonly(),
   is_expired: z.boolean().readonly(),
 })
@@ -1006,6 +1008,38 @@ export const zOwnershipTransferResult = z
   .register(z.globalRegistry, {
     description: 'Summary of a completed ownership transfer.',
   })
+
+/**
+ * PointRedemptionRead
+ *
+ * A redemption made at one point, with whose vouchers it took.
+ */
+export const zPointRedemptionRead = z
+  .object({
+    id: z.uuid(),
+    kind: z.enum(['redemption', 'adjustment']),
+    amount: z.int(),
+    method: z.enum(['code', 'manual']).nullish(),
+    note: z.string().nullish(),
+    task_id: z.uuid().nullish(),
+    task_name: z.string().nullish(),
+    actor_name: z.string().nullish(),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+    user_id: z.uuid(),
+    user_name: z.string().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A redemption made at one point, with whose vouchers it took.',
+  })
+
+/**
+ * PointRedemptionList
+ */
+export const zPointRedemptionList = z.object({
+  items: z.array(zPointRedemptionRead),
+  total_amount: z.int(),
+})
 
 /**
  * PushSubscriptionCreate
@@ -1562,6 +1596,9 @@ export const zTaskCreate = z.object({
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   team_id: z.uuid().nullish(),
+  vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
+  is_voucher_point: z.boolean().optional().default(false),
+  is_voucher_desk: z.boolean().optional().default(false),
 })
 
 /**
@@ -1577,6 +1614,9 @@ export const zTaskCreateWithShifts = z.object({
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   team_id: z.uuid().nullish(),
+  vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
+  is_voucher_point: z.boolean().optional().default(false),
+  is_voucher_desk: z.boolean().optional().default(false),
   event_id: z.uuid().nullish(),
   new_event: zEventCreate.nullish(),
   schedule: zShiftGenerationConfig,
@@ -1640,6 +1680,9 @@ export const zFeedTaskItem = z
     location_id: z.uuid().nullish(),
     category: z.string().nullish(),
     team_id: z.uuid().nullish(),
+    vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
+    is_voucher_point: z.boolean().optional().default(false),
+    is_voucher_desk: z.boolean().optional().default(false),
     id: z.uuid(),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
@@ -1654,6 +1697,7 @@ export const zFeedTaskItem = z
     locked_by_team: z.boolean().optional().default(false),
     can_manage: z.boolean().optional().default(false),
     managers: z.array(zTaskManagerBrief).optional().default([]),
+    can_redeem: z.boolean().optional().default(false),
     shifts: z.array(zFeedShiftEntry).nullish(),
     slot_window_start: z.iso.date().nullish(),
     total_shifts: z.int().nullish(),
@@ -1688,6 +1732,9 @@ export const zTaskRead = z.object({
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   team_id: z.uuid().nullish(),
+  vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
+  is_voucher_point: z.boolean().optional().default(false),
+  is_voucher_desk: z.boolean().optional().default(false),
   id: z.uuid(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
@@ -1702,6 +1749,7 @@ export const zTaskRead = z.object({
   locked_by_team: z.boolean().optional().default(false),
   can_manage: z.boolean().optional().default(false),
   managers: z.array(zTaskManagerBrief).optional().default([]),
+  can_redeem: z.boolean().optional().default(false),
 })
 
 /**
@@ -1756,6 +1804,9 @@ export const zTaskUpdate = z.object({
   location_id: z.uuid().nullish(),
   category: z.string().nullish(),
   team_id: z.uuid().nullish(),
+  vouchers_per_shift: z.int().gte(0).lte(50).nullish(),
+  is_voucher_point: z.boolean().nullish(),
+  is_voucher_desk: z.boolean().nullish(),
 })
 
 /**
@@ -3119,6 +3170,205 @@ export const zVolunteerHours = z
   })
 
 /**
+ * VoucherAdjustmentCreate
+ *
+ * A correction by an event admin: positive adds, negative takes away.
+ */
+export const zVoucherAdjustmentCreate = z
+  .object({
+    user_id: z.uuid(),
+    amount: z.int().gte(-999).lte(999),
+    note: z.string().min(1).max(500),
+  })
+  .register(z.globalRegistry, {
+    description: 'A correction by an event admin: positive adds, negative takes away.',
+  })
+
+/**
+ * VoucherAdjustmentUpdate
+ */
+export const zVoucherAdjustmentUpdate = z.object({
+  amount: z.int().gte(-999).lte(999).nullish(),
+  note: z.string().min(1).max(500).nullish(),
+})
+
+/**
+ * VoucherBalance
+ *
+ * One person's vouchers in one event.
+ */
+export const zVoucherBalance = z
+  .object({
+    user_id: z.uuid(),
+    name: z.string().nullish(),
+    email: z.string().nullish(),
+    avatar_etag: z.string().nullish(),
+    role: z.enum(['owner', 'admin', 'member']).nullish(),
+    earned: z.int(),
+    upcoming: z.int(),
+    redeemed: z.int(),
+    adjusted: z.int(),
+    balance: z.int().register(z.globalRegistry, {
+      description: 'earned - redeemed + adjusted; may be below zero',
+    }),
+    available: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description: "One person's vouchers in one event.",
+  })
+
+/**
+ * VoucherCheckRequest
+ *
+ * Who is in front of the redeemer: the code they show, or the person.
+ */
+export const zVoucherCheckRequest = z
+  .object({
+    task_id: z.uuid(),
+    code: z.string().max(32).nullish(),
+    user_id: z.uuid().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Who is in front of the redeemer: the code they show, or the person.',
+  })
+
+/**
+ * VoucherCheckResult
+ */
+export const zVoucherCheckResult = z.object({
+  user_id: z.uuid(),
+  name: z.string().nullish(),
+  avatar_etag: z.string().nullish(),
+  available: z.int(),
+})
+
+/**
+ * VoucherEntryRead
+ *
+ * One redemption or correction in a balance.
+ */
+export const zVoucherEntryRead = z
+  .object({
+    id: z.uuid(),
+    kind: z.enum(['redemption', 'adjustment']),
+    amount: z.int(),
+    method: z.enum(['code', 'manual']).nullish(),
+    note: z.string().nullish(),
+    task_id: z.uuid().nullish(),
+    task_name: z.string().nullish(),
+    actor_name: z.string().nullish(),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+  })
+  .register(z.globalRegistry, {
+    description: 'One redemption or correction in a balance.',
+  })
+
+/**
+ * VoucherPassRead
+ *
+ * A freshly issued code.
+ */
+export const zVoucherPassRead = z
+  .object({
+    id: z.uuid(),
+    code: z.string(),
+    qr_payload: z.string(),
+    expires_at: z.iso.datetime(),
+    ttl_seconds: z.int(),
+    event_name: z.string(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A freshly issued code.',
+  })
+
+/**
+ * VoucherPassStatus
+ */
+export const zVoucherPassStatus = z.object({
+  status: z.enum(['active', 'checking', 'used', 'expired']),
+  redeemed_amount: z.int().nullish(),
+  task_name: z.string().nullish(),
+  available: z.int(),
+})
+
+/**
+ * VoucherPointRead
+ *
+ * A task that takes vouchers, as the caller sees it.
+ */
+export const zVoucherPointRead = z
+  .object({
+    task_id: z.uuid(),
+    name: z.string(),
+    location: z.string().nullish(),
+    can_redeem: z.boolean(),
+    can_redeem_manually: z.boolean(),
+    is_desk: z.boolean(),
+    managers: z.array(zTaskManagerBrief),
+  })
+  .register(z.globalRegistry, {
+    description: 'A task that takes vouchers, as the caller sees it.',
+  })
+
+/**
+ * VoucherRedeemRequest
+ */
+export const zVoucherRedeemRequest = z.object({
+  task_id: z.uuid(),
+  code: z.string().max(32).nullish(),
+  user_id: z.uuid().nullish(),
+  amount: z.int().gte(1).lte(50),
+  request_id: z.uuid(),
+})
+
+/**
+ * VoucherRedeemResult
+ */
+export const zVoucherRedeemResult = z.object({
+  entry: zVoucherEntryRead,
+  user_id: z.uuid(),
+  name: z.string().nullish(),
+  available: z.int(),
+  replayed: z.boolean().optional().default(false),
+})
+
+/**
+ * VoucherShift
+ *
+ * One confirmed booking on a task that earns vouchers.
+ */
+export const zVoucherShift = z
+  .object({
+    booking_id: z.uuid(),
+    shift_id: z.uuid(),
+    task_id: z.uuid(),
+    task_name: z.string(),
+    title: z.string(),
+    date: z.iso.date(),
+    start_time: z.iso.time().nullish(),
+    end_time: z.iso.time().nullish(),
+    ends_at: z.iso.datetime().register(z.globalRegistry, {
+      description:
+        'When the shift ends, as naive UTC (the wall clock converted through EVENT_TIMEZONE), the same convention as created_at, so shifts and entries sort on one time line',
+    }),
+    vouchers: z.int(),
+    completed: z.boolean(),
+  })
+  .register(z.globalRegistry, {
+    description: 'One confirmed booking on a task that earns vouchers.',
+  })
+
+/**
+ * VoucherAccount
+ */
+export const zVoucherAccount = z.object({
+  summary: zVoucherBalance,
+  shifts: z.array(zVoucherShift),
+  entries: z.array(zVoucherEntryRead),
+})
+
+/**
  * WorkLogCreate
  */
 export const zWorkLogCreate = z.object({
@@ -3224,6 +3474,8 @@ export const zEventReadWritable = z.object({
     .default(0),
   team_count: z.int().optional().default(0),
   pending_team_request_count: z.int().optional().default(0),
+  voucher_task_count: z.int().optional().default(0),
+  voucher_point_count: z.int().optional().default(0),
 })
 
 /**
@@ -4706,6 +4958,145 @@ export const zWorkHoursUpdateWorkLogPath = z.object({
  * Successful Response
  */
 export const zWorkHoursUpdateWorkLogResponse = zWorkLogRead
+
+export const zVouchersGetMyVouchersPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersGetMyVouchersResponse = zVoucherAccount
+
+export const zVouchersIssueMyPassPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersIssueMyPassResponse = zVoucherPassRead
+
+export const zVouchersGetMyPassStatusPath = z.object({
+  event_id: z.uuid(),
+  pass_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersGetMyPassStatusResponse = zVoucherPassStatus
+
+export const zVouchersListVoucherPointsPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Vouchers-List Voucher Points
+ *
+ * Successful Response
+ */
+export const zVouchersListVoucherPointsResponse = z
+  .array(zVoucherPointRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zVouchersListPointRedemptionsPath = z.object({
+  event_id: z.uuid(),
+  task_id: z.uuid(),
+})
+
+export const zVouchersListPointRedemptionsQuery = z.object({
+  limit: z.int().gte(1).lte(200).optional().default(50),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersListPointRedemptionsResponse = zPointRedemptionList
+
+export const zVouchersCheckVoucherBody = zVoucherCheckRequest
+
+export const zVouchersCheckVoucherPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersCheckVoucherResponse = zVoucherCheckResult
+
+export const zVouchersRedeemVouchersBody = zVoucherRedeemRequest
+
+export const zVouchersRedeemVouchersPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersRedeemVouchersResponse = zVoucherRedeemResult
+
+export const zVouchersListVoucherBalancesPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Response Vouchers-List Voucher Balances
+ *
+ * Successful Response
+ */
+export const zVouchersListVoucherBalancesResponse = z
+  .array(zVoucherBalance)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zVouchersGetVoucherAccountPath = z.object({
+  event_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersGetVoucherAccountResponse = zVoucherAccount
+
+export const zVouchersCreateVoucherAdjustmentBody = zVoucherAdjustmentCreate
+
+export const zVouchersCreateVoucherAdjustmentPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersCreateVoucherAdjustmentResponse = zVoucherEntryRead
+
+export const zVouchersDeleteVoucherAdjustmentPath = z.object({
+  event_id: z.uuid(),
+  entry_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersDeleteVoucherAdjustmentResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zVouchersUpdateVoucherAdjustmentBody = zVoucherAdjustmentUpdate
+
+export const zVouchersUpdateVoucherAdjustmentPath = z.object({
+  event_id: z.uuid(),
+  entry_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zVouchersUpdateVoucherAdjustmentResponse = zVoucherEntryRead
 
 export const zInvitationsPreviewInvitationPath = z.object({
   token: z.string(),

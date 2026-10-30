@@ -1,4 +1,4 @@
-"""A small in-process rate limiter for the authentication endpoints.
+"""A small in-process rate limiter for the authentication and voucher endpoints.
 
 Login, registration and password reset are the three routes an attacker gets to
 call as often as they like, so they are the three that need a ceiling:
@@ -71,9 +71,14 @@ class RateLimiter:
     is why keys passed in only need to identify the actor, not the action.
     """
 
-    def __init__(self, limit: int, window_seconds: int) -> None:
+    def __init__(
+        self, limit: int, window_seconds: int, *, code: str = "auth.rate_limited"
+    ) -> None:
         self.limit = limit
         self.window_seconds = window_seconds
+        #: The problem code a 429 from this bucket carries, so the client can
+        #: word it for the action (a login, or scanning voucher codes).
+        self.code = code
         self._windows: dict[str, _Window] = {}
         # Every mutation of `_windows` happens between an await-free read and
         # write, so on a single event loop the lock is belt-and-braces. It costs
@@ -115,7 +120,7 @@ class RateLimiter:
         # lock across.
         raise_problem(
             429,
-            code="auth.rate_limited",
+            code=self.code,
             detail=(f"Too many attempts. Please try again in {retry_after} seconds."),
             headers={"Retry-After": str(retry_after)},
         )
@@ -178,3 +183,16 @@ resend_verification_limiter = RateLimiter(limit=3, window_seconds=60 * 60)
 # is SANDBOX_MAX_ACTIVE, counted in SQL, because these counters are per worker
 # process and this method returns immediately under TESTING.
 sandbox_limiter = RateLimiter(limit=3, window_seconds=60 * 60)
+
+# 60 per minute, keyed by user id: checking and redeeming voucher codes. A busy
+# stand does a check and a redeem per person, about 25 a minute, so 30 would be
+# too tight; 60 still makes guessing 6-character codes pointless.
+voucher_code_limiter = RateLimiter(
+    limit=60, window_seconds=60, code="voucher.rate_limited"
+)
+
+# 20 per minute, keyed by user id: issuing a voucher code writes a row. A
+# volunteer's screen asks for a new one every two minutes.
+voucher_pass_limiter = RateLimiter(
+    limit=20, window_seconds=60, code="voucher.rate_limited"
+)

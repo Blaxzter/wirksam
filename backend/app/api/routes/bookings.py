@@ -3,6 +3,7 @@ import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
@@ -11,6 +12,7 @@ from app.crud.booking import booking as crud_booking
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.crud.shift import shift as crud_shift
 from app.crud.task import task as crud_task
+from app.logic import clock
 from app.logic.booking_conflicts import find_conflicting_booking
 from app.logic.event_scope import get_user_event_scope
 from app.logic.notifications.triggers import (
@@ -18,7 +20,12 @@ from app.logic.notifications.triggers import (
     dispatch_booking_cobooked,
     dispatch_booking_confirmed,
 )
-from app.logic.permissions import require_team_for_booking
+from app.logic.permissions import (
+    require_event_role,
+    require_team_for_booking,
+    task_access,
+)
+from app.logic.work_hours import shift_ends_at
 from app.models.booking import Booking
 from app.models.shift import Shift
 from app.schemas.booking import (
@@ -123,13 +130,27 @@ async def create_booking(
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
 ) -> Booking:
-    """Book a duty shift for the current user."""
+    """Book a duty shift for the current user.
+
+    Only for members of the task's event (403 ``event.forbidden``), only on a
+    published task unless the caller can manage it (403
+    ``task.not_published``), and never once the shift has ended (409
+    ``booking.shift_over``, on every task). Hours and vouchers are derived
+    from booked shifts that have ended, so a booking made, or reactivated,
+    after the fact would credit work nobody did.
+    """
     shift = await crud_shift.get(
         session, str(booking_in.shift_id), raise_404_error=True
     )
-    task = await crud_task.get(session, str(shift.task_id))
-    if task is not None:
-        await require_team_for_booking(current_user, session, task)
+    task = await crud_task.get(session, str(shift.task_id), raise_404_error=True)
+    await require_event_role(current_user, session, task.event_id, minimum="member")
+    if (
+        task.status != "published"
+        and await task_access(current_user, session, task) is None
+    ):
+        raise_problem(403, code="task.not_published", detail="Task is not published")
+    await require_team_for_booking(current_user, session, task)
+    _refuse_if_shift_over(shift)
 
     existing = await crud_booking.get_by_shift_and_user(
         session, shift_id=shift.id, user_id=current_user.id
@@ -184,7 +205,7 @@ async def create_booking(
         )
         result = await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
 
-    task_name = task.name if task else None
+    task_name = task.name
 
     # Dispatch notifications
     background_tasks.add_task(
@@ -199,7 +220,7 @@ async def create_booking(
         task_name=task_name,
         slot_id=shift.id,
         task_id=shift.task_id,
-        event_id=task.event_id if task else None,
+        event_id=task.event_id,
     )
     if existing_user_ids:
         background_tasks.add_task(
@@ -264,6 +285,8 @@ async def update_booking(
             code="booking.rebook_required",
             detail="Book the shift again to reactivate a cancelled booking",
         )
+    if booking_in.status == "cancelled" and db_booking.status == "confirmed":
+        await _refuse_if_booked_shift_over(session, db_booking)
     return await crud_booking.update(session, db_obj=db_booking, obj_in=booking_in)
 
 
@@ -282,6 +305,8 @@ async def cancel_booking(
             code="booking.forbidden",
             detail="You can only cancel your own bookings",
         )
+    if db_booking.status == "confirmed":
+        await _refuse_if_booked_shift_over(session, db_booking)
     result = await crud_booking.update(
         session, db_obj=db_booking, obj_in=BookingUpdate(status="cancelled")
     )
@@ -327,6 +352,34 @@ async def dismiss_booking(
         )
     await session.delete(db_booking)
     await session.commit()
+
+
+def _refuse_if_shift_over(shift: Shift) -> None:
+    """409 ``booking.shift_over`` once the shift has ended (event wall clock).
+
+    On every task, not only those with vouchers: earnings follow the task's
+    current ``vouchers_per_shift``, so a shift booked after the fact on a task
+    with none would start earning the moment an organiser set a value.
+    Organisers fix the past with hour and voucher corrections instead.
+    """
+    if shift_ends_at(shift.date, shift.start_time, shift.end_time) <= (
+        clock.wall_clock_now()
+    ):
+        raise_problem(
+            409,
+            code="booking.shift_over",
+            detail="This shift is already over",
+        )
+
+
+async def _refuse_if_booked_shift_over(session: AsyncSession, booking: Booking) -> None:
+    """Cancelling a booking on a shift that has ended would take back hours
+    and vouchers already earned, and perhaps spent."""
+    if booking.shift_id is None:
+        return
+    shift = await crud_shift.get(session, str(booking.shift_id))
+    if shift is not None:
+        _refuse_if_shift_over(shift)
 
 
 def _shift_start_datetime(

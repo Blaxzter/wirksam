@@ -11,6 +11,7 @@ from sqlmodel import col
 
 from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
 from app.core.errors import raise_problem
+from app.crud.booking import booking as crud_booking
 from app.crud.event import EventScope
 from app.crud.event import event as crud_event
 from app.crud.event_invitation import event_invitation as crud_invitation
@@ -18,10 +19,12 @@ from app.crud.event_invitation import invitation_invalid_reason
 from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
+from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
+from app.logic import clock
 from app.logic.permissions import require_event_role, require_event_visible
 from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
@@ -85,9 +88,9 @@ async def decorate_events(
     """Attach viewer-relative context to a page of events.
 
     Member counts, the caller's own role, any pending join request, the
-    number of venue plans with an image, the number of teams and the team
-    requests the caller may decide are all fetched in one query each rather
-    than per row, so a long Discover list costs a constant number of round
+    number of venue plans with an image, the number of teams, the team
+    requests the caller may decide and the voucher task counts are all
+    fetched in one query each rather than per row, so a long Discover list costs a constant number of round
     trips.
     """
     event_ids = [e.id for e in events]
@@ -116,6 +119,9 @@ async def decorate_events(
         session, event_ids=member_of
     )
     team_counts = await crud_team.team_count_by_event(session, event_ids=member_of)
+    voucher_counts = await crud_task.voucher_counts_by_event(
+        session, event_ids=member_of
+    )
     team_requests = await crud_team.decidable_pending_by_event(
         session,
         user_id=user.id,
@@ -133,6 +139,9 @@ async def decorate_events(
         read.venue_plan_count = plan_counts.get(e.id, 0)
         read.team_count = team_counts.get(e.id, 0)
         read.pending_team_request_count = team_requests.get(e.id, 0)
+        read.voucher_task_count, read.voucher_point_count = voucher_counts.get(
+            e.id, (0, 0)
+        )
         out.append(read)
     return out
 
@@ -1125,6 +1134,11 @@ async def _clone_task(
         location_id=task_location_id,
         category=_pick(entry.category, src.category),
         team_id=team_map.get(src.team_id) if src.team_id else None,
+        # The voucher settings are part of "the same event again"; balances,
+        # redemptions and codes are not, just as bookings are not.
+        vouchers_per_shift=src.vouchers_per_shift,
+        is_voucher_point=src.is_voucher_point,
+        is_voucher_desk=src.is_voucher_desk,
         shift_duration_minutes=_pick(
             entry.shift_duration_minutes, src.shift_duration_minutes
         ),
@@ -1485,6 +1499,12 @@ async def remove_member(
     # Being in charge of a task goes too, so re-joining does not restore it.
     await crud_task_manager.remove_user_from_event_tasks(
         session, user_id=user_id, event_id=event_id
+    )
+    # And their place on shifts still to come: a former member neither keeps a
+    # spot on future rotas nor goes on earning hours and vouchers. Bookings on
+    # shifts already over stay, because that work happened.
+    await crud_booking.cancel_unfinished_bookings_in_event(
+        session, user_id=user_id, event_id=event_id, now=clock.wall_clock_now()
     )
 
     # Clear the selection so the removed user is not stranded on an event

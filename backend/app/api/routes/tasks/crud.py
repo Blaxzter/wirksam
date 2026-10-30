@@ -42,8 +42,21 @@ router = APIRouter()
 
 #: What only event admins may change on a task, even when a person in charge
 #: sends the edit: publishing fans a notification out to every account,
-#: ``team_id`` decides who may book, and moving needs admin in both events.
-ADMIN_ONLY_TASK_FIELDS: tuple[str, ...] = ("status", "event_id", "team_id")
+#: ``team_id`` decides who may book, moving needs admin in both events, and
+#: vouchers are currency, so the rate and the places that take them are the
+#: organisers' decision.
+ADMIN_ONLY_TASK_FIELDS: tuple[str, ...] = (
+    "status",
+    "event_id",
+    "team_id",
+    "vouchers_per_shift",
+    "is_voucher_point",
+    "is_voucher_desk",
+)
+
+#: Task columns that are NOT NULL, where an explicit ``null`` in a PATCH can
+#: only mean "leave it".
+_NOT_NULL_VOUCHER_FIELDS = ("vouchers_per_shift", "is_voucher_point", "is_voucher_desk")
 
 
 @router.get("/", response_model=TaskListResponse)
@@ -188,6 +201,9 @@ async def update_task(
     access = await require_task_manager(current_user, session, db_task)
     old_status = db_task.status
     update_data = task_in.model_dump(exclude_unset=True)
+    for f in _NOT_NULL_VOUCHER_FIELDS:
+        if f in update_data and update_data[f] is None:
+            del update_data[f]
     if access == "manager":
         changed = [
             f
@@ -224,6 +240,12 @@ async def update_task(
         team_id=update_data.get("team_id", db_task.team_id),
         event_id=target_event_id,
     )
+    if not update_data.get("is_voucher_point", db_task.is_voucher_point) and (
+        update_data.get("is_voucher_desk", db_task.is_voucher_desk)
+    ):
+        # A desk that takes no vouchers is not a desk: stored off, not refused,
+        # so turning the point off in one switch is enough.
+        update_data["is_voucher_desk"] = False
     update_data.update(
         await location_patch(session, db_task, update_data, event_id=target_event_id)
     )
