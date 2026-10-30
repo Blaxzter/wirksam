@@ -9,6 +9,9 @@
 import type { VoucherAccount, VoucherEntryRead, VoucherShift } from '@/client/types.gen'
 import { parseServerDate } from '@/lib/server-time'
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
 /** The server's alphabet (`app/logic/vouchers.py`): no 0, O, 1, I or L. */
 export const VOUCHER_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
 export const VOUCHER_CODE_LENGTH = 6
@@ -105,7 +108,7 @@ export function newRequestId(source: RandomSource = crypto): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-/** How long a code that was just handled is ignored while it stays in view. */
+/** How long a code that was just handled must be out of view before it counts again. */
 export const SAME_CODE_IGNORE_MS = 10_000
 
 /**
@@ -113,16 +116,24 @@ export const SAME_CODE_IGNORE_MS = 10_000
  * code on every frame it reads, so the code just redeemed would otherwise be
  * checked again the moment the confirm closes, while it is still in front of
  * the camera. A code is ignored once handled until a different one has been
- * seen, or for `SAME_CODE_IGNORE_MS`.
+ * seen, or until it has been out of view for `SAME_CODE_IGNORE_MS`: every
+ * sighting of it starts that wait again.
  */
 export function createDetectionGate(ignoreMs = SAME_CODE_IGNORE_MS) {
   let last: { code: string; at: number } | null = null
   return {
     /** Whether to act on `code`; remembers it when the answer is yes. */
     accept(code: string, nowMs: number): boolean {
-      if (last && last.code === code && nowMs - last.at < ignoreMs) return false
+      if (last && last.code === code && nowMs - last.at < ignoreMs) {
+        last.at = nowMs
+        return false
+      }
       last = { code, at: nowMs }
       return true
+    },
+    /** Count `code` as handled just now, e.g. when the confirm for it closes. */
+    remember(code: string, nowMs: number) {
+      last = { code, at: nowMs }
     },
     /** Forget the last code, so even the same one is accepted again. */
     reset() {
@@ -131,15 +142,37 @@ export function createDetectionGate(ignoreMs = SAME_CODE_IGNORE_MS) {
   }
 }
 
+/** Why the camera could not be used, as the redeem page tells it. */
+export type CameraProblem = 'denied' | 'no-camera' | 'other'
+
+const DENIED_ERRORS = new Set(['NotAllowedError', 'SecurityError', 'PermissionDeniedError'])
+const NO_CAMERA_ERRORS = new Set(['NotFoundError', 'OverconstrainedError', 'DevicesNotFoundError'])
+
+/**
+ * What went wrong when the scanner would not start. `qr-scanner` swallows the
+ * browser's own error and throws `'Camera not found.'` for everything, a
+ * refused permission included, so the permission's state (from the
+ * Permissions API, when the browser has one) decides first: a refusal is by
+ * far the most common reason at a stand, and the one the redeemer can fix.
+ */
+export function classifyCameraError(
+  error: unknown,
+  permission: PermissionState | null = null,
+): CameraProblem {
+  if (permission === 'denied') return 'denied'
+  if (error === 'Camera not found.') return 'no-camera'
+  const name = isRecord(error) && typeof error.name === 'string' ? error.name : ''
+  if (DENIED_ERRORS.has(name)) return 'denied'
+  if (NO_CAMERA_ERRORS.has(name)) return 'no-camera'
+  return 'other'
+}
+
 export type CodeUsedDetails = {
   amount: number | null
   taskName: string | null
   actorName: string | null
   usedAt: Date | null
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null
 
 /**
  * What a `409 voucher.code_used` answer says about the earlier redemption, so

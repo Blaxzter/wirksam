@@ -441,7 +441,12 @@ const navigateToBooking = () => {
 
           <Separator />
 
-          <ShiftRoster :bookings="shiftBookings" :capacity="capacity" :loading="loadingBookings" />
+          <ShiftRoster
+            :bookings="shiftBookings"
+            :capacity="capacity"
+            :loading="loadingBookings"
+            :hide-free="hasEnded"
+          />
 
           <!-- Extensibility shift: additional sections below the table -->
           <slot name="extra-sections" />

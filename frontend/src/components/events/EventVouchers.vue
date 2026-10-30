@@ -59,6 +59,9 @@ const balances = ref<VoucherBalance[]>([])
 
 const displayName = (b: Pick<VoucherBalance, 'name' | 'email'>) => b.name ?? b.email ?? '?'
 
+/** Corrections with their sign, so `+5` and `−4` read as what they did. */
+const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`)
+
 /** People with nothing to their name stay in the members card; here they are noise. */
 const rows = computed(() =>
   balances.value.filter((b) => b.earned > 0 || b.upcoming > 0 || b.redeemed > 0 || b.adjusted !== 0),
@@ -122,7 +125,12 @@ function editCorrection(entry: VoucherEntryRead) {
 }
 
 async function deleteCorrection(entry: VoucherEntryRead) {
-  if (!(await confirmDestructive(t('vouchers.admin.deleteConfirm')))) return
+  const confirmed = await confirmDestructive({
+    title: t('vouchers.admin.deleteConfirm'),
+    text: t('vouchers.admin.deleteHint'),
+    confirmText: t('vouchers.admin.deleteCorrection'),
+  })
+  if (!confirmed) return
   try {
     await del({ url: `/events/${props.eventId}/vouchers/adjustments/${entry.id}` })
     toast.success(t('vouchers.admin.deleted'))
@@ -171,6 +179,7 @@ async function afterChange() {
               <TableHead class="text-right">{{ t('vouchers.admin.colBalance') }}</TableHead>
               <TableHead class="text-right">{{ t('vouchers.admin.colEarned') }}</TableHead>
               <TableHead class="text-right">{{ t('vouchers.admin.colUsed') }}</TableHead>
+              <TableHead class="text-right">{{ t('vouchers.adjusted') }}</TableHead>
               <TableHead class="text-right">{{ t('vouchers.admin.colUpcoming') }}</TableHead>
             </TableRow>
           </TableHeader>
@@ -202,6 +211,9 @@ async function afterChange() {
               </TableCell>
               <TableCell class="text-right tabular-nums">{{ row.earned }}</TableCell>
               <TableCell class="text-right tabular-nums">{{ row.redeemed }}</TableCell>
+              <TableCell class="text-right tabular-nums" data-testid="event-vouchers-adjusted">
+                {{ signed(row.adjusted) }}
+              </TableCell>
               <TableCell class="text-right tabular-nums text-muted-foreground">
                 {{ row.upcoming }}
               </TableCell>
@@ -231,7 +243,7 @@ async function afterChange() {
                   <p class="text-xs text-muted-foreground">{{ t('vouchers.admin.colAvailable') }}</p>
                 </div>
               </div>
-              <dl class="mt-2 grid grid-cols-4 gap-2 text-xs">
+              <dl class="mt-2 grid grid-cols-3 gap-x-2 gap-y-1.5 text-xs">
                 <div>
                   <dt class="text-muted-foreground">{{ t('vouchers.admin.colBalance') }}</dt>
                   <dd
@@ -248,6 +260,10 @@ async function afterChange() {
                 <div>
                   <dt class="text-muted-foreground">{{ t('vouchers.admin.colUsed') }}</dt>
                   <dd class="tabular-nums">{{ row.redeemed }}</dd>
+                </div>
+                <div>
+                  <dt class="text-muted-foreground">{{ t('vouchers.adjusted') }}</dt>
+                  <dd class="tabular-nums">{{ signed(row.adjusted) }}</dd>
                 </div>
                 <div>
                   <dt class="text-muted-foreground">{{ t('vouchers.admin.colUpcoming') }}</dt>
@@ -279,7 +295,7 @@ async function afterChange() {
           {{ t('vouchers.admin.detailTitle', { name: detail ? displayName(detail.summary) : '' }) }}
         </ResponsiveDialogTitle>
         <ResponsiveDialogDescription class="sr-only">
-          {{ t('vouchers.admin.subtitle') }}
+          {{ t('vouchers.admin.detailDescription', { name: detail ? displayName(detail.summary) : '' }) }}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
 
@@ -321,6 +337,7 @@ async function afterChange() {
     :user-id="formUserId"
     :user-name="formUserName"
     :entry="formEntry"
+    :balances="balances"
     @saved="afterChange"
   />
 </template>

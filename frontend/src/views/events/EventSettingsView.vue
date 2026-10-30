@@ -104,7 +104,7 @@ const shownTab = computed<Tab>(() => {
   return activeTab.value
 })
 
-/** Once a published task earns vouchers or takes them, the organisers get the overview. */
+/** Once a task earns vouchers (published or archived) or takes them, the organisers get the overview. */
 const usesVouchers = computed(
   () =>
     (event.value?.voucher_task_count ?? 0) > 0 || (event.value?.voucher_point_count ?? 0) > 0,

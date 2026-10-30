@@ -744,7 +744,7 @@
             "noBookingsYet": "Click on a shift to book it.",
             "noShiftsMatch": "No shifts match the current filters.",
             "shifts": "Duty Shifts",
-            "shiftsCount": "{count} shifts",
+            "shiftsCount": "{count} shift | {count} shifts",
             "title": "Task Details",
             "unbatchedShifts": "Other Shifts"
         },

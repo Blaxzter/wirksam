@@ -53,7 +53,7 @@ const pass = ref<VoucherPassRead | null>(null)
 const receivedAt = ref(0)
 const now = ref(Date.now())
 const state = ref<VoucherPassStatus['status'] | null>(null)
-const used = ref<{ amount: number; place: string } | null>(null)
+const used = ref<{ amount: number; place: string; available: number } | null>(null)
 const issuing = ref(false)
 const failed = ref(false)
 /** Codes replaced by a newer one but perhaps still being redeemed. */
@@ -66,6 +66,8 @@ const remaining = computed(() =>
 )
 const settled = computed(() => state.value === 'used')
 const holding = computed(() => state.value === 'checking')
+/** The code on screen still works: a failed renewal must not take it away. */
+const passUsable = computed(() => !!pass.value && state.value !== 'expired' && remaining.value > 0)
 
 let tickTimer: ReturnType<typeof setInterval> | null = null
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -101,6 +103,7 @@ function markUsed(status: VoucherPassStatus) {
   used.value = {
     amount: status.redeemed_amount ?? 0,
     place: status.task_name ?? '',
+    available: status.available,
   }
   previousIds.value = []
   announcement.value = t(
@@ -253,10 +256,18 @@ onBeforeUnmount(() => {
             <p class="text-lg font-semibold">
               {{ t('vouchers.code.redeemed', { n: used.amount, place: used.place }, used.amount) }}
             </p>
+            <p class="text-sm text-muted-foreground" data-testid="voucher-code-left">
+              {{
+                used.available > 0
+                  ? t('vouchers.available', { n: used.available }, used.available)
+                  : t('vouchers.noneAvailable')
+              }}
+            </p>
           </div>
 
+          <!-- Nothing that still scans: say so, and offer to try again -->
           <div
-            v-else-if="failed"
+            v-else-if="failed && !passUsable"
             class="flex min-h-[292px] flex-col items-center justify-center gap-3 text-center"
           >
             <p class="text-sm text-muted-foreground">{{ t('vouchers.code.failed') }}</p>
@@ -298,6 +309,23 @@ onBeforeUnmount(() => {
                 {{ t('vouchers.code.expiresIn', { s: remaining }) }}
               </template>
             </p>
+            <!-- The next code did not arrive, but this one still works for now -->
+            <p
+              v-if="failed"
+              class="flex items-center gap-2 text-sm text-muted-foreground"
+              data-testid="voucher-code-renew-failed"
+            >
+              {{ t('vouchers.code.renewFailed') }}
+              <Button
+                variant="link"
+                size="sm"
+                class="h-auto p-0"
+                data-testid="btn-voucher-code-retry"
+                @click="issue"
+              >
+                {{ t('vouchers.code.retry') }}
+              </Button>
+            </p>
           </template>
 
           <div v-else class="flex min-h-[292px] items-center justify-center">
@@ -310,7 +338,12 @@ onBeforeUnmount(() => {
 
       <ResponsiveDialogFooter v-if="settled">
         <Button variant="outline" @click="open = false">{{ t('common.actions.close') }}</Button>
-        <Button data-testid="btn-voucher-code-new" @click="showNew">
+        <!-- Nothing left: a new code would only be turned away at the stand -->
+        <Button
+          v-if="(used?.available ?? 0) > 0"
+          data-testid="btn-voucher-code-new"
+          @click="showNew"
+        >
           {{ t('vouchers.code.showNew') }}
         </Button>
       </ResponsiveDialogFooter>

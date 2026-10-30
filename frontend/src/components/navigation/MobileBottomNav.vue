@@ -68,7 +68,7 @@ const moreGroups = computed<MoreItem[][]>(() => {
   const event: MoreItem[] = [
     { routeName: 'home', labelKey: 'navigation.sidebar.items.home.label', icon: House },
   ]
-  // Same rule as the sidebar: once a published task earns vouchers or takes them.
+  // Same rule as the sidebar: once a task earns vouchers or takes them.
   const selected = authStore.selectedEvent
   if ((selected?.voucher_task_count ?? 0) > 0 || (selected?.voucher_point_count ?? 0) > 0) {
     event.push({

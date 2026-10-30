@@ -819,11 +819,16 @@ Read-schema flags:
   within `redeem_window_dates(clock.wall_clock_now())` (yesterday through
   tomorrow, the same range `voucher_redeemer_kind` uses), filtered with
   `redeem_window`.
-- **`EventRead`** gets `voucher_task_count: int = 0` (published tasks with
-  `vouchers_per_shift > 0`) and `voucher_point_count: int = 0` (published
-  points). Both are for members only, like `team_count`, and are filled in
-  `decorate_events` by one grouped query,
+- **`EventRead`** gets `voucher_task_count: int = 0` (published *or
+  archived* tasks with `vouchers_per_shift > 0`: an archived task's shifts
+  still count, so its volunteers keep balances the organisers may need to
+  correct) and `voucher_point_count: int = 0` (published points). Both are
+  for members only, like `team_count`, and are filled in `decorate_events` by
+  one grouped query,
   `crud_task.voucher_counts_by_event(session, event_ids=member_of)`.
+- **`LocationShiftRead`** (the map's location sheet) gets
+  `vouchers_per_shift` and the viewer-relative `can_manage`, so the sheet
+  hides Book on a voucher shift that has started, as the task page does.
 
 Other changes:
 - `ADMIN_ONLY_TASK_FIELDS` gains `vouchers_per_shift`, `is_voucher_point`

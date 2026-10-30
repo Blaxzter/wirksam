@@ -67,7 +67,7 @@ test.describe('Task Detail – page structure', () => {
   test('shows shift time cards', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
     // Shifts should show time and availability count
-    await expect(page.getByText(/0\/3/).first()).toBeVisible()
+    await expect(page.getByText('0/3', { exact: true }).first()).toBeVisible()
   })
 
   test('back button navigates to tasks list', async ({ adminPage: page }) => {
@@ -83,7 +83,7 @@ test.describe('Task Detail – booking', () => {
   test('clicking a shift books it', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
     // Wait for shifts to render — find shift cards by their availability text
-    const slotCard = page.getByText(/0\/3/).first()
+    const slotCard = page.getByText('0/3', { exact: true }).first()
     await expect(slotCard).toBeVisible()
 
     // Click first available shift card
@@ -97,7 +97,7 @@ test.describe('Task Detail – booking', () => {
     }
 
     // Should show booking count updated
-    await expect(page.getByText(/1\/3/).first()).toBeVisible()
+    await expect(page.getByText('1/3', { exact: true }).first()).toBeVisible()
   })
 
   test('booked shift shows in My Bookings summary', async ({ adminPage: page }) => {
@@ -126,10 +126,10 @@ test.describe('Task Detail – booking', () => {
 
     await page.goto(`/app/tasks/${created.task.id}`)
     // Wait for booked state to load
-    await expect(page.getByText(/1\/3/).first()).toBeVisible()
+    await expect(page.getByText('1/3', { exact: true }).first()).toBeVisible()
 
     // Click to cancel
-    await page.getByText(/1\/3/).first().click()
+    await page.getByText('1/3', { exact: true }).first().click()
 
     // Handle confirmation dialog (app-level dialog, not browser dialog)
     const confirmBtn = page.getByRole('button', { name: /confirm|bestätigen/i })
@@ -139,7 +139,7 @@ test.describe('Task Detail – booking', () => {
     }
 
     // Should revert to 0 bookings
-    await expect(page.getByText(/0\/3/).first()).toBeVisible()
+    await expect(page.getByText('0/3', { exact: true }).first()).toBeVisible()
   })
 })
 

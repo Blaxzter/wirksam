@@ -11,12 +11,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 import type { ShiftBookingEntry } from '@/client/types.gen'
 import { telHref } from '@/lib/format'
+import { parseServerDate } from '@/lib/server-time'
 
 const props = defineProps<{
   bookings: ShiftBookingEntry[]
   /** `max_bookings` — how many people the shift is asking for. */
   capacity: number
   loading?: boolean
+  /** The shift is over: free places can no longer be filled, so say nothing of them. */
+  hideFree?: boolean
 }>()
 
 const { t } = useI18n()
@@ -27,7 +30,13 @@ const { formatDateTime } = useFormatters()
  * twelve people would otherwise push everything who actually signed up off the
  * screen behind eleven identical placeholders.
  */
-const freeCount = computed(() => Math.max(0, props.capacity - props.bookings.length))
+const freeCount = computed(() =>
+  props.hideFree ? 0 : Math.max(0, props.capacity - props.bookings.length),
+)
+
+/** When they booked, in the reader's time: the server sends naive UTC. */
+const bookedAt = (entry: ShiftBookingEntry) =>
+  formatDateTime(parseServerDate(entry.created_at)?.toISOString() ?? entry.created_at)
 
 const initials = (name: string | null | undefined, email: string | null | undefined): string => {
   if (name) {
@@ -114,7 +123,7 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
         </div>
 
         <time class="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
-          {{ formatDateTime(entry.created_at) }}
+          {{ bookedAt(entry) }}
         </time>
       </li>
 

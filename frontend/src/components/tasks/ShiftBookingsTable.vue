@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table'
 
 import type { ShiftBookingEntry } from '@/client/types.gen'
+import { parseServerDate } from '@/lib/server-time'
 
 const props = defineProps<{
   bookings: ShiftBookingEntry[]
@@ -100,7 +101,7 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
               <span class="text-muted-foreground truncate block">{{ entry.notes ?? '—' }}</span>
             </TableCell>
             <TableCell class="text-right text-muted-foreground whitespace-nowrap">
-              {{ formatDateTime(entry.created_at) }}
+              {{ formatDateTime(parseServerDate(entry.created_at)?.toISOString() ?? entry.created_at) }}
             </TableCell>
           </TableRow>
         </TableBody>

@@ -141,9 +141,52 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
     `1 redeemed for ${disposableUser.name}. 1 left.`,
   )
 
-  // The volunteer's screen follows within a couple of seconds.
-  await expect(codeDialog.getByTestId('voucher-code-used')).toContainText(
-    `1 voucher used at ${pointTask.name}`,
-    { timeout: 10_000 },
+  // The volunteer's screen follows within a couple of seconds, with what is left.
+  const used = codeDialog.getByTestId('voucher-code-used')
+  await expect(used).toContainText(`1 voucher used at ${pointTask.name}`, { timeout: 10_000 })
+  await expect(used.getByTestId('voucher-code-left')).toHaveText('1 voucher available')
+  await expect(codeDialog.getByTestId('btn-voucher-code-new')).toBeVisible()
+
+  // Showing the same code again at the stand says where it went, and stays.
+  await confirm.getByTestId('btn-voucher-next').click()
+  await expect(confirm).toBeHidden()
+  await adminPage.getByTestId('voucher-code-input').fill(code)
+  await adminPage.getByTestId('btn-voucher-check').click()
+  await expect(adminPage.getByTestId('voucher-check-problem')).toContainText(
+    `Already redeemed: 1 voucher at ${pointTask.name}`,
   )
+})
+
+test('a refused camera says so, and a bad code is explained next to the field', async ({
+  adminPage,
+}) => {
+  await api(adminPage, 'PATCH', `/tasks/${pointTask.id}`, { is_voucher_point: true })
+
+  // The browser refuses the camera. qr-scanner reports that as "Camera not
+  // found.", so the page asks the permission what happened.
+  await adminPage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('Refused', 'NotAllowedError')),
+      },
+    })
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: { query: () => Promise.resolve({ state: 'denied' }) },
+    })
+  })
+  await adminPage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
+  await expect(adminPage.getByTestId('voucher-scanner-error')).toContainText(
+    'Camera access was refused',
+  )
+
+  // The typing field opened by itself; a code nobody issued is explained in
+  // place rather than in a toast, until the next keystroke.
+  const problem = adminPage.getByTestId('voucher-check-problem')
+  await adminPage.getByTestId('voucher-code-input').fill('K7M4QX')
+  await adminPage.getByTestId('btn-voucher-check').click()
+  await expect(problem).toContainText("This code isn't valid")
+  await adminPage.getByTestId('voucher-code-input').fill('K7M4Q')
+  await expect(problem).toBeHidden()
 })

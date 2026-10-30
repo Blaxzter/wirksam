@@ -2203,6 +2203,14 @@ export type LocationShiftRead = {
    * Locked By Team
    */
   locked_by_team?: boolean
+  /**
+   * Vouchers Per Shift
+   */
+  vouchers_per_shift?: number
+  /**
+   * Can Manage
+   */
+  can_manage?: boolean
 }
 
 /**

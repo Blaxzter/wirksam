@@ -284,18 +284,23 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     ) -> dict[uuid.UUID, tuple[int, int]]:
         """``{event_id: (tasks that earn vouchers, points that take them)}``.
 
-        Published tasks only: a draft earns nobody anything yet, and the
-        navigation should not offer a voucher page for it.
+        A draft earns nobody anything yet, and the navigation should not offer
+        a voucher page for it. An archived task's shifts still count, so its
+        volunteers still hold balances and the organisers still need the
+        overview to correct them: it counts as earning. Only a published task
+        takes vouchers.
         """
         if not event_ids:
             return {}
         earning = func.count().filter(col(Task.vouchers_per_shift) > 0)
-        points = func.count().filter(col(Task.is_voucher_point).is_(True))
+        points = func.count().filter(
+            col(Task.is_voucher_point).is_(True), col(Task.status) == "published"
+        )
         rows = await db.execute(
             select(col(Task.event_id), earning, points)
             .where(
                 col(Task.event_id).in_(event_ids),
-                col(Task.status) == "published",
+                col(Task.status).in_(("published", "archived")),
                 or_(
                     col(Task.vouchers_per_shift) > 0,
                     col(Task.is_voucher_point).is_(True),

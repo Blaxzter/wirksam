@@ -134,6 +134,19 @@ const startedForVouchers = (shift: ShiftRead) =>
   !canManageTask.value &&
   shiftHasStarted(shift.date, shift.start_time)
 
+/**
+ * Why a shift that still has places cannot be booked any more, or `null`.
+ * Such a tile looks muted like a full one, so "click on a shift to book it"
+ * never points at a shift the server would refuse; a click still opens it.
+ */
+const notBookableNote = (shift: ShiftRead): string | null => {
+  if (shiftHasEnded(shift.date, shift.start_time, shift.end_time)) {
+    return t('duties.shifts.detail.over')
+  }
+  if (startedForVouchers(shift)) return t('vouchers.task.startedNote')
+  return null
+}
+
 const onVoucherSettingsSaved = (saved: TaskRead) => {
   task.value = saved
 }
@@ -1203,9 +1216,11 @@ onMounted(async () => {
                   </h3>
                   <Badge variant="outline">
                     {{
-                      t('duties.tasks.detail.shiftsCount', {
-                        count: filterShifts(event.shifts).length,
-                      })
+                      t(
+                        'duties.tasks.detail.shiftsCount',
+                        { count: filterShifts(event.shifts).length },
+                        filterShifts(event.shifts).length,
+                      )
                     }}
                   </Badge>
                   <template v-if="event.batch">
@@ -1255,7 +1270,9 @@ onMounted(async () => {
                 <div class="flex items-center gap-2">
                   <h3 class="font-medium">{{ formatDateLabel(date) }}</h3>
                   <Badge variant="outline">
-                    {{ t('duties.tasks.detail.shiftsCount', { count: shifts.length }) }}
+                    {{
+                      t('duties.tasks.detail.shiftsCount', { count: shifts.length }, shifts.length)
+                    }}
                   </Badge>
                 </div>
                 <div class="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
@@ -1269,7 +1286,9 @@ onMounted(async () => {
                         ? 'ring-2 ring-primary bg-primary/5'
                         : isShiftFull(shift)
                           ? 'opacity-40 cursor-not-allowed'
-                          : shift.locked_by_team
+                          : notBookableNote(shift)
+                            ? 'bg-muted/30 text-muted-foreground opacity-60 shadow-none hover:ring-1 hover:ring-border'
+                            : shift.locked_by_team
                             ? 'border-dashed bg-muted/30 text-muted-foreground shadow-none hover:ring-1 hover:ring-border'
                             : shift.collides_with_my_booking
                               ? 'opacity-50 cursor-not-allowed border-dashed border-destructive/50'
@@ -1277,7 +1296,9 @@ onMounted(async () => {
                       busyShiftId === shift.id ? 'opacity-60 pointer-events-none' : '',
                     ]"
                     :title="
-                      shift.locked_by_team && !myBookedShiftIds.has(shift.id)
+                      !myBookedShiftIds.has(shift.id) && notBookableNote(shift)
+                        ? notBookableNote(shift)!
+                        : shift.locked_by_team && !myBookedShiftIds.has(shift.id)
                         ? t('teamLocks.gate.lockedShift', { name: shift.team_name })
                         : shift.collides_with_my_booking
                           ? t('duties.shifts.detail.clashesWithMine')

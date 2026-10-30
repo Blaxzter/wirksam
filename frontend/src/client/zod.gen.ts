@@ -838,6 +838,8 @@ export const zLocationShiftRead = z
     team_requires_approval: z.boolean().nullish(),
     my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
     locked_by_team: z.boolean().optional().default(false),
+    vouchers_per_shift: z.int().optional().default(0),
+    can_manage: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
     description: "A shift at a location on one day, as listed in the map's location sheet.",

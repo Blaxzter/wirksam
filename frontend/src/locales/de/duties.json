@@ -744,7 +744,7 @@
             "noBookingsYet": "Klicke auf eine Schicht, um sie zu buchen.",
             "noShiftsMatch": "Keine Schichten entsprechen den aktuellen Filtern.",
             "shifts": "Dienstschichten",
-            "shiftsCount": "{count} Schichten",
+            "shiftsCount": "{count} Schicht | {count} Schichten",
             "title": "Aufgabendetails",
             "unbatchedShifts": "Weitere Schichten"
         },

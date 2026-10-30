@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { ChevronDown, Keyboard, MapPin, ScanLine, UserSearch } from '@lucide/vue'
+import { CircleAlert, ChevronDown, Info, Keyboard, MapPin, ScanLine, UserSearch } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { toast } from 'vue-sonner'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -40,7 +39,7 @@ import type {
   VoucherCheckResult,
   VoucherPointRead,
 } from '@/client/types.gen'
-import { toastApiError } from '@/lib/api-errors'
+import { getApiErrorMessage, toastApiError } from '@/lib/api-errors'
 import { parseServerDate } from '@/lib/server-time'
 import {
   codeUsedDetails,
@@ -143,6 +142,7 @@ async function loadPoints() {
 watch(eventId, loadPoints, { immediate: true })
 
 watch(pointId, (taskId) => {
+  checkProblem.value = null
   if (!taskId || !eventId.value) return
   rememberPoint(eventId.value, taskId)
   if (route.query.task !== taskId) {
@@ -192,12 +192,26 @@ const busy = ref(false)
 const confirmOpen = ref(false)
 const subject = ref<RedeemSubject | null>(null)
 const gate = createDetectionGate()
+/** "Pick a person" is open: a code held up meanwhile must not open the confirm on top. */
+const pickOpen = ref(false)
+
+/**
+ * Why the last code went nowhere, shown under the camera until the next code
+ * or the next keystroke. A toast is gone in four seconds, often before anyone
+ * at a busy counter has looked down at the phone.
+ */
+const checkProblem = ref<{ kind: 'used' | 'error'; text: string } | null>(null)
+
+function timeOfDay(d: Date | null): string {
+  return d ? d.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }) : ''
+}
 
 async function check(body: { code: string } | { user_id: string }) {
   const id = eventId.value
   const p = point.value
   if (!id || !p || busy.value) return
   busy.value = true
+  checkProblem.value = null
   try {
     const res = await post<{ data: VoucherCheckResult }>({
       url: `/events/${id}/vouchers/check`,
@@ -213,41 +227,37 @@ async function check(body: { code: string } | { user_id: string }) {
     confirmOpen.value = true
   } catch (error) {
     const used = codeUsedDetails(error)
-    if (used) {
-      toast.info(
-        t(
-          'vouchers.redeem.alreadyRedeemed',
-          {
-            n: used.amount ?? 0,
-            place: used.taskName ?? '?',
-            time: used.usedAt
-              ? used.usedAt.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' })
-              : '',
-          },
-          used.amount ?? 0,
-        ),
-      )
-    } else {
-      toastApiError(error)
-    }
+    checkProblem.value = used
+      ? {
+          kind: 'used',
+          text: t(
+            'vouchers.redeem.alreadyRedeemed',
+            { n: used.amount ?? 0, place: used.taskName ?? '?', time: timeOfDay(used.usedAt) },
+            used.amount ?? 0,
+          ),
+        }
+      : { kind: 'error', text: getApiErrorMessage(error) }
     busy.value = false
   }
 }
 
 watch(confirmOpen, (isOpen) => {
   if (isOpen) return
+  // However long the confirm stayed open, the code it was about is still in
+  // front of the camera now: count it as handled from this moment.
+  if (subject.value?.code) gate.remember(subject.value.code, Date.now())
   busy.value = false
   void loadRecent()
 })
 
 function onDetect(data: string) {
-  if (busy.value || !point.value) return
+  if (busy.value || pickOpen.value || !point.value) return
   const now = Date.now()
   const code = parseVoucherPayload(data)
-  // Even a stranger's QR code is handled once, not toasted on every frame.
+  // Even a stranger's QR code is handled once, not reported on every frame.
   if (!gate.accept(code ?? data, now)) return
   if (!code) {
-    toast.error(t('vouchers.redeem.notAVoucher'))
+    checkProblem.value = { kind: 'error', text: t('vouchers.redeem.notAVoucher') }
     return
   }
   void check({ code })
@@ -280,10 +290,15 @@ function onScannerError(kind: ScannerError) {
 
 const typed = ref('')
 
+// What was said about the last code no longer applies to a new one.
+watch(typed, () => {
+  checkProblem.value = null
+})
+
 function submitTyped() {
   const code = normalizeVoucherCode(typed.value)
   if (!code) {
-    toast.error(t('vouchers.redeem.notAVoucher'))
+    checkProblem.value = { kind: 'error', text: t('vouchers.redeem.notAVoucher') }
     return
   }
   gate.accept(code, Date.now())
@@ -294,7 +309,6 @@ function submitTyped() {
 
 // --- Picking the person ---
 
-const pickOpen = ref(false)
 const members = ref<EventMemberRead[]>([])
 
 async function openPicker() {
@@ -348,21 +362,29 @@ watch(eventId, () => {
           <MapPin class="size-4 text-muted-foreground" aria-hidden="true" />
           {{ t('vouchers.redeem.place') }}
         </Label>
-        <NativeSelect
-          id="voucher-point"
-          v-model="pointId"
-          class="min-w-0 flex-1"
-          data-testid="voucher-point"
-        >
-          <option v-for="p in redeemable" :key="p.task_id" :value="p.task_id">
-            {{ p.location ? `${p.name} · ${p.location}` : p.name }}
-          </option>
-        </NativeSelect>
+        <!-- The wrapper, not the select, is the flex child: let it fill the line
+             and let a long name be cut off by the select instead of widening it. -->
+        <div class="min-w-0 flex-1 [&_[data-slot=native-select-wrapper]]:w-full">
+          <NativeSelect
+            id="voucher-point"
+            v-model="pointId"
+            class="w-full truncate"
+            data-testid="voucher-point"
+          >
+            <option v-for="p in redeemable" :key="p.task_id" :value="p.task_id">
+              {{ p.location ? `${p.name} · ${p.location}` : p.name }}
+            </option>
+          </NativeSelect>
+        </div>
       </div>
 
       <!-- The camera: always mounted while it works, never hidden -->
       <div v-if="!scannerError" class="mx-auto w-full space-y-2 sm:max-w-sm">
-        <VoucherScanner :paused="busy" @detect="onDetect" @error="onScannerError" />
+        <VoucherScanner
+          :paused="busy || pickOpen"
+          @detect="onDetect"
+          @error="onScannerError"
+        />
         <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
           <ScanLine class="size-4 shrink-0" aria-hidden="true" />
           {{ t('vouchers.redeem.scanHint') }}
@@ -371,6 +393,23 @@ watch(eventId, () => {
       <Alert v-else data-testid="voucher-scanner-error">
         <AlertDescription>{{ scannerMessage }}</AlertDescription>
       </Alert>
+
+      <!-- What became of the last code: stays until the next one -->
+      <div
+        v-if="checkProblem"
+        role="alert"
+        class="flex items-start gap-2 rounded-md border p-3 text-sm"
+        :class="
+          checkProblem.kind === 'used'
+            ? 'border-amber-500/40 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200'
+            : 'border-destructive/40 bg-destructive/5 text-destructive'
+        "
+        data-testid="voucher-check-problem"
+      >
+        <Info v-if="checkProblem.kind === 'used'" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <CircleAlert v-else class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <span>{{ checkProblem.text }}</span>
+      </div>
 
       <!-- Typing the code: under the camera, not a tab beside it -->
       <Collapsible v-model:open="typeOpen" class="rounded-lg border">
@@ -457,7 +496,7 @@ watch(eventId, () => {
         </CardHeader>
         <CardContent>
           <p v-if="recent.items.length === 0" class="text-sm text-muted-foreground">
-            {{ t('vouchers.redeem.recentEmpty') }}
+            {{ seesAllEntries ? t('vouchers.redeem.recentEmpty') : t('vouchers.redeem.recentOwnEmpty') }}
           </p>
           <ul v-else class="divide-y">
             <li

@@ -46,10 +46,10 @@ Not yet covered, and not currently tracked by an issue:
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 25      |
 | `mobile`     | 2          | 10      |
-| `multi-user` | 7          | 63      |
+| `multi-user` | 7          | 64      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **59**     | **423** |
+| **Total**    | **59**     | **424** |
 
 ## Inventory
 
@@ -617,7 +617,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 63 tests
+### Project `multi-user` — 7 files, 64 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -716,9 +716,10 @@ Not yet covered, and not currently tracked by an issue:
 - an organiser puts a member in charge from the task page
 - a person in charge edits the task and adds a shift, but cannot delete or publish it
 
-#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 1 test
+#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 2 tests
 
 - a volunteer shows their code and an organiser redeems it at a stand
+- a refused camera says so, and a bad code is explained next to the field
 
 ### Project `public` — 8 files, 42 tests
 

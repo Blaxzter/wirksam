@@ -159,7 +159,7 @@ const showTeams = computed(() => {
 /** Team requests this user may decide in the selected event. */
 const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
 
-/** Once a published task earns vouchers or takes them; until then nothing to show. */
+/** Once a task earns vouchers (published or archived) or takes them; until then nothing to show. */
 const showVouchers = computed(() => {
   const event = authStore.selectedEvent
   return (event?.voucher_task_count ?? 0) > 0 || (event?.voucher_point_count ?? 0) > 0

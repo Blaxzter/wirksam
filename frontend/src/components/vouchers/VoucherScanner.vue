@@ -5,6 +5,8 @@ import { Loader2 } from '@lucide/vue'
 import type QrScanner from 'qr-scanner'
 import { useI18n } from 'vue-i18n'
 
+import { type CameraProblem, classifyCameraError } from '@/lib/vouchers'
+
 /**
  * The camera view that reads volunteers' QR codes. The only file that loads
  * `qr-scanner`, and only once it is on screen, so neither the library nor its
@@ -20,7 +22,7 @@ import { useI18n } from 'vue-i18n'
  */
 const props = defineProps<{ paused?: boolean }>()
 
-export type ScannerError = 'insecure' | 'denied' | 'no-camera' | 'other'
+export type ScannerError = 'insecure' | CameraProblem
 
 const emit = defineEmits<{
   /** The raw text of a QR code in view. */
@@ -30,27 +32,61 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/**
+ * How long a camera that has handed over its stream may take to show a first
+ * picture. Counted from the stream, not from the start, so a permission prompt
+ * the redeemer is still reading never runs into it.
+ */
+const NO_PICTURE_MS = 8000
+
 const video = ref<HTMLVideoElement | null>(null)
 const starting = ref(true)
 const failed = ref(false)
 
 let scanner: QrScanner | null = null
 let unmounted = false
+let watchdog: ReturnType<typeof setInterval> | null = null
 
-function classify(err: unknown): ScannerError {
-  if (err === 'Camera not found.') return 'no-camera'
-  const name = err instanceof Error || err instanceof DOMException ? err.name : ''
-  if (name === 'NotAllowedError' || name === 'SecurityError' || name === 'PermissionDeniedError')
-    return 'denied'
-  if (name === 'NotFoundError' || name === 'OverconstrainedError' || name === 'DevicesNotFoundError')
-    return 'no-camera'
-  return 'other'
+function stopWatchdog() {
+  if (watchdog) clearInterval(watchdog)
+  watchdog = null
 }
 
 function fail(kind: ScannerError) {
+  if (failed.value) return
+  stopWatchdog()
+  scanner?.destroy()
+  scanner = null
   failed.value = true
   starting.value = false
   emit('error', kind)
+}
+
+/** The camera permission's state, where the browser can tell. */
+async function cameraPermission(): Promise<PermissionState | null> {
+  try {
+    const status = await navigator.permissions?.query({ name: 'camera' as PermissionName })
+    return status?.state ?? null
+  } catch {
+    // Firefox does not know the name; nothing to go on, then.
+    return null
+  }
+}
+
+/**
+ * Some cameras hand over a stream that never delivers a frame (a webcam held
+ * by another app, a broken driver), and the library then waits for ever.
+ */
+function watchForPicture() {
+  let streamSince: number | null = null
+  watchdog = setInterval(() => {
+    const el = video.value
+    if (!el || !starting.value) return stopWatchdog()
+    if (!el.srcObject) return
+    streamSince ??= Date.now()
+    if (el.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return
+    if (Date.now() - streamSince >= NO_PICTURE_MS) fail('other')
+  }, 500)
 }
 
 onMounted(async () => {
@@ -72,18 +108,22 @@ onMounted(async () => {
         onDecodeError: () => {},
       },
     )
+    watchForPicture()
     await scanner.start()
+    if (failed.value) return
+    stopWatchdog()
     starting.value = false
   } catch (err) {
+    if (unmounted || failed.value) return
+    const permission = await cameraPermission()
     if (unmounted) return
-    scanner?.destroy()
-    scanner = null
-    fail(classify(err))
+    fail(classifyCameraError(err, permission))
   }
 })
 
 onBeforeUnmount(() => {
   unmounted = true
+  stopWatchdog()
   scanner?.destroy()
   scanner = null
 })

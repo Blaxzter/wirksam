@@ -432,6 +432,7 @@ const handleSubmit = async () => {
   submitting.value = true
 
   try {
+    const inEvent = eventMode.value !== 'none'
     const body: Record<string, unknown> = {
       name: name.value,
       description: description.value || null,
@@ -442,9 +443,11 @@ const handleSubmit = async () => {
       category: category.value || null,
       team_id: locationEventId.value ? teamId.value : null,
       manager_ids: locationEventId.value ? managers.value.map((m) => m.user_id) : [],
-      vouchers_per_shift: vouchersPerShift.value,
-      is_voucher_point: isVoucherPoint.value,
-      is_voucher_desk: isVoucherPoint.value && isVoucherDesk.value,
+      // Only inside an event, where the section is shown: switching to "No
+      // event" afterwards must not leave a task its creator cannot reset.
+      vouchers_per_shift: inEvent ? vouchersPerShift.value || 0 : 0,
+      is_voucher_point: inEvent && isVoucherPoint.value,
+      is_voucher_desk: inEvent && isVoucherPoint.value && isVoucherDesk.value,
       schedule: {
         default_start_time: defaultStartTime.value + ':00',
         default_end_time: defaultEndTime.value + ':00',
@@ -556,85 +559,6 @@ const handleSubmit = async () => {
                 <Input id="task-category" v-model="category" />
               </div>
             </div>
-            <!-- Who can book: only an existing event has teams to choose from -->
-            <section
-              v-if="locationEventId"
-              class="space-y-3 border-t pt-4"
-              data-testid="section-who-can-book"
-              aria-labelledby="who-can-book-heading"
-            >
-              <div class="space-y-0.5">
-                <h3 id="who-can-book-heading" class="font-semibold">
-                  {{ t('teamLocks.picker.title') }}
-                </h3>
-                <p class="text-sm text-muted-foreground">{{ t('teamLocks.picker.subtitle') }}</p>
-              </div>
-              <TeamPicker v-model="teamId" :event-id="locationEventId" input-id="task-team" />
-            </section>
-            <!-- People in charge: members of the chosen event -->
-            <section
-              v-if="locationEventId"
-              class="space-y-3 border-t pt-4"
-              data-testid="section-task-managers"
-              aria-labelledby="task-managers-heading"
-            >
-              <div class="space-y-0.5">
-                <h3 id="task-managers-heading" class="font-semibold">
-                  {{ t('duties.tasks.managers.title') }}
-                </h3>
-                <p class="text-sm text-muted-foreground">
-                  {{ t('duties.tasks.managers.createHint') }}
-                </p>
-              </div>
-              <EventMemberPicker
-                :members="eventMembers"
-                :unavailable="pickedManagerIds"
-                :label="t('duties.tasks.managers.add')"
-                :placeholder="t('teams.roster.addPlaceholder')"
-                input-id="task-create-manager"
-                :action-hint="t('teams.roster.enterToAdd')"
-                testid="task-create-manager"
-                @pick="addManager"
-              />
-              <ul v-if="managers.length" class="flex flex-wrap gap-2">
-                <li v-for="m in managers" :key="m.user_id">
-                  <Badge
-                    variant="secondary"
-                    class="gap-1 py-1 pr-1 pl-2.5 text-sm"
-                    :data-testid="`task-create-manager-chip-${m.user_id}`"
-                  >
-                    <span class="max-w-48 truncate">{{ m.name || m.email || '?' }}</span>
-                    <button
-                      type="button"
-                      class="rounded-full p-0.5 hover:bg-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      :aria-label="
-                        t('duties.events.members.remove', { name: m.name || m.email || '?' })
-                      "
-                      @click="removeManager(m.user_id)"
-                    >
-                      <X class="h-3.5 w-3.5" />
-                    </button>
-                  </Badge>
-                </li>
-              </ul>
-            </section>
-            <!-- Vouchers: only meaningful inside an event -->
-            <section
-              v-if="eventMode !== 'none'"
-              class="space-y-3 border-t pt-4"
-              data-testid="section-task-vouchers"
-              aria-labelledby="task-vouchers-heading"
-            >
-              <h3 id="task-vouchers-heading" class="font-semibold">
-                {{ t('vouchers.settings.title') }}
-              </h3>
-              <TaskVoucherSettingsFields
-                v-model:vouchers-per-shift="vouchersPerShift"
-                v-model:is-point="isVoucherPoint"
-                v-model:is-desk="isVoucherDesk"
-                id-prefix="task-create-vouchers"
-              />
-            </section>
             <div class="flex justify-end pt-2">
               <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{
                 t('common.actions.next')
@@ -714,6 +638,91 @@ const handleSubmit = async () => {
               </div>
             </div>
           </div>
+          <!--
+            What only makes sense inside an event sits right under the choice of
+            event, so it appears where the event was just picked rather than in
+            the step before, which nobody goes back to.
+          -->
+          <!-- Who can book: only an existing event has teams to choose from -->
+          <section
+            v-if="locationEventId"
+            class="mt-4 space-y-3 border-t pt-4"
+            data-testid="section-who-can-book"
+            aria-labelledby="who-can-book-heading"
+          >
+            <div class="space-y-0.5">
+              <h3 id="who-can-book-heading" class="font-semibold">
+                {{ t('teamLocks.picker.title') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">{{ t('teamLocks.picker.subtitle') }}</p>
+            </div>
+            <TeamPicker v-model="teamId" :event-id="locationEventId" input-id="task-team" />
+          </section>
+          <!-- People in charge: members of the chosen event -->
+          <section
+            v-if="locationEventId"
+            class="mt-4 space-y-3 border-t pt-4"
+            data-testid="section-task-managers"
+            aria-labelledby="task-managers-heading"
+          >
+            <div class="space-y-0.5">
+              <h3 id="task-managers-heading" class="font-semibold">
+                {{ t('duties.tasks.managers.title') }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ t('duties.tasks.managers.createHint') }}
+              </p>
+            </div>
+            <EventMemberPicker
+              :members="eventMembers"
+              :unavailable="pickedManagerIds"
+              :label="t('duties.tasks.managers.add')"
+              :placeholder="t('teams.roster.addPlaceholder')"
+              input-id="task-create-manager"
+              :action-hint="t('teams.roster.enterToAdd')"
+              testid="task-create-manager"
+              @pick="addManager"
+            />
+            <ul v-if="managers.length" class="flex flex-wrap gap-2">
+              <li v-for="m in managers" :key="m.user_id">
+                <Badge
+                  variant="secondary"
+                  class="gap-1 py-1 pr-1 pl-2.5 text-sm"
+                  :data-testid="`task-create-manager-chip-${m.user_id}`"
+                >
+                  <span class="max-w-48 truncate">{{ m.name || m.email || '?' }}</span>
+                  <button
+                    type="button"
+                    class="rounded-full p-0.5 hover:bg-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    :aria-label="
+                      t('duties.events.members.remove', { name: m.name || m.email || '?' })
+                    "
+                    @click="removeManager(m.user_id)"
+                  >
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </Badge>
+              </li>
+            </ul>
+          </section>
+          <!-- Vouchers: only meaningful inside an event -->
+          <section
+            v-if="eventMode !== 'none'"
+            class="mt-4 space-y-3 border-t pt-4"
+            data-testid="section-task-vouchers"
+            aria-labelledby="task-vouchers-heading"
+          >
+            <h3 id="task-vouchers-heading" class="font-semibold">
+              {{ t('vouchers.settings.title') }}
+            </h3>
+            <TaskVoucherSettingsFields
+              v-model:vouchers-per-shift="vouchersPerShift"
+              v-model:is-point="isVoucherPoint"
+              v-model:is-desk="isVoucherDesk"
+              :team-id="locationEventId ? teamId : null"
+            id-prefix="task-create-vouchers"
+            />
+          </section>
           <div class="mt-4 flex justify-end">
             <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{
               t('common.actions.next')

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { VoucherEntryRead, VoucherShift } from '@/client/types.gen'
 import {
   SAME_CODE_IGNORE_MS,
+  classifyCameraError,
   codeUsedDetails,
   createDetectionGate,
   formatVoucherCode,
@@ -172,10 +173,29 @@ describe('createDetectionGate', () => {
     expect(gate.accept('AAAAAA', SAME_CODE_IGNORE_MS - 1)).toBe(false)
   })
 
-  it('accepts the same code again after the quiet time', () => {
+  it('accepts the same code again once it has been out of view for the quiet time', () => {
     const gate = createDetectionGate(1000)
     gate.accept('AAAAAA', 0)
     expect(gate.accept('AAAAAA', 1000)).toBe(true)
+  })
+
+  it('counts the quiet time from the last sighting, not the first', () => {
+    const gate = createDetectionGate(1000)
+    gate.accept('AAAAAA', 0)
+    // Still in front of the camera: every sighting starts the wait again.
+    expect(gate.accept('AAAAAA', 900)).toBe(false)
+    expect(gate.accept('AAAAAA', 1800)).toBe(false)
+    expect(gate.accept('AAAAAA', 2700)).toBe(false)
+    expect(gate.accept('AAAAAA', 3700)).toBe(true)
+  })
+
+  it('treats a remembered code as just handled', () => {
+    const gate = createDetectionGate(1000)
+    gate.accept('AAAAAA', 0)
+    // The confirm for it closes long after it was first seen.
+    gate.remember('AAAAAA', 15_000)
+    expect(gate.accept('AAAAAA', 15_500)).toBe(false)
+    expect(gate.accept('BBBBBB', 15_600)).toBe(true)
   })
 
   it('accepts a different code at once, and the first one again after it', () => {
@@ -190,6 +210,37 @@ describe('createDetectionGate', () => {
     gate.accept('AAAAAA', 0)
     gate.reset()
     expect(gate.accept('AAAAAA', 1)).toBe(true)
+  })
+})
+
+describe('classifyCameraError', () => {
+  it('reads a refused permission as refused, whatever the scanner threw', () => {
+    // qr-scanner turns every getUserMedia rejection into this one string.
+    expect(classifyCameraError('Camera not found.', 'denied')).toBe('denied')
+    expect(classifyCameraError(new Error('x'), 'denied')).toBe('denied')
+  })
+
+  it("trusts the scanner's string when the permission was not refused", () => {
+    expect(classifyCameraError('Camera not found.', 'granted')).toBe('no-camera')
+    expect(classifyCameraError('Camera not found.', 'prompt')).toBe('no-camera')
+    expect(classifyCameraError('Camera not found.')).toBe('no-camera')
+  })
+
+  it("reads the browser's own errors by name", () => {
+    expect(classifyCameraError(new DOMException('no', 'NotAllowedError'))).toBe('denied')
+    expect(classifyCameraError(new DOMException('no', 'SecurityError'))).toBe('denied')
+    expect(classifyCameraError({ name: 'PermissionDeniedError' })).toBe('denied')
+    expect(classifyCameraError(new DOMException('none', 'NotFoundError'))).toBe('no-camera')
+    expect(classifyCameraError(new DOMException('x', 'OverconstrainedError'))).toBe('no-camera')
+    expect(classifyCameraError({ name: 'DevicesNotFoundError' })).toBe('no-camera')
+  })
+
+  it('calls anything else a failure', () => {
+    expect(classifyCameraError(new DOMException('busy', 'NotReadableError'))).toBe('other')
+    expect(classifyCameraError(new Error('boom'))).toBe('other')
+    expect(classifyCameraError('something else')).toBe('other')
+    expect(classifyCameraError(null)).toBe('other')
+    expect(classifyCameraError({ name: 42 })).toBe('other')
   })
 })
 

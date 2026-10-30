@@ -1428,6 +1428,22 @@ class TestFlags:
         assert r.json()["voucher_task_count"] == 1
         assert r.json()["voucher_point_count"] == 2
 
+        # An archived task still earns (its shifts keep counting, so the
+        # organisers still need the overview), but no longer takes vouchers.
+        await _task(
+            db_session,
+            cast.event,
+            cast.volunteer,
+            name="Archiv",
+            status="archived",
+            vouchers_per_shift=2,
+            is_voucher_point=True,
+        )
+        with act_as(app, cast.volunteer):
+            r = await async_client.get(f"/api/v1/events/{cast.event.id}")
+        assert r.json()["voucher_task_count"] == 2
+        assert r.json()["voucher_point_count"] == 2
+
         with act_as(app, cast.outsider):
             r = await async_client.get(f"/api/v1/events/{cast.event.id}")
         assert r.status_code == 200  # a public event

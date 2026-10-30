@@ -65,7 +65,10 @@ const { post } = useAuthenticatedClient()
 /** One redemption never takes more than this (the server's limit). */
 const MAX_PER_REDEMPTION = 50
 
-const amount = ref(1)
+/** `undefined` once the field is emptied: reka's number field reports no number then. */
+const amount = ref<number | undefined>(1)
+/** What is in the field while someone types, before it is committed on blur or Enter. */
+const typedAmount = ref<number | null>(null)
 const available = ref(0)
 const requestId = ref('')
 const busy = ref(false)
@@ -75,9 +78,31 @@ const alreadyUsed = ref<CodeUsedDetails | null>(null)
 const name = computed(() => props.subject?.name || '?')
 const max = computed(() => Math.max(1, Math.min(available.value, MAX_PER_REDEMPTION)))
 
+/** The number in the field right now, typed or committed; `null` while it is empty. */
+const shownAmount = computed(() => {
+  const n = typedAmount.value ?? amount.value
+  return typeof n === 'number' && Number.isFinite(n) ? n : null
+})
+/** What will be redeemed: the field clamps to 1…max when it commits. */
+const redeemAmount = computed(() =>
+  shownAmount.value === null ? null : Math.min(Math.max(1, shownAmount.value), max.value),
+)
+const overMax = computed(() => shownAmount.value !== null && shownAmount.value > max.value)
+
+// A committed value (blur, Enter, the ± buttons) replaces what was typed.
+watch(amount, () => {
+  typedAmount.value = null
+})
+
+function onAmountInput(event: Event) {
+  const text = (event.target as HTMLInputElement | null)?.value.trim() ?? ''
+  typedAmount.value = text === '' ? Number.NaN : Number.parseInt(text, 10)
+}
+
 watch(open, (isOpen) => {
   if (!isOpen) return
   amount.value = 1
+  typedAmount.value = null
   available.value = props.subject?.available ?? 0
   requestId.value = newRequestId()
   result.value = null
@@ -90,7 +115,9 @@ function timeOf(d: Date | null): string {
 
 async function redeem() {
   const s = props.subject
-  if (!s || busy.value || result.value) return
+  const n = amount.value
+  // An emptied field is no amount at all; never send a redemption without one.
+  if (!s || busy.value || result.value || n === undefined || !Number.isInteger(n)) return
   busy.value = true
   try {
     const res = await post<{ data: VoucherRedeemResult }>({
@@ -98,7 +125,7 @@ async function redeem() {
       body: {
         task_id: props.taskId,
         ...(s.code ? { code: s.code } : { user_id: s.userId }),
-        amount: amount.value,
+        amount: n,
         request_id: requestId.value,
       },
     })
@@ -118,7 +145,7 @@ async function redeem() {
       const left = response?.data?.available
       if (typeof left === 'number') {
         available.value = left
-        amount.value = Math.max(1, Math.min(amount.value, left))
+        amount.value = Math.max(1, Math.min(n, left))
       }
     }
   } finally {
@@ -129,7 +156,11 @@ async function redeem() {
 
 <template>
   <ResponsiveDialog v-model:open="open">
-    <ResponsiveDialogContent dialog-class="sm:max-w-sm" data-testid="voucher-redeem-confirm">
+    <ResponsiveDialogContent
+      dialog-class="sm:max-w-sm"
+      keep-keyboard-closed
+      data-testid="voucher-redeem-confirm"
+    >
       <ResponsiveDialogHeader>
         <ResponsiveDialogTitle>
           {{ t('vouchers.redeem.confirmTitle', { name }) }}
@@ -218,13 +249,25 @@ async function redeem() {
               :aria-label="t('common.actions.decrease')"
               data-testid="btn-voucher-amount-decrease"
             />
-            <NumberFieldInput class="h-14 text-2xl font-semibold" />
+            <NumberFieldInput
+              class="h-14 text-2xl font-semibold"
+              @input="onAmountInput"
+              @blur="typedAmount = null"
+              @keydown.enter="typedAmount = null"
+            />
             <NumberFieldIncrement
               class="p-4"
               :aria-label="t('common.actions.increase')"
               data-testid="btn-voucher-amount-increase"
             />
           </NumberFieldContent>
+          <p
+            v-if="overMax"
+            class="text-sm text-muted-foreground"
+            data-testid="voucher-redeem-max"
+          >
+            {{ t('vouchers.redeem.atMost', { n: max }) }}
+          </p>
         </NumberField>
       </ResponsiveDialogBody>
 
@@ -241,12 +284,16 @@ async function redeem() {
           <Button
             size="lg"
             class="w-full sm:w-auto"
-            :disabled="busy || !subject"
+            :disabled="busy || !subject || redeemAmount === null"
             data-testid="btn-voucher-redeem"
             @click="redeem"
           >
             <Loader2 v-if="busy" class="mr-2 size-4 animate-spin" aria-hidden="true" />
-            {{ t('vouchers.redeem.confirm', { n: amount }, amount) }}
+            {{
+              redeemAmount === null
+                ? t('vouchers.redeem.confirmNoAmount')
+                : t('vouchers.redeem.confirm', { n: redeemAmount }, redeemAmount)
+            }}
           </Button>
         </template>
       </ResponsiveDialogFooter>

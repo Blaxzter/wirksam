@@ -91,7 +91,9 @@
         "full": "Ausgebucht",
         "loadError": "Die Schichten konnten nicht geladen werden.",
         "noShifts": "Hier gibt es an diesem Tag keine Schichten",
-        "shiftsOn": "Schichten am {day}"
+        "over": "Vorbei",
+        "shiftsOn": "Schichten am {day}",
+        "started": "Läuft schon"
     },
     "staffing": {
         "full": "Voll besetzt",
