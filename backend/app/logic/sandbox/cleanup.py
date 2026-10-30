@@ -56,6 +56,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
@@ -136,11 +137,15 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
         await db.execute(delete(Shift).where(col(Shift.id).in_(shift_ids)))
 
     # 2. Tasks explicitly, never by cascade from the event — see the module
-    #    docstring. Batches would cascade from the task; being explicit keeps
-    #    the order readable and survives someone loosening that cascade later.
+    #    docstring. Batches and the people in charge would cascade from the
+    #    task; being explicit keeps the order readable and survives someone
+    #    loosening that cascade later.
     if task_ids:
         await db.execute(
             delete(ShiftBatch).where(col(ShiftBatch.task_id).in_(task_ids))
+        )
+        await db.execute(
+            delete(TaskManager).where(col(TaskManager.task_id).in_(task_ids))
         )
         await db.execute(delete(Task).where(col(Task.id).in_(task_ids)))
 

@@ -28,7 +28,8 @@ teams (an open Setup crew the visitor is in; the Cash desk, which needs
 approval and locks the wristband check; Shuttle drivers behind a class B
 driving licence; Childcare behind an extended police certificate, which locks
 the kids' games; and First aid behind a first-aid course, with one member whose
-check has expired); and — for the manager role only — one pending invitation,
+check has expired); one teammate put in charge of the Café counter and the
+Grill stand (`task_managers`); and — for the manager role only — one pending invitation,
 one pending join request, the notification telling them about it, the lead of
 the Cash desk, and five team requests to review from four made-up people: Vera
 for the Cash desk and the Shuttle drivers, Jordan for the Cash desk (no note),
@@ -138,7 +139,8 @@ leaves the orphans described above.
 1. booking_reminders, then bookings          — bookings.shift_id is SET NULL, so
 2. shifts                                       a shift removed first strands the
                                                 booking instead of removing it
-3. shift_batches, then tasks (by event_id)   — never by cascade from the event
+3. shift_batches, task_managers, then tasks
+   (by event_id)                             — never by cascade from the event
 4. user_availabilities, event_memberships,
    then event_team_documents, event_team_checks,
    event_team_members, event_team_requirements,
@@ -223,7 +225,8 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `logic/permissions.py::require_event_visible` | 404 for a sandbox the caller did not create — placed **before** the role check, because that check reports the superadmin as owner |
 | `crud/task.py::_apply_common_filters` | unrestricted (superadmin) queries exclude `Task.is_sandbox` |
 | `crud/shift.py::_apply_event_scope` | shifts are scoped through their task; unrestricted still excludes sandboxes |
-| `api/routes/shifts.py::get_shift` | ran no permission check at all before this feature; now resolves the task and runs the visibility gate |
+| `logic/permissions.py::require_task_visible` | the read gate for one task (task page, its shifts and bookings, `GET /shifts/{id}`): 404 for a sandbox task whose event the caller did not create — the superadmin included, so again placed **before** the role check |
+| `api/routes/shifts.py::get_shift` | ran no permission check at all before this feature; now resolves the task and runs `require_task_visible` |
 | `api/routes/dashboard.py::_sidebar_events` | excludes sandboxes unless the viewer created them — `visible_event_ids` is `None` for the superadmin and so cannot do this job |
 | `api/routes/reporting.py` | every query excludes sandbox tasks when there is no event filter, via `_non_sandbox_tasks()` |
 | `api/routes/events.py::set_event_featured` | 422 `event.sandbox_not_featurable` |

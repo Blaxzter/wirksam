@@ -65,6 +65,7 @@ from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
@@ -1602,3 +1603,33 @@ class TestSeededTeams:
             "Erste-Hilfe-Kurs",
             "Führerschein Klasse B",
         }
+
+
+# ── People in charge ──────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestSeededTaskManagers:
+    """Task pages show someone in charge, and that someone is in the event."""
+
+    async def test_one_teammate_runs_the_cafe_counter_and_the_grill(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        tasks = {t.id: t for t in await _tasks(db_session, test_sandbox)}
+        rows = list(
+            (
+                await db_session.execute(
+                    select(TaskManager).where(col(TaskManager.task_id).in_(tasks))
+                )
+            ).scalars()
+        )
+
+        assert sorted(tasks[r.task_id].name for r in rows) == [
+            "Café counter",
+            "Grill stand",
+        ]
+        assert len({r.user_id for r in rows}) == 1
+        guests = {g.id for g in await _guests(db_session, test_sandbox)}
+        assert rows[0].user_id in guests
+        assert rows[0].user_id != test_sandbox.guest.id
+        assert rows[0].added_by_name == test_sandbox.guest.name

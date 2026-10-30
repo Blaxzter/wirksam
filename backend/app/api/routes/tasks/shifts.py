@@ -1,22 +1,37 @@
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Query
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
+from app.crud.booking import booking as crud_booking
 from app.crud.event import event as crud_event
+from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
+from app.crud.task_manager import task_manager as crud_task_manager
+from app.logic import clock
 from app.logic.locations import resolve_location
-from app.logic.permissions import require_event_role
+from app.logic.permissions import (
+    check_shift_history,
+    require_event_role,
+    require_task_manager,
+    shift_history_refuses,
+)
 from app.logic.shift_generator import generate_shifts
+from app.logic.task_managers import decorate_task_reads
 from app.logic.teams import ensure_team_in_event
+from app.models.booking import Booking
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
+from app.models.task import Task
+from app.models.user import User
 from app.schemas.event import EventRead
 from app.schemas.shift import ShiftCreate
 from app.schemas.shift_batch import ShiftBatchCreate
@@ -35,6 +50,38 @@ from app.schemas.task import (
 router = APIRouter()
 
 
+async def _task_read(session: AsyncSession, user: User, task: Task) -> TaskRead:
+    """The task inside a write response, with its viewer-relative fields."""
+    read = TaskRead.model_validate(task)
+    await decorate_task_reads(session, user, [read])
+    return read
+
+
+async def _validate_manager_ids(
+    session: AsyncSession, payload: TaskCreateWithShifts
+) -> list[uuid.UUID]:
+    """The deduplicated ``manager_ids``, each a member of ``payload.event_id``.
+
+    Checked before anything is written. A task in a brand-new event (or in no
+    event) has nobody to put in charge yet.
+    """
+    ids = list(dict.fromkeys(payload.manager_ids))
+    if not ids:
+        return []
+    member_ids: set[uuid.UUID] = (
+        set(await crud_membership.list_user_ids(session, event_id=payload.event_id))
+        if payload.event_id is not None and payload.new_event is None
+        else set()
+    )
+    if any(i not in member_ids for i in ids):
+        raise_problem(
+            422,
+            code="task.manager_not_event_member",
+            detail="Only members of this event can be put in charge of its tasks",
+        )
+    return ids
+
+
 @router.post(
     "/with-shifts", response_model=TaskCreateWithShiftsResponse, status_code=201
 )
@@ -46,6 +93,7 @@ async def create_task_with_shifts(
     """Create a task with auto-generated duty shifts in a single transaction."""
     # Check access for the target event (if any)
     await require_event_role(current_user, session, payload.event_id)
+    manager_ids = await _validate_manager_ids(session, payload)
     # A location belongs to an existing event. Resolved before anything is
     # written, against ``payload.event_id`` only: an event created by this
     # very request has no locations yet, so any id is foreign to it.
@@ -139,11 +187,17 @@ async def create_task_with_shifts(
         slot_in.batch_id = db_batch.id
         await crud_shift.create(session, obj_in=slot_in)
 
+    # 5. The people in charge, validated above.
+    for user_id in manager_ids:
+        await crud_task_manager.add(
+            session, task_id=db_task.id, user_id=user_id, added_by=current_user
+        )
+
     await session.flush()
     await session.refresh(db_task)
 
     return TaskCreateWithShiftsResponse(
-        task=TaskRead.model_validate(db_task),
+        task=await _task_read(session, current_user, db_task),
         shifts_created=len(slot_creates),
         event=event_read,
     )
@@ -158,7 +212,7 @@ async def add_shifts_to_task(
 ) -> AddShiftsResponse:
     """Add a new batch of duty shifts to an existing task without touching existing shifts."""
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    await require_task_manager(current_user, session, db_task)
 
     # Validate dates against event constraints
     if db_task.event_id:
@@ -228,7 +282,7 @@ async def add_shifts_to_task(
     await session.refresh(db_task)
 
     return AddShiftsResponse(
-        task=TaskRead.model_validate(db_task),
+        task=await _task_read(session, current_user, db_task),
         shifts_added=len(slot_creates),
     )
 
@@ -250,9 +304,14 @@ async def regenerate_task_shifts(
     When dry_run=True, returns a preview without making changes.
     When batch_id is provided, only regenerates shifts belonging to that batch.
     Shifts are matched by (date, start_time, end_time) — matched shifts keep their bookings.
+
+    Bookings on removed shifts are cancelled with a snapshot, as on every other
+    delete path. A person in charge may not remove a booked shift that has
+    started (``check_shift_history``): the dry run marks such rows ``locked``,
+    the real run refuses with 403 ``task.shift_history_admin_only``.
     """
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    access = await require_task_manager(current_user, session, db_task)
 
     # If batch_id provided, load the batch for defaults
     db_batch: ShiftBatch | None = None
@@ -317,7 +376,9 @@ async def regenerate_task_shifts(
     stmt = (
         select(Shift)
         .where(col(Shift.task_id) == db_task.id)
-        .options(selectinload(Shift.bookings))  # type: ignore[arg-type]
+        .options(
+            selectinload(Shift.bookings).selectinload(Booking.user)  # type: ignore[arg-type]
+        )
     )
     if batch_id:
         stmt = stmt.where(col(Shift.batch_id) == batch_id)
@@ -348,23 +409,46 @@ async def regenerate_task_shifts(
             shifts_to_create.append(new_shift)
 
     # 5. Find unmatched existing shifts (to be deleted) and their confirmed bookings
+    now = clock.wall_clock_now()
     affected_bookings: list[AffectedBookingInfo] = []
     shifts_to_delete: list[Shift] = []
+    any_locked = False
     for key, shift in existing_lookup.items():
         if key not in matched_keys:
             shifts_to_delete.append(shift)
-            for booking in shift.bookings:
-                if booking.status == "confirmed":
-                    affected_bookings.append(
-                        AffectedBookingInfo(
-                            booking_id=booking.id,
-                            user_id=booking.user_id,
-                            slot_title=shift.title,
-                            slot_date=shift.date,
-                            slot_start_time=shift.start_time,
-                            slot_end_time=shift.end_time,
-                        )
+            confirmed = [b for b in shift.bookings if b.status == "confirmed"]
+            locked = shift_history_refuses(
+                access,
+                before=shift,
+                has_bookings=bool(confirmed),
+                deleting=True,
+                now=now,
+            )
+            any_locked = any_locked or locked
+            for booking in confirmed:
+                affected_bookings.append(
+                    AffectedBookingInfo(
+                        booking_id=booking.id,
+                        user_id=booking.user_id,
+                        user_name=booking.user.name if booking.user else None,
+                        slot_title=shift.title,
+                        slot_date=shift.date,
+                        slot_start_time=shift.start_time,
+                        slot_end_time=shift.end_time,
+                        locked=locked,
                     )
+                )
+
+    if not dry_run and any_locked:
+        # Raises: the same rule the dry run reported as ``locked``.
+        for shift in shifts_to_delete:
+            check_shift_history(
+                access,
+                before=shift,
+                has_bookings=any(b.status == "confirmed" for b in shift.bookings),
+                deleting=True,
+                now=now,
+            )
 
     if not dry_run:
         # 6a. Update task fields (only when not scoped to a batch)
@@ -410,7 +494,15 @@ async def regenerate_task_shifts(
             ]
             session.add(db_batch)
 
-        # 6c. Delete unmatched shifts (cascade deletes bookings)
+        # 6c. Delete unmatched shifts. Their confirmed bookings are cancelled
+        #     with a snapshot first, like every other delete path: the FK is
+        #     SET NULL, so they would otherwise stay "confirmed" with no shift
+        #     and drop out of everyone's hours without a word.
+        await crud_booking.cancel_bookings_for_shifts(
+            session,
+            slot_ids=[s.id for s in shifts_to_delete],
+            task_name=db_task.name,
+        )
         for shift in shifts_to_delete:
             await session.delete(shift)
 
@@ -424,7 +516,7 @@ async def regenerate_task_shifts(
         await session.refresh(db_task)
 
     return ShiftRegenerationResult(
-        task=TaskRead.model_validate(db_task),
+        task=await _task_read(session, current_user, db_task),
         shifts_added=len(shifts_to_create),
         shifts_removed=len(shifts_to_delete),
         shifts_kept=len(matched_keys),

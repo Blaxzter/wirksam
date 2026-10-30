@@ -55,6 +55,10 @@ export type AffectedBookingInfo = {
    */
   user_id: string
   /**
+   * User Name
+   */
+  user_name?: string | null
+  /**
    * Slot Title
    */
   slot_title: string
@@ -70,6 +74,10 @@ export type AffectedBookingInfo = {
    * Slot End Time
    */
   slot_end_time?: string | null
+  /**
+   * Locked
+   */
+  locked?: boolean
 }
 
 /**
@@ -1811,6 +1819,14 @@ export type FeedTaskItem = {
    * Locked By Team
    */
   locked_by_team?: boolean
+  /**
+   * Can Manage
+   */
+  can_manage?: boolean
+  /**
+   * Managers
+   */
+  managers?: Array<TaskManagerBrief>
   /**
    * Shifts
    */
@@ -3623,6 +3639,10 @@ export type TaskCreateWithShifts = {
   event_id?: string | null
   new_event?: EventCreate | null
   schedule: ShiftGenerationConfig
+  /**
+   * Manager Ids
+   */
+  manager_ids?: Array<string>
 }
 
 /**
@@ -3705,6 +3725,38 @@ export type TaskListResponse = {
    * Limit
    */
   limit: number
+}
+
+/**
+ * TaskManagerAdd
+ *
+ * Put an event member in charge of a task.
+ */
+export type TaskManagerAdd = {
+  /**
+   * User Id
+   */
+  user_id: string
+}
+
+/**
+ * TaskManagerBrief
+ *
+ * A person in charge of a task, as every viewer of the task sees them.
+ */
+export type TaskManagerBrief = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Avatar Etag
+   */
+  avatar_etag?: string | null
 }
 
 /**
@@ -3805,6 +3857,14 @@ export type TaskRead = {
    * Locked By Team
    */
   locked_by_team?: boolean
+  /**
+   * Can Manage
+   */
+  can_manage?: boolean
+  /**
+   * Managers
+   */
+  managers?: Array<TaskManagerBrief>
 }
 
 /**
@@ -9237,6 +9297,129 @@ export type TasksDeleteBatchResponses = {
 }
 
 export type TasksDeleteBatchResponse = TasksDeleteBatchResponses[keyof TasksDeleteBatchResponses]
+
+export type TasksAddTaskManagerData = {
+  body: TaskManagerAdd
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string
+  }
+  query?: never
+  url: '/api/v1/tasks/{task_id}/managers'
+}
+
+export type TasksAddTaskManagerErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TasksAddTaskManagerError = TasksAddTaskManagerErrors[keyof TasksAddTaskManagerErrors]
+
+export type TasksAddTaskManagerResponses = {
+  /**
+   * Successful Response
+   */
+  201: TaskManagerBrief
+}
+
+export type TasksAddTaskManagerResponse =
+  TasksAddTaskManagerResponses[keyof TasksAddTaskManagerResponses]
+
+export type TasksRemoveTaskManagerData = {
+  body?: never
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string
+    /**
+     * User Id
+     */
+    user_id: string
+  }
+  query?: never
+  url: '/api/v1/tasks/{task_id}/managers/{user_id}'
+}
+
+export type TasksRemoveTaskManagerErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TasksRemoveTaskManagerError =
+  TasksRemoveTaskManagerErrors[keyof TasksRemoveTaskManagerErrors]
+
+export type TasksRemoveTaskManagerResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type TasksRemoveTaskManagerResponse =
+  TasksRemoveTaskManagerResponses[keyof TasksRemoveTaskManagerResponses]
 
 export type ShiftsListShiftsData = {
   body?: never

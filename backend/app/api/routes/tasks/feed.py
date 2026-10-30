@@ -10,12 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
-from app.core.errors import raise_problem
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
+from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
-from app.logic.permissions import get_event_role
+from app.logic.permissions import require_task_visible
+from app.logic.task_managers import mark_task_access
 from app.logic.teams import bookable_filter, mark_task_locks, team_locks
 from app.models.booking import Booking
 from app.models.shift import Shift
@@ -322,6 +323,7 @@ async def task_feed(
     """
     effective_status: str | None = None
     also_include_group_ids: list[uuid.UUID] | None = None
+    also_include_task_ids: list[uuid.UUID] | None = None
 
     visible_event_ids = await get_visible_event_ids(session, current_user)
     if visible_event_ids is not None:
@@ -331,6 +333,10 @@ async def task_feed(
         effective_status = "published"
         if manageable_ids:
             also_include_group_ids = manageable_ids
+        # People in charge also see the drafts of their own tasks.
+        also_include_task_ids = await crud_task_manager.task_ids_for_user(
+            session, user_id=current_user.id
+        )
 
     effective_event_id = event_id
     if effective_event_id is None and not all_events:
@@ -359,6 +365,7 @@ async def task_feed(
         date_to=ev_date_to,
         has_future_shifts=future_shifts_cutoff,
         also_include_group_ids=also_include_group_ids,
+        also_include_task_ids=also_include_task_ids,
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
         location_id=location_id,
@@ -374,6 +381,7 @@ async def task_feed(
         date_to=ev_date_to,
         has_future_shifts=future_shifts_cutoff,
         also_include_group_ids=also_include_group_ids,
+        also_include_task_ids=also_include_task_ids,
         event_id=effective_event_id,
         restrict_to_event_ids=visible_event_ids,
         location_id=location_id,
@@ -404,6 +412,7 @@ async def task_feed(
         if lock is not None and lock.locked:
             for entry in item.shifts or []:
                 entry.locked_by_team = True
+    await mark_task_access(session, current_user, items)
 
     return TaskFeedResponse(items=items, total=total, skip=skip, limit=limit)
 
@@ -451,11 +460,7 @@ async def get_shift_window(
 ) -> ShiftWindowResponse:
     """Get shifts for a single task within a date window (for next/prev navigation)."""
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    role = await get_event_role(current_user, session, db_task.event_id)
-    if role is None:
-        raise_problem(404, code="task.not_found", detail="Task not found")
-    if db_task.status != "published" and role not in ("owner", "admin"):
-        raise_problem(403, code="task.not_published", detail="Task is not published")
+    await require_task_visible(current_user, session, db_task)
 
     end_date = start_date + dt.timedelta(days=days - 1)
     pairs = await _query_shifts_with_bookings(

@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Literal
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -19,6 +19,9 @@ class CRUDShift(CRUDBase[Shift, ShiftCreate, ShiftUpdate]):
         query: Select[Any],
         *,
         restrict_to_event_ids: list[uuid.UUID] | None,
+        status: str | None = None,
+        also_include_event_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
     ) -> Select[Any]:
         """Limit a shift query to the events the caller may see.
 
@@ -30,11 +33,28 @@ class CRUDShift(CRUDBase[Shift, ShiftCreate, ShiftUpdate]):
         An empty list means "nothing", and must never be allowed to degrade to
         "everything": that is the difference between a new account seeing no
         shifts and seeing every shift in the database.
+
+        ``status`` keeps only shifts of tasks with that status, widened (as on
+        the task list) by the events the caller runs and the tasks they are in
+        charge of, where drafts are theirs to see.
         """
         query = query.join(Task, col(Shift.task_id) == col(Task.id))
         if restrict_to_event_ids is None:
-            return query.where(col(Task.is_sandbox).is_(False))
-        return query.where(col(Task.event_id).in_(restrict_to_event_ids))
+            query = query.where(col(Task.is_sandbox).is_(False))
+        else:
+            query = query.where(col(Task.event_id).in_(restrict_to_event_ids))
+        if status:
+            status_filter = col(Task.status) == status
+            if also_include_event_ids:
+                status_filter = or_(
+                    status_filter, col(Task.event_id).in_(also_include_event_ids)
+                )
+            if also_include_task_ids:
+                status_filter = or_(
+                    status_filter, col(Task.id).in_(also_include_task_ids)
+                )
+            query = query.where(status_filter)
+        return query
 
     async def get_multi_filtered(
         self,
@@ -48,9 +68,16 @@ class CRUDShift(CRUDBase[Shift, ShiftCreate, ShiftUpdate]):
         sort_by: ShiftSortField = "date",
         sort_dir: Literal["asc", "desc"] = "asc",
         restrict_to_event_ids: list[uuid.UUID] | None = None,
+        status: str | None = None,
+        also_include_event_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
     ) -> list[Shift]:
         query = self._apply_event_scope(
-            select(Shift), restrict_to_event_ids=restrict_to_event_ids
+            select(Shift),
+            restrict_to_event_ids=restrict_to_event_ids,
+            status=status,
+            also_include_event_ids=also_include_event_ids,
+            also_include_task_ids=also_include_task_ids,
         )
         if task_id:
             query = query.where(col(Shift.task_id) == task_id)
@@ -77,10 +104,16 @@ class CRUDShift(CRUDBase[Shift, ShiftCreate, ShiftUpdate]):
         category: str | None = None,
         search: str | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
+        status: str | None = None,
+        also_include_event_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
     ) -> int:
         query = self._apply_event_scope(
             select(func.count()).select_from(Shift),
             restrict_to_event_ids=restrict_to_event_ids,
+            status=status,
+            also_include_event_ids=also_include_event_ids,
+            also_include_task_ids=also_include_task_ids,
         )
         if task_id:
             query = query.where(col(Shift.task_id) == task_id)

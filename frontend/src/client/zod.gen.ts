@@ -7,10 +7,12 @@ import * as z from 'zod'
 export const zAffectedBookingInfo = z.object({
   booking_id: z.uuid(),
   user_id: z.uuid(),
+  user_name: z.string().nullish(),
   slot_title: z.string(),
   slot_date: z.iso.date(),
   slot_start_time: z.iso.time().nullish(),
   slot_end_time: z.iso.time().nullish(),
+  locked: z.boolean().optional().default(false),
 })
 
 /**
@@ -677,45 +679,6 @@ export const zFeedShiftEntry = z
   })
   .register(z.globalRegistry, {
     description: 'Lightweight shift for the feed — no title/description, just booking info.',
-  })
-
-/**
- * FeedTaskItem
- *
- * Task with view-dependent embedded data.
- */
-export const zFeedTaskItem = z
-  .object({
-    name: z.string(),
-    description: z.string().nullish(),
-    start_date: z.iso.date(),
-    end_date: z.iso.date(),
-    status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
-    created_by_id: z.uuid().nullish(),
-    event_id: z.uuid().nullish(),
-    location: z.string().nullish(),
-    location_id: z.uuid().nullish(),
-    category: z.string().nullish(),
-    team_id: z.uuid().nullish(),
-    id: z.uuid(),
-    created_at: z.iso.datetime(),
-    updated_at: z.iso.datetime(),
-    shift_duration_minutes: z.int().nullish(),
-    default_start_time: z.iso.time().nullish(),
-    default_end_time: z.iso.time().nullish(),
-    people_per_shift: z.int().nullish(),
-    schedule_overrides: z.array(z.record(z.string(), z.unknown())).nullish(),
-    team_name: z.string().nullish(),
-    team_requires_approval: z.boolean().nullish(),
-    my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
-    locked_by_team: z.boolean().optional().default(false),
-    shifts: z.array(zFeedShiftEntry).nullish(),
-    slot_window_start: z.iso.date().nullish(),
-    total_shifts: z.int().nullish(),
-    available_shifts: z.int().nullish(),
-  })
-  .register(z.globalRegistry, {
-    description: 'Task with view-dependent embedded data.',
   })
 
 /**
@@ -1617,16 +1580,7 @@ export const zTaskCreateWithShifts = z.object({
   event_id: z.uuid().nullish(),
   new_event: zEventCreate.nullish(),
   schedule: zShiftGenerationConfig,
-})
-
-/**
- * TaskFeedResponse
- */
-export const zTaskFeedResponse = z.object({
-  items: z.array(zFeedTaskItem),
-  total: z.int(),
-  skip: z.int(),
-  limit: z.int(),
+  manager_ids: z.array(z.uuid()).optional().default([]),
 })
 
 /**
@@ -1638,6 +1592,85 @@ export const zTaskFillRate = z.object({
   total_capacity: z.int(),
   confirmed_bookings: z.int(),
   fill_rate: z.number(),
+})
+
+/**
+ * TaskManagerAdd
+ *
+ * Put an event member in charge of a task.
+ */
+export const zTaskManagerAdd = z
+  .object({
+    user_id: z.uuid(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Put an event member in charge of a task.',
+  })
+
+/**
+ * TaskManagerBrief
+ *
+ * A person in charge of a task, as every viewer of the task sees them.
+ */
+export const zTaskManagerBrief = z
+  .object({
+    user_id: z.uuid(),
+    name: z.string().nullish(),
+    avatar_etag: z.string().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A person in charge of a task, as every viewer of the task sees them.',
+  })
+
+/**
+ * FeedTaskItem
+ *
+ * Task with view-dependent embedded data.
+ */
+export const zFeedTaskItem = z
+  .object({
+    name: z.string(),
+    description: z.string().nullish(),
+    start_date: z.iso.date(),
+    end_date: z.iso.date(),
+    status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
+    created_by_id: z.uuid().nullish(),
+    event_id: z.uuid().nullish(),
+    location: z.string().nullish(),
+    location_id: z.uuid().nullish(),
+    category: z.string().nullish(),
+    team_id: z.uuid().nullish(),
+    id: z.uuid(),
+    created_at: z.iso.datetime(),
+    updated_at: z.iso.datetime(),
+    shift_duration_minutes: z.int().nullish(),
+    default_start_time: z.iso.time().nullish(),
+    default_end_time: z.iso.time().nullish(),
+    people_per_shift: z.int().nullish(),
+    schedule_overrides: z.array(z.record(z.string(), z.unknown())).nullish(),
+    team_name: z.string().nullish(),
+    team_requires_approval: z.boolean().nullish(),
+    my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
+    locked_by_team: z.boolean().optional().default(false),
+    can_manage: z.boolean().optional().default(false),
+    managers: z.array(zTaskManagerBrief).optional().default([]),
+    shifts: z.array(zFeedShiftEntry).nullish(),
+    slot_window_start: z.iso.date().nullish(),
+    total_shifts: z.int().nullish(),
+    available_shifts: z.int().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Task with view-dependent embedded data.',
+  })
+
+/**
+ * TaskFeedResponse
+ */
+export const zTaskFeedResponse = z.object({
+  items: z.array(zFeedTaskItem),
+  total: z.int(),
+  skip: z.int(),
+  limit: z.int(),
 })
 
 /**
@@ -1667,6 +1700,8 @@ export const zTaskRead = z.object({
   team_requires_approval: z.boolean().nullish(),
   my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
   locked_by_team: z.boolean().optional().default(false),
+  can_manage: z.boolean().optional().default(false),
+  managers: z.array(zTaskManagerBrief).optional().default([]),
 })
 
 /**
@@ -3748,7 +3783,7 @@ export const zTasksUpdateTaskPath = z.object({
 export const zTasksUpdateTaskResponse = zTaskRead
 
 export const zTasksListTaskBookingsPath = z.object({
-  task_id: z.string(),
+  task_id: z.uuid(),
 })
 
 /**
@@ -3825,6 +3860,29 @@ export const zTasksDeleteBatchResponse = z.void().register(z.globalRegistry, {
   description: 'Successful Response',
 })
 
+export const zTasksAddTaskManagerBody = zTaskManagerAdd
+
+export const zTasksAddTaskManagerPath = z.object({
+  task_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTasksAddTaskManagerResponse = zTaskManagerBrief
+
+export const zTasksRemoveTaskManagerPath = z.object({
+  task_id: z.uuid(),
+  user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTasksRemoveTaskManagerResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
 export const zShiftsListShiftsQuery = z.object({
   task_id: z.string().nullish(),
   category: z.string().nullish(),
@@ -3881,7 +3939,7 @@ export const zShiftsUpdateShiftPath = z.object({
 export const zShiftsUpdateShiftResponse = zShiftRead
 
 export const zShiftsListShiftBookingsPath = z.object({
-  slot_id: z.string(),
+  slot_id: z.uuid(),
 })
 
 /**

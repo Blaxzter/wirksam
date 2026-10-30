@@ -7,6 +7,7 @@ from app.crud.event_join_request import event_join_request
 from app.crud.event_membership import event_membership
 from app.crud.shift import shift
 from app.crud.task import task
+from app.crud.task_manager import task_manager
 from app.crud.user import user
 from app.crud.user_availability import user_availability
 from app.crud.user_token import user_token
@@ -18,6 +19,7 @@ __all__ = [
     "booking_reminder",
     "shift",
     "task",
+    "task_manager",
     "event",
     "event_invitation",
     "event_join_request",

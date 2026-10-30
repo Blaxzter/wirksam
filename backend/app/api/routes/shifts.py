@@ -6,17 +6,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
-from app.crud.event import event as crud_event
+from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
+from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
+from app.crud.task_manager import task_manager as crud_task_manager
+from app.logic import clock
 from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import apply_location, resolve_location
 from app.logic.permissions import (
-    get_event_role,
-    require_event_role,
-    require_event_visible,
+    check_shift_history,
+    require_task_manager,
+    require_task_visible,
+    task_access,
 )
 from app.logic.teams import mark_team_locks
 from app.models.shift import Shift
@@ -62,19 +66,28 @@ async def list_shifts(
 ) -> ShiftListResponse:
     if task_id:
         db_task = await crud_task.get(session, task_id, raise_404_error=True)
-        role = await get_event_role(current_user, session, db_task.event_id)
-        if role is None:
-            raise_problem(404, code="task.not_found", detail="Task not found")
-        if db_task.status != "published" and role not in ("owner", "admin"):
-            raise_problem(
-                403, code="task.not_published", detail="Task is not published"
-            )
+        await require_task_visible(current_user, session, db_task)
 
     # Without a task_id this route used to enumerate every shift in the
     # database - the check above only runs when one is supplied. The scope is
     # applied unconditionally now, so the unfiltered form answers with the
     # caller's own events rather than with everyone's.
     visible_event_ids = await get_visible_event_ids(session, current_user)
+
+    # And, like the task list, only the shifts of published tasks, plus the
+    # drafts of events the caller runs and of tasks they are in charge of.
+    # With a task_id the gate above has already decided.
+    status: str | None = None
+    also_include_event_ids: list[uuid.UUID] | None = None
+    also_include_task_ids: list[uuid.UUID] | None = None
+    if not task_id and visible_event_ids is not None:
+        status = "published"
+        also_include_event_ids = await crud_membership.list_event_ids_for_user(
+            session, user_id=current_user.id, minimum_role="admin"
+        )
+        also_include_task_ids = await crud_task_manager.task_ids_for_user(
+            session, user_id=current_user.id
+        )
 
     items = await crud_shift.get_multi_filtered(
         session,
@@ -84,6 +97,9 @@ async def list_shifts(
         category=category,
         search=search,
         restrict_to_event_ids=visible_event_ids,
+        status=status,
+        also_include_event_ids=also_include_event_ids,
+        also_include_task_ids=also_include_task_ids,
     )
     enriched = [await _enrich_shift(session, s, user_id=current_user.id) for s in items]
     await mark_collisions(session, user_id=current_user.id, entries=enriched)
@@ -94,6 +110,9 @@ async def list_shifts(
         category=category,
         search=search,
         restrict_to_event_ids=visible_event_ids,
+        status=status,
+        also_include_event_ids=also_include_event_ids,
+        also_include_task_ids=also_include_task_ids,
     )
     return ShiftListResponse(items=enriched, total=total, skip=skip, limit=limit)
 
@@ -102,24 +121,21 @@ async def list_shifts(
 async def get_shift(
     slot_id: str | None,
     session: DBDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
 ) -> ShiftRead:
     if slot_id is None:
         raise_problem(400, code="invalid_request", detail="slot_id is required")
 
     shift = await crud_shift.get(session, slot_id, raise_404_error=True)
     # This route had no permission check at all: any signed-in account could
-    # read any shift in the installation by id. Resolving the task and running
-    # the standard visibility gate is what also keeps demo shifts private,
-    # since that gate is where the sandbox test lives.
+    # read any shift in the installation by id. The task's visibility gate is
+    # what also keeps demo shifts private, since it holds a sandbox test of its
+    # own. A booker of the shift may always open it, whatever the task's status.
     db_task = await crud_task.get(session, str(shift.task_id), raise_404_error=True)
-    if db_task.event_id is None:
-        raise_problem(404, code="task.not_found", detail="Task not found")
-    event = await crud_event.get(session, db_task.event_id, raise_404_error=True)
-    await require_event_visible(_current_user, session, event)
-    read = await _enrich_shift(session, shift, user_id=_current_user.id)
-    await mark_collisions(session, user_id=_current_user.id, entries=[read])
-    await mark_team_locks(session, _current_user, [read])
+    await require_task_visible(current_user, session, db_task, booked_shift_id=shift.id)
+    read = await _enrich_shift(session, shift, user_id=current_user.id)
+    await mark_collisions(session, user_id=current_user.id, entries=[read])
+    await mark_team_locks(session, current_user, [read])
     return read
 
 
@@ -130,7 +146,17 @@ async def create_shift(
     current_user: CurrentUser,
 ) -> ShiftRead:
     db_task = await crud_task.get(session, str(slot_in.task_id), raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    await require_task_manager(current_user, session, db_task)
+    if slot_in.batch_id is not None:
+        # Otherwise the person in charge of one task could hang a shift on
+        # another task's batch, and deleting that batch would delete it.
+        db_batch = await crud_shift_batch.get(session, slot_in.batch_id)
+        if db_batch is None or db_batch.task_id != db_task.id:
+            raise_problem(
+                400,
+                code="batch.wrong_task",
+                detail="Batch does not belong to this task",
+            )
     loc = await resolve_location(
         session, event_id=db_task.event_id, location_id=slot_in.location_id
     )
@@ -149,11 +175,24 @@ async def update_shift(
 ) -> ShiftRead:
     db_shift = await crud_shift.get(session, slot_id, raise_404_error=True)
     db_task = await crud_task.get(session, str(db_shift.task_id), raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    access = await require_task_manager(current_user, session, db_task)
     old_start = db_shift.start_time
     old_end = db_shift.end_time
     old_date = db_shift.date
     update_data = slot_in.model_dump(exclude_unset=True)
+    if access == "manager" and any(
+        k in update_data for k in ("date", "start_time", "end_time")
+    ):
+        count = await crud_booking.get_confirmed_count(session, shift_id=db_shift.id)
+        check_shift_history(
+            access,
+            before=db_shift,
+            has_bookings=count > 0,
+            new_date=update_data.get("date") or db_shift.date,
+            new_start=update_data.get("start_time", db_shift.start_time),
+            new_end=update_data.get("end_time", db_shift.end_time),
+            now=clock.wall_clock_now(),
+        )
     update_data.update(
         await location_patch(session, db_shift, update_data, event_id=db_task.event_id)
     )
@@ -195,7 +234,16 @@ async def delete_shift(
 
     # Get task name for snapshot
     db_task = await crud_task.get(session, str(shift.task_id), raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    access = await require_task_manager(current_user, session, db_task)
+    if access == "manager":
+        count = await crud_booking.get_confirmed_count(session, shift_id=shift.id)
+        check_shift_history(
+            access,
+            before=shift,
+            has_bookings=count > 0,
+            deleting=True,
+            now=clock.wall_clock_now(),
+        )
 
     # Cancel confirmed bookings with snapshot before deleting the shift
     await crud_booking.cancel_bookings_for_shifts(
@@ -211,25 +259,36 @@ async def delete_shift(
 
 @router.get("/{slot_id}/bookings", response_model=list[ShiftBookingEntry])
 async def list_shift_bookings(
-    slot_id: str,
+    slot_id: uuid.UUID,
     session: DBDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
 ) -> list[ShiftBookingEntry]:
-    """List confirmed bookings for a shift with basic user info."""
-    await crud_shift.get(session, slot_id, raise_404_error=True)
+    """List confirmed bookings for a shift with basic user info.
+
+    Every member who can see the task sees the names. E-mail, phone and notes
+    only the event admins and the task's people in charge, and each booker on
+    their own row.
+    """
+    shift = await crud_shift.get(session, slot_id, raise_404_error=True)
+    db_task = await crud_task.get(session, shift.task_id, raise_404_error=True)
+    await require_task_visible(current_user, session, db_task, booked_shift_id=shift.id)
+    can_manage = await task_access(current_user, session, db_task) is not None
     bookings = await crud_booking.get_multi_by_shift(
-        session, shift_id=uuid.UUID(slot_id), status="confirmed", with_user=True
+        session, shift_id=shift.id, status="confirmed", with_user=True
     )
-    return [
-        ShiftBookingEntry(
-            id=b.id,
-            user_id=b.user_id,
-            user_name=b.user.name if b.user else None,
-            user_email=b.user.email if b.user else None,
-            user_avatar_etag=b.user.avatar_etag if b.user else None,
-            user_phone_number=b.user.phone_number if b.user else None,
-            notes=b.notes,
-            created_at=b.created_at,
+    entries: list[ShiftBookingEntry] = []
+    for b in bookings:
+        show = can_manage or b.user_id == current_user.id
+        entries.append(
+            ShiftBookingEntry(
+                id=b.id,
+                user_id=b.user_id,
+                user_name=b.user.name if b.user else None,
+                user_email=b.user.email if b.user and show else None,
+                user_avatar_etag=b.user.avatar_etag if b.user else None,
+                user_phone_number=b.user.phone_number if b.user and show else None,
+                notes=b.notes if show else None,
+                created_at=b.created_at,
+            )
         )
-        for b in bookings
-    ]
+    return entries

@@ -200,7 +200,7 @@ class TestTransferOwnership:
         )
         assert response.status_code == 403
 
-    async def test_transfer_forbidden_for_task_manager(
+    async def test_transfer_forbidden_for_event_admin(
         self,
         async_client: AsyncClient,
         test_user: User,

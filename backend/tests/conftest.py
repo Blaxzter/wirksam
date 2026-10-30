@@ -22,6 +22,7 @@ from tests.fixtures.auth import (
 )
 from tests.fixtures.bookings import test_booking
 from tests.fixtures.client import (
+    act_as,
     app,
     as_admin,
     as_event_admin,

@@ -18,6 +18,7 @@ from app.crud.event_invitation import invitation_invalid_reason
 from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
+from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
@@ -30,6 +31,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User as UserModel
 from app.models.user_availability import UserAvailabilityDate
 from app.schemas.event import (
@@ -891,23 +893,27 @@ async def clone_event(
         session, source_event_id=source.id, new_event_id=new_event.id
     )
 
+    # Who comes along into the new event: the copied roster plus the cloner,
+    # or nobody. Team rows and people in charge follow the same set.
+    carry_members: set[uuid.UUID] = (
+        {r.user_id for r in copied_rows} | {current_user.id}
+        if body.copy_members
+        else set()
+    )
+
     # Also before the tasks, for ``team_id``. A cloned task pointing at the
     # source's team would be gated on a roster the new event cannot manage.
     team_map = await _clone_teams(
         session,
         source_event_id=source.id,
         new_event_id=new_event.id,
-        carry_members=(
-            {r.user_id for r in copied_rows} | {current_user.id}
-            if body.copy_members
-            else set()
-        ),
+        carry_members=carry_members,
     )
 
     new_shifts: list[Shift] = []
-    tasks_created = 0
+    task_map: dict[uuid.UUID, uuid.UUID] = {}
     for entry in body.tasks:
-        task_shifts = await _clone_task(
+        new_task, task_shifts = await _clone_task(
             session,
             entry=entry,
             source_event_id=source.id,
@@ -917,12 +923,32 @@ async def clone_event(
             location_map=location_map,
             team_map=team_map,
         )
-        tasks_created += 1
+        task_map[entry.source_task_id] = new_task.id
         new_shifts.extend(task_shifts)
+    tasks_created = len(task_map)
 
     if new_shifts:
         session.add_all(new_shifts)
     await session.flush()
+
+    # People in charge who come along keep the role. Added after the flush,
+    # so the new tasks exist whatever order the unit of work picks
+    # (task_managers has no ORM relationship to sort it by).
+    manager_rows = await crud_task_manager.rows_for_clone(
+        session, task_ids=task_map.keys(), user_ids=carry_members
+    )
+    for src_task_id, rows in manager_rows.items():
+        for row in rows:
+            session.add(
+                TaskManager(
+                    task_id=task_map[src_task_id],
+                    user_id=row.user_id,
+                    added_by_id=row.added_by_id,
+                    added_by_name=row.added_by_name,
+                )
+            )
+    if manager_rows:
+        await session.flush()
     await session.refresh(new_event)
 
     # The announcement tells *other people* the event exists, so the cloner is
@@ -1022,7 +1048,7 @@ async def _clone_task(
     current_user_id: uuid.UUID,
     location_map: dict[uuid.UUID, uuid.UUID],
     team_map: dict[uuid.UUID, uuid.UUID],
-) -> list[Shift]:
+) -> tuple[Task, list[Shift]]:
     """Reproduce one source task, its batches and its shifts in ``new_event``.
 
     ``delta`` is the event-level offset, which is only the *default*: a caller
@@ -1031,9 +1057,10 @@ async def _clone_task(
     the Task row alone would leave its batches and shifts sitting in the
     source's window — a task pointing at shifts it does not contain.
 
-    The task and its batches are added to the session here; the shift rows are
-    returned so the caller can insert every task's shifts in one ``add_all``
-    rather than a flush per row.
+    The task and its batches are added to the session here; the new task and
+    its shift rows are returned so the caller can insert every task's shifts in
+    one ``add_all`` rather than a flush per row, and map the source task to the
+    new one.
     """
     # Scoped to the source event on purpose: without this filter the request
     # body could name any task id on the installation and have it copied into
@@ -1172,7 +1199,7 @@ async def _clone_task(
             batches=new_batches,
             shifts=shifts,
         )
-        return shifts
+        return new_task, shifts
 
     shift_result = await session.execute(
         sa_select(Shift)
@@ -1204,7 +1231,7 @@ async def _clone_task(
         batches=new_batches,
         shifts=copied,
     )
-    return copied
+    return new_task, copied
 
 
 @router.delete("/{event_id}", status_code=204)
@@ -1453,6 +1480,10 @@ async def remove_member(
 
     await crud_membership.remove(session, user_id=user_id, event_id=event_id)
     await crud_team.remove_user_from_event_teams(
+        session, user_id=user_id, event_id=event_id
+    )
+    # Being in charge of a task goes too, so re-joining does not restore it.
+    await crud_task_manager.remove_user_from_event_tasks(
         session, user_id=user_id, event_id=event_id
     )
 

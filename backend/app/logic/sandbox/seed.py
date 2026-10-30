@@ -23,7 +23,9 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
   sandbox cannot upload an image (``sandbox.upload_disabled``) and the map
   would otherwise be an empty state the visitor can do nothing about; and
   today's shifts at those places are deliberately full, half full and short,
-  because the map colours every pin by the day's staffing.
+  because the map colours every pin by the day's staffing; and
+* the first teammate is in charge of two tasks (``in_charge``), so the task
+  pages show "In charge: ..." rather than an empty line.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -91,6 +93,7 @@ from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 from app.schemas.sandbox import SandboxRole
@@ -167,6 +170,8 @@ class _TaskSpec:
     today_fill: float | None = None
     #: The key of the seeded team (``_TEAMS``) that alone may book this task.
     team: str | None = None
+    #: The first teammate is in charge of this task (``task_managers``).
+    in_charge: bool = False
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -252,6 +257,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=90,
         people_per_shift=2,
         today_fill=0.5,
+        in_charge=True,
     ),
     _TaskSpec(
         name_en="Stage crew",
@@ -338,6 +344,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=120,
         people_per_shift=3,
         today_fill=1.0,
+        in_charge=True,
     ),
     _TaskSpec(
         name_en="Wristband check",
@@ -645,6 +652,7 @@ async def _seed_event(
         now=now,
         sandbox=sandbox,
     )
+    _seed_task_managers(db, owner=owner, teammates=teammates, tasks=tasks)
 
     _seed_notifications(
         db,
@@ -659,6 +667,29 @@ async def _seed_event(
 
     await db.flush()
     return event
+
+
+def _seed_task_managers(
+    db: AsyncSession, *, owner: User, teammates: list[User], tasks: list[Task]
+) -> None:
+    """Put the first teammate in charge of the ``in_charge`` tasks.
+
+    The teammates and tasks are flushed already, which this relies on:
+    ``task_managers`` has no ORM relationship the unit of work could order
+    the inserts by.
+    """
+    if not teammates:
+        return
+    for spec, task in zip(_TASK_SPECS, tasks, strict=True):
+        if spec.in_charge:
+            db.add(
+                TaskManager(
+                    task_id=task.id,
+                    user_id=teammates[0].id,
+                    added_by_id=owner.id,
+                    added_by_name=owner.name,
+                )
+            )
 
 
 async def _seed_tasks_and_shifts(

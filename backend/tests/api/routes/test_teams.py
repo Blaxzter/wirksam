@@ -1,8 +1,6 @@
 """Teams inside an event, and the booking gate they put on a task (#179)."""
 
 import uuid
-from collections.abc import Generator
-from contextlib import contextmanager
 from datetime import date, time, timedelta
 from typing import Any
 
@@ -23,20 +21,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
-from tests.fixtures.client import (
-    _restore,  # pyright: ignore[reportPrivateUsage]
-    _swap_identity,  # pyright: ignore[reportPrivateUsage]
-)
-
-
-@contextmanager
-def act_as(app: FastAPI, user: User) -> Generator[None]:
-    """Switch identity for part of a test, then switch back."""
-    originals = _swap_identity(app, user, superuser=False)
-    try:
-        yield
-    finally:
-        _restore(app, originals)
+from tests.fixtures.client import act_as
 
 
 @pytest_asyncio.fixture
@@ -1512,12 +1497,17 @@ class TestShiftFlagsMore:
         [item] = (await async_client.get(url, params=params)).json()
         assert item["locked_by_team"] is False
 
-    async def test_outsider_sees_public_gated_shift_as_locked(
+    async def test_outsider_cannot_read_a_public_events_gated_shift(
         self, async_client: AsyncClient, gated_shift: Shift, as_outsider: None
     ):
+        """A shift is read through its task's gate, which wants a member.
+
+        The task page and every task list already did; a public event lets an
+        outsider see the event and ask to join, not open its rota by id.
+        """
         r = await async_client.get(f"/api/v1/shifts/{gated_shift.id}")
-        assert r.status_code == 200
-        assert r.json()["locked_by_team"] is True
+        assert r.status_code == 404
+        assert r.json()["code"] == "task.not_found"
 
     async def test_outsider_cannot_read_private_gated_shift(
         self,
@@ -1533,7 +1523,7 @@ class TestShiftFlagsMore:
         await db_session.flush()
         r = await async_client.get(f"/api/v1/shifts/{gated_shift.id}")
         assert r.status_code == 404
-        assert r.json()["code"] == "event.not_found"
+        assert r.json()["code"] == "task.not_found"
 
 
 @pytest.mark.asyncio

@@ -24,6 +24,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from tests.fixtures.storage import stored_bytes
@@ -1036,6 +1037,97 @@ class TestCloneMembers:
         assert [(m.user_id, m.role) for m in rows] == [
             (test_event_admin_user.id, "owner")
         ]
+
+
+# ── People in charge ────────────────────────────────────────────────────────
+
+
+async def _managers_of(db: AsyncSession, task_id: uuid.UUID) -> list[TaskManager]:
+    result = await db.execute(
+        select(TaskManager).where(col(TaskManager.task_id) == task_id)
+    )
+    return list(result.scalars().all())
+
+
+@pytest.mark.asyncio
+class TestCloneTaskManagers:
+    """People in charge come along only with the members they are."""
+
+    @pytest.fixture
+    async def in_charge(
+        self,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_user: User,
+        test_admin_user: User,
+    ) -> User:
+        """``test_user`` and a suspended member in charge of the source task."""
+        suspended = User(
+            subject="local|suspended-in-charge",
+            email="suspended-in-charge@example.com",
+            name="Suspended",
+            is_active=False,
+            roles=[],
+        )
+        db_session.add(suspended)
+        await db_session.flush()
+        db_session.add(
+            EventMembership(
+                user_id=suspended.id, event_id=source_event["event"].id, role="member"
+            )
+        )
+        for user in (test_user, suspended):
+            db_session.add(
+                TaskManager(
+                    task_id=source_event["task"].id,
+                    user_id=user.id,
+                    added_by_id=test_admin_user.id,
+                    added_by_name="Admin User",
+                )
+            )
+        await db_session.flush()
+        return suspended
+
+    async def test_with_members_active_people_in_charge_keep_the_role(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        in_charge: User,
+        as_event_admin: None,
+        test_user: User,
+    ):
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event, copy_members=True),
+        )
+        assert r.status_code == 201
+
+        [new_task] = await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"]))
+        rows = await _managers_of(db_session, new_task.id)
+        # The suspended member is not copied into the event, so not in charge.
+        assert [(m.user_id, m.added_by_name) for m in rows] == [
+            (test_user.id, "Admin User")
+        ]
+        # The source keeps its own rows.
+        assert len(await _managers_of(db_session, source_event["task"].id)) == 2
+
+    async def test_without_members_nobody_is_in_charge(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        in_charge: User,
+        as_event_admin: None,
+    ):
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event),
+        )
+        assert r.status_code == 201
+
+        [new_task] = await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"]))
+        assert await _managers_of(db_session, new_task.id) == []
 
 
 # ── Announcement ────────────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         date_to: dt.date | None = None,
         has_future_shifts: dt.date | dt.datetime | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
@@ -84,6 +85,14 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 status_filter = or_(
                     status_filter,
                     col(Task.event_id).in_(also_include_group_ids),
+                )
+            if also_include_task_ids:
+                # The drafts of tasks the caller is in charge of. Still inside
+                # restrict_to_event_ids above, so a task in an event they have
+                # left never shows up.
+                status_filter = or_(
+                    status_filter,
+                    col(Task.id).in_(also_include_task_ids),
                 )
             query = query.where(status_filter)
         if created_by_id:
@@ -168,6 +177,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         sort_by: TaskSortField = "start_date",
         sort_dir: Literal["asc", "desc"] = "asc",
         also_include_group_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
@@ -185,6 +195,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             date_to=date_to,
             has_future_shifts=has_future_shifts,
             also_include_group_ids=also_include_group_ids,
+            also_include_task_ids=also_include_task_ids,
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
             location_id=location_id,
@@ -211,6 +222,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         date_to: dt.date | None = None,
         has_future_shifts: dt.date | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
@@ -228,6 +240,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             date_to=date_to,
             has_future_shifts=has_future_shifts,
             also_include_group_ids=also_include_group_ids,
+            also_include_task_ids=also_include_task_ids,
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
             location_id=location_id,

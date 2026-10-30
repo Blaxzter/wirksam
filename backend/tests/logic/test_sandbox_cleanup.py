@@ -52,6 +52,7 @@ from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
@@ -92,6 +93,7 @@ class _Inventory:
     shape_ids: list[uuid.UUID]
     team_ids: list[uuid.UUID]
     team_member_ids: list[uuid.UUID]
+    task_manager_ids: list[uuid.UUID]
 
 
 async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
@@ -120,6 +122,9 @@ async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
         event_id=event_id,
         task_ids=task_ids,
         shift_ids=shift_ids,
+        task_manager_ids=await _ids(
+            db, col(TaskManager.id), col(TaskManager.task_id).in_(task_ids)
+        ),
         booking_ids=await _ids(
             db, col(Booking.id), col(Booking.shift_id).in_(shift_ids)
         ),
@@ -153,6 +158,9 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
         "shifts": await _count(db, Shift, col(Shift.id).in_(inv.shift_ids)),
         "shift_batches": await _count(
             db, ShiftBatch, col(ShiftBatch.task_id).in_(inv.task_ids)
+        ),
+        "task_managers": await _count(
+            db, TaskManager, col(TaskManager.id).in_(inv.task_manager_ids)
         ),
         "bookings": await _count(db, Booking, col(Booking.id).in_(inv.booking_ids)),
         "booking_reminders": await _count(
@@ -407,7 +415,7 @@ class TestPurgeSandbox:
 
         The invitation, the join request and the booking reminder are added on
         top of the seed, and a file on a team request, so that the census
-        covers all twenty-four tables rather than the nineteen a freshly
+        covers all twenty-five tables rather than the twenty a freshly
         seeded helper demo happens to populate. Every line of it starts
         non-zero and must end at zero — a count that was never anything but
         zero proves nothing.
@@ -429,6 +437,7 @@ class TestPurgeSandbox:
         assert len(inv.plan_ids) == 2, "the seeder must have produced two venue plans"
         assert inv.shape_ids, "the seeder must have drawn the plans"
         assert inv.team_ids, "the seeder must have produced teams"
+        assert inv.task_manager_ids, "the seeder must have put someone in charge"
         # The demo plans are drawn, not pictures; give one an image anyway, as
         # nothing stops a demo row from having one, so the census below is
         # not vacuously zero for it.

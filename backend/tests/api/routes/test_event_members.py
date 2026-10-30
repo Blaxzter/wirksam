@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.event_membership import event_membership as crud_membership
+from app.logic.permissions import task_access
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
@@ -22,6 +23,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 
@@ -935,3 +937,53 @@ class TestUserDeletionCascades:
             *((VenueShape, shape.id) for shape in test_venue_shapes),
         ):
             assert await db_session.get(model, row_id, populate_existing=True) is None
+
+    async def test_deleting_a_person_in_charge_removes_their_row(
+        self,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event_admin_user: User,
+    ) -> None:
+        db_session.add(
+            TaskManager(task_id=test_task.id, user_id=test_event_admin_user.id)
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_event_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        remaining = await db_session.execute(
+            select(func.count()).select_from(TaskManager)
+        )
+        assert remaining.scalar_one() == 0
+
+    async def test_deleting_the_owner_leaves_an_inert_person_in_charge(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_admin_user: User,
+        test_user: User,
+        test_task: Task,
+    ) -> None:
+        """The event goes, the task survives with no event, and so does the row.
+
+        ``task_access`` refuses it: a task without an event is the superadmin's
+        only, so the former person in charge controls nothing.
+        """
+        row = TaskManager(task_id=test_task.id, user_id=test_user.id)
+        db_session.add(row)
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert (
+            await db_session.get(Event, test_event.id, populate_existing=True) is None
+        )
+        survivor = await db_session.get(Task, test_task.id, populate_existing=True)
+        assert survivor is not None
+        assert survivor.event_id is None
+        assert await db_session.get(TaskManager, row.id, populate_existing=True)
+        assert await task_access(test_user, db_session, survivor) is None

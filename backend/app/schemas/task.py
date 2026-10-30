@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.schemas.event import EventCreate, EventRead
 from app.schemas.event_team import TeamMemberStatus
+from app.schemas.task_manager import TaskManagerBrief
 
 TaskStatus = Literal["draft", "published", "archived"]
 
@@ -68,6 +69,11 @@ class TaskRead(TaskBase):
     team_requires_approval: bool | None = None
     my_team_status: TeamMemberStatus | None = None
     locked_by_team: bool = False
+    #: Viewer-relative, filled in by ``app.logic.task_managers``: True for event
+    #: admins, the superadmin and the task's people in charge.
+    can_manage: bool = False
+    #: The task's people in charge, by name.
+    managers: list[TaskManagerBrief] = []
 
 
 class TaskListResponse(BaseModel):
@@ -157,6 +163,9 @@ class TaskCreateWithShifts(BaseModel):
     event_id: uuid.UUID | None = None
     new_event: EventCreate | None = None
     schedule: ShiftGenerationConfig
+    #: Members of ``event_id`` to put in charge of the new task. Not on
+    #: ``TaskCreate``: ``TaskBase`` is also the base of ``TaskRead``.
+    manager_ids: list[uuid.UUID] = []
 
     @field_validator("end_date")
     @classmethod
@@ -221,10 +230,16 @@ class AddShiftsResponse(BaseModel):
 class AffectedBookingInfo(BaseModel):
     booking_id: uuid.UUID
     user_id: uuid.UUID
+    #: The booker's name, so whoever confirms the regenerate can tell them.
+    user_name: str | None = None
     slot_title: str
     slot_date: dt.date
     slot_start_time: dt.time | None = None
     slot_end_time: dt.time | None = None
+    #: Only an event admin may remove this shift: it has started and people
+    #: are booked on it (``permissions.check_shift_history``). Always False
+    #: for event admins.
+    locked: bool = False
 
 
 class ShiftRegenerationResult(BaseModel):

@@ -17,7 +17,9 @@ from app.api.deps import (
 from app.core.errors import raise_problem
 from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.event_team import event_team as crud_team
 from app.crud.task import task as crud_task
+from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.logic.auth.service import build_user_profile
 from app.models.booking import Booking
@@ -463,9 +465,20 @@ async def transfer_user_ownership(
     await _get_valid_transfer_target(
         session, source_user_id=user_id, target_user_id=body.target_user_id
     )
-    events_transferred = await crud_event.reassign_owner(
+    events_transferred, owned_event_ids = await crud_event.reassign_owner(
         session, from_user_id=user_id, to_user_id=body.target_user_id
     )
+    # The source account survives but has left every one of those events (its
+    # owner row moved to the target), so what hung off that membership goes,
+    # as when anyone leaves: team rows and being in charge of a task.
+    # Otherwise re-inviting the person would quietly restore both.
+    for event_id in owned_event_ids:
+        await crud_team.remove_user_from_event_teams(
+            session, user_id=user_id, event_id=event_id
+        )
+        await crud_task_manager.remove_user_from_event_tasks(
+            session, user_id=user_id, event_id=event_id
+        )
     tasks_transferred = await crud_task.reassign_owner(
         session, from_user_id=user_id, to_user_id=body.target_user_id
     )

@@ -34,6 +34,7 @@ from .shift import Shift
 from .shift_batch import ShiftBatch
 from .stored_object import StorageDeletion, StoredObject
 from .task import Task
+from .task_manager import TaskManager
 from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
 from .user_avatar import UserAvatar
@@ -53,6 +54,7 @@ __all__ = [
     "StorageDeletion",
     "StoredObject",
     "Task",
+    "TaskManager",
     "Event",
     "EventInvitation",
     "EventJoinRequest",

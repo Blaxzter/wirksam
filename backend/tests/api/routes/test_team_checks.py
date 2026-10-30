@@ -7,8 +7,6 @@ file attached to a request lives only until the request is decided.
 
 import io
 import uuid
-from collections.abc import Generator
-from contextlib import contextmanager
 from datetime import date, timedelta
 from typing import Any
 
@@ -34,10 +32,7 @@ from app.models.event_team import (
     EventTeamRequirement,
 )
 from app.models.user import User
-from tests.fixtures.client import (
-    _restore,  # pyright: ignore[reportPrivateUsage]
-    _swap_identity,  # pyright: ignore[reportPrivateUsage]
-)
+from tests.fixtures.client import act_as
 from tests.fixtures.storage import drop_file
 
 PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
@@ -55,15 +50,6 @@ FIRST_AID = {
     "valid_for_years": 2,
     "accepts_document": True,
 }
-
-
-@contextmanager
-def act_as(app: FastAPI, user: User) -> Generator[None]:
-    originals = _swap_identity(app, user, superuser=False)
-    try:
-        yield
-    finally:
-        _restore(app, originals)
 
 
 def _png() -> bytes:

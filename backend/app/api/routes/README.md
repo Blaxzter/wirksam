@@ -67,7 +67,17 @@ Per-event authorisation is **not** done here. It goes through
 - `require_event_visible(user, session, event)` for reads — **404**, so a private
   event cannot be probed by id
 
-Grepping those two names must keep finding every check, so do not inline an
+Inside an event, a few gates in the same file narrow or widen those two:
+
+- **Teams** (`teams.py`) add `require_team_manager` (deciding requests,
+  editing a roster) and `require_team_for_booking`.
+- **People in charge** (`tasks/managers.py`) add `require_task_manager` (edit a
+  task's details and shifts; admin-only fields refused with `403
+  task.admin_only_field`; booked shifts that have started are the organisers'
+  through `check_shift_history`) and `require_task_visible` (reading one task;
+  drafts for admins and the task's people in charge).
+
+Grepping those names must keep finding every check, so do not inline an
 equivalent condition.
 
 Authentication itself — register, login, refresh, logout, password reset, email
