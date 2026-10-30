@@ -49,14 +49,18 @@ without paper. A stand that doesn't want to use the app keeps taking paper.
     and start time cannot change. Its end time may still move as long as the
     shift stays unfinished ("we're staying an hour longer");
   - a shift with confirmed bookings cannot be moved so that it ends at or
-    before now.
+    before now, nor so that it starts at or before now. Moving only the start
+    back ("since midnight, ends in a minute") leaves a shift that has not
+    ended yet, but a minute later it has, with the whole back-dated length
+    counted as worked.
 
   Both are refused with `403 task.shift_history_admin_only`. Event admins are
   not limited. This closes the instant ways to create vouchers (book a
   future shift, then move it into the past) and to wipe other volunteers'
   earned vouchers or hours (delete a worked shift). Creating a shift that
   has already ended needs no rule: nobody can book it (see "Earning requires
-  real membership and honest timing").
+  real membership and honest timing"). Creating one that is already running
+  is not limited either; see "What this does not prevent".
 - **What stays with event admins**, with reasons:
   - *Delete the task.* It removes the task for everyone, and the task isn't
     theirs to remove. (Deleting single future shifts stays possible; the
@@ -82,7 +86,12 @@ without paper. A stand that doesn't want to use the app keeps taking paper.
   bookings in its roster, and the earnings at the top of the organisers'
   voucher overview (sorted by available), where a correction undoes them.
   People in charge are trusted the way team leads are trusted to check
-  certificates. Whether voucher tasks
+  certificates. The same goes for a shift created already running: a person
+  in charge can add one at 14:00 that started at 00:00 and ends at 14:01, a
+  member books it, and a minute later fourteen hours count as worked. A
+  person in charge may need exactly that ("we forgot the morning setup
+  shift"), so creating is not refused; the shift and its booking are visible
+  the same way. Whether voucher tasks
   should instead keep shift creation with the organisers is the one open
   question for the product owner (see "Open question").
 - **Per task, not per location.** Locations are optional. Responsibility for a
@@ -364,9 +373,10 @@ async def require_task_manager(user: User, session: AsyncSession, task: Task) ->
 async def require_task_visible(
     user: User, session: AsyncSession, task: Task, *, booked_shift_id: uuid.UUID | None = None
 ) -> EventRole:
-    """The read gate for one task. 404 task.not_found for a sandbox task whose event
-    the caller did not create (checked first: get_event_role reports the superadmin
-    as owner), or when the caller has no role in the task's event. 403
+    """The read gate for one task. 404 task.not_found for a task in a sandbox event
+    the caller did not create, decided on the event and not on Task.is_sandbox
+    alone (checked first: get_event_role reports the superadmin as owner), or
+    when the caller has no role in the task's event. 403
     task.not_published for a non-published task unless task_access() is not None,
     or unless booked_shift_id is given and the caller has a booking (any status)
     on that shift: a volunteer can always reopen their own booking after the
@@ -379,8 +389,9 @@ def check_shift_history(
 ) -> None:
     """The shift history rule. No-op for 'admin'. For 'manager': 403
     task.shift_history_admin_only when a booked shift that has started would be
-    deleted or get a new date or start time, or when a booked shift would end
-    at or before ``now`` (event wall clock, logic/clock.wall_clock_now).
+    deleted or get a new date or start time, or when a booked shift would start
+    (after a new date or start time) or end at or before ``now`` (event wall
+    clock, logic/clock.wall_clock_now).
     'Started' is combine(date, start_time or 00:00) <= now; 'ends' is
     work_hours.shift_ends_at. Pure, so the routes pass in has_bookings.
     Creating shifts never calls it: nobody can book a shift that has ended."""
@@ -506,7 +517,11 @@ is not None.
 `get_count_filtered` get a new `also_include_task_ids: list[uuid.UUID] | None`.
 Inside `if status:`, it is OR-ed into the status filter just like
 `also_include_group_ids` is. `restrict_to_event_ids` stays a hard AND, so a
-task in an event the caller has left never shows up. Callers pass
+task in an event the caller has left never shows up. That `status` is the
+visibility rule (always `"published"` for everyone but the superadmin), not
+the caller's query parameter: `GET /tasks/?status=` goes into a separate
+`only_status`, ANDed on top, so a member asking for `draft` gets none rather
+than every draft in their events. Callers pass
 `await crud_task_manager.task_ids_for_user(session, user_id=current_user.id)`:
 
 - `GET /tasks/` (`list_tasks`)
@@ -566,7 +581,11 @@ Errors:
 - `404 task.not_found`: no such task.
 - `403 event.forbidden`: the caller is not an admin.
 - `422 task.manager_not_event_member`: the person is not a member of the
-  task's event, or the task has no event.
+  task's event, or the task has no event. The membership row is read
+  `FOR KEY SHARE` (`crud_membership.lock_member_ids`, also used for
+  `manager_ids` on create), so a concurrent leave waits for the grant and
+  its clean-up removes it, instead of missing a row that would come back
+  when the person re-joins.
 - `409 task.manager_already`: the person is already in charge. Check first,
   then insert inside `begin_nested()` and map an `IntegrityError` to the same
   409.
@@ -1087,7 +1106,11 @@ shifts_to_delete], task_name=db_task.name)`, like every other delete path.
 People in charge can trigger this route now, which is why the fix belongs to
 package A. For a person in charge, `check_shift_history` runs over
 `shifts_to_delete` first; the dry run marks those shifts `locked` and
-carries `user_name`, so the editor can name the people affected.
+carries `user_name`, so the editor can name the people affected. The dry run
+also used to copy the new title, places, location and category onto the kept
+shifts before checking `dry_run`, and the request's commit kept them, so a
+cancelled preview edited the rota. Those updates now happen in the real run
+only.
 
 **Another task's batch.** `POST /shifts/` used to accept any `batch_id`. With
 per-task rights, the person in charge of task B could then delete batch B and

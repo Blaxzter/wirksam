@@ -62,14 +62,17 @@ async def _validate_manager_ids(
 ) -> list[uuid.UUID]:
     """The deduplicated ``manager_ids``, each a member of ``payload.event_id``.
 
-    Checked before anything is written. A task in a brand-new event (or in no
+    Checked before anything is written, with the membership rows locked as in
+    ``POST /tasks/{id}/managers``. A task in a brand-new event (or in no
     event) has nobody to put in charge yet.
     """
     ids = list(dict.fromkeys(payload.manager_ids))
     if not ids:
         return []
     member_ids: set[uuid.UUID] = (
-        set(await crud_membership.list_user_ids(session, event_id=payload.event_id))
+        await crud_membership.lock_member_ids(
+            session, event_id=payload.event_id, user_ids=ids
+        )
         if payload.event_id is not None and payload.new_event is None
         else set()
     )
@@ -391,20 +394,18 @@ async def regenerate_task_shifts(
         key = (shift.date, shift.start_time, shift.end_time)
         existing_lookup[key] = shift
 
-    # 4. Match new shifts to existing
+    # 4. Match new shifts to existing. The kept shifts take the new title,
+    #    places, location and category, but only in 6e below: the request
+    #    commits whatever is on the session, so touching them here would make
+    #    the dry run's preview a real edit.
     matched_keys: set[tuple[Any, ...]] = set()
+    matched_updates: list[tuple[Shift, ShiftCreate]] = []
     shifts_to_create: list[ShiftCreate] = []
     for new_shift in new_shift_defs:
         key = (new_shift.date, new_shift.start_time, new_shift.end_time)
         if key in existing_lookup:
             matched_keys.add(key)
-            # Update title and max_bookings on matched shifts
-            existing = existing_lookup[key]
-            existing.title = new_shift.title
-            existing.max_bookings = new_shift.max_bookings
-            existing.location = new_shift.location
-            existing.location_id = new_shift.location_id
-            existing.category = new_shift.category
+            matched_updates.append((existing_lookup[key], new_shift))
         else:
             shifts_to_create.append(new_shift)
 
@@ -511,6 +512,15 @@ async def regenerate_task_shifts(
             if batch_id and db_batch:
                 slot_in.batch_id = db_batch.id
             await crud_shift.create(session, obj_in=slot_in)
+
+        # 6e. Update the kept shifts.
+        for existing, new_shift in matched_updates:
+            existing.title = new_shift.title
+            existing.max_bookings = new_shift.max_bookings
+            existing.location = new_shift.location
+            existing.location_id = new_shift.location_id
+            existing.category = new_shift.category
+            session.add(existing)
 
         await session.flush()
         await session.refresh(db_task)

@@ -225,7 +225,8 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `logic/permissions.py::require_event_visible` | 404 for a sandbox the caller did not create — placed **before** the role check, because that check reports the superadmin as owner |
 | `crud/task.py::_apply_common_filters` | unrestricted (superadmin) queries exclude `Task.is_sandbox` |
 | `crud/shift.py::_apply_event_scope` | shifts are scoped through their task; unrestricted still excludes sandboxes |
-| `logic/permissions.py::require_task_visible` | the read gate for one task (task page, its shifts and bookings, `GET /shifts/{id}`): 404 for a sandbox task whose event the caller did not create — the superadmin included, so again placed **before** the role check |
+| `logic/permissions.py::require_task_visible` | the read gate for one task (task page, its shifts and bookings, `GET /shifts/{id}`): 404 for a task in a sandbox event the caller did not create — the superadmin included, so again placed **before** the role check. Decided on the event, so a task row whose own flag is off is still covered; `Task.is_sandbox` counts for a task whose event is gone |
+| `crud/task.py::CRUDTask.create` | copies `is_sandbox` from the event, so a task the guest creates through `POST /tasks/` or `/tasks/with-shifts` is excluded from the listings above and stops the publish fan-out (`dispatch_task_published`) like a seeded one |
 | `api/routes/shifts.py::get_shift` | ran no permission check at all before this feature; now resolves the task and runs `require_task_visible` |
 | `api/routes/dashboard.py::_sidebar_events` | excludes sandboxes unless the viewer created them — `visible_event_ids` is `None` for the superadmin and so cannot do this job |
 | `api/routes/reporting.py` | every query excludes sandbox tasks when there is no event filter, via `_non_sandbox_tasks()` |

@@ -160,8 +160,9 @@ revoking access. Design note:
 `event_id` gets `403 task.admin_only_field`), `require_task_visible` (reading
 one task: drafts and archived tasks only for event admins and the task's people
 in charge, `403 task.not_published` otherwise; a booker can always reopen their
-own shift) and `check_shift_history` (a booked shift that has started, or a
-move into the past, is the event admins' — `403 task.shift_history_admin_only`).
+own shift) and `check_shift_history` (a booked shift that has started, or
+moving a booked shift's start or end into the past, is the event admins' —
+`403 task.shift_history_admin_only`).
 Only event admins name people in charge, delete or publish a task; a person in
 charge may step down. Being in charge counts only while the person is an event
 member, and leaving the event deletes the rows. Design note:

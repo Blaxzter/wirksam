@@ -13,6 +13,7 @@ Only the first two may edit ``test_task``; being in charge of something else,
 here or elsewhere, gives nothing on it.
 """
 
+import asyncio
 import datetime as dt
 import uuid
 from collections.abc import Awaitable, Callable
@@ -23,10 +24,13 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, Response
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, func, select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlmodel import col
 
+from app.api.routes.tasks.managers import add_task_manager
+from app.crud.event_membership import event_membership as crud_membership
+from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.permissions import task_access
 from app.models.booking import Booking
 from app.models.event import Event
@@ -37,6 +41,7 @@ from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
+from app.schemas.task_manager import TaskManagerAdd
 from tests.fixtures.client import act_as
 
 #: The clock for the shift history tests: the morning of the fixture task's
@@ -415,7 +420,11 @@ class TestPowers:
         assert r.json()["code"] == "event.forbidden"
 
     async def test_a_person_in_charge_cannot_create_tasks(
-        self, app: FastAPI, async_client: AsyncClient, cast: Cast
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
     ) -> None:
         with act_as(app, cast.manager):
             r = await async_client.post(
@@ -429,10 +438,32 @@ class TestPowers:
                 },
             )
         assert r.status_code == 403
+        # The event gate, not the task gate: creating stays with the admins.
+        assert r.json()["code"] == "event.forbidden"
+        created = await db_session.execute(
+            select(func.count()).select_from(Task).where(col(Task.name) == "Neu")
+        )
+        assert created.scalar_one() == 0
 
 
-async def _create_shift(client: AsyncClient, _db: AsyncSession, cast: Cast) -> Response:
-    return await client.post(
+async def _shift_count(db: AsyncSession, task: Task) -> int:
+    result = await db.execute(
+        select(func.count()).select_from(Shift).where(col(Shift.task_id) == task.id)
+    )
+    return result.scalar_one()
+
+
+async def _exists(db: AsyncSession, row: Shift | ShiftBatch) -> bool:
+    return await db.get(type(row), row.id, populate_existing=True) is not None
+
+
+#: A shift operation's response, and whether it did what it was asked to do,
+#: checked against the database rather than taken from the status code.
+Outcome = tuple[Response, Callable[[], Awaitable[bool]]]
+
+
+async def _create_shift(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
+    r = await client.post(
         "/api/v1/shifts/",
         json={
             "task_id": str(cast.task.id),
@@ -443,19 +474,41 @@ async def _create_shift(client: AsyncClient, _db: AsyncSession, cast: Cast) -> R
         },
     )
 
+    async def done() -> bool:
+        rows = await db.execute(
+            select(func.count())
+            .select_from(Shift)
+            .where(col(Shift.task_id) == cast.task.id, col(Shift.title) == "Extra")
+        )
+        return rows.scalar_one() == 1
 
-async def _patch_shift(client: AsyncClient, db: AsyncSession, cast: Cast) -> Response:
+    return r, done
+
+
+async def _patch_shift(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
     shift = await _shift(db, cast.task)
-    return await client.patch(f"/api/v1/shifts/{shift.id}", json={"title": "Bar"})
+    r = await client.patch(f"/api/v1/shifts/{shift.id}", json={"title": "Bar"})
+
+    async def done() -> bool:
+        await db.refresh(shift)
+        return shift.title == "Bar"
+
+    return r, done
 
 
-async def _delete_shift(client: AsyncClient, db: AsyncSession, cast: Cast) -> Response:
+async def _delete_shift(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
     shift = await _shift(db, cast.task)
-    return await client.delete(f"/api/v1/shifts/{shift.id}")
+    r = await client.delete(f"/api/v1/shifts/{shift.id}")
+
+    async def done() -> bool:
+        return not await _exists(db, shift)
+
+    return r, done
 
 
-async def _add_shifts(client: AsyncClient, _db: AsyncSession, cast: Cast) -> Response:
-    return await client.post(
+async def _add_shifts(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
+    before = await _shift_count(db, cast.task)
+    r = await client.post(
         f"/api/v1/tasks/{cast.task.id}/add-shifts",
         json={
             "start_date": "2026-06-12",
@@ -464,32 +517,57 @@ async def _add_shifts(client: AsyncClient, _db: AsyncSession, cast: Cast) -> Res
         },
     )
 
+    async def done() -> bool:
+        # 09:00-11:00 in hours: two shifts.
+        return await _shift_count(db, cast.task) == before + 2
 
-async def _regenerate_dry(
-    client: AsyncClient, db: AsyncSession, cast: Cast
-) -> Response:
-    await _shift(db, cast.task)
-    return await client.post(
+    return r, done
+
+
+async def _regenerate_dry(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
+    shift = await _shift(db, cast.task)
+    r = await client.post(
         f"/api/v1/tasks/{cast.task.id}/regenerate-shifts",
         params={"dry_run": True},
         json={"schedule": SCHEDULE},
     )
 
+    async def done() -> bool:
+        # A preview: it reports the 08:00-12:00 shift as going, and keeps it.
+        return (
+            r.status_code == 200
+            and r.json()["shifts_removed"] == 1
+            and await _exists(db, shift)
+        )
 
-async def _regenerate(client: AsyncClient, db: AsyncSession, cast: Cast) -> Response:
-    await _shift(db, cast.task)
-    return await client.post(
+    return r, done
+
+
+async def _regenerate(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
+    shift = await _shift(db, cast.task)
+    r = await client.post(
         f"/api/v1/tasks/{cast.task.id}/regenerate-shifts", json={"schedule": SCHEDULE}
     )
 
+    async def done() -> bool:
+        # Two hourly shifts on each of the task's three days replace it.
+        return not await _exists(db, shift) and await _shift_count(db, cast.task) == 6
 
-async def _delete_batch(client: AsyncClient, db: AsyncSession, cast: Cast) -> Response:
+    return r, done
+
+
+async def _delete_batch(client: AsyncClient, db: AsyncSession, cast: Cast) -> Outcome:
     batch = await _batch(db, cast.task)
-    await _shift(db, cast.task, batch=batch)
-    return await client.delete(f"/api/v1/tasks/{cast.task.id}/batches/{batch.id}")
+    shift = await _shift(db, cast.task, batch=batch)
+    r = await client.delete(f"/api/v1/tasks/{cast.task.id}/batches/{batch.id}")
+
+    async def done() -> bool:
+        return not await _exists(db, batch) and not await _exists(db, shift)
+
+    return r, done
 
 
-ShiftOp = Callable[[AsyncClient, AsyncSession, Cast], Awaitable[Response]]
+ShiftOp = Callable[[AsyncClient, AsyncSession, Cast], Awaitable[Outcome]]
 SHIFT_OPS: dict[str, ShiftOp] = {
     "create shift": _create_shift,
     "edit shift": _patch_shift,
@@ -513,12 +591,14 @@ async def test_shift_writes(
     role: str,
 ) -> None:
     with act_as(app, cast[role]):
-        r = await SHIFT_OPS[op](async_client, db_session, cast)
+        r, done = await SHIFT_OPS[op](async_client, db_session, cast)
     if role in MAY_EDIT:
         assert r.status_code in (200, 201, 204), r.text
+        assert await done(), f"{op} answered {r.status_code} but did not happen"
     else:
         assert r.status_code == 403, r.text
         assert r.json()["code"] == "task.forbidden"
+        assert not await done(), f"{op} was refused but happened anyway"
 
 
 @pytest.mark.asyncio
@@ -526,8 +606,8 @@ async def test_write_responses_carry_can_manage(
     app: FastAPI, async_client: AsyncClient, db_session: AsyncSession, cast: Cast
 ) -> None:
     with act_as(app, cast.manager):
-        added = await _add_shifts(async_client, db_session, cast)
-        regenerated = await _regenerate_dry(async_client, db_session, cast)
+        added, _ = await _add_shifts(async_client, db_session, cast)
+        regenerated, _ = await _regenerate_dry(async_client, db_session, cast)
     for r in (added, regenerated):
         assert r.json()["task"]["can_manage"] is True
         assert [m["user_id"] for m in r.json()["task"]["managers"]] == [
@@ -561,12 +641,46 @@ class TestShiftHistory:
         assert r.status_code == 204
 
     async def test_extending_a_running_booked_shift(
-        self, app: FastAPI, async_client: AsyncClient, cast: Cast, running: Shift
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        running: Shift,
     ) -> None:
         with act_as(app, cast.manager):
             r = await async_client.patch(
                 f"/api/v1/shifts/{running.id}", json={"end_time": "13:00:00"}
             )
+        assert r.status_code == 200, r.text
+        assert r.json()["end_time"] == "13:00:00"
+        await db_session.refresh(running)
+        assert running.end_time == dt.time(13, 0)
+
+    async def test_moving_a_future_booked_shift_to_start_in_the_past(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        clock: dt.datetime,
+    ) -> None:
+        """Ending in a minute is not ending yet, but starting at midnight is the past."""
+        future = await _shift(db_session, cast.task, date=dt.date(2026, 6, 12))
+        await _book(db_session, future, cast.member)
+        body = {
+            "date": NOW.date().isoformat(),
+            "start_time": "00:00:00",
+            "end_time": "10:01:00",
+        }
+        with act_as(app, cast.manager):
+            r = await async_client.patch(f"/api/v1/shifts/{future.id}", json=body)
+        assert r.status_code == 403
+        assert r.json()["code"] == "task.shift_history_admin_only"
+        await db_session.refresh(future)
+        assert (future.date, future.start_time) == (dt.date(2026, 6, 12), dt.time(8))
+        with act_as(app, cast.admin):
+            r = await async_client.patch(f"/api/v1/shifts/{future.id}", json=body)
         assert r.status_code == 200, r.text
 
     async def test_moving_a_future_booked_shift_into_the_past(
@@ -719,6 +833,38 @@ class TestDrafts:
             theirs = (await async_client.get("/api/v1/shifts/")).json()["items"]
         assert any(s["task_id"] == str(draft.id) for s in mine)
         assert not any(s["task_id"] == str(draft.id) for s in theirs)
+
+    @pytest.mark.parametrize("status", ["draft", "archived"])
+    async def test_asking_for_a_status_does_not_widen_the_list(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        status: str,
+    ) -> None:
+        """``?status=`` narrows what the caller may see; it never replaces it."""
+        hidden = await _task(
+            db_session, cast.event, cast.admin, name="Verborgen", status=status
+        )
+        await _in_charge(db_session, hidden, cast.manager)
+        params = {"event_id": str(cast.event.id), "status": status}
+
+        async def _ids(user: User, **extra: str) -> tuple[set[str], int]:
+            with act_as(app, user):
+                r = await async_client.get("/api/v1/tasks/", params={**params, **extra})
+            assert r.status_code == 200, r.text
+            return {i["id"] for i in r.json()["items"]}, r.json()["total"]
+
+        assert await _ids(cast.member) == (set(), 0)
+        assert await _ids(cast.sibling) == (set(), 0)
+        assert await _ids(cast.manager) == ({str(hidden.id)}, 1)
+        assert str(hidden.id) in (await _ids(cast.admin))[0]
+        # And the published filter still leaves the person in charge's own
+        # draft out: their status is a filter on top, not the base.
+        published, _ = await _ids(cast.manager, status="published")
+        assert str(hidden.id) not in published
+        assert str(cast.task.id) in published
 
     async def test_flags_on_a_published_task(
         self, app: FastAPI, async_client: AsyncClient, cast: Cast
@@ -954,6 +1100,99 @@ class TestLifecycle:
             r = await async_client.delete(f"/api/v1/tasks/{task_id}")
         assert r.status_code == 204
         assert await _manager_rows(db_session, task_id=task_id) == []
+
+
+@pytest.mark.asyncio
+async def test_a_leave_waits_for_a_grant_in_flight(test_engine: AsyncEngine) -> None:
+    """Putting someone in charge locks their membership until it commits.
+
+    Otherwise a leave that commits between the grant's membership check and
+    its insert finds no row to delete, and the row it missed comes back to
+    life when the person re-joins the event. Proving that takes two real
+    transactions on committed rows, so unlike the rest of the suite this test
+    commits, and removes what it wrote itself.
+    """
+    key = uuid.uuid4().hex[:8]
+    async with AsyncSession(test_engine, expire_on_commit=False) as setup:
+        admin = User(
+            subject=f"local|race-admin-{key}",
+            email=f"race-admin-{key}@example.com",
+            name="Race Admin",
+            roles=[],
+            is_active=True,
+        )
+        leaver = User(
+            subject=f"local|race-leaver-{key}",
+            email=f"race-leaver-{key}@example.com",
+            name="Race Leaver",
+            roles=[],
+            is_active=True,
+        )
+        setup.add_all([admin, leaver])
+        await setup.flush()
+        event = Event(
+            name=f"Race {key}",
+            start_date=dt.date(2026, 6, 10),
+            end_date=dt.date(2026, 6, 14),
+            created_by_id=admin.id,
+        )
+        setup.add(event)
+        await setup.flush()
+        setup.add_all(
+            [
+                EventMembership(user_id=admin.id, event_id=event.id, role="owner"),
+                EventMembership(user_id=leaver.id, event_id=event.id, role="member"),
+            ]
+        )
+        task = await _task(setup, event, admin)
+        await setup.commit()
+
+    try:
+        async with (
+            AsyncSession(test_engine) as granting,
+            AsyncSession(test_engine) as leaving,
+        ):
+            await add_task_manager(
+                task.id, TaskManagerAdd(user_id=leaver.id), granting, admin
+            )
+
+            async def leave() -> None:
+                # What ``DELETE /events/{id}/members/{user_id}`` does.
+                await crud_membership.remove(
+                    leaving, user_id=leaver.id, event_id=event.id
+                )
+                await crud_task_manager.remove_user_from_event_tasks(
+                    leaving, user_id=leaver.id, event_id=event.id
+                )
+                await leaving.commit()
+
+            pending = asyncio.create_task(leave())
+            try:
+                await asyncio.sleep(0.5)
+                waited = not pending.done()
+                await granting.commit()
+                await asyncio.wait_for(pending, timeout=10)
+            finally:
+                if not pending.done():
+                    pending.cancel()
+        assert waited, "the leave went ahead while the grant was still open"
+
+        async with AsyncSession(test_engine) as check:
+            left_behind = await _manager_rows(check, user_id=leaver.id)
+        assert left_behind == []
+    finally:
+        async with test_engine.begin() as conn:
+            await conn.execute(
+                delete(TaskManager).where(col(TaskManager.task_id) == task.id)
+            )
+            await conn.execute(delete(Task).where(col(Task.id) == task.id))
+            await conn.execute(
+                delete(EventMembership).where(col(EventMembership.event_id) == event.id)
+            )
+            await conn.execute(delete(Event).where(col(Event.id) == event.id))
+            await conn.execute(
+                delete(User).where(col(User.id).in_([admin.id, leaver.id]))
+            )
 
 
 # ── Naming them when the task is created ─────────────────────────

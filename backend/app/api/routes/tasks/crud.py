@@ -68,8 +68,13 @@ async def list_tasks(
     Defaults to scoping by the current user's selected event. Pass an explicit
     ``event_id`` to override, or ``all_events=true`` to disable that scoping
     (membership still applies).
+
+    ``status`` narrows that further and never widens it: a member asking for
+    ``draft`` gets the drafts they may see, which is none.
     """
-    effective_status = status
+    # What the caller may see, as opposed to the ``status`` they asked for.
+    # None for the superadmin, who sees every status.
+    visible_status: str | None = None
     also_include_group_ids = None
     also_include_task_ids = None
 
@@ -78,8 +83,7 @@ async def list_tasks(
         manageable_ids = await crud_membership.list_event_ids_for_user(
             session, user_id=current_user.id, minimum_role="admin"
         )
-        if effective_status is None:
-            effective_status = "published"
+        visible_status = "published"
         if manageable_ids:
             # Within events they run, admins also see drafts.
             also_include_group_ids = manageable_ids
@@ -99,7 +103,8 @@ async def list_tasks(
         skip=skip,
         limit=limit,
         search=search,
-        status=effective_status,
+        status=visible_status,
+        only_status=status,
         booked_by_user_id=booked_by_user_id,
         also_include_group_ids=also_include_group_ids,
         also_include_task_ids=also_include_task_ids,
@@ -109,7 +114,8 @@ async def list_tasks(
     total = await crud_task.get_count_filtered(
         session,
         search=search,
-        status=effective_status,
+        status=visible_status,
+        only_status=status,
         booked_by_user_id=booked_by_user_id,
         also_include_group_ids=also_include_group_ids,
         also_include_task_ids=also_include_task_ids,

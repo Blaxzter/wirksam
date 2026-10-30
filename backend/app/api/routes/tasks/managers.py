@@ -45,9 +45,17 @@ async def add_task_manager(
     """Put an event member in charge of this task. Event admins only."""
     task = await _get_task(session, task_id)
     await require_event_role(current_user, session, task.event_id)
-    if task.event_id is None or not await crud_membership.get(
-        session, user_id=body.user_id, event_id=task.event_id
-    ):
+    # Locked, not just read: a leave running alongside then waits for this
+    # grant and removes it, rather than missing it and leaving it to come
+    # back when the person re-joins.
+    members = (
+        await crud_membership.lock_member_ids(
+            session, event_id=task.event_id, user_ids=[body.user_id]
+        )
+        if task.event_id is not None
+        else set[uuid.UUID]()
+    )
+    if body.user_id not in members:
         raise_problem(
             422,
             code="task.manager_not_event_member",

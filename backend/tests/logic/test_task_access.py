@@ -243,6 +243,21 @@ class TestRequireTaskVisible:
         # Its guest reads it.
         assert await require_task_visible(test_sandbox.guest, db_session, task)
 
+    async def test_the_event_decides_not_the_tasks_own_flag(
+        self,
+        db_session: AsyncSession,
+        test_sandbox: SandboxSetup,
+        test_admin_user: User,
+    ) -> None:
+        """A task row in a demo whose ``is_sandbox`` is off is still the guest's."""
+        task = await _other_task(db_session, test_sandbox.event, test_sandbox.guest)
+        assert task.is_sandbox is False
+        with pytest.raises(HTTPException) as exc:
+            await require_task_visible(test_admin_user, db_session, task)
+        assert exc.value.status_code == 404
+        assert _code(exc) == "task.not_found"
+        assert await require_task_visible(test_sandbox.guest, db_session, task)
+
 
 # ── The shift history rule ────────────────────────────────────────
 
@@ -334,6 +349,50 @@ class TestCheckShiftHistory:
             before=future,
             has_bookings=True,
             new_date=dt.date(2026, 6, 10),
+        )
+
+    def test_moving_a_future_booked_shift_to_start_in_the_past_is_refused(
+        self,
+    ) -> None:
+        """Next week's 10-12 becomes 'since midnight, ends in a minute'.
+
+        It would not have ended yet, but a minute later it has, with the whole
+        back-dated length counted as worked.
+        """
+        future = _shift(date=dt.date(2026, 6, 12), start=dt.time(10, 0))
+        assert _refused(
+            "manager",
+            before=future,
+            has_bookings=True,
+            new_date=NOW.date(),
+            new_start=dt.time(0, 0),
+            new_end=dt.time(10, 1),
+        )
+        # Untimed on today counts as started at midnight.
+        assert _refused(
+            "manager",
+            before=future,
+            has_bookings=True,
+            new_date=NOW.date(),
+            new_start=None,
+            new_end=None,
+        )
+        # Later today is fine: it has not started.
+        assert not _refused(
+            "manager",
+            before=future,
+            has_bookings=True,
+            new_date=NOW.date(),
+            new_start=dt.time(10, 30),
+            new_end=dt.time(12, 0),
+        )
+        # And an unbooked shift may go anywhere.
+        assert not _refused(
+            "manager",
+            before=future,
+            has_bookings=False,
+            new_date=NOW.date(),
+            new_start=dt.time(0, 0),
         )
 
     def test_moving_a_future_booked_shift_within_the_future_passes(self) -> None:

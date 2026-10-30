@@ -9,6 +9,7 @@ from sqlmodel import col
 
 from app.crud.base import CRUDBase
 from app.models.booking import Booking
+from app.models.event import Event
 from app.models.shift import Shift
 from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -17,12 +18,30 @@ TaskSortField = Literal["name", "start_date", "end_date", "status", "created_at"
 
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
+    async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
+        """Insert a task, with ``is_sandbox`` copied from its event.
+
+        ``TaskCreate`` has no such field, so a task a demo guest adds through
+        the API would otherwise be a real task inside a sandbox: listed to the
+        superadmin and, once published, announced to every account. The seeder
+        and the event clone build their rows themselves and set it there.
+        """
+        task = await super().create(db, obj_in=obj_in)
+        if task.event_id is not None and await db.scalar(
+            select(col(Event.is_sandbox)).where(col(Event.id) == task.event_id)
+        ):
+            task.is_sandbox = True
+            db.add(task)
+            await db.flush()
+        return task
+
     def _apply_common_filters(
         self,
         query: Select[Any],
         *,
         search: str | None = None,
         status: str | None = None,
+        only_status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
@@ -95,6 +114,12 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     col(Task.id).in_(also_include_task_ids),
                 )
             query = query.where(status_filter)
+        if only_status:
+            # The caller's own filter, ANDed on top. ``status`` above is the
+            # visibility rule, which the also_include_* lists widen; letting a
+            # query parameter take its place would hand a plain member every
+            # draft in their events with ``?status=draft``.
+            query = query.where(col(Task.status) == only_status)
         if created_by_id:
             query = query.where(col(Task.created_by_id) == created_by_id)
         if booked_by_user_id:
@@ -169,6 +194,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         limit: int = 100,
         search: str | None = None,
         status: str | None = None,
+        only_status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
@@ -189,6 +215,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query,
             search=search,
             status=status,
+            only_status=only_status,
             created_by_id=created_by_id,
             booked_by_user_id=booked_by_user_id,
             date_from=date_from,
@@ -216,6 +243,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         *,
         search: str | None = None,
         status: str | None = None,
+        only_status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
@@ -234,6 +262,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query,
             search=search,
             status=status,
+            only_status=only_status,
             created_by_id=created_by_id,
             booked_by_user_id=booked_by_user_id,
             date_from=date_from,

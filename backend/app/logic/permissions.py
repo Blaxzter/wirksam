@@ -27,8 +27,8 @@ event admins through as well:
   task's people in charge (and a booker can always reopen their own shift).
 - :func:`check_shift_history`, the shift history rule: a person in charge may
   not delete, re-date or re-start a booked shift that has started, nor move a
-  booked shift into the past. Hours are derived from booked shifts that have
-  ended, so that past belongs to the event admins.
+  booked shift's start or end into the past. Hours are derived from booked
+  shifts that have ended, so that past belongs to the event admins.
 
 Being in charge only counts while the person is a member of the task's event
 (:func:`task_access`), so a row left behind by someone who left grants nothing.
@@ -267,9 +267,12 @@ async def require_task_visible(
 ) -> EventRole:
     """The read gate for one task; returns the caller's role in its event.
 
-    - 404 ``task.not_found`` for a sandbox task whose event the caller did not
-      create. Checked first, because ``get_event_role`` reports the superadmin
-      as owner of everything (the same order as :func:`require_event_visible`).
+    - 404 ``task.not_found`` for a task in a sandbox event that the caller did
+      not create. Checked first, because ``get_event_role`` reports the
+      superadmin as owner of everything (the same order as
+      :func:`require_event_visible`). Decided on the *event*: a task the guest
+      creates in their demo is a sandbox task whatever its own flag says.
+      ``Task.is_sandbox`` still counts for a task whose event is gone.
     - 404 ``task.not_found`` when the caller holds no role in the task's event,
       so a task cannot be probed by id.
     - 403 ``task.not_published`` for a draft or archived task, unless the caller
@@ -277,10 +280,11 @@ async def require_task_visible(
       booking (any status) on that shift: a volunteer can always reopen their
       own booking after the organisers archive the task.
     """
-    if task.is_sandbox:
-        event = await session.get(Event, task.event_id) if task.event_id else None
-        if event is None or event.created_by_id != user.id:
-            raise_problem(404, code="task.not_found", detail="Task not found")
+    event = await session.get(Event, task.event_id) if task.event_id else None
+    if (task.is_sandbox or (event is not None and event.is_sandbox)) and (
+        event is None or event.created_by_id != user.id
+    ):
+        raise_problem(404, code="task.not_found", detail="Task not found")
 
     role = await get_event_role(user, session, task.event_id)
     if role is None:
@@ -332,7 +336,9 @@ def check_shift_history(
       start time cannot change. Its end time may still move while the shift
       stays unfinished ("we're staying an hour longer"), but not once it has
       ended;
-    - a booked shift cannot be moved so that it ends at or before ``now``.
+    - a booked shift cannot be moved so that it starts, or ends, at or before
+      ``now``. Moving only the start into the past would leave a shift that
+      has not ended yet but soon has, with the back-dated part counted.
 
     Hours are derived from booked shifts that have ended, so whoever rewrites a
     booked shift's past rewrites other people's hours.
@@ -341,7 +347,9 @@ def check_shift_history(
     "Started" is ``combine(date, start_time or 00:00) <= now``; "ends" is
     ``work_hours.shift_ends_at``. ``now`` is the event wall clock
     (``clock.wall_clock_now()``). Pure, so the routes pass ``has_bookings``.
-    Creating shifts never calls this: nobody can book a shift that has ended.
+    Creating shifts never calls this: nobody can book a shift that has ended,
+    and a shift created already running is visible on the task like any other
+    (see "What this does not prevent" in the plan).
     """
     if shift_history_refuses(
         access,
@@ -392,7 +400,13 @@ def shift_history_refuses(
     date_or_start_changed = date != before.date or start != before.start_time
     if not date_or_start_changed and end == before.end_time:
         return False
-    if started and date_or_start_changed:
+    if date_or_start_changed and (
+        started or dt.datetime.combine(date, start or dt.time()) <= now
+    ):
+        # Neither re-date one that has started, nor move one's start into the
+        # past: next week's 10-12 turned into "since midnight, ends in a
+        # minute" has not ended yet, but a minute later it has, with the whole
+        # back-dated length counted as worked.
         return True
     if shift_ends_at(before.date, before.start_time, before.end_time) <= now:
         # Already over: moving its end, even to later, rewrites worked hours.

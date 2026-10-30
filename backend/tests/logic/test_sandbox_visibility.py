@@ -26,8 +26,10 @@ Two things to know about how these are driven:
 """
 
 import uuid
+from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,6 +47,7 @@ from app.models.notification import Notification, NotificationType
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
+from tests.fixtures.client import act_as
 from tests.fixtures.sandbox import SandboxSetup
 
 API = settings.API_V1_STR
@@ -419,6 +422,144 @@ class TestShiftListings:
         assert response.status_code == 200, response.text
         returned = {item["id"] for item in response.json()["items"]}
         assert returned and returned <= seeded
+
+
+_SCHEDULE = {
+    "default_start_time": "09:00:00",
+    "default_end_time": "11:00:00",
+    "shift_duration_minutes": 60,
+    "people_per_shift": 1,
+}
+
+
+@pytest.mark.asyncio
+class TestTasksTheGuestCreates:
+    """A task the guest adds to their demo is as private as a seeded one.
+
+    The seeder and the clone set ``Task.is_sandbox`` themselves, but the create
+    routes take no such field, so ``crud.task.create`` copies it from the
+    event. The single-task gate (``require_task_visible``) decides on the event
+    as well, so a row whose own flag is wrong still answers 404.
+
+    Driven through ``act_as`` rather than the guest's token, because the test
+    switches between the guest and the superadmin.
+    """
+
+    async def _create(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        db: AsyncSession,
+        sandbox: SandboxSetup,
+        route: str,
+        *,
+        status: str = "published",
+    ) -> tuple[Task, str]:
+        """The task the guest created through ``route``, and one of its shifts."""
+        await _promote_to_owner(db, sandbox)
+        day = sandbox.event.start_date.isoformat()
+        body = {
+            "name": "Bar",
+            "start_date": day,
+            "end_date": day,
+            "status": status,
+            "event_id": str(sandbox.event.id),
+        }
+        with act_as(app, sandbox.guest):
+            if route == "with-shifts":
+                r = await client.post(
+                    f"{API}/tasks/with-shifts", json={**body, "schedule": _SCHEDULE}
+                )
+                assert r.status_code == 201, r.text
+                task_id = r.json()["task"]["id"]
+            else:
+                r = await client.post(f"{API}/tasks/", json=body)
+                assert r.status_code == 201, r.text
+                task_id = r.json()["id"]
+                shift = await client.post(
+                    f"{API}/shifts/",
+                    json={
+                        "task_id": task_id,
+                        "title": "Bar",
+                        "date": day,
+                        "start_time": "18:00:00",
+                        "end_time": "22:00:00",
+                    },
+                )
+                assert shift.status_code == 201, shift.text
+        task = await db.get(Task, uuid.UUID(task_id), populate_existing=True)
+        assert task is not None
+        shift_id = (
+            (
+                await db.execute(
+                    select(col(Shift.id)).where(col(Shift.task_id) == task.id)
+                )
+            )
+            .scalars()
+            .first()
+        )
+        assert shift_id is not None
+        return task, str(shift_id)
+
+    @pytest.mark.parametrize("route", ["plain", "with-shifts"])
+    async def test_the_superadmin_cannot_read_it(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_sandbox: SandboxSetup,
+        test_admin_user: User,
+        route: str,
+    ) -> None:
+        task, shift_id = await self._create(
+            app, async_client, db_session, test_sandbox, route
+        )
+        assert task.is_sandbox is True
+
+        with act_as(app, test_admin_user):
+            reads = {
+                "task": await async_client.get(f"{API}/tasks/{task.id}"),
+                "shift": await async_client.get(f"{API}/shifts/{shift_id}"),
+                "roster": await async_client.get(f"{API}/shifts/{shift_id}/bookings"),
+            }
+            shifts = await async_client.get(f"{API}/shifts/", params={"limit": 200})
+            tasks = await async_client.get(f"{API}/tasks/", params={"all_events": True})
+        for name, r in reads.items():
+            assert r.status_code == 404, (name, r.text)
+        assert shift_id not in {s["id"] for s in shifts.json()["items"]}
+        assert str(task.id) not in {t["id"] for t in tasks.json()["items"]}
+
+        # Its guest still opens it.
+        with act_as(app, test_sandbox.guest):
+            own = await async_client.get(f"{API}/shifts/{shift_id}")
+        assert own.status_code == 200, own.text
+
+    async def test_publishing_it_notifies_nobody(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_sandbox: SandboxSetup,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The publish fan-out reaches every account; its hard stop reads the flag."""
+        calls: list[dict[str, Any]] = []
+
+        async def _record(**kwargs: Any) -> None:
+            calls.append(kwargs)
+
+        monkeypatch.setattr(
+            "app.logic.notifications.triggers.dispatch_task_published", _record
+        )
+        task, _ = await self._create(
+            app, async_client, db_session, test_sandbox, "plain", status="draft"
+        )
+        with act_as(app, test_sandbox.guest):
+            r = await async_client.patch(
+                f"{API}/tasks/{task.id}", json={"status": "published"}
+            )
+        assert r.status_code == 200, r.text
+        assert [c["is_sandbox"] for c in calls] == [True]
 
 
 # ── Aggregates ────────────────────────────────────────────────────
