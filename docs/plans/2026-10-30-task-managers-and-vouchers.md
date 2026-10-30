@@ -157,6 +157,12 @@ The English UI says "vouchers". The German UI says "Marken", with the title
   `is_voucher_point`). Showing the code is the volunteer's consent, and the
   full member list is more than a drinks-stand volunteer needs; the desk is
   where people without a working phone are sent, so its staff need the list.
+  "Staff" means approved members of the team that books the desk
+  (`tasks.team_id`): being on shift is only a booking, and on a desk anyone
+  may book, any member could book its running shift and spend every member's
+  vouchers a minute later. A desk without a team therefore gives its on-shift
+  staff no manual redemption (admins and people in charge keep it), and
+  someone dropped from the team loses it even if an older booking remains.
   The redeem view tells an on-shift redeemer without that right who can help
   ("No phone? Ask Anna or Ben"), from the point's people in charge.
 - **The code is a short-lived, single-use pass stored in the database.** It is
@@ -165,8 +171,10 @@ The English UI says "vouchers". The German UI says "Marken", with the title
   the wrong event can be recognised as such. The QR code holds the same code.
   Once a redeemer has checked a code it stays redeemable for 60 more seconds
   even if its two minutes run out, so a slow network between "check" and
-  "redeem" never loses it. Issuing a new code deletes the old one unless it is
-  being redeemed at that moment. Reasons for a stored code:
+  "redeem" never loses it. Only a check before expiry takes a hold, so
+  checking again and again cannot keep a code alive: it is dead 60 seconds
+  after its two minutes at the latest. Issuing a new code deletes the old one
+  unless it is being redeemed at that moment. Reasons for a stored code:
   - Single use needs a database write either way, so a signed token (JWT)
     gains nothing.
   - A JWT is around 200 characters, which nobody can type.
@@ -211,7 +219,20 @@ The English UI says "vouchers". The German UI says "Marken", with the title
   book through the API pin the clock (see Tests). Booking a non-published
   task is refused with `403 task.not_published` unless the caller can manage
   the task. Leaving or being removed from an event cancels the person's
-  confirmed bookings on its shifts that have not ended.
+  confirmed bookings on its shifts that have not ended; the booking holds
+  the caller's membership row `FOR KEY SHARE` (`lock_member_ids`), so a leave
+  running at the same moment cannot miss a booking still in flight.
+
+  On a task with `vouchers_per_shift > 0`, a shift that **has started**
+  (`combine(date, start_time or 00:00) <= now`, the shift history rule's
+  "started") cannot be booked or reactivated either: `409
+  booking.shift_started`, unless the caller can manage the task. Refusing
+  only ended shifts left the late booking open: vouchers are a flat amount
+  per shift, so booking a 10:00–18:00 shift at 17:59 paid the whole shift a
+  minute later, and an untimed shift (which counts as worked at midnight and
+  never clashes with another untimed one) booked at 23:58 did the same for
+  every such shift of the day. Tasks without vouchers keep accepting
+  bookings on running shifts, for helpers who turn up on the day.
 
 ## Data
 
@@ -337,7 +358,7 @@ Notes:
 | Action | Who |
 |---|---|
 | See a task, its people in charge, its shifts and booked names | event members (drafts and archived tasks: event admins and its people in charge; a booker can always open their own shift and its roster) |
-| Book a shift | event members, on published tasks only (admins and people in charge also on drafts); never once the shift has ended |
+| Book a shift | event members, on published tasks only (admins and people in charge also on drafts); never once the shift has ended; on a task that earns vouchers, not once it has started (its people in charge and admins still can) |
 | Edit name, description, dates, location, category; create, edit and delete shifts and batches; add and regenerate shifts | its people in charge, event admins (people in charge within the shift history rule) |
 | Change or delete a booked shift that has started, or move a booked shift into the past | event admins |
 | See phone and notes of the people booked on its shifts | its people in charge, event admins (and each booker their own row). E-mail is redacted in the same places, but this is partial: `GET /events/{id}/members` already shows every member's e-mail to every member |
@@ -345,7 +366,7 @@ Notes:
 | Name or remove people in charge | event admins; a person in charge may remove themselves |
 | See own vouchers, show own code | event members |
 | Redeem with a code at a point | event admins, its people in charge, anyone on a running shift there (±30 min) |
-| Redeem without a code (pick the person) | event admins, its people in charge, staff on a running shift at a point marked as volunteer desk |
+| Redeem without a code (pick the person) | event admins, its people in charge, staff on a running shift at a point marked as volunteer desk who are approved members of its team (`team_id`) |
 | See one person's available vouchers | whoever checks them at a point (needed to choose the amount) |
 | See redemptions made at a point | event admins, its people in charge; on-shift redeemers see their own |
 | See everyone's balance, add/edit/delete corrections | event admins |
@@ -433,8 +454,11 @@ async def voucher_redeemer_kind(
     yesterday (overnight shifts) through tomorrow (a shift at 00:15 opens at
     23:45). ``now`` is always clock.wall_clock_now()."""
 
-def may_redeem_manually(kind: RedeemerKind, task: Task) -> bool:
-    return kind in ("admin", "manager") or (task.is_voucher_point and task.is_voucher_desk)
+async def may_redeem_manually(
+    user: User, session: AsyncSession, kind: RedeemerKind, task: Task
+) -> bool:
+    """admin/manager, or on_shift at a point that is a desk with a team_id
+    whose approved members include the user (async: one team lookup)."""
 
 async def require_voucher_redeemer(
     user: User, session: AsyncSession, task: Task, *, now: dt.datetime, manual: bool = False
@@ -682,7 +706,7 @@ stays 404 even for the superadmin. Literal sub-paths are used throughout
 | POST | `/events/{event_id}/vouchers/check` | `require_voucher_redeemer` (`manual` if `user_id`); `voucher_code_limiter` per user when a code is given | `VoucherCheckRequest` → `VoucherCheckResult` |
 | POST | `/events/{event_id}/vouchers/redeem` | as `check` | `VoucherRedeemRequest` → **201** `VoucherRedeemResult` |
 | GET | `/events/{event_id}/vouchers/people` | admin | → `list[VoucherBalance]` |
-| GET | `/events/{event_id}/vouchers/people/{user_id}` | admin, or self (member) | → `VoucherAccount` |
+| GET | `/events/{event_id}/vouchers/people/{user_id}` | admin (for someone with a part in the event, as for corrections; else `404 event.member_not_found`), or self (member) | → `VoucherAccount` |
 | POST | `/events/{event_id}/vouchers/adjustments` | admin | `VoucherAdjustmentCreate` → **201** `VoucherEntryRead` |
 | PATCH | `/events/{event_id}/vouchers/adjustments/{entry_id}` | admin | `VoucherAdjustmentUpdate` → `VoucherEntryRead` |
 | DELETE | `/events/{event_id}/vouchers/adjustments/{entry_id}` | admin | → **204** |
@@ -843,6 +867,7 @@ Other changes:
 | 404 | `voucher.entry_not_found` | adjustment id not in this event |
 | 409 | `voucher.entry_not_editable` | PATCH/DELETE on a redemption |
 | 409 | `booking.shift_over` | booking, reactivating or cancelling a shift that has ended (any task) |
+| 409 | `booking.shift_started` | booking or reactivating a shift that has started, on a task that earns vouchers, by someone who cannot manage the task |
 | 403 | `event.forbidden` | booking a shift in an event you are not a member of (existing code) |
 | 404 | `event.member_not_found` | redeeming for a non-member; adjusting for someone with no membership, ledger rows or bookings in the event (existing code) |
 
@@ -1002,7 +1027,9 @@ can call it on two sessions.
 `check` runs steps 1–3 and 6 without the lock and without touching the
 ledger, and returns the name, avatar and `available`. With a code it makes
 one small write: `UPDATE voucher_passes SET checked_at = :now WHERE id = :id
-AND used_at IS NULL`, which **holds** the pass for `PASS_HOLD`. The redeemer
+AND used_at IS NULL AND expires_at > :now`, which **holds** the pass for
+`PASS_HOLD`. A check after expiry, inside an earlier hold, still answers but
+does not move the hold on, so re-checking cannot keep a code alive. The redeemer
 sees who is in front of them and the maximum before choosing an amount, and
 a code that runs out while they choose still goes through. A used code
 answers `409 voucher.code_used` with its extensions, so the redeemer sees
@@ -1133,12 +1160,16 @@ is refused with `400 batch.wrong_task`.
 
 **Booking** (`api/routes/bookings.py`, package B):
 - `create_booking` calls `require_event_role(current_user, session,
-  task.event_id, minimum="member")` before the team gate.
+  task.event_id, minimum="member")` before the team gate, then
+  `crud_membership.lock_member_ids` on the caller (not for the superadmin),
+  `403 event.forbidden` if the row is gone by then.
 - It then refuses `task.status != "published"` with `403 task.not_published`
   unless `task_access()` is not None.
 - If `shift_ends_at(...) <= clock.wall_clock_now()`, the answer is `409
   booking.shift_over`, on every task. This also covers reactivating a
   cancelled booking, which goes through the same route.
+- On a task with `vouchers_per_shift > 0`, a shift that has started is `409
+  booking.shift_started` unless `task_access()` is not None.
 - `cancel_booking` (DELETE) and `update_booking` (PATCH with
   `status="cancelled"`) refuse the same case with the same code, on every
   task.
@@ -1440,7 +1471,14 @@ decoded frame, up to 8 times a second, so the view gates detections itself:
   (Cancel), `MyBookingsView.vue` (the Cancel icon), `ShiftDetailDialog.vue`
   (`canBook` and its cancel item) and `TaskDetailView.vue` (the click on a
   booked or open shift). The server stays the authority; the browser's local
-  time is close enough to hide the buttons.
+  time is close enough to hide the buttons. **Started shifts on voucher
+  tasks** (`booking.shift_started`): add `shiftHasStarted(date, start, now)`
+  (`combine(date, start or 00:00) <= now`) next to it and hide Book on a
+  shift whose task has `vouchers_per_shift > 0` once it has started, unless
+  `task.can_manage`. The guided tour's `tourBookable` in
+  `components/tasks/quick-view/WeekDayColumns.vue` must apply the same rule
+  (and the ended one), or the tour's "press Book" step can land on a shift
+  the server refuses (every seeded demo task earns vouchers).
 - `views/events/SelectEventView.vue`: in the `expired` notice, when the
   expired event has `voucher_task_count > 0`, a link "See your vouchers"
   (`vouchers.afterEventLink`) to `my-vouchers` with its id.
@@ -1597,7 +1635,7 @@ Other new keys:
 | `settings.isPointOn` | The people in charge and whoever is on shift here can take vouchers in the app. | Die Verantwortlichen und wer hier gerade Schicht hat, können Marken in der App annehmen. |
 | `settings.isPointOff` | This place doesn't take vouchers in the app. It can still accept paper vouchers. | Dieser Ort nimmt keine Marken in der App an. Papiermarken gehen trotzdem. |
 | `settings.isDesk` | Volunteer desk: staff on shift can also redeem without a code | Ausgabestelle: Wer hier Schicht hat, kann auch ohne Code einlösen |
-| `settings.isDeskHint` | For people whose phone isn't working. Staff pick them from the member list. | Für Leute, deren Handy nicht geht. Sie werden aus der Mitgliederliste ausgewählt. |
+| `settings.isDeskHint` | For people whose phone isn't working. Staff pick them from the member list. This needs a team under "Who can book", so only people you chose can staff the desk. | Für Leute, deren Handy nicht geht. Sie werden aus der Mitgliederliste ausgewählt. Dafür braucht die Aufgabe ein Team unter „Wer kann buchen“, damit nur Leute an der Ausgabestelle sitzen, die ihr ausgewählt habt. |
 | `settings.saved` | Voucher settings saved. | Marken-Einstellungen gespeichert. |
 | `admin.title` | Vouchers | Marken |
 | `admin.person` | Person | Person |
@@ -1640,6 +1678,7 @@ entries there.
 | `task.manager_not_found` | That person is not in charge of this task. | Diese Person ist für diese Aufgabe nicht verantwortlich. |
 | `batch.wrong_task` | Those shifts belong to a different task. Reload the page and try again. | Diese Schichten gehören zu einer anderen Aufgabe. Lade die Seite neu und versuch es noch einmal. |
 | `booking.shift_over` | This shift is already over, so it can't be booked or cancelled any more. | Diese Schicht ist schon vorbei und kann nicht mehr gebucht oder abgesagt werden. |
+| `booking.shift_started` | This shift has already started. Shifts that earn vouchers can only be booked before they start; ask the people in charge if you're helping anyway. | Diese Schicht hat schon begonnen. Schichten mit Marken lassen sich nur vor Beginn buchen. Wenn du trotzdem hilfst, sag den Verantwortlichen Bescheid. |
 | `voucher.not_allowed` | You can only take vouchers here while you are on shift here, or if you are in charge. | Marken annehmen kannst du hier nur während deiner Schicht hier oder wenn du verantwortlich bist. |
 | `voucher.manual_not_allowed` | Only the people in charge, the organisers and the staff of a volunteer desk can redeem without a code. | Ohne Code einlösen können nur die Verantwortlichen, die Organisator:innen und wer an einer Ausgabestelle Schicht hat. |
 | `voucher.not_a_point` | Vouchers can't be redeemed at this task. | Bei dieser Aufgabe können keine Marken eingelöst werden. |
@@ -1952,7 +1991,13 @@ which were rejected in whole or in part:
 - **Count only bookings created before the shift ended (alternative fix for
   late bookings).** Not chosen. `created_at` survives cancel-and-reactivate,
   so it would need a new column. Refusing to book or reactivate an ended
-  shift on every task closes the hole with no schema change.
+  shift on every task closes the hole with no schema change. (The review of
+  package B showed it closed only half: a *running* shift booked a minute
+  before its end still paid in full. Counting only bookings confirmed before
+  the start would need that column and would silently pay nothing to a
+  helper who joins late, so instead a voucher task's shift that has started
+  can no longer be booked, `409 booking.shift_started`; see "Earning
+  requires real membership and honest timing".)
 - **Stop counting bookings on shifts that end after the membership ended
   (alternative fix for former members).** Not chosen, because a deleted
   membership row leaves no end time. Cancelling the person's unfinished

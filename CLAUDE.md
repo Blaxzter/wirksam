@@ -173,7 +173,9 @@ add one gate, `require_voucher_redeemer`: at a task flagged `is_voucher_point`,
 event admins, its people in charge and whoever has a confirmed booking on a
 shift of it running now (30 minutes either side) may redeem; without a code
 (picking the person) only admins, people in charge and staff on shift at a
-point also flagged `is_voucher_desk`. **Earned vouchers are derived, never
+point also flagged `is_voucher_desk` who are approved members of its team
+(a desk without `team_id` gives its staff no such right, or anyone could book
+themselves onto it). **Earned vouchers are derived, never
 stored**, like worked hours: `tasks.vouchers_per_shift` for every booking that
 `work_hours.counts_as_worked()` on a shift that has ended. `voucher_entries`
 holds only redemptions and admin corrections, so a balance can go negative
@@ -183,8 +185,9 @@ makes a retry return the first result. Codes (`voucher_passes`) are six
 characters, single use, two minutes, unique across the installation. Because
 earnings follow bookings, booking needs event membership, a published task
 (unless you manage it) and a shift that has not ended (`409
-booking.shift_over`, also for cancelling), and leaving an event cancels the
-person's unfinished bookings.
+booking.shift_over`, also for cancelling); on a task that earns vouchers, one
+that has not started (`409 booking.shift_started`, unless you manage the
+task). Leaving an event cancels the person's unfinished bookings.
 
 For queries, `backend/app/logic/event_scope.py` returns the id list to filter
 by. `None` means unrestricted (superadmin only); an **empty list means "nothing"

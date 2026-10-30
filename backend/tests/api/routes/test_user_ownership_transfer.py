@@ -1,6 +1,8 @@
 """Tests for the event/task ownership transfer flow before user deletion."""
 
+import datetime as dt
 import uuid
+from collections.abc import Callable
 
 import pytest
 import pytest_asyncio
@@ -11,7 +13,9 @@ from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
 from app.crud.user import user as crud_user
+from app.models.booking import Booking
 from app.models.event import Event
+from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 
@@ -212,6 +216,65 @@ class TestTransferOwnership:
             json={"target_user_id": str(transfer_target_user.id)},
         )
         assert response.status_code == 403
+
+    async def test_the_source_users_unfinished_bookings_are_cancelled(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_user: User,
+        owned_event: Event,
+        test_task: Task,
+        transfer_target_user: User,
+        as_admin: None,
+        wall_clock: Callable[[dt.datetime], None],
+    ):
+        """The source account survives but has left the event (its owner row
+        moved), so, as when anyone leaves, its bookings on shifts still to
+        come go and those on shifts already over stay: that work happened."""
+        wall_clock(dt.datetime(2026, 6, 11, 15, 0))
+        ended = Shift(
+            task_id=test_task.id,
+            title="Aufbau",
+            date=dt.date(2026, 6, 11),
+            start_time=dt.time(8),
+            end_time=dt.time(12),
+            max_bookings=2,
+        )
+        future = Shift(
+            task_id=test_task.id,
+            title="Abbau",
+            date=dt.date(2026, 6, 13),
+            start_time=dt.time(18),
+            end_time=dt.time(22),
+            max_bookings=2,
+        )
+        db_session.add_all([ended, future])
+        await db_session.flush()
+        worked = Booking(shift_id=ended.id, user_id=test_user.id, status="confirmed")
+        to_come = Booking(shift_id=future.id, user_id=test_user.id, status="confirmed")
+        db_session.add_all([worked, to_come])
+        await db_session.flush()
+
+        response = await async_client.post(
+            f"/api/v1/users/{test_user.id}/transfer-ownership",
+            json={"target_user_id": str(transfer_target_user.id)},
+        )
+        assert response.status_code == 200
+        assert response.json()["events_transferred"] == 1
+
+        await db_session.refresh(worked)
+        await db_session.refresh(to_come)
+        assert worked.status == "confirmed"
+        assert to_come.status == "cancelled"
+        assert to_come.cancelled_task_name == test_task.name
+        assert to_come.cancelled_shift_title == "Abbau"
+        assert to_come.cancelled_shift_date == dt.date(2026, 6, 13)
+        assert (
+            await crud_membership.get(
+                db_session, user_id=test_user.id, event_id=owned_event.id
+            )
+            is None
+        )
 
 
 @pytest.mark.asyncio

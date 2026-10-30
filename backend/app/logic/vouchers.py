@@ -18,7 +18,9 @@ overview shows the number.
 Neither query filters on membership or task status. Someone who worked and then
 left still worked, and an archived task's shifts still count. What keeps that
 honest is upstream: leaving cancels the person's unfinished bookings, nobody can
-book an ended shift, and members cannot book shifts of unpublished tasks.
+book an ended shift, nor (unless they manage the task) a shift that earns
+vouchers once it has started, and members cannot book shifts of unpublished
+tasks.
 
 **Redeeming** (:func:`redeem`) is serialised per (event, volunteer) with a
 transaction-scoped advisory lock (``crud.voucher.lock_ledger``). It is a logic
@@ -484,6 +486,9 @@ async def check(
 
     Writes nothing to the ledger. A code is *held* (``checked_at``), which
     keeps it redeemable for ``PASS_HOLD`` while the redeemer picks an amount.
+    Only an unexpired code takes a new hold: checking an expired one inside
+    its hold answers as before but does not extend it, so re-checking cannot
+    keep a code alive.
     """
     p: VoucherPass | None = None
     if code is not None:
@@ -495,7 +500,7 @@ async def check(
     volunteer = await _member_or_404(session, event_id=event_id, user_id=volunteer_id)
     if p is not None:
         await _raise_if_unusable(session, p, utc_now=utc_now)
-        await crud_voucher.hold_pass(session, pass_id=p.id, now=utc_now, hold=PASS_HOLD)
+        await crud_voucher.hold_pass(session, pass_id=p.id, now=utc_now)
     return VoucherCheckResult(
         user_id=volunteer.id,
         name=volunteer.name,

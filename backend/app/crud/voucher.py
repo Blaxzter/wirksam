@@ -294,12 +294,16 @@ class CRUDVoucher:
         *,
         pass_id: uuid.UUID,
         now: dt.datetime,
-        hold: dt.timedelta,
     ) -> bool:
-        """Mark a pass as checked, which keeps it redeemable for ``hold``.
+        """Mark a pass as checked, which keeps it redeemable for the hold
+        (``logic.vouchers.PASS_HOLD``) from ``now``.
 
-        Only a pass that is still redeemable can be held, so checking again
-        and again cannot keep an expired code alive.
+        Only a pass that has not yet expired can be held. A check after its
+        expiry, while an earlier hold still runs, finds it redeemable but does
+        not move the hold on, so however often it is checked a code is dead
+        one hold after its expiry at the latest, and a held code outlives the
+        volunteer's next one by no more than that. False when the hold was not
+        moved.
         """
         result = cast(
             CursorResult[Any],
@@ -308,7 +312,7 @@ class CRUDVoucher:
                 .where(
                     col(VoucherPass.id) == pass_id,
                     col(VoucherPass.used_at).is_(None),
-                    _redeemable_at(now, hold),
+                    col(VoucherPass.expires_at) > now,
                 )
                 .values(checked_at=now)
             ),

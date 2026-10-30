@@ -7,7 +7,8 @@ The cast, all in ``test_event`` (2026-06-10 to 14):
   that ended at noon on 11 June;
 - ``manager``: a member in charge of the point ``Theke``;
 - ``staff``: a member on a 14:00-18:00 shift at ``Theke`` that day;
-- ``desk_staff``: a member on the same hours at the volunteer desk;
+- ``desk_staff``: a member on the same hours at the volunteer desk, and an
+  approved member of ``desk_team``, the team that books the desk;
 - ``bystander``: a member with no shift and no role.
 
 The event wall clock is pinned to 11 June, 15:00 unless a test moves it, so
@@ -25,7 +26,7 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, Response
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -35,6 +36,7 @@ from app.logic.clock import utc_now
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.event_team import EventTeam, EventTeamMember
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.task_manager import TaskManager
@@ -64,6 +66,7 @@ class Cast:
     plain: Task
     other_point: Task
     staff_shift: Shift
+    desk_team: EventTeam
 
 
 async def _user(db: AsyncSession, key: str) -> User:
@@ -161,6 +164,15 @@ async def cast(
         db_session, test_draft_event, test_user, name="Kasse", is_voucher_point=True
     )
     db_session.add(TaskManager(task_id=point.id, user_id=manager.id))
+    # The desk's staff are chosen by the organisers: only its team may book it.
+    desk_team = EventTeam(event_id=test_event.id, name="Ausgabe-Team")
+    db_session.add(desk_team)
+    await db_session.flush()
+    db_session.add(
+        EventTeamMember(team_id=desk_team.id, user_id=desk_staff.id, status="approved")
+    )
+    desk.team_id = desk_team.id
+    db_session.add(desk)
     await db_session.flush()
 
     await _shift_for(db_session, work, test_user, start=dt.time(8), end=dt.time(12))
@@ -184,6 +196,7 @@ async def cast(
         plain=plain,
         other_point=other_point,
         staff_shift=staff_shift,
+        desk_team=desk_team,
     )
 
 
@@ -442,6 +455,59 @@ class TestHold:
         r = await _check(async_client, app, cast, cast.admin, code=code)
         assert r.status_code == 409
         assert _code(r) == "voucher.code_expired"
+
+    async def test_checking_again_does_not_keep_an_expired_code_alive(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """Re-checking inside the hold answers, but the hold runs from the
+        last check *before* expiry, so a code is dead a minute after its two
+        minutes at the latest, however often a redeemer checks it."""
+        code = await self._checked_then_expired(
+            async_client, app, db_session, cast, checked_ago=50
+        )
+        issued_id = (
+            await db_session.execute(
+                select(col(VoucherPass.id)).where(col(VoucherPass.code) == code)
+            )
+        ).scalar_one()
+        held_since = (await _pass_row(db_session, str(issued_id))).checked_at
+
+        r = await _check(async_client, app, cast, cast.admin, code=code)
+        assert r.status_code == 200
+        assert (await _pass_row(db_session, str(issued_id))).checked_at == held_since
+
+        # Ten more seconds pass: the hold from before the expiry is over.
+        p = await _pass_row(db_session, str(issued_id))
+        p.checked_at = utc_now() - dt.timedelta(seconds=61)
+        db_session.add(p)
+        await db_session.flush()
+        r = await _redeem(async_client, app, cast, cast.admin, code=code)
+        assert r.status_code == 409
+        assert _code(r) == "voucher.code_expired"
+
+    async def test_checking_again_before_expiry_renews_the_hold(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        issued = await _issue(async_client, app, cast)
+        await _check(async_client, app, cast, cast.admin, code=issued["code"])
+        p = await _pass_row(db_session, issued["id"])
+        p.checked_at = utc_now() - dt.timedelta(seconds=50)
+        db_session.add(p)
+        await db_session.flush()
+
+        r = await _check(async_client, app, cast, cast.admin, code=issued["code"])
+        assert r.status_code == 200
+        checked_at = (await _pass_row(db_session, issued["id"])).checked_at
+        assert checked_at is not None
+        assert checked_at > utc_now() - dt.timedelta(seconds=10)
 
 
 @pytest.mark.asyncio
@@ -843,6 +909,92 @@ class TestRedeemManually:
         )
         assert r.status_code == 201
 
+    async def test_booking_yourself_onto_an_open_desk_gives_no_list(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """A desk anyone may book: a member books its running shift and is on
+        shift there at once. That lets them take a code, which is the
+        volunteer's consent, but never pick people from the list, or they could
+        spend every member's vouchers and cancel the booking afterwards."""
+        cast.desk.team_id = None
+        db_session.add(cast.desk)
+        await db_session.flush()
+        open_shift = await _shift_for(
+            db_session, cast.desk, None, start=dt.time(14), end=dt.time(18)
+        )
+        with act_as(app, cast.bystander):
+            r = await async_client.post(
+                "/api/v1/bookings/", json={"shift_id": str(open_shift.id)}
+            )
+        assert r.status_code == 201, r.text
+
+        for call in (_check, _redeem):
+            r = await call(
+                async_client,
+                app,
+                cast,
+                cast.bystander,
+                task=cast.desk,
+                user_id=str(cast.volunteer.id),
+            )
+            assert r.status_code == 403
+            assert _code(r) == "voucher.manual_not_allowed"
+        # The staff booked before are no different without a team.
+        r = await _redeem(
+            async_client,
+            app,
+            cast,
+            cast.desk_staff,
+            task=cast.desk,
+            user_id=str(cast.volunteer.id),
+        )
+        assert r.status_code == 403
+        assert _code(r) == "voucher.manual_not_allowed"
+        # With the code it works.
+        issued = await _issue(async_client, app, cast)
+        r = await _redeem(
+            async_client, app, cast, cast.bystander, task=cast.desk, code=issued["code"]
+        )
+        assert r.status_code == 201
+        with act_as(app, cast.bystander):
+            r = await async_client.get(f"{_base(cast.event)}/points")
+        (desk,) = (p for p in r.json() if p["name"] == "Ausgabe")
+        assert (desk["can_redeem"], desk["can_redeem_manually"]) == (True, False)
+
+    async def test_dropped_from_the_desk_team_means_no_list(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """The booking from before stays, but the right goes with the team."""
+        row = (
+            await db_session.execute(
+                select(EventTeamMember).where(
+                    col(EventTeamMember.team_id) == cast.desk_team.id,
+                    col(EventTeamMember.user_id) == cast.desk_staff.id,
+                )
+            )
+        ).scalar_one()
+        await db_session.delete(row)
+        await db_session.flush()
+
+        r = await _redeem(
+            async_client,
+            app,
+            cast,
+            cast.desk_staff,
+            task=cast.desk,
+            user_id=str(cast.volunteer.id),
+        )
+        assert r.status_code == 403
+        assert _code(r) == "voucher.manual_not_allowed"
+
     async def test_only_for_members(
         self, async_client: AsyncClient, app: FastAPI, cast: Cast
     ) -> None:
@@ -935,6 +1087,38 @@ class TestAccounts:
             r = await async_client.get(url)
         assert r.status_code == 403
         assert _code(r) == "event.forbidden"
+
+    async def test_an_admin_reads_only_people_who_have_a_part_in_the_event(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """Anyone can create an event and be its admin, so being one must not
+        open the name and e-mail of every account on the installation."""
+        with act_as(app, cast.admin):
+            r = await async_client.get(f"{_base(cast.event)}/people/{cast.outsider.id}")
+        assert r.status_code == 404
+        assert _code(r) == "event.member_not_found"
+        assert cast.outsider.email is not None
+        assert cast.outsider.email not in r.text
+
+        # Someone who has left but worked here can still be looked up.
+        await db_session.execute(
+            delete(EventMembership).where(
+                col(EventMembership.event_id) == cast.event.id,
+                col(EventMembership.user_id) == cast.volunteer.id,
+            )
+        )
+        await db_session.flush()
+        with act_as(app, cast.admin):
+            r = await async_client.get(
+                f"{_base(cast.event)}/people/{cast.volunteer.id}"
+            )
+        assert r.status_code == 200
+        assert r.json()["summary"]["role"] is None
+        assert r.json()["summary"]["earned"] == 3
 
     async def test_the_overview_is_for_admins(
         self, async_client: AsyncClient, app: FastAPI, cast: Cast

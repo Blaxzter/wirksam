@@ -38,8 +38,8 @@ a task that is a redemption point: event admins, the task's people in charge,
 and whoever has a confirmed booking on one of its shifts that is running now
 (``logic.vouchers.redeem_window``: 30 minutes either side). Redeeming without
 a code, by picking the person, is for admins and people in charge, and for
-staff on shift at a point marked as the volunteer desk
-(:func:`may_redeem_manually`).
+staff on shift at a point marked as the volunteer desk who are approved
+members of the team that books it (:func:`may_redeem_manually`).
 """
 
 import datetime as dt
@@ -483,16 +483,29 @@ async def voucher_redeemer_kind(
     return None
 
 
-def may_redeem_manually(kind: RedeemerKind, task: Task) -> bool:
+async def may_redeem_manually(
+    user: User,
+    session: AsyncSession,
+    kind: RedeemerKind,
+    task: Task,
+) -> bool:
     """Redeeming without a code: the person picked from the member list.
 
     Showing the code is the volunteer's consent, and the full member list is
     more than a drinks-stand volunteer needs. The volunteer desk is where
-    people without a working phone are sent, so its staff on shift may.
+    people without a working phone are sent, so its staff on shift may, but
+    only approved members of the team that books the desk (``task.team_id``).
+    Being on shift is a booking, and a task anyone in the event may book would
+    let anyone make themselves desk staff a minute before and spend every
+    member's vouchers without their code. A team puts the choice of who
+    staffs the desk with the organisers, and someone dropped from the team
+    loses the right even if a booking from before is still there.
     """
-    return kind in ("admin", "manager") or (
-        task.is_voucher_point and task.is_voucher_desk
-    )
+    if kind in ("admin", "manager"):
+        return True
+    if not (task.is_voucher_point and task.is_voucher_desk) or task.team_id is None:
+        return False
+    return await crud_team.is_approved(session, team_id=task.team_id, user_id=user.id)
 
 
 async def require_voucher_redeemer(
@@ -519,7 +532,7 @@ async def require_voucher_redeemer(
                 "shift here can take vouchers at this task"
             ),
         )
-    if manual and not may_redeem_manually(kind, task):
+    if manual and not await may_redeem_manually(user, session, kind, task):
         raise_problem(
             403,
             code="voucher.manual_not_allowed",

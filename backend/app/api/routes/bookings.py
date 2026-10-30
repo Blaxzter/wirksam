@@ -10,6 +10,7 @@ from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
 from app.crud.booking_reminder import booking_reminder as crud_reminder
+from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
 from app.crud.task import task as crud_task
 from app.logic import clock
@@ -28,6 +29,7 @@ from app.logic.permissions import (
 from app.logic.work_hours import shift_ends_at
 from app.models.booking import Booking
 from app.models.shift import Shift
+from app.models.user import User
 from app.schemas.booking import (
     BookingBase,
     BookingCreate,
@@ -137,20 +139,30 @@ async def create_booking(
     ``task.not_published``), and never once the shift has ended (409
     ``booking.shift_over``, on every task). Hours and vouchers are derived
     from booked shifts that have ended, so a booking made, or reactivated,
-    after the fact would credit work nobody did.
+    after the fact would credit work nobody did. On a task that earns
+    vouchers, not once the shift has started either (409
+    ``booking.shift_started``), unless the caller can manage the task: the
+    vouchers are a flat amount per shift, so booking a running shift a minute
+    before it ends would pay the whole shift for that minute.
     """
     shift = await crud_shift.get(
         session, str(booking_in.shift_id), raise_404_error=True
     )
     task = await crud_task.get(session, str(shift.task_id), raise_404_error=True)
     await require_event_role(current_user, session, task.event_id, minimum="member")
-    if (
-        task.status != "published"
-        and await task_access(current_user, session, task) is None
-    ):
+    await _lock_membership(session, current_user, task.event_id)
+    # Only asked when one of the two rules below needs it.
+    access = (
+        await task_access(current_user, session, task)
+        if task.status != "published" or task.vouchers_per_shift > 0
+        else None
+    )
+    if task.status != "published" and access is None:
         raise_problem(403, code="task.not_published", detail="Task is not published")
     await require_team_for_booking(current_user, session, task)
     _refuse_if_shift_over(shift)
+    if task.vouchers_per_shift > 0 and access is None:
+        _refuse_if_shift_started(shift)
 
     existing = await crud_booking.get_by_shift_and_user(
         session, shift_id=shift.id, user_id=current_user.id
@@ -369,6 +381,54 @@ def _refuse_if_shift_over(shift: Shift) -> None:
             409,
             code="booking.shift_over",
             detail="This shift is already over",
+        )
+
+
+def _refuse_if_shift_started(shift: Shift) -> None:
+    """409 ``booking.shift_started`` once the shift has started (event wall clock).
+
+    Only for tasks that earn vouchers, and only for callers who cannot manage
+    the task; the route decides both. "Started" is the shift history rule's:
+    ``combine(date, start_time or 00:00)``, so a shift without times can be
+    booked until its day begins. Otherwise booking it at 23:58 would pay the
+    whole shift two minutes later, and shifts without times never clash with
+    one another, so every one of them could be taken at once.
+    """
+    starts = dt.datetime.combine(shift.date, shift.start_time or dt.time())
+    if starts <= clock.wall_clock_now():
+        raise_problem(
+            409,
+            code="booking.shift_started",
+            detail=(
+                "This shift has already started. Shifts that earn vouchers can "
+                "only be booked before they start"
+            ),
+        )
+
+
+async def _lock_membership(
+    session: AsyncSession, user: User, event_id: uuid.UUID | None
+) -> None:
+    """Hold the caller's membership row (``FOR KEY SHARE``) until commit.
+
+    Read, not just checked: a leave or removal committing between the
+    membership check and the insert would run its clean-up
+    (``cancel_unfinished_bookings_in_event``) before this booking exists and
+    miss it, leaving a former member on the rota and earning. With the row
+    held, the leave's DELETE waits for this transaction and its clean-up then
+    sees, and cancels, the booking. A leave that got there first has removed
+    the row, so the booking is refused (403 ``event.forbidden``). The
+    superadmin needs no row and takes no lock.
+    """
+    if user.is_admin or event_id is None:
+        return
+    if not await crud_membership.lock_member_ids(
+        session, event_id=event_id, user_ids=[user.id]
+    ):
+        raise_problem(
+            403,
+            code="event.forbidden",
+            detail="You do not have permission to do this in this event",
         )
 
 

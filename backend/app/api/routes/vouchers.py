@@ -10,6 +10,7 @@ Who may redeem where: ``app.logic.permissions.require_voucher_redeemer``.
 """
 
 import uuid
+from typing import NoReturn
 
 from fastapi import APIRouter, Query
 from sqlalchemy import select
@@ -207,7 +208,8 @@ async def list_voucher_points(
                 name=t.name,
                 location=t.location,
                 can_redeem=kind is not None,
-                can_redeem_manually=kind is not None and may_redeem_manually(kind, t),
+                can_redeem_manually=kind is not None
+                and await may_redeem_manually(current_user, session, kind, t),
                 is_desk=t.is_voucher_desk,
                 managers=[
                     TaskManagerBrief(
@@ -357,17 +359,20 @@ async def get_voucher_account(
     current_user: CurrentUser,
 ) -> VoucherAccount:
     """One person's vouchers. Anyone in the event may read their own; reading
-    someone else's needs admin."""
+    someone else's needs admin, and that someone must have a part in the event
+    (the rule corrections use): anyone can create an event and so be its
+    admin, and the account carries a name and e-mail address."""
     await _event_for(session, current_user, event_id)
     is_self = user_id == current_user.id
     await require_event_role(
         current_user, session, event_id, minimum="member" if is_self else "admin"
     )
-    user = (
-        current_user
-        if is_self
-        else await crud_user.get(session, id=user_id, raise_404_error=True)
-    )
+    if is_self:
+        user = current_user
+    else:
+        if not await _appears_in_event(session, event_id=event_id, user_id=user_id):
+            _no_part_in_event()
+        user = await crud_user.get(session, id=user_id, raise_404_error=True)
     return await vouchers.account(session, event_id, user, now=clock.wall_clock_now())
 
 
@@ -390,11 +395,7 @@ async def create_voucher_adjustment(
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
     if not await _appears_in_event(session, event_id=event_id, user_id=body.user_id):
-        raise_problem(
-            404,
-            code="event.member_not_found",
-            detail="That person has no part in this event",
-        )
+        _no_part_in_event()
     # The same lock as a redemption: a correction in the middle of one would
     # otherwise change the balance it is checking against.
     await crud_voucher.lock_ledger(session, event_id=event_id, user_id=body.user_id)
@@ -474,6 +475,14 @@ async def _adjustment_or_error(
             detail="A redemption cannot be changed; add a correction instead",
         )
     return entry
+
+
+def _no_part_in_event() -> NoReturn:
+    raise_problem(
+        404,
+        code="event.member_not_found",
+        detail="That person has no part in this event",
+    )
 
 
 async def _appears_in_event(

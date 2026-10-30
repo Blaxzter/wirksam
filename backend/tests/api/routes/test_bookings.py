@@ -254,7 +254,120 @@ class TestBookingGuards:
         test_shift: Shift,
         wall_clock: Callable[[datetime], None],
     ):
+        """On a task without vouchers: someone who turns up to help joins it."""
         wall_clock(datetime(2026, 5, 24, 11, 59))
+        r = await async_client.post(
+            "/api/v1/bookings/", json={"shift_id": str(test_shift.id)}
+        )
+        assert r.status_code == 201
+
+    @pytest.mark.parametrize(
+        "now",
+        [
+            datetime(2026, 5, 24, 8, 0),  # the minute it starts
+            datetime(2026, 5, 24, 11, 59),  # one minute before its end
+        ],
+    )
+    async def test_a_started_shift_that_earns_vouchers_cannot_be_booked(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shift: Shift,
+        wall_clock: Callable[[datetime], None],
+        now: datetime,
+    ):
+        """Vouchers are a flat amount per shift: booked at 11:59, the whole
+        08:00-12:00 shift would pay out a minute later."""
+        test_task.vouchers_per_shift = 2
+        db_session.add(test_task)
+        await db_session.flush()
+        wall_clock(now)
+
+        r = await async_client.post(
+            "/api/v1/bookings/", json={"shift_id": str(test_shift.id)}
+        )
+        assert r.status_code == 409
+        assert r.json()["code"] == "booking.shift_started"
+
+        wall_clock(datetime(2026, 5, 24, 7, 59))
+        r = await async_client.post(
+            "/api/v1/bookings/", json={"shift_id": str(test_shift.id)}
+        )
+        assert r.status_code == 201
+
+    async def test_an_untimed_shift_that_earns_vouchers_only_before_its_day(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        wall_clock: Callable[[datetime], None],
+    ):
+        """It counts as worked at midnight, and shifts without times never
+        clash, so on its day every one of them could be booked at 23:58."""
+        test_task.vouchers_per_shift = 2
+        db_session.add(test_task)
+        untimed = Shift(
+            task_id=test_task.id,
+            title="Den ganzen Tag",
+            date=date(2026, 6, 12),
+            max_bookings=3,
+        )
+        db_session.add(untimed)
+        await db_session.flush()
+
+        wall_clock(datetime(2026, 6, 12, 23, 58))
+        r = await async_client.post(
+            "/api/v1/bookings/", json={"shift_id": str(untimed.id)}
+        )
+        assert r.status_code == 409
+        assert r.json()["code"] == "booking.shift_started"
+
+        wall_clock(datetime(2026, 6, 11, 23, 59))
+        r = await async_client.post(
+            "/api/v1/bookings/", json={"shift_id": str(untimed.id)}
+        )
+        assert r.status_code == 201
+
+    async def test_a_cancelled_booking_on_a_started_voucher_shift_stays_cancelled(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shift: Shift,
+        test_user: User,
+        wall_clock: Callable[[datetime], None],
+    ):
+        test_task.vouchers_per_shift = 2
+        db_session.add(test_task)
+        db_session.add(
+            Booking(shift_id=test_shift.id, user_id=test_user.id, status="cancelled")
+        )
+        await db_session.flush()
+        wall_clock(datetime(2026, 5, 24, 11, 59))
+
+        r = await async_client.post(
+            "/api/v1/bookings/", json={"shift_id": str(test_shift.id)}
+        )
+        assert r.status_code == 409
+        assert r.json()["code"] == "booking.shift_started"
+
+    async def test_whoever_runs_a_voucher_task_may_join_a_started_shift(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shift: Shift,
+        test_user: User,
+        wall_clock: Callable[[datetime], None],
+    ):
+        """Its people in charge (and the organisers) already shape its shifts."""
+        test_task.vouchers_per_shift = 2
+        db_session.add(test_task)
+        db_session.add(TaskManager(task_id=test_task.id, user_id=test_user.id))
+        await db_session.flush()
+        wall_clock(datetime(2026, 5, 24, 11, 0))
+
         r = await async_client.post(
             "/api/v1/bookings/", json={"shift_id": str(test_shift.id)}
         )
