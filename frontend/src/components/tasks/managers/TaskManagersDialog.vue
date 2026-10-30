@@ -20,9 +20,9 @@ import TaskManagersEditor from './TaskManagersEditor.vue'
  */
 defineProps<{
   task: TaskRead
+  /** Fetch the task again after a change; awaited, so the editor waits for it. */
+  reload: () => Promise<unknown>
 }>()
-
-const emit = defineEmits<{ changed: [] }>()
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -46,7 +46,7 @@ const { t } = useI18n()
           :task-id="task.id"
           :event-id="task.event_id"
           :managers="task.managers ?? []"
-          @changed="emit('changed')"
+          :reload="reload"
         />
       </ResponsiveDialogBody>
     </ResponsiveDialogContent>

@@ -536,12 +536,17 @@ onMounted(loadTask)
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-2">
-            <Label>{{ t('duties.tasks.fields.name') }} *</Label>
-            <Input v-model="name" data-testid="input-task-name" />
+            <Label for="task-name">{{ t('duties.tasks.fields.name') }} *</Label>
+            <Input id="task-name" v-model="name" data-testid="input-task-name" />
           </div>
           <div class="space-y-2">
-            <Label>{{ t('duties.tasks.fields.description') }}</Label>
-            <Textarea v-model="description" :rows="3" class="max-h-[150px]" />
+            <Label for="task-description">{{ t('duties.tasks.fields.description') }}</Label>
+            <Textarea
+              id="task-description"
+              v-model="description"
+              :rows="3"
+              class="max-h-[150px]"
+            />
           </div>
           <div class="grid items-start gap-4 sm:grid-cols-2">
             <div class="space-y-2">
@@ -554,8 +559,8 @@ onMounted(loadTask)
               />
             </div>
             <div class="space-y-2">
-              <Label>{{ t('duties.tasks.fields.category') }}</Label>
-              <Input v-model="category" />
+              <Label for="task-category">{{ t('duties.tasks.fields.category') }}</Label>
+              <Input id="task-category" v-model="category" />
             </div>
           </div>
         </CardContent>
@@ -592,8 +597,8 @@ onMounted(loadTask)
               />
             </div>
             <div class="space-y-2">
-              <Label>{{ t('duties.tasks.fields.category') }}</Label>
-              <Input v-model="category" />
+              <Label for="batch-category">{{ t('duties.tasks.fields.category') }}</Label>
+              <Input id="batch-category" v-model="category" />
             </div>
           </div>
         </CardContent>
@@ -715,7 +720,11 @@ onMounted(loadTask)
             {{ t('duties.tasks.editView.affectedBookings.title') }}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            {{ t('duties.tasks.editView.affectedBookings.description') }}
+            {{
+              previewHasLocked
+                ? t('duties.tasks.editView.affectedBookings.descriptionLocked')
+                : t('duties.tasks.editView.affectedBookings.description')
+            }}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -768,6 +777,16 @@ onMounted(loadTask)
               </p>
             </div>
           </div>
+
+          <!-- Why "Proceed anyway" is greyed out, and what to do instead -->
+          <p
+            v-if="previewHasLocked"
+            class="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm"
+            data-testid="affected-bookings-locked-hint"
+          >
+            <Lock class="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            {{ t('duties.tasks.editView.affectedBookings.lockedHint') }}
+          </p>
         </ResponsiveDialogBody>
 
         <ResponsiveDialogFooter>

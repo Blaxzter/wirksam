@@ -16,6 +16,22 @@ export function formatHours(minutes: number): string {
   }).format(minutes / 60)
 }
 
+/**
+ * A `tel:` link for a phone number as people type it, or null when there is
+ * nothing to dial. Phone numbers are free text, and a `tel:` URI allows no
+ * spaces, slashes or brackets, so only the digits and a leading "+" are kept:
+ * "0171 / 123 45 67" → "tel:01711234567". The "(0)" in "+49 (0)171 …" is the
+ * national prefix, which must not be dialled after a country code, so it goes
+ * too; without a country code a "(0…)" keeps its zero.
+ */
+export function telHref(phone: string | null | undefined): string | null {
+  const raw = (phone ?? '').trim()
+  const international = raw.startsWith('+') || raw.startsWith('00')
+  const digits = (international ? raw.replace(/\(\s*0\s*\)/g, '') : raw).replace(/\D/g, '')
+  if (!digits) return null
+  return `tel:${raw.startsWith('+') ? '+' : ''}${digits}`
+}
+
 /** Two letters for an avatar fallback, skipping a "[DEMO]" style prefix. */
 export function initials(name: string | null | undefined): string {
   const words = (name ?? '')

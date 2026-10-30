@@ -454,7 +454,8 @@ const batchLabel = (batch: ShiftBatchRead) => {
   return batch.label || `${formatDate(batch.start_date)} – ${formatDate(batch.end_date)}`
 }
 
-const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}) => {
+/** Whether the task loaded; on a refusal it has toasted and left for the task list. */
+const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}): Promise<boolean> => {
   // A quiet reload keeps the page on screen instead of the loading state.
   if (!quiet) loading.value = true
   try {
@@ -474,9 +475,11 @@ const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}) => {
         title: response.data.name,
       },
     ])
+    return true
   } catch (error) {
     toastApiError(error)
     router.push({ name: 'tasks' })
+    return false
   } finally {
     loading.value = false
   }
@@ -541,7 +544,11 @@ const handleStepDown = async () => {
   if (!tk || !me) return
   const ok = await confirmDestructive({
     title: t('duties.tasks.managers.stepDown'),
-    text: t('duties.tasks.managers.stepDownConfirm'),
+    // Unpublished, the task drops out of sight as well; say so before it does.
+    text:
+      tk.status === 'published'
+        ? t('duties.tasks.managers.stepDownConfirm')
+        : t('duties.tasks.managers.stepDownConfirmUnpublished'),
     confirmText: t('duties.tasks.managers.stepDown'),
   })
   if (!ok) return
@@ -619,7 +626,7 @@ const handleCreateShift = async () => {
       max_bookings: 5,
     }
     slotDate.value = undefined
-    toast.success(t('duties.shifts.create'))
+    toast.success(t('duties.shifts.created'))
     await loadShifts()
   } catch (error) {
     toastApiError(error)
@@ -633,7 +640,7 @@ const handleDeleteShift = (shift: ShiftRead) => {
       const query: Record<string, string> = {}
       if (deleteReason.value.trim()) query.cancellation_reason = deleteReason.value.trim()
       await del({ url: `/shifts/${shift.id}`, query })
-      toast.success(t('duties.shifts.delete'))
+      toast.success(t('duties.shifts.deleted'))
       await loadShifts()
     } catch (error) {
       toastApiError(error)
@@ -644,7 +651,9 @@ const handleDeleteShift = (shift: ShiftRead) => {
 const reloadShiftsAndBookings = () => Promise.all([loadShifts(), loadMyBookings()])
 
 onMounted(async () => {
-  await loadTask()
+  // A refused task has already been reported; its shifts would only be
+  // refused again, with a second identical toast.
+  if (!(await loadTask())) return
   await Promise.all([loadShifts(), loadMyBookings(), loadBatches()])
 })
 </script>
@@ -1379,7 +1388,7 @@ onMounted(async () => {
       v-if="task && canAdminEvent"
       v-model:open="showManagersDialog"
       :task="task"
-      @changed="onManagersChanged"
+      :reload="onManagersChanged"
     />
 
     <!-- Shift Detail Dialog -->

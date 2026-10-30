@@ -587,8 +587,10 @@
         "available": "Available",
         "book": "Book this shift",
         "create": "Create Duty Shift",
+        "created": "Shift added.",
         "delete": "Delete Duty Shift",
         "deleteConfirm": "Are you sure you want to delete this duty shift?",
+        "deleted": "Shift deleted.",
         "detail": {
             "booked": "Booked",
             "bookedAt": "Booked at",
@@ -753,7 +755,9 @@
                 "cancel": "Cancel",
                 "confirm": "Proceed anyway",
                 "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. The people affected are not notified automatically, so you need to tell them yourself.",
+                "descriptionLocked": "Recreating the shifts would remove the shifts these people booked. Some of those shifts have started, and only an organiser can remove them.",
                 "locked": "Only an organiser can remove this shift, because it has started and people are booked.",
+                "lockedHint": "Change the dates or times so that the shifts that have started stay as they are, or ask an organiser to make this change.",
                 "shift": "Shift",
                 "title": "Affected Bookings",
                 "user": "User"
@@ -811,6 +815,7 @@
             "removed": "{name} is no longer in charge.",
             "stepDown": "Step down",
             "stepDownConfirm": "You will no longer be able to edit this task.",
+            "stepDownConfirmUnpublished": "You will no longer be able to edit this task. It isn't published, so you won't see it any more either.",
             "steppedDown": "You are no longer in charge of this task.",
             "title": "People in charge",
             "youAreInCharge": "You're in charge"

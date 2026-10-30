@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { formatDate, formatHours, initials } from '@/lib/format'
+import { formatDate, formatHours, initials, telHref } from '@/lib/format'
 import i18n from '@/locales/i18n'
 
 /**
@@ -102,6 +102,31 @@ describe('formatHours', () => {
   it('rounds to two decimals', () => {
     i18n.global.locale.value = 'en'
     expect(formatHours(10)).toBe('0.17')
+  })
+})
+
+describe('telHref', () => {
+  it('keeps only the digits and a leading plus', () => {
+    expect(telHref('+49 170 5551234')).toBe('tel:+491705551234')
+    expect(telHref('0171 / 123 45 67')).toBe('tel:01711234567')
+    expect(telHref('0171-123.45.67')).toBe('tel:01711234567')
+  })
+
+  it('drops the "(0)" after a country code, which would dial the wrong number', () => {
+    expect(telHref('+49 (0)171 1234567')).toBe('tel:+491711234567')
+    expect(telHref('0049 (0) 171 1234567')).toBe('tel:00491711234567')
+  })
+
+  it('keeps the zero of an area code in brackets when there is no country code', () => {
+    expect(telHref('(0171) 1234567')).toBe('tel:01711234567')
+    expect(telHref('(0) 171 1234567')).toBe('tel:01711234567')
+  })
+
+  it('returns null when nothing is left to dial', () => {
+    expect(telHref('ask at the desk')).toBeNull()
+    expect(telHref('  ')).toBeNull()
+    expect(telHref(null)).toBeNull()
+    expect(telHref(undefined)).toBeNull()
   })
 })
 

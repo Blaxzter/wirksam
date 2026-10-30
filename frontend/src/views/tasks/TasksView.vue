@@ -75,6 +75,16 @@ watch(
   { immediate: true },
 )
 
+/**
+ * A new task starts in the event this list shows, so the form can offer that
+ * event's teams and people in charge from its first step.
+ */
+const openCreateTask = () =>
+  router.push({
+    name: 'task-create',
+    query: authStore.selectedEventId ? { eventId: authStore.selectedEventId } : {},
+  })
+
 // Mirror store → URL (replace, not push, to avoid polluting history)
 const urlQuery = computed(() => {
   const q: Record<string, string> = {}
@@ -295,7 +305,7 @@ onMounted(loadTasks)
           v-if="authStore.isManager"
           data-testid="btn-create-task"
           class="max-xl:hidden"
-          @click="router.push({ name: 'task-create' })"
+          @click="openCreateTask"
         >
           <Plus class="mr-2 h-4 w-4" />
           {{ t('duties.tasks.create') }}
@@ -383,7 +393,7 @@ onMounted(loadTasks)
       class="xl:hidden fixed bottom-24 md:bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg"
       data-testid="fab-create-task"
       :aria-label="t('duties.tasks.create')"
-      @click="router.push({ name: 'task-create' })"
+      @click="openCreateTask"
     >
       <Plus class="size-7" :stroke-width="2.5" />
     </Button>

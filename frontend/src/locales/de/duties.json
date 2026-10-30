@@ -587,8 +587,10 @@
         "available": "Verfügbar",
         "book": "Dienstschicht buchen",
         "create": "Dienstschicht erstellen",
+        "created": "Schicht hinzugefügt.",
         "delete": "Dienstschicht löschen",
         "deleteConfirm": "Möchtest du diese Schicht wirklich löschen?",
+        "deleted": "Schicht gelöscht.",
         "detail": {
             "booked": "Gebucht",
             "bookedAt": "Gebucht am",
@@ -753,7 +755,9 @@
                 "cancel": "Abbrechen",
                 "confirm": "Trotzdem fortfahren",
                 "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, du musst ihnen selbst Bescheid geben.",
+                "descriptionLocked": "Beim Neuerstellen würden die Schichten wegfallen, die diese Leute gebucht haben. Einige davon haben schon begonnen, und die kann nur ein:e Organisator:in entfernen.",
                 "locked": "Diese Schicht kann nur ein:e Organisator:in entfernen, weil sie begonnen hat und Leute gebucht sind.",
+                "lockedHint": "Ändere die Tage oder Zeiten so, dass die begonnenen Schichten bleiben, wie sie sind, oder bitte eine:n Organisator:in, die Änderung vorzunehmen.",
                 "shift": "Schicht",
                 "title": "Betroffene Buchungen",
                 "user": "Benutzer"
@@ -811,6 +815,7 @@
             "removed": "{name} ist nicht mehr verantwortlich.",
             "stepDown": "Verantwortung abgeben",
             "stepDownConfirm": "Du kannst diese Aufgabe dann nicht mehr bearbeiten.",
+            "stepDownConfirmUnpublished": "Du kannst diese Aufgabe dann nicht mehr bearbeiten. Sie ist nicht veröffentlicht, du siehst sie dann also auch nicht mehr.",
             "steppedDown": "Du bist für diese Aufgabe nicht mehr verantwortlich.",
             "title": "Verantwortliche",
             "youAreInCharge": "Du bist verantwortlich"

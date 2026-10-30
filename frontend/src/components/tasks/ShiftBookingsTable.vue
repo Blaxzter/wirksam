@@ -3,6 +3,8 @@ import { computed } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
+import { useAuthStore } from '@/stores/auth'
+
 import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useFormatters } from '@/composables/useFormatters'
 
@@ -24,13 +26,18 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 
 /**
  * E-mail and notes arrive only for organisers and people in charge (and on the
  * viewer's own row); the server leaves them out for everyone else. Notes are a
- * whole column, so it shows once any row has some.
+ * whole column, so it shows once someone else's row has some. The viewer's own
+ * note doesn't count: a plain member always gets it back, and the column would
+ * then show "—" for everyone else, whose notes were held back, not empty.
  */
-const showNotes = computed(() => props.bookings.some((b) => b.notes != null))
+const showNotes = computed(() =>
+  props.bookings.some((b) => b.user_id !== authStore.profile?.id && b.notes != null),
+)
 const { formatDateTime } = useFormatters()
 
 const initials = (name: string | null | undefined, email: string | null | undefined): string => {

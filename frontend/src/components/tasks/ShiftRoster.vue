@@ -10,6 +10,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 import type { ShiftBookingEntry } from '@/client/types.gen'
+import { telHref } from '@/lib/format'
 
 const props = defineProps<{
   bookings: ShiftBookingEntry[]
@@ -89,15 +90,24 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
           <p v-if="entry.user_email" class="text-muted-foreground truncate text-xs">
             {{ entry.user_email }}
           </p>
+          <!-- The number as they typed it; the link dials a cleaned-up copy. -->
           <a
-            v-if="entry.user_phone_number"
-            :href="`tel:${entry.user_phone_number}`"
+            v-if="telHref(entry.user_phone_number)"
+            :href="telHref(entry.user_phone_number)!"
             class="text-muted-foreground hover:text-foreground flex w-fit max-w-full items-center gap-1 text-xs underline-offset-2 hover:underline"
             data-testid="shift-roster-phone"
           >
             <Phone class="size-3 shrink-0" aria-hidden="true" />
             <span class="truncate">{{ entry.user_phone_number }}</span>
           </a>
+          <p
+            v-else-if="entry.user_phone_number"
+            class="text-muted-foreground flex max-w-full items-center gap-1 text-xs"
+            data-testid="shift-roster-phone"
+          >
+            <Phone class="size-3 shrink-0" aria-hidden="true" />
+            <span class="truncate">{{ entry.user_phone_number }}</span>
+          </p>
           <p v-if="entry.notes" class="text-muted-foreground truncate text-xs italic">
             {{ entry.notes }}
           </p>

@@ -26,17 +26,17 @@ import { initials } from '@/lib/format'
 
 /**
  * Put event members in charge of a task, or take them off it. Organisers only;
- * the server refuses everyone else. Every change is saved at once and reported
- * with `changed`, and the page reloads the task, whose `managers` come back in
- * through the prop.
+ * the server refuses everyone else. Every change is saved at once, then
+ * `reload` fetches the task again, whose `managers` come back in through the
+ * prop. The editor stays busy until that reload is in, so the list never shows
+ * the old state after the success message.
  */
 const props = defineProps<{
   taskId: string
   eventId: string
   managers: TaskManagerBrief[]
+  reload: () => Promise<unknown>
 }>()
-
-const emit = defineEmits<{ changed: [] }>()
 
 const { t } = useI18n()
 const { get, post, delete: del } = useAuthenticatedClient()
@@ -74,8 +74,8 @@ async function act(userId: string, run: () => Promise<unknown>, message: string)
   busyUserId.value = userId
   try {
     await run()
+    await props.reload()
     toast.success(message)
-    emit('changed')
   } catch (err) {
     toastApiError(err)
   } finally {
