@@ -5,7 +5,7 @@ from pathlib import Path
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, make_url, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -130,7 +130,9 @@ def run_migrations_online():
     configuration["sqlalchemy.url"] = get_url()
 
     # replace postgresql+asyncpg with psycopg2 for Alembic compatibility
-    print(f"Using database URL: {configuration['sqlalchemy.url']}")
+    # The URL carries the password, and this line ends up in container logs.
+    shown = make_url(configuration["sqlalchemy.url"]).render_as_string(hide_password=True)
+    print(f"Using database URL: {shown}")
     configuration["sqlalchemy.url"] = configuration["sqlalchemy.url"].replace("postgresql+asyncpg", "postgresql+psycopg")
 
     connectable = engine_from_config(
