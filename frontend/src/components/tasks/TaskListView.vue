@@ -44,7 +44,7 @@ const authStore = useAuthStore()
       <CardHeader class="pb-3">
         <div class="flex items-start justify-between">
           <CardTitle class="text-lg line-clamp-1 break-words">{{ task.name }}</CardTitle>
-          <Badge v-if="authStore.isManager" :variant="statusVariant(task.status)">
+          <Badge v-if="task.can_manage" :variant="statusVariant(task.status)">
             {{ t(`duties.tasks.statuses.${task.status ?? 'draft'}`) }}
           </Badge>
         </div>
@@ -75,7 +75,10 @@ const authStore = useAuthStore()
       <CardContent>
         <div class="flex items-center justify-between text-sm text-muted-foreground">
           <span>{{ formatDate(task.start_date) }} – {{ formatDate(task.end_date) }}</span>
-          <HintTooltip v-if="authStore.isManager" :label="t('duties.tasks.delete')">
+          <HintTooltip
+            v-if="authStore.canManageEvent(task.event_id)"
+            :label="t('duties.tasks.delete')"
+          >
             <Button
               variant="ghost"
               size="icon"

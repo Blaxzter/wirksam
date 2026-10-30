@@ -232,8 +232,9 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           path: 'tasks/:eventId/edit',
           name: 'task-edit',
           component: () => import('@/views/tasks/TaskEditView.vue'),
+          // Not `requiresEventManager`: the task's people in charge edit it
+          // too. The view sends everyone else back to the task.
           meta: {
-            requiresEventManager: true,
             breadcrumbs: [
               { title: 'Tasks', titleKey: 'duties.tasks.title', to: { name: 'tasks' } },
               { title: 'Edit Task', titleKey: 'duties.tasks.editView.title' },
@@ -244,8 +245,8 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           path: 'tasks/:eventId/add-shifts',
           name: 'task-add-shifts',
           component: () => import('@/views/tasks/TaskAddShiftsView.vue'),
+          // Not `requiresEventManager`, as for task-edit.
           meta: {
-            requiresEventManager: true,
             breadcrumbs: [
               { title: 'Tasks', titleKey: 'duties.tasks.title', to: { name: 'tasks' } },
               { title: 'Add Shifts', titleKey: 'duties.tasks.addShiftsView.title' },

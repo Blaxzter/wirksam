@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
 
-import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 
 import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useFormatters } from '@/composables/useFormatters'
@@ -18,13 +18,19 @@ import {
 
 import type { ShiftBookingEntry } from '@/client/types.gen'
 
-defineProps<{
+const props = defineProps<{
   bookings: ShiftBookingEntry[]
   loading?: boolean
 }>()
 
 const { t } = useI18n()
-const authStore = useAuthStore()
+
+/**
+ * E-mail and notes arrive only for organisers and people in charge (and on the
+ * viewer's own row); the server leaves them out for everyone else. Notes are a
+ * whole column, so it shows once any row has some.
+ */
+const showNotes = computed(() => props.bookings.some((b) => b.notes != null))
 const { formatDateTime } = useFormatters()
 
 const initials = (name: string | null | undefined, email: string | null | undefined): string => {
@@ -57,7 +63,7 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
         <TableHeader>
           <TableRow>
             <TableHead class="w-[45%]">{{ t('duties.shifts.detail.userName') }}</TableHead>
-            <TableHead v-if="authStore.isAdmin" class="w-[25%]">
+            <TableHead v-if="showNotes" class="w-[25%]">
               {{ t('duties.shifts.detail.userNotes') }}
             </TableHead>
             <TableHead class="w-[30%] text-right">
@@ -77,16 +83,13 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
                 </Avatar>
                 <div class="min-w-0">
                   <p class="font-medium truncate">{{ entry.user_name ?? '—' }}</p>
-                  <p
-                    v-if="authStore.isAdmin && entry.user_email"
-                    class="text-xs text-muted-foreground truncate"
-                  >
+                  <p v-if="entry.user_email" class="text-xs text-muted-foreground truncate">
                     {{ entry.user_email }}
                   </p>
                 </div>
               </div>
             </TableCell>
-            <TableCell v-if="authStore.isAdmin" class="max-w-0">
+            <TableCell v-if="showNotes" class="max-w-0">
               <span class="text-muted-foreground truncate block">{{ entry.notes ?? '—' }}</span>
             </TableCell>
             <TableCell class="text-right text-muted-foreground whitespace-nowrap">

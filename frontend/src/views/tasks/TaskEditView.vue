@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
 import { parseDate } from '@internationalized/date'
-import { ArrowLeft, Clock, Info, RefreshCw } from '@lucide/vue'
+import { ArrowLeft, Clock, Info, Lock, RefreshCw } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -43,7 +43,13 @@ import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 
-import type { EventRead, ShiftBatchRead, ShiftRead, TaskRead } from '@/client/types.gen'
+import type {
+  EventRead,
+  ShiftBatchRead,
+  ShiftRead,
+  ShiftRegenerationResult,
+  TaskRead,
+} from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
@@ -63,6 +69,8 @@ const { get, post, patch } = useAuthenticatedClient()
 const eventId = computed(() => route.params.eventId as string)
 const batchId = computed(() => (route.query.batchId as string) || null)
 const isBatchMode = computed(() => !!batchId.value)
+/** Who can book (the team) is for organisers; people in charge never see it. */
+const canAdminEvent = computed(() => authStore.canManageEvent(task.value?.event_id))
 const loading = ref(true)
 const submitting = ref(false)
 const task = ref<TaskRead | null>(null)
@@ -116,24 +124,15 @@ const currentScheduleSnapshot = computed<ScheduleSnapshot | null>(() => {
 // Affected bookings dialog
 const showAffectedDialog = ref(false)
 
-interface AffectedBooking {
-  booking_id: string
-  user_id: string
-  slot_title: string
-  slot_date: string
-  slot_start_time: string | null
-  slot_end_time: string | null
-}
+const pendingPreview = ref<ShiftRegenerationResult | null>(null)
 
-interface RegenerationResult {
-  task: TaskRead
-  shifts_added: number
-  shifts_removed: number
-  shifts_kept: number
-  affected_bookings: AffectedBooking[]
-}
-
-const pendingPreview = ref<RegenerationResult | null>(null)
+/**
+ * A person in charge may not remove a shift that has started with people on
+ * it; the dry run marks those rows, and the real run would refuse them.
+ */
+const previewHasLocked = computed(
+  () => pendingPreview.value?.affected_bookings.some((b) => b.locked) ?? false,
+)
 
 // --- Existing shift bookings (fetched from backend) ---
 const existingBookings = ref(new Map<string, number>())
@@ -235,8 +234,8 @@ const loadTask = async () => {
     task.value = response.data
     const ev = response.data
 
-    // Check if user can manage this task
-    if (!authStore.canManageEvent(ev.event_id)) {
+    // Organisers and the task's people in charge.
+    if (!ev.can_manage) {
       router.replace({ name: 'task-detail', params: { eventId: eventId.value } })
       return
     }
@@ -443,7 +442,7 @@ const handleSubmit = async () => {
     const regenQuery: Record<string, unknown> = { dry_run: true }
     if (batchId.value) regenQuery.batch_id = batchId.value
 
-    const preview = await post<{ data: RegenerationResult }>({
+    const preview = await post<{ data: ShiftRegenerationResult }>({
       url: `/tasks/${eventId.value}/regenerate-shifts`,
       query: regenQuery,
       body: buildPayload(),
@@ -471,7 +470,7 @@ const executeRegeneration = async () => {
     const regenQuery: Record<string, unknown> = {}
     if (batchId.value) regenQuery.batch_id = batchId.value
 
-    await post<{ data: RegenerationResult }>({
+    await post<{ data: ShiftRegenerationResult }>({
       url: `/tasks/${eventId.value}/regenerate-shifts`,
       query: regenQuery,
       body: buildPayload(),
@@ -538,7 +537,7 @@ onMounted(loadTask)
         <CardContent class="space-y-4">
           <div class="space-y-2">
             <Label>{{ t('duties.tasks.fields.name') }} *</Label>
-            <Input v-model="name" />
+            <Input v-model="name" data-testid="input-task-name" />
           </div>
           <div class="space-y-2">
             <Label>{{ t('duties.tasks.fields.description') }}</Label>
@@ -563,7 +562,7 @@ onMounted(loadTask)
       </Card>
 
       <!-- Who can book (hidden in batch mode: a team is set on the task) -->
-      <Card v-if="!isBatchMode" data-testid="section-who-can-book">
+      <Card v-if="!isBatchMode && canAdminEvent" data-testid="section-who-can-book">
         <CardHeader>
           <CardTitle>{{ t('teamLocks.picker.title') }}</CardTitle>
           <CardDescription>{{ t('teamLocks.picker.subtitle') }}</CardDescription>
@@ -741,21 +740,32 @@ onMounted(loadTask)
             <div
               v-for="booking in pendingPreview.affected_bookings"
               :key="booking.booking_id"
-              class="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
+              class="rounded-md bg-muted/50 px-3 py-2 text-sm"
+              :data-testid="`affected-booking-${booking.booking_id}`"
             >
-              <div>
-                <p class="font-medium">{{ booking.slot_title }}</p>
-                <p class="text-muted-foreground">
-                  {{ formatDateLabel(booking.slot_date) }}
-                  <template v-if="booking.slot_start_time">
-                    {{ formatTime(booking.slot_start_time) }} -
-                    {{ formatTime(booking.slot_end_time) }}
-                  </template>
-                </p>
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-medium">{{ booking.slot_title }}</p>
+                  <p class="text-muted-foreground">
+                    {{ formatDateLabel(booking.slot_date) }}
+                    <template v-if="booking.slot_start_time">
+                      {{ formatTime(booking.slot_start_time) }} -
+                      {{ formatTime(booking.slot_end_time) }}
+                    </template>
+                  </p>
+                </div>
+                <Badge variant="outline" class="max-w-[50%] shrink-0 text-xs">
+                  <span class="truncate">{{ booking.user_name || '?' }}</span>
+                </Badge>
               </div>
-              <Badge variant="outline" class="text-xs">
-                {{ booking.user_id.substring(0, 8) }}...
-              </Badge>
+              <p
+                v-if="booking.locked"
+                class="mt-1.5 flex items-start gap-1.5 text-xs text-destructive"
+                data-testid="affected-booking-locked"
+              >
+                <Lock class="mt-0.5 h-3 w-3 shrink-0" />
+                {{ t('duties.tasks.editView.affectedBookings.locked') }}
+              </p>
             </div>
           </div>
         </ResponsiveDialogBody>
@@ -764,7 +774,12 @@ onMounted(loadTask)
           <Button variant="outline" @click="showAffectedDialog = false">
             {{ t('duties.tasks.editView.affectedBookings.cancel') }}
           </Button>
-          <Button variant="destructive" @click="confirmRegeneration">
+          <Button
+            variant="destructive"
+            :disabled="previewHasLocked"
+            data-testid="btn-confirm-regeneration"
+            @click="confirmRegeneration"
+          >
             {{ t('duties.tasks.editView.affectedBookings.confirm') }}
           </Button>
         </ResponsiveDialogFooter>

@@ -40,12 +40,13 @@ import {
 } from '@/components/ui/select'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
+import EventMemberPicker from '@/components/events/EventMemberPicker.vue'
 import TeamPicker from '@/components/events/teams/TeamPicker.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 
-import type { EventListResponse, EventRead } from '@/client/types.gen'
+import type { EventListResponse, EventMemberRead, EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
@@ -65,6 +66,9 @@ const location = ref('')
 const locationId = ref<string | null>(null)
 const category = ref('')
 const teamId = ref<string | null>(null)
+/** People in charge, picked from the chosen event's members. */
+const managers = ref<EventMemberRead[]>([])
+const eventMembers = ref<EventMemberRead[]>([])
 
 // Task event
 const isScopedManagerOnly = computed(() => !authStore.isAdmin && authStore.isEventManager)
@@ -171,7 +175,39 @@ watch(locationEventId, () => {
   locationId.value = null
   // Teams belong to one event too, and have no text to fall back on.
   teamId.value = null
+  // So do the people who can be put in charge.
+  managers.value = []
 })
+
+// The chosen event's roster, to pick people in charge from.
+watch(
+  locationEventId,
+  async (id) => {
+    eventMembers.value = []
+    if (!id) return
+    try {
+      const res = await get<{ data: EventMemberRead[] }>({ url: `/events/${id}/members` })
+      if (locationEventId.value === id) eventMembers.value = res.data
+    } catch {
+      // Not worth blocking the form for: the section just has nobody to offer.
+    }
+  },
+  { immediate: true },
+)
+
+const pickedManagerIds = computed(() =>
+  Object.fromEntries(
+    managers.value.map((m) => [m.user_id, t('duties.tasks.managers.alreadyInCharge')]),
+  ),
+)
+
+function addManager(member: EventMemberRead) {
+  if (!managers.value.some((m) => m.user_id === member.user_id)) managers.value.push(member)
+}
+
+function removeManager(userId: string) {
+  managers.value = managers.value.filter((m) => m.user_id !== userId)
+}
 
 // Clear dates when event changes (constraints may have changed)
 watch([eventMode, selectedEventId], () => {
@@ -400,6 +436,7 @@ const handleSubmit = async () => {
       location: location.value || null,
       category: category.value || null,
       team_id: locationEventId.value ? teamId.value : null,
+      manager_ids: locationEventId.value ? managers.value.map((m) => m.user_id) : [],
       schedule: {
         default_start_time: defaultStartTime.value + ':00',
         default_end_time: defaultEndTime.value + ':00',
@@ -525,6 +562,53 @@ const handleSubmit = async () => {
                 <p class="text-sm text-muted-foreground">{{ t('teamLocks.picker.subtitle') }}</p>
               </div>
               <TeamPicker v-model="teamId" :event-id="locationEventId" input-id="task-team" />
+            </section>
+            <!-- People in charge: members of the chosen event -->
+            <section
+              v-if="locationEventId"
+              class="space-y-3 border-t pt-4"
+              data-testid="section-task-managers"
+              aria-labelledby="task-managers-heading"
+            >
+              <div class="space-y-0.5">
+                <h3 id="task-managers-heading" class="font-semibold">
+                  {{ t('duties.tasks.managers.title') }}
+                </h3>
+                <p class="text-sm text-muted-foreground">
+                  {{ t('duties.tasks.managers.createHint') }}
+                </p>
+              </div>
+              <EventMemberPicker
+                :members="eventMembers"
+                :unavailable="pickedManagerIds"
+                :label="t('duties.tasks.managers.add')"
+                :placeholder="t('teams.roster.addPlaceholder')"
+                input-id="task-create-manager"
+                :action-hint="t('teams.roster.enterToAdd')"
+                testid="task-create-manager"
+                @pick="addManager"
+              />
+              <ul v-if="managers.length" class="flex flex-wrap gap-2">
+                <li v-for="m in managers" :key="m.user_id">
+                  <Badge
+                    variant="secondary"
+                    class="gap-1 py-1 pr-1 pl-2.5 text-sm"
+                    :data-testid="`task-create-manager-chip-${m.user_id}`"
+                  >
+                    <span class="max-w-48 truncate">{{ m.name || m.email || '?' }}</span>
+                    <button
+                      type="button"
+                      class="rounded-full p-0.5 hover:bg-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      :aria-label="
+                        t('duties.events.members.remove', { name: m.name || m.email || '?' })
+                      "
+                      @click="removeManager(m.user_id)"
+                    >
+                      <X class="h-3.5 w-3.5" />
+                    </button>
+                  </Badge>
+                </li>
+              </ul>
             </section>
             <div class="flex justify-end pt-2">
               <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{

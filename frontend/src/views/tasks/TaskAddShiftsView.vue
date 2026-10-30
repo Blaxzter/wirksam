@@ -8,7 +8,6 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-import { useAuthStore } from '@/stores/auth'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
@@ -40,7 +39,6 @@ const { t } = useI18n()
 const { formatTime, formatDateLabel } = useFormatters()
 const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
 const breadcrumbStore = useBreadcrumbStore()
 const { get, post } = useAuthenticatedClient()
 
@@ -201,8 +199,8 @@ const loadTask = async () => {
     task.value = response.data
     const ev = response.data
 
-    // Check if user can manage this task
-    if (!authStore.canManageEvent(ev.event_id)) {
+    // Organisers and the task's people in charge.
+    if (!ev.can_manage) {
       router.replace({ name: 'task-detail', params: { eventId: eventId.value } })
       return
     }

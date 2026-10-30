@@ -46,10 +46,10 @@ Not yet covered, and not currently tracked by an issue:
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 25      |
 | `mobile`     | 2          | 10      |
-| `multi-user` | 5          | 60      |
+| `multi-user` | 6          | 62      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **57**     | **420** |
+| **Total**    | **58**     | **422** |
 
 ## Inventory
 
@@ -617,7 +617,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 5 files, 60 tests
+### Project `multi-user` — 6 files, 62 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -710,6 +710,11 @@ Not yet covered, and not currently tracked by an issue:
 - **Cross-user – task booking flow** (2)
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
+
+#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 2 tests
+
+- an organiser puts a member in charge from the task page
+- a person in charge edits the task and adds a shift, but cannot delete or publish it
 
 ### Project `public` — 8 files, 42 tests
 

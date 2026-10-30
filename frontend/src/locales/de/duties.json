@@ -746,12 +746,14 @@
             "unbatchedShifts": "Weitere Schichten"
         },
         "draftBanner": "Diese Aufgabe ist ein Entwurf, Mitglieder sehen sie noch nicht. Setze den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
+        "draftBannerManager": "Diese Aufgabe ist ein Entwurf, Mitglieder sehen sie noch nicht. Bitte eine:n Organisator:in, sie zu veröffentlichen.",
         "edit": "Aufgabe bearbeiten",
         "editView": {
             "affectedBookings": {
                 "cancel": "Abbrechen",
                 "confirm": "Trotzdem fortfahren",
                 "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, du musst ihnen selbst Bescheid geben.",
+                "locked": "Diese Schicht kann nur ein:e Organisator:in entfernen, weil sie begonnen hat und Leute gebucht sind.",
                 "shift": "Schicht",
                 "title": "Betroffene Buchungen",
                 "user": "Benutzer"
@@ -792,6 +794,27 @@
             "today": "Auf heute zentrieren"
         },
         "hideFullShifts": "Ausgebuchte ausblenden",
+        "managers": {
+            "add": "Person hinzufügen",
+            "added": "{name} ist jetzt verantwortlich.",
+            "alreadyInCharge": "Bereits verantwortlich",
+            "cloneNote": "Verantwortliche werden nur übernommen, wenn auch die Mitglieder kopiert werden.",
+            "createHint": "Optional. Sie können diese Aufgabe und ihre Schichten bearbeiten.",
+            "dialogDescription": "Sie können diese Aufgabe und ihre Schichten bearbeiten und sehen, wer gebucht hat. Löschen oder veröffentlichen können sie sie nicht.",
+            "dialogTitle": "Verantwortliche für {task}",
+            "empty": "Noch niemand. Die Organisator:innen kümmern sich um diese Aufgabe.",
+            "label": "Verantwortlich",
+            "manage": "Verantwortliche…",
+            "remove": "Entfernen",
+            "removeConfirmText": "{name} kann diese Aufgabe dann nicht mehr bearbeiten.",
+            "removeConfirmTitle": "{name} entfernen?",
+            "removed": "{name} ist nicht mehr verantwortlich.",
+            "stepDown": "Verantwortung abgeben",
+            "stepDownConfirm": "Du kannst diese Aufgabe dann nicht mehr bearbeiten.",
+            "steppedDown": "Du bist für diese Aufgabe nicht mehr verantwortlich.",
+            "title": "Verantwortliche",
+            "youAreInCharge": "Du bist verantwortlich"
+        },
         "myBookingsFilter": "Nur meine Buchungen",
         "pickDate": "Datum auswählen",
         "quickView": {

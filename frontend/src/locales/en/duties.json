@@ -746,12 +746,14 @@
             "unbatchedShifts": "Other Shifts"
         },
         "draftBanner": "This task is a draft, so members can't see it yet. Set the status to \"Published\" to make it visible.",
+        "draftBannerManager": "This task is a draft, so members can't see it yet. Ask an organiser to publish it.",
         "edit": "Edit Task",
         "editView": {
             "affectedBookings": {
                 "cancel": "Cancel",
                 "confirm": "Proceed anyway",
                 "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. The people affected are not notified automatically, so you need to tell them yourself.",
+                "locked": "Only an organiser can remove this shift, because it has started and people are booked.",
                 "shift": "Shift",
                 "title": "Affected Bookings",
                 "user": "User"
@@ -792,6 +794,27 @@
             "today": "Centre on today"
         },
         "hideFullShifts": "Hide fully booked",
+        "managers": {
+            "add": "Add a person",
+            "added": "{name} is now in charge.",
+            "alreadyInCharge": "Already in charge",
+            "cloneNote": "People in charge come along only if members are copied too.",
+            "createHint": "Optional. They can edit this task and its shifts.",
+            "dialogDescription": "They can edit this task and its shifts and see who booked. They can't delete or publish it.",
+            "dialogTitle": "People in charge of {task}",
+            "empty": "Nobody yet. The organisers look after this task.",
+            "label": "In charge",
+            "manage": "People in charge…",
+            "remove": "Remove",
+            "removeConfirmText": "{name} will no longer be able to edit this task.",
+            "removeConfirmTitle": "Remove {name}?",
+            "removed": "{name} is no longer in charge.",
+            "stepDown": "Step down",
+            "stepDownConfirm": "You will no longer be able to edit this task.",
+            "steppedDown": "You are no longer in charge of this task.",
+            "title": "People in charge",
+            "youAreInCharge": "You're in charge"
+        },
         "myBookingsFilter": "My bookings only",
         "pickDate": "Pick a date",
         "quickView": {

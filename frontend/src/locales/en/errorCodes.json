@@ -15,10 +15,15 @@
         "token_expired": "This link has expired. Please request a new one.",
         "weak_password": "That password is too short. Please choose a longer one."
     },
+    "batch": {
+        "wrong_task": "Those shifts belong to a different task. Reload the page and try again."
+    },
     "booking": {
         "already_exists": "You already have a booking for this shift",
         "forbidden": "You can only manage your own bookings",
         "rebook_required": "This booking was cancelled. Book the shift again to take it back.",
+        "shift_over": "This shift is already over, so it can't be booked or cancelled any more.",
+        "shift_started": "This shift has already started. Shifts that earn vouchers can only be booked before they start; ask the people in charge if you're helping anyway.",
         "slot_full": "This duty shift is fully booked",
         "team_required": "Only members of the team for this task can book its shifts. Ask to join the team on the Teams page.",
         "time_conflict": "This shift overlaps one of your booked shifts",
@@ -53,7 +58,14 @@
         "not_found": "That shift could not be found."
     },
     "task": {
+        "admin_only_field": "Only organisers can publish a task, change who can book it or its vouchers, or move it to another event.",
+        "forbidden": "Only the people in charge of this task and the organisers can do this.",
+        "manager_already": "That person is already in charge of this task.",
+        "manager_not_event_member": "Only people in this event can be put in charge of its tasks.",
+        "manager_not_found": "That person is not in charge of this task.",
         "not_found": "That task could not be found.",
+        "not_published": "This task isn't published, so only the organisers and its people in charge can open or book it.",
+        "shift_history_admin_only": "This shift has started and people are booked on it, or the change would move it into the past. Only an organiser can do that.",
         "team_not_in_event": "The team has to belong to the same event as the task."
     },
     "team": {

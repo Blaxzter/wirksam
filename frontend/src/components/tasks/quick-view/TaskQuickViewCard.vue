@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Lock, MapPin, ShieldCheck, Tag, Trash2, UsersRound } from '@lucide/vue'
+import { Lock, MapPin, ShieldCheck, Tag, Trash2, UserCheck, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
@@ -38,7 +38,10 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const { get } = useAuthenticatedClient()
 
-const canManage = computed(() => authStore.canManageEvent(props.task.event_id))
+/** Organisers and the task's people in charge see its status. */
+const canManage = computed(() => props.task.can_manage ?? false)
+/** Deleting the task stays with the organisers. */
+const canAdminEvent = computed(() => authStore.canManageEvent(props.task.event_id))
 
 const numDays = computed(() => props.visibleDays ?? 5)
 const expanded = ref(false)
@@ -256,6 +259,16 @@ watch(
             </span>
           </Badge>
 
+          <Badge
+            v-if="canManage && !canAdminEvent"
+            variant="outline"
+            class="text-[11px]"
+            :data-testid="`task-in-charge-badge-${task.id}`"
+          >
+            <UserCheck aria-hidden="true" />
+            {{ t('duties.tasks.managers.label') }}
+          </Badge>
+
           <p v-if="task.description" class="text-xs text-muted-foreground line-clamp-2 break-words">
             {{ task.description }}
           </p>
@@ -288,7 +301,7 @@ watch(
           <span v-else class="text-xs text-muted-foreground">
             {{ t('duties.tasks.quickView.availableShifts', { count: totalAvailableShifts }) }}
           </span>
-          <HintTooltip v-if="canManage" :label="t('duties.tasks.delete')">
+          <HintTooltip v-if="canAdminEvent" :label="t('duties.tasks.delete')">
             <Button
               variant="ghost"
               size="icon"

@@ -19,6 +19,8 @@ import {
   Printer,
   Tag,
   Trash2,
+  UserMinus,
+  UsersRound,
 } from '@lucide/vue'
 import { I18nT, useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -63,6 +65,8 @@ import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialo
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
 import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
+import TaskManagersDialog from '@/components/tasks/managers/TaskManagersDialog.vue'
+import TaskManagersInline from '@/components/tasks/managers/TaskManagersInline.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
@@ -91,7 +95,20 @@ const { confirm, confirmDestructive } = useDialog()
 
 const eventId = computed(() => route.params.eventId as string)
 
-const canManage = computed(() => authStore.canManageEvent(task.value?.event_id))
+/** Edit the task and its shifts: organisers and the task's people in charge. */
+const canManageTask = computed(() => task.value?.can_manage ?? false)
+/** Publish, delete, name people in charge, edit the event's location: organisers only. */
+const canAdminEvent = computed(() => authStore.canManageEvent(task.value?.event_id))
+
+/** The viewer is in charge of this task without being an organiser. */
+const isManagerOnly = computed(
+  () =>
+    !canAdminEvent.value &&
+    !!authStore.profile?.id &&
+    (task.value?.managers ?? []).some((m) => m.user_id === authStore.profile?.id),
+)
+
+const showManagersDialog = ref(false)
 
 /**
  * The team this task is reserved for, from the task itself: whether the
@@ -514,6 +531,33 @@ const handleStatusChange = async (status: 'draft' | 'published' | 'archived') =>
   }
 }
 
+/** Naming or removing someone changes `managers` and maybe `can_manage`. */
+const onManagersChanged = () => loadTask({ quiet: true })
+
+/** A person in charge gives the task back to the organisers. */
+const handleStepDown = async () => {
+  const tk = task.value
+  const me = authStore.profile?.id
+  if (!tk || !me) return
+  const ok = await confirmDestructive({
+    title: t('duties.tasks.managers.stepDown'),
+    text: t('duties.tasks.managers.stepDownConfirm'),
+    confirmText: t('duties.tasks.managers.stepDown'),
+  })
+  if (!ok) return
+  try {
+    await del({ url: `/tasks/${tk.id}/managers/${me}` })
+    toast.success(t('duties.tasks.managers.steppedDown'))
+  } catch (error) {
+    toastApiError(error)
+    return
+  }
+  // An unpublished task is out of reach now: reloading it would answer
+  // `task.not_published` and toast an error on the way out.
+  if (tk.status === 'published') await loadTask({ quiet: true })
+  else router.push({ name: 'tasks' })
+}
+
 const handleDeleteTask = () => {
   const bookingCount = countConfirmedBookings(shifts.value)
   openDeleteDialog(t('duties.tasks.deleteConfirm'), bookingCount, async () => {
@@ -633,8 +677,10 @@ onMounted(async () => {
           class="border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-500/30"
         >
           <Info class="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          <AlertDescription>
-            {{ t('duties.tasks.draftBanner') }}
+          <AlertDescription data-testid="task-draft-banner">
+            {{
+              canAdminEvent ? t('duties.tasks.draftBanner') : t('duties.tasks.draftBannerManager')
+            }}
           </AlertDescription>
         </Alert>
 
@@ -691,7 +737,7 @@ onMounted(async () => {
                 data-testid="task-status"
                 :status="task.status"
                 i18n-prefix="duties.tasks.statuses"
-                :editable="canManage"
+                :editable="canAdminEvent"
                 @change="handleStatusChange"
               />
             </div>
@@ -708,6 +754,11 @@ onMounted(async () => {
                 <Tag class="h-3.5 w-3.5 shrink-0" />
                 <span class="truncate">{{ sharedCategory }}</span>
               </span>
+              <TaskManagersInline
+                v-if="task.managers?.length"
+                :managers="task.managers"
+                :you-are-in-charge="isManagerOnly"
+              />
             </div>
           </div>
 
@@ -725,7 +776,7 @@ onMounted(async () => {
               </Button>
             </HintTooltip>
             <Button
-              v-if="canManage && !hasBatches"
+              v-if="canManageTask && !hasBatches"
               data-testid="btn-edit-task"
               variant="outline"
               @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
@@ -733,40 +784,73 @@ onMounted(async () => {
               <Pencil class="mr-2 h-4 w-4" />
               {{ t('duties.tasks.edit') }}
             </Button>
-            <template v-if="canManage">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button data-testid="btn-add-shifts">
-                    <CalendarPlus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addShifts') }}
-                    <ChevronDown class="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    @click="router.push({ name: 'task-add-shifts', params: { eventId: task.id } })"
-                  >
-                    <CalendarPlus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addShiftBatch') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="showCreateShiftDialog = true">
-                    <Plus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addSingleShift') }}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <HintTooltip :label="t('duties.tasks.delete')">
-                <Button
-                  data-testid="btn-delete-task"
-                  variant="destructive"
-                  size="icon"
-                  :aria-label="t('duties.tasks.delete')"
-                  @click="handleDeleteTask"
-                >
-                  <Trash2 class="h-4 w-4" />
+            <DropdownMenu v-if="canManageTask">
+              <DropdownMenuTrigger as-child>
+                <Button data-testid="btn-add-shifts">
+                  <CalendarPlus class="mr-2 h-4 w-4" />
+                  {{ t('duties.tasks.detail.addShifts') }}
+                  <ChevronDown class="ml-1 h-3 w-3" />
                 </Button>
-              </HintTooltip>
-            </template>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  @click="router.push({ name: 'task-add-shifts', params: { eventId: task.id } })"
+                >
+                  <CalendarPlus class="mr-2 h-4 w-4" />
+                  {{ t('duties.tasks.detail.addShiftBatch') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="btn-add-single-shift"
+                  @click="showCreateShiftDialog = true"
+                >
+                  <Plus class="mr-2 h-4 w-4" />
+                  {{ t('duties.tasks.detail.addSingleShift') }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <HintTooltip v-if="canAdminEvent" :label="t('duties.tasks.delete')">
+              <Button
+                data-testid="btn-delete-task"
+                variant="destructive"
+                size="icon"
+                :aria-label="t('duties.tasks.delete')"
+                @click="handleDeleteTask"
+              >
+                <Trash2 class="h-4 w-4" />
+              </Button>
+            </HintTooltip>
+            <!-- More actions: who is in charge (organisers), or stepping down -->
+            <DropdownMenu v-if="canAdminEvent || isManagerOnly">
+              <DropdownMenuTrigger as-child>
+                <Button
+                  data-testid="btn-task-more"
+                  variant="outline"
+                  size="icon"
+                  :aria-label="t('common.actions.moreActions')"
+                >
+                  <EllipsisVertical class="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  v-if="canAdminEvent"
+                  data-testid="btn-task-managers"
+                  @click="showManagersDialog = true"
+                >
+                  <UsersRound class="mr-2 h-4 w-4" />
+                  {{ t('duties.tasks.managers.manage') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  v-else
+                  class="text-destructive focus:text-destructive"
+                  data-testid="btn-task-step-down"
+                  @click="handleStepDown"
+                >
+                  <UserMinus class="mr-2 h-4 w-4 text-destructive" />
+                  {{ t('duties.tasks.managers.stepDown') }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <!-- Mobile actions menu -->
@@ -784,7 +868,7 @@ onMounted(async () => {
                   <Printer class="mr-2 h-4 w-4" />
                   {{ t('print.printTask') }}
                 </DropdownMenuItem>
-                <template v-if="canManage">
+                <template v-if="canManageTask">
                   <DropdownMenuItem
                     v-if="!hasBatches"
                     @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
@@ -802,10 +886,31 @@ onMounted(async () => {
                     <Plus class="mr-2 h-4 w-4" />
                     {{ t('duties.tasks.detail.addSingleShift') }}
                   </DropdownMenuItem>
+                </template>
+                <template v-if="canAdminEvent">
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    data-testid="btn-task-managers-mobile"
+                    @click="showManagersDialog = true"
+                  >
+                    <UsersRound class="mr-2 h-4 w-4" />
+                    {{ t('duties.tasks.managers.manage') }}
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem class="text-destructive" @click="handleDeleteTask">
                     <Trash2 class="mr-2 h-4 w-4" />
                     {{ t('duties.tasks.delete') }}
+                  </DropdownMenuItem>
+                </template>
+                <template v-else-if="isManagerOnly">
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    class="text-destructive focus:text-destructive"
+                    data-testid="btn-task-step-down-mobile"
+                    @click="handleStepDown"
+                  >
+                    <UserMinus class="mr-2 h-4 w-4 text-destructive" />
+                    {{ t('duties.tasks.managers.stepDown') }}
                   </DropdownMenuItem>
                 </template>
               </DropdownMenuContent>
@@ -815,7 +920,7 @@ onMounted(async () => {
 
         <!-- Where it happens: mini map of the shared location -->
         <div
-          v-if="sharedLocationDetail && (miniMapPin || canManage)"
+          v-if="sharedLocationDetail && (miniMapPin || canAdminEvent)"
           class="space-y-1.5 sm:max-w-md"
           data-testid="task-mini-map"
         >
@@ -826,7 +931,7 @@ onMounted(async () => {
             :location-id="sharedLocationDetail.id"
           />
           <Button
-            v-if="canManage"
+            v-if="canAdminEvent"
             variant="link"
             size="sm"
             class="h-auto px-0"
@@ -1006,7 +1111,7 @@ onMounted(async () => {
                     </Badge>
                   </template>
                 </div>
-                <div v-if="canManage && event.batch" class="flex gap-1">
+                <div v-if="canManageTask && event.batch" class="flex gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1158,7 +1263,7 @@ onMounted(async () => {
                       </p>
 
                       <!-- Admin delete (stop propagation so it doesn't trigger booking) -->
-                      <HintTooltip v-if="canManage" :label="t('duties.shifts.delete')">
+                      <HintTooltip v-if="canManageTask" :label="t('duties.shifts.delete')">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1198,7 +1303,7 @@ onMounted(async () => {
 
     <!-- Create Shift Dialog -->
     <ResponsiveDialog v-model:open="showCreateShiftDialog">
-      <ResponsiveDialogContent>
+      <ResponsiveDialogContent data-testid="dialog-create-shift">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>{{ t('duties.shifts.create') }}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>{{
@@ -1209,7 +1314,7 @@ onMounted(async () => {
           <ResponsiveDialogBody class="space-y-4 pb-2">
             <div class="space-y-2">
               <Label>{{ t('duties.shifts.fields.title') }}</Label>
-              <Input v-model="slotForm.title" required />
+              <Input v-model="slotForm.title" data-testid="input-shift-title" required />
             </div>
             <div class="space-y-2">
               <Label>{{ t('duties.shifts.fields.description') }}</Label>
@@ -1254,18 +1359,27 @@ onMounted(async () => {
             <Button type="button" variant="outline" @click="showCreateShiftDialog = false">
               {{ t('common.actions.cancel') }}
             </Button>
-            <Button type="submit">{{ t('common.actions.create') }}</Button>
+            <Button type="submit" data-testid="btn-create-shift">{{
+              t('common.actions.create')
+            }}</Button>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
 
     <LocationFormDialog
-      v-if="sharedLocationDetail && task?.event_id"
+      v-if="sharedLocationDetail && task?.event_id && canAdminEvent"
       v-model:open="locationFormOpen"
       :event-id="task.event_id"
       :location="sharedLocationDetail"
       @saved="onLocationSaved"
+    />
+
+    <TaskManagersDialog
+      v-if="task && canAdminEvent"
+      v-model:open="showManagersDialog"
+      :task="task"
+      @changed="onManagersChanged"
     />
 
     <!-- Shift Detail Dialog -->

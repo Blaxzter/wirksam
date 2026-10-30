@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { UserRoundPlus } from '@lucide/vue'
+import { Phone, UserRoundPlus } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-
-import { useAuthStore } from '@/stores/auth'
 
 import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useFormatters } from '@/composables/useFormatters'
@@ -21,7 +19,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const authStore = useAuthStore()
 const { formatDateTime } = useFormatters()
 
 /**
@@ -85,20 +82,23 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm font-medium">{{ entry.user_name ?? '—' }}</p>
           <!--
-            Only an event admin has any business seeing a co-volunteer's email
-            or the note they left the organiser, so both stay behind the same
-            check the table they replaced used.
+            E-mail, phone and the note left for the organisers arrive only for
+            the task's organisers and people in charge (and on the viewer's own
+            row): the server leaves them out for everyone else.
           -->
-          <p
-            v-if="authStore.isAdmin && entry.user_email"
-            class="text-muted-foreground truncate text-xs"
-          >
+          <p v-if="entry.user_email" class="text-muted-foreground truncate text-xs">
             {{ entry.user_email }}
           </p>
-          <p
-            v-if="authStore.isAdmin && entry.notes"
-            class="text-muted-foreground truncate text-xs italic"
+          <a
+            v-if="entry.user_phone_number"
+            :href="`tel:${entry.user_phone_number}`"
+            class="text-muted-foreground hover:text-foreground flex w-fit max-w-full items-center gap-1 text-xs underline-offset-2 hover:underline"
+            data-testid="shift-roster-phone"
           >
+            <Phone class="size-3 shrink-0" aria-hidden="true" />
+            <span class="truncate">{{ entry.user_phone_number }}</span>
+          </a>
+          <p v-if="entry.notes" class="text-muted-foreground truncate text-xs italic">
             {{ entry.notes }}
           </p>
         </div>
