@@ -4,7 +4,6 @@ import {
   EllipsisVertical,
   MessageSquareWarning,
   Shield,
-  ShieldCheck,
   ShieldOff,
   Trash2,
   UserCheck,
@@ -37,7 +36,6 @@ const emit = defineEmits<{
   toggleActive: [user: UserRead]
   suspendReason: [user: UserRead]
   toggleAdmin: [user: UserRead]
-  toggleTaskManager: [user: UserRead]
   delete: [user: UserRead]
 }>()
 
@@ -105,18 +103,6 @@ const status = computed(() => userStatus(props.user))
           props.user.roles.includes('admin')
             ? t('admin.users.removeAdmin')
             : t('admin.users.makeAdmin')
-        }}
-      </DropdownMenuItem>
-      <DropdownMenuItem @click="emit('toggleTaskManager', props.user)">
-        <ShieldOff
-          v-if="props.user.roles.includes('task_manager')"
-          class="mr-2 h-4 w-4 text-amber-500"
-        />
-        <ShieldCheck v-else class="mr-2 h-4 w-4 text-amber-500" />
-        {{
-          props.user.roles.includes('task_manager')
-            ? t('admin.users.removeTaskManager')
-            : t('admin.users.makeTaskManager')
         }}
       </DropdownMenuItem>
       <DropdownMenuSeparator />

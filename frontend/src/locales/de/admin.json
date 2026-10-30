@@ -108,10 +108,8 @@
             "suspended": "Gesperrt"
         },
         "grantedAdmin": "Adminrolle an {name} vergeben.",
-        "grantedTaskManager": "Task-Manager-Rolle an {name} vergeben.",
         "inactive": "Inaktiv",
         "makeAdmin": "Admin machen",
-        "makeTaskManager": "Task-Manager machen",
         "ownedEvents": "Veranstaltungsgruppen: {count}",
         "ownedTasks": "Aufgaben: {count}",
         "pending": "Ausstehend",
@@ -122,9 +120,7 @@
         "rejected": "Abgelehnt",
         "rejectedToast": "Konto für {name} abgelehnt.",
         "removeAdmin": "Admin entfernen",
-        "removeTaskManager": "Task-Manager entfernen",
         "removedAdmin": "Adminrolle von {name} entfernt.",
-        "removedTaskManager": "Task-Manager-Rolle von {name} entfernt.",
         "searchPlaceholder": "Nach Name oder E-Mail suchen...",
         "sections": {
             "active": "Aktive Mitglieder",
