@@ -47,6 +47,10 @@
             "venueMap": {
                 "description": "Wo was auf der Veranstaltung ist",
                 "label": "Lageplan"
+            },
+            "vouchers": {
+                "description": "Deine Marken und dein Code",
+                "label": "Marken"
             }
         },
         "platform": "Plattform",

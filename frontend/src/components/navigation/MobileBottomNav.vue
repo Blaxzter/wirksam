@@ -13,6 +13,7 @@ import {
   Map as MapIcon,
   Menu,
   Sparkles,
+  Ticket,
   Users,
   UsersRound,
 } from '@lucide/vue'
@@ -67,6 +68,15 @@ const moreGroups = computed<MoreItem[][]>(() => {
   const event: MoreItem[] = [
     { routeName: 'home', labelKey: 'navigation.sidebar.items.home.label', icon: House },
   ]
+  // Same rule as the sidebar: once a published task earns vouchers or takes them.
+  const selected = authStore.selectedEvent
+  if ((selected?.voucher_task_count ?? 0) > 0 || (selected?.voucher_point_count ?? 0) > 0) {
+    event.push({
+      routeName: 'my-vouchers',
+      labelKey: 'navigation.sidebar.items.vouchers.label',
+      icon: Ticket,
+    })
+  }
   // Same rule as the sidebar: once the event has a team, or for whoever could
   // create the first one.
   if (showTeams.value) {
@@ -138,12 +148,16 @@ watch(
 const TASK_ROUTES = new Set(['tasks', 'task-create', 'task-edit', 'task-detail', 'task-add-shifts'])
 const BOOKING_ROUTES = new Set(['my-bookings', 'booking-detail'])
 const INBOX_ROUTES = new Set(['notifications'])
+// The redeem page is not an entry of its own in the sheet, so `moreRoutes`
+// alone would leave it with no tab lit.
+const VOUCHER_ROUTES = new Set(['my-vouchers', 'voucher-redeem'])
 
 const activeTab = computed<'tasks' | 'bookings' | 'inbox' | 'more' | null>(() => {
   const name = typeof route.name === 'string' ? route.name : ''
   if (TASK_ROUTES.has(name)) return 'tasks'
   if (BOOKING_ROUTES.has(name)) return 'bookings'
   if (INBOX_ROUTES.has(name)) return 'inbox'
+  if (VOUCHER_ROUTES.has(name)) return 'more'
   if (moreRoutes.value.has(name)) return 'more'
   return null
 })

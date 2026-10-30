@@ -120,6 +120,8 @@ const calendarRange = ref<DateRange | null>(null)
 const showShiftDialog = ref(false)
 const selectedShiftId = ref<string | null>(null)
 const selectedShiftTaskName = ref<string | null>(null)
+/** The clicked shift's task, for the rules on booking a voucher shift once it has begun. */
+const selectedShiftTask = ref<FeedTaskItem | null>(null)
 
 // Delete dialog state
 const showDeleteDialog = ref(false)
@@ -210,6 +212,7 @@ const confirmDeleteTask = async () => {
 const handleClickShift = (slotId: string, task: FeedTaskItem) => {
   selectedShiftId.value = slotId
   selectedShiftTaskName.value = task.name
+  selectedShiftTask.value = task
   showShiftDialog.value = true
 }
 
@@ -372,6 +375,8 @@ onMounted(loadTasks)
     <ShiftDetailDialog
       :shift-id="selectedShiftId"
       :task-name="selectedShiftTaskName"
+      :vouchers-per-shift="selectedShiftTask?.vouchers_per_shift ?? 0"
+      :can-manage-task="selectedShiftTask?.can_manage ?? false"
       :open="showShiftDialog"
       @update:open="showShiftDialog = $event"
       @booking-updated="loadTasks"

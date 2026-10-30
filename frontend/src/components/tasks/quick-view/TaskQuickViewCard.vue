@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Lock, MapPin, ShieldCheck, Tag, Trash2, UserCheck, UsersRound } from '@lucide/vue'
+import {
+  Lock,
+  MapPin,
+  ScanLine,
+  ShieldCheck,
+  Tag,
+  Ticket,
+  Trash2,
+  UserCheck,
+  UsersRound,
+} from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
@@ -269,6 +279,36 @@ watch(
             {{ t('duties.tasks.managers.label') }}
           </Badge>
 
+          <div
+            v-if="(task.vouchers_per_shift ?? 0) > 0 || task.is_voucher_point"
+            class="flex flex-wrap gap-1"
+          >
+            <Badge
+              v-if="(task.vouchers_per_shift ?? 0) > 0"
+              variant="secondary"
+              class="text-[11px]"
+              :data-testid="`task-vouchers-badge-${task.id}`"
+            >
+              <Ticket aria-hidden="true" />
+              {{
+                t(
+                  'vouchers.task.perShift',
+                  { n: task.vouchers_per_shift },
+                  task.vouchers_per_shift ?? 0,
+                )
+              }}
+            </Badge>
+            <Badge
+              v-if="task.is_voucher_point"
+              variant="outline"
+              class="text-[11px]"
+              :data-testid="`task-voucher-point-badge-${task.id}`"
+            >
+              <ScanLine aria-hidden="true" />
+              {{ t('vouchers.task.point') }}
+            </Badge>
+          </div>
+
           <p v-if="task.description" class="text-xs text-muted-foreground line-clamp-2 break-words">
             {{ task.description }}
           </p>
@@ -324,6 +364,7 @@ watch(
           :expanded="expanded"
           :hide-full-shifts="hideFullShifts"
           :team-name="task.team_name"
+          :book-before-start="(task.vouchers_per_shift ?? 0) > 0 && !canManage"
           :has-more-next="hasMoreNext"
           :has-more-previous="hasMorePrevious"
           :loading-next="loadingNext"

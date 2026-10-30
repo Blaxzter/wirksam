@@ -29,6 +29,7 @@ import AttentionStrip from '@/components/dashboard/AttentionStrip.vue'
 import NextShiftCard from '@/components/dashboard/NextShiftCard.vue'
 import ShiftRow from '@/components/dashboard/ShiftRow.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
+import MyVouchersCard from '@/components/vouchers/MyVouchersCard.vue'
 
 import type { DashboardFeedResponse, DashboardOpenShift, DashboardShift } from '@/client'
 import { toastApiError } from '@/lib/api-errors'
@@ -150,6 +151,9 @@ onMounted(loadFeed)
         @open="openShiftDetail($event.shift_id)"
         @browse="goBrowseOpenShifts"
       />
+
+      <!-- Hides itself in an event without vouchers -->
+      <MyVouchersCard />
 
       <!--
         `items-start` so a short list does not stretch into a void beside a long

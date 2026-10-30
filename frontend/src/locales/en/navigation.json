@@ -47,6 +47,10 @@
             "venueMap": {
                 "description": "Where things are at the event",
                 "label": "Map"
+            },
+            "vouchers": {
+                "description": "Your vouchers and your code",
+                "label": "Vouchers"
             }
         },
         "platform": "Platform",

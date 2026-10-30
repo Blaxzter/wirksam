@@ -45,6 +45,7 @@ import TeamPicker from '@/components/events/teams/TeamPicker.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
 import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
+import TaskVoucherSettingsFields from '@/components/tasks/vouchers/TaskVoucherSettingsFields.vue'
 
 import type { EventListResponse, EventMemberRead, EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -68,6 +69,10 @@ const category = ref('')
 const teamId = ref<string | null>(null)
 /** People in charge, picked from the chosen event's members. */
 const managers = ref<EventMemberRead[]>([])
+// Vouchers: how many a shift earns and whether the task takes them.
+const vouchersPerShift = ref(0)
+const isVoucherPoint = ref(false)
+const isVoucherDesk = ref(false)
 const eventMembers = ref<EventMemberRead[]>([])
 
 // Task event
@@ -437,6 +442,9 @@ const handleSubmit = async () => {
       category: category.value || null,
       team_id: locationEventId.value ? teamId.value : null,
       manager_ids: locationEventId.value ? managers.value.map((m) => m.user_id) : [],
+      vouchers_per_shift: vouchersPerShift.value,
+      is_voucher_point: isVoucherPoint.value,
+      is_voucher_desk: isVoucherPoint.value && isVoucherDesk.value,
       schedule: {
         default_start_time: defaultStartTime.value + ':00',
         default_end_time: defaultEndTime.value + ':00',
@@ -609,6 +617,23 @@ const handleSubmit = async () => {
                   </Badge>
                 </li>
               </ul>
+            </section>
+            <!-- Vouchers: only meaningful inside an event -->
+            <section
+              v-if="eventMode !== 'none'"
+              class="space-y-3 border-t pt-4"
+              data-testid="section-task-vouchers"
+              aria-labelledby="task-vouchers-heading"
+            >
+              <h3 id="task-vouchers-heading" class="font-semibold">
+                {{ t('vouchers.settings.title') }}
+              </h3>
+              <TaskVoucherSettingsFields
+                v-model:vouchers-per-shift="vouchersPerShift"
+                v-model:is-point="isVoucherPoint"
+                v-model:is-desk="isVoucherDesk"
+                id-prefix="task-create-vouchers"
+              />
             </section>
             <div class="flex justify-end pt-2">
               <Button :disabled="!isCurrentSectionValid" @click="goToNext">{{

@@ -43,6 +43,7 @@ import ReminderEntryRow from '@/components/notifications/ReminderEntryRow.vue'
 
 import type { BookingRead, ShiftRead, ShiftBookingEntry } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { shiftHasEnded } from '@/lib/shift-time'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -104,11 +105,11 @@ const timeDisplay = computed(() => {
 
 const isConfirmed = computed(() => booking.value?.status === 'confirmed')
 
+/** Over, so it can no longer be cancelled (the server says `booking.shift_over`). */
 const isInPast = computed(() => {
   const s = shift.value
   if (!s) return false
-  const slotDate = new Date(s.date + 'T' + (s.end_time ?? s.start_time ?? '23:59'))
-  return slotDate < new Date()
+  return shiftHasEnded(s.date, s.start_time, s.end_time)
 })
 
 // ── Data loading ──────────────────────────────────────────────
@@ -525,7 +526,7 @@ onMounted(loadData)
       </Card>
 
       <!-- ── Danger Zone ─────────────────────────────────────── -->
-      <div v-if="isConfirmed" class="flex justify-end pt-2">
+      <div v-if="isConfirmed && !isInPast" class="flex justify-end pt-2">
         <Button
           data-testid="btn-cancel-booking"
           variant="destructive"

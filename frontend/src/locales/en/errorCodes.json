@@ -128,6 +128,22 @@
         "limit_reached": "You can keep up to 20 templates. Delete one you no longer need first: under “+ Add map”, choose “Start from a template” and open the template’s menu (⋮).",
         "not_found": "That template could not be found. It may have been deleted in the meantime."
     },
+    "voucher": {
+        "code_expired": "This code has expired. Ask for a new one.",
+        "code_invalid": "This code isn't valid. Ask them to show their code again.",
+        "code_other_event": "This code is for a different event. Ask them to switch to this event in the app and show a new code.",
+        "code_used": "This code has already been used. Ask for a new one.",
+        "entry_not_editable": "A redemption can't be changed. Add a correction instead.",
+        "entry_not_found": "That entry could not be found. It may have been deleted.",
+        "insufficient": "Not enough vouchers.",
+        "insufficient_with": "Not enough vouchers: only {n} left.",
+        "manual_not_allowed": "Only the people in charge, the organisers and the staff of a volunteer desk can redeem without a code.",
+        "not_a_point": "Vouchers can't be redeemed at this task.",
+        "not_allowed": "You can only take vouchers here while you are on shift here, or if you are in charge.",
+        "pass_not_found": "That code is no longer there. Show a new one.",
+        "rate_limited": "Too many tries. Wait a moment and try again.",
+        "request_conflict": "Something went wrong with this redemption. Close it and scan again."
+    },
     "work_log": {
         "not_found": "That entry could not be found. It may have been deleted already."
     }

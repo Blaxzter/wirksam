@@ -128,6 +128,22 @@
         "limit_reached": "Du kannst bis zu 20 Vorlagen behalten. Lösche zuerst eine, die du nicht mehr brauchst: Unter „+ Plan hinzufügen“ wählst du „Vorlage verwenden“ und öffnest das Menü (⋮) der Vorlage.",
         "not_found": "Diese Vorlage wurde nicht gefunden. Vielleicht wurde sie inzwischen gelöscht."
     },
+    "voucher": {
+        "code_expired": "Dieser Code ist abgelaufen. Bitte um einen neuen.",
+        "code_invalid": "Dieser Code ist ungültig. Bitte darum, den Code noch einmal zu zeigen.",
+        "code_other_event": "Dieser Code gehört zu einer anderen Veranstaltung. Bitte darum, in der App zu dieser Veranstaltung zu wechseln und einen neuen Code zu zeigen.",
+        "code_used": "Dieser Code wurde schon benutzt. Bitte um einen neuen.",
+        "entry_not_editable": "Eine Einlösung lässt sich nicht ändern. Füg stattdessen eine Korrektur hinzu.",
+        "entry_not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er gelöscht.",
+        "insufficient": "Nicht genug Marken.",
+        "insufficient_with": "Nicht genug Marken: nur noch {n} übrig.",
+        "manual_not_allowed": "Ohne Code einlösen können nur die Verantwortlichen, die Organisator:innen und wer an einer Ausgabestelle Schicht hat.",
+        "not_a_point": "Bei dieser Aufgabe können keine Marken eingelöst werden.",
+        "not_allowed": "Marken annehmen kannst du hier nur während deiner Schicht hier oder wenn du verantwortlich bist.",
+        "pass_not_found": "Diesen Code gibt es nicht mehr. Zeig einen neuen.",
+        "rate_limited": "Zu viele Versuche. Warte kurz und versuch es noch einmal.",
+        "request_conflict": "Bei dieser Einlösung ist etwas schiefgelaufen. Schließ sie und scanne noch einmal."
+    },
     "work_log": {
         "not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er bereits gelöscht."
     }

@@ -43,6 +43,7 @@
     "markdown-it": "^14.3.3",
     "motion-v": "^2.3.0",
     "pinia": "^4.0.2",
+    "qr-scanner": "1.4.2",
     "qrcode": "^1.5.4",
     "reka-ui": "^2.10.1",
     "simple-icons": "^16.27.1",

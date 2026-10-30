@@ -110,6 +110,16 @@ const timeConflictMessage = (problem: ProblemDetailsWithCode): string | null => 
   return t('errorCodes.booking.time_conflict_with', { name, when })
 }
 
+/**
+ * `voucher.insufficient` carries how many the volunteer has, so the redeemer
+ * can pick a smaller amount instead of guessing.
+ */
+const insufficientMessage = (problem: ProblemDetailsWithCode): string | null => {
+  const available = (problem as Record<string, unknown>).available
+  if (typeof available !== 'number') return null
+  return t('errorCodes.voucher.insufficient_with', { n: available })
+}
+
 const messageFromProblemDetails = (problem: ProblemDetailsWithCode): string => {
   const validationCodeMessage = messageFromCode(codeFromValidationErrors(problem.errors))
   if (validationCodeMessage) return validationCodeMessage
@@ -122,6 +132,10 @@ const messageFromProblemDetails = (problem: ProblemDetailsWithCode): string => {
   if (code === 'booking.time_conflict') {
     const conflict = timeConflictMessage(problem)
     if (conflict) return conflict
+  }
+  if (code === 'voucher.insufficient') {
+    const insufficient = insufficientMessage(problem)
+    if (insufficient) return insufficient
   }
   const codeMessage = messageFromCode(code)
   if (codeMessage) return codeMessage

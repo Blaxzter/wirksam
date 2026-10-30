@@ -273,6 +273,33 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           },
         },
         {
+          // `:eventId?` falls back to the selected event. Exempt from the
+          // expired-event guard (router/index.ts), so a volunteer can still
+          // look up their vouchers the morning after.
+          path: 'vouchers/:eventId?',
+          name: 'my-vouchers',
+          component: () => import('@/views/vouchers/MyVouchersView.vue'),
+          meta: {
+            breadcrumbs: [{ title: 'My vouchers', titleKey: 'vouchers.myTitle' }],
+          },
+        },
+        {
+          // Not `requiresEventManager`: volunteers on shift at a stand redeem
+          // here too. The static `redeem` segment outranks `vouchers/:eventId?`.
+          // `?task=` picks the point; the fixed view key keeps a change of it
+          // from remounting the page, which would restart the camera.
+          path: 'vouchers/redeem/:eventId?',
+          name: 'voucher-redeem',
+          component: () => import('@/views/vouchers/RedeemVouchersView.vue'),
+          meta: {
+            routerViewKey: 'voucher-redeem',
+            breadcrumbs: [
+              { title: 'My vouchers', titleKey: 'vouchers.myTitle', to: { name: 'my-vouchers' } },
+              { title: 'Redeem vouchers', titleKey: 'vouchers.redeem.title' },
+            ],
+          },
+        },
+        {
           path: 'bookings/:bookingId',
           name: 'booking-detail',
           component: () => import('@/views/bookings/BookingDetailView.vue'),

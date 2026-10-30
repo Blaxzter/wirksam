@@ -44,6 +44,7 @@ import type {
   ShiftRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
 
 const props = withDefaults(
   defineProps<{
@@ -58,9 +59,17 @@ const props = withDefaults(
     showTaskLink?: boolean
     /** Stack above another open dialog (e.g. the map's location sheet). */
     priority?: boolean
+    /**
+     * The task's vouchers per shift. Such a shift can only be booked before it
+     * starts (`booking.shift_started`), unless the viewer can manage the task.
+     * Unknown (omitted) means the server alone decides.
+     */
+    vouchersPerShift?: number | null
+    /** The viewer is an organiser or in charge of the task. */
+    canManageTask?: boolean
     open: boolean
   }>(),
-  { showTaskLink: true, priority: false },
+  { showTaskLink: true, priority: false, vouchersPerShift: null, canManageTask: false },
 )
 
 const emit = defineEmits<{
@@ -254,8 +263,27 @@ const onTeamJoined = (status: 'approved' | 'pending') => {
   emit('team-joined', status)
 }
 
+/** Over: nothing can be booked or cancelled any more (`booking.shift_over`). */
+const hasEnded = computed(() => {
+  const s = resolvedShift.value
+  return !!s && shiftHasEnded(s.date, s.start_time, s.end_time)
+})
+
+/** A voucher shift that has begun, for someone who does not run the task. */
+const startedForVouchers = computed(() => {
+  const s = resolvedShift.value
+  return (
+    !!s &&
+    (props.vouchersPerShift ?? 0) > 0 &&
+    !props.canManageTask &&
+    shiftHasStarted(s.date, s.start_time)
+  )
+})
+
 const canBook = computed(() => {
   return (
+    !hasEnded.value &&
+    !startedForVouchers.value &&
     !resolvedMyBooking.value &&
     !bookedByMeOnServer.value &&
     !isShiftFull.value &&
@@ -451,7 +479,21 @@ const navigateToBooking = () => {
         <div class="hidden flex-1 md:block" />
 
         <p
-          v-if="isShiftFull && !resolvedMyBooking"
+          v-if="hasEnded && !resolvedMyBooking"
+          data-testid="shift-over-note"
+          class="text-muted-foreground flex-1 text-sm md:flex-none"
+        >
+          {{ t('duties.shifts.detail.over') }}
+        </p>
+        <p
+          v-else-if="startedForVouchers && !resolvedMyBooking"
+          data-testid="shift-started-note"
+          class="text-muted-foreground flex-1 text-sm md:flex-none"
+        >
+          {{ t('vouchers.task.startedNote') }}
+        </p>
+        <p
+          v-else-if="isShiftFull && !resolvedMyBooking"
           class="text-muted-foreground flex-1 text-sm md:flex-none"
         >
           {{ t('duties.shifts.detail.fullyBooked') }}
@@ -497,7 +539,7 @@ const navigateToBooking = () => {
           {{ t('duties.shifts.book') }}
         </Button>
         <Button
-          v-if="resolvedMyBooking"
+          v-if="resolvedMyBooking && !hasEnded"
           data-testid="btn-cancel-shift-booking"
           variant="destructive"
           class="h-10 flex-1 md:h-9 md:flex-none"

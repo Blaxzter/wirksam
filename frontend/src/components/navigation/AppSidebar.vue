@@ -12,6 +12,7 @@ import {
   House,
   Lock,
   Map as MapIcon,
+  Ticket,
   Users,
   UsersRound,
 } from '@lucide/vue'
@@ -158,6 +159,12 @@ const showTeams = computed(() => {
 /** Team requests this user may decide in the selected event. */
 const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
 
+/** Once a published task earns vouchers or takes them; until then nothing to show. */
+const showVouchers = computed(() => {
+  const event = authStore.selectedEvent
+  return (event?.voucher_task_count ?? 0) > 0 || (event?.voucher_point_count ?? 0) > 0
+})
+
 const navMain = computed(() => {
   const eventItems: NavSubItem[] = sidebarStore.tasks.map((e) => ({
     title: e.name,
@@ -198,6 +205,16 @@ const navMain = computed(() => {
       isActive: bookingItems.length > 0,
       items: bookingItems,
     },
+    ...(showVouchers.value
+      ? [
+          {
+            title: 'Vouchers',
+            titleKey: 'navigation.sidebar.items.vouchers.label',
+            icon: Ticket,
+            routeName: 'my-vouchers',
+          },
+        ]
+      : []),
     {
       title: 'Availability',
       titleKey: 'navigation.sidebar.items.availability.label',

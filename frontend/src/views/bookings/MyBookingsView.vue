@@ -31,9 +31,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import MyHoursCard from '@/components/bookings/MyHoursCard.vue'
+import MyVouchersCard from '@/components/vouchers/MyVouchersCard.vue'
 
 import type { BookingReadWithShift, MyBookingsListResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { shiftHasEnded } from '@/lib/shift-time'
 
 const { t, locale } = useI18n()
 const { formatTime, formatDateLabel } = useFormatters()
@@ -45,6 +47,7 @@ const route = useRoute()
 const bookings = ref<BookingReadWithShift[]>([])
 const loading = ref(false)
 const hoursCard = ref<InstanceType<typeof MyHoursCard> | null>(null)
+const vouchersCard = ref<InstanceType<typeof MyVouchersCard> | null>(null)
 
 const openBookingDetail = (booking: BookingReadWithShift) => {
   router.push({ name: 'booking-detail', params: { bookingId: booking.id } })
@@ -252,10 +255,17 @@ const handleCancel = async (booking: BookingReadWithShift) => {
   try {
     await del({ url: `/bookings/${booking.id}` })
     toast.success(t('duties.bookings.cancelSuccess'))
-    await Promise.all([loadBookings(), hoursCard.value?.reload()])
+    await Promise.all([loadBookings(), hoursCard.value?.reload(), vouchersCard.value?.reload()])
   } catch (error) {
     toastApiError(error)
   }
+}
+
+/** A shift that is over can no longer be cancelled (the server says `booking.shift_over`). */
+const canCancel = (booking: BookingReadWithShift) => {
+  if (booking.status !== 'confirmed') return false
+  const shift = booking.shift
+  return !shift || !shiftHasEnded(shift.date, shift.start_time, shift.end_time)
 }
 
 const handleDismiss = async (booking: BookingReadWithShift) => {
@@ -338,6 +348,7 @@ onMounted(loadBookings)
     </div>
 
     <MyHoursCard ref="hoursCard" />
+    <MyVouchersCard ref="vouchersCard" />
 
     <!-- Search & Filter -->
     <div class="flex flex-wrap items-center gap-4">
@@ -490,7 +501,7 @@ onMounted(loadBookings)
                 <div class="flex-1" />
 
                 <!-- Cancel button -->
-                <TooltipProvider v-if="booking.status === 'confirmed'" :delay-duration="300">
+                <TooltipProvider v-if="canCancel(booking)" :delay-duration="300">
                   <Tooltip>
                     <TooltipTrigger as-child>
                       <Button

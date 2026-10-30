@@ -17,7 +17,9 @@ import {
   Pencil,
   Plus,
   Printer,
+  ScanLine,
   Tag,
+  Ticket,
   Trash2,
   UserMinus,
   UsersRound,
@@ -67,6 +69,7 @@ import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
 import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
 import TaskManagersDialog from '@/components/tasks/managers/TaskManagersDialog.vue'
 import TaskManagersInline from '@/components/tasks/managers/TaskManagersInline.vue'
+import TaskVoucherSettingsDialog from '@/components/tasks/vouchers/TaskVoucherSettingsDialog.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
@@ -82,6 +85,7 @@ import type {
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { formatDate } from '@/lib/format'
+import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
 import { sharedLocationId as sharedLocationIdOf } from '@/lib/venue-map'
 
 const { t } = useI18n()
@@ -109,6 +113,30 @@ const isManagerOnly = computed(
 )
 
 const showManagersDialog = ref(false)
+const showVoucherSettings = ref(false)
+
+/** A place that takes vouchers, and the viewer may take them there right now. */
+const canRedeemHere = computed(() => !!task.value?.is_voucher_point && !!task.value?.can_redeem)
+/** Always the task's own event, which need not be the selected one. */
+const redeemRoute = computed(() => ({
+  name: 'voucher-redeem',
+  params: { eventId: task.value?.event_id ?? undefined },
+  query: { task: task.value?.id },
+}))
+
+/**
+ * A voucher shift that has begun can no longer be booked by someone who does
+ * not run the task (`booking.shift_started`): vouchers are a flat amount per
+ * shift, so a late booking would be paid in full.
+ */
+const startedForVouchers = (shift: ShiftRead) =>
+  (task.value?.vouchers_per_shift ?? 0) > 0 &&
+  !canManageTask.value &&
+  shiftHasStarted(shift.date, shift.start_time)
+
+const onVoucherSettingsSaved = (saved: TaskRead) => {
+  task.value = saved
+}
 
 /**
  * The team this task is reserved for, from the task itself: whether the
@@ -391,6 +419,15 @@ const handleShiftClick = async (shift: ShiftRead) => {
   busyShiftId.value = shift.id
 
   try {
+    // Over, or a voucher shift already under way: nothing to book or cancel
+    // here, so show the shift instead of offering what the server refuses.
+    if (
+      shiftHasEnded(shift.date, shift.start_time, shift.end_time) ||
+      (!myBookedShiftIds.value.has(shift.id) && startedForVouchers(shift))
+    ) {
+      openShiftDetail(shift)
+      return
+    }
     if (myBookedShiftIds.value.has(shift.id)) {
       const booking = getBookingForShift(shift.id)
       if (!booking) return
@@ -529,6 +566,11 @@ const handleStatusChange = async (status: 'draft' | 'published' | 'archived') =>
     })
     task.value = response.data
     toast.success(t(`duties.tasks.statuses.${status}`))
+    // The event's voucher counts follow published tasks only.
+    const tk = response.data
+    if (tk.event_id && ((tk.vouchers_per_shift ?? 0) > 0 || tk.is_voucher_point)) {
+      void authStore.refreshSelectedEvent(tk.event_id)
+    }
   } catch (error) {
     toastApiError(error)
   }
@@ -768,11 +810,37 @@ onMounted(async () => {
                 :managers="task.managers"
                 :you-are-in-charge="isManagerOnly"
               />
+              <Badge
+                v-if="(task.vouchers_per_shift ?? 0) > 0"
+                variant="secondary"
+                data-testid="task-vouchers-per-shift"
+              >
+                <Ticket aria-hidden="true" />
+                {{
+                  t(
+                    'vouchers.task.perShift',
+                    { n: task.vouchers_per_shift },
+                    task.vouchers_per_shift ?? 0,
+                  )
+                }}
+              </Badge>
+              <Badge v-if="task.is_voucher_point" variant="outline" data-testid="task-voucher-point">
+                <ScanLine aria-hidden="true" />
+                {{ t('vouchers.task.point') }}
+              </Badge>
             </div>
           </div>
 
           <!-- Desktop actions -->
           <div class="hidden sm:flex gap-2 shrink-0">
+            <Button
+              v-if="canRedeemHere"
+              data-testid="btn-redeem-vouchers"
+              @click="router.push(redeemRoute)"
+            >
+              <ScanLine class="mr-2 h-4 w-4" />
+              {{ t('vouchers.redeem.open') }}
+            </Button>
             <HintTooltip :label="t('print.printTask')">
               <Button
                 data-testid="btn-print"
@@ -841,14 +909,22 @@ onMounted(async () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  v-if="canAdminEvent"
-                  data-testid="btn-task-managers"
-                  @click="showManagersDialog = true"
-                >
-                  <UsersRound class="mr-2 h-4 w-4" />
-                  {{ t('duties.tasks.managers.manage') }}
-                </DropdownMenuItem>
+                <template v-if="canAdminEvent">
+                  <DropdownMenuItem
+                    data-testid="btn-task-managers"
+                    @click="showManagersDialog = true"
+                  >
+                    <UsersRound class="mr-2 h-4 w-4" />
+                    {{ t('duties.tasks.managers.manage') }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="btn-task-vouchers"
+                    @click="showVoucherSettings = true"
+                  >
+                    <Ticket class="mr-2 h-4 w-4" />
+                    {{ t('vouchers.settings.open') }}
+                  </DropdownMenuItem>
+                </template>
                 <DropdownMenuItem
                   v-else
                   class="text-destructive focus:text-destructive"
@@ -871,6 +947,10 @@ onMounted(async () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem v-if="canRedeemHere" @click="router.push(redeemRoute)">
+                  <ScanLine class="mr-2 h-4 w-4" />
+                  {{ t('vouchers.redeem.open') }}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   @click="router.push({ name: 'print-task', params: { eventId: task!.id } })"
                 >
@@ -905,6 +985,13 @@ onMounted(async () => {
                     <UsersRound class="mr-2 h-4 w-4" />
                     {{ t('duties.tasks.managers.manage') }}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    data-testid="btn-task-vouchers-mobile"
+                    @click="showVoucherSettings = true"
+                  >
+                    <Ticket class="mr-2 h-4 w-4" />
+                    {{ t('vouchers.settings.open') }}
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem class="text-destructive" @click="handleDeleteTask">
                     <Trash2 class="mr-2 h-4 w-4" />
@@ -926,6 +1013,18 @@ onMounted(async () => {
             </DropdownMenu>
           </div>
         </div>
+
+        <!-- At a stand, taking vouchers is the main thing to do on a phone -->
+        <Button
+          v-if="canRedeemHere"
+          size="lg"
+          class="w-full sm:hidden"
+          data-testid="btn-redeem-vouchers-mobile"
+          @click="router.push(redeemRoute)"
+        >
+          <ScanLine class="mr-2 h-4 w-4" />
+          {{ t('vouchers.redeem.open') }}
+        </Button>
 
         <!-- Where it happens: mini map of the shared location -->
         <div
@@ -1391,12 +1490,21 @@ onMounted(async () => {
       :reload="onManagersChanged"
     />
 
+    <TaskVoucherSettingsDialog
+      v-if="task && canAdminEvent"
+      v-model:open="showVoucherSettings"
+      :task="task"
+      @saved="onVoucherSettingsSaved"
+    />
+
     <!-- Shift Detail Dialog -->
     <ShiftDetailDialog
       v-model:open="showShiftDetail"
       :shift="selectedShift"
       :task-name="task?.name"
       :show-task-link="false"
+      :vouchers-per-shift="task?.vouchers_per_shift ?? 0"
+      :can-manage-task="canManageTask"
       :my-booking="selectedShift ? (getBookingForShift(selectedShift.id) ?? null) : null"
       @booking-updated="reloadShiftsAndBookings"
       @team-joined="onTeamJoined"

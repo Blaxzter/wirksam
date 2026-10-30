@@ -13,6 +13,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import EventEditForm from '@/components/events/EventEditForm.vue'
 import EventHours from '@/components/events/EventHours.vue'
+import EventVouchers from '@/components/events/EventVouchers.vue'
 import EventInvitations from '@/components/events/EventInvitations.vue'
 import EventJoinRequests from '@/components/events/EventJoinRequests.vue'
 import EventMembers from '@/components/events/EventMembers.vue'
@@ -102,6 +103,12 @@ const shownTab = computed<Tab>(() => {
     return 'details'
   return activeTab.value
 })
+
+/** Once a published task earns vouchers or takes them, the organisers get the overview. */
+const usesVouchers = computed(
+  () =>
+    (event.value?.voucher_task_count ?? 0) > 0 || (event.value?.voucher_point_count ?? 0) > 0,
+)
 
 /** Requests a lead or admin could decide, across every team they manage. */
 const teamRequestCount = computed(() => event.value?.pending_team_request_count ?? 0)
@@ -356,6 +363,11 @@ onMounted(loadEvent)
           :hours="hours"
           :members="members"
           @updated="loadHours"
+        />
+        <EventVouchers
+          v-if="canManage && usesVouchers"
+          :event-id="targetEventId"
+          :members="members"
         />
         <EventInvitations
           v-if="canManage"
