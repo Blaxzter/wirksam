@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.api.api import api_router
 from app.core.config import settings
@@ -157,6 +158,12 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Outermost, so every layer below (request log, rate limits, the address a
+# session records) sees the client rather than Traefik. The app applies it
+# itself, rather than relying on uvicorn's flag, so tests and `just dev` go
+# through the same code as production.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.FORWARDED_ALLOW_IPS)
 
 ERROR_RESPONSES_TYPED: dict[int | str, dict[str, Any]] = ERROR_RESPONSES  # type: ignore[assignment]
 

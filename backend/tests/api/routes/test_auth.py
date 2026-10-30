@@ -1778,6 +1778,43 @@ class TestSessionList:
         assert rows[0]["ip_address"] == "203.0.113.7"
         assert rows[0]["is_current"] is True
 
+    async def test_records_the_address_the_proxy_saw_not_one_the_caller_wrote(
+        self, unauthenticated_client: AsyncClient, test_user: User
+    ) -> None:
+        """Test that a caller cannot put its own address in front of the real one.
+
+        Traefik appends the address it saw; whatever the caller sent comes
+        before it, so only the rightmost untrusted entry is believable.
+        """
+        assert test_user.email is not None
+        signed_in = await _sign_in(
+            unauthenticated_client,
+            email=test_user.email,
+            ip_address="198.51.100.66, 203.0.113.7",
+        )
+
+        response = await unauthenticated_client.get(
+            f"{AUTH}/sessions", headers=signed_in.headers
+        )
+
+        assert response.json()[0]["ip_address"] == "203.0.113.7"
+
+    async def test_ignores_the_header_from_a_caller_that_is_not_a_proxy(
+        self, unauthenticated_app: FastAPI, test_user: User
+    ) -> None:
+        """Test that X-Forwarded-For from a public address is not believed."""
+        assert test_user.email is not None
+        transport = ASGITransport(
+            app=unauthenticated_app, client=("198.51.100.9", 40000)
+        )
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            signed_in = await _sign_in(
+                client, email=test_user.email, ip_address="203.0.113.7"
+            )
+            response = await client.get(f"{AUTH}/sessions", headers=signed_in.headers)
+
+        assert response.json()[0]["ip_address"] == "198.51.100.9"
+
     async def test_flags_only_the_session_making_the_request(
         self,
         unauthenticated_client: AsyncClient,

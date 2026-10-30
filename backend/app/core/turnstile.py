@@ -28,7 +28,7 @@ Three decisions worth keeping:
 
 * **``remoteip`` is deliberately not sent.** It is optional, and when it *is*
   sent Cloudflare requires it to match the address that solved the challenge.
-  The only address available here is ``client_ip``'s reading of
+  The only address available here is the one ``client_ip`` derives from
   ``X-Forwarded-For``, and on a dual-stack client the browser routinely solves
   the challenge over IPv6 and posts the form over IPv4 (or the reverse), which
   would compare two genuinely different addresses and reject a real person.
