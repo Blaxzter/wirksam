@@ -8,7 +8,7 @@
  * the heading (drawn by `AuthShell`), the only ways out are the two links below
  * the form, one to recover a forgotten password and one to create an account.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { EyeIcon, EyeOffIcon, LoaderIcon, LogInIcon } from '@lucide/vue'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -25,6 +25,7 @@ import AuthShell from '@/components/auth/AuthShell.vue'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import FormError from '@/components/utils/FormError.vue'
 
 import { zLoginRequest } from '@/client/zod.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -37,6 +38,8 @@ const { login } = useAuth()
 const busy = ref(false)
 const showPassword = ref(false)
 const formRef = ref<HTMLFormElement | null>(null)
+/** The server's refusal of the last attempt, shown above the submit button. */
+const submitError = ref<string | null>(null)
 
 /**
  * Where to land once signed in.
@@ -72,10 +75,14 @@ const loginSchema = computed(() => {
   return toTypedSchema(zLoginRequest.extend({ password: z.string().min(1) }))
 })
 
-const { errors, handleSubmit } = useForm({
+const { errors, values, handleSubmit } = useForm({
   validationSchema: loginSchema,
   initialValues: { email: '', password: '' },
 })
+
+// The refusal was about what was typed then; once either field changes it no
+// longer describes the form, and leaving it up reads as a verdict on the fix.
+watch(values, () => (submitError.value = null), { deep: true })
 
 /**
  * Live-validate a field only once it is already showing an error.
@@ -106,16 +113,17 @@ function focusFirstInvalid(form: HTMLFormElement | null, invalid: Record<string,
 }
 
 const onSubmit = handleSubmit(
-  async (values) => {
+  async (formValues) => {
     busy.value = true
+    submitError.value = null
     try {
-      await login(values)
+      await login(formValues)
       toast.success(t('auth.login.success'))
       // Replace rather than push: the back button should return to wherever the
       // visitor came from, not to a sign-in form they have already used.
       await router.replace(redirectTarget.value)
     } catch (error) {
-      toastApiError(error)
+      submitError.value = toastApiError(error).message
     } finally {
       busy.value = false
     }
@@ -193,6 +201,8 @@ const onSubmit = handleSubmit(
           <FormMessage />
         </FormItem>
       </FormField>
+
+      <FormError :message="submitError" />
 
       <Button class="w-full" type="submit" :disabled="busy" data-testid="btn-login">
         <LoaderIcon v-if="busy" class="size-4 animate-spin" />

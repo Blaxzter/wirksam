@@ -9,7 +9,7 @@
  * into a membership oracle — type an address, learn whether that person uses
  * the service.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { KeyRoundIcon, LoaderIcon, MailCheckIcon } from '@lucide/vue'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -20,6 +20,7 @@ import AuthShell from '@/components/auth/AuthShell.vue'
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import FormError from '@/components/utils/FormError.vue'
 
 import { client } from '@/client/client.gen'
 import { zForgotPasswordRequest } from '@/client/zod.gen'
@@ -31,6 +32,8 @@ const busy = ref(false)
 /** The address the confirmation is about — never a claim that it was found. */
 const submittedEmail = ref<string | null>(null)
 const formRef = ref<HTMLFormElement | null>(null)
+/** The server's refusal of the last attempt, shown above the submit button. */
+const submitError = ref<string | null>(null)
 
 /** Wrapped so a language switch re-runs validation — see `LoginView.vue`. */
 const forgotSchema = computed(() => {
@@ -38,10 +41,13 @@ const forgotSchema = computed(() => {
   return toTypedSchema(zForgotPasswordRequest)
 })
 
-const { errors, handleSubmit, resetForm } = useForm({
+const { errors, values, handleSubmit, resetForm } = useForm({
   validationSchema: forgotSchema,
   initialValues: { email: '' },
 })
+
+/** Cleared once the address changes — see `LoginView.vue`. */
+watch(values, () => (submitError.value = null), { deep: true })
 
 const liveValidate = (field: 'email') => Boolean(errors.value[field])
 
@@ -63,21 +69,22 @@ function focusFirstInvalid(form: HTMLFormElement | null, invalid: Record<string,
 }
 
 const onSubmit = handleSubmit(
-  async (values) => {
+  async (formValues) => {
     busy.value = true
+    submitError.value = null
     try {
       // A public endpoint: no bearer token to attach, so this goes straight to
       // the generated client rather than through `useAuthenticatedClient`, which
       // would throw for the anonymous visitor this page exists for.
       await client.post<unknown, unknown, true>({
         url: '/auth/forgot-password',
-        body: values,
+        body: formValues,
         throwOnError: true,
       })
-      submittedEmail.value = values.email
+      submittedEmail.value = formValues.email
     } catch (error) {
       // Reached by a rate limit or an outage — never by "no such address".
-      toastApiError(error)
+      submitError.value = toastApiError(error).message
     } finally {
       busy.value = false
     }
@@ -152,6 +159,8 @@ function startOver() {
             <FormMessage />
           </FormItem>
         </FormField>
+
+        <FormError :message="submitError" />
 
         <Button
           class="w-full"

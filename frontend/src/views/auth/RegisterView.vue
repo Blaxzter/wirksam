@@ -12,7 +12,7 @@
  * as a gate; an unverified account can already do everything, it just cannot be
  * reached by email yet.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { EyeIcon, EyeOffIcon, LoaderIcon, UserPlusIcon } from '@lucide/vue'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -41,6 +41,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import FormError from '@/components/utils/FormError.vue'
 
 import { zRegisterRequest } from '@/client/zod.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -75,6 +76,8 @@ const { register } = useAuth()
 const busy = ref(false)
 const showPassword = ref(false)
 const formRef = ref<HTMLFormElement | null>(null)
+/** The server's refusal of the last attempt, shown above the submit button. */
+const submitError = ref<string | null>(null)
 
 /**
  * The bot check, present only where the deployment configured one.
@@ -190,6 +193,9 @@ const { errors, values, handleSubmit } = useForm({
   initialValues: { email: '', password: '', name: '', confirm_password: '' },
 })
 
+/** Cleared once any field changes — see `LoginView.vue`. */
+watch(values, () => (submitError.value = null), { deep: true })
+
 const passwordLongEnough = computed(
   () => String(values.password ?? '').length >= PASSWORD_MIN_LENGTH,
 )
@@ -218,6 +224,7 @@ function focusFirstInvalid(form: HTMLFormElement | null, invalid: Record<string,
 const onSubmit = handleSubmit(
   async (formValues) => {
     busy.value = true
+    submitError.value = null
     try {
       const profile = await register({
         email: formValues.email,
@@ -248,7 +255,7 @@ const onSubmit = handleSubmit(
       // duplicate-email 409 the *next* attempt would be refused for a reason
       // that has nothing to do with the address the person just corrected.
       turnstileRef.value?.reset()
-      toastApiError(error)
+      submitError.value = toastApiError(error).message
     } finally {
       busy.value = false
     }
@@ -398,6 +405,8 @@ const onSubmit = handleSubmit(
         action="register"
         @update:token="turnstileToken = $event"
       />
+
+      <FormError :message="submitError" />
 
       <!--
         Disabled until the challenge is solved, and captioned underneath. A
