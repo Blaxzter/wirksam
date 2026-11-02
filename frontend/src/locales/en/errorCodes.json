@@ -139,7 +139,7 @@
         "entry_not_found": "That entry could not be found. It may have been deleted.",
         "insufficient": "Not enough vouchers.",
         "insufficient_with": "Not enough vouchers: only {n} left.",
-        "manual_not_allowed": "Only the people in charge, the organisers and the staff of a volunteer desk can redeem without a code.",
+        "manual_not_allowed": "Only organisers and the people in charge can redeem without a code here.",
         "not_a_point": "Vouchers can't be redeemed at this task.",
         "not_allowed": "You can only take vouchers here while you are on shift here, or if you are in charge.",
         "pass_not_found": "That code is no longer there. Show a new one.",

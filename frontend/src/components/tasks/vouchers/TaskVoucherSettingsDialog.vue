@@ -42,14 +42,12 @@ const authStore = useAuthStore()
 
 const perShift = ref(0)
 const isPoint = ref(false)
-const isDesk = ref(false)
 const saving = ref(false)
 
 watch(open, (isOpen) => {
   if (!isOpen) return
   perShift.value = props.task.vouchers_per_shift ?? 0
   isPoint.value = props.task.is_voucher_point ?? false
-  isDesk.value = props.task.is_voucher_desk ?? false
 })
 
 async function save() {
@@ -61,7 +59,6 @@ async function save() {
         // An emptied field means none (the fields already turn it into 0).
         vouchers_per_shift: Number.isFinite(perShift.value) ? perShift.value : 0,
         is_voucher_point: isPoint.value,
-        is_voucher_desk: isPoint.value && isDesk.value,
       },
     })
     toast.success(t('vouchers.settings.saved'))
@@ -89,7 +86,7 @@ async function save() {
           <Ticket class="size-5" />
           {{ t('vouchers.settings.dialogTitle', { task: task.name }) }}
         </ResponsiveDialogTitle>
-        <ResponsiveDialogDescription>
+        <ResponsiveDialogDescription class="sr-only">
           {{ t('vouchers.admin.afterEventHint') }}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
@@ -97,8 +94,6 @@ async function save() {
         <TaskVoucherSettingsFields
           v-model:vouchers-per-shift="perShift"
           v-model:is-point="isPoint"
-          v-model:is-desk="isDesk"
-          :team-id="task.team_id"
           id-prefix="task-vouchers"
         />
       </ResponsiveDialogBody>

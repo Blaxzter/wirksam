@@ -72,7 +72,6 @@ const managers = ref<EventMemberRead[]>([])
 // Vouchers: how many a shift earns and whether the task takes them.
 const vouchersPerShift = ref(0)
 const isVoucherPoint = ref(false)
-const isVoucherDesk = ref(false)
 const eventMembers = ref<EventMemberRead[]>([])
 
 // Task event
@@ -447,7 +446,6 @@ const handleSubmit = async () => {
       // event" afterwards must not leave a task its creator cannot reset.
       vouchers_per_shift: inEvent ? vouchersPerShift.value || 0 : 0,
       is_voucher_point: inEvent && isVoucherPoint.value,
-      is_voucher_desk: inEvent && isVoucherPoint.value && isVoucherDesk.value,
       schedule: {
         default_start_time: defaultStartTime.value + ':00',
         default_end_time: defaultEndTime.value + ':00',
@@ -718,9 +716,7 @@ const handleSubmit = async () => {
             <TaskVoucherSettingsFields
               v-model:vouchers-per-shift="vouchersPerShift"
               v-model:is-point="isVoucherPoint"
-              v-model:is-desk="isVoucherDesk"
-              :team-id="locationEventId ? teamId : null"
-            id-prefix="task-create-vouchers"
+              id-prefix="task-create-vouchers"
             />
           </section>
           <div class="mt-4 flex justify-end">

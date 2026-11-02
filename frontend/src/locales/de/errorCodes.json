@@ -139,7 +139,7 @@
         "entry_not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er gelöscht.",
         "insufficient": "Nicht genug Marken.",
         "insufficient_with": "Nicht genug Marken: nur noch {n} übrig.",
-        "manual_not_allowed": "Ohne Code einlösen können nur die Verantwortlichen, die Organisator:innen und wer an einer Ausgabestelle Schicht hat.",
+        "manual_not_allowed": "Ohne Code einlösen können hier nur Organisator:innen und Verantwortliche.",
         "not_a_point": "Bei dieser Aufgabe können keine Marken eingelöst werden.",
         "not_allowed": "Marken annehmen kannst du hier nur während deiner Schicht hier oder wenn du verantwortlich bist.",
         "pass_not_found": "Diesen Code gibt es nicht mehr. Zeig einen neuen.",
