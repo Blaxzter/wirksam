@@ -12,6 +12,7 @@ import {
   House,
   Lock,
   Map as MapIcon,
+  ShieldCheck,
   Ticket,
   Users,
   UsersRound,
@@ -129,6 +130,34 @@ function eventBadge(
 }
 
 /**
+ * A task the viewer is in charge of: a shield, plus its open-shift count when
+ * there is one. The sidebar lists these whether or not anything is still
+ * open, so a fully booked one would otherwise have no badge at all. A draft
+ * keeps its status text, with the shield in front.
+ */
+function inChargeBadge(openShifts: number, status?: string | null): NavSubItem['badge'] {
+  const inCharge = t('navigation.sidebar.badges.inCharge')
+  if (status && status !== 'published') {
+    // "Only visible to organisers" would be wrong here: the viewer sees it.
+    return {
+      text: t(`duties.tasks.statuses.${status}`),
+      icon: ShieldCheck,
+      tooltip: inCharge,
+      variant: 'secondary',
+    }
+  }
+  return {
+    text: openShifts > 0 ? `${openShifts}` : '',
+    icon: ShieldCheck,
+    tooltip:
+      openShifts > 0
+        ? `${inCharge} · ${t('navigation.sidebar.badges.openShifts', { count: openShifts }, openShifts)}`
+        : inCharge,
+    variant: 'outline',
+  }
+}
+
+/**
  * A task reserved for a team the viewer is not in: a lock where the count
  * would be. Its open shifts are not theirs to take, so neither the number nor
  * a red "starting soon" would help.
@@ -170,8 +199,9 @@ const navMain = computed(() => {
     title: e.name,
     routeName: 'task-detail',
     routeParams: { eventId: e.id },
-    badge:
-      e.status && e.status !== 'published'
+    badge: e.is_managed
+      ? inChargeBadge(e.open_shifts, e.status)
+      : e.status && e.status !== 'published'
         ? statusBadge(e.status)
         : e.locked_by_team
           ? lockBadge(e.team_name)

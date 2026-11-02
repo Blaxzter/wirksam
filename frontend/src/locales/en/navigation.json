@@ -18,6 +18,7 @@
     },
     "sidebar": {
         "badges": {
+            "inCharge": "You're in charge",
             "managersOnly": "Only visible to organisers",
             "openShifts": "{count} open shift | {count} open shifts"
         },
