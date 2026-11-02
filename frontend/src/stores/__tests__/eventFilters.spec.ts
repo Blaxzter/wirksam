@@ -44,7 +44,6 @@ describe('useTaskFiltersStore', () => {
         viewMode: 'calendar',
         focusMode: 'first-available',
         myBookingsOnly: true,
-        hideFullShifts: true,
         bookableOnly: true,
         dateFrom: '2026-08-01',
         dateTo: '2026-08-31',
@@ -56,9 +55,18 @@ describe('useTaskFiltersStore', () => {
       expect(store.viewMode).toBe('calendar')
       expect(store.focusMode).toBe('first-available')
       expect(store.myBookingsOnly).toBe(true)
-      expect(store.hideFullShifts).toBe(true)
       expect(store.dateFrom).toBe('2026-08-01')
       expect(store.dateTo).toBe('2026-08-31')
+    })
+
+    it('does not restore hideFullShifts saved by an earlier version', () => {
+      // Saved, the dashboard's "find a shift" link turned it on for good.
+      seed({ viewMode: 'box', hideFullShifts: true })
+
+      const store = useTaskFiltersStore()
+
+      expect(store.viewMode).toBe('box')
+      expect(store.hideFullShifts).toBe(false)
     })
 
     it('falls back per field when only part of the payload was stored', () => {
@@ -105,7 +113,6 @@ describe('useTaskFiltersStore', () => {
         viewMode: 'calendar',
         focusMode: 'today',
         myBookingsOnly: true,
-        hideFullShifts: false,
         bookableOnly: false,
         dateFrom: '2026-08-04',
         dateTo: null,
@@ -121,14 +128,25 @@ describe('useTaskFiltersStore', () => {
     it('round-trips through a freshly created store', async () => {
       const first = useTaskFiltersStore()
       first.focusMode = 'first-available'
-      first.hideFullShifts = true
+      first.myBookingsOnly = true
       await nextTick()
 
       setActivePinia(createPinia())
       const second = useTaskFiltersStore()
 
       expect(second.focusMode).toBe('first-available')
-      expect(second.hideFullShifts).toBe(true)
+      expect(second.myBookingsOnly).toBe(true)
+    })
+
+    it('never writes or carries over hideFullShifts', async () => {
+      const first = useTaskFiltersStore()
+      first.hideFullShifts = true
+      first.myBookingsOnly = true
+      await nextTick()
+
+      expect(readPersisted()).not.toHaveProperty('hideFullShifts')
+      setActivePinia(createPinia())
+      expect(useTaskFiltersStore().hideFullShifts).toBe(false)
     })
   })
 

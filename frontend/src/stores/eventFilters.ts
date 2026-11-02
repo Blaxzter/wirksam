@@ -11,7 +11,6 @@ interface PersistedFilters {
   viewMode: ViewMode
   focusMode: FocusMode
   myBookingsOnly: boolean
-  hideFullShifts: boolean
   bookableOnly: boolean
   dateFrom: string | null // YYYY-MM-DD or null (= today)
   dateTo: string | null // YYYY-MM-DD or null (= no upper bound)
@@ -33,7 +32,13 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
   const viewMode = ref<ViewMode>(saved.viewMode ?? 'list')
   const focusMode = ref<FocusMode>(saved.focusMode ?? 'today')
   const myBookingsOnly = ref(saved.myBookingsOnly ?? false)
-  const hideFullShifts = ref(saved.hideFullShifts ?? false)
+  /**
+   * Hide full shift chips on the cards. Not persisted, like `locationId`: it
+   * lives in the URL (`?hide_full=true`), so a reload keeps it, while going to
+   * Tasks from the navigation starts without it. Saved, one click on the
+   * dashboard's "find a shift" link turned it on for good.
+   */
+  const hideFullShifts = ref(false)
   /** Leave out tasks reserved for a team the user is not in. Off by default. */
   const bookableOnly = ref(saved.bookableOnly ?? false)
   /** Custom start date for task filtering. null = today (default). */
@@ -53,7 +58,6 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
     viewMode: viewMode.value,
     focusMode: focusMode.value,
     myBookingsOnly: myBookingsOnly.value,
-    hideFullShifts: hideFullShifts.value,
     bookableOnly: bookableOnly.value,
     dateFrom: dateFrom.value,
     dateTo: dateTo.value,
