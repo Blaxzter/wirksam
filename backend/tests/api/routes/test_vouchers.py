@@ -7,9 +7,12 @@ The cast, all in ``test_event`` (2026-06-10 to 14):
   that ended at noon on 11 June;
 - ``manager``: a member in charge of the point ``Theke``;
 - ``staff``: a member on a 14:00-18:00 shift at ``Theke`` that day;
-- ``desk_staff``: a member on the same hours at the volunteer desk, and an
-  approved member of ``desk_team``, the team that books the desk;
+- ``second_staff``: a member on the same hours at ``Ausgabe``, a second point
+  with nobody in charge and no team;
 - ``bystander``: a member with no shift and no role.
+
+The event keeps the default voucher rule (``voucher_manual_redeem`` is
+``on_shift``) unless a test switches it to ``in_charge``.
 
 The event wall clock is pinned to 11 June, 15:00 unless a test moves it, so
 the volunteer's shift is over and the staff shifts are running. Stored
@@ -37,7 +40,6 @@ from app.logic.clock import utc_now
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
-from app.models.event_team import EventTeam, EventTeamMember
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.task_manager import TaskManager
@@ -58,16 +60,15 @@ class Cast:
     volunteer: User
     manager: User
     staff: User
-    desk_staff: User
+    second_staff: User
     bystander: User
     outsider: User
     work: Task
     point: Task
-    desk: Task
+    second_point: Task
     plain: Task
     other_point: Task
     staff_shift: Shift
-    desk_team: EventTeam
 
 
 async def _user(db: AsyncSession, key: str) -> User:
@@ -141,9 +142,9 @@ async def cast(
     monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: NOW)
     manager = await _user(db_session, "manager")
     staff = await _user(db_session, "staff")
-    desk_staff = await _user(db_session, "desk_staff")
+    second_staff = await _user(db_session, "second_staff")
     bystander = await _user(db_session, "bystander")
-    for user in (manager, staff, desk_staff, bystander):
+    for user in (manager, staff, second_staff, bystander):
         await _member(db_session, user, test_event)
 
     work = await _task(
@@ -152,35 +153,23 @@ async def cast(
     point = await _task(
         db_session, test_event, test_user, name="Theke", is_voucher_point=True
     )
-    desk = await _task(
-        db_session,
-        test_event,
-        test_user,
-        name="Ausgabe",
-        is_voucher_point=True,
-        is_voucher_desk=True,
+    second_point = await _task(
+        db_session, test_event, test_user, name="Ausgabe", is_voucher_point=True
     )
     plain = await _task(db_session, test_event, test_user, name="Garderobe")
     other_point = await _task(
         db_session, test_draft_event, test_user, name="Kasse", is_voucher_point=True
     )
     db_session.add(TaskManager(task_id=point.id, user_id=manager.id))
-    # The desk's staff are chosen by the organisers: only its team may book it.
-    desk_team = EventTeam(event_id=test_event.id, name="Ausgabe-Team")
-    db_session.add(desk_team)
-    await db_session.flush()
-    db_session.add(
-        EventTeamMember(team_id=desk_team.id, user_id=desk_staff.id, status="approved")
-    )
-    desk.team_id = desk_team.id
-    db_session.add(desk)
     await db_session.flush()
 
     await _shift_for(db_session, work, test_user, start=dt.time(8), end=dt.time(12))
     staff_shift = await _shift_for(
         db_session, point, staff, start=dt.time(14), end=dt.time(18)
     )
-    await _shift_for(db_session, desk, desk_staff, start=dt.time(14), end=dt.time(18))
+    await _shift_for(
+        db_session, second_point, second_staff, start=dt.time(14), end=dt.time(18)
+    )
     return Cast(
         event=test_event,
         other_event=test_draft_event,
@@ -188,17 +177,23 @@ async def cast(
         volunteer=test_user,
         manager=manager,
         staff=staff,
-        desk_staff=desk_staff,
+        second_staff=second_staff,
         bystander=bystander,
         outsider=test_outsider_user,
         work=work,
         point=point,
-        desk=desk,
+        second_point=second_point,
         plain=plain,
         other_point=other_point,
         staff_shift=staff_shift,
-        desk_team=desk_team,
     )
+
+
+async def _manual_rule(db: AsyncSession, cast: Cast, rule: str) -> None:
+    """Set the event's ``voucher_manual_redeem``."""
+    cast.event.voucher_manual_redeem = rule
+    db.add(cast.event)
+    await db.flush()
 
 
 def _base(event: Event) -> str:
@@ -635,7 +630,9 @@ class TestRedeemByCode:
         self, async_client: AsyncClient, app: FastAPI, cast: Cast
     ) -> None:
         issued = await _issue(async_client, app, cast)
-        r = await _redeem(async_client, app, cast, cast.desk_staff, code=issued["code"])
+        r = await _redeem(
+            async_client, app, cast, cast.second_staff, code=issued["code"]
+        )
         assert r.status_code == 403
         assert _code(r) == "voucher.not_allowed"
 
@@ -873,10 +870,18 @@ class TestRetry:
 
 @pytest.mark.asyncio
 class TestRedeemManually:
+    @pytest.mark.parametrize("rule", ["on_shift", "in_charge"])
     @pytest.mark.parametrize("who", ["admin", "manager"])
     async def test_admins_and_people_in_charge_may_pick_the_person(
-        self, async_client: AsyncClient, app: FastAPI, cast: Cast, who: str
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        who: str,
+        rule: str,
     ) -> None:
+        await _manual_rule(db_session, cast, rule)
         r = await _redeem(
             async_client,
             app,
@@ -887,45 +892,94 @@ class TestRedeemManually:
         assert r.status_code == 201
         assert r.json()["entry"]["method"] == "manual"
 
-    async def test_staff_on_shift_need_the_code(
-        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    @pytest.mark.parametrize("who", ["staff", "second_staff"])
+    async def test_by_default_staff_on_shift_may_pick_at_their_point(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        who: str,
     ) -> None:
-        for call in (_redeem, _check):
-            r = await call(
-                async_client, app, cast, cast.staff, user_id=str(cast.volunteer.id)
-            )
-            assert r.status_code == 403
-            assert _code(r) == "voucher.manual_not_allowed"
-
-    async def test_staff_on_shift_at_the_volunteer_desk_may_pick(
-        self, async_client: AsyncClient, app: FastAPI, cast: Cast
-    ) -> None:
+        """No team needed: being on a running shift at the point is enough."""
+        redeemer: User = getattr(cast, who)
+        point = cast.point if who == "staff" else cast.second_point
+        r = await _check(
+            async_client,
+            app,
+            cast,
+            redeemer,
+            task=point,
+            user_id=str(cast.volunteer.id),
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["available"] == 3
         r = await _redeem(
             async_client,
             app,
             cast,
-            cast.desk_staff,
-            task=cast.desk,
+            redeemer,
+            task=point,
             user_id=str(cast.volunteer.id),
         )
-        assert r.status_code == 201
+        assert r.status_code == 201, r.text
+        # Traceable: the point's entries say who picked whom.
+        assert r.json()["entry"]["method"] == "manual"
+        assert r.json()["entry"]["actor_name"] == redeemer.name
+        (entry,) = await _entries(db_session, cast)
+        assert entry.actor_id == redeemer.id
+        assert entry.task_id == point.id
 
-    async def test_booking_yourself_onto_an_open_desk_gives_no_list(
+    async def test_with_in_charge_staff_on_shift_need_the_code(
         self,
         async_client: AsyncClient,
         app: FastAPI,
         db_session: AsyncSession,
         cast: Cast,
     ) -> None:
-        """A desk anyone may book: a member books its running shift and is on
-        shift there at once. That lets them take a code, which is the
-        volunteer's consent, but never pick people from the list, or they could
-        spend every member's vouchers and cancel the booking afterwards."""
-        cast.desk.team_id = None
-        db_session.add(cast.desk)
-        await db_session.flush()
+        await _manual_rule(db_session, cast, "in_charge")
+        for call in (_redeem, _check):
+            r = await call(
+                async_client, app, cast, cast.staff, user_id=str(cast.volunteer.id)
+            )
+            assert r.status_code == 403
+            assert _code(r) == "voucher.manual_not_allowed"
+        # With the code it still works.
+        issued = await _issue(async_client, app, cast)
+        r = await _redeem(async_client, app, cast, cast.staff, code=issued["code"])
+        assert r.status_code == 201
+
+    @pytest.mark.parametrize("rule", ["on_shift", "in_charge"])
+    @pytest.mark.parametrize("who", ["bystander", "second_staff"])
+    async def test_not_on_shift_here_is_not_allowed_either_way(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        who: str,
+        rule: str,
+    ) -> None:
+        await _manual_rule(db_session, cast, rule)
+        r = await _redeem(
+            async_client, app, cast, getattr(cast, who), user_id=str(cast.volunteer.id)
+        )
+        assert r.status_code == 403
+        assert _code(r) == "voucher.not_allowed"
+
+    async def test_booking_yourself_onto_an_open_point_is_on_shift_there(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """The door ``on_shift`` opens, which the event settings warn about: a
+        member books a running shift at a point anyone may book and may pick
+        people at once. Every such redemption names who made it, and
+        ``in_charge`` closes the door again."""
         open_shift = await _shift_for(
-            db_session, cast.desk, None, start=dt.time(14), end=dt.time(18)
+            db_session, cast.second_point, None, start=dt.time(14), end=dt.time(18)
         )
         with act_as(app, cast.bystander):
             r = await async_client.post(
@@ -933,64 +987,24 @@ class TestRedeemManually:
             )
         assert r.status_code == 201, r.text
 
-        for call in (_check, _redeem):
-            r = await call(
-                async_client,
-                app,
-                cast,
-                cast.bystander,
-                task=cast.desk,
-                user_id=str(cast.volunteer.id),
-            )
-            assert r.status_code == 403
-            assert _code(r) == "voucher.manual_not_allowed"
-        # The staff booked before are no different without a team.
         r = await _redeem(
             async_client,
             app,
             cast,
-            cast.desk_staff,
-            task=cast.desk,
+            cast.bystander,
+            task=cast.second_point,
             user_id=str(cast.volunteer.id),
         )
-        assert r.status_code == 403
-        assert _code(r) == "voucher.manual_not_allowed"
-        # With the code it works.
-        issued = await _issue(async_client, app, cast)
-        r = await _redeem(
-            async_client, app, cast, cast.bystander, task=cast.desk, code=issued["code"]
-        )
-        assert r.status_code == 201
-        with act_as(app, cast.bystander):
-            r = await async_client.get(f"{_base(cast.event)}/points")
-        (desk,) = (p for p in r.json() if p["name"] == "Ausgabe")
-        assert (desk["can_redeem"], desk["can_redeem_manually"]) == (True, False)
+        assert r.status_code == 201, r.text
+        assert r.json()["entry"]["actor_name"] == cast.bystander.name
 
-    async def test_dropped_from_the_desk_team_means_no_list(
-        self,
-        async_client: AsyncClient,
-        app: FastAPI,
-        db_session: AsyncSession,
-        cast: Cast,
-    ) -> None:
-        """The booking from before stays, but the right goes with the team."""
-        row = (
-            await db_session.execute(
-                select(EventTeamMember).where(
-                    col(EventTeamMember.team_id) == cast.desk_team.id,
-                    col(EventTeamMember.user_id) == cast.desk_staff.id,
-                )
-            )
-        ).scalar_one()
-        await db_session.delete(row)
-        await db_session.flush()
-
+        await _manual_rule(db_session, cast, "in_charge")
         r = await _redeem(
             async_client,
             app,
             cast,
-            cast.desk_staff,
-            task=cast.desk,
+            cast.bystander,
+            task=cast.second_point,
             user_id=str(cast.volunteer.id),
         )
         assert r.status_code == 403
@@ -1424,25 +1438,33 @@ class TestPoints:
         return {p["name"]: p for p in r.json()}
 
     @pytest.mark.parametrize(
-        ("who", "theke", "ausgabe"),
+        ("rule", "who", "theke", "ausgabe"),
         [
             # (can_redeem, can_redeem_manually) at each point
-            ("admin", (True, True), (True, True)),
-            ("manager", (True, True), (False, False)),
-            ("staff", (True, False), (False, False)),
-            ("desk_staff", (False, False), (True, True)),
-            ("bystander", (False, False), (False, False)),
+            ("on_shift", "admin", (True, True), (True, True)),
+            ("on_shift", "manager", (True, True), (False, False)),
+            ("on_shift", "staff", (True, True), (False, False)),
+            ("on_shift", "second_staff", (False, False), (True, True)),
+            ("on_shift", "bystander", (False, False), (False, False)),
+            ("in_charge", "admin", (True, True), (True, True)),
+            ("in_charge", "manager", (True, True), (False, False)),
+            ("in_charge", "staff", (True, False), (False, False)),
+            ("in_charge", "second_staff", (False, False), (True, False)),
+            ("in_charge", "bystander", (False, False), (False, False)),
         ],
     )
     async def test_who_may_redeem_where(
         self,
         async_client: AsyncClient,
         app: FastAPI,
+        db_session: AsyncSession,
         cast: Cast,
+        rule: str,
         who: str,
         theke: tuple[bool, bool],
         ausgabe: tuple[bool, bool],
     ) -> None:
+        await _manual_rule(db_session, cast, rule)
         points = await self._points(async_client, app, cast, getattr(cast, who))
         assert set(points) == {"Theke", "Ausgabe"}
         for name, expected in (("Theke", theke), ("Ausgabe", ausgabe)):
@@ -1450,8 +1472,8 @@ class TestPoints:
                 points[name]["can_redeem"],
                 points[name]["can_redeem_manually"],
             ) == expected, name
-        assert points["Ausgabe"]["is_desk"] is True
-        assert points["Theke"]["is_desk"] is False
+        # The volunteer desk is gone: the event decides, not the point.
+        assert "is_desk" not in points["Ausgabe"]
         assert [m["user_id"] for m in points["Theke"]["managers"]] == [
             str(cast.manager.id)
         ]
@@ -1690,7 +1712,6 @@ class TestTaskSettings:
         [
             ("vouchers_per_shift", 5),
             ("is_voucher_point", False),
-            ("is_voucher_desk", True),
         ],
     )
     async def test_people_in_charge_cannot_change_them(
@@ -1719,39 +1740,45 @@ class TestTaskSettings:
                     "name": "Bar",
                     "vouchers_per_shift": 0,
                     "is_voucher_point": True,
-                    "is_voucher_desk": False,
                 },
             )
         assert r.status_code == 200
         assert r.json()["name"] == "Bar"
 
-    async def test_an_admin_sets_them_and_a_desk_needs_a_point(
+    async def test_an_admin_sets_them(
         self,
         async_client: AsyncClient,
         app: FastAPI,
         db_session: AsyncSession,
         cast: Cast,
     ) -> None:
-        url = f"/api/v1/tasks/{cast.desk.id}"
+        url = f"/api/v1/tasks/{cast.second_point.id}"
         with act_as(app, cast.admin):
             r = await async_client.patch(url, json={"vouchers_per_shift": 4})
             assert r.status_code == 200
             assert r.json()["vouchers_per_shift"] == 4
-            assert r.json()["is_voucher_desk"] is True
 
             r = await async_client.patch(url, json={"is_voucher_point": False})
             assert r.status_code == 200
             assert r.json()["is_voucher_point"] is False
-            assert r.json()["is_voucher_desk"] is False
-
-            r = await async_client.patch(url, json={"is_voucher_desk": True})
-            assert r.json()["is_voucher_desk"] is False
 
             r = await async_client.patch(url, json={"vouchers_per_shift": 51})
             assert r.status_code == 422
             r = await async_client.patch(url, json={"vouchers_per_shift": None})
             assert r.status_code == 200
             assert r.json()["vouchers_per_shift"] == 4
+
+    async def test_an_old_clients_desk_switch_is_ignored(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        """``is_voucher_desk`` is gone; a client that still sends it is not
+        refused, and nothing reads it back."""
+        with act_as(app, cast.admin):
+            r = await async_client.patch(
+                f"/api/v1/tasks/{cast.point.id}", json={"is_voucher_desk": True}
+            )
+        assert r.status_code == 200
+        assert "is_voucher_desk" not in r.json()
 
     async def test_created_with_shifts(
         self, async_client: AsyncClient, app: FastAPI, cast: Cast
@@ -1765,7 +1792,8 @@ class TestTaskSettings:
                     "end_date": "2026-06-12",
                     "event_id": str(cast.event.id),
                     "vouchers_per_shift": 2,
-                    "is_voucher_point": False,
+                    "is_voucher_point": True,
+                    # An old client: ignored.
                     "is_voucher_desk": True,
                     "schedule": {
                         "default_start_time": "10:00:00",
@@ -1777,7 +1805,8 @@ class TestTaskSettings:
         assert r.status_code == 201, r.text
         task = r.json()["task"]
         assert task["vouchers_per_shift"] == 2
-        assert task["is_voucher_desk"] is False
+        assert task["is_voucher_point"] is True
+        assert "is_voucher_desk" not in task
 
 
 # ── Leaving the event ─────────────────────────────────────────────

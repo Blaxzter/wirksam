@@ -132,10 +132,10 @@ class VoucherPointRead(BaseModel):
     location: str | None = None
     #: The caller may redeem here right now.
     can_redeem: bool
-    #: ...also without a code, by picking the person.
+    #: ...also without a code, by picking the person: always for event admins
+    #: and the point's people in charge, for whoever is on shift there only
+    #: when the event's ``voucher_manual_redeem`` is ``on_shift``.
     can_redeem_manually: bool
-    #: Marked as the volunteer desk.
-    is_desk: bool
     #: For "No phone? Ask Anna or Ben".
     managers: list[TaskManagerBrief]
 

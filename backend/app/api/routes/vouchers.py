@@ -162,7 +162,7 @@ async def list_voucher_points(
 ) -> list[VoucherPointRead]:
     """The event's tasks that take vouchers, and whether the caller may redeem
     at each right now. Published ones, plus drafts the caller can manage."""
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     role = await require_event_role(current_user, session, event_id, minimum="member")
     is_admin = role_at_least(role, "admin")
     in_charge = set(
@@ -210,8 +210,7 @@ async def list_voucher_points(
                 location=t.location,
                 can_redeem=kind is not None,
                 can_redeem_manually=kind is not None
-                and await may_redeem_manually(current_user, session, kind, t),
-                is_desk=t.is_voucher_desk,
+                and may_redeem_manually(kind, event),
                 managers=[
                     TaskManagerBrief(
                         user_id=u.id, name=u.name, avatar_etag=u.avatar_etag
@@ -241,10 +240,12 @@ async def list_point_redemptions(
     totals. "Today" is the event wall-clock day, counted over every entry
     rather than the ``limit`` on screen.
     """
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=task_id)
     wall_now = clock.wall_clock_now()
-    kind = await require_voucher_redeemer(current_user, session, task, now=wall_now)
+    kind = await require_voucher_redeemer(
+        current_user, session, task, event=event, now=wall_now
+    )
     _require_point(task)
     actor_id = current_user.id if kind == "on_shift" else None
     rows = await crud_voucher.list_for_point(
@@ -286,12 +287,13 @@ async def check_voucher(
     Takes nothing. A code is held for a minute, so it still redeems if it runs
     out while the amount is chosen.
     """
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=body.task_id)
     await require_voucher_redeemer(
         current_user,
         session,
         task,
+        event=event,
         now=clock.wall_clock_now(),
         manual=body.user_id is not None,
     )
@@ -322,12 +324,13 @@ async def redeem_vouchers(
     A retry with the same ``request_id`` returns the first result
     (``replayed``) instead of taking them twice.
     """
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=body.task_id)
     await require_voucher_redeemer(
         current_user,
         session,
         task,
+        event=event,
         now=clock.wall_clock_now(),
         manual=body.user_id is not None,
     )

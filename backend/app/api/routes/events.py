@@ -240,6 +240,11 @@ async def create_event(
     return await decorate_event(session, current_user, db_event)
 
 
+#: The event's voucher rules, NOT NULL columns, where an explicit ``null`` in a
+#: PATCH can only mean "leave it".
+_NOT_NULL_VOUCHER_RULES = ("voucher_manual_redeem", "managers_edit_voucher_shifts")
+
+
 @router.patch("/{event_id}", response_model=EventRead)
 async def update_event(
     event_id: uuid.UUID,
@@ -314,7 +319,12 @@ async def update_event(
             )
 
     old_status = db_event.status
-    updated = await crud_event.update(session, db_obj=db_event, obj_in=event_in)
+    update_data = event_in.model_dump(exclude_unset=True)
+    for f in _NOT_NULL_VOUCHER_RULES:
+        if f in update_data and update_data[f] is None:
+            # NOT NULL columns: an explicit null can only mean "leave it".
+            del update_data[f]
+    updated = await crud_event.update(session, db_obj=db_event, obj_in=update_data)
 
     # An event pulled back out of public listings should not keep its featured
     # slot on the home screen.
@@ -813,6 +823,8 @@ async def clone_event(
     step with each other. Bookings are never copied — a cloned shift starts
     empty — and neither are ``is_featured``, ``is_sandbox`` or
     ``sandbox_expires_at``, all of which mean something about the *source*.
+    The voucher rules (``voucher_manual_redeem``,
+    ``managers_edit_voucher_shifts``) are copied.
 
     The clone always starts as a draft: publishing is a separate, deliberate
     act, and it is what fans a notification out to the roster.
@@ -866,6 +878,10 @@ async def clone_event(
     new_event.is_featured = False
     new_event.is_sandbox = False
     new_event.sandbox_expires_at = None
+    # The voucher rules are part of "the same event again", like the tasks'
+    # own voucher settings.
+    new_event.voucher_manual_redeem = source.voucher_manual_redeem
+    new_event.managers_edit_voucher_shifts = source.managers_edit_voucher_shifts
     session.add(new_event)
 
     # The owner grant is the membership row, not created_by_id — and it has to
@@ -1144,7 +1160,6 @@ async def _clone_task(
         # redemptions and codes are not, just as bookings are not.
         vouchers_per_shift=src.vouchers_per_shift,
         is_voucher_point=src.is_voucher_point,
-        is_voucher_desk=src.is_voucher_desk,
         shift_duration_minutes=_pick(
             entry.shift_duration_minutes, src.shift_duration_minutes
         ),

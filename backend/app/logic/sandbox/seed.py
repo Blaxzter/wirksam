@@ -26,9 +26,12 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
   because the map colours every pin by the day's staffing; and
 * the first teammate is in charge of two tasks (``in_charge``), so the task
   pages show "In charge: ..." rather than an empty line; and
-* every task earns two vouchers per shift, the welcome desk (the volunteer
-  desk) and the café counter take them, and the visitor already used one
-  yesterday, so "My vouchers" has a balance and a history on arrival.
+* every task earns two vouchers per shift, the welcome desk and the café
+  counter take them, and the visitor already used one yesterday, so "My
+  vouchers" has a balance and a history on arrival. The event keeps the
+  default voucher rules: whoever is on shift at either point may also redeem
+  without a code there, and the teammate in charge of the café counter cannot
+  change its shifts, because it earns vouchers.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -181,8 +184,6 @@ class _TaskSpec:
     vouchers_per_shift: int = 2
     #: Vouchers can be redeemed here (``tasks.is_voucher_point``).
     voucher_point: bool = False
-    #: ...and it is the volunteer desk (``tasks.is_voucher_desk``).
-    voucher_desk: bool = False
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -238,7 +239,6 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         people_per_shift=2,
         today_fill=1.0,
         voucher_point=True,
-        voucher_desk=True,
     ),
     _TaskSpec(
         name_en="Café counter",
@@ -731,7 +731,7 @@ def _seed_vouchers(
         (
             task
             for spec, task in zip(_TASK_SPECS, tasks, strict=True)
-            if spec.voucher_point and not spec.voucher_desk
+            if spec.voucher_point and spec.in_charge
         ),
         None,
     )
@@ -804,7 +804,6 @@ async def _seed_tasks_and_shifts(
             schedule_overrides=None,
             vouchers_per_shift=spec.vouchers_per_shift,
             is_voucher_point=spec.voucher_point,
-            is_voucher_desk=spec.voucher_point and spec.voucher_desk,
         )
         db.add(task)
         tasks.append(task)

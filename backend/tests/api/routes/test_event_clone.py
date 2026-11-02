@@ -1151,8 +1151,11 @@ class TestCloneVouchers:
         task = source_event["task"]
         task.vouchers_per_shift = 3
         task.is_voucher_point = True
-        task.is_voucher_desk = True
         db_session.add(task)
+        source = source_event["event"]
+        source.voucher_manual_redeem = "in_charge"
+        source.managers_edit_voucher_shifts = True
+        db_session.add(source)
         db_session.add_all(
             [
                 VoucherEntry(
@@ -1179,11 +1182,17 @@ class TestCloneVouchers:
         )
         assert r.status_code == 201
         new_event_id = uuid.UUID(r.json()["event"]["id"])
+        # The event's voucher rules come along too, in the response and stored.
+        assert r.json()["event"]["voucher_manual_redeem"] == "in_charge"
+        assert r.json()["event"]["managers_edit_voucher_shifts"] is True
+        new_event = await db_session.get(Event, new_event_id, populate_existing=True)
+        assert new_event is not None
+        assert new_event.voucher_manual_redeem == "in_charge"
+        assert new_event.managers_edit_voucher_shifts is True
 
         [new_task] = await _tasks_of(db_session, new_event_id)
         assert new_task.vouchers_per_shift == 3
         assert new_task.is_voucher_point is True
-        assert new_task.is_voucher_desk is True
         for model in (VoucherEntry, VoucherPass):
             count = await db_session.scalar(
                 select(sa_func.count())

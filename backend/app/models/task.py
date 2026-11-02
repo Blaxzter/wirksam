@@ -154,17 +154,9 @@ class Task(Base, table=True):
         sa_column=sa.Column(
             sa.Boolean, nullable=False, server_default=sa.text("false")
         ),
-        description="Vouchers can be redeemed here, in the app.",
-    )
-    is_voucher_desk: bool = Field(
-        default=False,
-        sa_column=sa.Column(
-            sa.Boolean, nullable=False, server_default=sa.text("false")
-        ),
         description=(
-            "The volunteer desk: staff on shift here may also redeem without a "
-            "code. Only meaningful together with is_voucher_point; writes force "
-            "it off when that is off."
+            "Vouchers can be redeemed here, in the app. Who may redeem without "
+            "a code is the event's rule (events.voucher_manual_redeem)."
         ),
     )
 

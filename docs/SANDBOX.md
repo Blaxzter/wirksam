@@ -30,10 +30,12 @@ driving licence; Childcare behind an extended police certificate, which locks
 the kids' games; and First aid behind a first-aid course, with one member whose
 check has expired); one teammate put in charge of the Café counter and the
 Grill stand (`task_managers`); two vouchers per shift on every task, with the
-Welcome desk (the volunteer desk) and the Café counter taking them, and one
-voucher the visitor already redeemed at the Café counter the day before
-(`voucher_entries`; with the shift behind them that leaves at least one to
-redeem); and — for the manager role only — one pending invitation,
+Welcome desk and the Café counter taking them, and one voucher the visitor
+already redeemed at the Café counter the day before (`voucher_entries`; with
+the shift behind them that leaves at least one to redeem), under the default
+voucher rules (whoever is on shift at either point may also redeem without a
+code, and the teammate in charge of the Café counter cannot change its
+shifts); and — for the manager role only — one pending invitation,
 one pending join request, the notification telling them about it, the lead of
 the Cash desk, and five team requests to review from four made-up people: Vera
 for the Cash desk and the Shuttle drivers, Jordan for the Cash desk (no note),

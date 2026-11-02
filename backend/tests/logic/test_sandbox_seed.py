@@ -51,6 +51,7 @@ from app.logic.sandbox.venue_plan_shapes import (
 )
 from app.logic.team_documents import sniff
 from app.models.booking import Booking
+from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
@@ -1654,7 +1655,19 @@ class TestSeededVouchers:
             "Café counter",
             "Welcome desk",
         ]
-        assert [t.name for t in tasks if t.is_voucher_desk] == ["Welcome desk"]
+
+    async def test_the_event_keeps_the_default_voucher_rules(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        """Staff on shift at either point may pick a person, and the teammate
+        in charge of the café counter, which earns vouchers, cannot change
+        its shifts: the defaults, shown as they are."""
+        event = await db_session.get(
+            Event, test_sandbox.event.id, populate_existing=True
+        )
+        assert event is not None
+        assert event.voucher_manual_redeem == "on_shift"
+        assert event.managers_edit_voucher_shifts is False
 
     async def test_the_cafe_counter_has_someone_in_charge_to_take_them(
         self, db_session: AsyncSession, test_sandbox: SandboxSetup
