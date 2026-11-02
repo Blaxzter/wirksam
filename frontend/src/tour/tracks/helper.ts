@@ -131,9 +131,9 @@ export const helperTrack = defineTrack('helper', [
     id: 'nextShift',
     chapter: 'yourEvent',
     route: 'home',
-    // The card is unconditional — only its `CardContent` branches on there
-    // being a shift — so this anchor is there for a visitor the seeder has put
-    // on nothing, and the copy still reads.
+    // `dashboard-next-shift` is on the hero and on its empty state alike, so
+    // the anchor is there for a visitor the seeder has put on nothing, and the
+    // copy still reads.
     element: '[data-testid="dashboard-next-shift"]',
     side: 'bottom',
   },
@@ -141,9 +141,10 @@ export const helperTrack = defineTrack('helper', [
     id: 'myShifts',
     chapter: 'yourEvent',
     route: 'home',
-    // `v-if="laterShifts.length > 0"`: the seeder books the guest onto two
-    // upcoming shifts, so the card is there for a demo, but a guest who has
-    // handed one back sees only the next-shift card — hence the short wait.
+    // The plan renders whenever the visitor has any upcoming shift (it used to
+    // need a second one, because the next shift was left out of it). The
+    // seeder books the guest onto two, so it is there for a demo; a guest who
+    // has handed both back has no plan at all, hence the short wait.
     element: '[data-testid="dashboard-my-shifts"]',
     anchorTimeout: 1500,
     side: 'top',
@@ -153,6 +154,10 @@ export const helperTrack = defineTrack('helper', [
     chapter: 'yourEvent',
     route: 'home',
     element: '[data-testid="dashboard-open-shifts"]',
+    // On a phone four stacked cards make the section taller than the screen.
+    // The first card is what the copy describes (the label, the bar, Sign up),
+    // and the engine falls back to the section when there is no card.
+    mobileElement: '[data-testid="dashboard-open-shifts"] [data-testid="open-shift-card"]',
     side: 'top',
   },
   {
@@ -341,7 +346,10 @@ export const helperTrack = defineTrack('helper', [
     id: 'finish',
     chapter: 'keepingTrack',
     route: 'home',
-    element: '[data-testid="dashboard-quick-actions"]',
-    side: 'top',
+    // The quick-actions block this used to point at is gone (it repeated the
+    // navigation). The header is the one thing always on the page, and the
+    // copy now says "this page is where you start".
+    element: '[data-testid="dashboard-header"]',
+    side: 'bottom',
   },
 ])
