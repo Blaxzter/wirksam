@@ -35,7 +35,8 @@ export const useTaskFiltersStore = defineStore('eventFilters', () => {
   /**
    * Hide full shift chips on the cards. Not persisted, like `locationId`: it
    * lives in the URL (`?hide_full=true`), so a reload keeps it, while going to
-   * Tasks from the navigation starts without it. Saved, one click on the
+   * Tasks from the navigation starts without it (`TasksView` sets it from the
+   * query on every mount, present or not). Saved, one click on the
    * dashboard's "find a shift" link turned it on for good.
    */
   const hideFullShifts = ref(false)

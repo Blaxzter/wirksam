@@ -55,7 +55,10 @@ function readUrlIntoStore() {
     filters.focusMode = q.focus as (typeof FOCUS_MODES)[number]
   if (q.search !== undefined) filters.searchQuery = String(q.search)
   if (q.my_bookings !== undefined) filters.myBookingsOnly = q.my_bookings === 'true'
-  if (q.hide_full !== undefined) filters.hideFullShifts = q.hide_full === 'true'
+  // The URL is the only place this one lives: the store outlasts the page, so
+  // without it "Tasks" in the navigation kept the dashboard's "find a shift"
+  // filter on, while the address bar said plain /tasks.
+  filters.hideFullShifts = q.hide_full === 'true'
   if (q.bookable !== undefined) filters.bookableOnly = q.bookable === 'true'
   if (q.date_from && /^\d{4}-\d{2}-\d{2}$/.test(String(q.date_from)))
     filters.dateFrom = String(q.date_from)
