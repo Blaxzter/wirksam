@@ -9,6 +9,7 @@ What the numbers mean and how a redemption is serialised: ``app.logic.vouchers``
 Who may redeem where: ``app.logic.permissions.require_voucher_redeemer``.
 """
 
+import datetime as dt
 import uuid
 from typing import NoReturn
 
@@ -233,22 +234,24 @@ async def list_point_redemptions(
     current_user: CurrentUser,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> PointRedemptionList:
-    """Redemptions made at one point, newest first.
+    """Redemptions made at one point, newest first, and today's totals there.
 
     Event admins and its people in charge see every one; someone redeeming
-    because they are on shift there sees the ones they made.
+    because they are on shift there sees the ones they made, and their own
+    totals. "Today" is the event wall-clock day, counted over every entry
+    rather than the ``limit`` on screen.
     """
     await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=task_id)
-    kind = await require_voucher_redeemer(
-        current_user, session, task, now=clock.wall_clock_now()
-    )
+    wall_now = clock.wall_clock_now()
+    kind = await require_voucher_redeemer(current_user, session, task, now=wall_now)
     _require_point(task)
+    actor_id = current_user.id if kind == "on_shift" else None
     rows = await crud_voucher.list_for_point(
         session,
         event_id=event_id,
         task_id=task.id,
-        actor_id=current_user.id if kind == "on_shift" else None,
+        actor_id=actor_id,
         limit=limit,
     )
     items = [
@@ -259,7 +262,16 @@ async def list_point_redemptions(
         )
         for entry, user in rows
     ]
-    return PointRedemptionList(items=items, total_amount=sum(-i.amount for i in items))
+    today_count, today_amount = await crud_voucher.point_totals_since(
+        session,
+        event_id=event_id,
+        task_id=task.id,
+        actor_id=actor_id,
+        since=vouchers.to_utc(dt.datetime.combine(wall_now.date(), dt.time())),
+    )
+    return PointRedemptionList(
+        items=items, today_count=today_count, today_amount=today_amount
+    )
 
 
 @router.post("/{event_id}/vouchers/check", response_model=VoucherCheckResult)

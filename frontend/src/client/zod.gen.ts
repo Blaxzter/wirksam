@@ -1042,7 +1042,8 @@ export const zPointRedemptionRead = z
  */
 export const zPointRedemptionList = z.object({
   items: z.array(zPointRedemptionRead),
-  total_amount: z.int(),
+  today_count: z.int(),
+  today_amount: z.int(),
 })
 
 /**
@@ -1558,6 +1559,7 @@ export const zSidebarTask = z.object({
   next_shift_start_time: z.iso.time().nullish(),
   team_name: z.string().nullish(),
   locked_by_team: z.boolean().optional().default(false),
+  is_managed: z.boolean().optional().default(false),
 })
 
 /**
@@ -1704,6 +1706,9 @@ export const zFeedTaskItem = z
     can_redeem: z.boolean().optional().default(false),
     shifts: z.array(zFeedShiftEntry).nullish(),
     slot_window_start: z.iso.date().nullish(),
+    open_shifts: z.int().nullish(),
+    next_shift_date: z.iso.date().nullish(),
+    next_open_shift_date: z.iso.date().nullish(),
     total_shifts: z.int().nullish(),
     available_shifts: z.int().nullish(),
   })

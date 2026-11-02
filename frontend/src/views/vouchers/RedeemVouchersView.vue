@@ -489,8 +489,11 @@ watch(eventId, () => {
             <CardTitle class="text-base">
               {{ seesAllEntries ? t('vouchers.redeem.recent') : t('vouchers.redeem.recentOwn') }}
             </CardTitle>
-            <span v-if="recent.items.length" class="text-sm text-muted-foreground tabular-nums">
-              {{ t('vouchers.redeem.recentTotal', { n: recent.total_amount }) }}
+            <span
+              class="shrink-0 text-sm text-muted-foreground tabular-nums"
+              data-testid="voucher-recent-today"
+            >
+              {{ t('vouchers.redeem.recentToday', { n: recent.today_amount }, recent.today_amount) }}
             </span>
           </div>
         </CardHeader>
@@ -514,7 +517,9 @@ watch(eventId, () => {
                   · {{ t('vouchers.history.by', { name: entry.actor_name }) }}
                 </span>
               </span>
-              <span class="shrink-0 font-semibold tabular-nums">{{ -entry.amount }}</span>
+              <span class="shrink-0 font-semibold tabular-nums">
+                {{ t('vouchers.redeem.rowAmount', { n: -entry.amount }, -entry.amount) }}
+              </span>
             </li>
           </ul>
         </CardContent>

@@ -103,6 +103,35 @@ class CRUDVoucher:
             query = query.where(col(VoucherEntry.actor_id) == actor_id)
         return [(e, u) for e, u in (await session.execute(query)).all()]
 
+    async def point_totals_since(
+        self,
+        session: AsyncSession,
+        *,
+        event_id: uuid.UUID,
+        task_id: uuid.UUID,
+        actor_id: uuid.UUID | None = None,
+        since: dt.datetime,
+    ) -> tuple[int, int]:
+        """``(redemptions, vouchers)`` made at one point from ``since`` on.
+
+        The same rows as :meth:`list_for_point`, counted in the database, so
+        the total is not limited to the page on screen. ``since`` is naive
+        UTC, like ``created_at``; vouchers come back as a positive number.
+        """
+        query = select(
+            func.count(),
+            func.coalesce(func.sum(col(VoucherEntry.amount)), 0),
+        ).where(
+            col(VoucherEntry.event_id) == event_id,
+            col(VoucherEntry.task_id) == task_id,
+            col(VoucherEntry.kind) == "redemption",
+            col(VoucherEntry.created_at) >= since,
+        )
+        if actor_id is not None:
+            query = query.where(col(VoucherEntry.actor_id) == actor_id)
+        count, total = (await session.execute(query)).one()
+        return int(count), -int(total)
+
     async def get_in_event(
         self,
         session: AsyncSession,

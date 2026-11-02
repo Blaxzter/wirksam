@@ -230,6 +230,10 @@ class PointRedemptionRead(VoucherEntryRead):
 
 
 class PointRedemptionList(BaseModel):
+    #: The newest redemptions, up to the request's ``limit``.
     items: list[PointRedemptionRead]
-    #: Vouchers taken across ``items``, as a positive number.
-    total_amount: int
+    #: Redemptions made here today (event wall-clock day), over all of them
+    #: rather than only ``items``; an on-shift redeemer's own.
+    today_count: int
+    #: Vouchers those took, as a positive number.
+    today_amount: int

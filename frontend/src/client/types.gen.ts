@@ -1868,6 +1868,18 @@ export type FeedTaskItem = {
    */
   slot_window_start?: string | null
   /**
+   * Open Shifts
+   */
+  open_shifts?: number | null
+  /**
+   * Next Shift Date
+   */
+  next_shift_date?: string | null
+  /**
+   * Next Open Shift Date
+   */
+  next_open_shift_date?: string | null
+  /**
    * Total Shifts
    */
   total_shifts?: number | null
@@ -2580,9 +2592,13 @@ export type PointRedemptionList = {
    */
   items: Array<PointRedemptionRead>
   /**
-   * Total Amount
+   * Today Count
    */
-  total_amount: number
+  today_count: number
+  /**
+   * Today Amount
+   */
+  today_amount: number
 }
 
 /**
@@ -3627,6 +3643,10 @@ export type SidebarTask = {
    * Locked By Team
    */
   locked_by_team?: boolean
+  /**
+   * Is Managed
+   */
+  is_managed?: boolean
 }
 
 /**

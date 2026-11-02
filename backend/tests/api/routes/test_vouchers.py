@@ -1370,7 +1370,9 @@ class TestPoints:
             with act_as(app, user):
                 r = await async_client.get(url)
             assert r.status_code == 200
-            assert r.json()["total_amount"] == 3
+            assert r.json()["today_amount"] == 3
+            assert r.json()["today_count"] == 2
+            assert "total_amount" not in r.json()
             assert len(r.json()["items"]) == 2
             assert r.json()["items"][0]["user_name"] == cast.volunteer.name
 
@@ -1378,12 +1380,68 @@ class TestPoints:
             r = await async_client.get(url)
         assert r.status_code == 200
         assert [i["actor_name"] for i in r.json()["items"]] == [cast.staff.name]
-        assert r.json()["total_amount"] == 1
+        assert r.json()["today_amount"] == 1
+        assert r.json()["today_count"] == 1
 
         with act_as(app, cast.bystander):
             r = await async_client.get(url)
         assert r.status_code == 403
         assert _code(r) == "voucher.not_allowed"
+
+    async def test_today_counts_the_whole_day_not_the_page(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """The header's "Today: n vouchers" adds up the whole event day.
+
+        The day starts at midnight on the event wall clock (Berlin, UTC+2 in
+        June): 23:50 the evening before is yesterday, and 00:10, still 10 June
+        in UTC, is today. Entries beyond ``limit`` still count; an on-shift
+        redeemer gets the totals of their own.
+        """
+        # 23:50 on 10 June in Berlin is 21:50 UTC: yesterday, left out.
+        yesterday = dt.datetime(2026, 6, 10, 21, 50)
+        # 00:10 on 11 June in Berlin is 22:10 UTC the day before: today.
+        just_after_midnight = dt.datetime(2026, 6, 10, 22, 10)
+        rows = [
+            (yesterday, 5, cast.manager),
+            (just_after_midnight, 2, cast.manager),
+            (dt.datetime(2026, 6, 11, 9, 0), 1, cast.staff),
+            (dt.datetime(2026, 6, 11, 11, 0), 3, cast.staff),
+        ]
+        for created_at, amount, actor in rows:
+            db_session.add(
+                VoucherEntry(
+                    event_id=cast.event.id,
+                    user_id=cast.volunteer.id,
+                    kind="redemption",
+                    amount=-amount,
+                    method="manual",
+                    task_id=cast.point.id,
+                    task_name=cast.point.name,
+                    actor_id=actor.id,
+                    actor_name=actor.name,
+                    created_at=created_at,
+                )
+            )
+        await db_session.flush()
+        url = f"{_base(cast.event)}/points/{cast.point.id}/entries"
+
+        with act_as(app, cast.manager):
+            r = await async_client.get(url, params={"limit": 1})
+        assert r.status_code == 200
+        assert len(r.json()["items"]) == 1
+        assert r.json()["today_count"] == 3
+        assert r.json()["today_amount"] == 6
+
+        with act_as(app, cast.staff):
+            r = await async_client.get(url)
+        assert r.status_code == 200
+        assert r.json()["today_count"] == 2
+        assert r.json()["today_amount"] == 4
 
     async def test_recent_redemptions_need_the_task_in_this_event(
         self, async_client: AsyncClient, app: FastAPI, cast: Cast

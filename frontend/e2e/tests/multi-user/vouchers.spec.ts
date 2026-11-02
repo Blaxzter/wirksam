@@ -150,6 +150,11 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   // Showing the same code again at the stand says where it went, and stays.
   await confirm.getByTestId('btn-voucher-next').click()
   await expect(confirm).toBeHidden()
+  // The list under the scanner reads as vouchers, with today's total on top.
+  const recentCard = adminPage.getByTestId('voucher-recent')
+  await expect(recentCard.getByTestId('voucher-recent-today')).toHaveText('Today: 1 voucher')
+  await expect(recentCard.getByTestId('voucher-recent-row')).toHaveCount(1)
+  await expect(recentCard.getByTestId('voucher-recent-row')).toContainText('1 voucher')
   await adminPage.getByTestId('voucher-code-input').fill(code)
   await adminPage.getByTestId('btn-voucher-check').click()
   await expect(adminPage.getByTestId('voucher-check-problem')).toContainText(
