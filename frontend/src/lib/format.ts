@@ -32,6 +32,19 @@ export function telHref(phone: string | null | undefined): string | null {
   return `tel:${raw.startsWith('+') ? '+' : ''}${digits}`
 }
 
+/**
+ * First word of a name, skipping a "[DEMO]" style prefix: "Approve Carla",
+ * "Good morning, Carla". Falls back to the whole (trimmed) name when there is
+ * no word to take.
+ */
+export function firstName(name: string): string {
+  const words = name
+    .replace(/^\s*\[[^\]]*\]\s*/, '')
+    .trim()
+    .split(/\s+/)
+  return words[0] || name.trim()
+}
+
 /** Two letters for an avatar fallback, skipping a "[DEMO]" style prefix. */
 export function initials(name: string | null | undefined): string {
   const words = (name ?? '')

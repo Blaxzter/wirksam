@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { formatDate, formatHours, initials, telHref } from '@/lib/format'
+import { firstName, formatDate, formatHours, initials, telHref } from '@/lib/format'
 import i18n from '@/locales/i18n'
 
 /**
@@ -144,5 +144,22 @@ describe('initials', () => {
     expect(initials('Marco')).toBe('MA')
     expect(initials('')).toBe('?')
     expect(initials(null)).toBe('?')
+  })
+})
+
+describe('firstName', () => {
+  it('takes the first word, skipping a "[DEMO]" style prefix', () => {
+    expect(firstName('[DEMO] Carla Meier')).toBe('Carla')
+    expect(firstName('Sven')).toBe('Sven')
+  })
+
+  it('ignores extra spaces around and between the words', () => {
+    expect(firstName('  Carla   Meier ')).toBe('Carla')
+    expect(firstName('  [DEMO]   Carla Meier')).toBe('Carla')
+  })
+
+  it('falls back to the whole name when nothing is left after the prefix', () => {
+    expect(firstName('[DEMO]')).toBe('[DEMO]')
+    expect(firstName('')).toBe('')
   })
 })
