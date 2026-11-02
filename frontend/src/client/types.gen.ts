@@ -626,6 +626,10 @@ export type DashboardOpenShift = {
    */
   location?: string | null
   /**
+   * Location Id
+   */
+  location_id?: string | null
+  /**
    * Taken
    */
   taken: number
@@ -689,6 +693,10 @@ export type DashboardShift = {
    * Location
    */
   location?: string | null
+  /**
+   * Location Id
+   */
+  location_id?: string | null
   /**
    * Taken
    */

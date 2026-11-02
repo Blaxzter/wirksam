@@ -274,6 +274,7 @@ export const zDashboardOpenShift = z
     start_time: z.iso.time().nullish(),
     end_time: z.iso.time().nullish(),
     location: z.string().nullish(),
+    location_id: z.uuid().nullish(),
     taken: z.int(),
     capacity: z.int(),
     places_left: z.int(),
@@ -300,6 +301,7 @@ export const zDashboardShift = z
     start_time: z.iso.time().nullish(),
     end_time: z.iso.time().nullish(),
     location: z.string().nullish(),
+    location_id: z.uuid().nullish(),
     taken: z.int(),
     capacity: z.int(),
   })

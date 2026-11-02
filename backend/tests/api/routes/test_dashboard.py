@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_team import EventTeam, EventTeamMember
+from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -26,6 +27,7 @@ async def _add_shift(
     start: dt.time | None = dt.time(9, 0),
     end: dt.time | None = dt.time(12, 30),
     capacity: int = 2,
+    location: Location | None = None,
 ) -> Shift:
     shift = Shift(
         task_id=task.id,
@@ -33,7 +35,8 @@ async def _add_shift(
         date=date,
         start_time=start,
         end_time=end,
-        location="Haupteingang",
+        location=location.name if location else "Haupteingang",
+        location_id=location.id if location else None,
         max_bookings=capacity,
     )
     db_session.add(shift)
@@ -98,6 +101,44 @@ class TestDashboardFeed:
         assert mine["capacity"] == 2
         # 09:00–12:30
         assert data["my_minutes"] == 210
+
+    async def test_shifts_carry_their_venue_location(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+        test_user: User,
+    ):
+        """The id lets a row point at its spot on the venue map.
+
+        A shift whose place is only free text has nothing to point at, so it
+        sends ``null`` rather than leaving the field out.
+        """
+        stage = Location(event_id=test_event.id, name="Bühne")
+        db_session.add(stage)
+        await db_session.flush()
+        on_stage = await _add_shift(
+            db_session, test_task, title="Meine Bühne", location=stage
+        )
+        await _book(db_session, on_stage, test_user)
+        anywhere = await _add_shift(db_session, test_task, title="Mein Irgendwo")
+        await _book(db_session, anywhere, test_user)
+        await _add_shift(db_session, test_task, title="Offen Bühne", location=stage)
+        await _add_shift(db_session, test_task, title="Offen Irgendwo")
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert r.status_code == 200
+        data = r.json()
+        booked = {s["title"]: s for s in data["my_shifts"]}
+        assert booked["Meine Bühne"]["location_id"] == str(stage.id)
+        assert booked["Meine Bühne"]["location"] == "Bühne"
+        assert booked["Mein Irgendwo"]["location_id"] is None
+        offered = {s["title"]: s for s in data["open_shifts"]}
+        assert offered["Offen Bühne"]["location_id"] == str(stage.id)
+        assert offered["Offen Irgendwo"]["location_id"] is None
+        assert offered["Offen Irgendwo"]["location"] == "Haupteingang"
 
     async def test_past_shifts_are_not_upcoming(
         self,
