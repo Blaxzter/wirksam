@@ -10,6 +10,7 @@
     },
     "mobileBottomNav": {
         "bookings": "Bookings",
+        "home": "Home",
         "inbox": "Inbox",
         "more": "More",
         "moreDescription": "Everything else in WirkSam",

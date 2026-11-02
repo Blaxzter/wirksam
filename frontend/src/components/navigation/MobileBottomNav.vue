@@ -59,15 +59,15 @@ interface MoreItem {
 }
 
 /**
- * Every page the desktop sidebar offers that the three tabs do not, in the
+ * Every page the desktop sidebar offers that the tabs do not, in the
  * sidebar's groups. Phones have no sidebar, so this sheet is the one place for
  * pages; the avatar menu in the header keeps only what is about the user
  * (account, notifications, theme, sign out), as on desktop.
  */
 const moreGroups = computed<MoreItem[][]>(() => {
-  const event: MoreItem[] = [
-    { routeName: 'home', labelKey: 'navigation.sidebar.items.home.label', icon: House },
-  ]
+  // Home is a tab of its own, so the event group starts empty; it is never
+  // empty in the end, because availability and change-event always follow.
+  const event: MoreItem[] = []
   // Same rule as the sidebar: once a task earns vouchers or takes them.
   const selected = authStore.selectedEvent
   if ((selected?.voucher_task_count ?? 0) > 0 || (selected?.voucher_point_count ?? 0) > 0) {
@@ -124,17 +124,7 @@ const moreGroups = computed<MoreItem[][]>(() => {
   return [event, manage, app].filter((group) => group.length > 0)
 })
 
-// Home is where the app opens, so "More" lighting up there would read as if the
-// user had wandered somewhere.
-const moreRoutes = computed(
-  () =>
-    new Set(
-      moreGroups.value
-        .flat()
-        .map((item) => item.routeName)
-        .filter((name) => name !== 'home'),
-    ),
-)
+const moreRoutes = computed(() => new Set(moreGroups.value.flat().map((item) => item.routeName)))
 
 // The entries are real links, so the tap itself navigates; the sheet closes on
 // that tap and, as a backstop, whenever the route changes underneath it.
@@ -145,6 +135,36 @@ watch(
   },
 )
 
+type Tab = 'home' | 'tasks' | 'bookings' | 'inbox' | 'more'
+
+/** The four tabs that are plain links; "More" is a button and comes last. */
+const linkTabs: {
+  id: Exclude<Tab, 'more'>
+  routeName: string
+  labelKey: string
+  icon: Component
+}[] = [
+  { id: 'home', routeName: 'home', labelKey: 'navigation.mobileBottomNav.home', icon: House },
+  {
+    id: 'tasks',
+    routeName: 'tasks',
+    labelKey: 'navigation.mobileBottomNav.tasks',
+    icon: CalendarDays,
+  },
+  {
+    id: 'bookings',
+    routeName: 'my-bookings',
+    labelKey: 'navigation.mobileBottomNav.bookings',
+    icon: BookCheck,
+  },
+  {
+    id: 'inbox',
+    routeName: 'notifications',
+    labelKey: 'navigation.mobileBottomNav.inbox',
+    icon: Bell,
+  },
+]
+
 const TASK_ROUTES = new Set(['tasks', 'task-create', 'task-edit', 'task-detail', 'task-add-shifts'])
 const BOOKING_ROUTES = new Set(['my-bookings', 'booking-detail'])
 const INBOX_ROUTES = new Set(['notifications'])
@@ -152,8 +172,9 @@ const INBOX_ROUTES = new Set(['notifications'])
 // alone would leave it with no tab lit.
 const VOUCHER_ROUTES = new Set(['my-vouchers', 'voucher-redeem'])
 
-const activeTab = computed<'tasks' | 'bookings' | 'inbox' | 'more' | null>(() => {
+const activeTab = computed<Tab | null>(() => {
   const name = typeof route.name === 'string' ? route.name : ''
+  if (name === 'home') return 'home'
   if (TASK_ROUTES.has(name)) return 'tasks'
   if (BOOKING_ROUTES.has(name)) return 'bookings'
   if (INBOX_ROUTES.has(name)) return 'inbox'
@@ -161,6 +182,17 @@ const activeTab = computed<'tasks' | 'bookings' | 'inbox' | 'more' | null>(() =>
   if (moreRoutes.value.has(name)) return 'more'
   return null
 })
+
+/**
+ * Said explicitly on every tab: RouterLink's own `aria-current` only fires on
+ * an exact match, so a task's detail page would light the Tasks tab without
+ * announcing it.
+ */
+const currentFor = (tab: Tab) => (activeTab.value === tab ? 'page' : undefined)
+
+const TAB_CLASS = 'flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-0.5'
+const PILL_CLASS = 'relative flex h-7 w-[52px] items-center justify-center rounded-full'
+const LABEL_CLASS = 'max-w-full truncate px-1 text-[11px]'
 
 const notificationDisplayCount = computed(() => {
   if (notificationStore.unreadCount > 99) return '99+'
@@ -174,58 +206,39 @@ const notificationDisplayCount = computed(() => {
     class="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
   >
     <RouterLink
-      :to="{ name: 'tasks' }"
-      data-testid="mobile-nav-tasks"
-      class="flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-xs"
-      :class="
-        activeTab === 'tasks' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-      "
+      v-for="tab in linkTabs"
+      :key="tab.id"
+      :to="{ name: tab.routeName }"
+      :data-testid="`mobile-nav-${tab.id}`"
+      :aria-current="currentFor(tab.id)"
+      :class="[
+        TAB_CLASS,
+        activeTab === tab.id ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+      ]"
     >
-      <CalendarDays class="size-5" />
-      <span>{{ t('navigation.mobileBottomNav.tasks') }}</span>
-    </RouterLink>
-
-    <RouterLink
-      :to="{ name: 'my-bookings' }"
-      data-testid="mobile-nav-bookings"
-      class="flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-xs"
-      :class="
-        activeTab === 'bookings' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-      "
-    >
-      <BookCheck class="size-5" />
-      <span>{{ t('navigation.mobileBottomNav.bookings') }}</span>
-    </RouterLink>
-
-    <RouterLink
-      :to="{ name: 'notifications' }"
-      data-testid="mobile-nav-inbox"
-      class="relative flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-xs"
-      :class="
-        activeTab === 'inbox' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-      "
-    >
-      <div class="relative">
-        <Bell class="size-5" />
+      <span :class="[PILL_CLASS, activeTab === tab.id ? 'bg-primary/10' : '']">
+        <component :is="tab.icon" class="size-5" aria-hidden="true" />
         <span
-          v-if="notificationStore.hasUnread"
-          class="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white"
+          v-if="tab.id === 'inbox' && notificationStore.hasUnread"
+          class="absolute top-0 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white"
         >
           {{ notificationDisplayCount }}
         </span>
-      </div>
-      <span>{{ t('navigation.mobileBottomNav.inbox') }}</span>
+      </span>
+      <span :class="[LABEL_CLASS, activeTab === tab.id ? 'font-semibold' : 'font-medium']">
+        {{ t(tab.labelKey) }}
+      </span>
     </RouterLink>
 
     <button
       type="button"
       data-testid="mobile-nav-more"
-      class="flex h-16 flex-1 flex-col items-center justify-center gap-0.5 text-xs"
-      :class="
+      :class="[
+        TAB_CLASS,
         activeTab === 'more' || moreOpen
           ? 'text-primary'
-          : 'text-muted-foreground hover:text-foreground'
-      "
+          : 'text-muted-foreground hover:text-foreground',
+      ]"
       :aria-expanded="moreOpen"
       :aria-label="
         teamRequestCount > 0
@@ -234,20 +247,24 @@ const notificationDisplayCount = computed(() => {
       "
       @click="moreOpen = true"
     >
-      <div class="relative">
-        <Menu class="size-5" />
+      <span :class="[PILL_CLASS, activeTab === 'more' || moreOpen ? 'bg-primary/10' : '']">
+        <Menu class="size-5" aria-hidden="true" />
         <!-- Something to decide outranks something new to read. -->
         <span
           v-if="teamRequestCount > 0"
-          class="absolute -top-0.5 -right-1 size-2 rounded-full bg-red-700"
+          class="absolute top-0.5 right-3 size-2 rounded-full bg-red-700"
           data-testid="mobile-nav-more-dot"
         />
         <span
           v-else-if="hasNewVersions"
-          class="absolute -top-0.5 -right-1 size-2 rounded-full bg-primary"
+          class="absolute top-0.5 right-3 size-2 rounded-full bg-primary"
         />
-      </div>
-      <span>{{ t('navigation.mobileBottomNav.more') }}</span>
+      </span>
+      <span
+        :class="[LABEL_CLASS, activeTab === 'more' || moreOpen ? 'font-semibold' : 'font-medium']"
+      >
+        {{ t('navigation.mobileBottomNav.more') }}
+      </span>
     </button>
   </nav>
 

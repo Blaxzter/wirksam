@@ -10,6 +10,7 @@
     },
     "mobileBottomNav": {
         "bookings": "Buchungen",
+        "home": "Start",
         "inbox": "Posteingang",
         "more": "Mehr",
         "moreDescription": "Alles Weitere in WirkSam",
