@@ -157,6 +157,32 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   )
 })
 
+test('the dashboard shows a code at the stand, without going to the vouchers page', async ({
+  adminPage,
+  disposablePage,
+}) => {
+  // The same earned vouchers as above, set up through the API: this test is
+  // about the dashboard's own "Show my code", which opens its own dialog.
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await bookShift(disposablePage, shift.id)
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+  await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+
+  await setSelectedEvent(disposablePage, event.id)
+  await disposablePage.goto('/app/home')
+  const card = disposablePage.getByTestId('my-vouchers-card')
+  await expect(card.getByTestId('dashboard-voucher-available')).toHaveText('2')
+
+  await card.getByTestId('btn-show-voucher-code').click()
+  const codeDialog = disposablePage.getByTestId('voucher-code-dialog')
+  await expect(codeDialog.getByTestId('voucher-code-text')).toHaveText(
+    /^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/,
+  )
+  await disposablePage.keyboard.press('Escape')
+  await expect(codeDialog).toBeHidden()
+  await expect(disposablePage).toHaveURL(/\/app\/home$/)
+})
+
 test('a refused camera says so, and a bad code is explained next to the field', async ({
   adminPage,
 }) => {

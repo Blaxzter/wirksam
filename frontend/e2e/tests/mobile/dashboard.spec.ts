@@ -71,6 +71,11 @@ test.describe('Dashboard – on a phone', () => {
     await expect(section.locator('[data-testid="open-shift-card"]:visible')).toHaveCount(4)
     const browse = page.getByTestId('btn-browse-open-shifts')
     await expect(browse).toBeVisible()
-    await expect(browse).toContainText('more')
+    // The link holds both counts and shows one by width; text matching would
+    // read the hidden one too, so this asks which is on screen.
+    const phoneCount = browse.getByTestId('open-shifts-more-mobile')
+    await expect(phoneCount).toBeVisible()
+    await expect(phoneCount).toHaveText(/^\(\d+ more\)$/)
+    await expect(browse.getByTestId('open-shifts-more-desktop')).toBeHidden()
   })
 })

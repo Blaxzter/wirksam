@@ -8,12 +8,18 @@
  */
 import { expect, test } from '../../fixtures.js'
 import {
+  type EventRead,
   type ShiftRead,
   type TaskWithShifts,
+  addMember,
+  api,
   bookShift,
   cancelBooking,
+  createEvent,
   createTaskWithShifts,
+  deleteEvent,
   deleteTask,
+  futureDate,
   listShifts,
   uniqueName,
 } from '../../helpers/api.js'
@@ -203,5 +209,55 @@ test.describe('Dashboard – getting around', () => {
     } finally {
       await cancelBooking(page, booking.id).catch(() => {})
     }
+  })
+})
+
+test.describe('Dashboard – switching event', () => {
+  // A disposable user, because switching changes the account's selected event.
+  let other: EventRead
+  let otherTask: TaskWithShifts
+  let otherName: string
+
+  test.beforeEach(async ({ adminPage, disposablePage, disposableUser }) => {
+    other = await createEvent(adminPage, uniqueName('E2E Dashboard Switch'), 'published', 'private', {
+      start: futureDate(1),
+      end: futureDate(3),
+    })
+    await addMember(adminPage, disposablePage, other.id, disposableUser.email)
+    otherName = uniqueName('E2E Dashboard Elsewhere')
+    otherTask = await createTaskWithShifts(adminPage, {
+      name: otherName,
+      eventId: other.id,
+      status: 'published',
+      startTime: '08:00',
+      endTime: '10:00',
+      slotDuration: 60,
+      peoplePerShift: 2,
+    })
+    // The sidebar's event switcher is off by default.
+    await api(disposablePage, 'PATCH', '/users/me', { show_event_switcher_in_nav: true })
+  })
+
+  test.afterEach(async ({ adminPage }) => {
+    // Tasks outlive their event, so they go first.
+    await deleteTask(adminPage, otherTask?.task.id ?? '').catch(() => {})
+    await deleteEvent(adminPage, other?.id ?? '').catch(() => {})
+  })
+
+  test('the dashboard follows a switch from the sidebar without a reload', async ({
+    disposablePage: page,
+  }) => {
+    await page.goto('/app/home')
+    const open = page.getByTestId('dashboard-open-shifts')
+    await expect(open.getByText(taskName).first()).toBeVisible()
+
+    await page.getByTestId('sidebar-event-switcher').click()
+    await page.getByTestId(`event-switcher-option-${other.id}`).click()
+
+    // Switching does not change the URL, so nothing remounts the page: the
+    // dashboard has to notice by itself.
+    await expect(open.getByText(otherName).first()).toBeVisible()
+    await expect(open.getByText(taskName)).toHaveCount(0)
+    await expect(page).toHaveURL(/\/app\/home$/)
   })
 })

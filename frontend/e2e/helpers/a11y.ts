@@ -121,11 +121,18 @@ function ruleIdsWithReasons(rules: DisabledRule[]): string[] {
  *
  * Waiting rather than dismissing the notice: it is part of what an anonymous
  * visitor sees, so it belongs in the scan.
+ *
+ * Toasts fade in the same way (400 ms). The organiser's dashboard raises one
+ * ("4 people are waiting to join") the moment its feed arrives, which is when
+ * a scan that waits for the cards starts: its "Review" button came out at
+ * 4.35:1 mid-fade, against about 8:1 once it has settled.
  */
 async function settleOverlays(page: Page): Promise<void> {
   const notice = page.getByTestId('cookie-notice')
-  if ((await notice.count()) === 0) return
-  await expect(notice).toHaveCSS('opacity', '1')
+  if ((await notice.count()) > 0) await expect(notice).toHaveCSS('opacity', '1')
+  for (const toast of await page.locator('[data-sonner-toast][data-visible="true"]').all()) {
+    await expect(toast).toHaveCSS('opacity', '1')
+  }
 }
 
 /** Only exclude dev-only overlays that are actually on the page. */

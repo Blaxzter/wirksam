@@ -41,19 +41,19 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 31      |
+| `a11y`       | 5          | 33      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 230     |
+| `chromium`   | 28         | 231     |
 | `member`     | 3          | 26      |
 | `mobile`     | 3          | 14      |
-| `multi-user` | 7          | 64      |
+| `multi-user` | 7          | 65      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **60**     | **428** |
+| **Total**    | **60**     | **432** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 31 tests
+### Project `a11y` — 5 files, 33 tests
 
 #### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 12 tests
 
@@ -88,7 +88,7 @@ Not yet covered, and not currently tracked by an issue:
   - dashboard in English
   - dashboard in German
 
-#### `frontend/e2e/tests/a11y/member-routes.spec.ts` — 7 tests
+#### `frontend/e2e/tests/a11y/member-routes.spec.ts` — 9 tests
 
 - **a11y – member routes** (6)
   - dashboard
@@ -97,6 +97,9 @@ Not yet covered, and not currently tracked by an issue:
   - my bookings
   - availability
   - settings
+- **a11y – member dashboard with a booked shift** (2)
+  - next-shift card, light
+  - next-shift card, dark
 - **a11y – member task detail** (1)
   - task detail
 
@@ -155,7 +158,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 230 tests
+### Project `chromium` — 28 files, 231 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -267,7 +270,7 @@ Not yet covered, and not currently tracked by an issue:
   - can access public changelog page
   - public changelog shows heading
 
-#### `frontend/e2e/tests/authenticated/dashboard-full.spec.ts` — 16 tests
+#### `frontend/e2e/tests/authenticated/dashboard-full.spec.ts` — 17 tests
 
 - **Dashboard – page structure** (3)
   - leads with the next-shift card
@@ -290,6 +293,8 @@ Not yet covered, and not currently tracked by an issue:
 - **Dashboard – getting around** (2)
   - Find a shift in the header opens the open shifts
   - All bookings opens your bookings
+- **Dashboard – switching event** (1)
+  - the dashboard follows a switch from the sidebar without a reload
 
 #### `frontend/e2e/tests/authenticated/dashboard.spec.ts` — 2 tests
 
@@ -625,7 +630,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 64 tests
+### Project `multi-user` — 7 files, 65 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -724,9 +729,10 @@ Not yet covered, and not currently tracked by an issue:
 - an organiser puts a member in charge from the task page
 - a person in charge edits the task and adds a shift, but cannot delete or publish it
 
-#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 2 tests
+#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 3 tests
 
 - a volunteer shows their code and an organiser redeems it at a stand
+- the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 
 ### Project `public` — 8 files, 42 tests

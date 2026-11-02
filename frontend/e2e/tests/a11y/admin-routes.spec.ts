@@ -23,6 +23,10 @@ test.describe('a11y – admin routes', () => {
   test('dashboard', async ({ adminPage: page }) => {
     await page.goto('/app/home')
     await expect(page.getByTestId('page-heading')).toBeVisible()
+    // The greeting renders before the cards; scanning then would scan the
+    // skeleton. The next-shift card (or its empty state) only comes with the
+    // rest of the cards.
+    await expect(page.getByTestId('dashboard-next-shift')).toBeVisible()
     await expectNoA11yViolations(page, { label: 'admin dashboard (/app/home)' })
   })
 
