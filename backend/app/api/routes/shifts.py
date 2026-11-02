@@ -11,7 +11,7 @@ from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
-from app.logic import clock
+from app.logic import clock, vouchers
 from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_visible_event_ids
 from app.logic.location_assignment import location_patch
@@ -193,6 +193,14 @@ async def update_shift(
             new_end=update_data.get("end_time", db_shift.end_time),
             now=clock.wall_clock_now(),
         )
+    if any(
+        k in update_data and update_data[k] != getattr(db_shift, k)
+        for k in ("date", "start_time", "end_time")
+    ):
+        # Moving an ended shift, even into the future, keeps what it earned.
+        await vouchers.settle_earnings(
+            session, now=clock.wall_clock_now(), shift_ids=[db_shift.id]
+        )
     update_data.update(
         await location_patch(session, db_shift, update_data, event_id=db_task.event_id)
     )
@@ -245,7 +253,11 @@ async def delete_shift(
             now=clock.wall_clock_now(),
         )
 
-    # Cancel confirmed bookings with snapshot before deleting the shift
+    # What its bookers earned stays earned; then cancel the confirmed
+    # bookings with a snapshot before deleting the shift.
+    await vouchers.settle_earnings(
+        session, now=clock.wall_clock_now(), shift_ids=[shift.id]
+    )
     await crud_booking.cancel_bookings_for_shifts(
         session,
         slot_ids=[shift.id],

@@ -369,10 +369,11 @@ async def dismiss_booking(
 def _refuse_if_shift_over(shift: Shift) -> None:
     """409 ``booking.shift_over`` once the shift has ended (event wall clock).
 
-    On every task, not only those with vouchers: earnings follow the task's
-    current ``vouchers_per_shift``, so a shift booked after the fact on a task
-    with none would start earning the moment an organiser set a value.
-    Organisers fix the past with hour and voucher corrections instead.
+    On every task, not only those with vouchers: hours are derived from booked
+    shifts that have ended, and so are the vouchers of a booking not settled
+    yet, at the task's current ``vouchers_per_shift``. A booking made after the
+    fact would credit work nobody did. Organisers fix the past with hour and
+    voucher corrections instead.
     """
     if shift_ends_at(shift.date, shift.start_time, shift.end_time) <= (
         clock.wall_clock_now()

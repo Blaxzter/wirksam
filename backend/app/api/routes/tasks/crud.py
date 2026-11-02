@@ -11,6 +11,7 @@ from app.crud.booking import booking as crud_booking
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
+from app.logic import clock, vouchers
 from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import (
@@ -221,9 +222,25 @@ async def update_task(
             update_data.pop(f, None)
     target_event_id = update_data.get("event_id", db_task.event_id)
     moving = target_event_id != db_task.event_id
+    rate_changing = (
+        "vouchers_per_shift" in update_data
+        and update_data["vouchers_per_shift"] != db_task.vouchers_per_shift
+    )
     if moving:
         # Moving a task is a write into the target event as well.
         await require_event_role(current_user, session, target_event_id)
+    if rate_changing or moving:
+        # Earned is earned: what ended shifts earned is frozen at the old rate,
+        # and in the source event, before either changes. A rate change also
+        # freezes zero-rate bookings, so raising a rate from 0 pays only for
+        # shifts not over yet.
+        await vouchers.settle_earnings(
+            session,
+            now=clock.wall_clock_now(),
+            task_ids=[db_task.id],
+            include_zero=rate_changing,
+        )
+    if moving:
         # A location belongs to one event; moving the task drops the link on
         # it and on its batches and shifts, keeping the names as free text.
         await unlink_task_children(session, db_task.id)
@@ -312,6 +329,10 @@ async def delete_task(
     result = await session.execute(stmt)
     slot_ids = list(result.scalars().all())
 
+    # What the worked shifts earned stays earned, under the task's name.
+    await vouchers.settle_earnings(
+        session, now=clock.wall_clock_now(), task_ids=[db_task.id]
+    )
     # Cancel confirmed bookings with snapshot before deleting
     await crud_booking.cancel_bookings_for_shifts(
         session,

@@ -77,7 +77,10 @@ export function historySortKey(item: VoucherHistoryItem): number {
 
 /**
  * The shifts that earned vouchers and every redemption and correction, newest
- * first. Shifts still to come are left out: they have earned nothing yet.
+ * first. Shifts still to come are left out: they have earned nothing yet. A
+ * settled shift (frozen before its task or shift changed, or went) is listed
+ * like any other earned one, from its snapshot; its `shift_id` and `task_id`
+ * are null once those are gone.
  */
 export function voucherHistory(account: Pick<VoucherAccount, 'shifts' | 'entries'>) {
   const items: VoucherHistoryItem[] = [

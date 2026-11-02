@@ -1,8 +1,10 @@
 """How a voucher balance is worked out (``app.logic.vouchers``).
 
-Earned vouchers are derived from bookings every time they are asked for, so
-these tests build shifts and bookings directly and pass ``now`` in: what
-matters is which bookings count, and from when.
+Earned vouchers are derived from bookings until something would change what an
+ended booking earned; then they are settled (frozen) first. Most tests here
+build shifts and bookings directly and pass ``now`` in: what matters is which
+bookings count, and from when. The "earned is earned" tests make the changes
+through the API, so they also prove that every route settles before it acts.
 """
 
 import datetime as dt
@@ -10,19 +12,24 @@ import uuid
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.core.config import settings
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.voucher import voucher as crud_voucher
-from app.logic import vouchers
+from app.logic import vouchers, work_hours
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.shift import Shift
+from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
+from tests.fixtures.client import act_as
 
 DAY = dt.date(2026, 6, 11)
 
@@ -58,9 +65,11 @@ async def _booked(
     start: dt.time | None = dt.time(8),
     end: dt.time | None = dt.time(12),
     status: str = "confirmed",
+    batch: ShiftBatch | None = None,
 ) -> Shift:
     shift = Shift(
         task_id=task.id,
+        batch_id=batch.id if batch else None,
         title=f"Shift {uuid.uuid4().hex[:6]}",
         date=date,
         start_time=start,
@@ -102,6 +111,13 @@ async def _summary(
         "balance": s.balance,
         "available": s.available,
     }
+
+
+async def _earning_rows(db: AsyncSession, **where: Any) -> list[VoucherEarning]:
+    query = select(VoucherEarning).execution_options(populate_existing=True)
+    for name, value in where.items():
+        query = query.where(getattr(VoucherEarning, name) == value)
+    return list((await db.execute(query)).scalars())
 
 
 # ── Pure helpers ──────────────────────────────────────────────────
@@ -378,21 +394,6 @@ class TestLedger:
             == 2
         )
 
-    async def test_lowering_the_rate_after_spending_goes_negative(
-        self, db_session: AsyncSession, test_event: Event, test_user: User
-    ) -> None:
-        task = await _voucher_task(db_session, test_event, test_user, per_shift=3)
-        await _booked(db_session, task, test_user)
-        await _entry(db_session, test_event, test_user, -3, kind="redemption")
-
-        task.vouchers_per_shift = 1
-        db_session.add(task)
-        await db_session.flush()
-
-        summary = await _summary(db_session, test_event, test_user, at(DAY, 20))
-        assert summary["balance"] == -2
-        assert summary["available"] == 0
-
 
 @pytest.mark.asyncio
 class TestBalances:
@@ -435,32 +436,6 @@ class TestBalances:
         row = next(r for r in rows if r.user_id == test_outsider_user.id)
         assert row.balance == -1
         assert row.available == 0
-
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("as_event_admin")
-async def test_deleting_a_past_shift_lowers_what_was_earned(
-    async_client: AsyncClient,
-    db_session: AsyncSession,
-    test_event: Event,
-    test_user: User,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Derived, not stored: an organiser deleting a worked shift takes its
-    vouchers back with it, as it takes its hours."""
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: at(DAY, 20))
-    task = await _voucher_task(db_session, test_event, test_user)
-    shift = await _booked(db_session, task, test_user)
-    assert (await _summary(db_session, test_event, test_user, at(DAY, 20)))[
-        "earned"
-    ] == 2
-
-    r = await async_client.delete(f"/api/v1/shifts/{shift.id}")
-    assert r.status_code == 204
-
-    assert (await _summary(db_session, test_event, test_user, at(DAY, 20)))[
-        "earned"
-    ] == 0
 
 
 @pytest.mark.asyncio
@@ -512,3 +487,470 @@ async def test_a_code_already_taken_is_drawn_again(
     assert issued.expires_at == now + vouchers.PASS_TTL
     # The other person's code was not touched.
     assert await db_session.get(VoucherPass, taken.id) is not None
+
+
+# ── Settling ──────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestSettle:
+    """``settle_earnings`` on its own: which bookings it freezes, and how often."""
+
+    async def test_twice_writes_one_row_per_booking(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+        test_outsider_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+        other = await _booked(db_session, task, test_outsider_user)
+        now = at(DAY, 20)
+
+        first = await vouchers.settle_earnings(db_session, now=now, task_ids=[task.id])
+        again = await vouchers.settle_earnings(db_session, now=now, task_ids=[task.id])
+        by_shift = await vouchers.settle_earnings(
+            db_session, now=now, shift_ids=[other.id]
+        )
+        assert (first, again, by_shift) == (2, 0, 0)
+
+        rows = await _earning_rows(db_session, task_id=task.id)
+        assert sorted(r.user_id for r in rows) == sorted(
+            [test_user.id, test_outsider_user.id]
+        )
+        assert {(r.amount, r.event_id) for r in rows} == {(2, test_event.id)}
+        # Settling turns a derived amount into the same stored one.
+        assert (await _summary(db_session, test_event, test_user, now))["earned"] == 2
+
+    async def test_only_ended_worked_bookings(
+        self, db_session: AsyncSession, test_event: Event, test_user: User
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        ended = await _booked(db_session, task, test_user)
+        # Running at 20:00, tomorrow's, and a cancelled one: none has earned.
+        await _booked(db_session, task, test_user, start=dt.time(19), end=dt.time(21))
+        await _booked(db_session, task, test_user, date=DAY + dt.timedelta(days=1))
+        await _booked(db_session, task, test_user, status="cancelled")
+
+        written = await vouchers.settle_earnings(
+            db_session, now=at(DAY, 20), task_ids=[task.id]
+        )
+
+        assert written == 1
+        (row,) = await _earning_rows(db_session, task_id=task.id)
+        assert row.shift_id == ended.id
+        assert (row.task_name, row.shift_title) == ("Theke", ended.title)
+        assert (row.shift_date, row.shift_start_time, row.shift_end_time) == (
+            DAY,
+            dt.time(8),
+            dt.time(12),
+        )
+
+    async def test_an_overnight_shift_from_yesterday_once_it_is_over(
+        self, db_session: AsyncSession, test_event: Event, test_user: User
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user, start=dt.time(22), end=dt.time(2))
+        nxt = DAY + dt.timedelta(days=1)
+
+        running = await vouchers.settle_earnings(
+            db_session, now=at(nxt, 1, 59), task_ids=[task.id]
+        )
+        over = await vouchers.settle_earnings(
+            db_session, now=at(nxt, 2), task_ids=[task.id]
+        )
+        assert (running, over) == (0, 1)
+
+    async def test_tasks_at_zero_only_with_include_zero(
+        self, db_session: AsyncSession, test_event: Event, test_user: User
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user, per_shift=0)
+        await _booked(db_session, task, test_user)
+        now = at(DAY, 20)
+
+        plain = await vouchers.settle_earnings(db_session, now=now, task_ids=[task.id])
+        with_zero = await vouchers.settle_earnings(
+            db_session, now=now, task_ids=[task.id], include_zero=True
+        )
+        assert (plain, with_zero) == (0, 1)
+        (row,) = await _earning_rows(db_session, task_id=task.id)
+        assert row.amount == 0
+        # A zero row is no part of anyone's history.
+        acc = await vouchers.account(db_session, test_event.id, test_user, now=now)
+        assert acc.shifts == []
+
+    async def test_needs_something_to_settle(self, db_session: AsyncSession) -> None:
+        now = at(DAY, 20)
+        with pytest.raises(TypeError):
+            await vouchers.settle_earnings(db_session, now=now)
+        assert await vouchers.settle_earnings(db_session, now=now, task_ids=[]) == 0
+        assert await vouchers.settle_earnings(db_session, now=now, shift_ids=[]) == 0
+
+
+@pytest.mark.asyncio
+class TestSettledReads:
+    """Reading a balance once some of it is settled."""
+
+    async def test_a_settled_booking_keeps_its_amount_when_the_rate_rises(
+        self, db_session: AsyncSession, test_event: Event, test_user: User
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+        await vouchers.settle_earnings(db_session, now=at(DAY, 20), task_ids=[task.id])
+
+        task.vouchers_per_shift = 5
+        db_session.add(task)
+        await db_session.flush()
+
+        summary = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert summary["earned"] == 2
+
+    async def test_a_settled_shift_moved_into_the_future_does_not_earn_twice(
+        self, db_session: AsyncSession, test_event: Event, test_user: User
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        shift = await _booked(db_session, task, test_user)
+        await vouchers.settle_earnings(db_session, now=at(DAY, 20), task_ids=[task.id])
+
+        shift.date = DAY + dt.timedelta(days=2)
+        db_session.add(shift)
+        await db_session.flush()
+
+        now = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert (now["earned"], now["upcoming"]) == (2, 0)
+        later = await _summary(
+            db_session, test_event, test_user, at(DAY + dt.timedelta(days=4), 12)
+        )
+        assert (later["earned"], later["upcoming"]) == (2, 0)
+
+    async def test_a_settled_row_reads_from_its_snapshot(
+        self, db_session: AsyncSession, test_event: Event, test_user: User
+    ) -> None:
+        """Renaming afterwards changes nothing, and ``ends_at`` is UTC like the
+        derived rows: 12:00 at a Berlin venue in June is 10:00 UTC."""
+        task = await _voucher_task(db_session, test_event, test_user)
+        shift = await _booked(db_session, task, test_user)
+        title = shift.title
+        await vouchers.settle_earnings(db_session, now=at(DAY, 20), task_ids=[task.id])
+
+        task.name = "Bar"
+        shift.title = "Renamed"
+        db_session.add_all([task, shift])
+        await db_session.flush()
+
+        acc = await vouchers.account(
+            db_session, test_event.id, test_user, now=at(DAY, 20)
+        )
+        (row,) = acc.shifts
+        assert row.settled
+        assert row.completed
+        assert (row.task_name, row.title) == ("Theke", title)
+        assert (row.shift_id, row.task_id) == (shift.id, task.id)
+        assert row.ends_at == at(DAY, 10)
+        assert row.vouchers == 2
+
+
+# ── Earned is earned, through the API ────────────────────────────
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("as_event_admin")
+class TestEarnedIsEarned:
+    """Every change that could take back what an ended shift earned settles
+    it first. The wall clock stands at 20:00 on the day of the shifts: the
+    08:00-12:00 shift is over, a 19:00-21:00 one is running."""
+
+    @pytest.fixture(autouse=True)
+    def _evening(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: at(DAY, 20))
+
+    async def test_lowering_the_rate_keeps_what_ended_shifts_earned(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """2 to 0 after two were spent: the ended shift keeps its 2, so the
+        balance stays at 0 instead of going below it; the running shift and
+        the one still to come count at the new rate."""
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+        await _booked(db_session, task, test_user, start=dt.time(19), end=dt.time(21))
+        await _booked(db_session, task, test_user, date=DAY + dt.timedelta(days=1))
+        await _entry(db_session, test_event, test_user, -2, kind="redemption")
+
+        r = await async_client.patch(
+            f"/api/v1/tasks/{task.id}", json={"vouchers_per_shift": 0}
+        )
+        assert r.status_code == 200, r.text
+
+        assert await _summary(db_session, test_event, test_user, at(DAY, 20)) == {
+            "earned": 2,
+            "upcoming": 0,
+            "redeemed": 2,
+            "adjusted": 0,
+            "balance": 0,
+            "available": 0,
+        }
+        later = await _summary(
+            db_session, test_event, test_user, at(DAY + dt.timedelta(days=3), 0)
+        )
+        assert later["earned"] == 2
+
+    async def test_raising_the_rate_from_zero_pays_only_shifts_not_over(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user, per_shift=0)
+        ended = await _booked(db_session, task, test_user)
+        await _booked(db_session, task, test_user, start=dt.time(19), end=dt.time(21))
+        await _booked(db_session, task, test_user, date=DAY + dt.timedelta(days=1))
+
+        r = await async_client.patch(
+            f"/api/v1/tasks/{task.id}", json={"vouchers_per_shift": 3}
+        )
+        assert r.status_code == 200, r.text
+
+        now = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert (now["earned"], now["upcoming"]) == (0, 6)
+        later = await _summary(
+            db_session, test_event, test_user, at(DAY + dt.timedelta(days=3), 0)
+        )
+        assert later["earned"] == 6
+        # The ended shift was frozen at 0, so the new rate never reaches it.
+        (row,) = await _earning_rows(db_session, task_id=task.id)
+        assert (row.shift_id, row.amount) == (ended.id, 0)
+
+    async def test_the_rate_sent_unchanged_settles_nothing(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+
+        r = await async_client.patch(
+            f"/api/v1/tasks/{task.id}",
+            json={"vouchers_per_shift": 2, "description": "Neu"},
+        )
+        assert r.status_code == 200, r.text
+        assert await _earning_rows(db_session, task_id=task.id) == []
+
+    async def test_deleting_a_worked_shift_keeps_its_vouchers_not_its_hours(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """Hours are a record the organisers keep correcting; vouchers are a
+        promise, and may already be spent at a stand."""
+        task = await _voucher_task(db_session, test_event, test_user)
+        shift = await _booked(db_session, task, test_user)
+        title = shift.title
+
+        r = await async_client.delete(f"/api/v1/shifts/{shift.id}")
+        assert r.status_code == 204
+
+        acc = await vouchers.account(
+            db_session, test_event.id, test_user, now=at(DAY, 20)
+        )
+        assert acc.summary.earned == 2
+        (row,) = acc.shifts
+        assert row.settled
+        assert (row.shift_id, row.task_id) == (None, task.id)
+        assert (row.task_name, row.title, row.date) == ("Theke", title, DAY)
+        assert (row.start_time, row.end_time) == (dt.time(8), dt.time(12))
+        assert row.ends_at == at(DAY, 10)
+        hours = await work_hours.volunteer_hours(
+            db_session, test_event.id, test_user, now=at(DAY, 20)
+        )
+        assert hours.summary.shift_count == 0
+
+    async def test_deleting_the_task_keeps_them_under_its_old_name(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        ended = await _booked(db_session, task, test_user)
+        await _booked(db_session, task, test_user, date=DAY + dt.timedelta(days=1))
+
+        r = await async_client.delete(f"/api/v1/tasks/{task.id}")
+        assert r.status_code == 204
+
+        acc = await vouchers.account(
+            db_session, test_event.id, test_user, now=at(DAY, 20)
+        )
+        assert (acc.summary.earned, acc.summary.upcoming) == (2, 0)
+        (row,) = acc.shifts
+        assert (row.task_id, row.shift_id, row.task_name) == (None, None, "Theke")
+        # Only the ended shift was frozen; the one to come had earned nothing.
+        rows = await _earning_rows(db_session, user_id=test_user.id)
+        assert [r.shift_id for r in rows] == [ended.id]
+
+    async def test_deleting_a_batch_keeps_them(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        batch = ShiftBatch(task_id=task.id, start_date=DAY, end_date=DAY)
+        db_session.add(batch)
+        await db_session.flush()
+        await _booked(db_session, task, test_user, batch=batch)
+
+        r = await async_client.delete(f"/api/v1/tasks/{task.id}/batches/{batch.id}")
+        assert r.status_code == 204
+
+        summary = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert summary["earned"] == 2
+
+    async def test_regenerating_away_an_ended_shift_keeps_them(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """The dry run writes nothing; the real run settles before it deletes."""
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+        payload = {
+            "start_date": DAY.isoformat(),
+            "end_date": DAY.isoformat(),
+            "schedule": {
+                "default_start_time": "14:00",
+                "default_end_time": "16:00",
+                "shift_duration_minutes": 120,
+            },
+        }
+        url = f"/api/v1/tasks/{task.id}/regenerate-shifts"
+
+        r = await async_client.post(f"{url}?dry_run=true", json=payload)
+        assert r.status_code == 200, r.text
+        assert await _earning_rows(db_session, task_id=task.id) == []
+
+        r = await async_client.post(url, json=payload)
+        assert r.status_code == 200, r.text
+        assert r.json()["shifts_removed"] == 1
+        summary = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert summary["earned"] == 2
+
+    async def test_moving_an_ended_shift_into_the_future_keeps_them_once(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        shift = await _booked(db_session, task, test_user)
+
+        r = await async_client.patch(
+            f"/api/v1/shifts/{shift.id}",
+            json={"date": (DAY + dt.timedelta(days=2)).isoformat()},
+        )
+        assert r.status_code == 200, r.text
+
+        now = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert (now["earned"], now["upcoming"]) == (2, 0)
+        # When it ends again it does not count a second time.
+        later = await _summary(
+            db_session, test_event, test_user, at(DAY + dt.timedelta(days=4), 0)
+        )
+        assert later["earned"] == 2
+
+    async def test_moving_the_event_dates_keeps_them(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+
+        r = await async_client.post(
+            f"/api/v1/events/{test_event.id}/shift-dates",
+            json={"new_start_date": "2026-06-24"},
+        )
+        assert r.status_code == 200, r.text
+
+        now = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert (now["earned"], now["upcoming"]) == (2, 0)
+
+    async def test_moving_the_task_keeps_them_in_the_source_event(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_user: User,
+    ) -> None:
+        """Balances and points are per event, and the volunteer may not even be
+        in the target: what was earned stays where it was earned, and only the
+        shifts still to come go along."""
+        task = await _voucher_task(db_session, test_event, test_user)
+        await _booked(db_session, task, test_user)
+        await _booked(db_session, task, test_user, date=DAY + dt.timedelta(days=1))
+
+        r = await async_client.patch(
+            f"/api/v1/tasks/{task.id}", json={"event_id": str(test_draft_event.id)}
+        )
+        assert r.status_code == 200, r.text
+
+        source = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert (source["earned"], source["upcoming"]) == (2, 0)
+        target = await _summary(db_session, test_draft_event, test_user, at(DAY, 20))
+        assert (target["earned"], target["upcoming"]) == (0, 2)
+        (row,) = await _earning_rows(db_session, task_id=task.id)
+        assert row.event_id == test_event.id
+
+    async def test_deleting_the_tasks_creator_keeps_what_others_earned(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+    ) -> None:
+        """``tasks.created_by_id`` cascades: the task and its shifts go with
+        the account, but not what volunteers earned on them."""
+        creator = User(
+            subject="local|voucher-task-creator",
+            email="creator.vouchers@example.com",
+            name="Creator",
+            roles=[],
+            is_active=True,
+        )
+        db_session.add(creator)
+        await db_session.flush()
+        task = await _voucher_task(db_session, test_event, creator)
+        task_id = task.id
+        await _booked(db_session, task, test_user)
+
+        with act_as(app, creator):
+            r = await async_client.delete("/api/v1/users/me")
+        assert r.status_code == 204
+
+        assert await db_session.get(Task, task_id, populate_existing=True) is None
+        summary = await _summary(db_session, test_event, test_user, at(DAY, 20))
+        assert summary["earned"] == 2
+        count = await db_session.execute(
+            select(func.count())
+            .select_from(VoucherEarning)
+            .where(col(VoucherEarning.user_id) == test_user.id)
+        )
+        assert count.scalar_one() == 1

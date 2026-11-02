@@ -1,19 +1,31 @@
 """Volunteer vouchers: what someone has earned, and spending it at a stand.
 
-**Earned vouchers are derived, never stored**, like worked hours
-(``app.logic.work_hours``). A volunteer earns ``task.vouchers_per_shift`` for
-every booking that counts as worked (``work_hours.counts_as_worked``) on a
-shift that has ended (``work_hours.shift_ends_at`` against
-``clock.wall_clock_now()``). The table ``voucher_entries`` holds only what
-cannot be derived: redemptions and the corrections event admins make. So::
+**Earned is earned.** A volunteer earns ``task.vouchers_per_shift`` for every
+booking that counts as worked (``work_hours.counts_as_worked``) on a shift that
+has ended (``work_hours.shift_ends_at`` against ``clock.wall_clock_now()``).
+That figure is *derived*, like worked hours (``app.logic.work_hours``), until
+something would change it for a shift already over: a rate change, deleting
+or moving a shift, a batch or the task, the event's shift dates, deleting the
+account that created the task. Every one of those routes first calls
+:func:`settle_earnings`, which freezes what the ended bookings earned in
+``voucher_earnings``. Reads (:func:`_voucher_shifts`) add the settled rows to
+the bookings not settled yet, in one statement.
+
+That is correct because of one invariant: every ended, worked booking without
+an earning row still derives today exactly what it earned when its shift
+ended. Time passing cannot break it (a shift ends at the rate in force, which
+stays the current rate until a rate change settles it), and every other change
+settles first. A settled booking is left out of the derivation for good, so a
+shift moved into the future and ending again cannot earn twice.
+
+``voucher_entries`` holds what cannot be derived at all: redemptions and the
+corrections event admins make. So::
 
     balance   = earned - redeemed + adjusted     (may be below zero)
     available = max(balance, 0)
 
-A balance goes negative when something lowers what was earned after it was
-spent: a lower ``vouchers_per_shift``, a deleted past shift, a shift moved into
-the future. The app then shows 0 available and refuses redemptions; the admin
-overview shows the number.
+Nothing takes earned vouchers back any more, but a correction can still take a
+balance below zero. The app then shows 0 available and refuses redemptions.
 
 Neither query filters on membership or task status. Someone who worked and then
 left still worked, and an archived task's shifts still count. What keeps that
@@ -25,34 +37,43 @@ tasks.
 **Redeeming** (:func:`redeem`) is serialised per (event, volunteer) with a
 transaction-scoped advisory lock (``crud.voucher.lock_ledger``). It is a logic
 function rather than route code so the concurrency test can call it on two
-sessions. The routes do all the gating: this module must not import
+sessions. Settling takes no lock: it turns a derived amount into the same
+stored amount, so no total changes, and a redemption reading the earned
+figure in one statement sees the booking either derived or settled, never both
+nor neither. The routes do all the gating: this module must not import
 ``app.logic.permissions``, which imports it.
 
-Design: ``docs/plans/2026-10-30-task-managers-and-vouchers.md``.
+Design: ``docs/plans/2026-10-30-task-managers-and-vouchers.md``, and for
+settling ``docs/plans/2026-11-02-people-in-charge-and-vouchers-followups.md``
+(Decision G).
 """
 
 import datetime as dt
 import secrets
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import NoReturn
+from typing import Any, NoReturn
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import exists, false, select, true, union_all
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 from sqlmodel import col
 
 from app.core.config import settings
 from app.core.errors import raise_problem
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.voucher import voucher as crud_voucher
+from app.logic import clock
 from app.logic.work_hours import counts_as_worked, shift_ends_at
 from app.models.booking import Booking
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 from app.schemas.event_membership import EventRole
 from app.schemas.voucher import (
     VoucherAccount,
@@ -191,6 +212,126 @@ class _Tally:
         )
 
 
+# --- Settling ----------------------------------------------------------------
+
+#: Rows per INSERT when settling: 14 parameters each, well under asyncpg's
+#: 32767 parameters per statement.
+_SETTLE_CHUNK = 1000
+
+
+async def settle_earnings(
+    session: AsyncSession,
+    *,
+    now: dt.datetime,
+    task_ids: Sequence[uuid.UUID] | None = None,
+    shift_ids: Sequence[uuid.UUID] | None = None,
+    include_zero: bool = False,
+) -> int:
+    """Freeze what ended, worked bookings on these tasks or shifts have earned,
+    before a change that would alter it. Returns the rows written.
+
+    Called in the route's transaction, before the change, with the ``now``
+    (event wall clock) the route uses. Candidates: bookings that
+    ``counts_as_worked()``, on a task that belongs to an event, on a shift
+    that has ended by ``now``, without an earning row yet; and only tasks
+    that earn vouchers, unless ``include_zero``. A rate change passes
+    ``include_zero=True``, so that raising a rate from 0 does not pay for
+    shifts already over; every other change skips tasks at 0, whose bookings
+    earn nothing whatever happens to them.
+
+    Idempotent: ``ON CONFLICT (booking_id) DO NOTHING``, so settling a booking
+    twice, or from two requests at once, writes one row. Takes no lock (see
+    the module docstring). Never writes for a shift still running.
+    """
+    if task_ids is None and shift_ids is None:
+        msg = "settle_earnings needs task_ids or shift_ids"
+        raise TypeError(msg)
+    if (task_ids is not None and not task_ids) or (
+        shift_ids is not None and not shift_ids
+    ):
+        return 0
+
+    query = (
+        select(
+            col(Booking.id),
+            col(Booking.user_id),
+            col(Task.event_id),
+            col(Task.vouchers_per_shift),
+            col(Task.id),
+            col(Task.name),
+            col(Shift.id),
+            col(Shift.title),
+            col(Shift.date),
+            col(Shift.start_time),
+            col(Shift.end_time),
+        )
+        .join(Shift, col(Shift.id) == col(Booking.shift_id))
+        .join(Task, col(Task.id) == col(Shift.task_id))
+        .where(
+            counts_as_worked(),
+            col(Task.event_id).is_not(None),
+            # A cheap prefilter: an overnight shift dated yesterday ends today,
+            # one dated tomorrow cannot have ended. The exact test is below.
+            col(Shift.date) <= now.date(),
+            ~exists().where(col(VoucherEarning.booking_id) == col(Booking.id)),
+        )
+    )
+    if task_ids is not None:
+        query = query.where(col(Task.id).in_(list(task_ids)))
+    if shift_ids is not None:
+        query = query.where(col(Shift.id).in_(list(shift_ids)))
+    if not include_zero:
+        query = query.where(col(Task.vouchers_per_shift) > 0)
+
+    stamp = clock.utc_now()
+    values: list[dict[str, Any]] = [
+        {
+            "id": uuid.uuid4(),
+            "created_at": stamp,
+            "updated_at": stamp,
+            "event_id": event_id,
+            "user_id": user_id,
+            "booking_id": booking_id,
+            "amount": per_shift,
+            "task_id": task_id,
+            "task_name": task_name,
+            "shift_id": shift_id,
+            "shift_title": title,
+            "shift_date": date,
+            "shift_start_time": start,
+            "shift_end_time": end,
+        }
+        for (
+            booking_id,
+            user_id,
+            event_id,
+            per_shift,
+            task_id,
+            task_name,
+            shift_id,
+            title,
+            date,
+            start,
+            end,
+        ) in (await session.execute(query)).all()
+        if shift_ends_at(date, start, end) <= now
+    ]
+
+    written = 0
+    for i in range(0, len(values), _SETTLE_CHUNK):
+        result = await session.execute(
+            pg_insert(VoucherEarning)
+            .values(values[i : i + _SETTLE_CHUNK])
+            .on_conflict_do_nothing(index_elements=["booking_id"])
+            .returning(col(VoucherEarning.id))
+        )
+        written += len(result.all())
+    return written
+
+
+# --- Earned: settled rows and derived ones -----------------------------------
+
+
 async def _voucher_shifts(
     session: AsyncSession,
     event_id: uuid.UUID,
@@ -200,10 +341,41 @@ async def _voucher_shifts(
 ) -> list[tuple[uuid.UUID, VoucherShift]]:
     """``(booker, shift)`` for every booking that earns vouchers in the event.
 
-    ``now`` is the event wall clock. Completed rows count as earned, the rest
-    as upcoming.
+    One statement, so one snapshot: the settled rows of the event (those
+    worth something, shown from their snapshot and always earned) ``UNION
+    ALL`` the bookings not settled yet, derived from the current task and
+    shift. A settlement committing meanwhile is counted either as derived or
+    as settled, never both and never neither. ``now`` is the event wall
+    clock: a derived row whose shift has ended counts as earned, the rest as
+    upcoming.
+
+    A settled row's ``shift_id`` / ``task_id`` are None once that shift or
+    task is gone, so the client does not link to it.
     """
-    query = (
+    live_shift = aliased(Shift, name="live_shift")
+    live_task = aliased(Task, name="live_task")
+    settled = (
+        select(
+            col(VoucherEarning.booking_id),
+            col(VoucherEarning.user_id),
+            col(live_shift.id),
+            col(live_task.id),
+            col(VoucherEarning.task_name),
+            col(VoucherEarning.shift_title),
+            col(VoucherEarning.shift_date),
+            col(VoucherEarning.shift_start_time),
+            col(VoucherEarning.shift_end_time),
+            col(VoucherEarning.amount),
+            true(),
+        )
+        .outerjoin(live_shift, col(live_shift.id) == col(VoucherEarning.shift_id))
+        .outerjoin(live_task, col(live_task.id) == col(VoucherEarning.task_id))
+        .where(
+            col(VoucherEarning.event_id) == event_id,
+            col(VoucherEarning.amount) > 0,
+        )
+    )
+    derived = (
         select(
             col(Booking.id),
             col(Booking.user_id),
@@ -215,6 +387,7 @@ async def _voucher_shifts(
             col(Shift.start_time),
             col(Shift.end_time),
             col(Task.vouchers_per_shift),
+            false(),
         )
         .join(Shift, col(Shift.id) == col(Booking.shift_id))
         .join(Task, col(Task.id) == col(Shift.task_id))
@@ -222,11 +395,14 @@ async def _voucher_shifts(
             col(Task.event_id) == event_id,
             counts_as_worked(),
             col(Task.vouchers_per_shift) > 0,
+            ~exists().where(col(VoucherEarning.booking_id) == col(Booking.id)),
         )
-        .order_by(col(Shift.date), col(Shift.start_time))
     )
     if user_id is not None:
-        query = query.where(col(Booking.user_id) == user_id)
+        settled = settled.where(col(VoucherEarning.user_id) == user_id)
+        derived = derived.where(col(Booking.user_id) == user_id)
+    result = await session.execute(union_all(settled, derived))
+
     rows: list[tuple[uuid.UUID, VoucherShift]] = []
     for (
         booking_id,
@@ -238,8 +414,9 @@ async def _voucher_shifts(
         date,
         start,
         end,
-        per_shift,
-    ) in (await session.execute(query)).all():
+        amount,
+        is_settled,
+    ) in result.all():
         ends = shift_ends_at(date, start, end)
         rows.append(
             (
@@ -254,11 +431,21 @@ async def _voucher_shifts(
                     start_time=start,
                     end_time=end,
                     ends_at=to_utc(ends),
-                    vouchers=per_shift,
-                    completed=ends <= now,
+                    vouchers=amount,
+                    completed=bool(is_settled) or ends <= now,
+                    settled=bool(is_settled),
                 ),
             )
         )
+    # In shift order, as the rota reads; a shift without a start time last
+    # on its day, as Postgres sorts NULLs.
+    rows.sort(
+        key=lambda r: (
+            r[1].date,
+            r[1].start_time is None,
+            r[1].start_time or dt.time(),
+        )
+    )
     return rows
 
 
@@ -274,6 +461,8 @@ async def _tally(
         session, event_id, user_id=user_id, now=now
     ):
         tallies.setdefault(booker_id, _Tally()).add_shift(shift)
+    # A second statement, as before settling existed: the ledger only moves
+    # under ``lock_ledger``, which every writer to it holds.
     totals = await crud_voucher.ledger_totals(
         session, event_id=event_id, user_id=user_id
     )

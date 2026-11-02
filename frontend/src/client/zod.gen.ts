@@ -3346,12 +3346,16 @@ export const zVoucherRedeemResult = z.object({
  * VoucherShift
  *
  * One confirmed booking on a task that earns vouchers.
+ *
+ * Either derived from the booking's current shift and task, or, once
+ * ``settled``, read from the snapshot taken when what it earned was frozen
+ * (``app.logic.vouchers.settle_earnings``).
  */
 export const zVoucherShift = z
   .object({
     booking_id: z.uuid(),
-    shift_id: z.uuid(),
-    task_id: z.uuid(),
+    shift_id: z.uuid().nullish(),
+    task_id: z.uuid().nullish(),
     task_name: z.string(),
     title: z.string(),
     date: z.iso.date(),
@@ -3363,9 +3367,11 @@ export const zVoucherShift = z
     }),
     vouchers: z.int(),
     completed: z.boolean(),
+    settled: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
-    description: 'One confirmed booking on a task that earns vouchers.',
+    description:
+      "One confirmed booking on a task that earns vouchers.\n\nEither derived from the booking's current shift and task, or, once\n``settled``, read from the snapshot taken when what it earned was frozen\n(``app.logic.vouchers.settle_earnings``).",
   })
 
 /**

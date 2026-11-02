@@ -28,8 +28,8 @@ class TaskBase(BaseModel):
     #: Only approved members of this team may book the task's shifts.
     team_id: uuid.UUID | None = None
     #: Vouchers a volunteer earns for each confirmed shift once it is over.
-    #: 0 means none. Earnings are derived from the current value, so a change
-    #: also counts for shifts already worked.
+    #: 0 means none. A change only affects shifts that are not over yet: what
+    #: ended shifts earned is settled first and stays.
     vouchers_per_shift: int = Field(default=0, ge=0, le=MAX_VOUCHERS_PER_SHIFT)
     #: Vouchers can be redeemed here, in the app.
     is_voucher_point: bool = False

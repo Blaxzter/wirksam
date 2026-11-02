@@ -1,20 +1,25 @@
 """Volunteer vouchers: the stored half of a balance, and the codes that spend it.
 
-What a volunteer has *earned* is never stored. It is derived from their
-confirmed bookings on shifts that have ended (``app/logic/vouchers.py``), the
-same way worked hours are, so correcting a shift corrects both. This file holds
-what cannot be derived:
+What a volunteer has *earned* is derived from their confirmed bookings on
+shifts that have ended (``app/logic/vouchers.py``), the same way worked hours
+are, **until something would change that derivation for a shift already
+over**. Then it is frozen first: earned is earned. This file holds what cannot
+be derived:
 
 * :class:`VoucherEntry`, the ledger: redemptions (debits) and the corrections
   event admins make by hand.
+* :class:`VoucherEarning`, what one ended booking earned, written by
+  ``vouchers.settle_earnings`` before a rate change, a delete or a move that
+  would otherwise take it back.
 * :class:`VoucherPass`, the short-lived code a volunteer shows at a stand.
 
-None of the ``task_id`` / ``actor_id`` / ``pass_id`` references carries a
-foreign key. A CASCADE would delete the debits along with a deleted point task
-or redeemer, which refunds them, and SET NULL next to ``event_id`` is the trap
-described in ``app/models/CLAUDE.md`` (reached here through
-``tasks.created_by_id`` as well as through a user). Name snapshots keep the
-rows readable instead, as on ``WorkLog``.
+None of the ``task_id`` / ``shift_id`` / ``booking_id`` / ``actor_id`` /
+``pass_id`` references carries a foreign key. A CASCADE would delete the debits
+along with a deleted point task or redeemer, which refunds them, or an earning
+along with its shift, which takes back what was earned; and SET NULL next to
+``event_id`` is the trap described in ``app/models/CLAUDE.md`` (reached here
+through ``tasks.created_by_id`` as well as through a user). Name snapshots keep
+the rows readable instead, as on ``WorkLog``.
 """
 
 import datetime as dt
@@ -103,6 +108,74 @@ class VoucherEntry(Base, table=True):
     request_id: uuid.UUID | None = Field(
         default=None,
         sa_column=sa.Column(sa.Uuid, nullable=True, unique=True, index=True),
+    )
+
+
+class VoucherEarning(Base, table=True):
+    """What one ended, worked booking earned, frozen before a change.
+
+    Written only by ``app.logic.vouchers.settle_earnings``, once per booking
+    (``booking_id`` is unique), never edited. ``created_at`` is when it was
+    settled. ``amount`` is the task's rate at that moment and may be 0: a rate
+    change settles every ended booking of the task, so raising a rate from 0
+    does not pay for shifts already over.
+
+    A booking with a row here is left out of the derivation for good, so a
+    settled shift moved into the future and ending again cannot earn twice.
+    The snapshot columns keep the row readable after its shift or task is
+    gone. **Never put SET NULL on any foreign key in this table** (see the
+    module docstring): ``booking_id``, ``task_id`` and ``shift_id`` have no
+    foreign key at all.
+    """
+
+    __tablename__ = "voucher_earnings"  # type: ignore[assignment]
+    __table_args__ = (
+        sa.Index("ix_voucher_earnings_event_id_user_id", "event_id", "user_id"),
+        sa.CheckConstraint(
+            "amount >= 0", name="ck_voucher_earnings_amount_non_negative"
+        ),
+    )
+
+    event_id: uuid.UUID = Field(
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("events.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+    )
+    #: The volunteer who earned it.
+    user_id: uuid.UUID = Field(
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
+    )
+    #: The idempotency key of a settlement and what the derivation's
+    #: ``NOT EXISTS`` looks up. No foreign key: the booking may be deleted.
+    booking_id: uuid.UUID = Field(
+        sa_column=sa.Column(sa.Uuid, nullable=False, unique=True, index=True),
+    )
+    #: The rate when it was settled; may be 0.
+    amount: int = Field(sa_column=sa.Column(sa.Integer, nullable=False))
+
+    # Snapshots of the task and the shift, for the history once they are gone.
+    task_id: uuid.UUID | None = Field(
+        default=None, sa_column=sa.Column(sa.Uuid, nullable=True)
+    )
+    task_name: str = Field(sa_column=sa.Column(sa.String, nullable=False))
+    shift_id: uuid.UUID | None = Field(
+        default=None, sa_column=sa.Column(sa.Uuid, nullable=True)
+    )
+    shift_title: str = Field(sa_column=sa.Column(sa.String, nullable=False))
+    shift_date: dt.date = Field(sa_column=sa.Column(sa.Date, nullable=False))
+    shift_start_time: dt.time | None = Field(
+        default=None, sa_column=sa.Column(sa.Time, nullable=True)
+    )
+    shift_end_time: dt.time | None = Field(
+        default=None, sa_column=sa.Column(sa.Time, nullable=True)
     )
 
 

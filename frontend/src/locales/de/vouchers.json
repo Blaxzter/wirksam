@@ -121,7 +121,7 @@
         "open": "Marken…",
         "perShift": "Marken pro Schicht",
         "perShiftHint": "So viele bekommen Helfende pro Schicht, sobald sie vorbei ist. 0 heißt keine.",
-        "retroHint": "Änderungen gelten auch für Schichten, die schon vorbei sind.",
+        "rateHint": "Gilt für Schichten, die noch nicht vorbei sind. Schon verdiente Marken bleiben.",
         "saved": "Marken-Einstellungen gespeichert.",
         "title": "Marken"
     },

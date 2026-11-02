@@ -61,7 +61,7 @@ from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.models.venue_template import VenueTemplate, VenueTemplateImage
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 
 logger = get_logger(__name__)
 
@@ -159,11 +159,16 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
     await db.execute(
         delete(EventMembership).where(col(EventMembership.event_id) == event_id)
     )
-    #    Voucher codes and the ledger. Both cascade from the event (and from
-    #    the guests); spelled out like the teams below so a reader of this
-    #    function sees every table a demo writes to go.
+    #    Voucher codes, the ledger and the frozen earnings. All three cascade
+    #    from the event (and from the guests); spelled out like the teams
+    #    below so a reader of this function sees every table a demo writes to
+    #    go. Earnings carry no foreign key to the tasks, shifts and bookings
+    #    deleted above, so the order among these does not matter.
     await db.execute(delete(VoucherPass).where(col(VoucherPass.event_id) == event_id))
     await db.execute(delete(VoucherEntry).where(col(VoucherEntry.event_id) == event_id))
+    await db.execute(
+        delete(VoucherEarning).where(col(VoucherEarning.event_id) == event_id)
+    )
     #    Teams after the tasks that pointed at them (``tasks.team_id``), and
     #    leaf first: a request's attached file and the checks, then the member
     #    rows, then the requirements those two point at, then the teams. All

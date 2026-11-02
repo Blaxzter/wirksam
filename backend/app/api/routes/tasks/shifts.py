@@ -16,7 +16,7 @@ from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
-from app.logic import clock
+from app.logic import clock, vouchers
 from app.logic.locations import resolve_location
 from app.logic.notifications.triggers import dispatch_task_manager_added
 from app.logic.permissions import (
@@ -469,6 +469,12 @@ async def regenerate_task_shifts(
             )
 
     if not dry_run:
+        # 6. First, before anything is renamed or removed: what the shifts
+        #    about to go have earned stays earned, under today's names.
+        await vouchers.settle_earnings(
+            session, now=now, shift_ids=[s.id for s in shifts_to_delete]
+        )
+
         # 6a. Update task fields (only when not scoped to a batch)
         if not batch_id:
             if payload.name is not None:

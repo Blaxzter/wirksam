@@ -6434,6 +6434,10 @@ export type VoucherRedeemResult = {
  * VoucherShift
  *
  * One confirmed booking on a task that earns vouchers.
+ *
+ * Either derived from the booking's current shift and task, or, once
+ * ``settled``, read from the snapshot taken when what it earned was frozen
+ * (``app.logic.vouchers.settle_earnings``).
  */
 export type VoucherShift = {
   /**
@@ -6443,11 +6447,11 @@ export type VoucherShift = {
   /**
    * Shift Id
    */
-  shift_id: string
+  shift_id?: string | null
   /**
    * Task Id
    */
-  task_id: string
+  task_id?: string | null
   /**
    * Task Name
    */
@@ -6482,6 +6486,10 @@ export type VoucherShift = {
    * Completed
    */
   completed: boolean
+  /**
+   * Settled
+   */
+  settled?: boolean
 }
 
 /**

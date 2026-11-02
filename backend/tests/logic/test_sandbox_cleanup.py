@@ -31,7 +31,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from app.logic import vouchers
+from app.logic import clock, vouchers
 from app.logic.sandbox.cleanup import count_active, purge_sandbox, sweep_expired
 from app.logic.sandbox.service import utc_now
 from app.models.auth_session import AuthSession
@@ -57,7 +57,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
 from tests.fixtures.storage import put_file
 
@@ -98,6 +98,7 @@ class _Inventory:
     task_manager_ids: list[uuid.UUID]
     voucher_entry_ids: list[uuid.UUID]
     voucher_pass_ids: list[uuid.UUID]
+    voucher_earning_ids: list[uuid.UUID]
 
 
 async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
@@ -134,6 +135,9 @@ async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
         ),
         voucher_pass_ids=await _ids(
             db, col(VoucherPass.id), col(VoucherPass.event_id) == event_id
+        ),
+        voucher_earning_ids=await _ids(
+            db, col(VoucherEarning.id), col(VoucherEarning.event_id) == event_id
         ),
         booking_ids=await _ids(
             db, col(Booking.id), col(Booking.shift_id).in_(shift_ids)
@@ -177,6 +181,9 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
         ),
         "voucher_passes": await _count(
             db, VoucherPass, col(VoucherPass.id).in_(inv.voucher_pass_ids)
+        ),
+        "voucher_earnings": await _count(
+            db, VoucherEarning, col(VoucherEarning.id).in_(inv.voucher_earning_ids)
         ),
         "bookings": await _count(db, Booking, col(Booking.id).in_(inv.booking_ids)),
         "booking_reminders": await _count(
@@ -412,6 +419,27 @@ async def _add_voucher_pass(db: AsyncSession, sandbox: SandboxSetup) -> None:
     await db.flush()
 
 
+async def _add_voucher_earnings(db: AsyncSession, sandbox: SandboxSetup) -> None:
+    """Freeze what the demo's worked shifts earned, as an organiser changing a
+    rate or deleting a shift during the tour would.
+
+    The seeder writes no earning rows (earnings stay derived until something
+    would change them), so without this the ``voucher_earnings`` line of the
+    census would be vacuously zero.
+    """
+    task_ids = list(
+        (
+            await db.execute(
+                select(col(Task.id)).where(col(Task.event_id) == sandbox.event.id)
+            )
+        ).scalars()
+    )
+    written = await vouchers.settle_earnings(
+        db, now=clock.wall_clock_now(), task_ids=task_ids
+    )
+    assert written, "the seeder must have booked shifts that are over"
+
+
 async def _add_booking_reminder(db: AsyncSession, *, booking_id: uuid.UUID) -> None:
     """Schedule a reminder against one of the demo's bookings.
 
@@ -448,15 +476,17 @@ class TestPurgeSandbox:
         """Test that every table a demo writes into comes back to zero.
 
         The invitation, the join request and the booking reminder are added on
-        top of the seed, and a file on a team request and a voucher code, so
-        that the census covers all twenty-seven tables rather than the
-        twenty-one a freshly seeded helper demo happens to populate. Every line of it starts
+        top of the seed, and a file on a team request, a voucher code and the
+        frozen voucher earnings, so that the census covers all twenty-eight
+        tables rather than the twenty-one a freshly seeded helper demo happens
+        to populate. Every line of it starts
         non-zero and must end at zero — a count that was never anything but
         zero proves nothing.
         """
         await _add_pending_decisions(db_session, test_sandbox)
         await _add_team_document(db_session, test_sandbox)
         await _add_voucher_pass(db_session, test_sandbox)
+        await _add_voucher_earnings(db_session, test_sandbox)
         inv = await _inventory(db_session, test_sandbox.event.id)
         await _add_booking_reminder(db_session, booking_id=inv.booking_ids[0])
         # Guard the guards: an assertion that "nothing remains" is worthless if
@@ -621,6 +651,7 @@ class TestPurgeSandbox:
         await _add_pending_decisions(db_session, second)
         await _add_team_document(db_session, second)
         await _add_voucher_pass(db_session, second)
+        await _add_voucher_earnings(db_session, second)
         keep = await _inventory(db_session, second.event.id)
         await _add_booking_reminder(db_session, booking_id=keep.booking_ids[0])
         await _add_plan_image(db_session, plan_id=keep.plan_ids[0])

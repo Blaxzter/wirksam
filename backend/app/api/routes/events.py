@@ -24,7 +24,7 @@ from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
-from app.logic import clock
+from app.logic import clock, vouchers
 from app.logic.permissions import require_event_role, require_event_visible
 from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
@@ -454,6 +454,12 @@ async def shift_event_dates(
     task_ids = list(task_ids_result.scalars().all())
 
     if task_ids:
+        # What the shifts already over have earned stays earned: moving them
+        # into the future must not turn it back into "still to come".
+        await vouchers.settle_earnings(
+            session, now=clock.wall_clock_now(), task_ids=task_ids
+        )
+
         # 2. Shift tasks
         await session.execute(
             sa_update(Task)

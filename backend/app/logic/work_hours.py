@@ -14,7 +14,9 @@ Shift times are wall-clock times with no zone attached ("Saturday,
 ``clock.wall_clock_now()``, read in ``settings.EVENT_TIMEZONE``. Vouchers
 (``app.logic.vouchers``) use the same clock, the same :func:`shift_ends_at` and
 the same :func:`counts_as_worked`, so a shift earns its hours and its vouchers
-at the same moment.
+at the same moment. Unlike hours, earned vouchers are frozen before a change
+that would take them back (``vouchers.settle_earnings``): deleting a worked
+shift removes its hours but not its vouchers.
 
 This module must not import ``app.logic.permissions``, which imports it.
 """
@@ -47,8 +49,15 @@ from app.schemas.work_hours import (
 def counts_as_worked() -> ColumnElement[bool]:
     """Whether a booking earns hours and vouchers once its shift has ended.
 
-    The one predicate both derive from. Attendance (#177) changes this line
-    and nothing else: a no-show then stops counting for both at once.
+    The one predicate both derive from. Attendance (#177) changes this line:
+    a no-show then stops counting for both at once.
+
+    Vouchers an ended booking earned are final, though
+    (``app.logic.vouchers.settle_earnings``). Anything that changes what this
+    returns for a booking whose shift has ended, marking a no-show after the
+    fact included, must settle that booking first, or the vouchers it earned
+    would go. Taking them back is an explicit correction, which can't go
+    below zero.
     """
     return col(Booking.status) == "confirmed"
 

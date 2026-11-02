@@ -2,7 +2,8 @@
 
 The balance is derived, so there is no row to lock; ``logic.vouchers.redeem``
 serialises on a transaction-scoped advisory lock per (event, volunteer)
-instead. Proving that it holds takes two real transactions on two connections,
+instead. Settling earned vouchers takes no lock at all, because it changes no
+total; the cases at the end show a redemption and a settlement racing. Proving that it holds takes two real transactions on two connections,
 so unlike the rest of the suite these tests do not run on ``db_session``: the
 setup is committed for real, each redemption runs in its own session inside
 ``session.begin()``, and a ``finally`` block deletes everything that was
@@ -19,7 +20,7 @@ from typing import Any
 import pytest
 import pytest_asyncio
 from fastapi import HTTPException
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlmodel import col
 
@@ -30,7 +31,7 @@ from app.models.event_membership import EventMembership
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 from app.schemas.voucher import VoucherRedeemResult
 
 #: After the shift below has ended (event wall clock).
@@ -44,6 +45,7 @@ class Committed:
     volunteer: User
     redeemer: User
     point: Task
+    work: Task
 
 
 @pytest_asyncio.fixture
@@ -122,11 +124,15 @@ async def committed(test_engine: AsyncEngine) -> AsyncGenerator[Committed]:
             volunteer=volunteer,
             redeemer=redeemer,
             point=point,
+            work=work,
         )
     finally:
         async with test_engine.begin() as conn:
             await conn.execute(
                 delete(VoucherEntry).where(col(VoucherEntry.event_id) == event.id)
+            )
+            await conn.execute(
+                delete(VoucherEarning).where(col(VoucherEarning.event_id) == event.id)
             )
             await conn.execute(
                 delete(VoucherPass).where(col(VoucherPass.event_id) == event.id)
@@ -192,6 +198,48 @@ async def _ledger(c: Committed) -> tuple[int, int]:
             )
         ).one()
     return int(row[0]), int(row[1])
+
+
+async def _lower_rate(
+    c: Committed, *, to: int, delay: float = 0.0, pause: float = 0.0
+) -> int:
+    """What ``PATCH /tasks/{id}`` does to the rate, in its own transaction:
+    settle the work task's ended bookings, then change ``vouchers_per_shift``.
+    Returns the earning rows written."""
+    await asyncio.sleep(delay)
+    async with c.sessions() as session, session.begin():
+        written = await vouchers.settle_earnings(
+            session, now=WALL_NOW, task_ids=[c.work.id], include_zero=True
+        )
+        await session.execute(
+            update(Task).where(col(Task.id) == c.work.id).values(vouchers_per_shift=to)
+        )
+        await asyncio.sleep(pause)
+        return written
+
+
+async def _available(c: Committed) -> int:
+    async with c.sessions() as session:
+        return await vouchers.available_for(
+            session, c.event_id, c.volunteer.id, now=WALL_NOW
+        )
+
+
+async def _earning_rows(c: Committed) -> list[tuple[int, uuid.UUID]]:
+    async with c.sessions() as session:
+        rows = await session.execute(
+            select(col(VoucherEarning.amount), col(VoucherEarning.booking_id)).where(
+                col(VoucherEarning.event_id) == c.event_id
+            )
+        )
+        return [(int(a), b) for a, b in rows.all()]
+
+
+async def _delayed_redeem(
+    c: Committed, *, amount: int, delay: float
+) -> VoucherRedeemResult:
+    await asyncio.sleep(delay)
+    return await _redeem(c, amount=amount, pause=0.3)
 
 
 def _split(
@@ -272,3 +320,52 @@ async def test_a_retried_manual_redemption_debits_once(committed: Committed) -> 
     assert {r.entry.id for r in ok} == {ok[0].entry.id}
     assert sorted(r.replayed for r in ok) == [False, True]
     assert await _ledger(committed) == (1, -1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("redeem_delay", "settle_delay"),
+    [
+        pytest.param(0.1, 0.0, id="redeem-while-settling"),
+        pytest.param(0.0, 0.1, id="settle-while-redeeming"),
+        pytest.param(0.6, 0.0, id="redeem-after-settled"),
+    ],
+)
+async def test_redeeming_everything_while_the_rate_is_lowered(
+    committed: Committed, redeem_delay: float, settle_delay: float
+) -> None:
+    """3 earned at 3 per shift. One stand redeems all 3 while an organiser
+    lowers the rate to 1. Whichever way they interleave, the redemption reads
+    one balance (the derived 3 or the settled 3, never 1 and never 6), so it
+    goes through, nothing is left, and the booking has exactly one earning
+    row."""
+    redeemed, written = await asyncio.gather(
+        _delayed_redeem(committed, amount=3, delay=redeem_delay),
+        _lower_rate(committed, to=1, delay=settle_delay, pause=0.3),
+        return_exceptions=True,
+    )
+
+    assert isinstance(redeemed, VoucherRedeemResult), redeemed
+    assert redeemed.available == 0
+    assert written == 1
+    assert await _ledger(committed) == (1, -3)
+    assert await _available(committed) == 0
+    rows = await _earning_rows(committed)
+    assert [amount for amount, _ in rows] == [3]
+
+
+@pytest.mark.asyncio
+async def test_two_settlements_at_once_write_one_row(committed: Committed) -> None:
+    """Two organisers changing the rate at the same moment: the second insert
+    waits on the unique booking id and then does nothing."""
+    results = await asyncio.gather(
+        _lower_rate(committed, to=2, pause=0.3),
+        _lower_rate(committed, to=1, pause=0.3),
+        return_exceptions=True,
+    )
+
+    written = [r for r in results if isinstance(r, int)]
+    assert sorted(written) == [0, 1], results
+    rows = await _earning_rows(committed)
+    assert [amount for amount, _ in rows] == [3]
+    assert await _available(committed) == 3

@@ -163,6 +163,12 @@ describe('voucherHistory', () => {
     })
     expect(items).toEqual([])
   })
+
+  it('lists a settled shift whose shift and task are gone like any earned one', () => {
+    const gone = shift({ booking_id: 'gone', shift_id: null, task_id: null, settled: true })
+    const items = voucherHistory({ shifts: [gone], entries: [] })
+    expect(items).toEqual([{ kind: 'shift', key: 'shift-gone', shift: gone }])
+  })
 })
 
 describe('createDetectionGate', () => {

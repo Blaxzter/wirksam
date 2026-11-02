@@ -121,7 +121,7 @@
         "open": "Vouchers…",
         "perShift": "Vouchers per shift",
         "perShiftHint": "Volunteers get this many for each shift once it is over. 0 means none.",
-        "retroHint": "Changes also count for shifts already worked.",
+        "rateHint": "Applies to shifts that aren't over yet. Vouchers already earned stay.",
         "saved": "Voucher settings saved.",
         "title": "Vouchers"
     },

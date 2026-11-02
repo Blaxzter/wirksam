@@ -147,6 +147,7 @@ leaves the orphans described above.
    (by event_id)                             — never by cascade from the event
 4. user_availabilities, event_memberships,
    voucher_passes, voucher_entries,
+   voucher_earnings,
    then event_team_documents, event_team_checks,
    event_team_members, event_team_requirements,
    event_teams                               — after the tasks (tasks.team_id);

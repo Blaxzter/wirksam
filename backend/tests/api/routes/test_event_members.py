@@ -28,7 +28,7 @@ from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 
 
 @pytest.mark.asyncio
@@ -998,6 +998,7 @@ class TestUserDeletionCascades:
         test_user: User,
         test_event_admin_user: User,
     ) -> None:
+        """Their entries, codes and frozen earnings all go with the account."""
         _voucher_rows(db_session, test_event, volunteer=test_user, actor=None)
         await db_session.flush()
 
@@ -1007,6 +1008,7 @@ class TestUserDeletionCascades:
 
         assert await _count(db_session, VoucherEntry) == 0
         assert await _count(db_session, VoucherPass) == 0
+        assert await _count(db_session, VoucherEarning) == 0
 
     async def test_deleting_a_redeemer_keeps_their_redemptions(
         self,
@@ -1016,7 +1018,7 @@ class TestUserDeletionCascades:
         test_event_admin_user: User,
     ) -> None:
         """``actor_id`` has no foreign key: the debit stays, and so does the
-        name of who took it."""
+        name of who took it. The volunteer's earnings are not touched."""
         _voucher_rows(
             db_session, test_event, volunteer=test_user, actor=test_event_admin_user
         )
@@ -1033,6 +1035,7 @@ class TestUserDeletionCascades:
         ).scalar_one()
         assert entry.actor_name == "Manager User"
         assert entry.amount == -2
+        assert await _count(db_session, VoucherEarning) == 1
 
     async def test_deleting_the_owner_takes_the_events_vouchers(
         self,
@@ -1042,10 +1045,10 @@ class TestUserDeletionCascades:
         test_user: User,
         test_task: Task,
     ) -> None:
-        """The event cascades, and with it its ledger and codes. A redemption
-        point's ``task_id`` has no foreign key, so the task surviving with no
-        event (and the SET NULL that does to it) does not touch the ledger
-        mid-statement."""
+        """The event cascades, and with it its ledger, codes and earnings. A
+        redemption point's ``task_id`` and an earning's ``task_id`` have no
+        foreign key, so the task surviving with no event (and the SET NULL
+        that does to it) does not touch them mid-statement."""
         test_task.is_voucher_point = True
         db_session.add(test_task)
         _voucher_rows(
@@ -1063,6 +1066,7 @@ class TestUserDeletionCascades:
 
         assert await _count(db_session, VoucherEntry) == 0
         assert await _count(db_session, VoucherPass) == 0
+        assert await _count(db_session, VoucherEarning) == 0
 
 
 def _voucher_rows(
@@ -1073,7 +1077,8 @@ def _voucher_rows(
     actor: User | None,
     task: Task | None = None,
 ) -> None:
-    """One redemption, one correction and one code for ``volunteer``."""
+    """One redemption, one correction, one code and one frozen earning for
+    ``volunteer``."""
     db.add_all(
         [
             VoucherEntry(
@@ -1100,11 +1105,25 @@ def _voucher_rows(
                 code=generate_code(),
                 expires_at=datetime.datetime(2026, 6, 11, 12, 0),
             ),
+            VoucherEarning(
+                event_id=event.id,
+                user_id=volunteer.id,
+                booking_id=uuid.uuid4(),
+                amount=2,
+                task_id=task.id if task else None,
+                task_name=task.name if task else "Aufbau",
+                shift_id=uuid.uuid4(),
+                shift_title="Aufbau 8-12",
+                shift_date=datetime.date(2026, 6, 11),
+                shift_start_time=datetime.time(8, 0),
+                shift_end_time=datetime.time(12, 0),
+            ),
         ]
     )
 
 
 async def _count(
-    db: AsyncSession, model: type[VoucherEntry] | type[VoucherPass]
+    db: AsyncSession,
+    model: type[VoucherEntry] | type[VoucherPass] | type[VoucherEarning],
 ) -> int:
     return (await db.execute(select(func.count()).select_from(model))).scalar_one()

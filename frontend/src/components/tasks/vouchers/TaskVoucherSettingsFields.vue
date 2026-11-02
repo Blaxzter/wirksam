@@ -116,6 +116,6 @@ const id = (name: string) => `${props.idPrefix}-${name}`
       {{ t('vouchers.settings.deskNeedsTeam') }}
     </p>
 
-    <p class="text-xs text-muted-foreground">{{ t('vouchers.settings.retroHint') }}</p>
+    <p class="text-xs text-muted-foreground">{{ t('vouchers.settings.rateHint') }}</p>
   </div>
 </template>

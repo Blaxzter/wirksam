@@ -318,6 +318,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         )
         return result.scalar_one()
 
+    async def ids_created_by(
+        self, db: AsyncSession, *, user_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        """The ids of the tasks created by the given user."""
+        result = await db.execute(
+            select(col(Task.id)).where(col(Task.created_by_id) == user_id)
+        )
+        return list(result.scalars().all())
+
     async def reassign_owner(
         self,
         db: AsyncSession,

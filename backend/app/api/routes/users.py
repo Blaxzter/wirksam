@@ -22,7 +22,7 @@ from app.crud.event_team import event_team as crud_team
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
-from app.logic import clock
+from app.logic import clock, vouchers
 from app.logic.auth.service import build_user_profile
 from app.models.booking import Booking
 from app.models.notification import NotificationSubscription
@@ -395,11 +395,29 @@ async def delete_current_user(
     the same statement. The browser keeps its refresh cookie, but the row it
     names no longer exists, so the next renewal 401s and the client returns to
     the sign-in screen.
+
+    The tasks this account created go with it (``tasks.created_by_id`` is
+    CASCADE), so what other volunteers earned on them is settled first; the
+    account's own bookings, ledger and earnings go with it.
     """
+    await _settle_created_tasks(session, user.id)
     await session.delete(user)
     await session.commit()
 
     logger.info("User account deleted: %s", user.id)
+
+
+async def _settle_created_tasks(session: AsyncSession, user_id: uuid.UUID) -> None:
+    """Freeze what volunteers earned on the tasks ``user_id`` created.
+
+    Deleting the account cascades to those tasks, and with them their shifts,
+    which would take the vouchers earned there back. Earned is earned
+    (``app.logic.vouchers.settle_earnings``).
+    """
+    task_ids = await crud_task.ids_created_by(session, user_id=user_id)
+    await vouchers.settle_earnings(
+        session, now=clock.wall_clock_now(), task_ids=task_ids
+    )
 
 
 async def _get_valid_transfer_target(
@@ -550,6 +568,10 @@ async def delete_user(
             transfer_to_user_id,
         )
 
+    # A no-op today: the tasks this user created were handed over above, or
+    # the delete was refused. It stays so that earned vouchers survive if
+    # that refusal ever goes.
+    await _settle_created_tasks(session, user_id)
     await session.delete(user)
     await session.commit()
     return user

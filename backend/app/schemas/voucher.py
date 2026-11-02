@@ -38,11 +38,18 @@ class VoucherEntryRead(BaseModel):
 
 
 class VoucherShift(BaseModel):
-    """One confirmed booking on a task that earns vouchers."""
+    """One confirmed booking on a task that earns vouchers.
+
+    Either derived from the booking's current shift and task, or, once
+    ``settled``, read from the snapshot taken when what it earned was frozen
+    (``app.logic.vouchers.settle_earnings``).
+    """
 
     booking_id: uuid.UUID
-    shift_id: uuid.UUID
-    task_id: uuid.UUID
+    #: None once a settled row's shift is gone.
+    shift_id: uuid.UUID | None = None
+    #: None once a settled row's task is gone.
+    task_id: uuid.UUID | None = None
     task_name: str
     title: str
     date: dt.date
@@ -58,6 +65,9 @@ class VoucherShift(BaseModel):
     vouchers: int
     #: The shift has ended, so ``vouchers`` count as earned.
     completed: bool
+    #: Frozen: shown from its snapshot, and what a later change to the task or
+    #: shift does no longer touches it. Always ``completed``.
+    settled: bool = False
 
 
 class VoucherBalance(BaseModel):

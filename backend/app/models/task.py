@@ -141,8 +141,9 @@ class Task(Base, table=True):
     )
 
     # Volunteer vouchers (app/logic/vouchers.py). Earnings are derived from
-    # this value every time they are asked for, so changing it also changes
-    # what shifts already worked have earned.
+    # this value for shifts not settled yet. Changing it settles every ended
+    # booking first (vouchers.settle_earnings), so it only affects shifts that
+    # are not over: earned is earned.
     vouchers_per_shift: int = Field(
         default=0,
         sa_column=sa.Column(sa.Integer, nullable=False, server_default="0"),
