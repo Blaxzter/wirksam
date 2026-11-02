@@ -401,8 +401,9 @@ async def create_voucher_adjustment(
 ) -> VoucherEntry:
     """Add or take away vouchers by hand, with a reason. Event admins only.
 
-    For a current member, or for someone who has left but still has entries or
-    bookings in the event, so an organiser can settle a former member's balance.
+    For a current member, or for someone who has left but still has entries,
+    settled earnings or bookings in the event, so an organiser can settle a
+    former member's balance.
     Taking away more than the person can still redeem is refused with 409
     ``voucher.correction_exceeds_available``: a balance never goes below zero.
     """
@@ -451,8 +452,7 @@ async def update_voucher_adjustment(
     """
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    entry = await _adjustment_or_error(session, event_id=event_id, entry_id=entry_id)
-    await crud_voucher.lock_ledger(session, event_id=event_id, user_id=entry.user_id)
+    entry = await _locked_adjustment(session, event_id=event_id, entry_id=entry_id)
     data = body.model_dump(exclude_unset=True, exclude_none=True)
     if "amount" in data:
         await _refuse_below_zero(
@@ -485,8 +485,7 @@ async def delete_voucher_adjustment(
     """
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    entry = await _adjustment_or_error(session, event_id=event_id, entry_id=entry_id)
-    await crud_voucher.lock_ledger(session, event_id=event_id, user_id=entry.user_id)
+    entry = await _locked_adjustment(session, event_id=event_id, entry_id=entry_id)
     await _refuse_below_zero(
         session, event_id=event_id, user_id=entry.user_id, change=-entry.amount
     )
@@ -522,11 +521,35 @@ async def _refuse_below_zero(
         )
 
 
-async def _adjustment_or_error(
+async def _locked_adjustment(
     session: AsyncSession, *, event_id: uuid.UUID, entry_id: uuid.UUID
 ) -> VoucherEntry:
+    """The correction, read again under its person's ``lock_ledger``.
+
+    The lock's key needs the entry's ``user_id``, so the entry is read once
+    before it. Another organiser may change or delete the same correction
+    while this request waits for the lock, and the session would keep the
+    amount it read first; checking a change against that stale amount could
+    take the balance below zero. The second read takes what is committed
+    (a 404 if it is gone). ``user_id`` itself never changes, so the lock
+    still fits.
+    """
+    entry = await _adjustment_or_error(session, event_id=event_id, entry_id=entry_id)
+    await crud_voucher.lock_ledger(session, event_id=event_id, user_id=entry.user_id)
+    return await _adjustment_or_error(
+        session, event_id=event_id, entry_id=entry_id, fresh=True
+    )
+
+
+async def _adjustment_or_error(
+    session: AsyncSession,
+    *,
+    event_id: uuid.UUID,
+    entry_id: uuid.UUID,
+    fresh: bool = False,
+) -> VoucherEntry:
     entry = await crud_voucher.get_in_event(
-        session, entry_id=entry_id, event_id=event_id
+        session, entry_id=entry_id, event_id=event_id, fresh=fresh
     )
     if entry is None:
         raise_problem(
@@ -552,10 +575,20 @@ def _no_part_in_event() -> NoReturn:
 async def _appears_in_event(
     session: AsyncSession, *, event_id: uuid.UUID, user_id: uuid.UUID
 ) -> bool:
-    """A current member, or someone with entries or confirmed bookings here."""
+    """A current member, or someone with entries, settled earnings or confirmed
+    bookings here.
+
+    Covers everyone ``vouchers.balances`` lists as a former member, so an
+    organiser can open and correct every row of the overview. Settled earnings
+    count on their own: deleting an ended shift or its task cancels the
+    booking behind the earning, and moving the task to another event takes
+    the booking with it.
+    """
     if await crud_membership.get(session, user_id=user_id, event_id=event_id):
         return True
     if await crud_voucher.has_entries(session, event_id=event_id, user_id=user_id):
+        return True
+    if await crud_voucher.has_earnings(session, event_id=event_id, user_id=user_id):
         return True
     return (
         await crud_booking.count_by_user(

@@ -3,7 +3,10 @@
 The balance is derived, so there is no row to lock; ``logic.vouchers.redeem``
 serialises on a transaction-scoped advisory lock per (event, volunteer)
 instead. Settling earned vouchers takes no lock at all, because it changes no
-total; the cases at the end show a redemption and a settlement racing. Proving that it holds takes two real transactions on two connections,
+total; the cases at the end show a redemption and a settlement racing, and
+two organisers changing the same correction (the routes, called directly,
+since the stale read they guard against lives there). Proving that it holds
+takes two real transactions on two connections,
 so unlike the rest of the suite these tests do not run on ``db_session``: the
 setup is committed for real, each redemption runs in its own session inside
 ``session.begin()``, and a ``finally`` block deletes everything that was
@@ -24,6 +27,10 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlmodel import col
 
+from app.api.routes.vouchers import (
+    delete_voucher_adjustment,
+    update_voucher_adjustment,
+)
 from app.logic import vouchers
 from app.models.booking import Booking
 from app.models.event import Event
@@ -32,7 +39,7 @@ from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
-from app.schemas.voucher import VoucherRedeemResult
+from app.schemas.voucher import VoucherAdjustmentUpdate, VoucherRedeemResult
 
 #: After the shift below has ended (event wall clock).
 WALL_NOW = dt.datetime(2026, 6, 11, 20, 0)
@@ -352,6 +359,108 @@ async def test_redeeming_everything_while_the_rate_is_lowered(
     assert await _available(committed) == 0
     rows = await _earning_rows(committed)
     assert [amount for amount, _ in rows] == [3]
+
+
+async def _committed_correction(c: Committed, *, amount: int) -> uuid.UUID:
+    async with c.sessions() as session, session.begin():
+        entry = VoucherEntry(
+            event_id=c.event_id,
+            user_id=c.volunteer.id,
+            kind="adjustment",
+            amount=amount,
+            note="Papiermarken",
+        )
+        session.add(entry)
+    return entry.id
+
+
+async def _edit_correction(
+    c: Committed,
+    entry_id: uuid.UUID,
+    *,
+    amount: int | None,
+    delay: float = 0.0,
+    pause: float = 0.0,
+) -> int | None:
+    """An organiser's ``PATCH`` (``amount``) or ``DELETE`` (``None``) of a
+    correction, as one request: the route in its own session and
+    transaction. ``delay`` starts it later, ``pause`` keeps its transaction
+    (and so the ledger lock) open afterwards. Returns the stored amount."""
+    await asyncio.sleep(delay)
+    async with c.sessions() as session, session.begin():
+        organiser = await session.get(User, c.redeemer.id)
+        assert organiser is not None
+        if amount is None:
+            await delete_voucher_adjustment(
+                event_id=c.event_id,
+                entry_id=entry_id,
+                session=session,
+                current_user=organiser,
+            )
+            result = None
+        else:
+            entry = await update_voucher_adjustment(
+                event_id=c.event_id,
+                entry_id=entry_id,
+                body=VoucherAdjustmentUpdate(amount=amount),
+                session=session,
+                current_user=organiser,
+            )
+            result = entry.amount
+        await asyncio.sleep(pause)
+        return result
+
+
+@pytest.mark.asyncio
+async def test_two_organisers_changing_one_correction(
+    committed: Committed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """3 earned and a correction of -1: 2 left. One organiser changes it to
+    +5 (8 left), while another, who read the -1 before that committed, changes
+    it to -5. Checked against the -1 that would take 4; against the +5 now
+    stored it takes 10, more than the 8 left, so the second is refused and
+    the balance never goes below zero."""
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: WALL_NOW)
+    entry_id = await _committed_correction(committed, amount=-1)
+
+    results = await asyncio.gather(
+        _edit_correction(committed, entry_id, amount=5, pause=0.3),
+        _edit_correction(committed, entry_id, amount=-5, delay=0.1),
+        return_exceptions=True,
+    )
+
+    assert results[0] == 5, results
+    refused = results[1]
+    assert isinstance(refused, HTTPException), refused
+    assert refused.status_code == 409
+    assert _code(refused) == "voucher.correction_exceeds_available"
+    assert await _ledger(committed) == (1, 5)
+    assert await _available(committed) == 8
+
+
+@pytest.mark.asyncio
+async def test_changing_a_correction_another_organiser_deleted(
+    committed: Committed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One organiser deletes a correction while another, who read it before
+    that committed, changes it: the change finds it gone (404), rather than
+    updating a row that no longer exists."""
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: WALL_NOW)
+    entry_id = await _committed_correction(committed, amount=-1)
+
+    results = await asyncio.gather(
+        _edit_correction(committed, entry_id, amount=None, pause=0.3),
+        _edit_correction(committed, entry_id, amount=-2, delay=0.1),
+        return_exceptions=True,
+    )
+
+    assert results[0] is None, results
+    gone = results[1]
+    assert isinstance(gone, HTTPException), gone
+    assert gone.status_code == 404
+    assert _code(gone) == "voucher.entry_not_found"
+    assert await _ledger(committed) == (0, 0)
+    assert await _available(committed) == 3
 
 
 @pytest.mark.asyncio

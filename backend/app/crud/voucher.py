@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.models.user import User
-from app.models.voucher import VoucherEntry, VoucherPass
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 
 #: How many fresh codes ``issue_pass`` tries before giving up. With 31^6
 #: codes and a few dozen live ones, a second attempt is already rare.
@@ -138,13 +138,18 @@ class CRUDVoucher:
         *,
         entry_id: uuid.UUID,
         event_id: uuid.UUID,
+        fresh: bool = False,
     ) -> VoucherEntry | None:
-        result = await session.execute(
-            select(VoucherEntry).where(
-                col(VoucherEntry.id) == entry_id,
-                col(VoucherEntry.event_id) == event_id,
-            )
+        """One entry of the event. ``fresh`` overwrites a copy the session
+        already holds with what is committed now, for a read again under
+        :meth:`lock_ledger`."""
+        query = select(VoucherEntry).where(
+            col(VoucherEntry.id) == entry_id,
+            col(VoucherEntry.event_id) == event_id,
         )
+        if fresh:
+            query = query.execution_options(populate_existing=True)
+        result = await session.execute(query)
         return result.scalar_one_or_none()
 
     async def find_entry_by_request_id(
@@ -184,6 +189,26 @@ class CRUDVoucher:
             .where(
                 col(VoucherEntry.event_id) == event_id,
                 col(VoucherEntry.user_id) == user_id,
+            )
+            .limit(1)
+        )
+        return result.first() is not None
+
+    async def has_earnings(
+        self,
+        session: AsyncSession,
+        *,
+        event_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+        """Whether this person has a settled earning worth something in the
+        event: the rows ``logic.vouchers`` counts as earned."""
+        result = await session.execute(
+            select(col(VoucherEarning.id))
+            .where(
+                col(VoucherEarning.event_id) == event_id,
+                col(VoucherEarning.user_id) == user_id,
+                col(VoucherEarning.amount) > 0,
             )
             .limit(1)
         )

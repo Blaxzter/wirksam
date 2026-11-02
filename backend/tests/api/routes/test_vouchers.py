@@ -30,6 +30,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.booking import booking as crud_booking
 from app.crud.voucher import voucher as crud_voucher
 from app.logic import vouchers
 from app.logic.clock import utc_now
@@ -1233,6 +1234,55 @@ class TestCorrections:
         await db_session.flush()
         r = await self._create(async_client, app, cast, user_id=str(cast.outsider.id))
         assert r.status_code == 201
+
+    async def test_a_former_member_with_only_settled_earnings_can_be_settled(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """The volunteer leaves, then an organiser deletes their ended shift:
+        what it earned is settled and the booking cancelled, so the earning is
+        all that says they worked here. They stay in the overview, and their
+        row still opens and takes a correction."""
+        await db_session.execute(
+            delete(EventMembership).where(
+                col(EventMembership.event_id) == cast.event.id,
+                col(EventMembership.user_id) == cast.volunteer.id,
+            )
+        )
+        await db_session.flush()
+        shift_id = (
+            await db_session.execute(
+                select(col(Shift.id)).where(col(Shift.task_id) == cast.work.id)
+            )
+        ).scalar_one()
+        with act_as(app, cast.admin):
+            r = await async_client.delete(f"/api/v1/shifts/{shift_id}")
+            assert r.status_code == 204, r.text
+            overview = (await async_client.get(f"{_base(cast.event)}/people")).json()
+        assert (
+            await crud_booking.count_by_user(
+                db_session,
+                user_id=cast.volunteer.id,
+                status="confirmed",
+                event_id=cast.event.id,
+            )
+            == 0
+        )
+        assert await _entries(db_session, cast) == []
+        (row,) = [b for b in overview if b["user_id"] == str(cast.volunteer.id)]
+        assert (row["role"], row["available"]) == (None, 3)
+
+        with act_as(app, cast.admin):
+            r = await async_client.get(
+                f"{_base(cast.event)}/people/{cast.volunteer.id}"
+            )
+        assert r.status_code == 200, r.text
+        assert r.json()["summary"]["earned"] == 3
+        r = await self._create(async_client, app, cast, amount=-1)
+        assert r.status_code == 201, r.text
 
     @pytest.mark.parametrize("who", ["volunteer", "manager"])
     async def test_admins_only(
