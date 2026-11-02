@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { ref } from 'vue'
 
 import { ArrowRight, QrCode, Ticket } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
-import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useMyVoucherAccount } from '@/composables/useMyVoucherAccount'
 
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,66 +15,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import VoucherBalanceSummary from '@/components/vouchers/VoucherBalanceSummary.vue'
 import VoucherCodeDialog from '@/components/vouchers/VoucherCodeDialog.vue'
 
-import type { VoucherAccount } from '@/client/types.gen'
-
 /**
  * The volunteer's vouchers in the selected event, with the button that shows
  * their code. Like `MyHoursCard` it reads the selected event and keeps out of
  * the way: it appears once there is something to show, or once the event is
- * known to use vouchers, and stays hidden if the account cannot be read.
+ * known to use vouchers, and stays hidden if the account cannot be read. The
+ * loading itself lives in `useMyVoucherAccount`, which the dashboard shares.
  */
 const { t } = useI18n()
 const router = useRouter()
-const { get } = useAuthenticatedClient()
 const authStore = useAuthStore()
 
-const account = ref<VoucherAccount | null>(null)
+const { account, eventId, visible, canShowCode, reload } = useMyVoucherAccount()
 const codeOpen = ref(false)
 
-const eventId = computed(() => authStore.selectedEventId)
-
-const usesVouchers = computed(() => {
-  const event = authStore.selectedEvent
-  if (!event || event.id !== eventId.value) return false
-  return (event.voucher_task_count ?? 0) > 0 || (event.voucher_point_count ?? 0) > 0
-})
-
-const visible = computed(() => {
-  const a = account.value
-  if (!a) return false
-  const s = a.summary
-  // The account itself, not only the cached counts: a voucher task enabled
-  // a minute ago shows up here before the selected event is re-read.
-  return s.earned > 0 || s.upcoming > 0 || a.entries.length > 0 || usesVouchers.value
-})
-
-const canShowCode = computed(
-  () => (account.value?.summary.available ?? 0) > 0 && !authStore.selectedEvent?.is_expired,
-)
-
-/** Re-read the account; the card stays as it is until the answer is in. */
-async function load() {
-  const id = eventId.value
-  if (!id) {
-    account.value = null
-    return
-  }
-  try {
-    const res = await get<{ data: VoucherAccount }>({ url: `/events/${id}/vouchers/me` })
-    if (eventId.value === id) account.value = res.data
-  } catch {
-    // Not in the selected event (any more): the card simply stays hidden.
-    if (eventId.value === id) account.value = null
-  }
-}
-
-watch(eventId, () => {
-  account.value = null
-  void load()
-})
-onMounted(load)
-
-defineExpose({ reload: load })
+defineExpose({ reload })
 </script>
 
 <template>
@@ -123,6 +78,6 @@ defineExpose({ reload: load })
     v-if="eventId"
     v-model:open="codeOpen"
     :event-id="eventId"
-    @redeemed="load"
+    @redeemed="reload"
   />
 </template>
