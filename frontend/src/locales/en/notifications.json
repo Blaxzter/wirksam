@@ -225,6 +225,14 @@
             }
         },
         "task": {
+            "manager_added": {
+                "description": "When an organiser puts you in charge of a task",
+                "name": "Put in charge of a task"
+            },
+            "manager_removed": {
+                "description": "When an organiser takes you off a task you were in charge of",
+                "name": "No longer in charge"
+            },
             "published": {
                 "description": "When a new task is published",
                 "name": "Task Published"

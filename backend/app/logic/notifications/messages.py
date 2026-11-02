@@ -48,6 +48,26 @@ def get_email_strings(language: str) -> dict[str, str]:
     )
 
 
+def quoted_list(names: list[str], lang: str) -> str:
+    """Quote names and join them as prose, in the recipient's language.
+
+    ``["Bar", "Grill", "Café"]`` reads “Bar”, “Grill” and “Café” in English and
+    „Bar“, „Grill“ und „Café“ in German: German quotes open low, and neither
+    language puts a comma before the last name. One name is just that name,
+    quoted; none is an empty string. The names stay values, never part of a
+    format string, so a task called ``{event_name}`` prints as typed.
+    """
+    if _resolve_lang(lang) == "de":
+        quoted = [f"„{name}“" for name in names]
+        last_joiner = " und "
+    else:
+        quoted = [f"“{name}”" for name in names]
+        last_joiner = " and "
+    if len(quoted) <= 1:
+        return "".join(quoted)
+    return ", ".join(quoted[:-1]) + last_joiner + quoted[-1]
+
+
 def format_time_until(offset_minutes: int, lang: str) -> str:
     """Human-readable time-until string for the ``booking.reminder`` body.
 

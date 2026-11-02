@@ -27,6 +27,14 @@
     "title": "New Task Published",
     "body": "A new task \"{task_name}\" has been published. Check it out!"
   },
+  "task.manager_added": {
+    "title": "You're in charge of a task",
+    "body": "{actor} put you in charge of “{task_name}” in “{event_name}”. You can now edit the task and its shifts and see who has booked."
+  },
+  "task.manager_removed": {
+    "title": "No longer in charge",
+    "body": "{actor} took you off “{task_name}” in “{event_name}”. You can no longer edit it."
+  },
   "event.published": {
     "title": "New Event Published",
     "body": "Event \"{event_name}\" has been published."
@@ -106,6 +114,10 @@
   },
   "role.member": {
     "title": "a member",
+    "body": ""
+  },
+  "someone": {
+    "title": "Someone",
     "body": ""
   },
   "user.reinstated": {

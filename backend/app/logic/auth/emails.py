@@ -172,12 +172,12 @@ def _chrome(language: str, key: str) -> str:
     """Return one shared email-chrome string, falling back to English per key.
 
     ``get_email_strings`` falls back to English only when a locale file has no
-    "email" block at all — not when a single key inside one is missing. Nothing
-    in this repository checks the *backend* locale files for en/de parity (the
-    pre-commit hook only covers ``frontend/src/locales``), so a key added to
-    en.json and forgotten in de.json would raise ``KeyError`` here, which the
-    caller swallows as "sending failed": the reset mail would simply never
-    arrive for German users. Degrade to the English wording instead.
+    "email" block at all — not when a single key inside one is missing. The
+    pre-commit hook only covers ``frontend/src/locales``; the backend files are
+    checked by ``tests/logic/test_notification_locales.py``. Should a key in
+    en.json still be missing from de.json, it would raise ``KeyError`` here,
+    which the caller swallows as "sending failed": the reset mail would simply
+    never arrive for German users. Degrade to the English wording instead.
     """
     strings = get_email_strings(language)
     if key in strings:

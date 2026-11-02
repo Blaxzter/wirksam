@@ -27,6 +27,14 @@
     "title": "Neue Aufgabe veröffentlicht",
     "body": "Die Aufgabe „{task_name}“ wurde veröffentlicht. Schau sie dir an."
   },
+  "task.manager_added": {
+    "title": "Du bist jetzt verantwortlich",
+    "body": "{actor} hat dich bei „{task_name}“ in „{event_name}“ als verantwortlich eingetragen. Du kannst die Aufgabe und ihre Schichten jetzt bearbeiten und sehen, wer gebucht hat."
+  },
+  "task.manager_removed": {
+    "title": "Nicht mehr verantwortlich",
+    "body": "{actor} hat dich bei „{task_name}“ in „{event_name}“ als verantwortlich ausgetragen. Du kannst die Aufgabe nicht mehr bearbeiten."
+  },
   "event.published": {
     "title": "Neue Veranstaltung veröffentlicht",
     "body": "Die Veranstaltung „{event_name}“ wurde veröffentlicht."
@@ -106,6 +114,10 @@
   },
   "role.member": {
     "title": "Mitglied",
+    "body": ""
+  },
+  "someone": {
+    "title": "Jemand",
     "body": ""
   },
   "user.reinstated": {

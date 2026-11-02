@@ -225,6 +225,14 @@
             }
         },
         "task": {
+            "manager_added": {
+                "description": "Wenn dich jemand für eine Aufgabe als verantwortlich einträgt",
+                "name": "Als verantwortlich eingetragen"
+            },
+            "manager_removed": {
+                "description": "Wenn dich jemand bei einer Aufgabe als verantwortlich austrägt",
+                "name": "Nicht mehr verantwortlich"
+            },
             "published": {
                 "description": "Wenn eine neue Aufgabe veröffentlicht wird",
                 "name": "Aufgabe veröffentlicht"

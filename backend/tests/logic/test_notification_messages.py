@@ -1,10 +1,13 @@
 """Unit tests for notification message translations."""
 
+import pytest
+
 from app.logic.notifications.messages import (
     DEFAULT_LANGUAGE,
     _resolve_lang,  # type: ignore[reportPrivateUsage]
     get_email_strings,
     get_message,
+    quoted_list,
 )
 
 
@@ -95,3 +98,29 @@ class TestGetEmailStrings:
         xx_strings = get_email_strings("xx")
 
         assert en_strings == xx_strings
+
+
+class TestQuotedList:
+    """Names joined as prose, with each language's quotation marks."""
+
+    @pytest.mark.parametrize(
+        ("names", "lang", "expected"),
+        [
+            ([], "en", ""),
+            (["Bar"], "en", "“Bar”"),
+            (["Bar", "Grill"], "en", "“Bar” and “Grill”"),
+            (["Bar", "Grill", "Café"], "en", "“Bar”, “Grill” and “Café”"),
+            ([], "de", ""),
+            (["Bar"], "de", "„Bar“"),
+            (["Bar", "Grill"], "de", "„Bar“ und „Grill“"),
+            (["Bar", "Grill", "Café"], "de", "„Bar“, „Grill“ und „Café“"),
+            # An unknown language reads like English, as get_message falls back.
+            (["Bar", "Grill"], "fr", "“Bar” and “Grill”"),
+        ],
+    )
+    def test_joins(self, names: list[str], lang: str, expected: str) -> None:
+        assert quoted_list(names, lang) == expected
+
+    def test_braces_stay_as_typed(self) -> None:
+        """Names are values, never a format string."""
+        assert quoted_list(["{event_name}"], "en") == "“{event_name}”"
