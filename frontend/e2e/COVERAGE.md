@@ -45,11 +45,11 @@ Not yet covered, and not currently tracked by an issue:
 | `auth`       | 5          | 20      |
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 26      |
-| `mobile`     | 3          | 14      |
+| `mobile`     | 4          | 16      |
 | `multi-user` | 7          | 65      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **60**     | **432** |
+| **Total**    | **61**     | **434** |
 
 ## Inventory
 
@@ -601,7 +601,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 3 files, 14 tests
+### Project `mobile` — 4 files, 16 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -610,6 +610,12 @@ Not yet covered, and not currently tracked by an issue:
   - Home brings you back to the dashboard
   - the More sheet no longer lists Home
   - on a phone the open shifts stop at four
+
+#### `frontend/e2e/tests/mobile/my-bookings.spec.ts` — 2 tests
+
+- **My Bookings – on a phone** (2)
+  - the search keeps a usable width next to one filter button
+  - the filter button holds the date range and the cancelled switch
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 

@@ -90,6 +90,7 @@
             "all": "All",
             "allDates": "All dates",
             "clearDates": "Clear dates",
+            "includeCancelled": "Show cancelled bookings",
             "showCancelled": "Cancelled",
             "thisMonth": "This Month",
             "upcoming": "Upcoming"

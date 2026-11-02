@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Calendar,
   CalendarDays,
+  ChevronDown,
   Clock,
   Layers,
   MapPin,
@@ -25,7 +26,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import Input from '@/components/ui/input/Input.vue'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import Separator from '@/components/ui/separator/Separator.vue'
+import { Switch } from '@/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -76,6 +80,18 @@ const isoDaysAgo = (days: number) => {
 const dateFrom = ref<string | null>(route.query.range === 'all' ? isoDaysAgo(HISTORY_DAYS) : null)
 const dateTo = ref<string | null>(null)
 const showCancelled = ref(false)
+
+/**
+ * The phone's filter button names the date range, short: on a 375 px screen
+ * the search needs the room (it was squashed down to "Suchen.").
+ */
+const shortDateLabel = computed(() => {
+  const short = (date: string) => formatDateLabel(date, { day: 'numeric', month: 'short' })
+  if (!dateFrom.value) return t('duties.tasks.filters.fromToday')
+  if (!dateTo.value || dateTo.value === dateFrom.value)
+    return t('duties.tasks.filters.fromDate', { date: short(dateFrom.value) })
+  return `${short(dateFrom.value)} – ${short(dateTo.value)}`
+})
 
 // Marked days for the date range picker
 const markedDays = ref<Set<string>>(new Set())
@@ -350,9 +366,14 @@ onMounted(loadBookings)
     <MyHoursCard ref="hoursCard" />
     <MyVouchersCard ref="vouchersCard" />
 
-    <!-- Search & Filter -->
-    <div class="flex flex-wrap items-center gap-4">
-      <div class="relative flex-1">
+    <!--
+      Search & Filter. Phones: the search and one filter button share a row,
+      the date range and "cancelled" behind it. Wider: the search takes what
+      the two controls leave, and they wrap below it once it would drop under
+      20rem.
+    -->
+    <div class="flex flex-wrap items-center gap-2 sm:gap-4" data-testid="bookings-filter-row">
+      <div class="relative min-w-0 flex-1 sm:basis-80">
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           v-model="searchQuery"
@@ -361,24 +382,69 @@ onMounted(loadBookings)
           class="pl-10"
         />
       </div>
-      <DateRangePicker
-        :date-from="dateFrom"
-        :date-to="dateTo"
-        :marked-days="markedDays"
-        :reset-label="t('duties.bookings.filters.clearDates')"
-        @update:date-from="dateFrom = $event"
-        @update:date-to="dateTo = $event"
-        @update:visible-month="handleVisibleMonth"
-      />
-      <Button
-        data-testid="btn-toggle-cancelled"
-        :variant="showCancelled ? 'default' : 'outline'"
-        size="sm"
-        @click="showCancelled = !showCancelled"
-      >
-        <XCircle class="h-4 w-4 mr-1.5" />
-        {{ t('duties.bookings.filters.showCancelled') }}
-      </Button>
+
+      <Popover>
+        <PopoverTrigger as-child>
+          <Button
+            variant="outline"
+            class="h-9 max-w-36 shrink-0 gap-1.5 px-3 sm:hidden"
+            :aria-label="`${t('duties.tasks.filters.title')}: ${shortDateLabel}`"
+            data-testid="btn-bookings-filters"
+          >
+            <span class="truncate">{{ shortDateLabel }}</span>
+            <span
+              v-if="showCancelled"
+              class="size-1.5 shrink-0 rounded-full bg-primary"
+              aria-hidden="true"
+            />
+            <ChevronDown class="size-4 shrink-0" aria-hidden="true" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" class="w-72 space-y-4" data-testid="bookings-filters">
+          <h4 class="text-sm font-medium">{{ t('duties.tasks.filters.title') }}</h4>
+          <DateRangePicker
+            :date-from="dateFrom"
+            :date-to="dateTo"
+            :marked-days="markedDays"
+            :reset-label="t('duties.bookings.filters.clearDates')"
+            @update:date-from="dateFrom = $event"
+            @update:date-to="dateTo = $event"
+            @update:visible-month="handleVisibleMonth"
+          />
+          <div class="flex items-center justify-between gap-3">
+            <Label for="bookings-show-cancelled" class="cursor-pointer text-sm font-normal">
+              {{ t('duties.bookings.filters.includeCancelled') }}
+            </Label>
+            <Switch
+              id="bookings-show-cancelled"
+              data-testid="switch-show-cancelled"
+              :model-value="showCancelled"
+              @update:model-value="showCancelled = $event"
+            />
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <div class="hidden sm:contents">
+        <DateRangePicker
+          :date-from="dateFrom"
+          :date-to="dateTo"
+          :marked-days="markedDays"
+          :reset-label="t('duties.bookings.filters.clearDates')"
+          @update:date-from="dateFrom = $event"
+          @update:date-to="dateTo = $event"
+          @update:visible-month="handleVisibleMonth"
+        />
+        <Button
+          data-testid="btn-toggle-cancelled"
+          :variant="showCancelled ? 'default' : 'outline'"
+          size="sm"
+          @click="showCancelled = !showCancelled"
+        >
+          <XCircle class="h-4 w-4 mr-1.5" />
+          {{ t('duties.bookings.filters.showCancelled') }}
+        </Button>
+      </div>
     </div>
 
     <!-- Loading -->

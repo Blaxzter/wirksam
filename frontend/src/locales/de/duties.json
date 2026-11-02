@@ -90,6 +90,7 @@
             "all": "Alle",
             "allDates": "Alle Termine",
             "clearDates": "Datum zurücksetzen",
+            "includeCancelled": "Stornierte Buchungen zeigen",
             "showCancelled": "Storniert",
             "thisMonth": "Dieser Monat",
             "upcoming": "Bevorstehend"
