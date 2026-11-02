@@ -36,8 +36,19 @@ export interface NavSubItem {
     variant?: 'default' | 'secondary' | 'destructive' | 'outline'
     /** Drawn before the text; with no text, `tooltip` is also what a screen reader hears. */
     icon?: LucideIcon
+    /**
+     * What a screen reader hears in place of the icon and text, when they
+     * mean more than the text says: a hover tooltip never reaches a screen
+     * reader, a keyboard or a phone.
+     */
+    label?: string
   }
 }
+
+type NavBadge = NonNullable<NavSubItem['badge']>
+
+/** The badge's words for a screen reader, when the visible text is not enough. */
+const badgeSrText = (badge: NavBadge) => badge.label ?? (badge.text ? undefined : badge.tooltip)
 
 export interface NavItem {
   title: string
@@ -192,12 +203,14 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
                               class="size-3"
                               aria-hidden="true"
                             />
-                            {{ subItem.badge.text }}
                             <span
-                              v-if="!subItem.badge.text && subItem.badge.tooltip"
-                              class="sr-only"
+                              v-if="subItem.badge.text"
+                              :aria-hidden="subItem.badge.label ? 'true' : undefined"
                             >
-                              {{ subItem.badge.tooltip }}
+                              {{ subItem.badge.text }}
+                            </span>
+                            <span v-if="badgeSrText(subItem.badge)" class="sr-only">
+                              {{ badgeSrText(subItem.badge) }}
                             </span>
                           </Badge>
                         </TooltipTrigger>

@@ -133,26 +133,31 @@ function eventBadge(
  * A task the viewer is in charge of: a shield, plus its open-shift count when
  * there is one. The sidebar lists these whether or not anything is still
  * open, so a fully booked one would otherwise have no badge at all. A draft
- * keeps its status text, with the shield in front.
+ * keeps its status text, with the shield in front. A screen reader hears what
+ * the shield means too (`label`), not just "3" or "Entwurf".
  */
 function inChargeBadge(openShifts: number, status?: string | null): NavSubItem['badge'] {
   const inCharge = t('navigation.sidebar.badges.inCharge')
   if (status && status !== 'published') {
     // "Only visible to organisers" would be wrong here: the viewer sees it.
+    const text = t(`duties.tasks.statuses.${status}`)
     return {
-      text: t(`duties.tasks.statuses.${status}`),
+      text,
       icon: ShieldCheck,
       tooltip: inCharge,
+      label: `${text} · ${inCharge}`,
       variant: 'secondary',
     }
   }
+  const tooltip =
+    openShifts > 0
+      ? `${inCharge} · ${t('navigation.sidebar.badges.openShifts', { count: openShifts }, openShifts)}`
+      : inCharge
   return {
     text: openShifts > 0 ? `${openShifts}` : '',
     icon: ShieldCheck,
-    tooltip:
-      openShifts > 0
-        ? `${inCharge} · ${t('navigation.sidebar.badges.openShifts', { count: openShifts }, openShifts)}`
-        : inCharge,
+    tooltip,
+    label: tooltip,
     variant: 'outline',
   }
 }
