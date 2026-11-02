@@ -48,10 +48,10 @@ const hiddenDesktop = computed(() => hiddenCount(props.totalCount, props.shifts.
   <section
     data-testid="dashboard-open-shifts"
     aria-labelledby="dashboard-open-title"
-    class="grid min-w-0 gap-y-2.5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-x-4 lg:gap-y-3.5"
+    class="grid min-w-0 gap-y-2.5 @4xl:grid-cols-[minmax(0,1fr)_auto] @4xl:items-end @4xl:gap-x-4 @4xl:gap-y-3.5"
   >
     <div class="min-w-0">
-      <h2 id="dashboard-open-title" class="text-[17px] font-bold lg:text-lg">
+      <h2 id="dashboard-open-title" class="text-[17px] font-bold @4xl:text-lg">
         {{ t('dashboard.home.open.title') }}
       </h2>
       <p data-testid="open-shifts-summary" class="mt-0.5 text-sm text-muted-foreground">
@@ -66,16 +66,16 @@ const hiddenDesktop = computed(() => hiddenCount(props.totalCount, props.shifts.
     <RouterLink
       data-testid="btn-browse-open-shifts"
       :to="OPEN_SHIFTS_ROUTE"
-      class="order-last mt-0.5 flex min-h-12 items-center justify-center gap-1.5 rounded-xl border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:order-none lg:col-start-2 lg:row-start-1 lg:mt-0 lg:min-h-9 lg:justify-end lg:border-0 lg:px-0 lg:text-primary lg:hover:bg-transparent lg:hover:underline"
+      class="order-last mt-0.5 flex min-h-12 items-center justify-center gap-1.5 rounded-xl border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none @4xl:order-none @4xl:col-start-2 @4xl:row-start-1 @4xl:mt-0 @4xl:min-h-9 @4xl:justify-end @4xl:border-0 @4xl:px-0 @4xl:text-primary @4xl:hover:bg-transparent @4xl:hover:underline"
     >
       {{ t('dashboard.home.open.browseAll') }}
-      <span v-if="hiddenMobile > 0" data-testid="open-shifts-more-mobile" class="lg:hidden">
+      <span v-if="hiddenMobile > 0" data-testid="open-shifts-more-mobile" class="@4xl:hidden">
         {{ t('dashboard.home.open.moreCount', { count: hiddenMobile }) }}
       </span>
       <span
         v-if="hiddenDesktop > 0"
         data-testid="open-shifts-more-desktop"
-        class="hidden lg:inline"
+        class="hidden @4xl:inline"
       >
         {{ t('dashboard.home.open.moreCount', { count: hiddenDesktop }) }}
       </span>
@@ -84,7 +84,7 @@ const hiddenDesktop = computed(() => hiddenCount(props.totalCount, props.shifts.
 
     <ul
       v-if="shifts.length"
-      class="flex flex-col gap-2.5 sm:grid sm:grid-cols-2 sm:gap-3 lg:col-span-2 lg:grid-cols-[repeat(auto-fill,minmax(18.75rem,1fr))] lg:gap-4"
+      class="flex flex-col gap-2.5 @xl:grid @xl:grid-cols-2 @xl:gap-3 @4xl:col-span-2 @4xl:grid-cols-[repeat(auto-fill,minmax(18.75rem,1fr))] @4xl:gap-4"
     >
       <OpenShiftCard
         v-for="(shift, i) in shifts"
@@ -92,14 +92,14 @@ const hiddenDesktop = computed(() => hiddenCount(props.totalCount, props.shifts.
         :shift="shift"
         :now="now"
         :show-event-name="showEventName"
-        :class="i >= MOBILE_OPEN_SHIFT_LIMIT ? 'max-lg:hidden' : ''"
+        :class="i >= MOBILE_OPEN_SHIFT_LIMIT ? '@max-4xl:hidden' : ''"
         @select="emit('select', $event)"
       />
     </ul>
     <div
       v-else
       data-testid="open-shifts-empty"
-      class="flex flex-col items-center gap-1 rounded-2xl border border-dashed px-4 py-8 text-center lg:col-span-2 lg:rounded-[18px]"
+      class="flex flex-col items-center gap-1 rounded-2xl border border-dashed px-4 py-8 text-center @4xl:col-span-2 @4xl:rounded-[18px]"
     >
       <p class="font-medium">{{ t('dashboard.home.open.emptyTitle') }}</p>
       <p class="text-sm text-muted-foreground">{{ t('dashboard.home.open.emptyBody') }}</p>

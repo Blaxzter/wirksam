@@ -18,6 +18,15 @@
  * every test id exists exactly once at every width. The old "Anything else"
  * buttons went, because they repeated the navigation.
  *
+ * "Desktop" here means the page has room, not that the screen is wide: the
+ * page is a container and the three-column layout switches on at 56rem of
+ * page (`@4xl:`), not at the `lg` screen width. At 1024 px the sidebar takes
+ * a quarter of the screen, and three columns in what is left wrapped the
+ * start time onto two lines and squeezed the to-do list to a word per line.
+ * The components below use the same `@4xl:` variant, so their desktop look
+ * follows the same switch. That variant answers to the nearest container, so
+ * nothing inside the page may become a container of its own.
+ *
  * The page keeps its own clock, ticking once a minute, which the countdown,
  * the greeting and every "today" label read, so they stay true while the tab
  * is left open, and a shift that ends while you look moves the card on.
@@ -171,7 +180,9 @@ watch(nextShiftOver, (over) => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-[70rem] space-y-5 pt-4 pb-7 lg:space-y-6 lg:px-6 lg:pt-6 lg:pb-12">
+  <div
+    class="@container mx-auto max-w-[70rem] space-y-5 pt-4 pb-7 lg:space-y-6 lg:px-6 lg:pt-6 lg:pb-12"
+  >
     <DashboardHeader
       :now="now"
       :name="greetName"
@@ -183,20 +194,21 @@ watch(nextShiftOver, (over) => {
 
     <template v-else>
       <!-- Row 1: the next shift, and beside it what you have -->
-      <div class="grid grid-cols-2 gap-x-3 gap-y-5 lg:grid-cols-3 lg:gap-6">
+      <div class="grid grid-cols-2 gap-x-3 gap-y-5 @4xl:grid-cols-3 @4xl:gap-6">
         <NextShiftHero
           class="col-span-2"
-          :class="showVouchers ? 'lg:col-span-2' : 'lg:col-span-3'"
+          :class="showVouchers ? '@4xl:col-span-2' : '@4xl:col-span-3'"
           :shift="nextShift"
           :now="now"
           :open-places="feed?.open_places ?? 0"
           :venue-map-event-id="venueMapEventId"
           :current-event-id="feed?.event_id ?? null"
+          :alone="!showVouchers"
           @open="openShiftDetail($event.shift_id)"
         />
         <DashboardVoucherCard
           v-if="showVouchers && vouchers.account.value && vouchers.eventId.value"
-          :class="hasShift ? 'col-span-1' : 'col-span-2 lg:col-span-1'"
+          :class="hasShift ? 'col-span-1' : 'col-span-2 @4xl:col-span-1'"
           :account="vouchers.account.value"
           :now="now"
           :event-id="vouchers.eventId.value"
@@ -216,13 +228,13 @@ watch(nextShiftOver, (over) => {
       <!-- Row 2: what needs the organiser, and your plan -->
       <div
         v-if="attention.length > 0 || hasShift"
-        class="grid gap-5 lg:grid-cols-3 lg:items-start lg:gap-6"
+        class="grid gap-5 @4xl:grid-cols-3 @4xl:items-start @4xl:gap-6"
       >
         <AttentionList
           v-if="attention.length > 0"
           :items="attention"
           :event-id="feed?.event_id ?? null"
-          :class="hasShift ? 'lg:col-start-3 lg:row-start-1' : 'lg:col-span-3'"
+          :class="hasShift ? '@4xl:col-start-3 @4xl:row-start-1' : '@4xl:col-span-3'"
         />
         <MyPlan
           v-if="hasShift"
@@ -232,7 +244,9 @@ watch(nextShiftOver, (over) => {
           :current-event-id="feed?.event_id ?? null"
           :now="now"
           :class="
-            attention.length > 0 ? 'lg:col-span-2 lg:col-start-1 lg:row-start-1' : 'lg:col-span-3'
+            attention.length > 0
+              ? '@4xl:col-span-2 @4xl:col-start-1 @4xl:row-start-1'
+              : '@4xl:col-span-3'
           "
           @select="openShiftDetail"
         />

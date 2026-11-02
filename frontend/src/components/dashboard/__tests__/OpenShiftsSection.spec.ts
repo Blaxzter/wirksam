@@ -67,7 +67,7 @@ describe('OpenShiftsSection', () => {
   it('renders every card and hides the fifth and sixth below desktop', () => {
     const cards = mountSection(six).findAll('[data-testid="open-shift-card"]')
     expect(cards).toHaveLength(6)
-    expect(cards.map((c) => c.classes().includes('max-lg:hidden'))).toEqual([
+    expect(cards.map((c) => c.classes().includes('@max-4xl:hidden'))).toEqual([
       false,
       false,
       false,

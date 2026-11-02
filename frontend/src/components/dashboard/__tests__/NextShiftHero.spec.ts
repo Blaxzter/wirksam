@@ -195,5 +195,15 @@ describe('NextShiftHero', () => {
       expect(w.find('[data-testid="btn-find-shift"]').exists()).toBe(false)
       expect(w.find('[data-testid="next-shift-countdown"]').exists()).toBe(false)
     })
+
+    it('lays itself out in one line on desktop only with the row to itself', () => {
+      const card = (alone: boolean) =>
+        mountHero({ shift: null, openPlaces: 10, alone })
+          .find('[data-testid="dashboard-next-shift"]')
+          .classes()
+      expect(card(true)).toContain('@4xl:flex-row')
+      // Beside the voucher card it stays stacked.
+      expect(card(false)).not.toContain('@4xl:flex-row')
+    })
   })
 })

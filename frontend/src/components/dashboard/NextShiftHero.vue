@@ -12,6 +12,12 @@
  * a marker for now. It repeats what the text says, so it is hidden from
  * screen readers, and it is left out for a shift without times.
  *
+ * The buttons come right after the time in the DOM, because on desktop they
+ * share its row (wrapping under it when the card is too narrow for both, as
+ * with a 12-hour clock or the map button). On a phone they are moved to the
+ * bottom of the card by `order`; they are the card's only focusable elements,
+ * so the tab order is the same either way.
+ *
  * With nothing booked the card turns into the offer instead: a page that says
  * "nothing booked" and stops there has wasted the best slot on the screen.
  * Both states carry `dashboard-next-shift`, so the tour's first step always
@@ -57,6 +63,14 @@ const props = defineProps<{
   venueMapEventId: string | null
   /** The event the feed is about, so a shift elsewhere is labelled. */
   currentEventId: string | null
+  /**
+   * The empty card has its row to itself on desktop (no voucher card beside
+   * it). Only then are icon, words and button laid out in one line: at two
+   * thirds of the width that line left a sentence floating in the middle of a
+   * tall, empty card, so there it stays stacked, with the button at the
+   * bottom as in the voucher card next to it.
+   */
+  alone?: boolean
 }>()
 
 const emit = defineEmits<{ open: [shift: DashboardShift] }>()
@@ -131,19 +145,19 @@ const strip = computed(() => (props.shift ? dayStrip(props.shift, props.now) : n
     v-if="shift"
     aria-labelledby="dashboard-next-title"
     data-testid="dashboard-next-shift"
-    class="relative isolate overflow-hidden rounded-[20px] bg-primary p-5 text-primary-foreground lg:rounded-[22px] lg:px-8 lg:py-7"
+    class="relative isolate overflow-hidden rounded-[20px] bg-primary p-5 text-primary-foreground @4xl:rounded-[22px] @4xl:px-8 @4xl:py-7"
   >
     <span
       aria-hidden="true"
-      class="pointer-events-none absolute -top-14 -right-12 size-[170px] rounded-full bg-hero-speck opacity-[0.18] lg:-top-20 lg:-right-[60px] lg:size-[260px] lg:opacity-[0.16]"
+      class="pointer-events-none absolute -top-14 -right-12 size-[170px] rounded-full bg-hero-speck opacity-[0.18] @4xl:-top-20 @4xl:-right-[60px] @4xl:size-[260px] @4xl:opacity-[0.16]"
     />
     <span
       aria-hidden="true"
-      class="pointer-events-none absolute top-[70px] right-9 size-[52px] rounded-full bg-hero-speck opacity-[0.14] lg:top-10 lg:right-[150px] lg:size-16 lg:opacity-[0.12]"
+      class="pointer-events-none absolute top-[70px] right-9 size-[52px] rounded-full bg-hero-speck opacity-[0.14] @4xl:top-10 @4xl:right-[150px] @4xl:size-16 @4xl:opacity-[0.12]"
     />
 
-    <div class="relative grid gap-1 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-6">
-      <div class="flex flex-wrap items-center gap-2 lg:col-span-2 lg:gap-2.5">
+    <div class="relative flex flex-col gap-1">
+      <div class="flex flex-wrap items-center gap-2 @4xl:gap-2.5">
         <h2
           id="dashboard-next-title"
           class="text-xs font-bold tracking-[0.06em] text-primary-foreground/85 uppercase"
@@ -159,34 +173,66 @@ const strip = computed(() => (props.shift ? dayStrip(props.shift, props.now) : n
         </span>
       </div>
 
-      <div class="mt-3 min-w-0 lg:col-start-1 lg:mt-2.5">
-        <p
-          v-if="times"
-          data-testid="next-shift-times"
-          class="leading-[1.05] font-bold tracking-[-0.02em] tabular-nums lg:leading-none lg:tracking-[-0.025em]"
-          :class="longTimes ? 'text-[2rem] lg:text-5xl' : 'text-[2.5rem] lg:text-[3.5rem]'"
-        >
-          <template v-for="(piece, i) in timePieces" :key="i"
-            ><span v-if="i > 0"> – </span
-            ><span class="whitespace-nowrap">{{ piece }}</span></template
+      <!--
+        On a wide card the time and the buttons share a row, and the buttons
+        drop under the time when both do not fit, rather than squeezing the
+        time onto two lines. On a narrow card this wrapper dissolves
+        (`contents`) and `order-last` sends the buttons to the end of the card.
+      -->
+      <div
+        class="contents @4xl:mt-2.5 @4xl:flex @4xl:flex-wrap @4xl:items-end @4xl:justify-between @4xl:gap-x-6 @4xl:gap-y-4"
+      >
+        <div class="mt-3 min-w-0 @4xl:mt-0">
+          <p
+            v-if="times"
+            data-testid="next-shift-times"
+            class="leading-[1.05] font-bold tracking-[-0.02em] tabular-nums @4xl:leading-none @4xl:tracking-[-0.025em]"
+            :class="longTimes ? 'text-[2rem] @4xl:text-5xl' : 'text-[2.5rem] @4xl:text-[3.5rem]'"
           >
-        </p>
-        <p v-else class="text-3xl leading-tight font-bold tracking-[-0.02em] lg:text-4xl">
-          {{ fullDate }}
-        </p>
-        <p v-if="dateLine" class="text-sm text-primary-foreground/85 lg:mt-2 lg:text-[15px]">
-          {{ dateLine }}
-        </p>
+            <template v-for="(piece, i) in timePieces" :key="i"
+              ><span v-if="i > 0"> – </span
+              ><span class="whitespace-nowrap">{{ piece }}</span></template
+            >
+          </p>
+          <p v-else class="text-3xl leading-tight font-bold tracking-[-0.02em] @4xl:text-4xl">
+            {{ fullDate }}
+          </p>
+          <p v-if="dateLine" class="text-sm text-primary-foreground/85 @4xl:mt-2 @4xl:text-[15px]">
+            {{ dateLine }}
+          </p>
+        </div>
+
+        <div class="order-last mt-[18px] flex gap-2 @4xl:order-none @4xl:mt-0 @4xl:flex-wrap">
+          <Button
+            data-testid="btn-open-next-shift"
+            class="h-12 flex-1 rounded-xl bg-primary-foreground font-bold text-primary hover:bg-primary-foreground/90 focus-visible:ring-primary-foreground/60 @4xl:h-[46px] @4xl:flex-none @4xl:px-[18px] @4xl:has-[>svg]:px-[18px]"
+            @click="emit('open', shift)"
+          >
+            {{ t('dashboard.home.next.open') }}
+            <ArrowRight aria-hidden="true" />
+          </Button>
+          <Button
+            v-if="mapTo"
+            as-child
+            variant="outline"
+            class="size-12 shrink-0 rounded-xl border-primary-foreground/40 bg-transparent p-0 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-primary-foreground/60 @4xl:-order-1 @4xl:h-[46px] @4xl:w-auto @4xl:px-[18px] @4xl:has-[>svg]:px-[18px] dark:border-primary-foreground/40 dark:bg-transparent dark:hover:bg-primary-foreground/10"
+          >
+            <RouterLink data-testid="btn-next-shift-map" :to="mapTo">
+              <MapIcon class="size-5" aria-hidden="true" />
+              <span class="sr-only @4xl:not-sr-only">{{ t('dashboard.home.next.onMap') }}</span>
+            </RouterLink>
+          </Button>
+        </div>
       </div>
 
       <p
-        class="mt-3.5 min-w-0 text-xl leading-tight font-semibold break-words lg:col-span-2 lg:mt-[18px] lg:text-[22px]"
+        class="mt-3.5 min-w-0 text-xl leading-tight font-semibold break-words @4xl:mt-[18px] @4xl:text-[22px]"
       >
         {{ heading?.headline }}
       </p>
 
       <div
-        class="mt-0.5 flex min-w-0 flex-col gap-1 text-sm text-primary-foreground/85 lg:col-span-2 lg:flex-row lg:flex-wrap lg:gap-x-[18px] lg:gap-y-1.5"
+        class="mt-0.5 flex min-w-0 flex-col gap-1 text-sm text-primary-foreground/85 @4xl:flex-row @4xl:flex-wrap @4xl:gap-x-[18px] @4xl:gap-y-1.5"
       >
         <span v-if="heading?.taskLine" class="truncate">{{ heading.taskLine }}</span>
         <span v-if="shift.location" class="flex min-w-0 items-center gap-1.5">
@@ -203,31 +249,7 @@ const strip = computed(() => (props.shift ? dayStrip(props.shift, props.now) : n
         </span>
       </div>
 
-      <div
-        class="mt-[18px] flex gap-2 lg:col-start-2 lg:row-start-2 lg:mt-0 lg:flex-wrap lg:self-end"
-      >
-        <Button
-          data-testid="btn-open-next-shift"
-          class="h-12 flex-1 rounded-xl bg-primary-foreground font-bold text-primary hover:bg-primary-foreground/90 focus-visible:ring-primary-foreground/60 lg:h-[46px] lg:flex-none lg:px-[18px] lg:has-[>svg]:px-[18px]"
-          @click="emit('open', shift)"
-        >
-          {{ t('dashboard.home.next.open') }}
-          <ArrowRight aria-hidden="true" />
-        </Button>
-        <Button
-          v-if="mapTo"
-          as-child
-          variant="outline"
-          class="size-12 shrink-0 rounded-xl border-primary-foreground/40 bg-transparent p-0 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground focus-visible:ring-primary-foreground/60 lg:-order-1 lg:h-[46px] lg:w-auto lg:px-[18px] lg:has-[>svg]:px-[18px] dark:border-primary-foreground/40 dark:bg-transparent dark:hover:bg-primary-foreground/10"
-        >
-          <RouterLink data-testid="btn-next-shift-map" :to="mapTo">
-            <MapIcon class="size-5" aria-hidden="true" />
-            <span class="sr-only lg:not-sr-only">{{ t('dashboard.home.next.onMap') }}</span>
-          </RouterLink>
-        </Button>
-      </div>
-
-      <ShiftDayStrip v-if="strip" :strip="strip" class="hidden lg:col-span-2 lg:block" />
+      <ShiftDayStrip v-if="strip" :strip="strip" class="hidden @4xl:block" />
     </div>
   </section>
 
@@ -235,19 +257,26 @@ const strip = computed(() => (props.shift ? dayStrip(props.shift, props.now) : n
     v-else
     aria-labelledby="dashboard-next-empty-title"
     data-testid="dashboard-next-shift"
-    class="flex flex-col gap-2.5 rounded-[20px] border bg-card p-5 text-card-foreground lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-7 lg:gap-y-5 lg:rounded-[22px] lg:px-8 lg:py-7"
+    class="flex flex-col gap-2.5 rounded-[20px] border bg-card p-5 text-card-foreground @4xl:rounded-[22px] @4xl:px-8 @4xl:py-7"
+    :class="{
+      '@4xl:flex-row @4xl:flex-wrap @4xl:items-center @4xl:gap-x-7 @4xl:gap-y-5': alone,
+    }"
   >
     <span
       aria-hidden="true"
-      class="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary lg:size-14"
+      class="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary @4xl:size-14"
     >
       <CalendarCheck class="size-6" />
     </span>
-    <div class="lg:min-w-0 lg:flex-1 lg:basis-80">
-      <h2 id="dashboard-next-empty-title" class="mt-1 text-xl font-bold lg:mt-0 lg:text-[22px]">
+    <div :class="{ '@4xl:min-w-0 @4xl:flex-1 @4xl:basis-80': alone }">
+      <h2
+        id="dashboard-next-empty-title"
+        class="mt-1 text-xl font-bold @4xl:text-[22px]"
+        :class="{ '@4xl:mt-0': alone }"
+      >
         {{ t('dashboard.home.next.empty.title') }}
       </h2>
-      <p class="text-[15px] text-muted-foreground lg:mt-1">
+      <p class="text-[15px] text-muted-foreground @4xl:mt-1">
         {{
           openPlaces > 0
             ? t('dashboard.home.next.empty.bodyOpen', { count: openPlaces }, openPlaces)
@@ -255,15 +284,17 @@ const strip = computed(() => (props.shift ? dayStrip(props.shift, props.now) : n
         }}
       </p>
     </div>
-    <Button
-      v-if="openPlaces > 0"
-      as-child
-      class="mt-2 h-12 rounded-xl font-bold lg:mt-0 lg:px-5 lg:has-[>svg]:px-5"
-    >
-      <RouterLink data-testid="btn-find-shift" :to="OPEN_SHIFTS_ROUTE">
-        <Search aria-hidden="true" />
-        {{ t('dashboard.home.findShift') }}
-      </RouterLink>
-    </Button>
+    <div v-if="openPlaces > 0" class="mt-auto pt-2" :class="{ '@4xl:mt-0 @4xl:pt-0': alone }">
+      <Button
+        as-child
+        class="h-12 w-full rounded-xl font-bold @4xl:px-5 @4xl:has-[>svg]:px-5"
+        :class="{ '@4xl:w-auto': alone }"
+      >
+        <RouterLink data-testid="btn-find-shift" :to="OPEN_SHIFTS_ROUTE">
+          <Search aria-hidden="true" />
+          {{ t('dashboard.home.findShift') }}
+        </RouterLink>
+      </Button>
+    </div>
   </section>
 </template>

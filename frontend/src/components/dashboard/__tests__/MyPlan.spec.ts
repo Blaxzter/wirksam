@@ -13,7 +13,8 @@ import i18n from '@/locales/i18n'
  * events labelled, and a note when the feed held rows back.
  */
 
-vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ profile: { time_format: 'h24' } }) }))
+const profile = vi.hoisted(() => ({ time_format: 'h24' }))
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ profile }) }))
 
 const NOW = new Date(2026, 6, 18, 9, 0)
 
@@ -122,5 +123,22 @@ describe('MyPlan', () => {
   it('leaves the hours out when no shift has times', () => {
     const w = mountPlan(plan, { minutes: 0 })
     expect(w.find('[data-testid="plan-summary"]').text()).toBe('3 shifts')
+  })
+
+  it('widens the desktop time column for a 12-hour clock', () => {
+    const timeColumn = () =>
+      mountPlan(plan)
+        .find('[data-testid="plan-row"]')
+        .findAll('span')
+        .find((s) => s.classes().includes('@4xl:order-1'))!
+        .classes()
+    expect(timeColumn()).toContain('@4xl:w-28')
+    profile.time_format = 'h12'
+    try {
+      // "02:00 PM – 05:00 PM" broke after the dash in the narrow column.
+      expect(timeColumn()).toContain('@4xl:w-40')
+    } finally {
+      profile.time_format = 'h24'
+    }
   })
 })

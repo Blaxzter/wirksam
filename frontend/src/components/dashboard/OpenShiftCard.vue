@@ -67,7 +67,7 @@ const signUpLabel = computed(() => {
 <template>
   <li data-testid="open-shift-card" :data-shift-id="shift.shift_id" class="min-w-0">
     <Card
-      class="h-full gap-2 rounded-2xl px-4 py-3.5 shadow-none lg:gap-2.5 lg:rounded-[18px] lg:p-[18px]"
+      class="h-full gap-2 rounded-2xl px-4 py-3.5 shadow-none @4xl:gap-2.5 @4xl:rounded-[18px] @4xl:p-[18px]"
     >
       <div class="flex items-center justify-between gap-2">
         <span class="min-w-0 truncate text-[13px] text-muted-foreground tabular-nums">
@@ -87,7 +87,7 @@ const signUpLabel = computed(() => {
       </div>
 
       <div class="min-w-0">
-        <p class="truncate text-base font-semibold lg:text-[17px]">{{ heading.headline }}</p>
+        <p class="truncate text-base font-semibold @4xl:text-[17px]">{{ heading.headline }}</p>
         <p v-if="heading.taskLine" class="truncate text-[13px] text-muted-foreground">
           {{ heading.taskLine }}
         </p>
@@ -107,7 +107,7 @@ const signUpLabel = computed(() => {
         </p>
       </div>
 
-      <div class="flex items-center gap-3 lg:mt-auto">
+      <div class="flex items-center gap-3 @4xl:mt-auto">
         <div class="min-w-0 flex-1">
           <div aria-hidden="true" class="h-1.5 overflow-hidden rounded-full bg-muted">
             <div class="h-full rounded-full bg-staff-partial" :style="{ width: `${fill}%` }" />
@@ -120,7 +120,7 @@ const signUpLabel = computed(() => {
           variant="outline"
           data-testid="btn-open-shift-signup"
           :aria-label="signUpLabel"
-          class="h-11 shrink-0 rounded-lg border-primary bg-card px-4 font-bold text-primary hover:bg-primary/10 hover:text-primary lg:h-10 dark:border-primary/60 dark:bg-card dark:hover:bg-primary/10"
+          class="h-11 shrink-0 rounded-lg border-primary bg-card px-4 font-bold text-primary hover:bg-primary/10 hover:text-primary @4xl:h-10 dark:border-primary/60 dark:bg-card dark:hover:bg-primary/10"
           @click="emit('select', shift.shift_id)"
         >
           {{ t('dashboard.home.open.signUp') }}

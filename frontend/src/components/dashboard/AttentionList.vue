@@ -75,10 +75,10 @@ function labelFor(item: AttentionItem): string {
     v-if="items.length > 0"
     data-testid="dashboard-attention"
     aria-labelledby="dashboard-attention-title"
-    class="min-w-0 rounded-2xl border bg-card text-card-foreground lg:rounded-[22px] lg:px-1 lg:pt-1"
+    class="min-w-0 rounded-2xl border bg-card text-card-foreground @4xl:rounded-[22px] @4xl:px-1 @4xl:pt-1"
   >
-    <div class="px-4 pt-3.5 pb-1 lg:pt-4">
-      <h2 id="dashboard-attention-title" class="text-[17px] font-bold lg:text-lg">
+    <div class="px-4 pt-3.5 pb-1 @4xl:pt-4">
+      <h2 id="dashboard-attention-title" class="text-[17px] font-bold @4xl:text-lg">
         {{ t('dashboard.home.attention.title') }}
       </h2>
       <p class="mt-0.5 text-sm text-muted-foreground">

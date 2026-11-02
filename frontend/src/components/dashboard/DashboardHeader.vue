@@ -63,7 +63,7 @@ const greeting = computed(() => {
       </p>
       <h1
         data-testid="page-heading"
-        class="mt-0.5 text-[1.625rem] leading-tight font-bold tracking-[-0.01em] lg:mt-1 lg:text-[2rem] lg:tracking-[-0.015em]"
+        class="mt-0.5 text-[1.625rem] leading-tight font-bold tracking-[-0.01em] @4xl:mt-1 @4xl:text-[2rem] @4xl:tracking-[-0.015em]"
       >
         {{ greeting }}
       </h1>
@@ -72,7 +72,7 @@ const greeting = computed(() => {
       v-if="showFindShift"
       as-child
       variant="outline"
-      class="hidden h-11 rounded-xl px-4 font-semibold has-[>svg]:px-4 lg:inline-flex"
+      class="hidden h-11 rounded-xl px-4 font-semibold has-[>svg]:px-4 @4xl:inline-flex"
     >
       <RouterLink data-testid="btn-header-find-shift" :to="OPEN_SHIFTS_ROUTE">
         <Search aria-hidden="true" />

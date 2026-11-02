@@ -34,7 +34,7 @@ const { t, locale } = useI18n()
   <section
     data-testid="dashboard-committed"
     aria-labelledby="dashboard-committed-title"
-    class="flex min-w-0 flex-col rounded-2xl border bg-card p-4 text-card-foreground lg:hidden"
+    class="flex min-w-0 flex-col rounded-2xl border bg-card p-4 text-card-foreground @4xl:hidden"
   >
     <h2
       id="dashboard-committed-title"
