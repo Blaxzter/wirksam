@@ -109,6 +109,18 @@ describe('TaskQuickViewCard', () => {
       expect(hint(w).text()).toContain('Next shift: Tue, Jul 28')
     })
 
+    it('tells a screen reader which task and day its button moves to', () => {
+      const w = mountCard(
+        task({ open_shifts: 1, next_shift_date: '2026-07-28', next_open_shift_date: '2026-07-28' }),
+      )
+      const ids = w.find('[data-testid="btn-task-row-jump"]').attributes('aria-describedby')
+      const described = (ids ?? '')
+        .split(' ')
+        .map((id) => w.find(`[id="${id}"]`).text())
+        .join(' ')
+      expect(described).toBe('Cafétheke Next shift: Tue, Jul 28')
+    })
+
     it('moves the strip to that day through the shift-window endpoint', async () => {
       api.get.mockResolvedValue({
         data: { shifts: [shift('2026-07-28')], start_date: '2026-07-28', days: 5 },

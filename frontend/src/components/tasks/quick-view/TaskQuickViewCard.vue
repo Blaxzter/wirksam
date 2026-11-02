@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import {
   Lock,
@@ -181,6 +181,14 @@ const nextShiftBeyond = computed<string | null>(() => {
 
 const jumping = ref(false)
 
+/**
+ * Every card's button says "Show"; a screen reader also hears which task and
+ * which day it moves to.
+ */
+const cardId = useId()
+const nameId = `${cardId}-name`
+const nextShiftId = `${cardId}-next-shift`
+
 /** Move the strip to start on `date`; swiping back still reaches the days before. */
 async function jumpTo(date: string) {
   if (jumping.value) return
@@ -277,7 +285,7 @@ watch(
       >
         <div class="space-y-2">
           <div class="flex items-start justify-between gap-2">
-            <h3 class="text-sm font-semibold leading-tight line-clamp-2 break-words">
+            <h3 :id="nameId" class="text-sm font-semibold leading-tight line-clamp-2 break-words">
               {{ task.name }}
             </h3>
             <div v-if="canManage" class="flex shrink-0 items-center gap-1">
@@ -421,14 +429,15 @@ watch(
           class="mx-1 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md bg-muted/60 px-3 py-1.5 text-xs"
           data-testid="task-row-next-shift"
         >
-          <span class="text-muted-foreground">
+          <span :id="nextShiftId" class="text-muted-foreground">
             {{ t('duties.tasks.quickView.nextShiftOn', { date: formatDateLabel(nextShiftBeyond) }) }}
           </span>
           <Button
             variant="outline"
             size="sm"
-            class="h-7 px-2.5 text-xs"
+            class="h-11 px-3 text-xs sm:h-7 sm:px-2.5"
             :disabled="jumping"
+            :aria-describedby="`${nameId} ${nextShiftId}`"
             data-testid="btn-task-row-jump"
             @click="jumpTo(nextShiftBeyond)"
           >
