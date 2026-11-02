@@ -1,6 +1,7 @@
 """Route tests for Dashboard endpoints."""
 
 import datetime as dt
+from collections.abc import Callable
 
 import pytest
 from httpx import AsyncClient
@@ -153,6 +154,90 @@ class TestDashboardFeed:
         r = await async_client.get("/api/v1/dashboard/feed")
 
         assert r.json()["my_shift_count"] == 0
+
+    async def test_a_shift_that_has_started_stays_until_it_ends(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_user: User,
+        wall_clock: Callable[[dt.datetime], None],
+    ):
+        """Somebody who opens the dashboard while on duty still sees that duty.
+
+        The feed used to drop a shift the moment it started, so the card said
+        "nothing booked yet" to a volunteer standing at their post.
+        """
+        wall_clock(dt.datetime.combine(TOMORROW, dt.time(12, 0)))
+        running = await _add_shift(
+            db_session,
+            test_task,
+            title="Läuft",
+            start=dt.time(11, 50),
+            end=dt.time(14, 0),
+        )
+        await _book(db_session, running, test_user)
+        untimed = await _add_shift(
+            db_session, test_task, title="Ganzer Tag", start=None, end=None
+        )
+        await _book(db_session, untimed, test_user)
+        over = await _add_shift(
+            db_session,
+            test_task,
+            title="Vorbei",
+            start=dt.time(9, 0),
+            end=dt.time(11, 30),
+        )
+        await _book(db_session, over, test_user)
+        begun = await _add_shift(
+            db_session,
+            test_task,
+            title="Angefangen",
+            start=dt.time(11, 50),
+            end=dt.time(14, 0),
+        )
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        data = r.json()
+        assert sorted(s["title"] for s in data["my_shifts"]) == ["Ganzer Tag", "Läuft"]
+        assert data["my_shift_count"] == 2
+        # Offering a shift that is already under way is another matter: the
+        # open list keeps to shifts that have not started.
+        assert str(begun.id) not in {s["shift_id"] for s in data["open_shifts"]}
+
+    async def test_last_nights_shift_is_on_until_it_ends(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_user: User,
+        wall_clock: Callable[[dt.datetime], None],
+    ):
+        """22:00-02:00 runs past midnight, so at one in the morning it is on."""
+        wall_clock(dt.datetime.combine(TOMORROW, dt.time(1, 0)))
+        night = await _add_shift(
+            db_session,
+            test_task,
+            title="Nachtwache",
+            date=TOMORROW - dt.timedelta(days=1),
+            start=dt.time(22, 0),
+            end=dt.time(2, 0),
+        )
+        await _book(db_session, night, test_user)
+        late = await _add_shift(
+            db_session,
+            test_task,
+            title="Spätdienst",
+            date=TOMORROW - dt.timedelta(days=1),
+            start=dt.time(20, 0),
+            end=dt.time(0, 30),
+        )
+        await _book(db_session, late, test_user)
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert [s["title"] for s in r.json()["my_shifts"]] == ["Nachtwache"]
 
     async def test_open_shifts_offer_what_still_has_room(
         self,

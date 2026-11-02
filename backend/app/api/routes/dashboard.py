@@ -11,6 +11,7 @@ from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.crud.event_team import event_team as crud_team
+from app.logic import clock
 from app.logic.event_scope import (
     get_manageable_event_ids,
     get_user_event_scope,
@@ -63,8 +64,12 @@ async def dashboard_feed(
     duty you have promised to turn up to should not disappear because the event
     switcher is pointing somewhere else. Everything else - the open shifts, the
     organiser's counts - is about the event in view.
+
+    "Now" is the events' wall clock (``EVENT_TIMEZONE``), the zone shift times
+    are written in. The server's own clock is UTC in a container, which kept
+    shifts that had started up to two hours ago on a German volunteer's feed.
     """
-    now = dt.datetime.now()
+    now = clock.wall_clock_now()
     today = now.date()
 
     visible_event_ids = await get_visible_event_ids(session, current_user)
@@ -118,7 +123,11 @@ async def _load_my_shifts(
     today: dt.date,
     now_time: dt.time,
 ) -> tuple[list[DashboardShift], int, int]:
-    """The user's upcoming confirmed bookings, soonest first.
+    """The user's confirmed bookings that are not over yet, soonest first.
+
+    A shift that has started stays until it ends, so the dashboard can say
+    "happening now" to somebody who opens it while they are on duty, rather
+    than offering them "find a shift" while they are standing at one.
 
     Returns the rows, how many there are and how many minutes they add up to.
     A shift with no clock times counts as zero minutes rather than guessing.
@@ -146,7 +155,7 @@ async def _load_my_shifts(
         .where(
             col(Booking.user_id) == user_id,
             col(Booking.status) == "confirmed",
-            _future_shift_condition(today, now_time),
+            _unfinished_shift_condition(today, now_time),
         )
         .order_by(col(Shift.date), col(Shift.start_time), col(Shift.title))
         .limit(SCAN_LIMIT)
@@ -519,6 +528,32 @@ def _future_shift_condition(today: dt.date, now_time: dt.time | None = None):  #
     return col(Shift.date) >= today
 
 
+def _unfinished_shift_condition(today: dt.date, now_time: dt.time):  # noqa: ANN202
+    """Shift has not ended yet, by ``work_hours.shift_ends_at``'s rule.
+
+    Without an end time a shift lasts until the end of its day; an end at or
+    before the start runs past midnight, so yesterday's 22:00-02:00 is still
+    on until two. A shift with an end but no start ends at that end.
+    """
+    overnight = col(Shift.end_time) <= col(Shift.start_time)
+    return or_(
+        col(Shift.date) > today,
+        and_(
+            col(Shift.date) == today,
+            or_(
+                col(Shift.end_time).is_(None),
+                col(Shift.end_time) > now_time,
+                overnight,
+            ),
+        ),
+        and_(
+            col(Shift.date) == today - dt.timedelta(days=1),
+            overnight,
+            col(Shift.end_time) > now_time,
+        ),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
@@ -530,7 +565,7 @@ async def dashboard_sidebar(
     current_user: CurrentUser,
 ) -> SidebarResponse:
     """Lightweight data for sidebar quick-links."""
-    now = dt.datetime.now()
+    now = clock.wall_clock_now()
     today = now.date()
     now_time = now.time()
     (
