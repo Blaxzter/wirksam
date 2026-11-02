@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 31      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 231     |
-| `member`     | 3          | 25      |
-| `mobile`     | 2          | 10      |
+| `chromium`   | 28         | 230     |
+| `member`     | 3          | 26      |
+| `mobile`     | 3          | 14      |
 | `multi-user` | 7          | 64      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **59**     | **424** |
+| **Total**    | **60**     | **428** |
 
 ## Inventory
 
@@ -155,7 +155,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 231 tests
+### Project `chromium` — 28 files, 230 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -267,30 +267,29 @@ Not yet covered, and not currently tracked by an issue:
   - can access public changelog page
   - public changelog shows heading
 
-#### `frontend/e2e/tests/authenticated/dashboard-full.spec.ts` — 17 tests
+#### `frontend/e2e/tests/authenticated/dashboard-full.spec.ts` — 16 tests
 
 - **Dashboard – page structure** (3)
   - leads with the next-shift card
   - shows the shifts that still need people
-  - shows Quick Actions section
+  - greets you in the page header
 - **Dashboard – shifts that need people** (4)
   - lists a shift from a freshly published job
   - a shift nobody has taken is marked as such
-  - pressing a row opens the shift
+  - Sign up opens the shift
   - Browse shifts goes to the task list
-- **Dashboard – what you have said yes to** (3)
+- **Dashboard – what you have said yes to** (4)
   - a booked shift becomes the headline and leaves the offer list
   - the headline opens the shift it names
-  - a second booking lands in the list under the headline
+  - the next shift says how far away it is
+  - every booking is in your plan, the next one marked
 - **Dashboard – the organiser view** (3)
   - an organiser is told which shifts have nobody on them
   - the gap link leads to the task list
   - somebody who only helps out sees none of it
-- **Dashboard – quick actions** (4)
-  - shows Browse Tasks button
-  - shows My Bookings button
-  - Browse Tasks navigates to tasks page
-  - My Bookings quick action navigates to bookings
+- **Dashboard – getting around** (2)
+  - Find a shift in the header opens the open shifts
+  - All bookings opens your bookings
 
 #### `frontend/e2e/tests/authenticated/dashboard.spec.ts` — 2 tests
 
@@ -552,7 +551,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue plan templates** (1)
   - save a plan as a template, start a new plan from it, rename and delete it
 
-### Project `member` — 3 files, 25 tests
+### Project `member` — 3 files, 26 tests
 
 #### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
 
@@ -583,12 +582,13 @@ Not yet covered, and not currently tracked by an issue:
   - member can view task detail
   - member can book a shift
 
-#### `frontend/e2e/tests/member/venue-map.spec.ts` — 7 tests
+#### `frontend/e2e/tests/member/venue-map.spec.ts` — 8 tests
 
-- **Venue map – helper view** (3)
+- **Venue map – helper view** (4)
   - tap a pin, read the place, book a shift there
   - search finds a place and zooms to it
   - a deep link opens the place’s sheet
+  - the next-shift card points at the shift’s place on the map
 - **Venue map – nothing to show** (2)
   - an event without plans shows the empty state and no nav entry
   - someone outside the event cannot read its map
@@ -596,7 +596,15 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 2 files, 10 tests
+### Project `mobile` — 3 files, 14 tests
+
+#### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
+
+- **Dashboard – on a phone** (4)
+  - the bottom nav starts with Home and marks the current page
+  - Home brings you back to the dashboard
+  - the More sheet no longer lists Home
+  - on a phone the open shifts stop at four
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 
