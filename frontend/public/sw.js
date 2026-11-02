@@ -95,10 +95,16 @@ self.addEventListener('notificationclick', (task) => {
   const data = task.notification.data || {}
   let url = '/app/home'
 
+  // The same targets as a click in the in-app list (NotificationList.vue,
+  // NotificationsView.vue). `/app/events/{id}` is not a route and fell through
+  // to not-found, e.g. for "no longer in charge" of a draft, which carries
+  // only the event.
   if (data.task_id) {
     url = `/app/tasks/${data.task_id}`
+  } else if (data.team_id && data.event_id) {
+    url = `/app/teams/${data.event_id}?team=${data.team_id}`
   } else if (data.event_id) {
-    url = `/app/events/${data.event_id}`
+    url = `/app/event-settings/${data.event_id}`
   } else if (data.booking_id) {
     url = '/app/bookings'
   }

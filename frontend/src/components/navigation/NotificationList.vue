@@ -105,6 +105,8 @@ function getNotificationIcon(typeCode: string): string {
     'booking.shift_cobooked': '👥',
     'shift.time_changed': '🕐',
     'task.published': '📅',
+    'task.manager_added': '🛡️',
+    'task.manager_removed': '✕',
     'event.cloned': '📑',
     'event.published': '📋',
     'user.suspended': '⛔',
