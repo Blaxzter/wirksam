@@ -142,15 +142,20 @@ const adjustedText = computed(() => {
       </div>
     </dl>
 
+    <!--
+      The phone tile is 104 px wide inside at 320 px, less than the icon and
+      "Show my code" need on one line, so there the icon goes and the label
+      may wrap rather than spill past the button's edges.
+    -->
     <div class="mt-auto pt-3 @4xl:pt-4">
       <Button
         v-if="!expired"
         data-testid="btn-show-voucher-code"
         :disabled="!canShowCode"
-        class="h-11 w-full rounded-lg text-sm font-semibold @4xl:h-[46px] @4xl:rounded-xl @4xl:font-bold"
+        class="h-auto min-h-11 w-full rounded-lg px-3 py-2 text-center text-sm leading-tight font-semibold whitespace-normal @4xl:h-[46px] @4xl:min-h-0 @4xl:rounded-xl @4xl:py-0 @4xl:font-bold @4xl:whitespace-nowrap"
         @click="emit('showCode')"
       >
-        <QrCode aria-hidden="true" />
+        <QrCode class="hidden @4xl:block" aria-hidden="true" />
         {{ t('vouchers.showCode') }}
       </Button>
     </div>

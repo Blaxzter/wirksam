@@ -13,6 +13,7 @@
             "hours": "{hours} Std.",
             "inShifts": "in 1 Schicht | in {count} Schichten",
             "shifts": "1 Schicht | {count} Schichten",
+            "shiftsNoun": "Schicht | Schichten",
             "title": "Zugesagt",
             "toPlan": "Zum Plan"
         },
@@ -61,8 +62,8 @@
             "nobodyYet": "Noch niemand",
             "placesLeft": "1 Platz frei | {count} Plätze frei",
             "signUp": "Eintragen",
-            "signUpLabel": "Für {title} eintragen, {day} {time}",
-            "signUpLabelNoTime": "Für {title} eintragen, {day}",
+            "signUpLabel": "Eintragen: {title}, {day} {time}",
+            "signUpLabelNoTime": "Eintragen: {title}, {day}",
             "summaryPlaces": "1 Platz frei | {count} Plätze frei",
             "summaryShifts": "in 1 Schicht | in {count} Schichten",
             "title": "Hier fehlen noch Leute"

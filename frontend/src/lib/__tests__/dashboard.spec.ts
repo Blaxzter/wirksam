@@ -6,6 +6,7 @@ import {
   capitalizeFirst,
   dayOffset,
   dayStrip,
+  endedShiftsKey,
   eventDay,
   fillPercent,
   foreignEventName,
@@ -17,9 +18,12 @@ import {
   hoursValue,
   localIsoDate,
   mapLinkFor,
+  nextUnfinished,
   shiftCountdown,
   shiftHeadline,
+  twelveHourFormatter,
   upcomingToday,
+  voucherShiftsDueKey,
 } from '@/lib/dashboard'
 
 /**
@@ -153,6 +157,64 @@ describe('shiftCountdown', () => {
     const night = { date: '2026-07-17', start_time: '22:00', end_time: '02:00' }
     expect(shiftCountdown(night, at(1, 0))).toEqual({ kind: 'running' })
     expect(shiftCountdown(night, at(2, 0))).toEqual({ kind: 'over' })
+  })
+})
+
+describe('finished shifts', () => {
+  const plan = [
+    { booking_id: 'b1', date: '2026-07-18', start_time: '09:00', end_time: '11:00' },
+    { booking_id: 'b2', date: '2026-07-18', start_time: '14:00', end_time: '17:00' },
+    { booking_id: 'b3', date: '2026-07-19', start_time: null, end_time: null },
+  ]
+
+  it('takes the first shift that is not over, a running one included', () => {
+    expect(nextUnfinished(plan, at(8))?.booking_id).toBe('b1')
+    expect(nextUnfinished(plan, at(10))?.booking_id).toBe('b1')
+    expect(nextUnfinished(plan, at(11))?.booking_id).toBe('b2')
+    expect(nextUnfinished(plan, at(18))?.booking_id).toBe('b3')
+    expect(nextUnfinished(plan, at(0, 0, 0, 20))).toBeNull()
+    expect(nextUnfinished([], at(8))).toBeNull()
+  })
+
+  it('keys the shifts that are over, so a watcher fires once per shift', () => {
+    expect(endedShiftsKey(plan, at(10, 59))).toBe('')
+    expect(endedShiftsKey(plan, at(11))).toBe('b1')
+    expect(endedShiftsKey(plan, at(17, 30))).toBe('b1,b2')
+  })
+})
+
+describe('voucherShiftsDueKey', () => {
+  // `ends_at` is naive UTC, so `now` is built in UTC as well.
+  const utc = (h: number, m = 0) => new Date(Date.UTC(2026, 6, 18, h, m))
+  const shifts = [
+    { booking_id: 'b1', ends_at: '2026-07-18T10:00:00', completed: false },
+    { booking_id: 'b2', ends_at: '2026-07-18T08:00:00', completed: true },
+    { booking_id: 'b3', ends_at: '2026-07-18T15:00:00', completed: false },
+    { booking_id: 'b4', ends_at: 'not a date', completed: false },
+  ]
+
+  it('lists what has ended by now but still counts as to come', () => {
+    expect(voucherShiftsDueKey(shifts, utc(9, 59))).toBe('')
+    expect(voucherShiftsDueKey(shifts, utc(10))).toBe('b1')
+    expect(voucherShiftsDueKey(shifts, utc(16))).toBe('b1,b3')
+  })
+
+  it('leaves out what the account already counts as earned', () => {
+    expect(voucherShiftsDueKey(shifts, utc(23))).not.toContain('b2')
+  })
+})
+
+describe('twelveHourFormatter', () => {
+  const at3pm = new Date(2000, 0, 1, 15)
+
+  it('follows the locale when the user has not chosen', () => {
+    expect(twelveHourFormatter('en', undefined)?.format(at3pm)).toMatch(/^3\sPM$/)
+    expect(twelveHourFormatter('de', undefined)).toBeNull()
+  })
+
+  it('follows the user when they have', () => {
+    expect(twelveHourFormatter('en', false)).toBeNull()
+    expect(twelveHourFormatter('de', true)).not.toBeNull()
   })
 })
 

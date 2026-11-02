@@ -29,7 +29,10 @@
  *
  * The page keeps its own clock, ticking once a minute, which the countdown,
  * the greeting and every "today" label read, so they stay true while the tab
- * is left open, and a shift that ends while you look moves the card on.
+ * is left open, and a shift that ends while you look moves the card on. The
+ * voucher balance is re-read the same way: the server works out what a shift
+ * earned when the account is read, so after a voucher shift ends the card
+ * would otherwise keep saying "0 available" and keep "Show my code" disabled.
  */
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -53,9 +56,15 @@ import VoucherCodeDialog from '@/components/vouchers/VoucherCodeDialog.vue'
 
 import type { DashboardFeedResponse, DashboardShift } from '@/client'
 import { toastApiError } from '@/lib/api-errors'
-import { attentionItems, eventDay, greetingName } from '@/lib/dashboard'
+import {
+  attentionItems,
+  endedShiftsKey,
+  eventDay,
+  greetingName,
+  nextUnfinished,
+  voucherShiftsDueKey,
+} from '@/lib/dashboard'
 import { scrollToSection } from '@/lib/scroll-to-section'
-import { shiftHasEnded } from '@/lib/shift-time'
 
 const authStore = useAuthStore()
 const { get } = useAuthenticatedClient()
@@ -81,8 +90,15 @@ const showShiftDetail = ref(false)
 const codeOpen = ref(false)
 
 const myShifts = computed<DashboardShift[]>(() => feed.value?.my_shifts ?? [])
-const nextShift = computed<DashboardShift | null>(() => myShifts.value[0] ?? null)
+/**
+ * The first of your shifts that is not over by the page's clock. The feed
+ * sends a shift until it ends by the server's clock, so a shift under way
+ * stays on the card ("happening now"); when one ends while you look, the feed
+ * is re-read (below) and, should the server still send it, it is skipped here.
+ */
+const nextShift = computed<DashboardShift | null>(() => nextUnfinished(myShifts.value, now.value))
 const hasShift = computed(() => nextShift.value !== null)
+const hasPlan = computed(() => myShifts.value.length > 0)
 const attention = computed(() => attentionItems(feed.value?.attention))
 const showVouchers = computed(() => vouchers.visible.value && !!vouchers.account.value)
 /** Wait for the voucher account too, so its card does not pop in after the rest. */
@@ -96,25 +112,22 @@ const venueMapEventId = computed(() => {
 })
 const showHeaderFindShift = computed(() => !authStore.selectedEvent?.is_expired)
 
-/**
- * The feed only sends shifts that have not started, so a running shift stays
- * on the card ("happening now") until it ends, and then the feed is re-read
- * and the next one moves up.
- */
-const nextShiftOver = computed(
-  () =>
-    !!nextShift.value &&
-    shiftHasEnded(
-      nextShift.value.date,
-      nextShift.value.start_time,
-      nextShift.value.end_time,
-      now.value,
-    ),
+/** Changes when another of your shifts ends, so the feed is re-read then. */
+const endedShifts = computed(() => endedShiftsKey(myShifts.value, now.value))
+/** Voucher shifts that have ended since the account was read. */
+const voucherShiftsDue = computed(() =>
+  voucherShiftsDueKey(vouchers.account.value?.shifts ?? [], now.value),
 )
 
 async function loadFeed({ silent = false }: { silent?: boolean } = {}) {
   const id = ++feedRequest
-  if (!silent) loading.value = true
+  if (!silent) {
+    loading.value = true
+    // A new event's feed is on its way (the skeleton covers the gap). Should
+    // it fail, the page must not go on showing the old event's open shifts
+    // and to-do list under the new event's name.
+    feed.value = null
+  }
   try {
     const res = await get<{ data: DashboardFeedResponse }>({ url: '/dashboard/feed' })
     if (id !== feedRequest) return
@@ -174,8 +187,23 @@ watch(
   },
 )
 
-watch(nextShiftOver, (over) => {
-  if (over) void loadFeed({ silent: true })
+watch(endedShifts, (ended) => {
+  if (ended) void loadFeed({ silent: true })
+})
+
+/**
+ * Re-read the voucher account once a voucher shift has ended by the page's
+ * clock. The server decides on its own clock, so if ours runs a little ahead
+ * the first answer can still say "to come"; a couple more tries on the next
+ * ticks cover that without polling forever.
+ */
+let voucherRetry = { key: '', tries: 0 }
+watch([voucherShiftsDue, now], ([due]) => {
+  if (!due) return
+  if (due !== voucherRetry.key) voucherRetry = { key: due, tries: 0 }
+  if (voucherRetry.tries >= 3) return
+  voucherRetry.tries += 1
+  void vouchers.reload()
 })
 </script>
 
@@ -227,18 +255,19 @@ watch(nextShiftOver, (over) => {
 
       <!-- Row 2: what needs the organiser, and your plan -->
       <div
-        v-if="attention.length > 0 || hasShift"
+        v-if="attention.length > 0 || hasPlan"
         class="grid gap-5 @4xl:grid-cols-3 @4xl:items-start @4xl:gap-6"
       >
         <AttentionList
           v-if="attention.length > 0"
           :items="attention"
           :event-id="feed?.event_id ?? null"
-          :class="hasShift ? '@4xl:col-start-3 @4xl:row-start-1' : '@4xl:col-span-3'"
+          :class="hasPlan ? '@4xl:col-start-3 @4xl:row-start-1' : '@4xl:col-span-3'"
         />
         <MyPlan
-          v-if="hasShift"
+          v-if="hasPlan"
           :shifts="myShifts"
+          :next-booking-id="nextShift?.booking_id ?? null"
           :total-count="feed?.my_shift_count ?? 0"
           :minutes="feed?.my_minutes ?? 0"
           :current-event-id="feed?.event_id ?? null"

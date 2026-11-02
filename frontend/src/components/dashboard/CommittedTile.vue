@@ -9,7 +9,9 @@
  * would remount the whole dashboard.
  *
  * Shifts without times count as no minutes, so when every booked shift is
- * untimed the tile counts shifts instead of claiming "0 h".
+ * untimed the tile counts shifts instead of claiming "0 h". That count is
+ * drawn like the hours, the number big and the word small: "Schichten" at the
+ * big size is wider than a half-width tile on a phone and cannot wrap.
  */
 import { CalendarCheck } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -51,9 +53,12 @@ const { t, locale } = useI18n()
         {{ t('dashboard.home.committed.inShifts', { count: shiftCount }, shiftCount) }}
       </p>
     </template>
-    <p v-else class="mt-1.5 text-[2rem] leading-none font-bold tabular-nums">
-      {{ t('dashboard.home.committed.shifts', { count: shiftCount }, shiftCount) }}
-    </p>
+    <template v-else>
+      <p class="mt-1.5 text-[2rem] leading-none font-bold tabular-nums">{{ shiftCount }}</p>
+      <p class="text-[13px] text-muted-foreground">
+        {{ t('dashboard.home.committed.shiftsNoun', shiftCount) }}
+      </p>
+    </template>
     <div class="mt-auto pt-3">
       <Button
         variant="outline"

@@ -14,7 +14,8 @@ import i18n from '@/locales/i18n'
  * empty state's offer.
  */
 
-vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ profile: { time_format: 'h24' } }) }))
+const profile = vi.hoisted(() => ({ time_format: 'h24' }))
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ profile }) }))
 
 /** Saturday, July 18th 2026, 11:45 local time. */
 const NOW = new Date(2026, 6, 18, 11, 45)
@@ -158,6 +159,21 @@ describe('NextShiftHero', () => {
         .find('[data-testid="next-shift-day-strip-now"]')
         .exists(),
     ).toBe(false)
+  })
+
+  it('labels the strip in the clock the card uses', () => {
+    const ticks = () =>
+      mountHero()
+        .findAll('[data-testid="next-shift-day-strip-tick"]')
+        .map((tick) => tick.text().replace(/\s/g, ' '))
+    expect(ticks()).toEqual(['8:00', '12', '16', '20', '24:00'])
+    profile.time_format = 'h12'
+    try {
+      // There is no 24 o'clock on a 12-hour clock; the day ends at 12 AM.
+      expect(ticks()).toEqual(['8 AM', '12 PM', '4 PM', '8 PM', '12 AM'])
+    } finally {
+      profile.time_format = 'h24'
+    }
   })
 
   it('shows the date as the headline of a shift without times', () => {

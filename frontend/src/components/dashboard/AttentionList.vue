@@ -8,6 +8,11 @@
  * shifts short of people, plain for requests and drafts that can wait. It
  * renders nothing when every count is zero: an empty "needs your attention"
  * panel trains people to stop reading it.
+ *
+ * The count is 20 px bold, which counts as large text. At 17 px the red and
+ * amber numbers on their /10 tints came out just under 4.5:1 in the classic
+ * palette and in dark mode; as large text they need 3:1, which every palette
+ * clears.
  */
 import { ChevronRight } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -94,7 +99,7 @@ function labelFor(item: AttentionItem): string {
         >
           <span
             data-testid="attention-count"
-            class="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl px-2 text-[17px] font-bold tabular-nums"
+            class="flex h-11 min-w-11 shrink-0 items-center justify-center rounded-xl px-2 text-xl font-bold tabular-nums"
             :class="TONE_CLASS[item.tone]"
           >
             {{ formatCount(item.count) }}

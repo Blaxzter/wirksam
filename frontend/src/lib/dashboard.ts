@@ -15,7 +15,8 @@ import type { RouteLocationRaw } from 'vue-router'
 
 import type { DashboardAttention } from '@/client/types.gen'
 import { firstName } from '@/lib/format'
-import { shiftEndsAt, shiftStartsAt } from '@/lib/shift-time'
+import { parseServerDate } from '@/lib/server-time'
+import { shiftEndsAt, shiftHasEnded, shiftStartsAt } from '@/lib/shift-time'
 
 /** Open-shift cards a phone shows before handing over to the Tasks board. */
 export const MOBILE_OPEN_SHIFT_LIMIT = 4
@@ -137,6 +138,55 @@ export function shiftCountdown(shift: TimedShift, now: Date): Countdown {
   return { kind: 'day' }
 }
 
+/**
+ * The first shift that is not over by `now`, or null.
+ *
+ * The feed sends your shifts until they end by the server's clock, which can
+ * run behind the page's. Taking the first one still on keeps the card from
+ * sitting on a shift that has finished, with no countdown, until the page is
+ * reloaded.
+ */
+export function nextUnfinished<T extends TimedShift>(shifts: readonly T[], now: Date): T | null {
+  return shifts.find((s) => !shiftHasEnded(s.date, s.start_time, s.end_time, now)) ?? null
+}
+
+/**
+ * The booking ids of the shifts that are over by `now`, as one string, '' for
+ * none. A watcher on it fires when another shift ends, and not again when a
+ * reload brings back the same finished row (the server's clock behind ours).
+ */
+export function endedShiftsKey(
+  shifts: readonly (TimedShift & { booking_id: string })[],
+  now: Date,
+): string {
+  return shifts
+    .filter((s) => shiftHasEnded(s.date, s.start_time, s.end_time, now))
+    .map((s) => s.booking_id)
+    .join(',')
+}
+
+/**
+ * The voucher shifts the account still counts as to come although they have
+ * ended by `now`, as one key, '' for none.
+ *
+ * `completed`, `available` and `upcoming` are what the server worked out when
+ * the account was read; they do not move on their own. `ends_at` is naive UTC,
+ * so it is compared as UTC rather than in the browser's zone.
+ */
+export function voucherShiftsDueKey(
+  shifts: readonly { booking_id: string; ends_at: string; completed: boolean }[],
+  now: Date,
+): string {
+  return shifts
+    .filter((s) => {
+      if (s.completed) return false
+      const ends = parseServerDate(s.ends_at)
+      return ends !== null && ends.getTime() <= now.getTime()
+    })
+    .map((s) => s.booking_id)
+    .join(',')
+}
+
 export interface DayStrip {
   /** Window start, a whole hour. */
   startHour: number
@@ -196,6 +246,21 @@ export function dayStrip(shift: TimedShift, now: Date): DayStrip | null {
     nowAt: nowH !== null ? at(nowH) : null,
     ticks,
   }
+}
+
+/**
+ * An hour formatter when the clock in use is a 12-hour one, else null.
+ *
+ * `hour12` is the user's time-format choice, undefined for the locale's own
+ * (English: 12-hour, German: 24-hour). The day strip uses it so its labels
+ * follow the same clock as the times printed above it.
+ */
+export function twelveHourFormatter(
+  locale: string,
+  hour12: boolean | undefined,
+): Intl.DateTimeFormat | null {
+  const fmt = new Intl.DateTimeFormat(locale, { hour: 'numeric', hour12 })
+  return fmt.resolvedOptions().hour12 === true ? fmt : null
 }
 
 /** A trailing "14:00-17:00" (hyphen or en dash) on a generated shift title. */

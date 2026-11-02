@@ -7,14 +7,32 @@
  * it, and the countdown chip), so the whole strip is `aria-hidden`. The
  * window and positions come from `dayStrip()` in `@/lib/dashboard`, which
  * also clamps an overnight shift at midnight.
+ *
+ * The hour labels follow the clock the times above use. On a 12-hour clock
+ * each is a formatted hour ("8 AM", "4 PM") and the end of the day is "12 AM",
+ * since there is no 24 o'clock there; on a 24-hour clock the ends are spelled
+ * out ("8 Uhr", "24 Uhr") and the hours between are bare numbers.
  */
+import { computed } from 'vue'
+
 import { useI18n } from 'vue-i18n'
 
-import type { DayStrip } from '@/lib/dashboard'
+import { useFormatters } from '@/composables/useFormatters'
+
+import { type DayStrip, twelveHourFormatter } from '@/lib/dashboard'
 
 defineProps<{ strip: DayStrip }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const { hour12 } = useFormatters()
+
+const twelveHour = computed(() => twelveHourFormatter(locale.value, hour12.value))
+
+function tickLabel(tick: DayStrip['ticks'][number]): string {
+  const fmt = twelveHour.value
+  if (fmt) return fmt.format(new Date(2000, 0, 1, tick.hour % 24))
+  return tick.edge ? t('dashboard.home.next.strip.hour', { hour: tick.hour }) : String(tick.hour)
+}
 
 /** Keep the "now" label inside the bar near either end. */
 function nowLabelShift(at: number): string {
@@ -54,6 +72,7 @@ function nowLabelShift(at: number): string {
       <span
         v-for="tick in strip.ticks"
         :key="tick.hour"
+        data-testid="next-shift-day-strip-tick"
         class="absolute whitespace-nowrap"
         :class="
           tick.edge === 'start'
@@ -64,7 +83,7 @@ function nowLabelShift(at: number): string {
         "
         :style="{ left: `${tick.at}%` }"
       >
-        {{ tick.edge ? t('dashboard.home.next.strip.hour', { hour: tick.hour }) : tick.hour }}
+        {{ tickLabel(tick) }}
       </span>
     </div>
   </div>

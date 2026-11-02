@@ -6,7 +6,9 @@
  * because the card above already showed it. That made a second list that
  * started in the middle, and one booking meant no list at all. Now the plan is
  * complete, the next shift is simply marked "Up next", and a rail down the
- * side keeps the times in one column so a day reads top to bottom.
+ * side keeps the times in one column so a day reads top to bottom. Which row
+ * is next is the page's call (`nextBookingId`), not simply the first row: a
+ * shift that has just ended can still be in the feed for a moment.
  *
  * Your duties are listed across every event you belong to; one in another
  * event than the one in view carries that event's name, so two schedules do
@@ -35,6 +37,8 @@ import {
 const props = defineProps<{
   /** All of feed.my_shifts, soonest first. */
   shifts: DashboardShift[]
+  /** The booking the next-shift card shows, marked "Up next"; null for none. */
+  nextBookingId: string | null
   /** feed.my_shift_count */
   totalCount: number
   /** feed.my_minutes */
@@ -49,7 +53,6 @@ const emit = defineEmits<{ select: [shiftId: string] }>()
 const { t, locale } = useI18n()
 const { formatTime, formatTimeRange, formatRelativeDay, formatDateLabel } = useFormatters()
 
-const nextId = computed(() => props.shifts[0]?.booking_id ?? null)
 const hidden = computed(() => hiddenCount(props.totalCount, props.shifts.length))
 
 const days = computed(() =>
@@ -75,7 +78,7 @@ const days = computed(() =>
           headline,
           detail: [taskLine, shift.location].filter(Boolean).join(' · '),
           eventName: foreignEventName(shift, props.currentEventId),
-          isNext: shift.booking_id === nextId.value,
+          isNext: shift.booking_id === props.nextBookingId,
         }
       }),
     }
@@ -160,7 +163,12 @@ const wideTimes = computed(() =>
                 class="max-w-18 min-w-[50px] shrink-0 text-sm leading-snug tabular-nums @4xl:order-1 @4xl:max-w-none @4xl:min-w-0 @4xl:text-[15px] @4xl:font-bold"
                 :class="wideTimes ? '@4xl:w-40' : '@4xl:w-28'"
               >
-                <span class="@4xl:hidden">
+                <!--
+                  On a phone the start and end are stacked; a screen reader
+                  hears the range with its dash instead (the span below, made
+                  visible on desktop), not two times in a row.
+                -->
+                <span aria-hidden="true" class="@4xl:hidden">
                   <span
                     class="block font-bold"
                     :class="{ 'whitespace-nowrap': row.shift.start_time }"
@@ -175,7 +183,7 @@ const wideTimes = computed(() =>
                     {{ formatTime(row.shift.end_time) }}
                   </span>
                 </span>
-                <span class="hidden @4xl:inline">
+                <span class="sr-only @4xl:not-sr-only">
                   {{ row.range || t('dashboard.home.plan.noTime') }}
                 </span>
               </span>

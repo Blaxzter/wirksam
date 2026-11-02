@@ -155,9 +155,12 @@ export const helperTrack = defineTrack('helper', [
     route: 'home',
     element: '[data-testid="dashboard-open-shifts"]',
     // On a phone four stacked cards make the section taller than the screen.
-    // The first card is what the copy describes (the label, the bar, Sign up),
-    // and the engine falls back to the section when there is no card.
-    mobileElement: '[data-testid="dashboard-open-shifts"] [data-testid="open-shift-card"]',
+    // The first card is what the copy describes (the label, the bar, Sign up).
+    // With every shift covered there is no card, only the "Everything is
+    // covered" box, and the selector takes that too: the engine waits on the
+    // phone selector alone for six seconds before it tries the section.
+    mobileElement:
+      '[data-testid="dashboard-open-shifts"] :is([data-testid="open-shift-card"], [data-testid="open-shifts-empty"])',
     side: 'top',
   },
   {

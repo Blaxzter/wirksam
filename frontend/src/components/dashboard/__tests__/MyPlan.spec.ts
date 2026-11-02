@@ -41,6 +41,7 @@ function mountPlan(shifts: DashboardShift[], props: Record<string, unknown> = {}
   return mount(MyPlan, {
     props: {
       shifts,
+      nextBookingId: shifts[0]?.booking_id ?? null,
       totalCount: shifts.length,
       minutes: 360,
       currentEventId: 'e1',
@@ -75,13 +76,31 @@ describe('MyPlan', () => {
     expect(headings).toEqual(['Today · Sat, July 18', 'Tomorrow · Sun, July 19', 'Tue, July 21'])
   })
 
-  it('marks only the first row as next', () => {
+  it('marks only the next row as next', () => {
     const w = mountPlan(plan)
     const rows = w.findAll('[data-testid="plan-row"]')
     expect(rows).toHaveLength(3)
     expect(rows[0].find('[data-testid="plan-next-badge"]').text()).toBe('Up next')
     expect(rows[1].find('[data-testid="plan-next-badge"]').exists()).toBe(false)
     expect(rows[2].find('[data-testid="plan-next-badge"]').exists()).toBe(false)
+  })
+
+  it('marks the row the page says is next, not simply the first', () => {
+    // The first shift has just ended and is still in the feed for a moment.
+    const rows = mountPlan(plan, { nextBookingId: 'b-s2' }).findAll('[data-testid="plan-row"]')
+    expect(rows[0].find('[data-testid="plan-next-badge"]').exists()).toBe(false)
+    expect(rows[1].find('[data-testid="plan-next-badge"]').text()).toBe('Up next')
+  })
+
+  it('lets a screen reader hear the phone row as a range', () => {
+    const row = mountPlan(plan).find('[data-testid="plan-row"]')
+    // The stacked start and end are hidden from it...
+    const stacked = row.findAll('span').find((s) => s.classes().includes('@4xl:hidden'))!
+    expect(stacked.attributes('aria-hidden')).toBe('true')
+    // ...and the range with its dash is read instead.
+    const range = row.findAll('span').find((s) => s.classes().includes('sr-only'))!
+    expect(range.text()).toBe('14:00 – 17:00')
+    expect(range.classes()).toContain('@4xl:not-sr-only')
   })
 
   it('names another event only on its own shifts', () => {

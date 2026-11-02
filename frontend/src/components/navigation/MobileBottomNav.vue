@@ -192,7 +192,9 @@ const currentFor = (tab: Tab) => (activeTab.value === tab ? 'page' : undefined)
 
 const TAB_CLASS = 'flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-0.5'
 const PILL_CLASS = 'relative flex h-7 w-[52px] items-center justify-center rounded-full'
-const LABEL_CLASS = 'max-w-full truncate px-1 text-[11px]'
+// Five tabs leave 64 px each on a 320 px phone. `px-0.5` keeps 60 px for the
+// label, which "Buchungen" needs at the active tab's semibold weight.
+const LABEL_CLASS = 'max-w-full truncate px-0.5 text-[11px]'
 
 const notificationDisplayCount = computed(() => {
   if (notificationStore.unreadCount > 99) return '99+'

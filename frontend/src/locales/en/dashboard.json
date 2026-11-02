@@ -13,6 +13,7 @@
             "hours": "{hours} h",
             "inShifts": "in 1 shift | in {count} shifts",
             "shifts": "1 shift | {count} shifts",
+            "shiftsNoun": "shift | shifts",
             "title": "Signed up",
             "toPlan": "See my plan"
         },

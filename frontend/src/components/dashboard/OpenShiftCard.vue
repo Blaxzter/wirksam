@@ -10,6 +10,11 @@
  * "Sign up" opens the shift's details rather than booking on the spot: that
  * is where you see who else is on it and where it is, and where a team or a
  * voucher rule can say no before you have promised anything.
+ *
+ * The day and time line wraps rather than truncating: beside the badge on a
+ * 320 px phone, or with a 12-hour clock, a cut would take the end time, which
+ * is the fact people scan these cards for. The time is one unbreakable piece,
+ * so a break falls before it and never inside it.
  */
 import { computed } from 'vue'
 
@@ -51,7 +56,10 @@ const times = computed(() => formatTimeRange(props.shift.start_time, props.shift
 const heading = computed(() => shiftHeadline(props.shift.title, props.shift.task_name))
 const fill = computed(() => fillPercent(props.shift.taken, props.shift.capacity))
 
-/** Names the shift, and starts with the visible word "Sign up" (WCAG 2.5.3). */
+/**
+ * Names the shift, and starts with the visible word ("Sign up for …",
+ * "Eintragen: …"), which is what voice control matches on (WCAG 2.5.3).
+ */
 const signUpLabel = computed(() => {
   const day = Math.abs(offset.value) <= 1 ? formatRelativeDay(props.shift.date) : cardDay.value
   return times.value
@@ -69,9 +77,12 @@ const signUpLabel = computed(() => {
     <Card
       class="h-full gap-2 rounded-2xl px-4 py-3.5 shadow-none @4xl:gap-2.5 @4xl:rounded-[18px] @4xl:p-[18px]"
     >
-      <div class="flex items-center justify-between gap-2">
-        <span class="min-w-0 truncate text-[13px] text-muted-foreground tabular-nums">
-          {{ dayLabel }}<template v-if="times"> · {{ times }}</template>
+      <div class="flex items-start justify-between gap-2">
+        <span class="min-w-0 flex-1 text-[13px] text-muted-foreground tabular-nums">
+          {{ dayLabel
+          }}<template v-if="times">
+            · <span class="whitespace-nowrap">{{ times }}</span></template
+          >
         </span>
         <Badge
           data-testid="open-shift-badge"
@@ -87,7 +98,9 @@ const signUpLabel = computed(() => {
       </div>
 
       <div class="min-w-0">
-        <p class="truncate text-base font-semibold @4xl:text-[17px]">{{ heading.headline }}</p>
+        <p class="line-clamp-2 text-base font-semibold break-words @4xl:text-[17px]">
+          {{ heading.headline }}
+        </p>
         <p v-if="heading.taskLine" class="truncate text-[13px] text-muted-foreground">
           {{ heading.taskLine }}
         </p>

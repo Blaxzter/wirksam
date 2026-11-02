@@ -81,8 +81,12 @@ describe('CommittedTile', () => {
 
   it('counts shifts when none has times', () => {
     const w = mountTile(0, 2)
-    expect(w.text()).toContain('2 shifts')
+    // The number big and the word small, like the hours: "Schichten" at the
+    // big size did not fit a half-width tile on a phone.
+    const lines = w.findAll('p').map((p) => p.text())
+    expect(lines).toEqual(['2', 'shifts'])
     expect(w.text()).not.toContain(' h')
+    expect(mountTile(0, 1).findAll('p')[1].text()).toBe('shift')
   })
 
   it('asks the page to scroll to the plan', async () => {
