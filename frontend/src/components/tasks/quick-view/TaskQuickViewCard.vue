@@ -17,6 +17,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useFormatters } from '@/composables/useFormatters'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -47,6 +48,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { get } = useAuthenticatedClient()
+const { formatDateLabel } = useFormatters()
 
 /** Organisers and the task's people in charge see its status. */
 const canManage = computed(() => props.task.can_manage ?? false)
@@ -143,13 +145,53 @@ const days = computed<DayColumn[]>(() => {
   return result
 })
 
-const totalAvailableShifts = computed(() => {
-  const shifts = props.task.shifts ?? []
-  return shifts.filter((s) => {
-    if (!s.max_bookings) return true
-    return (s.current_bookings ?? 0) < s.max_bookings
-  }).length
+/**
+ * What there is to book, over every shift still to come rather than the days
+ * on screen: a task whose only shift is ten days out is listed, and saying
+ * "0 available" next to it read as "nothing to book here".
+ */
+const shiftsLabel = computed(() => {
+  const open = props.task.open_shifts ?? 0
+  if (open > 0) return t('duties.tasks.quickView.openShifts', { count: open }, open)
+  if (props.task.next_shift_date) return t('duties.tasks.quickView.allTaken')
+  return t('duties.tasks.quickView.noUpcoming')
 })
+
+/** Same rule as the chips' (`WeekDayColumns`): no limit means room. */
+function hasRoom(shift: DayShiftEntry): boolean {
+  if (!shift.maxBookings) return true
+  return (shift.currentBookings ?? 0) < shift.maxBookings
+}
+
+/**
+ * The next shift worth showing, when the days on screen hold none (after the
+ * hide-full filter, if it is on) and it lies beyond them. The strip stays on
+ * the shared window by default, which lines the cards up by date; this lets
+ * one card move there on request.
+ */
+const nextShiftBeyond = computed<string | null>(() => {
+  const next = props.hideFullShifts ? props.task.next_open_shift_date : props.task.next_shift_date
+  if (!next) return null
+  const onScreen = days.value.some((day) =>
+    day.shifts.some((s) => !props.hideFullShifts || hasRoom(s)),
+  )
+  if (onScreen) return null
+  return next >= dateStr(rangeEnd.value) ? next : null // ISO dates compare lexicographically
+})
+
+const jumping = ref(false)
+
+/** Move the strip to start on `date`; swiping back still reaches the days before. */
+async function jumpTo(date: string) {
+  if (jumping.value) return
+  jumping.value = true
+  const start = parseDate(date)
+  if (await fetchDays(start, numDays.value)) {
+    rangeStart.value = start
+    rangeEnd.value = addDays(start, numDays.value)
+  }
+  jumping.value = false
+}
 
 async function fetchDays(start: Date, count: number): Promise<boolean> {
   try {
@@ -338,8 +380,8 @@ watch(
             class="h-auto min-w-0 justify-start px-0 text-xs font-semibold whitespace-normal text-left"
             @joined="emit('teamJoined')"
           />
-          <span v-else class="text-xs text-muted-foreground">
-            {{ t('duties.tasks.quickView.availableShifts', { count: totalAvailableShifts }) }}
+          <span v-else class="text-xs text-muted-foreground" data-testid="task-row-shifts-label">
+            {{ shiftsLabel }}
           </span>
           <HintTooltip v-if="canAdminEvent" :label="t('duties.tasks.delete')">
             <Button
@@ -374,6 +416,25 @@ watch(
           @click-shift="(slotId) => emit('clickShift', slotId, task)"
           @toggle-expand="expanded = !expanded"
         />
+        <div
+          v-if="nextShiftBeyond"
+          class="mx-1 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md bg-muted/60 px-3 py-1.5 text-xs"
+          data-testid="task-row-next-shift"
+        >
+          <span class="text-muted-foreground">
+            {{ t('duties.tasks.quickView.nextShiftOn', { date: formatDateLabel(nextShiftBeyond) }) }}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-7 px-2.5 text-xs"
+            :disabled="jumping"
+            data-testid="btn-task-row-jump"
+            @click="jumpTo(nextShiftBeyond)"
+          >
+            {{ t('duties.tasks.quickView.jumpTo') }}
+          </Button>
+        </div>
       </div>
     </div>
   </div>

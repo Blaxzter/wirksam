@@ -824,9 +824,13 @@
         "myBookingsFilter": "My bookings only",
         "pickDate": "Pick a date",
         "quickView": {
-            "availableShifts": "{count} available",
+            "allTaken": "All shifts taken",
+            "jumpTo": "Show",
             "nextDays": "Next days",
+            "nextShiftOn": "Next shift: {date}",
             "noMore": "No more tasks",
+            "noUpcoming": "No shifts coming up",
+            "openShifts": "No open shifts | 1 open shift | {count} open shifts",
             "previousDays": "Previous days",
             "showLess": "Show less",
             "showMore": "Show {count} more"

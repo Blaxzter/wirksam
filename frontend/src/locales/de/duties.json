@@ -824,9 +824,13 @@
         "myBookingsFilter": "Nur meine Buchungen",
         "pickDate": "Datum auswählen",
         "quickView": {
-            "availableShifts": "{count} verfügbar",
+            "allTaken": "Alle Schichten belegt",
+            "jumpTo": "Anzeigen",
             "nextDays": "Nächste Tage",
+            "nextShiftOn": "Nächste Schicht: {date}",
             "noMore": "Keine weiteren Aufgaben",
+            "noUpcoming": "Keine kommenden Schichten",
+            "openShifts": "Keine freie Schicht | 1 freie Schicht | {count} freie Schichten",
             "previousDays": "Vorherige Tage",
             "showLess": "Weniger anzeigen",
             "showMore": "{count} weitere anzeigen"
