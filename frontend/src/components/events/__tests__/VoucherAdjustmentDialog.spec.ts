@@ -12,7 +12,7 @@ import i18n from '@/locales/i18n'
  * A correction may take away at most what the person can still redeem
  * (earned vouchers stay earned, so a balance never goes below zero). The
  * dialog caps "Take away" there and says why; an edit gets its own amount back
- * first.
+ * first, and lowering an addition already spent is held to the same limit.
  */
 
 const api = vi.hoisted(() => ({ post: vi.fn(), patch: vi.fn() }))
@@ -125,11 +125,59 @@ describe('VoucherAdjustmentDialog', () => {
   })
 
   it('gives an edited correction its own amount back first', async () => {
-    // A −1 with 2 left: up to 3 can be taken.
+    // A −1 with 2 left: up to 3 can be taken, and the hint says why that is
+    // more than the 2 on the badge.
     const w = await openDialog(2, correction(-1))
+    expect(w.find('[data-testid="voucher-adjustment-current"]').text()).toBe('2 vouchers available')
     expect(w.find('[data-testid="voucher-adjustment-max"]').text()).toBe(
-      "At most 3: that's what Sina can still redeem.",
+      'At most 3: Sina can still redeem 2, with this correction already counted.',
     )
+    expect(input(w).attributes('aria-valuemax')).toBe('3')
+  })
+
+  it('keeps an edited addition from being lowered past what is left', async () => {
+    // A +5 with 2 left (3 already spent): lowering it to +1 would take 4, so
+    // +3 is the least it can keep.
+    api.patch.mockResolvedValue({ data: {} })
+    const w = await openDialog(2, correction(5))
+    const hint = w.find('[data-testid="voucher-adjustment-max"]')
+    expect(hint.text()).toBe('At least 3: less would take away more than Sina can still redeem.')
+    expect(hint.classes()).toContain('text-muted-foreground')
+    expect(input(w).attributes('aria-valuemin')).toBe('3')
+
+    await input(w).setValue('1')
+    await input(w).trigger('blur')
+
+    expect(input(w).element.value).toBe('3')
+    expect(w.find('[data-testid="voucher-adjustment-after"]').text()).toBe('Available afterwards 0')
+    await w.find('[data-testid="btn-save-voucher-adjustment"]').trigger('click')
+    await flush()
+    expect(api.patch).toHaveBeenCalledWith({
+      url: '/events/e1/vouchers/adjustments/c1',
+      body: { amount: 3, note: 'Papiermarken' },
+    })
+  })
+
+  it('takes nothing from an addition already spent', async () => {
+    // Turning that +5 into a take-away would take at least 6.
+    const w = await openDialog(2, correction(5))
+    await w.find('[data-testid="voucher-adjustment-take"]').trigger('click')
+    await input(w).setValue('1')
+    await input(w).trigger('blur')
+
+    const max = w.find('[data-testid="voucher-adjustment-max"]')
+    expect(max.text()).toBe('At most 0: Sina can still redeem 2, with this correction already counted.')
+    expect(max.classes()).toContain('text-destructive')
+    expect(w.find('[data-testid="voucher-adjustment-after"]').exists()).toBe(false)
+
+    await w.find('[data-testid="btn-save-voucher-adjustment"]').trigger('click')
+    await flush()
+    expect(api.patch).not.toHaveBeenCalled()
+
+    // Back to adding, the amount comes up to the least it can keep.
+    await w.find('[data-testid="voucher-adjustment-add"]').trigger('click')
+    expect(input(w).element.value).toBe('3')
+    expect(w.find('[data-testid="voucher-adjustment-after"]').text()).toBe('Available afterwards 0')
   })
 
   it('refuses to take anything from someone with nothing left', async () => {

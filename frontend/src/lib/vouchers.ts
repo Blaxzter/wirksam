@@ -87,6 +87,16 @@ export function correctionTakeAwayMax(available: number, currentAmount = 0): num
 }
 
 /**
+ * The least an edited correction may add. Lowering an earlier addition takes
+ * vouchers away too, and is held to the same limit: changing a +5 with 2 left
+ * takes 3 back at most, so it must stay at +3 or more. 1 for a new correction,
+ * and whenever what is left covers the old amount.
+ */
+export function correctionAddMin(available: number, currentAmount = 0): number {
+  return Math.max(1, currentAmount - available)
+}
+
+/**
  * The shifts that earned vouchers and every redemption and correction, newest
  * first. Shifts still to come are left out: they have earned nothing yet. A
  * settled shift (frozen before its task or shift changed, or went) is listed

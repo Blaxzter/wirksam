@@ -3,6 +3,7 @@
     "admin": {
         "add": "Add",
         "addCorrection": "Add correction",
+        "addMin": "At least {n}: less would take away more than {name} can still redeem.",
         "afterEventHint": "Vouchers can be redeemed in the app until the event's end date. Volunteers can still see their balance afterwards.",
         "amount": "Amount",
         "amountHint": "How many vouchers to add or take away.",
@@ -36,6 +37,7 @@
         "subtitle": "What everyone has earned and used in this event.",
         "takeAway": "Take away",
         "takeAwayMax": "At most {n}: that's what {name} can still redeem.",
+        "takeAwayMaxEdit": "At most {n}: {name} can still redeem {available}, with this correction already counted.",
         "title": "Vouchers"
     },
     "afterEventLink": "See your vouchers",

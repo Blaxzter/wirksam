@@ -5,6 +5,7 @@ import {
   SAME_CODE_IGNORE_MS,
   classifyCameraError,
   codeUsedDetails,
+  correctionAddMin,
   correctionTakeAwayMax,
   createDetectionGate,
   formatVoucherCode,
@@ -187,6 +188,25 @@ describe('correctionTakeAwayMax', () => {
 
   it('never goes below zero', () => {
     expect(correctionTakeAwayMax(1, 4)).toBe(0)
+  })
+})
+
+describe('correctionAddMin', () => {
+  it('is 1 for a new correction, whatever is left', () => {
+    expect(correctionAddMin(0)).toBe(1)
+    expect(correctionAddMin(5)).toBe(1)
+  })
+
+  it('is 1 while what is left covers the old amount', () => {
+    expect(correctionAddMin(2, -1)).toBe(1)
+    expect(correctionAddMin(2, 2)).toBe(1)
+    expect(correctionAddMin(4, 2)).toBe(1)
+  })
+
+  it('keeps an addition already spent from being lowered past what is left', () => {
+    // Changing a +5 with 2 left: lowering it to +3 takes 2, to +2 would take 3.
+    expect(correctionAddMin(2, 5)).toBe(3)
+    expect(correctionAddMin(0, 4)).toBe(4)
   })
 })
 

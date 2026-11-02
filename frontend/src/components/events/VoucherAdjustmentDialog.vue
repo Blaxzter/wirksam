@@ -33,7 +33,7 @@ import EventMemberPicker from '@/components/events/EventMemberPicker.vue'
 
 import type { EventMemberRead, VoucherBalance, VoucherEntryRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
-import { correctionTakeAwayMax } from '@/lib/vouchers'
+import { correctionAddMin, correctionTakeAwayMax } from '@/lib/vouchers'
 
 /**
  * Add or take away vouchers by hand, with a reason. The amount is always typed
@@ -43,7 +43,9 @@ import { correctionTakeAwayMax } from '@/lib/vouchers'
  * Taking away is capped at what the person can still redeem: a balance never
  * goes below zero, and the server refuses anything more (`409
  * voucher.correction_exceeds_available`), which still arrives as a toast when
- * someone redeemed in the meantime.
+ * someone redeemed in the meantime. An edit replaces the correction's old
+ * amount, so the same limit also sets the least an edited addition may keep:
+ * lowering a +5 takes vouchers away as well.
  */
 const open = defineModel<boolean>('open', { required: true })
 
@@ -100,22 +102,37 @@ const current = computed(() => {
 const currentName = computed(() =>
   current.value ? (current.value.name ?? current.value.email ?? '?') : '',
 )
+/** The amount an edit replaces; 0 for a new correction. */
+const oldAmount = computed(() => props.entry?.amount ?? 0)
 /** The most "Take away" may take; `null` while nobody (or nobody known) is chosen. */
 const takeMax = computed(() =>
-  current.value ? correctionTakeAwayMax(current.value.available, props.entry?.amount ?? 0) : null,
+  current.value ? correctionTakeAwayMax(current.value.available, oldAmount.value) : null,
+)
+/** The least "Add" may add (above 1 only for an addition already spent); `null` as above. */
+const addMin = computed(() =>
+  current.value ? correctionAddMin(current.value.available, oldAmount.value) : null,
 )
 const taking = computed(() => direction.value === 'take')
+const amountMin = computed(() =>
+  !taking.value && addMin.value !== null ? Math.min(MAX_ADJUSTMENT, addMin.value) : 1,
+)
 const amountMax = computed(() =>
   taking.value && takeMax.value !== null
     ? Math.max(1, Math.min(MAX_ADJUSTMENT, takeMax.value))
     : MAX_ADJUSTMENT,
 )
 
-// Switching to "Take away", or picking someone with less, brings the amount
-// down to what can be taken, so the stepper never starts past its end.
-watch([taking, takeMax], () => {
-  if (!taking.value || takeMax.value === null || takeMax.value < 1) return
-  if (amount.value !== undefined && amount.value > takeMax.value) amount.value = takeMax.value
+// Switching direction, or picking someone with less, brings the amount within
+// what can be saved, so the stepper never starts past either end.
+watch([taking, takeMax, addMin], () => {
+  if (amount.value === undefined) return
+  if (taking.value) {
+    if (takeMax.value !== null && takeMax.value >= 1 && amount.value > takeMax.value) {
+      amount.value = takeMax.value
+    }
+  } else if (addMin.value !== null && amount.value < addMin.value) {
+    amount.value = amountMin.value
+  }
 })
 
 const personMissing = computed(() => !isEdit.value && !personId.value)
@@ -126,26 +143,44 @@ const amountInvalid = computed(
     amount.value < 1 ||
     amount.value > MAX_ADJUSTMENT,
 )
-/** Taking away more than is left, which the server would refuse. */
-const overCap = computed(
-  () =>
-    taking.value &&
-    takeMax.value !== null &&
-    amount.value !== undefined &&
-    amount.value > takeMax.value,
-)
+/**
+ * What they could redeem after saving, not clamped at zero; an edit replaces
+ * its old amount. `null` while nobody known is chosen or the amount is not a
+ * number yet.
+ */
+const rawAfter = computed(() => {
+  if (!current.value || amountInvalid.value) return null
+  const n = amount.value as number
+  return current.value.available - oldAmount.value + (taking.value ? -n : n)
+})
+/**
+ * Taking away more than is left, either way round (taking, or lowering an
+ * addition already spent): what the server would refuse.
+ */
+const overCap = computed(() => rawAfter.value !== null && rawAfter.value < 0)
+const availableAfter = computed(() => (overCap.value ? null : rawAfter.value))
+
+/** Why the amount stops where it does; `null` when nothing but the server's range limits it. */
+const limitHint = computed(() => {
+  if (!current.value) return null
+  if (taking.value) {
+    return isEdit.value
+      ? t('vouchers.admin.takeAwayMaxEdit', {
+          n: takeMax.value,
+          name: currentName.value,
+          available: current.value.available,
+        })
+      : t('vouchers.admin.takeAwayMax', { n: takeMax.value, name: currentName.value })
+  }
+  return addMin.value !== null && addMin.value > 1
+    ? t('vouchers.admin.addMin', { n: addMin.value, name: currentName.value })
+    : null
+})
+
 const noteMissing = computed(() => note.value.trim().length === 0)
 const valid = computed(
   () => !personMissing.value && !amountInvalid.value && !overCap.value && !noteMissing.value,
 )
-
-/** What they can redeem after saving; an edit replaces its old amount. */
-const availableAfter = computed(() => {
-  if (!current.value || amountInvalid.value || overCap.value) return null
-  const n = amount.value as number
-  const signed = taking.value ? -n : n
-  return Math.max(0, current.value.available - (props.entry?.amount ?? 0) + signed)
-})
 
 async function save() {
   if (!valid.value) {
@@ -286,7 +321,7 @@ async function save() {
             <NumberField
               id="voucher-adjustment-amount"
               v-model="amount"
-              :min="1"
+              :min="amountMin"
               :max="amountMax"
               class="w-32"
               data-testid="voucher-adjustment-amount"
@@ -294,9 +329,7 @@ async function save() {
               <NumberFieldContent>
                 <NumberFieldDecrement :aria-label="t('common.actions.decrease')" />
                 <NumberFieldInput
-                  :aria-describedby="
-                    taking && takeMax !== null ? 'voucher-adjustment-max' : undefined
-                  "
+                  :aria-describedby="limitHint ? 'voucher-adjustment-max' : undefined"
                 />
                 <NumberFieldIncrement :aria-label="t('common.actions.increase')" />
               </NumberFieldContent>
@@ -306,14 +339,14 @@ async function save() {
             {{ t('vouchers.admin.amountInvalid', { max: MAX_ADJUSTMENT }) }}
           </p>
           <p
-            v-else-if="taking && takeMax !== null"
+            v-else-if="limitHint"
             id="voucher-adjustment-max"
             class="text-xs"
             :class="overCap ? 'text-destructive' : 'text-muted-foreground'"
             :role="overCap ? 'status' : undefined"
             data-testid="voucher-adjustment-max"
           >
-            {{ t('vouchers.admin.takeAwayMax', { n: takeMax, name: currentName }) }}
+            {{ limitHint }}
           </p>
           <p v-else class="text-xs text-muted-foreground">{{ t('vouchers.admin.amountHint') }}</p>
         </div>

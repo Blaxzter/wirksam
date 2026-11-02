@@ -3,6 +3,7 @@
     "admin": {
         "add": "Hinzufügen",
         "addCorrection": "Korrektur hinzufügen",
+        "addMin": "Mindestens {n}: Weniger würde mehr abziehen, als {name} noch einlösen kann.",
         "afterEventHint": "Marken lassen sich in der App bis zum Enddatum der Veranstaltung einlösen. Ihren Stand sehen Helfende auch danach noch.",
         "amount": "Anzahl",
         "amountHint": "Wie viele Marken du hinzufügst oder abziehst.",
@@ -36,6 +37,7 @@
         "subtitle": "Was alle in dieser Veranstaltung verdient und eingelöst haben.",
         "takeAway": "Abziehen",
         "takeAwayMax": "Höchstens {n}, so viele kann {name} noch einlösen.",
+        "takeAwayMaxEdit": "Höchstens {n}: {name} kann noch {available} einlösen, diese Korrektur schon eingerechnet.",
         "title": "Marken"
     },
     "afterEventLink": "Deine Marken ansehen",
