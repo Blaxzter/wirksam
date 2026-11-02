@@ -22,6 +22,7 @@ from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import BEFORE_FIXTURE_SHIFTS
 
 # The fixture shifts are dated in the past; booking refuses an ended shift
 # (booking.shift_over), so this module runs before them.
@@ -652,11 +653,14 @@ async def _event_member(
     await db_session.flush()
 
 
-async def _future_shift(db_session: AsyncSession, task: Task, days: int = 7) -> Shift:
+async def _future_shift(
+    db_session: AsyncSession, task: Task, days: int = 7, *, after: date | None = None
+) -> Shift:
+    """A shift ``days`` after ``after`` (default: the server's today)."""
     shift = Shift(
         task_id=task.id,
         title="Später",
-        date=date.today() + timedelta(days=days),
+        date=(after or date.today()) + timedelta(days=days),
         start_time=time(9, 0),
         end_time=time(12, 0),
         max_bookings=2,
@@ -1552,7 +1556,10 @@ class TestTaskReadsAndFeed:
         test_task.team_id = team.id
         test_task.end_date = date.today() + timedelta(days=30)
         db_session.add(test_task)
-        await _future_shift(db_session, test_task, days=1)
+        # The list's five days start on the event wall clock, pinned here.
+        await _future_shift(
+            db_session, test_task, days=1, after=BEFORE_FIXTURE_SHIFTS.date()
+        )
         r = await async_client.get(
             "/api/v1/tasks/feed",
             params={"event_id": str(test_event.id), "view": "list"},

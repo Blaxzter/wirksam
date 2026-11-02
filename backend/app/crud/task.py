@@ -2,12 +2,13 @@ import datetime as dt
 import uuid
 from typing import Any, Literal, cast
 
-from sqlalchemy import CursorResult, and_, exists, func, or_, select, update
+from sqlalchemy import ColumnElement, CursorResult, exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
+from app.crud.shift import upcoming_condition
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.shift import Shift
@@ -46,7 +47,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.date | dt.datetime | None = None,
+        has_future_shifts: dt.datetime | None = None,
+        open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
+        open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
         also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
@@ -137,8 +140,13 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query = query.where(col(Task.end_date) >= date_from)
         if date_to:
             query = query.where(col(Task.start_date) <= date_to)
-        if has_future_shifts:
-            # Only include tasks that have at least one bookable shift in the future
+        if has_future_shifts is not None:
+            # A shift still to come (event wall clock) with a free place. Plain
+            # members do not get a fully booked task in the default list; the
+            # ones who run it always do, or a person in charge could not find
+            # their own task once it filled up. Both exemptions stay inside
+            # restrict_to_event_ids above, so a task in an event the caller
+            # has left never comes back through them.
             booking_count_sq = (
                 select(func.count())
                 .select_from(Booking)
@@ -149,41 +157,20 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 .correlate(Shift)
                 .scalar_subquery()
             )
-            today = (
-                has_future_shifts.date()
-                if isinstance(has_future_shifts, dt.datetime)
-                else has_future_shifts
-            )
-            now_time = (
-                has_future_shifts.time()
-                if isinstance(has_future_shifts, dt.datetime)
-                else None
-            )
-
-            # Shift is in the future if:
-            #   date > today, OR
-            #   date == today AND (start_time is NULL OR start_time >= now)
-            future_condition = col(Shift.date) > today
-            if now_time is not None:
-                future_condition = or_(
-                    col(Shift.date) > today,
-                    and_(
-                        col(Shift.date) == today,
-                        or_(
-                            col(Shift.start_time).is_(None),
-                            col(Shift.start_time) >= now_time,
-                        ),
+            open_shift = col(Task.id).in_(
+                select(col(Shift.task_id)).where(
+                    upcoming_condition(
+                        has_future_shifts.date(), has_future_shifts.time()
                     ),
-                )
-
-            query = query.where(
-                col(Task.id).in_(
-                    select(col(Shift.task_id)).where(
-                        future_condition,
-                        col(Shift.max_bookings) > booking_count_sq,
-                    )
+                    col(Shift.max_bookings) > booking_count_sq,
                 )
             )
+            exempt: list[ColumnElement[bool]] = []
+            if open_shift_exempt_task_ids:
+                exempt.append(col(Task.id).in_(open_shift_exempt_task_ids))
+            if open_shift_exempt_event_ids:
+                exempt.append(col(Task.event_id).in_(open_shift_exempt_event_ids))
+            query = query.where(or_(open_shift, *exempt))
         return query
 
     async def get_multi_filtered(
@@ -199,7 +186,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.date | None = None,
+        has_future_shifts: dt.datetime | None = None,
+        open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
+        open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         sort_by: TaskSortField = "start_date",
         sort_dir: Literal["asc", "desc"] = "asc",
         also_include_group_ids: list[uuid.UUID] | None = None,
@@ -221,6 +210,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             date_from=date_from,
             date_to=date_to,
             has_future_shifts=has_future_shifts,
+            open_shift_exempt_task_ids=open_shift_exempt_task_ids,
+            open_shift_exempt_event_ids=open_shift_exempt_event_ids,
             also_include_group_ids=also_include_group_ids,
             also_include_task_ids=also_include_task_ids,
             event_id=event_id,
@@ -248,7 +239,9 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.date | None = None,
+        has_future_shifts: dt.datetime | None = None,
+        open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
+        open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
         also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
@@ -268,6 +261,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             date_from=date_from,
             date_to=date_to,
             has_future_shifts=has_future_shifts,
+            open_shift_exempt_task_ids=open_shift_exempt_task_ids,
+            open_shift_exempt_event_ids=open_shift_exempt_event_ids,
             also_include_group_ids=also_include_group_ids,
             also_include_task_ids=also_include_task_ids,
             event_id=event_id,

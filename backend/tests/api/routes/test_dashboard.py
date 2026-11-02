@@ -2,18 +2,24 @@
 
 import datetime as dt
 from collections.abc import Callable
+from typing import Any
 
 import pytest
+import pytest_asyncio
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
 from app.models.event import Event
+from app.models.event_membership import EventMembership
 from app.models.event_team import EventTeam, EventTeamMember
 from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
+from tests.fixtures.client import act_as
 
 TOMORROW = dt.date.today() + dt.timedelta(days=1)
 YESTERDAY = dt.date.today() - dt.timedelta(days=1)
@@ -467,6 +473,121 @@ class TestDashboardSidebar:
         assert "events" in data
         assert "tasks" in data
         assert "bookings" in data
+
+
+#: The event wall clock for the sidebar tests: before ``test_event`` (10-14 June).
+SIDEBAR_NOW = dt.datetime(2026, 6, 1, 10, 0)
+
+
+async def _sidebar_task(
+    db_session: AsyncSession,
+    event: Event,
+    creator: User,
+    name: str,
+    *,
+    start: dt.date,
+    status: str = "published",
+) -> Task:
+    task = Task(
+        name=name,
+        start_date=start,
+        end_date=dt.date(2026, 6, 14),
+        status=status,
+        created_by_id=creator.id,
+        event_id=event.id,
+    )
+    db_session.add(task)
+    await db_session.flush()
+    return task
+
+
+@pytest.mark.asyncio
+class TestSidebarTasksInCharge:
+    """A person in charge finds their task in the sidebar, full or not."""
+
+    @pytest_asyncio.fixture
+    async def in_charge(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_user: User,
+        wall_clock: Callable[[dt.datetime], None],
+    ) -> User:
+        """The cast: ``in_charge`` runs a full task and a draft here, and holds
+        a stale row in ``test_draft_event``, which they are not a member of.
+        ``test_user`` is a plain member of both events."""
+        wall_clock(SIDEBAR_NOW)
+        manager = await _applicant(db_session, "sidebar-in-charge")
+        db_session.add(
+            EventMembership(user_id=manager.id, event_id=test_event.id, role="member")
+        )
+        open_task = await _sidebar_task(
+            db_session, test_event, test_user, "Offen", start=dt.date(2026, 6, 1)
+        )
+        await _add_shift(db_session, open_task, date=dt.date(2026, 6, 2))
+        full = await _sidebar_task(
+            db_session, test_event, test_user, "Voll", start=dt.date(2026, 6, 3)
+        )
+        taken = await _add_shift(db_session, full, date=dt.date(2026, 6, 3), capacity=1)
+        await _book(db_session, taken, test_user)
+        draft = await _sidebar_task(
+            db_session,
+            test_event,
+            test_user,
+            "Entwurf",
+            start=dt.date(2026, 6, 4),
+            status="draft",
+        )
+        stale = await _sidebar_task(
+            db_session, test_draft_event, test_user, "Fremd", start=dt.date(2026, 6, 1)
+        )
+        await _add_shift(db_session, stale, date=dt.date(2026, 6, 2))
+        for task in (full, draft, stale):
+            db_session.add(TaskManager(task_id=task.id, user_id=manager.id))
+        await db_session.flush()
+        return manager
+
+    async def _tasks(
+        self, client: AsyncClient, app: FastAPI, user: User
+    ) -> list[dict[str, Any]]:
+        with act_as(app, user):
+            r = await client.get("/api/v1/dashboard/sidebar")
+        assert r.status_code == 200, r.text
+        return r.json()["tasks"]
+
+    async def test_their_tasks_come_first_and_marked(
+        self, async_client: AsyncClient, app: FastAPI, in_charge: User
+    ) -> None:
+        tasks = await self._tasks(async_client, app, in_charge)
+
+        assert [t["name"] for t in tasks] == ["Voll", "Entwurf", "Offen"]
+        assert [t["is_managed"] for t in tasks] == [True, True, False]
+        voll = tasks[0]
+        assert voll["open_shifts"] == 0
+        assert voll["next_shift_date"] is None
+        assert tasks[1]["status"] == "draft"
+
+    async def test_a_row_in_an_event_they_left_gives_nothing(
+        self, async_client: AsyncClient, app: FastAPI, in_charge: User
+    ) -> None:
+        tasks = await self._tasks(async_client, app, in_charge)
+        assert "Fremd" not in [t["name"] for t in tasks]
+
+    async def test_a_plain_member_gets_only_what_is_open(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        in_charge: User,
+        test_user: User,
+    ) -> None:
+        tasks = await self._tasks(async_client, app, test_user)
+
+        names = [t["name"] for t in tasks]
+        assert "Voll" not in names
+        assert "Entwurf" not in names
+        assert {"Offen", "Fremd"} <= set(names)
+        assert not any(t["is_managed"] for t in tasks)
 
 
 # ---------------------------------------------------------------------------

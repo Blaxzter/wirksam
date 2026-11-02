@@ -1800,7 +1800,9 @@ Run one pytest at a time (see the memory note on the pre-commit venv sync).
   published tasks plus admin-managed events, so a person in charge finds
   their draft on the Tasks page but not in the sidebar) and in the team tab
   of the Availability page (admin-only today). Both are reads that would
-  help "the person who fixes the rota"; neither is needed for it.
+  help "the person who fixes the rota"; neither is needed for it. The
+  sidebar half is done since the follow-ups
+  ([`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md), F2).
 - A per-person cap on vouchers earned per day, should the trust placed in
   people in charge of voucher tasks turn out to be misplaced (see "What this
   does not prevent").

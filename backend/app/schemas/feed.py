@@ -32,6 +32,13 @@ class FeedTaskItem(TaskRead):
     # List view: embedded shifts for the visible 5-day window
     shifts: list[FeedShiftEntry] | None = None
     slot_window_start: dt.date | None = None
+    #: List view: shifts that have not started yet (event wall clock) and
+    #: still have a free place, over the whole task rather than the window.
+    open_shifts: int | None = None
+    #: List view: date of the next shift that has not started, full or not.
+    next_shift_date: dt.date | None = None
+    #: List view: date of the next one of those with a free place.
+    next_open_shift_date: dt.date | None = None
 
     # Cards / calendar view: aggregated stats
     total_shifts: int | None = None

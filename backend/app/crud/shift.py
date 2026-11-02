@@ -1,7 +1,8 @@
+import datetime as dt
 import uuid
 from typing import Any, Literal
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -11,6 +12,27 @@ from app.models.task import Task
 from app.schemas.shift import ShiftCreate, ShiftUpdate
 
 ShiftSortField = Literal["title", "date", "start_time", "category", "created_at"]
+
+
+def upcoming_condition(today: dt.date, now_time: dt.time) -> ColumnElement[bool]:
+    """The Shift row has not started yet, on the event wall clock.
+
+    Later than today, or today with a start at or after ``now_time``; a shift
+    with no start time counts as not started until its day is over. Pass
+    ``clock.wall_clock_now()`` split into its date and time: shift times carry
+    no zone, so comparing them with the server's UTC clock would let an 18:00
+    shift in a German summer "start" at 20:00.
+
+    The one definition the task feed, the sidebar and the dashboard's open
+    shifts share, so a shift counts as coming up in all three or in none.
+    """
+    return or_(
+        col(Shift.date) > today,
+        and_(
+            col(Shift.date) == today,
+            or_(col(Shift.start_time).is_(None), col(Shift.start_time) >= now_time),
+        ),
+    )
 
 
 class CRUDShift(CRUDBase[Shift, ShiftCreate, ShiftUpdate]):
