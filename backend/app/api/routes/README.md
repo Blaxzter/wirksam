@@ -74,8 +74,13 @@ Inside an event, a few gates in the same file narrow or widen those two:
 - **People in charge** (`tasks/managers.py`) add `require_task_manager` (edit a
   task's details and shifts; admin-only fields refused with `403
   task.admin_only_field`; booked shifts that have started are the organisers'
-  through `check_shift_history`) and `require_task_visible` (reading one task;
-  drafts for admins and the task's people in charge).
+  through `check_shift_history`), `require_shift_editor` (adding, deleting and
+  regenerating shifts and batches: on a task that earns vouchers a person in
+  charge gets `403 task.voucher_shifts_admin_only` unless the event's
+  `managers_edit_voucher_shifts` is on; `PATCH /shifts/{id}` asks
+  `check_voucher_shifts` only when it changes `SHIFT_EARNING_FIELDS`) and
+  `require_task_visible` (reading one task; drafts for admins and the task's
+  people in charge).
 - **Vouchers** (`vouchers.py`) add `require_voucher_redeemer` (taking vouchers
   at a task flagged `is_voucher_point`: event admins, its people in charge,
   and whoever is on a running shift there; without a code, admins and people

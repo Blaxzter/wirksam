@@ -615,6 +615,87 @@ async def test_write_responses_carry_can_manage(
         ]
 
 
+# ── Shift actions on a task that earns vouchers ───────────────────
+
+
+@pytest.mark.asyncio
+class TestCanManageShifts:
+    """``can_manage_shifts`` on every task read: who gets the shift actions.
+
+    The writes themselves are in ``test_voucher_shift_lock.py``.
+    """
+
+    async def _reads(
+        self, app: FastAPI, client: AsyncClient, cast: Cast, role: str
+    ) -> dict[str, dict[str, Any]]:
+        event = str(cast.event.id)
+        task_id = str(cast.task.id)
+        with act_as(app, cast[role]):
+            one = await client.get(f"/api/v1/tasks/{task_id}")
+            listed = await client.get("/api/v1/tasks/", params={"event_id": event})
+            feed = await client.get(
+                "/api/v1/tasks/feed",
+                params={"event_id": event, "date_from": "2026-06-01"},
+            )
+            patched = (
+                await client.patch(f"/api/v1/tasks/{task_id}", json={"name": "Bar"})
+                if role in MAY_EDIT
+                else None
+            )
+        reads = {
+            "get": one.json(),
+            "list": next(i for i in listed.json()["items"] if i["id"] == task_id),
+            "feed": next(i for i in feed.json()["items"] if i["id"] == task_id),
+        }
+        if patched is not None:
+            assert patched.status_code == 200, patched.text
+            reads["patch"] = patched.json()
+        return reads
+
+    @pytest.mark.parametrize(
+        ("role", "rate", "expected"),
+        [
+            ("admin", 2, True),
+            ("manager", 2, False),
+            ("member", 2, False),
+            ("admin", 0, True),
+            ("manager", 0, True),
+            ("member", 0, False),
+        ],
+    )
+    async def test_on_every_read(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        role: str,
+        rate: int,
+        expected: bool,
+    ) -> None:
+        cast.task.vouchers_per_shift = rate
+        db_session.add(cast.task)
+        await _shift(db_session, cast.task)
+        reads = await self._reads(app, async_client, cast, role)
+        for key, read in reads.items():
+            assert read["can_manage_shifts"] is expected, key
+            assert read["can_manage"] is (role in MAY_EDIT), key
+
+    async def test_the_event_can_give_them_back(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        cast.task.vouchers_per_shift = 2
+        cast.event.managers_edit_voucher_shifts = True
+        db_session.add_all([cast.task, cast.event])
+        await _shift(db_session, cast.task)
+        reads = await self._reads(app, async_client, cast, "manager")
+        assert all(r["can_manage_shifts"] is True for r in reads.values())
+
+
 # ── The shift history rule ────────────────────────────────────────
 
 

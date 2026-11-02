@@ -74,7 +74,8 @@ without paper. A stand that doesn't want to use the app keeps taking paper.
     admins, which is why teams and people in charge stay separate.
   - *Change `vouchers_per_shift` / `is_voucher_point` / `is_voucher_desk`
     (B).* Vouchers are currency, so the rate and the places that take them
-    are the organisers' decision.
+    are the organisers' decision. *(`is_voucher_desk` is gone; see Decision C
+    of [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)*
   - *Name or remove people in charge.* The one exception: a person in charge
     may step down themselves.
 - **What this does not prevent.** Earnings are a flat amount per shift, and
@@ -93,7 +94,9 @@ without paper. A stand that doesn't want to use the app keeps taking paper.
   shift"), so creating is not refused; the shift and its booking are visible
   the same way. Whether voucher tasks
   should instead keep shift creation with the organisers is the one open
-  question for the product owner (see "Open question").
+  question for the product owner (see "Open question"). *(Decided: by
+  default they do, and an event setting can allow it; see Decision D of
+  [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)*
 - **Per task, not per location.** Locations are optional. Responsibility for a
   whole location is a later extension (see "Not done").
 - **One gate, in `app/logic/permissions.py`**, next to `require_event_role` and
@@ -173,6 +176,10 @@ The English UI says "vouchers". The German UI says "Marken", with the title
   someone dropped from the team loses it even if an older booking remains.
   The redeem view tells an on-shift redeemer without that right who can help
   ("No phone? Ask Anna or Ben"), from the point's people in charge.
+  *(Superseded: the volunteer desk and its team requirement are gone. One
+  event-wide rule, `events.voucher_manual_redeem` (default `on_shift`),
+  decides whether whoever is on shift at a point may also pick a person
+  there; see Decision C of [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)*
 - **The code is a short-lived, single-use pass stored in the database.** It is
   6 characters from an alphabet without look-alikes, lives for 120 seconds,
   can be used once, and is unique across the installation, so a code shown in
@@ -286,7 +293,7 @@ plus `created_at` and `updated_at` (`sa.DateTime`, naive UTC, NOT NULL).
 |---|---|---|---|---|
 | `vouchers_per_shift` | Integer | no | `0`, `server_default="0"` | 0 = none. Schemas allow 0–50. `sa.CheckConstraint("vouchers_per_shift >= 0", name="ck_tasks_vouchers_per_shift_non_negative")` in a new `Task.__table_args__` and in the migration |
 | `is_voucher_point` | Boolean | no | `False`, `server_default=sa.text("false")` | "Vouchers can be redeemed here" |
-| `is_voucher_desk` | Boolean | no | `False`, `server_default=sa.text("false")` | "Staff on shift can also redeem without a code" (the volunteer desk). Writes force it to `False` when `is_voucher_point` ends up `False`; the redeem gate also checks both |
+| `is_voucher_desk` | Boolean | no | `False`, `server_default=sa.text("false")` | "Staff on shift can also redeem without a code" (the volunteer desk). Writes force it to `False` when `is_voucher_point` ends up `False`; the redeem gate also checks both. *(Dropped in `20261102_0002` for `events.voucher_manual_redeem`; see Decision C of [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)* |
 
 ### `voucher_entries` (B, `app/models/voucher.py`, class `VoucherEntry`)
 
@@ -374,7 +381,7 @@ Notes:
 | Name or remove people in charge | event admins; a person in charge may remove themselves |
 | See own vouchers, show own code | event members |
 | Redeem with a code at a point | event admins, its people in charge, anyone on a running shift there (±30 min) |
-| Redeem without a code (pick the person) | event admins, its people in charge, staff on a running shift at a point marked as volunteer desk who are approved members of its team (`team_id`) |
+| Redeem without a code (pick the person) | event admins, its people in charge, staff on a running shift at a point marked as volunteer desk who are approved members of its team (`team_id`). *(Now: with `voucher_manual_redeem = "on_shift"`, the default, anyone on a running shift at that point; see Decision C of the follow-ups.)* |
 | See one person's available vouchers | whoever checks them at a point (needed to choose the amount) |
 | See redemptions made at a point | event admins, its people in charge; on-shift redeemers see their own |
 | See everyone's balance, add/edit/delete corrections | event admins |
@@ -466,7 +473,9 @@ async def may_redeem_manually(
     user: User, session: AsyncSession, kind: RedeemerKind, task: Task
 ) -> bool:
     """admin/manager, or on_shift at a point that is a desk with a team_id
-    whose approved members include the user (async: one team lookup)."""
+    whose approved members include the user (async: one team lookup).
+    (Now may_redeem_manually(kind, event), decided by the event's
+    voucher_manual_redeem; see the follow-ups, "Gates".)"""
 
 async def require_voucher_redeemer(
     user: User, session: AsyncSession, task: Task, *, now: dt.datetime, manual: bool = False
@@ -777,7 +786,7 @@ class VoucherPassStatus(BaseModel):
 class VoucherPointRead(BaseModel):
     task_id: uuid.UUID; name: str; location: str | None
     can_redeem: bool; can_redeem_manually: bool
-    is_desk: bool
+    is_desk: bool                                 # removed in the follow-ups
     managers: list[TaskManagerBrief]              # "No phone? Ask Anna or Ben"
 
 class VoucherCheckRequest(BaseModel):
@@ -819,7 +828,8 @@ Read-schema flags:
   `is_voucher_point: bool = False` and `is_voucher_desk: bool = False`. They
   go in `TaskBase`, so `TaskCreate` accepts them, with `Field(ge=0, le=50)` on
   the first. `TaskUpdate` (optional) and `TaskCreateWithShifts` get them as
-  well.
+  well. *(`is_voucher_desk` is gone from all of them, and `TaskRead` gained
+  `can_manage_shifts`; see package 4 of [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)*
 - **`TaskRead`** also gets the viewer-relative `can_redeem: bool = False`:
   true when `is_voucher_point` holds and the caller may redeem there *right
   now*. `mark_task_access` fills it using one extra query: the caller's
@@ -867,7 +877,7 @@ Other changes:
 | 404 | `task.manager_not_found` | remove |
 | 400 | `batch.wrong_task` | `POST /shifts/` with another task's batch (existing code, gets an i18n entry now) |
 | 403 | `voucher.not_allowed` | `require_voucher_redeemer` |
-| 403 | `voucher.manual_not_allowed` | redeeming by `user_id` while only on shift at a point that is not a desk |
+| 403 | `voucher.manual_not_allowed` | redeeming by `user_id` while only on shift at a point that is not a desk *(now: while only on shift, in an event with `voucher_manual_redeem = "in_charge"`)* |
 | 422 | `voucher.not_a_point` | check / redeem / points entries on an unflagged task |
 | 404 | `voucher.code_invalid` | unknown or malformed code, or a pass replaced between check and redeem |
 | 409 | `voucher.code_other_event` | the code was issued in another event |
@@ -1228,7 +1238,8 @@ The cost is small and the demo then shows both features:
 - `_TaskSpec` gets `vouchers_per_shift: int = 2`, `voucher_point: bool =
   False` and `voucher_desk: bool = False`. Set `voucher_point=True` on
   "Welcome desk" (the volunteer desk, also `voucher_desk=True`) and "Café
-  counter".
+  counter". *(`voucher_desk` is gone; the seeded event keeps the default
+  voucher rules. See "Seeds" in the follow-ups.)*
 - After `_seed_teams`, with the teammates already flushed:
   - `TaskManager` rows put `teammates[0]` in charge of "Café counter" and
     "Grill stand", with `added_by_name=owner.name`.
@@ -1654,6 +1665,7 @@ Other new keys:
 | `settings.isPointOff` | This place doesn't take vouchers in the app. It can still accept paper vouchers. | Dieser Ort nimmt keine Marken in der App an. Papiermarken gehen trotzdem. |
 | `settings.isDesk` | Volunteer desk: staff on shift can also redeem without a code | Ausgabestelle: Wer hier Schicht hat, kann auch ohne Code einlösen |
 | `settings.isDeskHint` | For people whose phone isn't working. Staff pick them from the member list. This needs a team under "Who can book", so only people you chose can staff the desk. | Für Leute, deren Handy nicht geht. Sie werden aus der Mitgliederliste ausgewählt. Dafür braucht die Aufgabe ein Team unter „Wer kann buchen“, damit nur Leute an der Ausgabestelle sitzen, die ihr ausgewählt habt. |
+| *(removed)* | `settings.isDesk` and `settings.isDeskHint` went with the desk in the follow-ups' package 4. | |
 | `settings.saved` | Voucher settings saved. | Marken-Einstellungen gespeichert. |
 | `admin.title` | Vouchers | Marken |
 | `admin.person` | Person | Person |
@@ -1957,6 +1969,11 @@ Steps:
 
 ## Open question
 
+*(Answered by the product owner: by default people in charge do not change
+the shifts of voucher tasks, and an event setting can allow it
+(`events.managers_edit_voucher_shifts`, `403 task.voucher_shifts_admin_only`).
+See Decision D of [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)*
+
 **Should people in charge of a voucher task be able to create shifts?** The
 brief says people in charge create, edit and delete their task's shifts, and
 vouchers are a flat amount per shift. Together that lets someone in charge of
@@ -1999,7 +2016,8 @@ which were rejected in whole or in part:
   every code would slow every queue to guard against a rare mistake. The
   desk half of that finding (no manual redemption at a desk staffed by
   volunteers, nobody named to ask) was applied with `is_voucher_desk` and
-  the names of the people in charge.
+  the names of the people in charge. *(The desk later gave way to the
+  event-wide `voucher_manual_redeem`; see Decision C of the follow-ups.)*
 - **Redact e-mails in the event roster for non-admins.** Not done here. Team
   leads' pickers read that roster, so it is a change of its own. The plan
   now says the booking-list redaction is partial, and the roster change is

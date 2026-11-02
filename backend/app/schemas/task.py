@@ -86,6 +86,11 @@ class TaskRead(TaskBase):
     #: Viewer-relative, filled in by ``app.logic.task_managers``: True for event
     #: admins, the superadmin and the task's people in charge.
     can_manage: bool = False
+    #: Viewer-relative: the caller may add, move, resize and delete this
+    #: task's shifts. True for event admins; for people in charge unless the
+    #: task earns vouchers and the event keeps those shifts with its admins
+    #: (``permissions.voucher_shifts_locked``).
+    can_manage_shifts: bool = False
     #: The task's people in charge, by name.
     managers: list[TaskManagerBrief] = []
     #: Viewer-relative: the task takes vouchers and the caller may redeem

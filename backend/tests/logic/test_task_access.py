@@ -1,13 +1,15 @@
 """The gates for people in charge of a task (``app.logic.permissions``).
 
 ``task_access`` decides who may edit a task, ``require_task_visible`` who may
-read it, and ``check_shift_history`` what a person in charge may not do to a
-booked shift's past. The route tests in ``test_task_managers.py`` cover the
+read it, ``check_shift_history`` what a person in charge may not do to a
+booked shift's past, and ``voucher_shifts_locked`` whether the shifts of a task
+that earns vouchers are the event admins' alone. The route tests in ``test_task_managers.py`` cover the
 same rules through the API; these pin the edge cases directly.
 """
 
 import datetime as dt
 import uuid
+from dataclasses import dataclass
 from typing import Any, cast
 
 import pytest
@@ -21,6 +23,7 @@ from app.logic.permissions import (
     check_shift_history,
     require_task_visible,
     task_access,
+    voucher_shifts_locked,
 )
 from app.models.booking import Booking
 from app.models.event import Event
@@ -432,3 +435,37 @@ class TestCheckShiftHistory:
         assert not _refused("manager", before=_shift(), has_bookings=True, new_end=None)
         finished = _shift(start=dt.time(6, 0), end=dt.time(9, 0))
         assert _refused("manager", before=finished, has_bookings=True, new_end=None)
+
+
+@dataclass
+class _Rate:
+    vouchers_per_shift: int
+
+
+@dataclass
+class _Rule:
+    managers_edit_voucher_shifts: bool
+
+
+class TestVoucherShiftsLocked:
+    def test_never_for_an_event_admin(self) -> None:
+        for event in (_Rule(False), _Rule(True), None):
+            assert not voucher_shifts_locked("admin", _Rate(2), event)
+
+    def test_never_on_a_task_without_vouchers(self) -> None:
+        assert not voucher_shifts_locked("manager", _Rate(0), _Rule(False))
+        assert not voucher_shifts_locked("manager", _Rate(0), None)
+
+    def test_a_person_in_charge_of_a_voucher_task_unless_the_event_allows_it(
+        self,
+    ) -> None:
+        assert voucher_shifts_locked("manager", _Rate(2), _Rule(False))
+        assert not voucher_shifts_locked("manager", _Rate(2), _Rule(True))
+
+    def test_an_orphan_task_counts_as_locked(self) -> None:
+        """No event, no setting to allow it."""
+        assert voucher_shifts_locked("manager", _Rate(2), None)
+
+    def test_nobody_is_not_locked_but_not_allowed_either(self) -> None:
+        """No access at all is ``require_task_manager``'s 403, not this one."""
+        assert not voucher_shifts_locked(None, _Rate(2), _Rule(False))

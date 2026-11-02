@@ -10,7 +10,7 @@ from app.crud.task import task as crud_task
 from app.logic import clock, vouchers
 from app.logic.permissions import (
     check_shift_history,
-    require_task_manager,
+    require_shift_editor,
     require_task_visible,
 )
 from app.models.booking import Booking
@@ -44,7 +44,9 @@ async def delete_batch(
     """Delete a shift batch and all its duty shifts (cascade).
 
     A person in charge may not delete a batch holding a booked shift that has
-    started (``check_shift_history``); nothing is deleted then.
+    started (``check_shift_history``), nor any batch of a task that earns
+    vouchers unless the event allows it (``require_shift_editor``); nothing is
+    deleted then.
     """
     db_batch = await crud_shift_batch.get(session, batch_id, raise_404_error=True)
     if str(db_batch.task_id) != task_id:
@@ -54,7 +56,7 @@ async def delete_batch(
 
     # Get task name for snapshot
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    access = await require_task_manager(current_user, session, db_task)
+    access = await require_shift_editor(current_user, session, db_task)
 
     shifts = list(
         (

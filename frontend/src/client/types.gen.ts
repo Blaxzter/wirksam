@@ -1294,6 +1294,14 @@ export type EventRead = {
    */
   updated_at: string
   /**
+   * Voucher Manual Redeem
+   */
+  voucher_manual_redeem?: 'on_shift' | 'in_charge'
+  /**
+   * Managers Edit Voucher Shifts
+   */
+  managers_edit_voucher_shifts?: boolean
+  /**
    * My Role
    */
   my_role?: 'owner' | 'admin' | 'member' | null
@@ -1661,6 +1669,14 @@ export type EventUpdate = {
    * Visibility
    */
   visibility?: 'public' | 'private' | null
+  /**
+   * Voucher Manual Redeem
+   */
+  voucher_manual_redeem?: 'on_shift' | 'in_charge' | null
+  /**
+   * Managers Edit Voucher Shifts
+   */
+  managers_edit_voucher_shifts?: boolean | null
 }
 
 /**
@@ -1794,10 +1810,6 @@ export type FeedTaskItem = {
    */
   is_voucher_point?: boolean
   /**
-   * Is Voucher Desk
-   */
-  is_voucher_desk?: boolean
-  /**
    * Id
    */
   id: string
@@ -1851,6 +1863,10 @@ export type FeedTaskItem = {
    * Can Manage
    */
   can_manage?: boolean
+  /**
+   * Can Manage Shifts
+   */
+  can_manage_shifts?: boolean
   /**
    * Managers
    */
@@ -3729,10 +3745,6 @@ export type TaskCreate = {
    * Is Voucher Point
    */
   is_voucher_point?: boolean
-  /**
-   * Is Voucher Desk
-   */
-  is_voucher_desk?: boolean
 }
 
 /**
@@ -3783,10 +3795,6 @@ export type TaskCreateWithShifts = {
    * Is Voucher Point
    */
   is_voucher_point?: boolean
-  /**
-   * Is Voucher Desk
-   */
-  is_voucher_desk?: boolean
   /**
    * Event Id
    */
@@ -3970,10 +3978,6 @@ export type TaskRead = {
    */
   is_voucher_point?: boolean
   /**
-   * Is Voucher Desk
-   */
-  is_voucher_desk?: boolean
-  /**
    * Id
    */
   id: string
@@ -4027,6 +4031,10 @@ export type TaskRead = {
    * Can Manage
    */
   can_manage?: boolean
+  /**
+   * Can Manage Shifts
+   */
+  can_manage_shifts?: boolean
   /**
    * Managers
    */
@@ -4089,10 +4097,6 @@ export type TaskUpdate = {
    * Is Voucher Point
    */
   is_voucher_point?: boolean | null
-  /**
-   * Is Voucher Desk
-   */
-  is_voucher_desk?: boolean | null
 }
 
 /**
@@ -6366,10 +6370,6 @@ export type VoucherPointRead = {
    */
   can_redeem_manually: boolean
   /**
-   * Is Desk
-   */
-  is_desk: boolean
-  /**
    * Managers
    */
   managers: Array<TaskManagerBrief>
@@ -6743,6 +6743,14 @@ export type EventReadWritable = {
    * Updated At
    */
   updated_at: string
+  /**
+   * Voucher Manual Redeem
+   */
+  voucher_manual_redeem?: 'on_shift' | 'in_charge'
+  /**
+   * Managers Edit Voucher Shifts
+   */
+  managers_edit_voucher_shifts?: boolean
   /**
    * My Role
    */

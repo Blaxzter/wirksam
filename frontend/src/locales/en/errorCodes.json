@@ -66,7 +66,8 @@
         "not_found": "That task could not be found.",
         "not_published": "This task isn't published, so only the organisers and its people in charge can open or book it.",
         "shift_history_admin_only": "This shift has started and people are booked on it, or the change would move it into the past. Only an organiser can do that.",
-        "team_not_in_event": "The team has to belong to the same event as the task."
+        "team_not_in_event": "The team has to belong to the same event as the task.",
+        "voucher_shifts_admin_only": "This task earns vouchers, so only organisers can add, move or delete its shifts. Ask an organiser, or ask them to allow it in the event settings."
     },
     "team": {
         "already_member": "That person is already in this team.",

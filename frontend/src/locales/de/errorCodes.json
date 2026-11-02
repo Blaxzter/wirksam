@@ -66,7 +66,8 @@
         "not_found": "Diese Aufgabe wurde nicht gefunden.",
         "not_published": "Diese Aufgabe ist nicht veröffentlicht. Nur die Organisator:innen und ihre Verantwortlichen können sie öffnen oder buchen.",
         "shift_history_admin_only": "Diese Schicht hat schon begonnen und es sind Leute gebucht, oder die Änderung würde sie in die Vergangenheit verlegen. Das kann nur ein:e Organisator:in.",
-        "team_not_in_event": "Das Team muss zur selben Veranstaltung gehören wie die Aufgabe."
+        "team_not_in_event": "Das Team muss zur selben Veranstaltung gehören wie die Aufgabe.",
+        "voucher_shifts_admin_only": "Für diese Aufgabe gibt es Marken. Deshalb können nur Organisator:innen Schichten hinzufügen, verschieben oder löschen. Frag eine:n Organisator:in oder bitte darum, es in den Einstellungen der Veranstaltung zu erlauben."
     },
     "team": {
         "already_member": "Diese Person ist bereits in diesem Team.",

@@ -16,12 +16,22 @@ Teams add one layer *inside* an event, and only two gates of their own:
 team). Both let event admins through, so a team can never lock its own event's
 admins out.
 
-People in charge of a task (``task_managers``) add three more, all of which let
+People in charge of a task (``task_managers``) add four more, all of which let
 event admins through as well:
 
 - :func:`require_task_manager` for editing one task's details and its shifts.
   It returns the caller's level (:data:`TaskAccess`) so the route can refuse
   the fields that stay with event admins (status, team, moving the task).
+- :func:`require_shift_editor` for adding, deleting and regenerating a task's
+  shifts and batches: :func:`require_task_manager`, plus 403
+  ``task.voucher_shifts_admin_only`` for a person in charge of a task that
+  earns vouchers, unless the event allows it
+  (``events.managers_edit_voucher_shifts``, off by default). Every extra or
+  bigger shift earns vouchers, so that lever stays with the event admins.
+  ``PATCH /shifts/{id}`` asks :func:`check_voucher_shifts` only when it
+  changes one of :data:`SHIFT_EARNING_FIELDS`, so a person in charge can still
+  fix a shift's title or place; :func:`voucher_shifts_locked` is the same rule
+  as a pure flag, for ``TaskRead.can_manage_shifts``.
 - :func:`require_task_visible` for reading one task: event members see
   published tasks; drafts and archived tasks only the event admins and the
   task's people in charge (and a booker can always reopen their own shift).
@@ -46,7 +56,7 @@ manual redemption records who made it, so it can be traced.
 import datetime as dt
 import enum
 import uuid
-from typing import Literal
+from typing import Literal, Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,6 +81,30 @@ TaskAccess = Literal["admin", "manager"]
 #: Why a caller may redeem vouchers at a point: as an event admin, as one of
 #: its people in charge, or because they are on a running shift there.
 RedeemerKind = Literal["admin", "manager", "on_shift"]
+
+#: Shift fields whose change decides who earns how much: when a shift runs,
+#: and how many people it takes.
+SHIFT_EARNING_FIELDS: tuple[str, ...] = (
+    "date",
+    "start_time",
+    "end_time",
+    "max_bookings",
+)
+
+
+class _EarnsVouchers(Protocol):
+    """A task, or a task read: anything with a voucher rate."""
+
+    @property
+    def vouchers_per_shift(self) -> int: ...
+
+
+class _VoucherShiftRule(Protocol):
+    """An event, or anything else carrying its voucher-shift setting."""
+
+    @property
+    def managers_edit_voucher_shifts(self) -> bool: ...
+
 
 # Weakest → strongest. Comparing positions in this tuple is the whole hierarchy.
 _ROLE_ORDER: tuple[EventRole, ...] = ("member", "admin", "owner")
@@ -269,6 +303,63 @@ async def require_task_manager(
             code="task.forbidden",
             detail="Only this task's people in charge and the event admins can do this",
         )
+    return access
+
+
+def voucher_shifts_locked(
+    access: TaskAccess | None,
+    task: _EarnsVouchers,
+    event: _VoucherShiftRule | None,
+) -> bool:
+    """Whether the shifts of ``task`` are the event admins' alone for this caller.
+
+    True for a person in charge (``access == "manager"``) of a task that earns
+    vouchers, in an event that does not let people in charge change those
+    shifts (``managers_edit_voucher_shifts``, off by default). Never for event
+    admins. A task without an event (``event`` None) counts as locked.
+
+    Pure, so the task reads use it for ``can_manage_shifts`` as well.
+    """
+    if access != "manager" or task.vouchers_per_shift <= 0:
+        return False
+    return event is None or not event.managers_edit_voucher_shifts
+
+
+async def check_voucher_shifts(
+    access: TaskAccess, session: AsyncSession, task: Task
+) -> None:
+    """Raise 403 ``task.voucher_shifts_admin_only`` when :func:`voucher_shifts_locked`.
+
+    Loads the event only for a person in charge of a task that earns vouchers,
+    the one case where its setting decides.
+    """
+    if access != "manager" or task.vouchers_per_shift <= 0:
+        return
+    event = await session.get(Event, task.event_id) if task.event_id else None
+    if voucher_shifts_locked(access, task, event):
+        raise_problem(
+            403,
+            code="task.voucher_shifts_admin_only",
+            detail=(
+                "This task earns vouchers, so only the event admins can add, "
+                "move, resize or delete its shifts"
+            ),
+        )
+
+
+async def require_shift_editor(
+    user: User,
+    session: AsyncSession,
+    task: Task,
+) -> TaskAccess:
+    """Raise 403 unless the user may add, delete or regenerate this task's shifts.
+
+    :func:`require_task_manager` (403 ``task.forbidden``), then
+    :func:`check_voucher_shifts` (403 ``task.voucher_shifts_admin_only``).
+    Returns the level, like :func:`require_task_manager`.
+    """
+    access = await require_task_manager(user, session, task)
+    await check_voucher_shifts(access, session, task)
     return access
 
 

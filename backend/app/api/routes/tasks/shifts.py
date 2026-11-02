@@ -22,7 +22,7 @@ from app.logic.notifications.triggers import dispatch_task_manager_added
 from app.logic.permissions import (
     check_shift_history,
     require_event_role,
-    require_task_manager,
+    require_shift_editor,
     shift_history_refuses,
 )
 from app.logic.shift_generator import generate_shifts
@@ -229,9 +229,13 @@ async def add_shifts_to_task(
     session: DBDep,
     current_user: CurrentUser,
 ) -> AddShiftsResponse:
-    """Add a new batch of duty shifts to an existing task without touching existing shifts."""
+    """Add a new batch of duty shifts to an existing task without touching existing shifts.
+
+    Event admins, and its people in charge unless the task earns vouchers and
+    the event keeps those shifts with its admins (``require_shift_editor``).
+    """
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    await require_task_manager(current_user, session, db_task)
+    await require_shift_editor(current_user, session, db_task)
 
     # Validate dates against event constraints
     if db_task.event_id:
@@ -328,9 +332,14 @@ async def regenerate_task_shifts(
     delete path. A person in charge may not remove a booked shift that has
     started (``check_shift_history``): the dry run marks such rows ``locked``,
     the real run refuses with 403 ``task.shift_history_admin_only``.
+
+    On a task that earns vouchers, a person in charge gets 403
+    ``task.voucher_shifts_admin_only`` unless the event allows it
+    (``require_shift_editor``), the dry run included, so the editor learns it
+    before anything is confirmed.
     """
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    access = await require_task_manager(current_user, session, db_task)
+    access = await require_shift_editor(current_user, session, db_task)
 
     # If batch_id provided, load the batch for defaults
     db_batch: ShiftBatch | None = None

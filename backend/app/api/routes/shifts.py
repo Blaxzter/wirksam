@@ -17,7 +17,10 @@ from app.logic.event_scope import get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import apply_location, resolve_location
 from app.logic.permissions import (
+    SHIFT_EARNING_FIELDS,
     check_shift_history,
+    check_voucher_shifts,
+    require_shift_editor,
     require_task_manager,
     require_task_visible,
     task_access,
@@ -146,7 +149,7 @@ async def create_shift(
     current_user: CurrentUser,
 ) -> ShiftRead:
     db_task = await crud_task.get(session, str(slot_in.task_id), raise_404_error=True)
-    await require_task_manager(current_user, session, db_task)
+    await require_shift_editor(current_user, session, db_task)
     if slot_in.batch_id is not None:
         # Otherwise the person in charge of one task could hang a shift on
         # another task's batch, and deleting that batch would delete it.
@@ -180,6 +183,14 @@ async def update_shift(
     old_end = db_shift.end_time
     old_date = db_shift.date
     update_data = slot_in.model_dump(exclude_unset=True)
+    if any(
+        k in update_data and update_data[k] != getattr(db_shift, k)
+        for k in SHIFT_EARNING_FIELDS
+    ):
+        # When it runs and how many it takes decide who earns how much; the
+        # title, description, place and category stay editable ("meet at gate
+        # B"), and a field sent with its current value is no change.
+        await check_voucher_shifts(access, session, db_task)
     if access == "manager" and any(
         k in update_data for k in ("date", "start_time", "end_time")
     ):
@@ -242,7 +253,7 @@ async def delete_shift(
 
     # Get task name for snapshot
     db_task = await crud_task.get(session, str(shift.task_id), raise_404_error=True)
-    access = await require_task_manager(current_user, session, db_task)
+    access = await require_shift_editor(current_user, session, db_task)
     if access == "manager":
         count = await crud_booking.get_confirmed_count(session, shift_id=shift.id)
         check_shift_history(

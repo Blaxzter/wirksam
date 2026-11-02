@@ -578,6 +578,8 @@ export const zEventRead = z.object({
   sandbox_expires_at: z.iso.datetime().nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
+  voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
+  managers_edit_voucher_shifts: z.boolean().optional().default(false),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
@@ -646,6 +648,8 @@ export const zEventUpdate = z.object({
   default_end_time: z.iso.time().nullish(),
   status: z.enum(['draft', 'published', 'archived']).nullish(),
   visibility: z.enum(['public', 'private']).nullish(),
+  voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).nullish(),
+  managers_edit_voucher_shifts: z.boolean().nullish(),
 })
 
 /**
@@ -1604,7 +1608,6 @@ export const zTaskCreate = z.object({
   team_id: z.uuid().nullish(),
   vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
   is_voucher_point: z.boolean().optional().default(false),
-  is_voucher_desk: z.boolean().optional().default(false),
 })
 
 /**
@@ -1622,7 +1625,6 @@ export const zTaskCreateWithShifts = z.object({
   team_id: z.uuid().nullish(),
   vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
   is_voucher_point: z.boolean().optional().default(false),
-  is_voucher_desk: z.boolean().optional().default(false),
   event_id: z.uuid().nullish(),
   new_event: zEventCreate.nullish(),
   schedule: zShiftGenerationConfig,
@@ -1688,7 +1690,6 @@ export const zFeedTaskItem = z
     team_id: z.uuid().nullish(),
     vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
     is_voucher_point: z.boolean().optional().default(false),
-    is_voucher_desk: z.boolean().optional().default(false),
     id: z.uuid(),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
@@ -1702,6 +1703,7 @@ export const zFeedTaskItem = z
     my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
     locked_by_team: z.boolean().optional().default(false),
     can_manage: z.boolean().optional().default(false),
+    can_manage_shifts: z.boolean().optional().default(false),
     managers: z.array(zTaskManagerBrief).optional().default([]),
     can_redeem: z.boolean().optional().default(false),
     shifts: z.array(zFeedShiftEntry).nullish(),
@@ -1743,7 +1745,6 @@ export const zTaskRead = z.object({
   team_id: z.uuid().nullish(),
   vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
   is_voucher_point: z.boolean().optional().default(false),
-  is_voucher_desk: z.boolean().optional().default(false),
   id: z.uuid(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
@@ -1757,6 +1758,7 @@ export const zTaskRead = z.object({
   my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
   locked_by_team: z.boolean().optional().default(false),
   can_manage: z.boolean().optional().default(false),
+  can_manage_shifts: z.boolean().optional().default(false),
   managers: z.array(zTaskManagerBrief).optional().default([]),
   can_redeem: z.boolean().optional().default(false),
 })
@@ -1815,7 +1817,6 @@ export const zTaskUpdate = z.object({
   team_id: z.uuid().nullish(),
   vouchers_per_shift: z.int().gte(0).lte(50).nullish(),
   is_voucher_point: z.boolean().nullish(),
-  is_voucher_desk: z.boolean().nullish(),
 })
 
 /**
@@ -3310,7 +3311,6 @@ export const zVoucherPointRead = z
     location: z.string().nullish(),
     can_redeem: z.boolean(),
     can_redeem_manually: z.boolean(),
-    is_desk: z.boolean(),
     managers: z.array(zTaskManagerBrief),
   })
   .register(z.globalRegistry, {
@@ -3473,6 +3473,8 @@ export const zEventReadWritable = z.object({
   sandbox_expires_at: z.iso.datetime().nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
+  voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
+  managers_edit_voucher_shifts: z.boolean().optional().default(false),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
