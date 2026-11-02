@@ -89,8 +89,9 @@ class VoucherBalance(BaseModel):
     redeemed: int
     #: The signed sum of corrections.
     adjusted: int
-    balance: int = Field(description="earned - redeemed + adjusted; may be below zero")
-    #: ``max(balance, 0)``: what can be redeemed now.
+    #: What can be redeemed now: ``earned - redeemed + adjusted``, which never
+    #: goes below zero (earned vouchers stay earned, corrections are capped);
+    #: ``max(..., 0)`` guards rows written before that rule.
     available: int
 
 

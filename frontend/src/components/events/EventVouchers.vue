@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { AlertTriangle, Plus, Ticket } from '@lucide/vue'
+import { Plus, Ticket } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -45,6 +45,9 @@ import { toastApiError } from '@/lib/api-errors'
  * a table on desktop, cards on phones. Most available first, so a person in
  * charge handing out more than their task earns shows up at the top. A row
  * opens that person's history, where corrections can be changed.
+ *
+ * "Available" is the one number: earned vouchers stay earned and corrections
+ * can't take away more than is left, so it never goes below zero.
  */
 const props = defineProps<{
   eventId: string
@@ -66,7 +69,6 @@ const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`)
 const rows = computed(() =>
   balances.value.filter((b) => b.earned > 0 || b.upcoming > 0 || b.redeemed > 0 || b.adjusted !== 0),
 )
-const anyNegative = computed(() => rows.value.some((b) => b.balance < 0))
 
 async function load() {
   try {
@@ -175,8 +177,9 @@ async function afterChange() {
           <TableHeader>
             <TableRow>
               <TableHead>{{ t('vouchers.admin.person') }}</TableHead>
-              <TableHead class="text-right">{{ t('vouchers.admin.colAvailable') }}</TableHead>
-              <TableHead class="text-right">{{ t('vouchers.admin.colBalance') }}</TableHead>
+              <TableHead class="text-right text-foreground">
+                {{ t('vouchers.admin.colAvailable') }}
+              </TableHead>
               <TableHead class="text-right">{{ t('vouchers.admin.colEarned') }}</TableHead>
               <TableHead class="text-right">{{ t('vouchers.admin.colUsed') }}</TableHead>
               <TableHead class="text-right">{{ t('vouchers.adjusted') }}</TableHead>
@@ -200,14 +203,11 @@ async function afterChange() {
                   {{ t('vouchers.admin.left') }}
                 </p>
               </TableCell>
-              <TableCell class="text-right font-semibold tabular-nums">
-                {{ row.available }}
-              </TableCell>
               <TableCell
-                class="text-right tabular-nums"
-                :class="row.balance < 0 ? 'font-semibold text-destructive' : ''"
+                class="text-right text-base font-bold tabular-nums"
+                data-testid="event-vouchers-available"
               >
-                {{ row.balance }}
+                {{ row.available }}
               </TableCell>
               <TableCell class="text-right tabular-nums">{{ row.earned }}</TableCell>
               <TableCell class="text-right tabular-nums">{{ row.redeemed }}</TableCell>
@@ -243,45 +243,49 @@ async function afterChange() {
                   <p class="text-xs text-muted-foreground">{{ t('vouchers.admin.colAvailable') }}</p>
                 </div>
               </div>
-              <dl class="mt-2 grid grid-cols-3 gap-x-2 gap-y-1.5 text-xs">
-                <div>
-                  <dt class="text-muted-foreground">{{ t('vouchers.admin.colBalance') }}</dt>
-                  <dd
-                    class="tabular-nums"
-                    :class="row.balance < 0 ? 'font-semibold text-destructive' : ''"
-                  >
-                    {{ row.balance }}
+              <dl
+                class="mt-2 grid grid-cols-4 divide-x divide-border/70 rounded-md bg-muted/60 text-xs"
+              >
+                <div class="min-w-0 px-1.5 py-1.5">
+                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
+                    {{ t('vouchers.admin.colEarned') }}
+                  </dt>
+                  <dd class="text-sm font-semibold tabular-nums">{{ row.earned }}</dd>
+                </div>
+                <div class="min-w-0 px-1.5 py-1.5">
+                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">{{ t('vouchers.admin.colUsed') }}</dt>
+                  <dd class="text-sm font-semibold tabular-nums">{{ row.redeemed }}</dd>
+                </div>
+                <div class="min-w-0 px-1.5 py-1.5">
+                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">{{ t('vouchers.adjusted') }}</dt>
+                  <dd class="text-sm font-semibold tabular-nums">{{ signed(row.adjusted) }}</dd>
+                </div>
+                <div class="min-w-0 px-1.5 py-1.5">
+                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
+                    {{ t('vouchers.admin.colUpcoming') }}
+                  </dt>
+                  <dd class="text-sm font-semibold tabular-nums text-muted-foreground">
+                    {{ row.upcoming }}
                   </dd>
-                </div>
-                <div>
-                  <dt class="text-muted-foreground">{{ t('vouchers.admin.colEarned') }}</dt>
-                  <dd class="tabular-nums">{{ row.earned }}</dd>
-                </div>
-                <div>
-                  <dt class="text-muted-foreground">{{ t('vouchers.admin.colUsed') }}</dt>
-                  <dd class="tabular-nums">{{ row.redeemed }}</dd>
-                </div>
-                <div>
-                  <dt class="text-muted-foreground">{{ t('vouchers.adjusted') }}</dt>
-                  <dd class="tabular-nums">{{ signed(row.adjusted) }}</dd>
-                </div>
-                <div>
-                  <dt class="text-muted-foreground">{{ t('vouchers.admin.colUpcoming') }}</dt>
-                  <dd class="tabular-nums">{{ row.upcoming }}</dd>
                 </div>
               </dl>
             </button>
           </li>
         </ul>
 
-        <p
-          v-if="anyNegative"
-          class="flex items-start gap-1.5 text-xs text-muted-foreground"
-          data-testid="event-vouchers-negative"
+        <dl
+          class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground"
+          data-testid="event-vouchers-legend"
         >
-          <AlertTriangle class="mt-0.5 size-3.5 shrink-0 text-destructive" />
-          {{ t('vouchers.admin.balanceNegative') }}
-        </p>
+          <div class="flex gap-1.5">
+            <dt class="font-semibold text-foreground/80">{{ t('vouchers.admin.colAvailable') }}</dt>
+            <dd>{{ t('vouchers.admin.colAvailableHint') }}</dd>
+          </div>
+          <div class="flex gap-1.5">
+            <dt class="font-semibold text-foreground/80">{{ t('vouchers.admin.colUpcoming') }}</dt>
+            <dd>{{ t('vouchers.admin.colUpcomingHint') }}</dd>
+          </div>
+        </dl>
       </template>
 
       <p class="text-xs text-muted-foreground">{{ t('vouchers.admin.afterEventHint') }}</p>
@@ -305,13 +309,6 @@ async function afterChange() {
         </div>
         <template v-else>
           <VoucherBalanceSummary :summary="detail.summary" compact other />
-          <p
-            v-if="detail.summary.balance < 0"
-            class="flex items-start gap-1.5 text-xs text-destructive"
-          >
-            <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
-            {{ t('vouchers.admin.balanceNegative') }}
-          </p>
           <VoucherHistory
             :account="detail"
             can-edit

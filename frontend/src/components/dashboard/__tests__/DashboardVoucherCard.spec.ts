@@ -44,7 +44,6 @@ function account(
       upcoming: 0,
       redeemed: 2,
       adjusted: 0,
-      balance: 4,
       available: 4,
       ...summary,
     },

@@ -76,6 +76,17 @@ export function historySortKey(item: VoucherHistoryItem): number {
 }
 
 /**
+ * The most a correction may take away, so that the person is not left with
+ * less than nothing; the server refuses more (`409
+ * voucher.correction_exceeds_available`). An edit replaces the correction's
+ * own amount, which is given back first: changing a −1 can take one more than
+ * `available`, changing a +2 two fewer.
+ */
+export function correctionTakeAwayMax(available: number, currentAmount = 0): number {
+  return Math.max(0, available - currentAmount)
+}
+
+/**
  * The shifts that earned vouchers and every redemption and correction, newest
  * first. Shifts still to come are left out: they have earned nothing yet. A
  * settled shift (frozen before its task or shift changed, or went) is listed

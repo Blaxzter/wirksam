@@ -6190,12 +6190,6 @@ export type VoucherBalance = {
    */
   adjusted: number
   /**
-   * Balance
-   *
-   * earned - redeemed + adjusted; may be below zero
-   */
-  balance: number
-  /**
    * Available
    */
   available: number

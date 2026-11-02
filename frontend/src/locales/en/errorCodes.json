@@ -133,6 +133,8 @@
         "code_invalid": "This code isn't valid. Ask them to show their code again.",
         "code_other_event": "This code is for a different event. Ask them to switch to this event in the app and show a new code.",
         "code_used": "This code has already been used. Ask for a new one.",
+        "correction_exceeds_available": "That would take away more than they can still redeem.",
+        "correction_exceeds_available_with": "That would take away more than they can still redeem: {n} at most.",
         "entry_not_editable": "A redemption can't be changed. Add a correction instead.",
         "entry_not_found": "That entry could not be found. It may have been deleted.",
         "insufficient": "Not enough vouchers.",

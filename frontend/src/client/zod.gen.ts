@@ -3217,9 +3217,6 @@ export const zVoucherBalance = z
     upcoming: z.int(),
     redeemed: z.int(),
     adjusted: z.int(),
-    balance: z.int().register(z.globalRegistry, {
-      description: 'earned - redeemed + adjusted; may be below zero',
-    }),
     available: z.int(),
   })
   .register(z.globalRegistry, {

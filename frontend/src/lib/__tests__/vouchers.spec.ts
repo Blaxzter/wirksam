@@ -5,6 +5,7 @@ import {
   SAME_CODE_IGNORE_MS,
   classifyCameraError,
   codeUsedDetails,
+  correctionTakeAwayMax,
   createDetectionGate,
   formatVoucherCode,
   historySortKey,
@@ -168,6 +169,24 @@ describe('voucherHistory', () => {
     const gone = shift({ booking_id: 'gone', shift_id: null, task_id: null, settled: true })
     const items = voucherHistory({ shifts: [gone], entries: [] })
     expect(items).toEqual([{ kind: 'shift', key: 'shift-gone', shift: gone }])
+  })
+})
+
+describe('correctionTakeAwayMax', () => {
+  it('is what the person can still redeem', () => {
+    expect(correctionTakeAwayMax(3)).toBe(3)
+    expect(correctionTakeAwayMax(0)).toBe(0)
+  })
+
+  it('gives an edited correction its own amount back first', () => {
+    // Changing a -1 with 2 left: up to 3 can be taken.
+    expect(correctionTakeAwayMax(2, -1)).toBe(3)
+    // Changing a +2 with 5 left: the 2 go first, so 3 at most.
+    expect(correctionTakeAwayMax(5, 2)).toBe(3)
+  })
+
+  it('never goes below zero', () => {
+    expect(correctionTakeAwayMax(1, 4)).toBe(0)
   })
 })
 

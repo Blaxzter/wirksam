@@ -116,6 +116,10 @@ The English UI says "vouchers". The German UI says "Marken", with the title
 "ledger".
 
 - **Earned vouchers are derived, never stored**, like worked hours
+  *(Superseded: they are derived until something would change them, then
+  frozen in `voucher_earnings`; see
+  [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md),
+  Decision G.)*
   (`logic/work_hours.py`). A volunteer earns `task.vouchers_per_shift` for
   every *confirmed* booking on a shift that has *ended*. The table stores only
   redemptions (debits) and manual adjustments by event admins (± corrections).
@@ -125,7 +129,11 @@ The English UI says "vouchers". The German UI says "Marken", with the title
   - Derived earnings follow every correction automatically, just as hours do.
     Attendance (#177) then becomes a one-line change: no-show bookings stop
     counting through one shared predicate.
-- **Balances can go negative, and we accept that.** Several things lower what
+- *(Superseded by Decision G of
+  [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md):
+  earned vouchers are final and corrections are capped, so a balance never
+  goes below zero.)*
+  **Balances can go negative, and we accept that.** Several things lower what
   was earned after vouchers were spent: lowering `vouchers_per_shift`,
   deleting a past shift, or moving a shift into the future. `balance = earned
   + ledger` may then be below zero. The app shows `available = max(balance,
@@ -1127,7 +1135,9 @@ that clears `team_id` and `location_id`, call
 `crud_task_manager.remove_all_for_task`. People in charge are members of the
 source event. The voucher settings stay, because the mover is admin in both
 events and sees them. The task's earned vouchers move with it, as its hours
-already do.
+already do. *(Superseded: they stay in the source event, settled before the
+move; see Decision G of
+[`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md).)*
 
 **Regenerating shifts used to delete without a record.** Unmatched shifts
 were removed with `session.delete(shift)`, which left their bookings
@@ -1181,7 +1191,10 @@ is refused with `400 batch.wrong_task`.
 - A no-show is corrected with a negative adjustment (and an hours
   correction) until #177 exists.
 
-**Admin edits after the fact** (lowering vouchers per shift, deleting a past
+**Admin edits after the fact** *(superseded: they no longer take earned
+vouchers back, see Decision G of
+[`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md))*
+(lowering vouchers per shift, deleting a past
 shift or batch or task, moving a shift's date) can push a balance below zero.
 The app shows 0 available and refuses redemptions; the admin overview shows
 the negative number with an explanation.

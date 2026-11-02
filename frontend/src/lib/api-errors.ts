@@ -111,13 +111,20 @@ const timeConflictMessage = (problem: ProblemDetailsWithCode): string | null => 
 }
 
 /**
- * `voucher.insufficient` carries how many the volunteer has, so the redeemer
- * can pick a smaller amount instead of guessing.
+ * `voucher.insufficient` and `voucher.correction_exceeds_available` carry how
+ * many the volunteer can still redeem, so the redeemer or organiser can pick a
+ * smaller amount instead of guessing. `null` without that number.
  */
-const insufficientMessage = (problem: ProblemDetailsWithCode): string | null => {
+const AVAILABLE_MESSAGES: Record<string, string> = {
+  'voucher.insufficient': 'errorCodes.voucher.insufficient_with',
+  'voucher.correction_exceeds_available': 'errorCodes.voucher.correction_exceeds_available_with',
+}
+
+const availableMessage = (code: string, problem: ProblemDetailsWithCode): string | null => {
+  const key = AVAILABLE_MESSAGES[code]
   const available = (problem as Record<string, unknown>).available
-  if (typeof available !== 'number') return null
-  return t('errorCodes.voucher.insufficient_with', { n: available })
+  if (!key || typeof available !== 'number') return null
+  return t(key, { n: available })
 }
 
 const messageFromProblemDetails = (problem: ProblemDetailsWithCode): string => {
@@ -133,9 +140,9 @@ const messageFromProblemDetails = (problem: ProblemDetailsWithCode): string => {
     const conflict = timeConflictMessage(problem)
     if (conflict) return conflict
   }
-  if (code === 'voucher.insufficient') {
-    const insufficient = insufficientMessage(problem)
-    if (insufficient) return insufficient
+  if (code) {
+    const withAvailable = availableMessage(code, problem)
+    if (withAvailable) return withAvailable
   }
   const codeMessage = messageFromCode(code)
   if (codeMessage) return codeMessage

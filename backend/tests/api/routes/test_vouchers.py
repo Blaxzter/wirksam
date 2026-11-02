@@ -1061,6 +1061,9 @@ class TestAccounts:
         assert body["summary"]["earned"] == 3
         assert body["summary"]["available"] == 3
         assert body["summary"]["role"] == "member"
+        # One number: earned vouchers stay earned, so there is no separate
+        # balance that could go below zero.
+        assert "balance" not in body["summary"]
         (shift,) = body["shifts"]
         assert shift["task_name"] == "Aufbau"
         assert shift["completed"] is True
@@ -1080,7 +1083,9 @@ class TestAccounts:
     ) -> None:
         url = f"{_base(cast.event)}/people/{cast.volunteer.id}"
         with act_as(app, cast.admin):
-            assert (await async_client.get(url)).status_code == 200
+            r = await async_client.get(url)
+            assert r.status_code == 200
+            assert "balance" not in r.json()["summary"]
         with act_as(app, cast.volunteer):
             assert (await async_client.get(url)).status_code == 200
         with act_as(app, cast.bystander):
@@ -1129,6 +1134,7 @@ class TestAccounts:
         assert r.status_code == 200
         assert r.json()[0]["user_id"] == str(cast.volunteer.id)
         assert r.json()[0]["available"] == 3
+        assert all("balance" not in row for row in r.json())
         for user in (cast.volunteer, cast.manager):
             with act_as(app, user):
                 assert (await async_client.get(url)).status_code == 403
@@ -1164,14 +1170,19 @@ class TestCorrections:
         assert body["note"] == "Aufbau"
         assert body["actor_name"] == cast.admin.name
 
+        # 3 earned + 2: taking away 6 would go below zero, so the balance
+        # stays as it is; taking away exactly the 5 left is fine.
         r = await self._create(async_client, app, cast, amount=-6)
+        assert r.status_code == 409
+        assert _code(r) == "voucher.correction_exceeds_available"
+        assert r.json()["available"] == 5
+        r = await self._create(async_client, app, cast, amount=-5)
         assert r.status_code == 201
         with act_as(app, cast.volunteer):
             summary = (await async_client.get(f"{_base(cast.event)}/me")).json()[
                 "summary"
             ]
-        assert summary["adjusted"] == -4
-        assert summary["balance"] == -1
+        assert summary["adjusted"] == -3
         assert summary["available"] == 0
 
     @pytest.mark.parametrize(
@@ -1249,6 +1260,66 @@ class TestCorrections:
             ).status_code == 422
             assert (await async_client.delete(url)).status_code == 204
         assert await _entries(db_session, cast) == []
+
+    async def test_a_change_may_not_take_away_more_than_is_left(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """3 earned, a correction of -1 leaves 2: changing it to -10 would take
+        9 more, so it is refused; to -3 takes 2 and is fine."""
+        entry_id = (await self._create(async_client, app, cast, amount=-1)).json()["id"]
+        url = f"{_base(cast.event)}/adjustments/{entry_id}"
+        with act_as(app, cast.admin):
+            r = await async_client.patch(url, json={"amount": -10})
+            assert r.status_code == 409
+            assert _code(r) == "voucher.correction_exceeds_available"
+            assert r.json()["available"] == 2
+            # Only the note: no amount, no check.
+            r = await async_client.patch(url, json={"note": "Nur der Grund"})
+            assert r.status_code == 200
+            r = await async_client.patch(url, json={"amount": -3})
+            assert r.status_code == 200
+        (entry,) = await _entries(db_session, cast)
+        assert (entry.amount, entry.note) == (-3, "Nur der Grund")
+
+    async def test_deleting_an_addition_already_spent_is_refused(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """3 earned and 5 added, 5 redeemed at a stand: 3 are left, so the 5
+        added can no longer be taken back."""
+        entry_id = (await self._create(async_client, app, cast, amount=5)).json()["id"]
+        r = await _redeem(
+            async_client,
+            app,
+            cast,
+            cast.admin,
+            amount=5,
+            user_id=str(cast.volunteer.id),
+        )
+        assert r.status_code == 201, r.text
+        url = f"{_base(cast.event)}/adjustments/{entry_id}"
+        with act_as(app, cast.admin):
+            r = await async_client.delete(url)
+        assert r.status_code == 409
+        assert _code(r) == "voucher.correction_exceeds_available"
+        assert r.json()["available"] == 3
+        assert len(await _entries(db_session, cast)) == 2
+
+    async def test_adding_is_always_allowed(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        """Nothing to cap, even for someone with nothing left."""
+        r = await self._create(async_client, app, cast, amount=-3)
+        assert r.status_code == 201
+        r = await self._create(async_client, app, cast, amount=4)
+        assert r.status_code == 201
 
     async def test_a_redemption_cannot_be_edited(
         self, async_client: AsyncClient, app: FastAPI, cast: Cast

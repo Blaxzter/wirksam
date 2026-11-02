@@ -21,11 +21,13 @@ shift moved into the future and ending again cannot earn twice.
 ``voucher_entries`` holds what cannot be derived at all: redemptions and the
 corrections event admins make. So::
 
-    balance   = earned - redeemed + adjusted     (may be below zero)
+    balance   = earned - redeemed + adjusted
     available = max(balance, 0)
 
-Nothing takes earned vouchers back any more, but a correction can still take a
-balance below zero. The app then shows 0 available and refuses redemptions.
+Nothing takes earned vouchers back, redemptions check ``available`` and
+corrections may take away at most that much (``409
+voucher.correction_exceeds_available``), so a balance never goes below zero;
+the ``max`` only guards rows written under the old rules.
 
 Neither query filters on membership or task status. Someone who worked and then
 left still worked, and an archived task's shifts still count. What keeps that
@@ -207,7 +209,6 @@ class _Tally:
             upcoming=self.upcoming,
             redeemed=self.redeemed,
             adjusted=self.adjusted,
-            balance=self.balance,
             available=max(self.balance, 0),
         )
 

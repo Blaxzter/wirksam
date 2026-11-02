@@ -108,7 +108,6 @@ async def _summary(
         "upcoming": s.upcoming,
         "redeemed": s.redeemed,
         "adjusted": s.adjusted,
-        "balance": s.balance,
         "available": s.available,
     }
 
@@ -384,7 +383,6 @@ class TestLedger:
             "upcoming": 0,
             "redeemed": 3,
             "adjusted": 1,
-            "balance": 2,
             "available": 2,
         }
         assert (
@@ -434,7 +432,9 @@ class TestBalances:
 
         rows = await vouchers.balances(db_session, test_event.id, now=at(DAY, 20))
         row = next(r for r in rows if r.user_id == test_outsider_user.id)
-        assert row.balance == -1
+        # Written straight to the ledger, past the API's cap: the guard keeps
+        # what can be redeemed at zero.
+        assert row.adjusted == -1
         assert row.available == 0
 
 
@@ -691,7 +691,6 @@ class TestEarnedIsEarned:
             "upcoming": 0,
             "redeemed": 2,
             "adjusted": 0,
-            "balance": 0,
             "available": 0,
         }
         later = await _summary(

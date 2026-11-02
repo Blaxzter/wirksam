@@ -133,6 +133,8 @@
         "code_invalid": "Dieser Code ist ungültig. Bitte darum, den Code noch einmal zu zeigen.",
         "code_other_event": "Dieser Code gehört zu einer anderen Veranstaltung. Bitte darum, in der App zu dieser Veranstaltung zu wechseln und einen neuen Code zu zeigen.",
         "code_used": "Dieser Code wurde schon benutzt. Bitte um einen neuen.",
+        "correction_exceeds_available": "Das wäre mehr, als noch eingelöst werden kann.",
+        "correction_exceeds_available_with": "Das wäre mehr, als noch eingelöst werden kann: höchstens {n}.",
         "entry_not_editable": "Eine Einlösung lässt sich nicht ändern. Füg stattdessen eine Korrektur hinzu.",
         "entry_not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er gelöscht.",
         "insufficient": "Nicht genug Marken.",

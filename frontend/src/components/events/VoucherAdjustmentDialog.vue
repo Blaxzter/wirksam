@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Minus, Plus, Scale, TriangleAlert, X } from '@lucide/vue'
+import { Minus, Plus, Scale, Ticket, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -33,11 +33,17 @@ import EventMemberPicker from '@/components/events/EventMemberPicker.vue'
 
 import type { EventMemberRead, VoucherBalance, VoucherEntryRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { correctionTakeAwayMax } from '@/lib/vouchers'
 
 /**
  * Add or take away vouchers by hand, with a reason. The amount is always typed
  * as a positive number and the direction picked beside it, because a phone's
  * number pad often has no minus key.
+ *
+ * Taking away is capped at what the person can still redeem: a balance never
+ * goes below zero, and the server refuses anything more (`409
+ * voucher.correction_exceeds_available`), which still arrives as a toast when
+ * someone redeemed in the meantime.
  */
 const open = defineModel<boolean>('open', { required: true })
 
@@ -86,6 +92,32 @@ watch(open, (isOpen) => {
   attempted.value = false
 })
 
+/** The chosen person's vouchers now, from the overview. */
+const current = computed(() => {
+  const id = props.entry ? (props.userId ?? null) : personId.value
+  return id ? (props.balances?.find((b) => b.user_id === id) ?? null) : null
+})
+const currentName = computed(() =>
+  current.value ? (current.value.name ?? current.value.email ?? '?') : '',
+)
+/** The most "Take away" may take; `null` while nobody (or nobody known) is chosen. */
+const takeMax = computed(() =>
+  current.value ? correctionTakeAwayMax(current.value.available, props.entry?.amount ?? 0) : null,
+)
+const taking = computed(() => direction.value === 'take')
+const amountMax = computed(() =>
+  taking.value && takeMax.value !== null
+    ? Math.max(1, Math.min(MAX_ADJUSTMENT, takeMax.value))
+    : MAX_ADJUSTMENT,
+)
+
+// Switching to "Take away", or picking someone with less, brings the amount
+// down to what can be taken, so the stepper never starts past its end.
+watch([taking, takeMax], () => {
+  if (!taking.value || takeMax.value === null || takeMax.value < 1) return
+  if (amount.value !== undefined && amount.value > takeMax.value) amount.value = takeMax.value
+})
+
 const personMissing = computed(() => !isEdit.value && !personId.value)
 const amountInvalid = computed(
   () =>
@@ -94,23 +126,25 @@ const amountInvalid = computed(
     amount.value < 1 ||
     amount.value > MAX_ADJUSTMENT,
 )
-const noteMissing = computed(() => note.value.trim().length === 0)
-const valid = computed(() => !personMissing.value && !amountInvalid.value && !noteMissing.value)
-
-/** The chosen person's balance now, from the overview. */
-const current = computed(() => {
-  const id = props.entry ? (props.userId ?? null) : personId.value
-  return id ? (props.balances?.find((b) => b.user_id === id) ?? null) : null
-})
-const currentName = computed(() =>
-  current.value ? (current.value.name ?? current.value.email ?? '?') : '',
+/** Taking away more than is left, which the server would refuse. */
+const overCap = computed(
+  () =>
+    taking.value &&
+    takeMax.value !== null &&
+    amount.value !== undefined &&
+    amount.value > takeMax.value,
 )
-/** What their balance would be after saving; an edit replaces its old amount. */
-const balanceAfter = computed(() => {
-  if (!current.value || amountInvalid.value) return null
+const noteMissing = computed(() => note.value.trim().length === 0)
+const valid = computed(
+  () => !personMissing.value && !amountInvalid.value && !overCap.value && !noteMissing.value,
+)
+
+/** What they can redeem after saving; an edit replaces its old amount. */
+const availableAfter = computed(() => {
+  if (!current.value || amountInvalid.value || overCap.value) return null
   const n = amount.value as number
-  const signed = direction.value === 'take' ? -n : n
-  return current.value.balance - (props.entry?.amount ?? 0) + signed
+  const signed = taking.value ? -n : n
+  return Math.max(0, current.value.available - (props.entry?.amount ?? 0) + signed)
 })
 
 async function save() {
@@ -192,10 +226,24 @@ async function save() {
             </div>
           </template>
         </div>
-        <p v-else-if="userName" class="text-sm">
-          <span class="text-muted-foreground">{{ t('vouchers.admin.person') }}:</span>
-          {{ userName }}
-        </p>
+        <div
+          v-else-if="userName || current"
+          class="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
+          data-testid="voucher-adjustment-person-row"
+        >
+          <span class="min-w-0 flex-1 truncate text-sm font-semibold">
+            <span class="sr-only">{{ t('vouchers.admin.person') }}:</span>
+            {{ userName || currentName }}
+          </span>
+          <Badge
+            v-if="current"
+            class="shrink-0 gap-1 tabular-nums"
+            data-testid="voucher-adjustment-current"
+          >
+            <Ticket class="size-3.5" aria-hidden="true" />
+            {{ t('vouchers.available', { n: current.available }, current.available) }}
+          </Badge>
+        </div>
         <p
           v-if="showPicker && attempted && personMissing"
           class="-mt-2 text-sm text-destructive"
@@ -204,7 +252,7 @@ async function save() {
           {{ t('vouchers.admin.personRequired') }}
         </p>
         <p
-          v-if="current"
+          v-if="showPicker && current"
           class="-mt-2 text-sm text-muted-foreground"
           data-testid="voucher-adjustment-current"
         >
@@ -239,13 +287,17 @@ async function save() {
               id="voucher-adjustment-amount"
               v-model="amount"
               :min="1"
-              :max="MAX_ADJUSTMENT"
+              :max="amountMax"
               class="w-32"
               data-testid="voucher-adjustment-amount"
             >
               <NumberFieldContent>
                 <NumberFieldDecrement :aria-label="t('common.actions.decrease')" />
-                <NumberFieldInput />
+                <NumberFieldInput
+                  :aria-describedby="
+                    taking && takeMax !== null ? 'voucher-adjustment-max' : undefined
+                  "
+                />
                 <NumberFieldIncrement :aria-label="t('common.actions.increase')" />
               </NumberFieldContent>
             </NumberField>
@@ -253,16 +305,17 @@ async function save() {
           <p v-if="attempted && amountInvalid" class="text-sm text-destructive">
             {{ t('vouchers.admin.amountInvalid', { max: MAX_ADJUSTMENT }) }}
           </p>
-          <p v-else class="text-xs text-muted-foreground">{{ t('vouchers.admin.amountHint') }}</p>
           <p
-            v-if="balanceAfter !== null && balanceAfter < 0"
-            class="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-            role="status"
-            data-testid="voucher-adjustment-below-zero"
+            v-else-if="taking && takeMax !== null"
+            id="voucher-adjustment-max"
+            class="text-xs"
+            :class="overCap ? 'text-destructive' : 'text-muted-foreground'"
+            :role="overCap ? 'status' : undefined"
+            data-testid="voucher-adjustment-max"
           >
-            <TriangleAlert class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-            {{ t('vouchers.admin.belowZero', { name: currentName, n: balanceAfter }) }}
+            {{ t('vouchers.admin.takeAwayMax', { n: takeMax, name: currentName }) }}
           </p>
+          <p v-else class="text-xs text-muted-foreground">{{ t('vouchers.admin.amountHint') }}</p>
         </div>
 
         <div class="space-y-2">
@@ -287,6 +340,15 @@ async function save() {
             {{ t('vouchers.admin.noteRequired') }}
           </p>
         </div>
+
+        <p
+          v-if="availableAfter !== null"
+          class="flex items-center justify-between gap-2 rounded-lg bg-muted px-3.5 py-2.5 text-sm text-muted-foreground"
+          data-testid="voucher-adjustment-after"
+        >
+          {{ t('vouchers.admin.availableAfter') }}
+          <span class="text-lg font-bold text-foreground tabular-nums">{{ availableAfter }}</span>
+        </p>
       </ResponsiveDialogBody>
 
       <ResponsiveDialogFooter>

@@ -403,6 +403,8 @@ async def create_voucher_adjustment(
 
     For a current member, or for someone who has left but still has entries or
     bookings in the event, so an organiser can settle a former member's balance.
+    Taking away more than the person can still redeem is refused with 409
+    ``voucher.correction_exceeds_available``: a balance never goes below zero.
     """
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
@@ -411,6 +413,9 @@ async def create_voucher_adjustment(
     # The same lock as a redemption: a correction in the middle of one would
     # otherwise change the balance it is checking against.
     await crud_voucher.lock_ledger(session, event_id=event_id, user_id=body.user_id)
+    await _refuse_below_zero(
+        session, event_id=event_id, user_id=body.user_id, change=body.amount
+    )
     now = clock.utc_now()
     entry = VoucherEntry(
         event_id=event_id,
@@ -439,12 +444,23 @@ async def update_voucher_adjustment(
     session: DBDep,
     current_user: CurrentUser,
 ) -> VoucherEntry:
-    """Change a correction. Redemptions cannot be changed. Event admins only."""
+    """Change a correction. Redemptions cannot be changed. Event admins only.
+
+    A new amount that would take the person below zero is refused with 409
+    ``voucher.correction_exceeds_available``.
+    """
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
     entry = await _adjustment_or_error(session, event_id=event_id, entry_id=entry_id)
     await crud_voucher.lock_ledger(session, event_id=event_id, user_id=entry.user_id)
     data = body.model_dump(exclude_unset=True, exclude_none=True)
+    if "amount" in data:
+        await _refuse_below_zero(
+            session,
+            event_id=event_id,
+            user_id=entry.user_id,
+            change=data["amount"] - entry.amount,
+        )
     for key, value in data.items():
         setattr(entry, key, value)
     entry.updated_at = clock.utc_now()
@@ -461,13 +477,49 @@ async def delete_voucher_adjustment(
     session: DBDep,
     current_user: CurrentUser,
 ) -> None:
-    """Delete a correction. Redemptions cannot be deleted. Event admins only."""
+    """Delete a correction. Redemptions cannot be deleted. Event admins only.
+
+    Deleting a correction that added more than the person can still redeem is
+    refused with 409 ``voucher.correction_exceeds_available``: those vouchers
+    are already spent.
+    """
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
     entry = await _adjustment_or_error(session, event_id=event_id, entry_id=entry_id)
     await crud_voucher.lock_ledger(session, event_id=event_id, user_id=entry.user_id)
+    await _refuse_below_zero(
+        session, event_id=event_id, user_id=entry.user_id, change=-entry.amount
+    )
     await session.delete(entry)
     await session.flush()
+
+
+async def _refuse_below_zero(
+    session: AsyncSession,
+    *,
+    event_id: uuid.UUID,
+    user_id: uuid.UUID,
+    change: int,
+) -> None:
+    """409 ``voucher.correction_exceeds_available`` when ``change`` (what the
+    correction does to the balance, signed) would take away more than the
+    person can still redeem. Call it under ``lock_ledger``.
+
+    Adding is always allowed, also to a balance left below zero by rows
+    written under the old rules.
+    """
+    if change >= 0:
+        return
+    available = await vouchers.available_for(
+        session, event_id, user_id, now=clock.wall_clock_now()
+    )
+    if -change > available:
+        raise_problem(
+            409,
+            code="voucher.correction_exceeds_available",
+            detail=f"That would take away more than the {available} still available",
+            extensions={"available": available},
+        )
 
 
 async def _adjustment_or_error(

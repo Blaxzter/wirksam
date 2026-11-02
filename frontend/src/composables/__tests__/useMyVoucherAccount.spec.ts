@@ -31,7 +31,6 @@ function account(summary: Partial<VoucherAccount['summary']> = {}, entries = 0):
       upcoming: 0,
       redeemed: 0,
       adjusted: 0,
-      balance: 0,
       available: 0,
       ...summary,
     },
