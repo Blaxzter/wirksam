@@ -1268,10 +1268,22 @@ verantwortlich".
 
 | Key | en | de |
 |---|---|---|
-| `task.manager_added` title | You're in charge of a task | Du bist jetzt verantwortlich |
-| `task.manager_added` body | {actor} put you in charge of “{task_name}” in “{event_name}”. You can now edit the task and its shifts and see who has booked. | {actor} hat dich bei „{task_name}“ in „{event_name}“ als verantwortlich eingetragen. Du kannst die Aufgabe und ihre Schichten jetzt bearbeiten und sehen, wer gebucht hat. |
-| `task.manager_removed` title | No longer in charge | Nicht mehr verantwortlich |
-| `task.manager_removed` body | {actor} took you off “{task_name}” in “{event_name}”. You can no longer edit it. | {actor} hat dich bei „{task_name}“ in „{event_name}“ als verantwortlich ausgetragen. Du kannst die Aufgabe nicht mehr bearbeiten. |
+| `task.manager_added` title | You're now in charge of {task_name} · {event_name} | Du bist jetzt verantwortlich für {task_name} · {event_name} |
+| `task.manager_added` body | {actor} put you in charge. You can edit the task and see who has booked. | {actor} hat dich eingetragen. Du kannst die Aufgabe bearbeiten und siehst, wer gebucht hat. |
+| `task.manager_removed` title | No longer in charge of {task_name} · {event_name} | Nicht mehr verantwortlich für {task_name} · {event_name} |
+| `task.manager_removed` body | {actor} took you off this task. You can no longer edit it. | {actor} hat dich ausgetragen. Du kannst die Aufgabe nicht mehr bearbeiten. |
+
+The titles name the task, as the Inbox design does, so several of these notices
+don't read alike in the inbox or thread together as one e-mail subject
+(`get_message` formats the title as well as the body). The `task.manager_added`
+e-mail follows the EmailNamed design (`logic/notifications/in_charge_mail.py`):
+a greeting, who put the person in charge, a block with task, place, dates and
+shift count and who else is in charge, "What you can do now" (edit the task,
+see who is on shift, redeem vouchers there if it is a voucher point), the
+button "Open task" and the step-down hint. Each recipient gets their own mail
+through `NotificationService.notify(email_body=...)`, so preferences and mutes
+apply as for every notice. Its strings are in the `email` block of the backend
+locales (`open_task`, `detail_*`, `shift_count_*`, `in_charge_*`).
 
 **`notifications.json` → `notifications.types.task.*`**
 

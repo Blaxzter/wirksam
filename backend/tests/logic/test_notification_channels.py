@@ -22,8 +22,10 @@ from app.crud.push_subscription import push_subscription as crud_push
 from app.crud.telegram_binding import telegram_binding as crud_telegram
 from app.logic.notifications.channels.base import NotificationChannel
 from app.logic.notifications.channels.email import (
+    EmailBody,
     EmailChannel,
     _build_html,  # type: ignore[reportPrivateUsage]
+    build_details_html,
 )
 from app.logic.notifications.channels.push import PUSH_TIMEOUT_SECONDS, PushChannel
 from app.logic.notifications.channels.telegram import (
@@ -646,6 +648,106 @@ class TestEmailHtmlBody:
 
         assert "https://app.example.test/app/settings/notifications" in html
         assert "https://app.example.test/icon.svg" in html
+
+
+@pytest.mark.asyncio
+class TestOwnEmailBody:
+    """A mail written for one recipient (``EmailBody``) replaces the generic one."""
+
+    async def test_send_uses_the_given_text_and_html(self) -> None:
+        with (
+            _email_settings(),
+            patch.object(EmailChannel, "_smtp_send", new_callable=AsyncMock) as smtp,
+        ):
+            result = await EmailChannel().send(
+                recipient=_make_user(),
+                title="You're now in charge of Bar · Fair",
+                body="Generic body",
+                data={"task_id": "task-1"},
+                content=EmailBody(text="Own text", html="<p>Own html</p>"),
+            )
+
+        assert result is True
+        call = smtp.await_args
+        assert call is not None
+        msg = call.args[0]
+        assert msg["Subject"] == "[Wirksam Test] You're now in charge of Bar · Fair"
+        plain = msg.get_body(preferencelist=("plain",))
+        rich = msg.get_body(preferencelist=("html",))
+        assert plain is not None and rich is not None
+        assert plain.get_content().strip() == "Own text"
+        assert "<p>Own html</p>" in rich.get_content()
+        assert "Generic body" not in msg.as_string()
+
+
+class TestDetailsHtml:
+    """``build_details_html``: the layout of the "you're in charge" mail."""
+
+    def _html(
+        self,
+        *,
+        title: str = "Du bist jetzt verantwortlich für Café · Fest",
+        paragraphs: tuple[str, ...] = ("Hallo Pia,", "Anna hat dich eingetragen."),
+        details: tuple[tuple[str, str], ...] = (("Aufgabe", "Café"), ("Ort", "Foyer")),
+        items: tuple[str, ...] = ("Beschreibung ändern", "Marken einlösen"),
+        note: str = "Passt das nicht?",
+    ) -> str:
+        with _email_settings():
+            return build_details_html(
+                title=title,
+                language="de",
+                paragraphs=paragraphs,
+                details=details,
+                list_heading="Das kannst du jetzt",
+                items=items,
+                action_url="https://app.example.test/app/tasks/task-9",
+                action_label="Aufgabe öffnen",
+                note=note,
+            )
+
+    def test_renders_every_part_in_order(self) -> None:
+        html = self._html()
+
+        parts = [
+            "Du bist jetzt verantwortlich für Café · Fest",
+            "Hallo Pia,",
+            "Anna hat dich eingetragen.",
+            "Aufgabe</td>",
+            "Foyer</td>",
+            "Das kannst du jetzt",
+            "<li",
+            "https://app.example.test/app/tasks/task-9",
+            "Aufgabe öffnen",
+            "Passt das nicht?",
+            "https://app.example.test/app/settings/notifications",
+        ]
+        positions = [html.index(part) for part in parts]
+        assert positions == sorted(positions)
+        assert '<html lang="de">' in html
+        assert "Details anzeigen" not in html
+
+    def test_every_value_is_escaped(self) -> None:
+        html = self._html(
+            title="<b>T</b>",
+            paragraphs=("<b>Pia</b>",),
+            details=(("Aufgabe", "<b>Café</b>"),),
+            items=("<script>x</script>",),
+            note="<i>n</i>",
+        )
+
+        assert "<b>" not in html
+        assert "<script>" not in html
+        assert "<i>" not in html
+        assert "&lt;b&gt;Café&lt;/b&gt;" in html
+
+    def test_empty_parts_are_left_out(self) -> None:
+        html = self._html(details=(), items=(), note="")
+
+        assert "<table" not in html
+        assert "<ul" not in html
+        assert "Das kannst du jetzt" not in html
+        assert "Passt das nicht?" not in html
+        assert "Aufgabe öffnen" in html
 
 
 # ── Push ──────────────────────────────────────────────────────────

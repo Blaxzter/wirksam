@@ -1,10 +1,13 @@
 """Unit tests for notification message translations."""
 
+import datetime as dt
+
 import pytest
 
 from app.logic.notifications.messages import (
     DEFAULT_LANGUAGE,
     _resolve_lang,  # type: ignore[reportPrivateUsage]
+    date_range,
     get_email_strings,
     get_message,
     quoted_list,
@@ -74,6 +77,33 @@ class TestGetMessage:
         assert isinstance(body, str)
         assert title  # non-empty
 
+    def test_title_placeholders_are_filled(self) -> None:
+        """A title can name its task, so two such notices don't read alike."""
+        title, body = get_message(
+            "task.manager_added",
+            "de",
+            actor="Anna Berger",
+            task_name="Cafétheke",
+            event_name="Sommerfest am Fluss",
+        )
+
+        assert (
+            title == "Du bist jetzt verantwortlich für Cafétheke · Sommerfest am Fluss"
+        )
+        assert body.startswith("Anna Berger hat dich eingetragen.")
+
+    def test_braces_in_a_value_stay_as_typed_in_the_title(self) -> None:
+        """Values are never a format string, in the title as in the body."""
+        title, _ = get_message(
+            "task.manager_removed",
+            "en",
+            actor="Anna",
+            task_name="{event_name}",
+            event_name="Fair",
+        )
+
+        assert title == "No longer in charge of {event_name} · Fair"
+
 
 class TestGetEmailStrings:
     """Test get_email_strings function."""
@@ -124,3 +154,16 @@ class TestQuotedList:
     def test_braces_stay_as_typed(self) -> None:
         """Names are values, never a format string."""
         assert quoted_list(["{event_name}"], "en") == "“{event_name}”"
+
+
+class TestDateRange:
+    """The dates a mail gives, as ``booking.confirmed`` writes them."""
+
+    def test_one_day(self) -> None:
+        assert date_range(dt.date(2026, 7, 17), dt.date(2026, 7, 17)) == "17.07.2026"
+
+    def test_several_days(self) -> None:
+        assert (
+            date_range(dt.date(2026, 7, 17), dt.date(2026, 7, 19))
+            == "17.07.2026 – 19.07.2026"
+        )

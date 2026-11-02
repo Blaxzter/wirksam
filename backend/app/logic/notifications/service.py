@@ -14,7 +14,7 @@ from app.crud.notification_subscription import (
     notification_subscription as crud_subscription,
 )
 from app.logic.notifications.channels.base import NotificationChannel
-from app.logic.notifications.channels.email import EmailChannel
+from app.logic.notifications.channels.email import EmailBody, EmailChannel
 from app.logic.notifications.channels.push import PushChannel
 from app.logic.notifications.channels.telegram import TelegramChannel
 from app.models.notification import Notification
@@ -25,6 +25,9 @@ logger = get_logger(__name__)
 
 # Type alias for a factory that returns (title, body) given a language code
 MessageFactory = Callable[[str], tuple[str, str]]
+
+# Writes one recipient's e-mail in full (see ``EmailBody``).
+EmailBodyFactory = Callable[[User], EmailBody]
 
 
 class NotificationService:
@@ -49,6 +52,7 @@ class NotificationService:
         data: NotificationData | None = None,
         scope_chain: list[tuple[str, uuid.UUID]] | None = None,
         force_channels: list[str] | None = None,
+        email_body: EmailBodyFactory | None = None,
     ) -> list[Notification]:
         """Send a notification to one or more recipients.
 
@@ -58,6 +62,10 @@ class NotificationService:
         3. Create in-app Notification record
         4. Dispatch to each enabled channel (emails batched by language via BCC)
         5. Record delivery status
+
+        With ``email_body`` each recipient gets their own mail, written by it
+        (a greeting by name, details that differ per person), instead of the
+        shared BCC one. Preferences and mutes decide as for any notice.
         """
         notifications: list[Notification] = []
 
@@ -124,10 +132,22 @@ class NotificationService:
                     continue
 
                 if channel_name == "email":
-                    lang = recipient.preferred_language
-                    pending_emails.setdefault(lang, []).append(
-                        (recipient, notif, resolved_title, resolved_body)
+                    if email_body is None:
+                        lang = recipient.preferred_language
+                        pending_emails.setdefault(lang, []).append(
+                            (recipient, notif, resolved_title, resolved_body)
+                        )
+                        continue
+                    # Sent at once and gated like the batch: ``send`` itself
+                    # knows whether mail is switched on and configured.
+                    sent = await self._send_own_email(
+                        recipient=recipient,
+                        title=resolved_title,
+                        body=resolved_body,
+                        data=data,
+                        email_body=email_body,
                     )
+                    (channels_sent if sent else channels_failed).append("email")
                     continue
 
                 channel = self.channels.get(channel_name)
@@ -190,6 +210,42 @@ class NotificationService:
             await self.db.flush()
 
         return notifications
+
+    async def _send_own_email(
+        self,
+        *,
+        recipient: User,
+        title: str,
+        body: str,
+        data: NotificationData | None,
+        email_body: EmailBodyFactory,
+    ) -> bool:
+        """Send one recipient their own mail; the generic one if writing it fails.
+
+        A bug in a renderer should cost the details, not the notice.
+        """
+        channel = self.channels.get("email")
+        if not isinstance(channel, EmailChannel):
+            return False
+        content: EmailBody | None = None
+        try:
+            content = email_body(recipient)
+        except Exception:
+            logger.exception(
+                f"Writing the e-mail for {recipient.id} failed; "
+                "sending the plain notice instead"
+            )
+        try:
+            return await channel.send(
+                recipient=recipient,
+                title=title,
+                body=body,
+                data=data,
+                content=content,
+            )
+        except Exception:
+            logger.exception(f"Channel email failed for user {recipient.id}")
+            return False
 
     async def notify_admins(
         self,

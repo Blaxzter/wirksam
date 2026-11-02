@@ -1,6 +1,8 @@
 """Email notification channel using aiosmtplib."""
 
 import html
+from collections.abc import Sequence
+from dataclasses import dataclass
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -17,6 +19,21 @@ from app.schemas.notification import NotificationData
 logger = get_logger(__name__)
 
 TEMPLATE_DIR = Path(__file__).parent.parent.parent.parent / "email-templates" / "build"
+
+
+@dataclass(frozen=True)
+class EmailBody:
+    """A notification mail written for one recipient: plain text and HTML.
+
+    Most notices go out as the generic mail (title, body, one button), batched
+    per language. A type whose design asks for more, a greeting by name or a
+    block of details, renders this per recipient and hands the renderer to
+    ``NotificationService.notify(email_body=...)``. The subject stays the
+    notification title either way.
+    """
+
+    text: str
+    html: str
 
 
 class EmailChannel(NotificationChannel):
@@ -43,7 +60,9 @@ class EmailChannel(NotificationChannel):
         title: str,
         body: str,
         data: NotificationData | None = None,
+        content: EmailBody | None = None,
     ) -> bool:
+        """Send one mail; ``content`` replaces the generic text and HTML."""
         if not settings.emails_enabled:
             logger.debug("Email disabled in local environment, skipping")
             return True
@@ -63,6 +82,7 @@ class EmailChannel(NotificationChannel):
                 data=data,
                 language=recipient.preferred_language,
                 to=recipient.email,
+                content=content,
             )
             await self._smtp_send(msg)
             logger.info(f"Email sent to {recipient.email}: {title}")
@@ -127,8 +147,13 @@ class EmailChannel(NotificationChannel):
         data: NotificationData | None,
         language: str,
         to: str | None,
+        content: EmailBody | None = None,
     ) -> EmailMessage:
-        html_body = _build_html(title=title, body=body, data=data, language=language)
+        if content is None:
+            content = EmailBody(
+                text=body,
+                html=_build_html(title=title, body=body, data=data, language=language),
+            )
         from_name = settings.EMAILS_FROM_NAME or settings.PROJECT_NAME
         from_email = settings.EMAILS_FROM_EMAIL or "noreply@example.com"
 
@@ -136,8 +161,8 @@ class EmailChannel(NotificationChannel):
         msg["Subject"] = f"[{settings.PROJECT_NAME}] {title}"
         msg["From"] = f"{from_name} <{from_email}>"
         msg["To"] = to
-        msg.set_content(body)
-        msg.add_alternative(html_body, subtype="html")
+        msg.set_content(content.text)
+        msg.add_alternative(content.html, subtype="html")
         return msg
 
     async def _smtp_send(self, msg: EmailMessage) -> None:
@@ -180,26 +205,114 @@ def _build_html(
 
     action_html = ""
     if action_link:
-        action_html = f"""
-        <div style="text-align: center;">
-            <a href="{action_link}"
-               style="background-color: #1f2937; color: #ffffff; padding: 12px 28px;
-                      text-decoration: none; border-radius: 8px; display: inline-block;
-                      font-size: 14px; font-weight: 600;">
-                {email_strings["view_details"]}
-            </a>
-        </div>
-        """
-
-    logo_url = f"{frontend_url}/icon.svg"
-    preferences_url = f"{frontend_url}/app/settings/notifications"
+        action_html = _button(action_link, email_strings["view_details"])
 
     # Title and body carry user-supplied text — event and task names, and now a
     # free-text note an event admin types when cloning. Escape before the
     # interpolation below, then restore the one piece of markup this template
-    # actually wants: newlines as line breaks.
-    safe_title = html.escape(title)
+    # actually wants: newlines as line breaks. (``_card`` escapes the title.)
     safe_body = html.escape(body).replace("\n", "<br>")
+
+    content = f"""
+                    <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
+                        {safe_body}
+                    </p>
+                    {action_html}"""
+    return _card(title=title, content=content, language=language)
+
+
+def build_details_html(
+    *,
+    title: str,
+    language: str,
+    paragraphs: Sequence[str],
+    details: Sequence[tuple[str, str]],
+    list_heading: str,
+    items: Sequence[str],
+    action_url: str,
+    action_label: str,
+    note: str,
+) -> str:
+    """A notification mail with more to say than one paragraph.
+
+    Top to bottom: the opening lines (a greeting, who did what), a block of
+    label/value facts, a short list under a heading, one button and a small
+    closing note: the layout of the "you're in charge" design. Every argument
+    is plain text and escaped here; an empty ``details``, ``items`` or ``note``
+    leaves its part out.
+    """
+    opening = "".join(
+        f"""
+                    <p style="margin: 0 0 8px; color: #1f2937; font-size: 15px; line-height: 1.6;">{html.escape(text)}</p>"""
+        for text in paragraphs
+    )
+
+    details_html = ""
+    if details:
+        # A table, not a grid: mail clients keep a table's columns.
+        rows = "".join(
+            f"""
+                        <tr>
+                            <td style="padding: 4px 12px 4px 0; width: 38%; color: #6b7280; vertical-align: top;">{html.escape(label)}</td>
+                            <td style="padding: 4px 0; font-weight: 600; color: #1f2937; vertical-align: top;">{html.escape(value)}</td>
+                        </tr>"""
+            for label, value in details
+        )
+        details_html = f"""
+                    <table role="presentation" style="width: 100%; margin: 16px 0 0; border-collapse: separate;
+                                  border-spacing: 0; padding: 12px 16px; background-color: #f3f4f6;
+                                  border-radius: 10px; font-size: 14px; line-height: 1.5;">{rows}
+                    </table>"""
+
+    list_html = ""
+    if items:
+        entries = "".join(
+            f"""
+                        <li style="margin: 0 0 4px;">{html.escape(item)}</li>"""
+            for item in items
+        )
+        list_html = f"""
+                    <p style="margin: 20px 0 6px; font-weight: 700; color: #1f2937; font-size: 15px;">{html.escape(list_heading)}</p>
+                    <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 15px; line-height: 1.6;">{entries}
+                    </ul>"""
+
+    note_html = ""
+    if note:
+        note_html = f"""
+                    <p style="margin: 22px 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">{html.escape(note)}</p>"""
+
+    content = f"""{opening}{details_html}{list_html}
+                    <div style="height: 24px;"></div>
+                    {_button(action_url, action_label)}{note_html}"""
+    return _card(title=title, content=content, language=language)
+
+
+def _button(url: str, label: str) -> str:
+    """The one call to action, centred."""
+    return f"""
+        <div style="text-align: center;">
+            <a href="{html.escape(url)}"
+               style="background-color: #1f2937; color: #ffffff; padding: 12px 28px;
+                      text-decoration: none; border-radius: 8px; display: inline-block;
+                      font-size: 14px; font-weight: 600;">
+                {html.escape(label)}
+            </a>
+        </div>
+        """
+
+
+def _card(*, title: str, content: str, language: str) -> str:
+    """The frame every notification mail shares around ``content``.
+
+    The logo header, the title as the heading, and the footer that links to
+    the notification settings. ``title`` is escaped here; ``content`` is HTML
+    its builder has already escaped.
+    """
+    frontend_url = settings.FRONTEND_HOST
+    email_strings = get_email_strings(language)
+    logo_url = f"{frontend_url}/icon.svg"
+    preferences_url = f"{frontend_url}/app/settings/notifications"
+    safe_title = html.escape(title)
 
     return f"""
     <!DOCTYPE html>
@@ -221,11 +334,7 @@ def _build_html(
                 </div>
                 <!-- Body -->
                 <div style="padding: 32px 24px;">
-                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{safe_title}</h2>
-                    <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
-                        {safe_body}
-                    </p>
-                    {action_html}
+                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{safe_title}</h2>{content}
                 </div>
                 <!-- Footer -->
                 <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px;

@@ -1,5 +1,6 @@
 """Notification message translations loaded from JSON locale files."""
 
+import datetime as dt
 import json
 from pathlib import Path
 from typing import Any
@@ -25,7 +26,9 @@ def get_message(type_code: str, language: str, **kwargs: str) -> tuple[str, str]
     """Return (title, body) for a notification type in the given language.
 
     Falls back to English if the language is not found.
-    kwargs are passed to str.format() on the body template.
+    kwargs are passed to str.format() on both templates, so a title can name
+    the task it is about (``task.manager_added``) and two such notices don't
+    read the same in the inbox or thread together as one e-mail subject.
     """
     lang = _resolve_lang(language)
     msg = _messages.get(lang, _messages[DEFAULT_LANGUAGE]).get(type_code)
@@ -35,7 +38,7 @@ def get_message(type_code: str, language: str, **kwargs: str) -> tuple[str, str]
             type_code, {"title": type_code, "body": ""}
         )
 
-    title = msg["title"]
+    title = msg["title"].format(**kwargs) if kwargs else msg["title"]
     body = msg["body"].format(**kwargs) if kwargs else msg["body"]
     return title, body
 
@@ -66,6 +69,16 @@ def quoted_list(names: list[str], lang: str) -> str:
     if len(quoted) <= 1:
         return "".join(quoted)
     return ", ".join(quoted[:-1]) + last_joiner + quoted[-1]
+
+
+def date_range(first: dt.date, last: dt.date) -> str:
+    """``17.07.2026`` for one day, ``17.07.2026 – 19.07.2026`` for several.
+
+    The date format ``booking.confirmed`` uses, the same in both languages.
+    """
+    if first == last:
+        return first.strftime("%d.%m.%Y")
+    return f"{first.strftime('%d.%m.%Y')} – {last.strftime('%d.%m.%Y')}"
 
 
 def format_time_until(offset_minutes: int, lang: str) -> str:

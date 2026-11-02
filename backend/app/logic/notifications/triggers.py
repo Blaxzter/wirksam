@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import async_session
 from app.core.logger import get_logger
 from app.logic.notifications.messages import get_message
-from app.logic.notifications.service import NotificationService
+from app.logic.notifications.service import EmailBodyFactory, NotificationService
 from app.schemas.notification import NotificationData
 
 logger = get_logger(__name__)
@@ -317,6 +317,9 @@ async def _dispatch_task_manager_change(
     The data opens the task. The removal notice does so only while the task is
     published: a draft or an archived task is closed to someone who is no
     longer in charge of it, so that notice opens the event instead.
+
+    The "you're in charge" notice writes each recipient their own e-mail
+    (``in_charge_mail``): a greeting, where and when, who else runs the task.
     """
     candidates = [uid for uid in dict.fromkeys(user_ids) if uid != actor_id]
     if not candidates:
@@ -324,6 +327,7 @@ async def _dispatch_task_manager_change(
     try:
         from sqlmodel import col, select
 
+        from app.logic.notifications.in_charge_mail import load_in_charge_mail
         from app.models.event_membership import EventMembership
         from app.models.task import Task
         from app.models.user import User
@@ -373,6 +377,13 @@ async def _dispatch_task_manager_change(
             if type_code == "task.manager_added" or is_published:
                 data["task_id"] = str(task_id)
 
+            email_body: EmailBodyFactory | None = None
+            if type_code == "task.manager_added":
+                mail = await load_in_charge_mail(
+                    db, task=task, event_name=event_name, actor=actor_name
+                )
+                email_body = mail.render
+
             svc = NotificationService(db)
             await svc.notify(
                 recipient_ids=recipients,
@@ -380,6 +391,7 @@ async def _dispatch_task_manager_change(
                 message_factory=_factory,
                 data=data,
                 scope_chain=[("task", task_id), ("event", event_id)],
+                email_body=email_body,
             )
             await db.commit()
     except Exception:

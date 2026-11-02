@@ -28,12 +28,12 @@
     "body": "A new task \"{task_name}\" has been published. Check it out!"
   },
   "task.manager_added": {
-    "title": "You're in charge of a task",
-    "body": "{actor} put you in charge of “{task_name}” in “{event_name}”. You can now edit the task and its shifts and see who has booked."
+    "title": "You're now in charge of {task_name} · {event_name}",
+    "body": "{actor} put you in charge. You can edit the task and see who has booked."
   },
   "task.manager_removed": {
-    "title": "No longer in charge",
-    "body": "{actor} took you off “{task_name}” in “{event_name}”. You can no longer edit it."
+    "title": "No longer in charge of {task_name} · {event_name}",
+    "body": "{actor} took you off this task. You can no longer edit it."
   },
   "event.published": {
     "title": "New Event Published",
@@ -66,7 +66,20 @@
     "verify_cta": "Confirm email",
     "reset_cta": "Set a new password",
     "action_url_fallback": "If the button does not work, copy this link into your browser:",
-    "transactional_footer": "You received this email because it was requested for this address. If that wasn't you, no action is needed."
+    "transactional_footer": "You received this email because it was requested for this address. If that wasn't you, no action is needed.",
+    "open_task": "Open task",
+    "detail_task": "Task",
+    "detail_location": "Where",
+    "detail_when": "When",
+    "detail_also_in_charge": "Also in charge",
+    "shift_count_one": "1 shift",
+    "shift_count_other": "{n} shifts",
+    "in_charge_intro": "{actor} put you in charge of “{task_name}” at “{event_name}”.",
+    "in_charge_can_heading": "What you can do now",
+    "in_charge_can_edit": "Change the task's description and details",
+    "in_charge_can_see": "See who is on shift and get in touch with them",
+    "in_charge_can_redeem": "Redeem vouchers at “{task_name}”",
+    "in_charge_step_down": "Doesn't suit you? You can step down on the task's page."
   },
   "event.invitation": {
     "title": "Event Invitation",

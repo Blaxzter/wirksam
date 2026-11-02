@@ -18,7 +18,8 @@ code is unknown, so every database test seeds the whole code registry first via
 the ``seeded_types`` fixture.
 
 No delivery channel is ever reached: email/push/Telegram are reported as
-unconfigured and the batched email send is replaced by an ``AsyncMock``.
+unconfigured and both email sends (the batch, and the per-recipient one a
+notice with its own mail uses) are replaced by ``AsyncMock``s.
 """
 
 import datetime as dt
@@ -42,7 +43,9 @@ from app.models.event import Event
 from app.models.event_membership import EventMembership
 from app.models.event_team import EventTeam, EventTeamMember
 from app.models.notification import Notification, NotificationSubscription
+from app.models.shift import Shift
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 
 MODULE = "app.logic.notifications.triggers"
@@ -90,6 +93,11 @@ def _dispatch_env(db: AsyncSession) -> Generator[MagicMock, None, None]:
         patch(f"{SERVICE}.TelegramChannel.is_configured", return_value=False),
         patch(
             f"{SERVICE}.EmailChannel.send_batch",
+            new_callable=AsyncMock,
+            return_value=True,
+        ),
+        patch(
+            f"{SERVICE}.EmailChannel.send",
             new_callable=AsyncMock,
             return_value=True,
         ),
@@ -1039,11 +1047,12 @@ class TestDispatchTaskManagerAdded:
             )
 
         notif = await _single(db_session, "task.manager_added", test_user.id)
-        assert notif.title == "You're in charge of a task"
+        assert notif.title == (
+            "You're now in charge of Pfingsten 2026 · Kirchentags Woche 2026"
+        )
         assert notif.body == (
-            "Manager User put you in charge of “Pfingsten 2026” in "
-            "“Kirchentags Woche 2026”. You can now edit the task and its shifts "
-            "and see who has booked."
+            "Manager User put you in charge. You can edit the task and see who "
+            "has booked."
         )
         assert notif.data == {
             "task_id": str(test_task.id),
@@ -1069,10 +1078,12 @@ class TestDispatchTaskManagerAdded:
             )
 
         notif = await _single(db_session, "task.manager_added", german.id)
-        assert notif.title == "Du bist jetzt verantwortlich"
-        assert notif.body.startswith(
-            "Manager User hat dich bei „Pfingsten 2026“ in „Kirchentags Woche "
-            "2026“ als verantwortlich eingetragen."
+        assert notif.title == (
+            "Du bist jetzt verantwortlich für Pfingsten 2026 · Kirchentags Woche 2026"
+        )
+        assert notif.body == (
+            "Manager User hat dich eingetragen. Du kannst die Aufgabe bearbeiten "
+            "und siehst, wer gebucht hat."
         )
 
     async def test_leaves_out_the_actor_suspended_accounts_and_non_members(
@@ -1166,7 +1177,7 @@ class TestDispatchTaskManagerAdded:
             )
 
         notif = await _single(db_session, "task.manager_added", test_user.id)
-        assert notif.body.startswith("Someone put you in charge of “Pfingsten 2026”")
+        assert notif.body.startswith("Someone put you in charge.")
 
     async def test_an_actor_without_a_name_reads_as_their_address(
         self,
@@ -1185,7 +1196,9 @@ class TestDispatchTaskManagerAdded:
             )
 
         notif = await _single(db_session, "task.manager_added", test_user.id)
-        assert notif.body.startswith("in-charge-nameless@example.com put you in")
+        assert notif.body.startswith(
+            "in-charge-nameless@example.com put you in charge."
+        )
 
     async def test_a_deleted_task_sends_nothing(
         self,
@@ -1202,6 +1215,131 @@ class TestDispatchTaskManagerAdded:
             )
 
         assert await _rows(db_session) == []
+
+    async def test_each_person_gets_their_own_mail_with_the_details(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_event: Event,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """Greeting, place, dates, shift count and who else runs it.
+
+        Two people named at once each get a mail of their own, not one BCC
+        mail: the greeting and "also in charge" differ between them.
+        """
+        mira = await _make_user(db_session, tag="in-charge-mira")
+        await _join_event(db_session, user_id=mira.id, event_id=test_event.id)
+        test_task.location = "Foyer-Café"
+        test_task.is_voucher_point = True
+        db_session.add_all(
+            [
+                Shift(task_id=test_task.id, title="Early", date=dt.date(2026, 6, 11)),
+                Shift(task_id=test_task.id, title="Late", date=dt.date(2026, 6, 13)),
+            ]
+        )
+        for user in (test_user, mira):
+            db_session.add(
+                TaskManager(
+                    task_id=test_task.id,
+                    user_id=user.id,
+                    added_by_id=test_event_admin_user.id,
+                )
+            )
+        await db_session.flush()
+
+        with (
+            _dispatch_env(db_session),
+            patch(
+                f"{SERVICE}.EmailChannel.send",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as send,
+            patch(
+                f"{SERVICE}.EmailChannel.send_batch",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as send_batch,
+        ):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id,
+                user_ids=[test_user.id, mira.id],
+                actor_id=test_event_admin_user.id,
+            )
+
+        send_batch.assert_not_awaited()
+        mails = {
+            call.kwargs["recipient"].id: call.kwargs for call in send.await_args_list
+        }
+        assert set(mails) == {test_user.id, mira.id}
+        mine = mails[test_user.id]
+        assert mine["title"] == (
+            "You're now in charge of Pfingsten 2026 · Kirchentags Woche 2026"
+        )
+        text = mine["content"].text
+        assert text.startswith(
+            "Hi Test User,\n\nManager User put you in charge of “Pfingsten 2026” "
+            "at “Kirchentags Woche 2026”."
+        )
+        assert "Where: Foyer-Café" in text
+        assert "When: 11.06.2026 – 13.06.2026 · 2 shifts" in text
+        assert "Also in charge: User in-charge-mira" in text
+        assert "Redeem vouchers at “Pfingsten 2026”" in text
+        assert f"/app/tasks/{test_task.id}" in text
+        assert "Also in charge: Test User" in mails[mira.id]["content"].text
+        for notif in await _rows(db_session, "task.manager_added"):
+            assert "email" in notif.channels_sent
+
+    async def test_the_removal_notice_keeps_the_plain_mail(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """Only "you're in charge" has its own mail; removal is the plain one.
+
+        Removal sends no e-mail by default, so the person switches it on first.
+        """
+        notif_type = await crud_notification_type.get_by_code(
+            db_session, "task.manager_removed"
+        )
+        assert notif_type is not None
+        db_session.add(
+            NotificationSubscription(
+                user_id=test_user.id,
+                notification_type_id=notif_type.id,
+                scope_type="global",
+                email_enabled=True,
+                push_enabled=True,
+            )
+        )
+        await db_session.flush()
+
+        with (
+            _dispatch_env(db_session),
+            patch(
+                f"{SERVICE}.EmailChannel.send",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as send,
+            patch(
+                f"{SERVICE}.EmailChannel.send_batch",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as send_batch,
+        ):
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_task.id,
+                user_id=test_user.id,
+                actor_id=test_event_admin_user.id,
+            )
+
+        send.assert_not_awaited()
+        send_batch.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -1224,10 +1362,11 @@ class TestDispatchTaskManagerRemoved:
             )
 
         notif = await _single(db_session, "task.manager_removed", test_user.id)
-        assert notif.title == "No longer in charge"
+        assert notif.title == (
+            "No longer in charge of Pfingsten 2026 · Kirchentags Woche 2026"
+        )
         assert notif.body == (
-            "Manager User took you off “Pfingsten 2026” in “Kirchentags Woche "
-            "2026”. You can no longer edit it."
+            "Manager User took you off this task. You can no longer edit it."
         )
         assert notif.data == {
             "task_id": str(test_task.id),
@@ -1272,11 +1411,12 @@ class TestDispatchTaskManagerRemoved:
             )
 
         notif = await _single(db_session, "task.manager_removed", german.id)
-        assert notif.title == "Nicht mehr verantwortlich"
+        assert notif.title == (
+            "Nicht mehr verantwortlich für Pfingsten 2026 · Kirchentags Woche 2026"
+        )
         assert notif.body == (
-            "Manager User hat dich bei „Pfingsten 2026“ in „Kirchentags Woche "
-            "2026“ als verantwortlich ausgetragen. Du kannst die Aufgabe nicht "
-            "mehr bearbeiten."
+            "Manager User hat dich ausgetragen. Du kannst die Aufgabe nicht mehr "
+            "bearbeiten."
         )
 
     async def test_someone_who_left_the_event_is_not_told(
