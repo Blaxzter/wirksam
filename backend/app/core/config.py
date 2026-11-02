@@ -295,6 +295,18 @@ class Settings(BaseSettings):
     # a file also wakes it right after its commit; this is the backstop.
     STORAGE_GC_INTERVAL_SECONDS: int = 60
 
+    # Proxies whose X-Forwarded-For the API believes. The client is the
+    # rightmost address in that header that is not one of these, so a value
+    # the caller sends itself never counts (ProxyHeadersMiddleware in
+    # app/main.py). Comma-separated addresses and networks; the default is
+    # loopback and the private ranges Docker hands out, i.e. Traefik in the
+    # stack. Behind Cloudflare add its ranges, here and as Traefik's
+    # forwardedHeaders.trustedIPs (docs/deployment.md). uvicorn reads the same
+    # variable for its own --proxy-headers.
+    FORWARDED_ALLOW_IPS: str = (
+        "127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7"
+    )
+
     # Web Push (VAPID) configuration
     VAPID_PRIVATE_KEY: str | None = None
     VAPID_PUBLIC_KEY: str | None = None

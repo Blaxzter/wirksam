@@ -253,10 +253,14 @@ The whole limiter is a **no-op under `settings.TESTING`**. Six parallel
 Playwright workers would otherwise trip any sane per-IP limit, and it would read
 as flakiness rather than as a limit doing its job.
 
-`client_ip()` prefers the leftmost `X-Forwarded-For` entry because in production
-the API sits behind Traefik and `request.client.host` is the proxy's address for
-every caller. That header is client-supplied and spoofable — build nothing but
-rate-limit keys on it.
+The IP is the address the last trusted proxy saw. Behind Traefik the socket's
+peer is the proxy for every caller, so uvicorn's `ProxyHeadersMiddleware`
+(`app/main.py`) replaces it with the rightmost `X-Forwarded-For` entry that is
+not a trusted proxy (`FORWARDED_ALLOW_IPS`; loopback and the private ranges by
+default). Each proxy appends to that header, so whatever a caller sends itself
+ends up to the left and is never picked. Behind Cloudflare both Traefik and the
+API have to trust Cloudflare's ranges, or every caller becomes a Cloudflare edge
+server: see [deployment.md](deployment.md#behind-cloudflare).
 
 ## Bot protection on registration
 
