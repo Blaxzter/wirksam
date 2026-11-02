@@ -28,10 +28,15 @@ test.describe('My Bookings – on a phone', () => {
       const filters = box('btn-bookings-filters')
       return {
         searchWidth: search.width,
+        searchHeight: search.height,
+        filtersHeight: filters.height,
         offset: Math.abs(search.top + search.height / 2 - (filters.top + filters.height / 2)),
       }
     })
     expect(layout.searchWidth).toBeGreaterThanOrEqual(200)
+    // Both big enough to hit with a thumb.
+    expect(layout.searchHeight).toBeGreaterThanOrEqual(44)
+    expect(layout.filtersHeight).toBeGreaterThanOrEqual(44)
     // Side by side, on one row.
     expect(layout.offset).toBeLessThan(4)
   })
@@ -40,7 +45,8 @@ test.describe('My Bookings – on a phone', () => {
     adminPage: page,
   }) => {
     await page.goto('/app/bookings')
-    await page.getByTestId('btn-bookings-filters').click()
+    const button = page.getByTestId('btn-bookings-filters')
+    await button.click()
 
     const menu = page.getByTestId('bookings-filters')
     await expect(menu).toBeVisible()
@@ -49,5 +55,7 @@ test.describe('My Bookings – on a phone', () => {
     await expect(cancelled).toHaveAttribute('aria-checked', 'false')
     await cancelled.click()
     await expect(cancelled).toHaveAttribute('aria-checked', 'true')
+    // The dot on the button says so to the eye; its name says so to a screen reader.
+    await expect(button).toHaveAttribute('aria-label', /cancelled bookings shown/i)
   })
 })

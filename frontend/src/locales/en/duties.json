@@ -89,6 +89,7 @@
         "filters": {
             "all": "All",
             "allDates": "All dates",
+            "cancelledShown": "cancelled bookings shown",
             "clearDates": "Clear dates",
             "includeCancelled": "Show cancelled bookings",
             "showCancelled": "Cancelled",

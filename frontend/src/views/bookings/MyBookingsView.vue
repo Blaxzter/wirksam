@@ -93,6 +93,12 @@ const shortDateLabel = computed(() => {
   return `${short(dateFrom.value)} – ${short(dateTo.value)}`
 })
 
+/** The button's name says what the dot shows, too: cancelled bookings are in the list. */
+const filtersButtonLabel = computed(() => {
+  const label = `${t('duties.tasks.filters.title')}: ${shortDateLabel.value}`
+  return showCancelled.value ? `${label}, ${t('duties.bookings.filters.cancelledShown')}` : label
+})
+
 // Marked days for the date range picker
 const markedDays = ref<Set<string>>(new Set())
 
@@ -379,7 +385,7 @@ onMounted(loadBookings)
           v-model="searchQuery"
           data-testid="input-search"
           :placeholder="t('common.actions.search')"
-          class="pl-10"
+          class="h-11 pl-10 sm:h-9"
         />
       </div>
 
@@ -387,8 +393,8 @@ onMounted(loadBookings)
         <PopoverTrigger as-child>
           <Button
             variant="outline"
-            class="h-9 max-w-36 shrink-0 gap-1.5 px-3 sm:hidden"
-            :aria-label="`${t('duties.tasks.filters.title')}: ${shortDateLabel}`"
+            class="h-11 max-w-36 shrink-0 gap-1.5 px-3 sm:hidden"
+            :aria-label="filtersButtonLabel"
             data-testid="btn-bookings-filters"
           >
             <span class="truncate">{{ shortDateLabel }}</span>

@@ -89,6 +89,7 @@
         "filters": {
             "all": "Alle",
             "allDates": "Alle Termine",
+            "cancelledShown": "stornierte Buchungen werden angezeigt",
             "clearDates": "Datum zurücksetzen",
             "includeCancelled": "Stornierte Buchungen zeigen",
             "showCancelled": "Storniert",
