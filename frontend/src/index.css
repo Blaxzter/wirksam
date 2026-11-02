@@ -20,6 +20,8 @@
   --color-hero: var(--hero);
   --color-hero-foreground: var(--hero-foreground);
   --color-hero-speck: var(--hero-speck);
+  --color-hero-chip: var(--hero-chip);
+  --color-hero-chip-foreground: var(--hero-chip-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -520,6 +522,10 @@
   /* Decorative bubbles on the hero — warm amber to read as "sun on leaves". */
   --hero-speck: oklch(0.76 0.135 75);
   --hero-speck-opacity: 20%;
+  /* The countdown chip and day-strip block on the dashboard's next-shift card:
+     amber with dark ink in every palette. */
+  --hero-chip: oklch(0.78 0.13 75);
+  --hero-chip-foreground: oklch(0.27 0.012 60);
   --secondary: oklch(0.91 0.022 78);
   --secondary-foreground: oklch(0.27 0.012 60);
   --muted: oklch(0.91 0.022 78);
@@ -572,6 +578,10 @@
      into exactly the brown this palette exists to avoid. */
   --hero-speck: oklch(0.72 0.11 130);
   --hero-speck-opacity: 22%;
+  /* The countdown chip and day-strip block on the dashboard's next-shift card:
+     amber with dark ink in every palette. */
+  --hero-chip: oklch(0.86 0.12 88);
+  --hero-chip-foreground: oklch(0.17 0.010 155);
   --secondary: oklch(0.25 0.012 155);
   --secondary-foreground: oklch(0.93 0.010 155);
   --muted: oklch(0.25 0.012 155);
@@ -796,6 +806,10 @@
   --hero-foreground: oklch(0.97 0 0);
   --hero-speck: oklch(69.78% 0.1211 24.37);
   --hero-speck-opacity: 15%;
+  /* The countdown chip and day-strip block on the dashboard's next-shift card:
+     amber with dark ink in every palette. */
+  --hero-chip: oklch(0.83 0.14 80);
+  --hero-chip-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -837,6 +851,10 @@
   --hero-foreground: oklch(0.2 0 0);
   --hero-speck: oklch(69.78% 0.1211 24.37);
   --hero-speck-opacity: 40%;
+  /* The countdown chip and day-strip block on the dashboard's next-shift card:
+     amber with dark ink in every palette. */
+  --hero-chip: oklch(0.80 0.14 75);
+  --hero-chip-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -951,6 +969,8 @@
     --hero-foreground: oklch(0.97 0 0) !important;
     --hero-speck: #df7e78 !important;
     --hero-speck-opacity: 100% !important;
+    --hero-chip: oklch(0.78 0.13 75) !important;
+    --hero-chip-foreground: oklch(0.27 0.012 60) !important;
     --secondary: oklch(0.97 0 0) !important;
     --secondary-foreground: oklch(0.205 0 0) !important;
     --accent: oklch(0.97 0 0) !important;

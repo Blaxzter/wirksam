@@ -5,83 +5,110 @@
  * It used to be a month calendar with three date-range layers painted on it,
  * which looked like an overview and answered nothing: whether you are due
  * anywhere, and where people are still missing, both needed you to open the
- * grid and count. So the page is now two lists and a headline — what you have
+ * grid and count. So the page became two lists and a headline — what you have
  * said yes to, and what still needs somebody — with the calendar left where it
  * belongs, on the Tasks screen, behind a view switch.
+ *
+ * The layout now leads with the next shift as a big green card: when, where,
+ * how long until it starts, and on desktop a bar of the day. Beside it sits
+ * what you have (your vouchers, and on a phone the hours you signed up for).
+ * Below that comes what needs the organiser, then your whole plan day by day,
+ * then the shifts still short of people as cards you can sign up from. Phones
+ * read it top to bottom; on desktop the same DOM is laid out by grid, so
+ * every test id exists exactly once at every width. The old "Anything else"
+ * buttons went, because they repeated the navigation.
+ *
+ * The page keeps its own clock, ticking once a minute, which the countdown,
+ * the greeting and every "today" label read, so they stay true while the tab
+ * is left open, and a shift that ends while you look moves the card on.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
-import { ArrowRight, BookCheck, HelpCircle, Search } from '@lucide/vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useDocumentVisibility, useIntervalFn } from '@vueuse/core'
 
 import { useAuthStore } from '@/stores/auth'
 
-import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useMyVoucherAccount } from '@/composables/useMyVoucherAccount'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-
-import AttentionStrip from '@/components/dashboard/AttentionStrip.vue'
-import NextShiftCard from '@/components/dashboard/NextShiftCard.vue'
-import ShiftRow from '@/components/dashboard/ShiftRow.vue'
+import AttentionList from '@/components/dashboard/AttentionList.vue'
+import CommittedTile from '@/components/dashboard/CommittedTile.vue'
+import DashboardHeader from '@/components/dashboard/DashboardHeader.vue'
+import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton.vue'
+import DashboardVoucherCard from '@/components/dashboard/DashboardVoucherCard.vue'
+import MyPlan from '@/components/dashboard/MyPlan.vue'
+import NextShiftHero from '@/components/dashboard/NextShiftHero.vue'
+import OpenShiftsSection from '@/components/dashboard/OpenShiftsSection.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
-import MyVouchersCard from '@/components/vouchers/MyVouchersCard.vue'
+import VoucherCodeDialog from '@/components/vouchers/VoucherCodeDialog.vue'
 
-import type { DashboardFeedResponse, DashboardOpenShift, DashboardShift } from '@/client'
+import type { DashboardFeedResponse, DashboardShift } from '@/client'
 import { toastApiError } from '@/lib/api-errors'
+import { attentionItems, eventDay, greetingName } from '@/lib/dashboard'
+import { scrollToSection } from '@/lib/scroll-to-section'
+import { shiftHasEnded } from '@/lib/shift-time'
 
-const { t, locale } = useI18n()
-const router = useRouter()
-const landingEnabled = isSwitchOn(useAppConfig().LANDING_ENABLED)
 const authStore = useAuthStore()
 const { get } = useAuthenticatedClient()
+const vouchers = useMyVoucherAccount()
 
 const feed = ref<DashboardFeedResponse | null>(null)
 const loading = ref(true)
+/** Bumped per request, so an answer for an event no longer selected is dropped. */
+let feedRequest = 0
+
+// The clock the countdown, greeting and "today" labels read. Refreshed every
+// minute and whenever the tab comes back.
+const now = ref(new Date())
+useIntervalFn(() => {
+  now.value = new Date()
+}, 60_000)
+watch(useDocumentVisibility(), (visibility) => {
+  if (visibility === 'visible') now.value = new Date()
+})
 
 const detailShiftId = ref<string | null>(null)
 const showShiftDetail = ref(false)
+const codeOpen = ref(false)
 
-const todayStr = computed(() => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const myShifts = computed<DashboardShift[]>(() => feed.value?.my_shifts ?? [])
+const nextShift = computed<DashboardShift | null>(() => myShifts.value[0] ?? null)
+const hasShift = computed(() => nextShift.value !== null)
+const attention = computed(() => attentionItems(feed.value?.attention))
+const showVouchers = computed(() => vouchers.visible.value && !!vouchers.account.value)
+/** Wait for the voucher account too, so its card does not pop in after the rest. */
+const ready = computed(() => !loading.value && vouchers.settled.value)
+
+const greetName = computed(() => greetingName(authStore.profile))
+const dayOfEvent = computed(() => eventDay(authStore.selectedEvent, now.value))
+const venueMapEventId = computed(() => {
+  const event = authStore.selectedEvent
+  return event && (event.venue_plan_count ?? 0) > 0 ? event.id : null
 })
-
-const nextShift = computed<DashboardShift | null>(() => feed.value?.my_shifts[0] ?? null)
-/** Everything after the headline one — the headline is not repeated below it. */
-const laterShifts = computed<DashboardShift[]>(() => feed.value?.my_shifts.slice(1) ?? [])
-const openShifts = computed<DashboardOpenShift[]>(() => feed.value?.open_shifts ?? [])
-
-/** Rows the feed knows about but did not send, so the lists can say so. */
-const hiddenMine = computed(() =>
-  Math.max((feed.value?.my_shift_count ?? 0) - (feed.value?.my_shifts.length ?? 0), 0),
-)
-const hiddenOpen = computed(() =>
-  Math.max((feed.value?.open_shift_count ?? 0) - openShifts.value.length, 0),
-)
-
-const committedHours = computed(() => {
-  const hours = (feed.value?.my_minutes ?? 0) / 60
-  return hours.toLocaleString(locale.value, { maximumFractionDigits: 1 })
-})
+const showHeaderFindShift = computed(() => !authStore.selectedEvent?.is_expired)
 
 /**
- * A shift in some other event than the one selected, labelled so. Your own
- * duties are listed across every event you belong to — a promise to turn up
- * should not vanish because the event switcher is pointing elsewhere — and
- * without the name that list would silently mix two schedules together.
+ * The feed only sends shifts that have not started, so a running shift stays
+ * on the card ("happening now") until it ends, and then the feed is re-read
+ * and the next one moves up.
  */
-const foreignEventName = (shift: DashboardShift): string | null =>
-  shift.event_id && shift.event_id !== feed.value?.event_id ? (shift.event_name ?? null) : null
+const nextShiftOver = computed(
+  () =>
+    !!nextShift.value &&
+    shiftHasEnded(
+      nextShift.value.date,
+      nextShift.value.start_time,
+      nextShift.value.end_time,
+      now.value,
+    ),
+)
 
-async function loadFeed() {
-  loading.value = true
+async function loadFeed({ silent = false }: { silent?: boolean } = {}) {
+  const id = ++feedRequest
+  if (!silent) loading.value = true
   try {
     const res = await get<{ data: DashboardFeedResponse }>({ url: '/dashboard/feed' })
+    if (id !== feedRequest) return
     feed.value = res.data
     // Join requests waiting on this user, across every event they run.
     authStore.notifyPendingJoinRequests(res.data.pending_join_request_count ?? 0)
@@ -98,9 +125,9 @@ async function loadFeed() {
       void authStore.refreshSelectedEvent(selected.id)
     }
   } catch (error) {
-    toastApiError(error)
+    if (id === feedRequest) toastApiError(error)
   } finally {
-    loading.value = false
+    if (id === feedRequest) loading.value = false
   }
 }
 
@@ -109,227 +136,129 @@ const openShiftDetail = (shiftId: string) => {
   showShiftDetail.value = true
 }
 
-const goBrowseOpenShifts = () => router.push({ name: 'tasks', query: { hide_full: 'true' } })
+/** A booking or a team changed: the lists and the voucher balance may have too. */
+function onBookingChanged() {
+  void loadFeed({ silent: true })
+  void vouchers.reload()
+}
 
-onMounted(loadFeed)
+/**
+ * The phone's "See my plan" button. A scroll rather than a `#dashboard-plan`
+ * link, because the router-view key is the full path and a hash navigation
+ * would remount the page. Focus follows, so a keyboard or screen reader user
+ * lands where the screen went.
+ */
+function goToPlan() {
+  if (scrollToSection('dashboard-plan')) {
+    document.getElementById('dashboard-plan-title')?.focus({ preventScroll: true })
+  }
+}
+
+onMounted(() => void loadFeed())
+
+// Switching event from the header used to leave the old event's open shifts on
+// screen until the next visit.
+watch(
+  () => authStore.selectedEventId,
+  (next, prev) => {
+    if (next !== prev) void loadFeed()
+  },
+)
+
+watch(nextShiftOver, (over) => {
+  if (over) void loadFeed({ silent: true })
+})
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-6">
-    <div class="space-y-2">
-      <h1 data-testid="page-heading" class="text-2xl font-bold sm:text-3xl">
-        {{ t('dashboard.home.title') }}
-      </h1>
-      <p class="text-muted-foreground">
-        {{
-          feed?.event_name
-            ? t('dashboard.home.subtitleEvent', { event: feed.event_name })
-            : t('dashboard.home.subtitle')
-        }}
-      </p>
-    </div>
+  <div class="mx-auto max-w-[70rem] space-y-5 pt-4 pb-7 lg:space-y-6 lg:px-6 lg:pt-6 lg:pb-12">
+    <DashboardHeader
+      :now="now"
+      :name="greetName"
+      :event-day="dayOfEvent"
+      :show-find-shift="showHeaderFindShift"
+    />
 
-    <div v-if="loading" class="space-y-6">
-      <Skeleton class="h-40 w-full rounded-xl" />
-      <div class="grid gap-6 lg:grid-cols-2">
-        <Skeleton class="h-64 w-full rounded-xl" />
-        <Skeleton class="h-64 w-full rounded-xl" />
-      </div>
-    </div>
+    <DashboardSkeleton v-if="!ready" />
 
     <template v-else>
-      <!-- Organisers only: the backend sends nothing here for a plain member. -->
-      <AttentionStrip
-        v-if="feed?.attention"
-        :attention="feed.attention"
-        :event-id="feed.event_id"
-      />
+      <!-- Row 1: the next shift, and beside it what you have -->
+      <div class="grid grid-cols-2 gap-x-3 gap-y-5 lg:grid-cols-3 lg:gap-6">
+        <NextShiftHero
+          class="col-span-2"
+          :class="showVouchers ? 'lg:col-span-2' : 'lg:col-span-3'"
+          :shift="nextShift"
+          :now="now"
+          :open-places="feed?.open_places ?? 0"
+          :venue-map-event-id="venueMapEventId"
+          :current-event-id="feed?.event_id ?? null"
+          @open="openShiftDetail($event.shift_id)"
+        />
+        <DashboardVoucherCard
+          v-if="showVouchers && vouchers.account.value && vouchers.eventId.value"
+          :class="hasShift ? 'col-span-1' : 'col-span-2 lg:col-span-1'"
+          :account="vouchers.account.value"
+          :now="now"
+          :event-id="vouchers.eventId.value"
+          :expired="vouchers.isExpired.value"
+          :can-show-code="vouchers.canShowCode.value"
+          @show-code="codeOpen = true"
+        />
+        <CommittedTile
+          v-if="hasShift"
+          :class="showVouchers ? 'col-span-1' : 'col-span-2'"
+          :minutes="feed?.my_minutes ?? 0"
+          :shift-count="feed?.my_shift_count ?? 0"
+          @to-plan="goToPlan"
+        />
+      </div>
 
-      <NextShiftCard
-        :shift="nextShift"
+      <!-- Row 2: what needs the organiser, and your plan -->
+      <div
+        v-if="attention.length > 0 || hasShift"
+        class="grid gap-5 lg:grid-cols-3 lg:items-start lg:gap-6"
+      >
+        <AttentionList
+          v-if="attention.length > 0"
+          :items="attention"
+          :event-id="feed?.event_id ?? null"
+          :class="hasShift ? 'lg:col-start-3 lg:row-start-1' : 'lg:col-span-3'"
+        />
+        <MyPlan
+          v-if="hasShift"
+          :shifts="myShifts"
+          :total-count="feed?.my_shift_count ?? 0"
+          :minutes="feed?.my_minutes ?? 0"
+          :current-event-id="feed?.event_id ?? null"
+          :now="now"
+          :class="
+            attention.length > 0 ? 'lg:col-span-2 lg:col-start-1 lg:row-start-1' : 'lg:col-span-3'
+          "
+          @select="openShiftDetail"
+        />
+      </div>
+
+      <OpenShiftsSection
+        :shifts="feed?.open_shifts ?? []"
+        :total-count="feed?.open_shift_count ?? 0"
         :open-places="feed?.open_places ?? 0"
-        @open="openShiftDetail($event.shift_id)"
-        @browse="goBrowseOpenShifts"
+        :now="now"
+        :show-event-name="!feed?.event_id"
+        @select="openShiftDetail"
       />
-
-      <!-- Hides itself in an event without vouchers -->
-      <MyVouchersCard />
-
-      <!--
-        `items-start` so a short list does not stretch into a void beside a long
-        one. `min-w-0` on each card because a grid item defaults to
-        `min-width: auto` and will not shrink below its content — without it a
-        long shift title pushes the whole card past the screen on a phone.
-      -->
-      <div class="grid items-start gap-6 lg:grid-cols-2">
-        <!-- What else you have said yes to -->
-        <Card v-if="laterShifts.length > 0" data-testid="dashboard-my-shifts" class="min-w-0">
-          <CardHeader class="flex flex-row items-start justify-between gap-2 space-y-0">
-            <div class="min-w-0">
-              <CardTitle class="text-base">{{ t('dashboard.home.mine.title') }}</CardTitle>
-              <p class="mt-1 text-sm text-muted-foreground">
-                {{
-                  t(
-                    'dashboard.home.mine.summaryCount',
-                    { count: feed?.my_shift_count ?? 0 },
-                    feed?.my_shift_count ?? 0,
-                  )
-                }}<template v-if="(feed?.my_minutes ?? 0) > 0">
-                  · {{ t('dashboard.home.mine.summaryHours', { hours: committedHours }) }}
-                </template>
-              </p>
-            </div>
-            <Button
-              data-testid="btn-all-bookings"
-              variant="ghost"
-              size="sm"
-              class="shrink-0"
-              @click="router.push({ name: 'my-bookings' })"
-            >
-              {{ t('dashboard.home.mine.all') }}
-              <ArrowRight class="ml-1 h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent class="space-y-1">
-            <ShiftRow
-              v-for="shift in laterShifts"
-              :key="shift.booking_id"
-              :date="shift.date"
-              :start-time="shift.start_time"
-              :end-time="shift.end_time"
-              :title="shift.title"
-              :task-name="shift.task_name"
-              :location="shift.location"
-              :event-name="foreignEventName(shift)"
-              :highlight="shift.date === todayStr"
-              @select="openShiftDetail(shift.shift_id)"
-            />
-            <p v-if="hiddenMine > 0" class="px-2 pt-1 text-xs text-muted-foreground">
-              {{ t('dashboard.home.mine.more', { count: hiddenMine }, hiddenMine) }}
-            </p>
-          </CardContent>
-        </Card>
-
-        <!-- Where the event is still short of people -->
-        <Card
-          data-testid="dashboard-open-shifts"
-          :class="['min-w-0', laterShifts.length > 0 ? '' : 'lg:col-span-2']"
-        >
-          <CardHeader class="flex flex-row items-start justify-between gap-2 space-y-0">
-            <div class="min-w-0">
-              <CardTitle class="text-base">{{ t('dashboard.home.open.title') }}</CardTitle>
-              <p class="mt-1 text-sm text-muted-foreground">
-                <template v-if="feed && feed.open_places > 0">
-                  {{
-                    t(
-                      'dashboard.home.open.summaryPlaces',
-                      { count: feed.open_places },
-                      feed.open_places,
-                    )
-                  }}
-                  {{
-                    t(
-                      'dashboard.home.open.summaryShifts',
-                      { count: feed.open_shift_count },
-                      feed.open_shift_count,
-                    )
-                  }}
-                </template>
-                <template v-else>{{ t('dashboard.home.open.emptySummary') }}</template>
-              </p>
-            </div>
-            <Button
-              data-testid="btn-browse-open-shifts"
-              variant="ghost"
-              size="sm"
-              class="shrink-0"
-              @click="goBrowseOpenShifts"
-            >
-              {{ t('dashboard.home.open.browse') }}
-              <ArrowRight class="ml-1 h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent class="space-y-1">
-            <ShiftRow
-              v-for="shift in openShifts"
-              :key="shift.shift_id"
-              :date="shift.date"
-              :start-time="shift.start_time"
-              :end-time="shift.end_time"
-              :title="shift.title"
-              :task-name="shift.task_name"
-              :location="shift.location"
-              :highlight="shift.date === todayStr"
-              @select="openShiftDetail(shift.shift_id)"
-            >
-              <template #trailing>
-                <Badge :variant="shift.taken === 0 ? 'warning' : 'secondary'">
-                  {{
-                    shift.taken === 0
-                      ? t('dashboard.home.open.nobodyYet')
-                      : t(
-                          'dashboard.home.open.placesLeft',
-                          { count: shift.places_left },
-                          shift.places_left,
-                        )
-                  }}
-                </Badge>
-              </template>
-            </ShiftRow>
-
-            <p v-if="hiddenOpen > 0" class="px-2 pt-1 text-xs text-muted-foreground">
-              {{ t('dashboard.home.open.more', { count: hiddenOpen }, hiddenOpen) }}
-            </p>
-
-            <div
-              v-if="openShifts.length === 0"
-              class="flex flex-col items-center gap-1 py-8 text-center"
-            >
-              <p class="font-medium">{{ t('dashboard.home.open.emptyTitle') }}</p>
-              <p class="text-sm text-muted-foreground">{{ t('dashboard.home.open.emptyBody') }}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <!-- Quick Actions -->
-      <div data-testid="dashboard-quick-actions" class="rounded-xl bg-muted/50 p-6">
-        <h2 class="mb-4 text-xl font-semibold">{{ t('dashboard.home.quickActions.title') }}</h2>
-        <div class="flex flex-wrap gap-3">
-          <Button
-            data-testid="btn-browse-tasks"
-            variant="outline"
-            @click="router.push({ name: 'tasks' })"
-          >
-            <Search class="mr-2 h-4 w-4" />
-            {{ t('dashboard.home.quickActions.browseTasks') }}
-          </Button>
-          <Button
-            data-testid="btn-my-bookings"
-            variant="outline"
-            @click="router.push({ name: 'my-bookings' })"
-          >
-            <BookCheck class="mr-2 h-4 w-4" />
-            {{ t('dashboard.home.quickActions.myBookings') }}
-          </Button>
-          <!-- The walkthrough lives on the landing page, which a deployment can switch off. -->
-          <Button
-            v-if="landingEnabled"
-            variant="outline"
-            @click="router.push({ name: 'landing', hash: '#how-it-works' })"
-          >
-            <HelpCircle class="mr-2 h-4 w-4" />
-            {{ t('dashboard.home.quickActions.howItWorks') }}
-          </Button>
-        </div>
-      </div>
     </template>
 
     <ShiftDetailDialog
       v-model:open="showShiftDetail"
       :shift-id="detailShiftId"
-      @booking-updated="loadFeed"
-      @team-joined="loadFeed"
+      @booking-updated="onBookingChanged"
+      @team-joined="onBookingChanged"
+    />
+    <VoucherCodeDialog
+      v-if="vouchers.eventId.value"
+      v-model:open="codeOpen"
+      :event-id="vouchers.eventId.value"
+      @redeemed="vouchers.reload"
     />
   </div>
 </template>

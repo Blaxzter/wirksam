@@ -1,55 +1,88 @@
 {
     "home": {
         "attention": {
-            "draftTasks": "1 job is still a draft | {count} jobs are still drafts",
-            "emptyShifts": "1 shift in the next {days} days has nobody on it | {count} shifts in the next {days} days have nobody on them",
-            "joinRequests": "1 person is waiting to join | {count} people are waiting to join",
-            "shortShifts": "1 shift in the next {days} days is short of people | {count} shifts in the next {days} days are short of people",
+            "draftTasks": "Job is still a draft | Jobs are still drafts",
+            "emptyShifts": "Shift in the next {days} days has nobody on it | Shifts in the next {days} days have nobody on them",
+            "joinRequests": "Person is waiting to join | People are waiting to join",
+            "shortShifts": "Shift in the next {days} days is short of people | Shifts in the next {days} days are short of people",
+            "subtitle": "Only organisers see this",
+            "teamRequests": "Team request is waiting for you | Team requests are waiting for you",
             "title": "Needs your attention"
+        },
+        "committed": {
+            "hours": "{hours} h",
+            "inShifts": "in 1 shift | in {count} shifts",
+            "shifts": "1 shift | {count} shifts",
+            "title": "Signed up",
+            "toPlan": "See my plan"
+        },
+        "dayOfEvent": "Day {day} of {total}",
+        "findShift": "Find a shift",
+        "greeting": {
+            "afternoon": "Good afternoon",
+            "evening": "Good evening",
+            "morning": "Good morning",
+            "withName": "{greeting}, {name}"
         },
         "joinRequestToast": {
             "action": "Review",
             "dismiss": "Later",
             "message": "1 person is waiting to join | {count} people are waiting to join"
         },
-        "mine": {
-            "all": "All my bookings",
-            "more": "and 1 more | and {count} more",
-            "summaryCount": "1 shift coming up | {count} shifts coming up",
-            "summaryHours": "{hours} h in total",
-            "title": "After that"
-        },
         "next": {
+            "countdown": {
+                "hours": "in {hours} h",
+                "hoursMinutes": "in {hours} h {minutes} min",
+                "minutes": "in {minutes} min",
+                "running": "happening now"
+            },
+            "dateLine": "{relative}, {date}",
             "empty": {
-                "action": "Find a shift",
                 "bodyNone": "Nothing is short of people right now. Look again once the schedule grows.",
-                "bodyOpen": "1 place is still waiting for somebody. | {count} places are still waiting for somebody.",
-                "title": "Nothing in your diary"
+                "bodyOpen": "1 place is still waiting for somebody. Pick a shift that suits you. | {count} places are still waiting for somebody. Pick a shift that suits you.",
+                "title": "Nothing booked yet"
             },
             "eyebrow": "Your next shift",
+            "onMap": "On the map",
             "open": "Open shift",
+            "strip": {
+                "hour": "{hour}:00",
+                "now": "now"
+            },
             "withOthers": "on your own | with 1 other person | with {count} other people"
         },
         "open": {
-            "browse": "Browse shifts",
+            "browseAll": "All open shifts",
             "emptyBody": "Nothing here is short of people right now.",
             "emptySummary": "Every shift is covered",
             "emptyTitle": "Everything is covered",
-            "more": "and 1 more | and {count} more",
+            "filled": "{taken} of {capacity} filled",
+            "moreCount": "({count} more)",
             "nobodyYet": "Nobody yet",
             "placesLeft": "1 place left | {count} places left",
+            "signUp": "Sign up",
+            "signUpLabel": "Sign up for {title}, {day} {time}",
+            "signUpLabelNoTime": "Sign up for {title}, {day}",
             "summaryPlaces": "1 place open | {count} places open",
             "summaryShifts": "in 1 shift | across {count} shifts",
             "title": "Still needs people"
         },
-        "quickActions": {
-            "browseTasks": "Browse jobs",
-            "howItWorks": "How it works",
-            "myBookings": "My bookings",
-            "title": "Anything else"
+        "plan": {
+            "all": "All bookings",
+            "dayHeading": "{relative} · {date}",
+            "more": "and 1 more | and {count} more",
+            "next": "Up next",
+            "noTime": "No set time",
+            "summaryHours": "{hours} h signed up",
+            "title": "Your plan"
         },
-        "subtitle": "What you have said yes to, and where help is still needed.",
-        "subtitleEvent": "What you have said yes to, and where {event} still needs people.",
-        "title": "Dashboard"
+        "vouchers": {
+            "available": "available",
+            "history": "History",
+            "title": "Your vouchers",
+            "upcomingShort": "+{n} to come | +{n} to come",
+            "upcomingTodayMany": "+{n} more after your shifts today | +{n} more after your shifts today",
+            "upcomingTodayOne": "+{n} more after your shift today | +{n} more after your shift today"
+        }
     }
 }

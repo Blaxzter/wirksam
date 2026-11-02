@@ -1,55 +1,88 @@
 {
     "home": {
         "attention": {
-            "draftTasks": "1 Aufgabe ist noch ein Entwurf | {count} Aufgaben sind noch Entwürfe",
-            "emptyShifts": "1 Schicht in den nächsten {days} Tagen hat noch niemanden | {count} Schichten in den nächsten {days} Tagen haben noch niemanden",
-            "joinRequests": "1 Person möchte mitmachen | {count} Personen möchten mitmachen",
-            "shortShifts": "1 Schicht in den nächsten {days} Tagen braucht noch Leute | {count} Schichten in den nächsten {days} Tagen brauchen noch Leute",
+            "draftTasks": "Aufgabe ist noch ein Entwurf | Aufgaben sind noch Entwürfe",
+            "emptyShifts": "Schicht in den nächsten {days} Tagen hat noch niemanden | Schichten in den nächsten {days} Tagen haben noch niemanden",
+            "joinRequests": "Person möchte mitmachen | Personen möchten mitmachen",
+            "shortShifts": "Schicht in den nächsten {days} Tagen braucht noch Leute | Schichten in den nächsten {days} Tagen brauchen noch Leute",
+            "subtitle": "Nur für die Organisation sichtbar",
+            "teamRequests": "Anfrage für ein Team wartet auf dich | Anfragen für Teams warten auf dich",
             "title": "Das wartet auf dich"
+        },
+        "committed": {
+            "hours": "{hours} Std.",
+            "inShifts": "in 1 Schicht | in {count} Schichten",
+            "shifts": "1 Schicht | {count} Schichten",
+            "title": "Zugesagt",
+            "toPlan": "Zum Plan"
+        },
+        "dayOfEvent": "Tag {day} von {total}",
+        "findShift": "Schicht finden",
+        "greeting": {
+            "afternoon": "Guten Tag",
+            "evening": "Guten Abend",
+            "morning": "Guten Morgen",
+            "withName": "{greeting}, {name}"
         },
         "joinRequestToast": {
             "action": "Ansehen",
             "dismiss": "Später",
             "message": "1 Person möchte mitmachen | {count} Personen möchten mitmachen"
         },
-        "mine": {
-            "all": "Alle meine Buchungen",
-            "more": "und 1 weitere | und {count} weitere",
-            "summaryCount": "1 Schicht steht an | {count} Schichten stehen an",
-            "summaryHours": "{hours} Std. insgesamt",
-            "title": "Danach"
-        },
         "next": {
+            "countdown": {
+                "hours": "in {hours} Std.",
+                "hoursMinutes": "in {hours} Std. {minutes} Min.",
+                "minutes": "in {minutes} Min.",
+                "running": "läuft gerade"
+            },
+            "dateLine": "{relative}, {date}",
             "empty": {
-                "action": "Schicht finden",
                 "bodyNone": "Gerade fehlt nirgends jemand. Schau wieder vorbei, wenn der Plan wächst.",
-                "bodyOpen": "1 Platz wartet noch auf jemanden. | {count} Plätze warten noch auf jemanden.",
-                "title": "Nichts eingetragen"
+                "bodyOpen": "1 Platz wartet noch auf jemanden. Such dir eine Schicht aus, die zu dir passt. | {count} Plätze warten noch auf jemanden. Such dir eine Schicht aus, die zu dir passt.",
+                "title": "Noch nichts eingetragen"
             },
             "eyebrow": "Deine nächste Schicht",
+            "onMap": "Auf dem Lageplan",
             "open": "Schicht öffnen",
+            "strip": {
+                "hour": "{hour} Uhr",
+                "now": "jetzt"
+            },
             "withOthers": "allein | mit 1 weiteren Person | mit {count} weiteren Personen"
         },
         "open": {
-            "browse": "Schichten ansehen",
+            "browseAll": "Alle offenen Schichten",
             "emptyBody": "Hier fehlt gerade nirgends jemand.",
             "emptySummary": "Alle Schichten sind besetzt",
             "emptyTitle": "Alles besetzt",
-            "more": "und 1 weitere | und {count} weitere",
+            "filled": "{taken} von {capacity} besetzt",
+            "moreCount": "({count} weitere)",
             "nobodyYet": "Noch niemand",
             "placesLeft": "1 Platz frei | {count} Plätze frei",
+            "signUp": "Eintragen",
+            "signUpLabel": "Für {title} eintragen, {day} {time}",
+            "signUpLabelNoTime": "Für {title} eintragen, {day}",
             "summaryPlaces": "1 Platz frei | {count} Plätze frei",
             "summaryShifts": "in 1 Schicht | in {count} Schichten",
             "title": "Hier fehlen noch Leute"
         },
-        "quickActions": {
-            "browseTasks": "Aufgaben ansehen",
-            "howItWorks": "So funktioniert's",
-            "myBookings": "Meine Buchungen",
-            "title": "Sonst noch"
+        "plan": {
+            "all": "Alle Buchungen",
+            "dayHeading": "{relative} · {date}",
+            "more": "und 1 weitere | und {count} weitere",
+            "next": "Als Nächstes",
+            "noTime": "Ohne Uhrzeit",
+            "summaryHours": "{hours} Std. zugesagt",
+            "title": "Dein Plan"
         },
-        "subtitle": "Wozu du Ja gesagt hast, und wo noch Leute fehlen.",
-        "subtitleEvent": "Wozu du Ja gesagt hast, und wo bei {event} noch Leute fehlen.",
-        "title": "Übersicht"
+        "vouchers": {
+            "available": "verfügbar",
+            "history": "Verlauf",
+            "title": "Deine Marken",
+            "upcomingShort": "+{n} kommt noch | +{n} kommen noch",
+            "upcomingTodayMany": "+{n} kommt nach deinen Schichten heute dazu | +{n} kommen nach deinen Schichten heute dazu",
+            "upcomingTodayOne": "+{n} kommt nach deiner Schicht heute dazu | +{n} kommen nach deiner Schicht heute dazu"
+        }
     }
 }
