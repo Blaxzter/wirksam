@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -18,6 +18,7 @@ from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic import clock
 from app.logic.locations import resolve_location
+from app.logic.notifications.triggers import dispatch_task_manager_added
 from app.logic.permissions import (
     check_shift_history,
     require_event_role,
@@ -92,8 +93,13 @@ async def create_task_with_shifts(
     payload: TaskCreateWithShifts,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ) -> TaskCreateWithShiftsResponse:
-    """Create a task with auto-generated duty shifts in a single transaction."""
+    """Create a task with auto-generated duty shifts in a single transaction.
+
+    The people named in ``manager_ids`` are told they are in charge, in one
+    queued call, except the creator if they named themselves.
+    """
     # Check access for the target event (if any)
     await require_event_role(current_user, session, payload.event_id)
     manager_ids = await _validate_manager_ids(session, payload)
@@ -197,6 +203,14 @@ async def create_task_with_shifts(
     for user_id in manager_ids:
         await crud_task_manager.add(
             session, task_id=db_task.id, user_id=user_id, added_by=current_user
+        )
+    told = [user_id for user_id in manager_ids if user_id != current_user.id]
+    if told:
+        background_tasks.add_task(
+            dispatch_task_manager_added,
+            task_id=db_task.id,
+            user_ids=told,
+            actor_id=current_user.id,
         )
 
     await session.flush()

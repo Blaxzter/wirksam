@@ -3,12 +3,16 @@
 There is no list endpoint: ``TaskRead.managers`` is the list, and the editor
 reloads the task after each change. What being in charge allows is decided in
 ``app.logic.permissions`` (``require_task_manager``).
+
+Whoever is put in charge, or taken off, by someone else hears about it
+(``task.manager_added`` / ``task.manager_removed``). The dispatchers are
+imported by name so tests can replace them on this module.
 """
 
 import uuid
 from typing import NoReturn
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, BackgroundTasks, status
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DBDep
@@ -17,6 +21,10 @@ from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
+from app.logic.notifications.triggers import (
+    dispatch_task_manager_added,
+    dispatch_task_manager_removed,
+)
 from app.logic.permissions import require_event_role
 from app.models.task import Task
 from app.schemas.task_manager import TaskManagerAdd, TaskManagerBrief
@@ -41,8 +49,12 @@ async def add_task_manager(
     body: TaskManagerAdd,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ) -> TaskManagerBrief:
-    """Put an event member in charge of this task. Event admins only."""
+    """Put an event member in charge of this task. Event admins only.
+
+    The person is told, unless they named themselves.
+    """
     task = await _get_task(session, task_id)
     await require_event_role(current_user, session, task.event_id)
     # Locked, not just read: a leave running alongside then waits for this
@@ -74,6 +86,13 @@ async def add_task_manager(
         # Someone else added the same person between the check and the insert.
         _already()
     user = await crud_user.get(session, id=body.user_id, raise_404_error=True)
+    if body.user_id != current_user.id:
+        background_tasks.add_task(
+            dispatch_task_manager_added,
+            task_id=task.id,
+            user_ids=[body.user_id],
+            actor_id=current_user.id,
+        )
     return TaskManagerBrief(
         user_id=user.id, name=user.name, avatar_etag=user.avatar_etag
     )
@@ -93,10 +112,12 @@ async def remove_task_manager(
     user_id: uuid.UUID,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ) -> None:
     """Remove someone from charge of this task.
 
-    Event admins may remove anyone; a person in charge may step down.
+    Event admins may remove anyone, and that person is told; a person in
+    charge may step down, which tells nobody.
     """
     task = await _get_task(session, task_id)
     if user_id != current_user.id:
@@ -106,4 +127,11 @@ async def remove_task_manager(
             404,
             code="task.manager_not_found",
             detail="That person is not in charge of this task",
+        )
+    if user_id != current_user.id:
+        background_tasks.add_task(
+            dispatch_task_manager_removed,
+            task_id=task.id,
+            user_id=user_id,
+            actor_id=current_user.id,
         )

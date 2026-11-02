@@ -1792,7 +1792,11 @@ Run one pytest at a time (see the memory note on the pre-commit venv sync).
   left for them: `require_task_manager` is the gate for sending, and
   `crud_task_manager.user_ids_for_task` plus the team-request recipient
   pattern (`dispatch_team_join_requested`) give the audience.
-- A notification when someone is put in charge.
+- A notification when someone is put in charge. Done since the follow-ups
+  (`task.manager_added`, and `task.manager_removed` when an organiser takes
+  someone off;
+  [`2026-11-02-people-in-charge-and-vouchers-followups.md`](2026-11-02-people-in-charge-and-vouchers-followups.md),
+  Decision A).
 - People in charge per **location** rather than per task.
 - People in charge in reporting, work hours, the venue map's draft shifts
   and `GET /tasks/active-dates`.

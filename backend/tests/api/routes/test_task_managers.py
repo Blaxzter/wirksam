@@ -22,7 +22,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
-from fastapi import FastAPI
+from fastapi import BackgroundTasks, FastAPI
 from httpx import AsyncClient, Response
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
@@ -1153,7 +1153,11 @@ async def test_a_leave_waits_for_a_grant_in_flight(test_engine: AsyncEngine) -> 
             AsyncSession(test_engine) as leaving,
         ):
             await add_task_manager(
-                task.id, TaskManagerAdd(user_id=leaver.id), granting, admin
+                task.id,
+                TaskManagerAdd(user_id=leaver.id),
+                granting,
+                admin,
+                BackgroundTasks(),
             )
 
             async def leave() -> None:

@@ -42,6 +42,7 @@ from app.models.event import Event
 from app.models.event_membership import EventMembership
 from app.models.event_team import EventTeam, EventTeamMember
 from app.models.notification import Notification, NotificationSubscription
+from app.models.task import Task
 from app.models.user import User
 
 MODULE = "app.logic.notifications.triggers"
@@ -180,13 +181,17 @@ def _all_invocations(
     user_id: uuid.UUID,
     event_id: uuid.UUID,
     invitation_id: uuid.UUID,
+    event_task_id: uuid.UUID,
+    actor_id: uuid.UUID,
 ) -> list[tuple[str, TriggerCall]]:
     """Every trigger, bound with the minimum arguments to reach its ``try``.
 
     The event-scoped triggers look up members or an invitation row *before*
     they build a NotificationService, and return early when there are none —
     so ``event_id`` and ``invitation_id`` must refer to real, populated rows
-    or the error-handling sweep would pass vacuously.
+    or the error-handling sweep would pass vacuously. The people-in-charge
+    triggers likewise need ``event_task_id``, a real task in that event, and an
+    ``actor_id`` other than ``user_id``.
     """
     slot_id = uuid.uuid4()
     task_id = uuid.uuid4()
@@ -241,6 +246,18 @@ def _all_invocations(
         (
             "dispatch_task_published",
             lambda: triggers.dispatch_task_published(task_id=task_id, task_name="Task"),
+        ),
+        (
+            "dispatch_task_manager_added",
+            lambda: triggers.dispatch_task_manager_added(
+                task_id=event_task_id, user_ids=[user_id], actor_id=actor_id
+            ),
+        ),
+        (
+            "dispatch_task_manager_removed",
+            lambda: triggers.dispatch_task_manager_removed(
+                task_id=event_task_id, user_id=user_id, actor_id=actor_id
+            ),
         ),
         (
             "dispatch_event_published",
@@ -994,6 +1011,330 @@ class TestDispatchTaskPublished:
         assert await _rows(db_session) == []
 
 
+# ── task.manager_added / task.manager_removed ─────────────────────
+
+
+@pytest.mark.asyncio
+class TestDispatchTaskManagerAdded:
+    """``task.manager_added`` tells people they now run a task.
+
+    ``test_task`` ("Pfingsten 2026") is published in ``test_event``
+    ("Kirchentags Woche 2026"); ``test_event_admin_user`` ("Manager User") is
+    the organiser who acts, ``test_user`` the member put in charge.
+    """
+
+    async def test_notifies_the_person_with_task_event_and_actor(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id,
+                user_ids=[test_user.id],
+                actor_id=test_event_admin_user.id,
+            )
+
+        notif = await _single(db_session, "task.manager_added", test_user.id)
+        assert notif.title == "You're in charge of a task"
+        assert notif.body == (
+            "Manager User put you in charge of “Pfingsten 2026” in "
+            "“Kirchentags Woche 2026”. You can now edit the task and its shifts "
+            "and see who has booked."
+        )
+        assert notif.data == {
+            "task_id": str(test_task.id),
+            "event_id": str(test_task.event_id),
+        }
+
+    async def test_german_text(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        german = await _make_user(db_session, tag="in-charge-de", language="de")
+        await _join_event(db_session, user_id=german.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id,
+                user_ids=[german.id],
+                actor_id=test_event_admin_user.id,
+            )
+
+        notif = await _single(db_session, "task.manager_added", german.id)
+        assert notif.title == "Du bist jetzt verantwortlich"
+        assert notif.body.startswith(
+            "Manager User hat dich bei „Pfingsten 2026“ in „Kirchentags Woche "
+            "2026“ als verantwortlich eingetragen."
+        )
+
+    async def test_leaves_out_the_actor_suspended_accounts_and_non_members(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_event: Event,
+        test_user: User,
+        test_event_admin_user: User,
+        test_outsider_user: User,
+    ) -> None:
+        suspended = await _make_user(
+            db_session, tag="in-charge-suspended", is_active=False
+        )
+        await _join_event(db_session, user_id=suspended.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id,
+                user_ids=[
+                    test_user.id,
+                    test_event_admin_user.id,
+                    suspended.id,
+                    test_outsider_user.id,
+                    test_user.id,
+                ],
+                actor_id=test_event_admin_user.id,
+            )
+
+        rows = await _rows(db_session, "task.manager_added")
+        assert [row.recipient_id for row in rows] == [test_user.id]
+
+    async def test_only_the_actor_returns_before_opening_a_session(
+        self,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event_admin_user: User,
+    ) -> None:
+        with _dispatch_env(db_session) as factory:
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id,
+                user_ids=[test_event_admin_user.id],
+                actor_id=test_event_admin_user.id,
+            )
+
+        factory.assert_not_called()
+
+    @pytest.mark.parametrize("scope", ["event", "task", "global"])
+    async def test_muting_silences_it(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+        scope: str,
+    ) -> None:
+        scope_ids = {
+            "event": test_task.event_id,
+            "task": test_task.id,
+            "global": None,
+        }
+        await _mute(
+            db_session,
+            user_id=test_user.id,
+            type_code="task.manager_added",
+            scope_type=scope,
+            scope_id=scope_ids[scope],
+        )
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id,
+                user_ids=[test_user.id],
+                actor_id=test_event_admin_user.id,
+            )
+
+        assert await _rows(db_session, "task.manager_added") == []
+
+    async def test_an_actor_who_is_gone_reads_as_someone(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id, user_ids=[test_user.id], actor_id=uuid.uuid4()
+            )
+
+        notif = await _single(db_session, "task.manager_added", test_user.id)
+        assert notif.body.startswith("Someone put you in charge of “Pfingsten 2026”")
+
+    async def test_an_actor_without_a_name_reads_as_their_address(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+    ) -> None:
+        nameless = await _make_user(db_session, tag="in-charge-nameless")
+        nameless.name = None
+        await db_session.flush()
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=test_task.id, user_ids=[test_user.id], actor_id=nameless.id
+            )
+
+        notif = await _single(db_session, "task.manager_added", test_user.id)
+        assert notif.body.startswith("in-charge-nameless@example.com put you in")
+
+    async def test_a_deleted_task_sends_nothing(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_added(
+                task_id=uuid.uuid4(),
+                user_ids=[test_user.id],
+                actor_id=test_event_admin_user.id,
+            )
+
+        assert await _rows(db_session) == []
+
+
+@pytest.mark.asyncio
+class TestDispatchTaskManagerRemoved:
+    """``task.manager_removed`` tells someone an organiser took them off."""
+
+    async def test_a_published_task_opens_the_task(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_task.id,
+                user_id=test_user.id,
+                actor_id=test_event_admin_user.id,
+            )
+
+        notif = await _single(db_session, "task.manager_removed", test_user.id)
+        assert notif.title == "No longer in charge"
+        assert notif.body == (
+            "Manager User took you off “Pfingsten 2026” in “Kirchentags Woche "
+            "2026”. You can no longer edit it."
+        )
+        assert notif.data == {
+            "task_id": str(test_task.id),
+            "event_id": str(test_task.event_id),
+        }
+
+    async def test_a_draft_opens_the_event_instead(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_draft_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """Someone no longer in charge of a draft can't open it."""
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_draft_task.id,
+                user_id=test_user.id,
+                actor_id=test_event_admin_user.id,
+            )
+
+        notif = await _single(db_session, "task.manager_removed", test_user.id)
+        assert notif.data == {"event_id": str(test_draft_task.event_id)}
+
+    async def test_german_text(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        german = await _make_user(db_session, tag="off-charge-de", language="de")
+        await _join_event(db_session, user_id=german.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_task.id,
+                user_id=german.id,
+                actor_id=test_event_admin_user.id,
+            )
+
+        notif = await _single(db_session, "task.manager_removed", german.id)
+        assert notif.title == "Nicht mehr verantwortlich"
+        assert notif.body == (
+            "Manager User hat dich bei „Pfingsten 2026“ in „Kirchentags Woche "
+            "2026“ als verantwortlich ausgetragen. Du kannst die Aufgabe nicht "
+            "mehr bearbeiten."
+        )
+
+    async def test_someone_who_left_the_event_is_not_told(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_outsider_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_task.id,
+                user_id=test_outsider_user.id,
+                actor_id=test_event_admin_user.id,
+            )
+
+        assert await _rows(db_session) == []
+
+    async def test_removing_yourself_returns_before_opening_a_session(
+        self,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session) as factory:
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_task.id, user_id=test_user.id, actor_id=test_user.id
+            )
+
+        factory.assert_not_called()
+
+    async def test_muting_the_event_silences_it(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_task: Task,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        await _mute(
+            db_session,
+            user_id=test_user.id,
+            type_code="task.manager_removed",
+            scope_type="event",
+            scope_id=test_task.event_id,
+        )
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_manager_removed(
+                task_id=test_task.id,
+                user_id=test_user.id,
+                actor_id=test_event_admin_user.id,
+            )
+
+        assert await _rows(db_session, "task.manager_removed") == []
+
+
 # ── event.published ───────────────────────────────────────────────
 
 
@@ -1662,6 +2003,7 @@ class TestTriggerErrorHandling:
         test_user: User,
         test_event: Event,
         test_admin_user: User,
+        test_task: Task,
     ) -> None:
         """Test each trigger's except branch with a service that blows up."""
         invitation = await crud_invitation.create(
@@ -1673,7 +2015,7 @@ class TestTriggerErrorHandling:
             expires_in_days=14,
         )
         for name, invoke in _all_invocations(
-            test_user.id, test_event.id, invitation.id
+            test_user.id, test_event.id, invitation.id, test_task.id, test_admin_user.id
         ):
             with (
                 _dispatch_env(db_session),

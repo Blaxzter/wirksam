@@ -13,6 +13,7 @@ from app.core.db import async_session
 from app.core.logger import get_logger
 from app.logic.notifications.messages import get_message
 from app.logic.notifications.service import NotificationService
+from app.schemas.notification import NotificationData
 
 logger = get_logger(__name__)
 
@@ -257,6 +258,132 @@ async def dispatch_task_published(
                 await db.commit()
     except Exception:
         logger.exception("Failed to dispatch task.published notification")
+
+
+# ── People in charge ──────────────────────────────────────────────
+
+
+async def dispatch_task_manager_added(
+    *, task_id: uuid.UUID, user_ids: list[uuid.UUID], actor_id: uuid.UUID
+) -> None:
+    """Tell people an organiser has put them in charge of a task.
+
+    Queued by ``POST /tasks/{id}/managers`` and ``POST /tasks/with-shifts``,
+    one call per task with everyone it names. Never for someone who names
+    themselves (the actor is dropped here as well as at the call sites), on
+    clone (``event.cloned`` already tells the new roster, and a notice per task
+    would bury it), or when someone accepts an invitation to be in charge
+    (they just did it themselves).
+    """
+    await _dispatch_task_manager_change(
+        type_code="task.manager_added",
+        task_id=task_id,
+        user_ids=user_ids,
+        actor_id=actor_id,
+    )
+
+
+async def dispatch_task_manager_removed(
+    *, task_id: uuid.UUID, user_id: uuid.UUID, actor_id: uuid.UUID
+) -> None:
+    """Tell someone an organiser has taken them off a task they ran.
+
+    Queued by ``DELETE /tasks/{id}/managers/{user_id}`` only when the caller
+    removes someone else. No notice when a person steps down, leaves or is
+    removed from the event (the bigger news), or when the task is deleted or
+    moved to another event: there the link would lead nowhere.
+    """
+    await _dispatch_task_manager_change(
+        type_code="task.manager_removed",
+        task_id=task_id,
+        user_ids=[user_id],
+        actor_id=actor_id,
+    )
+
+
+async def _dispatch_task_manager_change(
+    *,
+    type_code: str,
+    task_id: uuid.UUID,
+    user_ids: list[uuid.UUID],
+    actor_id: uuid.UUID,
+) -> None:
+    """Shared body of the two people-in-charge notices.
+
+    Recipients are the named people minus the actor, minus suspended accounts
+    (as ``dispatch_event_cloned`` does) and minus anyone who is no longer a
+    member of the task's event by the time this runs.
+
+    The data opens the task. The removal notice does so only while the task is
+    published: a draft or an archived task is closed to someone who is no
+    longer in charge of it, so that notice opens the event instead.
+    """
+    candidates = [uid for uid in dict.fromkeys(user_ids) if uid != actor_id]
+    if not candidates:
+        return
+    try:
+        from sqlmodel import col, select
+
+        from app.models.event_membership import EventMembership
+        from app.models.task import Task
+        from app.models.user import User
+
+        async with async_session() as db:
+            task = await db.get(Task, task_id)
+            if task is None or task.event_id is None:
+                return
+            event_id = task.event_id
+            task_name = task.name
+            is_published = task.status == "published"
+
+            eligible = set(
+                (
+                    await db.execute(
+                        select(col(User.id))
+                        .join(
+                            EventMembership,
+                            col(EventMembership.user_id) == col(User.id),
+                        )
+                        .where(
+                            col(User.id).in_(candidates),
+                            col(User.is_active) == True,  # noqa: E712
+                            col(EventMembership.event_id) == event_id,
+                        )
+                    )
+                ).scalars()
+            )
+            recipients = [uid for uid in candidates if uid in eligible]
+            if not recipients:
+                return
+
+            actor = await db.get(User, actor_id)
+            actor_name = (actor.name or actor.email) if actor else None
+            event_name = await _event_name(db, event_id)
+
+            def _factory(lang: str) -> tuple[str, str]:
+                return get_message(
+                    type_code,
+                    lang,
+                    actor=actor_name or get_message("someone", lang)[0],
+                    task_name=task_name,
+                    event_name=event_name,
+                )
+
+            data: NotificationData = {"event_id": str(event_id)}
+            if type_code == "task.manager_added" or is_published:
+                data["task_id"] = str(task_id)
+
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=recipients,
+                type_code=type_code,
+                message_factory=_factory,
+                data=data,
+                scope_chain=[("task", task_id), ("event", event_id)],
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch %s notification", type_code)
 
 
 async def dispatch_event_published(
