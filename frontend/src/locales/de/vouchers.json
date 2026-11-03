@@ -68,7 +68,7 @@
         "description": "Gelten für alle Aufgaben dieser Veranstaltung.",
         "manualHint": "Für Leute, deren Handy nicht geht: Die Person wird aus der Liste gewählt. Wer darf das?",
         "manualInCharge": "Nur Organisator:innen und Verantwortliche",
-        "manualInChargeHint": "Strenger: Für andere einlösen nur Leute, die du ausgesucht hast.",
+        "manualInChargeHint": "Strenger: Nur Leute, die du selbst ausgesucht hast, lösen für andere ein.",
         "manualOnShift": "Auch alle, die gerade an einer Einlösestelle Schicht haben",
         "manualOnShiftHint": "Praktisch an einer vollen Theke. Wer dort im Dienst ist, kann für jede Person der Veranstaltung einlösen.",
         "manualOnShiftWarning": "Das gilt für alle, die dort eine Schicht buchen. Wenn dir das zu offen ist, lass diese Schichten nur von einem Team buchen.",
