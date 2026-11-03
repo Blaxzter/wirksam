@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 34      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 232     |
+| `chromium`   | 28         | 233     |
 | `member`     | 3          | 26      |
 | `mobile`     | 5          | 19      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **448** |
+| **Total**    | **62**     | **449** |
 
 ## Inventory
 
@@ -160,7 +160,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 232 tests
+### Project `chromium` — 28 files, 233 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -207,14 +207,15 @@ Not yet covered, and not currently tracked by an issue:
   - approving lets the account in
   - rejecting asks for a reason and keeps the account
 
-#### `frontend/e2e/tests/authenticated/availability.spec.ts` — 11 tests
+#### `frontend/e2e/tests/authenticated/availability.spec.ts` — 12 tests
 
 - **Availability – page structure** (3)
   - heading and My Availability section are visible
   - admin sees the member availabilities section
   - mode picker shows all three availability types
-- **Availability – fully available** (4)
+- **Availability – fully available** (5)
   - Save button is disabled when there are no changes
+  - a mode cannot be picked before the saved one has loaded
   - can register as fully available
   - can remove availability
   - can switch from fully available to specific dates
