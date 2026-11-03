@@ -26,6 +26,7 @@
     "actions": {
         "back": "Back",
         "cancel": "Cancel",
+        "changeStatus": "Status: {status}. Change",
         "close": "Close",
         "confirm": "Confirm",
         "create": "Create",

@@ -26,6 +26,7 @@
     "actions": {
         "back": "Zurück",
         "cancel": "Abbrechen",
+        "changeStatus": "Status: {status}. Ändern",
         "close": "Schließen",
         "confirm": "Bestätigen",
         "create": "Erstellen",
