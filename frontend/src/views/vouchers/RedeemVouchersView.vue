@@ -82,9 +82,15 @@ const isInCharge = computed(
 /** Someone redeeming only because they are on shift sees just their own. */
 const seesAllEntries = computed(() => isAdmin.value || isInCharge.value)
 
+/**
+ * Who to send someone without a phone to, when the caller may not pick the
+ * person (the event keeps that with organisers and people in charge): the
+ * point's people in charge by name, or the organisers when it has none.
+ */
 const askManagers = computed(() => {
   const p = point.value
-  if (!p || p.can_redeem_manually || p.managers.length === 0) return null
+  if (!p || p.can_redeem_manually) return null
+  if (p.managers.length === 0) return t('vouchers.redeem.askOrganisers')
   const names = p.managers.map((m) => m.name || '?')
   return t('vouchers.redeem.askManagers', { names: joinNames(names, locale.value) })
 })
@@ -458,7 +464,8 @@ watch(eventId, () => {
         </CollapsibleContent>
       </Collapsible>
 
-      <!-- No phone: pick the person (organisers, people in charge, desk staff) -->
+      <!-- No phone: pick the person (organisers, people in charge, and the staff
+           on shift unless the event keeps this with those two) -->
       <div v-if="point?.can_redeem_manually" class="space-y-1">
         <Button
           variant="outline"

@@ -76,6 +76,7 @@
         "alreadyRedeemed": "Schon eingelöst: {n} Marke bei {place}, {time} | Schon eingelöst: {n} Marken bei {place}, {time}",
         "amount": "Wie viele?",
         "askManagers": "Kein Handy? Frag {names}.",
+        "askOrganisers": "Kein Handy? Frag eine:n Organisator:in.",
         "atMost": "Höchstens {n}.",
         "cameraDenied": "Der Zugriff auf die Kamera wurde verweigert. Erlaube ihn in den Browser-Einstellungen oder gib den Code ein.",
         "cameraFailed": "Die Kamera konnte nicht gestartet werden. Gib stattdessen den Code ein.",

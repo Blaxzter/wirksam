@@ -76,6 +76,7 @@
         "alreadyRedeemed": "Already redeemed: {n} voucher at {place}, {time} | Already redeemed: {n} vouchers at {place}, {time}",
         "amount": "How many?",
         "askManagers": "No phone? Ask {names}.",
+        "askOrganisers": "No phone? Ask an organiser.",
         "atMost": "At most {n}.",
         "cameraDenied": "Camera access was refused. Allow it in your browser settings, or enter the code.",
         "cameraFailed": "The camera could not be started. Enter the code instead.",
