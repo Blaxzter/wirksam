@@ -427,14 +427,14 @@ const navAdmin = computed(() => {
       v-if="navManager.length > 0"
       :items="navManager"
       :open="props.open"
-      event-label-key="navigation.sidebar.items.management.label"
+      group-label-key="navigation.sidebar.items.management.label"
       class="shrink-0 px-2 pb-2"
     />
     <NavMain
       v-if="navAdmin.length > 0"
       :items="navAdmin"
       :open="props.open"
-      event-label-key="admin.sidebar.section"
+      group-label-key="admin.sidebar.section"
       class="shrink-0 px-2 pb-2"
     />
     <SidebarFooter class="flex flex-col gap-1 p-2 pb-1">

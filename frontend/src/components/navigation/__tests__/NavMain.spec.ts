@@ -108,3 +108,47 @@ describe('NavMain: task badges', () => {
     expect(spokenLink(w, 'stage')).toBe('stage 2')
   })
 })
+
+describe('NavMain: group label', () => {
+  async function mountGroup(groupLabelKey?: string) {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { name: 'home', path: '/', component: page },
+        { name: 'tasks', path: '/tasks', component: page },
+        { name: 'task-detail', path: '/tasks/:taskId', component: page },
+      ],
+    })
+    await router.push('/')
+    await router.isReady()
+    // A group with sub-items, which needs no surrounding sidebar.
+    const items: NavItem[] = [
+      {
+        title: 'Sommerfest',
+        routeName: 'tasks',
+        isActive: true,
+        items: [task('stage', undefined)],
+      },
+    ]
+    return mount(
+      {
+        render: () => h(TooltipProvider, () => h(NavMain, { open: true, items, groupLabelKey })),
+      },
+      { global: { plugins: [i18n, router] } },
+    )
+  }
+
+  it('heads the group "Platform" when no label is given', async () => {
+    const w = await mountGroup()
+
+    expect(w.find('[data-sidebar$="-label"]').text()).toBe('Platform')
+  })
+
+  // The sidebar's management and admin groups pass their own; under a
+  // misspelt prop name all three groups read "Platform".
+  it('heads the group with the label it is given', async () => {
+    const w = await mountGroup('admin.sidebar.section')
+
+    expect(w.find('[data-sidebar$="-label"]').text()).toBe('Administration')
+  })
+})
