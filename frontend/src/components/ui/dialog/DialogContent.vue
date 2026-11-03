@@ -50,9 +50,13 @@ defineOptions({ inheritAttrs: false })
         Not stock shadcn: the ✕ stays a 16 px glyph, but an invisible 44 px
         square centred on it (`after:`) takes the tap, so a thumb need not hit
         the glyph itself. Headers keep `pr-12` clear for it.
+
+        `focus-visible` rather than `focus`, as on the drawer's ✕: a dialog
+        with no field opens with focus here, and a plain `focus:` ring drew a
+        box around it even when the dialog was opened with the mouse.
       -->
       <DialogClose
-        class="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity after:absolute after:top-1/2 after:left-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+        class="ring-offset-background focus-visible:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity after:absolute after:top-1/2 after:left-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
       >
         <X />
         <span class="sr-only">{{ t('common.actions.close') }}</span>
