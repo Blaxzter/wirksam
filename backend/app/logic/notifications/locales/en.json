@@ -79,15 +79,50 @@
     "in_charge_can_edit": "Change the task's description and details",
     "in_charge_can_see": "See who is on shift and get in touch with them",
     "in_charge_can_redeem": "Redeem vouchers at “{task_name}”",
-    "in_charge_step_down": "Doesn't suit you? You can step down on the task's page."
+    "in_charge_step_down": "Doesn't suit you? You can step down on the task's page.",
+    "invite_cta": "Create account and accept",
+    "invite_footer": "You received this e-mail because {inviter} entered your address on {project_name}. If you don't know them, you can ignore it.",
+    "invite_from": "{inviter} via {project_name}",
+    "invite_organiser": "Organising {event_name}",
+    "invite_heading": "Will you join “{event_name}”?",
+    "invite_heading_tasks": "Will you take on {tasks}?",
+    "invite_in_charge_means": "Being in charge means you can change the description and see who is on shift.",
+    "invite_in_charge_means_redeem": "Being in charge means you can change the description, see who is on shift and redeem vouchers at {points}.",
+    "invite_also_in_charge_one": "{names} is in charge too.",
+    "invite_also_in_charge_other": "{names} are in charge too.",
+    "invite_sign_in": "Already have an account? {link} with this address and the invitation will be waiting for you.",
+    "invite_sign_in_link": "Sign in",
+    "invite_decline": "Not for you? Then there's nothing to do. Without your yes you won't be put down for anything.",
+    "detail_tasks": "Tasks",
+    "detail_event": "Event"
   },
   "event.invitation": {
     "title": "Event Invitation",
     "body": "You have been invited to join “{event_name}”."
   },
+  "event.invitation.tasks": {
+    "title": "Invitation to be in charge",
+    "body": "{inviter} invited you to “{event_name}” and would like you to be in charge of {tasks}."
+  },
   "event.invitation_accepted": {
     "title": "Invitation Accepted",
     "body": "{name} joined “{event_name}”."
+  },
+  "event.invitation_accepted.tasks": {
+    "title": "Invitation Accepted",
+    "body": "{name} joined “{event_name}” and is now in charge of {tasks}."
+  },
+  "invite.email": {
+    "title": "{inviter} invites you to “{event_name}”",
+    "body": "{inviter} invites you to take part in “{event_name}”. Create an account with this e-mail address and accept, and you're in."
+  },
+  "invite.email.tasks": {
+    "title": "{inviter} asks you to take on {tasks}",
+    "body": "{inviter} asked you to be in charge of {tasks} at “{event_name}”. Create an account with this e-mail address and accept, and you're in and in charge."
+  },
+  "invite.email.expiry": {
+    "title": "",
+    "body": "The invitation is valid until {date}."
   },
   "event.join_requested": {
     "title": "Join Request",

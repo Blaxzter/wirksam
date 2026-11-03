@@ -40,6 +40,7 @@ from app.crud.notification_type import notification_type as crud_notification_ty
 from app.logic.notifications import triggers
 from app.logic.notifications.seeder import seed_notification_types
 from app.models.event import Event
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_membership import EventMembership
 from app.models.event_team import EventTeam, EventTeamMember
 from app.models.notification import Notification, NotificationSubscription
@@ -1819,14 +1820,102 @@ class TestDispatchEventInvitation:
             "token": invitation.token,
         }
 
-    async def test_address_without_an_account_creates_nothing(
+    async def test_names_the_tasks_and_carries_the_token(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_task: Task,
+        test_admin_user: User,
+    ) -> None:
+        """An invitation to be in charge says so, in the invitee's language."""
+        invitee = await _make_user(db_session, tag="invitee-de", language="de")
+        invitation = await crud_invitation.create(
+            db_session,
+            event_id=test_event.id,
+            email=invitee.email,
+            role="member",
+            invited_by_id=test_admin_user.id,
+            expires_in_days=14,
+            for_tasks_only=True,
+        )
+        db_session.add(
+            EventInvitationTask(invitation_id=invitation.id, task_id=test_task.id)
+        )
+        await db_session.flush()
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_invitation(invitation_id=invitation.id)
+
+        notif = await _single(db_session, "event.invitation", invitee.id)
+        assert notif.title == "Einladung als Verantwortliche:r"
+        assert notif.body == (
+            f"{test_admin_user.name} hat dich zu „{test_event.name}“ eingeladen "
+            f"und möchte, dass du für „{test_task.name}“ verantwortlich bist."
+        )
+        assert notif.data == {
+            "event_id": str(test_event.id),
+            "token": invitation.token,
+        }
+
+    async def test_an_address_without_an_account_gets_the_mail(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_task: Task,
+        test_admin_user: User,
+    ) -> None:
+        """Nobody to notify, so the invitation goes out as a mail of its own.
+
+        In the inviter's language, the best guess for a stranger.
+        """
+        test_admin_user.preferred_language = "de"
+        db_session.add(test_admin_user)
+        invitation = await crud_invitation.create(
+            db_session,
+            event_id=test_event.id,
+            email="stranger@example.com",
+            role="member",
+            invited_by_id=test_admin_user.id,
+            expires_in_days=14,
+            for_tasks_only=True,
+        )
+        db_session.add(
+            EventInvitationTask(invitation_id=invitation.id, task_id=test_task.id)
+        )
+        await db_session.flush()
+
+        with (
+            _dispatch_env(db_session),
+            patch(
+                "app.logic.invitation_emails.send_event_invitation_email",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as send,
+        ):
+            await triggers.dispatch_event_invitation(invitation_id=invitation.id)
+
+        assert await _rows(db_session, "event.invitation") == []
+        send.assert_awaited_once()
+        assert send.await_args is not None
+        kwargs = send.await_args.kwargs
+        assert kwargs["email"] == "stranger@example.com"
+        assert kwargs["language"] == "de"
+        assert kwargs["token"] == invitation.token
+        assert kwargs["inviter_name"] == test_admin_user.name
+        assert kwargs["event"].id == test_event.id
+        assert [t.name for t in kwargs["tasks"]] == [test_task.name]
+        assert kwargs["expires_at"] == invitation.expires_at
+
+    async def test_a_plain_invitation_without_an_account_gets_the_plain_mail(
         self,
         db_session: AsyncSession,
         seeded_types: None,
         test_event: Event,
         test_admin_user: User,
     ) -> None:
-        """Nobody to notify yet - the invite is picked up at first sign-in."""
+        """An invitation from the event settings no longer goes nowhere."""
         invitation = await crud_invitation.create(
             db_session,
             event_id=test_event.id,
@@ -1836,10 +1925,48 @@ class TestDispatchEventInvitation:
             expires_in_days=14,
         )
 
-        with _dispatch_env(db_session):
+        with (
+            _dispatch_env(db_session),
+            patch(
+                "app.logic.invitation_emails.send_event_invitation_email",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as send,
+        ):
             await triggers.dispatch_event_invitation(invitation_id=invitation.id)
 
-        assert await _rows(db_session, "event.invitation") == []
+        send.assert_awaited_once()
+        assert send.await_args is not None
+        assert send.await_args.kwargs["tasks"] == []
+        assert send.await_args.kwargs["language"] == "en"
+
+    async def test_a_withdrawn_invitation_sends_nothing(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_admin_user: User,
+    ) -> None:
+        invitation = await crud_invitation.create(
+            db_session,
+            event_id=test_event.id,
+            email="stranger@example.com",
+            role="member",
+            invited_by_id=test_admin_user.id,
+            expires_in_days=14,
+        )
+        await crud_invitation.revoke(db_session, invitation=invitation)
+
+        with (
+            _dispatch_env(db_session),
+            patch(
+                "app.logic.invitation_emails.send_event_invitation_email",
+                new_callable=AsyncMock,
+            ) as send,
+        ):
+            await triggers.dispatch_event_invitation(invitation_id=invitation.id)
+
+        send.assert_not_awaited()
 
     async def test_share_link_notifies_nobody(
         self,
@@ -1862,6 +1989,54 @@ class TestDispatchEventInvitation:
             await triggers.dispatch_event_invitation(invitation_id=invitation.id)
 
         assert await _rows(db_session, "event.invitation") == []
+
+
+@pytest.mark.asyncio
+class TestDispatchEventInvitationAccepted:
+    """``event.invitation_accepted`` tells the organisers who joined."""
+
+    async def test_names_the_tasks_accepting_put_them_in_charge_of(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_task: Task,
+        test_event_admin_user: User,
+    ) -> None:
+        joiner = await _make_user(db_session, tag="joiner")
+        await _join_event(db_session, user_id=joiner.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_invitation_accepted(
+                event_id=test_event.id, user_id=joiner.id, task_ids=[test_task.id]
+            )
+
+        notif = await _single(
+            db_session, "event.invitation_accepted", test_event_admin_user.id
+        )
+        assert notif.body == (
+            f"{joiner.name} joined “{test_event.name}” and is now in charge of "
+            f"“{test_task.name}”."
+        )
+
+    async def test_without_tasks_it_reads_as_before(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_event_admin_user: User,
+    ) -> None:
+        joiner = await _make_user(db_session, tag="joiner")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_invitation_accepted(
+                event_id=test_event.id, user_id=joiner.id
+            )
+
+        notif = await _single(
+            db_session, "event.invitation_accepted", test_event_admin_user.id
+        )
+        assert notif.body == f"{joiner.name} joined “{test_event.name}”."
 
 
 @pytest.mark.asyncio

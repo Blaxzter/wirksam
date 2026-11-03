@@ -636,31 +636,94 @@ async def dispatch_event_invitation(
     *,
     invitation_id: uuid.UUID,
 ) -> None:
-    """Tell an invitee they have been invited to an event.
+    """Send a targeted invitation to its addressee.
 
-    Only fires for people who already have an account — an invitation to an
-    address with no user behind it is picked up at first sign-in instead.
+    Queued whenever a targeted invitation is created or sent again: from the
+    event settings (one or in bulk), and when an organiser invites someone to
+    be in charge of a task (``POST /tasks/{id}/managers/invite``, "send
+    again", create-with-shifts). Each caller has already stamped
+    ``last_sent_at``, which throttles the next one.
+
+    * An address with an account gets the ``event.invitation`` notification,
+      so their preferences apply as for any notice. It names the tasks the
+      invitation asks them to run (``event.invitation.tasks``), and its data
+      carries the token, so the e-mail button and the in-app click open
+      ``/invite/{token}``: the event's own page is a 404 to a non-member of a
+      private event.
+    * An address without one gets the invitation mail directly
+      (``logic/invitation_emails.py``), in the inviter's language: there is no
+      account to notify, and without the mail the invitation would never
+      reach them.
+
+    Nothing for a share link (no addressee), an invitation that is no longer
+    open, or one into a demo event (which cannot invite anyway).
     """
     try:
+        from app.crud.event import event as crud_event
         from app.crud.event_invitation import event_invitation as crud_invitation
+        from app.crud.event_invitation_task import (
+            event_invitation_task as crud_links,
+        )
         from app.crud.user import user as crud_user
+        from app.logic.invitation_emails import (
+            load_invited_tasks,
+            send_event_invitation_email,
+        )
+        from app.logic.notifications.messages import quoted_list
 
         async with async_session() as db:
             invitation = await crud_invitation.get(db, invitation_id=invitation_id)
             if not invitation or not invitation.email:
                 return
+            if invitation.revoked_at is not None or invitation.accepted_at is not None:
+                return
+            event = await crud_event.get(db, invitation.event_id)
+            if event is None or event.is_sandbox:
+                return
+            tasks = (
+                await crud_links.tasks_for_invitations(
+                    db, invitation_ids=[invitation.id]
+                )
+            ).get(invitation.id, [])
+            inviter = (
+                await crud_user.get(db, id=invitation.invited_by_id)
+                if invitation.invited_by_id
+                else None
+            )
+            inviter_name = (inviter.name or inviter.email) if inviter else None
+
             invitee = await crud_user.get_by_email(db, email=invitation.email)
-            if not invitee:
+            if invitee is None:
+                await send_event_invitation_email(
+                    email=invitation.email,
+                    inviter_name=inviter_name,
+                    event=event,
+                    tasks=await load_invited_tasks(db, tasks),
+                    token=invitation.token,
+                    expires_at=invitation.expires_at,
+                    language=inviter.preferred_language if inviter else "en",
+                )
                 return
 
-            name = await _event_name(db, invitation.event_id)
+            event_name = event.name
+            task_names = [t.name for t in tasks]
+
+            def _factory(lang: str) -> tuple[str, str]:
+                if task_names:
+                    return get_message(
+                        "event.invitation.tasks",
+                        lang,
+                        inviter=inviter_name or get_message("someone", lang)[0],
+                        event_name=event_name,
+                        tasks=quoted_list(task_names, lang),
+                    )
+                return get_message("event.invitation", lang, event_name=event_name)
+
             svc = NotificationService(db)
             await svc.notify(
                 recipient_ids=[invitee.id],
                 type_code="event.invitation",
-                message_factory=lambda lang: get_message(
-                    "event.invitation", lang, event_name=name
-                ),
+                message_factory=_factory,
                 data={
                     "event_id": str(invitation.event_id),
                     "token": invitation.token,
@@ -676,11 +739,20 @@ async def dispatch_event_invitation_accepted(
     *,
     event_id: uuid.UUID,
     user_id: uuid.UUID,
+    task_ids: list[uuid.UUID] | None = None,
 ) -> None:
-    """Tell the event's admins that an invitee joined."""
+    """Tell the event's admins that an invitee joined.
+
+    ``task_ids`` are the tasks accepting put them in charge of; the notice
+    names them (``event.invitation_accepted.tasks``).
+    """
     try:
+        from sqlmodel import col, select
+
         from app.crud.event_membership import event_membership as crud_membership
         from app.crud.user import user as crud_user
+        from app.logic.notifications.messages import quoted_list
+        from app.models.task import Task
 
         async with async_session() as db:
             admins = await crud_membership.list_user_ids(
@@ -695,17 +767,39 @@ async def dispatch_event_invitation_accepted(
                 (joiner.name or joiner.email or "Someone") if joiner else "Someone"
             )
             name = await _event_name(db, event_id)
+            task_names: list[str] = []
+            if task_ids:
+                task_names = list(
+                    (
+                        await db.execute(
+                            select(col(Task.name))
+                            .where(col(Task.id).in_(task_ids))
+                            .order_by(col(Task.name))
+                        )
+                    ).scalars()
+                )
+
+            def _factory(lang: str) -> tuple[str, str]:
+                if task_names:
+                    return get_message(
+                        "event.invitation_accepted.tasks",
+                        lang,
+                        name=joiner_name,
+                        event_name=name,
+                        tasks=quoted_list(task_names, lang),
+                    )
+                return get_message(
+                    "event.invitation_accepted",
+                    lang,
+                    name=joiner_name,
+                    event_name=name,
+                )
 
             svc = NotificationService(db)
             await svc.notify(
                 recipient_ids=recipients,
                 type_code="event.invitation_accepted",
-                message_factory=lambda lang: get_message(
-                    "event.invitation_accepted",
-                    lang,
-                    name=joiner_name,
-                    event_name=name,
-                ),
+                message_factory=_factory,
                 data={"event_id": str(event_id), "user_id": str(user_id)},
                 scope_chain=[("event", event_id)],
             )

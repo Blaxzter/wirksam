@@ -560,6 +560,20 @@ class TestEmailHtmlBody:
         assert "/app/tasks/task-42" in html
         assert "/app/event-settings/event-7" not in html
 
+    def test_an_invitation_opens_the_invite_page(self) -> None:
+        """Test that a token wins over the event: its page is a 404 to a guest.
+
+        A private event cannot be opened by someone who has not joined it
+        yet, and the invitation is what lets them join.
+        """
+        with _email_settings():
+            html = _build_html(
+                title="T", body="B", data={"event_id": "event-7", "token": "tok-9"}
+            )
+
+        assert "https://app.example.test/invite/tok-9" in html
+        assert "/app/event-settings/event-7" not in html
+
     def test_no_action_button_without_data(self) -> None:
         """Test that no action button is rendered when there is no data."""
         with _email_settings():

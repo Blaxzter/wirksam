@@ -193,7 +193,12 @@ def _build_html(
     # Build action link if we have relevant data
     action_link = ""
     if data:
-        if "task_id" in data:
+        if "token" in data:
+            # An invitation: ``/invite/{token}`` works before the person
+            # belongs to the event, where the event's page is a 404 to them
+            # while the event is private.
+            action_link = f"{frontend_url}/invite/{data['token']}"
+        elif "task_id" in data:
             action_link = f"{frontend_url}/app/tasks/{data['task_id']}"
         elif "event_id" in data:
             # ``/app/events/{id}`` is not a route: the Vue router has
@@ -205,7 +210,7 @@ def _build_html(
 
     action_html = ""
     if action_link:
-        action_html = _button(action_link, email_strings["view_details"])
+        action_html = button_html(action_link, email_strings["view_details"])
 
     # Title and body carry user-supplied text — event and task names, and now a
     # free-text note an event admin types when cloning. Escape before the
@@ -247,22 +252,7 @@ def build_details_html(
         for text in paragraphs
     )
 
-    details_html = ""
-    if details:
-        # A table, not a grid: mail clients keep a table's columns.
-        rows = "".join(
-            f"""
-                        <tr>
-                            <td style="padding: 4px 12px 4px 0; width: 38%; color: #6b7280; vertical-align: top;">{html.escape(label)}</td>
-                            <td style="padding: 4px 0; font-weight: 600; color: #1f2937; vertical-align: top;">{html.escape(value)}</td>
-                        </tr>"""
-            for label, value in details
-        )
-        details_html = f"""
-                    <table role="presentation" style="width: 100%; margin: 16px 0 0; border-collapse: separate;
-                                  border-spacing: 0; padding: 12px 16px; background-color: #f3f4f6;
-                                  border-radius: 10px; font-size: 14px; line-height: 1.5;">{rows}
-                    </table>"""
+    details_html = details_table_html(details)
 
     list_html = ""
     if items:
@@ -283,12 +273,60 @@ def build_details_html(
 
     content = f"""{opening}{details_html}{list_html}
                     <div style="height: 24px;"></div>
-                    {_button(action_url, action_label)}{note_html}"""
+                    {button_html(action_url, action_label)}{note_html}"""
     return _card(title=title, content=content, language=language)
 
 
-def _button(url: str, label: str) -> str:
-    """The one call to action, centred."""
+def details_table_html(details: Sequence[tuple[str, str]]) -> str:
+    """A block of label/value facts; empty for no details. Escapes both."""
+    if not details:
+        return ""
+    # A table, not a grid: mail clients keep a table's columns.
+    rows = "".join(
+        f"""
+                        <tr>
+                            <td style="padding: 4px 12px 4px 0; width: 38%; color: #6b7280; vertical-align: top;">{html.escape(label)}</td>
+                            <td style="padding: 4px 0; font-weight: 600; color: #1f2937; vertical-align: top;">{html.escape(value)}</td>
+                        </tr>"""
+        for label, value in details
+    )
+    return f"""
+                    <table role="presentation" style="width: 100%; margin: 16px 0 0; border-collapse: separate;
+                                  border-spacing: 0; padding: 12px 16px; background-color: #f3f4f6;
+                                  border-radius: 10px; font-size: 14px; line-height: 1.5;">{rows}
+                    </table>"""
+
+
+def card_html(
+    *,
+    title: str,
+    content: str,
+    language: str,
+    footer_text: str,
+    show_title: bool = True,
+) -> str:
+    """The shared mail frame, for a mail that is not a notification.
+
+    Same logo header and card as every notification, but the footer says
+    ``footer_text`` (plain, escaped here) instead of pointing at notification
+    settings the recipient may not have. ``show_title`` False leaves the
+    heading to ``content``, for a layout that puts something above it.
+    """
+    footer = f"""
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                        {html.escape(footer_text)}
+                    </p>"""
+    return _card(
+        title=title,
+        content=content,
+        language=language,
+        footer_html=footer,
+        show_title=show_title,
+    )
+
+
+def button_html(url: str, label: str) -> str:
+    """The one call to action, centred. Escapes both."""
     return f"""
         <div style="text-align: center;">
             <a href="{html.escape(url)}"
@@ -301,18 +339,42 @@ def _button(url: str, label: str) -> str:
         """
 
 
-def _card(*, title: str, content: str, language: str) -> str:
+def _card(
+    *,
+    title: str,
+    content: str,
+    language: str,
+    footer_html: str | None = None,
+    show_title: bool = True,
+) -> str:
     """The frame every notification mail shares around ``content``.
 
     The logo header, the title as the heading, and the footer that links to
-    the notification settings. ``title`` is escaped here; ``content`` is HTML
-    its builder has already escaped.
+    the notification settings (or ``footer_html``, for ``card_html``).
+    ``title`` is escaped here; ``content`` and ``footer_html`` are HTML their
+    builder has already escaped.
     """
     frontend_url = settings.FRONTEND_HOST
     email_strings = get_email_strings(language)
     logo_url = f"{frontend_url}/icon.svg"
     preferences_url = f"{frontend_url}/app/settings/notifications"
     safe_title = html.escape(title)
+    heading = (
+        f"""
+                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{safe_title}</h2>"""
+        if show_title
+        else ""
+    )
+    if footer_html is None:
+        footer_html = f"""
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                        {email_strings["footer_text"]}
+                        <br />
+                        <a href="{preferences_url}"
+                           style="color: #6b7280; text-decoration: underline;">
+                            {email_strings["manage_preferences"]}
+                        </a>
+                    </p>"""
 
     return f"""
     <!DOCTYPE html>
@@ -333,20 +395,11 @@ def _card(*, title: str, content: str, language: str) -> str:
                     </div>
                 </div>
                 <!-- Body -->
-                <div style="padding: 32px 24px;">
-                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{safe_title}</h2>{content}
+                <div style="padding: 32px 24px;">{heading}{content}
                 </div>
                 <!-- Footer -->
                 <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px;
-                            background-color: #f9fafb; text-align: center;">
-                    <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
-                        {email_strings["footer_text"]}
-                        <br />
-                        <a href="{preferences_url}"
-                           style="color: #6b7280; text-decoration: underline;">
-                            {email_strings["manage_preferences"]}
-                        </a>
-                    </p>
+                            background-color: #f9fafb; text-align: center;">{footer_html}
                 </div>
             </div>
         </div>

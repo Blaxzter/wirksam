@@ -62,13 +62,21 @@ def quoted_list(names: list[str], lang: str) -> str:
     """
     if _resolve_lang(lang) == "de":
         quoted = [f"„{name}“" for name in names]
-        last_joiner = " und "
     else:
         quoted = [f"“{name}”" for name in names]
-        last_joiner = " and "
-    if len(quoted) <= 1:
-        return "".join(quoted)
-    return ", ".join(quoted[:-1]) + last_joiner + quoted[-1]
+    return name_list(quoted, lang)
+
+
+def name_list(names: list[str], lang: str) -> str:
+    """Join names as prose without quoting them: ``Mira, Pia und Jonas``.
+
+    For people, whose names need no quotes to stand out. No comma before the
+    last name in either language; one name is just that name.
+    """
+    last_joiner = " und " if _resolve_lang(lang) == "de" else " and "
+    if len(names) <= 1:
+        return "".join(names)
+    return ", ".join(names[:-1]) + last_joiner + names[-1]
 
 
 def date_range(first: dt.date, last: dt.date) -> str:
