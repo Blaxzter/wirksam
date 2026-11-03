@@ -81,7 +81,7 @@
     "in_charge_can_redeem": "bei „{task_name}“ Marken einlösen",
     "in_charge_step_down": "Passt das nicht? Du kannst die Verantwortung auf der Aufgabe abgeben.",
     "invite_cta": "Konto anlegen und zusagen",
-    "invite_footer": "Du bekommst diese Mail, weil {inviter} deine Adresse in {project_name} eingegeben hat. Wenn du die Person nicht kennst, kannst du sie ignorieren.",
+    "invite_footer": "Du bekommst diese Mail, weil {inviter} deine Adresse in {project_name} eingegeben hat. Wenn du die Person nicht kennst, kannst du diese Mail einfach ignorieren.",
     "invite_from": "{inviter} über {project_name}",
     "invite_organiser": "Organisation, {event_name}",
     "invite_heading": "Machst du bei „{event_name}“ mit?",

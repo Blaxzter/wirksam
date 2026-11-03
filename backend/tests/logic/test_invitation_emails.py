@@ -126,7 +126,11 @@ class TestTaskInvitation:
         assert "löst bei „Cafétheke“ Marken ein" in text
         assert "Mira Lindqvist und Pia Incharge sind auch dabei." in text
         assert "Die Einladung gilt bis 18.11.2026." in text
-        assert "Wenn du die Person nicht kennst" in text
+        # "diese Mail", not "sie": that could read as ignoring the person.
+        assert (
+            "Wenn du die Person nicht kennst, kannst du diese Mail einfach ignorieren."
+            in text
+        )
 
     async def test_the_button_and_the_fallback_link_open_the_invitation(self) -> None:
         html = _part(await _send(), "html")
@@ -208,13 +212,47 @@ class TestPlainInvitation:
         assert parseaddr(str(message["From"]))[0] == "Wirksam Test Sender"
 
     async def test_a_long_or_odd_inviter_name_stays_on_one_line(self) -> None:
-        message = await _send(inviter_name="Anna\r\nBcc: x@y.z " + "a" * 80)
+        message = await _send(inviter_name="Anna\r\nBcc: Berger " + "a" * 80)
         name = parseaddr(str(message["From"]))[0]
         assert "\n" not in name
         assert "\r" not in name
-        assert name.startswith("Anna Bcc: x@y.z")
+        assert name.startswith("Anna Bcc: Berger")
         assert name.endswith("über Wirksam Test")
         assert message["Bcc"] is None
+
+    @pytest.mark.parametrize(
+        "inviter_name",
+        [
+            "security@bank.example",
+            "Kundenservice <hilfe@bank.example>",
+            "bank.example",
+            "Support www.bank.de",
+            "https://bank.example/login",
+            "Anna\r\nBcc: x@y.z",
+        ],
+    )
+    async def test_a_name_that_passes_for_an_address_keeps_the_sender(
+        self, inviter_name: str
+    ) -> None:
+        """Anyone can sign up with any name and mail a stranger: one that
+        could pass for an address or a site never reaches the sender column.
+        The subject still says who invited."""
+        message = await _send(tasks=[], inviter_name=inviter_name, language="en")
+        assert parseaddr(str(message["From"])) == (
+            "Wirksam Test Sender",
+            "sender@example.test",
+        )
+        assert message["Bcc"] is None
+        assert " ".join(inviter_name.split()) in str(message["Subject"])
+
+    @pytest.mark.parametrize("inviter_name", ["J.R.R. Tolkien", "Dr. Anna Berger"])
+    async def test_initials_and_titles_still_name_the_sender(
+        self, inviter_name: str
+    ) -> None:
+        message = await _send(tasks=[], inviter_name=inviter_name, language="en")
+        assert parseaddr(str(message["From"]))[0] == (
+            f"{inviter_name} via Wirksam Test"
+        )
 
 
 @pytest.mark.asyncio

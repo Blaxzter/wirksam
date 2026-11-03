@@ -134,10 +134,27 @@ def _strings(language: str) -> dict[str, str]:
     return {**english, **get_email_strings(language)}
 
 
-def _sender_name(name: str) -> str:
-    """A name someone typed, made safe and short for a ``From`` display name."""
+#: Something a sender column could pass off as an address or a site:
+#: "@", angle brackets, "://", or a dotted name ending in letters
+#: ("paypal.com", "www.bank.de"). Initials like "J.R.R. Tolkien" don't match.
+_ADDRESS_LIKE = re.compile(
+    r"[@<>]|://|[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b"
+)
+
+
+def _sender_name(name: str) -> str | None:
+    """A name someone typed, made safe and short for a ``From`` display name.
+
+    ``None`` keeps the default sender. Anyone can sign up with any name and
+    mail an address that never signed up, so a name that could pass for an
+    address or a domain ("security@bank.example", "bank.example") never
+    reaches the sender column, where it would sit right before our own
+    address. The subject and the body still name the inviter as typed.
+    """
     flat = re.sub(r"[\x00-\x1f\x7f]+", " ", name)
     flat = " ".join(flat.split())
+    if not flat or _ADDRESS_LIKE.search(flat):
+        return None
     if len(flat) > _SENDER_NAME_MAX:
         flat = flat[: _SENDER_NAME_MAX - 1].rstrip() + "…"
     return flat
@@ -309,11 +326,10 @@ def render_event_invitation_email(
         footer_text=footer,
         show_title=False,
     )
+    sender = _sender_name(inviter_name) if inviter_name else None
     from_name = (
-        s["invite_from"].format(
-            inviter=_sender_name(inviter_name), project_name=project
-        )
-        if inviter_name
+        s["invite_from"].format(inviter=sender, project_name=project)
+        if sender
         else None
     )
     return RenderedInvitation(
