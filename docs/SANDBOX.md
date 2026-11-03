@@ -145,7 +145,8 @@ leaves the orphans described above.
 1. booking_reminders, then bookings          — bookings.shift_id is SET NULL, so
 2. shifts                                       a shift removed first strands the
                                                 booking instead of removing it
-3. shift_batches, task_managers, then tasks
+3. shift_batches, task_managers,
+   event_invitation_tasks, then tasks
    (by event_id)                             — never by cascade from the event
 4. user_availabilities, event_memberships,
    voucher_passes, voucher_entries,

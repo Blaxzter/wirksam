@@ -44,6 +44,7 @@ from app.models.auth_session import AuthSession
 from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.event import Event
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_membership import EventMembership
 from app.models.event_team import (
     EventTeam,
@@ -138,15 +139,22 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
         await db.execute(delete(Shift).where(col(Shift.id).in_(shift_ids)))
 
     # 2. Tasks explicitly, never by cascade from the event — see the module
-    #    docstring. Batches and the people in charge would cascade from the
-    #    task; being explicit keeps the order readable and survives someone
-    #    loosening that cascade later.
+    #    docstring. Batches, the people in charge and the invitations' task
+    #    links would cascade from the task; being explicit keeps the order
+    #    readable and survives someone loosening that cascade later. A demo
+    #    cannot invite, so the links are there only if one got in some
+    #    other way.
     if task_ids:
         await db.execute(
             delete(ShiftBatch).where(col(ShiftBatch.task_id).in_(task_ids))
         )
         await db.execute(
             delete(TaskManager).where(col(TaskManager.task_id).in_(task_ids))
+        )
+        await db.execute(
+            delete(EventInvitationTask).where(
+                col(EventInvitationTask.task_id).in_(task_ids)
+            )
         )
         await db.execute(delete(Task).where(col(Task.id).in_(task_ids)))
 

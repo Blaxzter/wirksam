@@ -20,6 +20,7 @@ from app.logic.permissions import task_access
 from app.logic.vouchers import generate_code
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_join_request import EventJoinRequest
 from app.models.location import Location
 from app.models.shift import Shift
@@ -833,6 +834,48 @@ class TestUserDeletionCascades:
             select(func.count()).select_from(EventInvitation)
         )
         assert remaining.scalar_one() == 0
+
+    async def test_deleting_an_owner_who_invited_someone_to_run_a_task(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_task: Task,
+        test_admin_user: User,
+    ) -> None:
+        """The task link goes with the invitation, and trips over nothing.
+
+        The owner's delete cascades to the event (and so to the invitation)
+        and through ``invited_by_id`` to the same invitation; the link hangs
+        off it by CASCADE and has no SET NULL that could re-check a parent
+        already gone.
+        """
+        invitation = await crud_invitation.create(
+            db_session,
+            event_id=test_event.id,
+            email="runner@example.com",
+            role="member",
+            invited_by_id=test_admin_user.id,
+            expires_in_days=14,
+            for_tasks_only=True,
+        )
+        db_session.add(
+            EventInvitationTask(
+                invitation_id=invitation.id,
+                task_id=test_task.id,
+                added_by_id=test_admin_user.id,
+            )
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        for model in (EventInvitation, EventInvitationTask):
+            remaining = await db_session.execute(
+                select(func.count()).select_from(model)
+            )
+            assert remaining.scalar_one() == 0, model
 
     async def test_deleting_a_decider_of_a_join_request(
         self,

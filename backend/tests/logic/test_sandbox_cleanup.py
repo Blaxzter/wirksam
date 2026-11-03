@@ -39,6 +39,7 @@ from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_join_request import EventJoinRequest
 from app.models.event_membership import EventMembership
 from app.models.event_team import (
@@ -96,6 +97,7 @@ class _Inventory:
     team_ids: list[uuid.UUID]
     team_member_ids: list[uuid.UUID]
     task_manager_ids: list[uuid.UUID]
+    invitation_task_ids: list[uuid.UUID]
     voucher_entry_ids: list[uuid.UUID]
     voucher_pass_ids: list[uuid.UUID]
     voucher_earning_ids: list[uuid.UUID]
@@ -129,6 +131,11 @@ async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
         shift_ids=shift_ids,
         task_manager_ids=await _ids(
             db, col(TaskManager.id), col(TaskManager.task_id).in_(task_ids)
+        ),
+        invitation_task_ids=await _ids(
+            db,
+            col(EventInvitationTask.id),
+            col(EventInvitationTask.task_id).in_(task_ids),
         ),
         voucher_entry_ids=await _ids(
             db, col(VoucherEntry.id), col(VoucherEntry.event_id) == event_id
@@ -175,6 +182,11 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
         ),
         "task_managers": await _count(
             db, TaskManager, col(TaskManager.id).in_(inv.task_manager_ids)
+        ),
+        "event_invitation_tasks": await _count(
+            db,
+            EventInvitationTask,
+            col(EventInvitationTask.id).in_(inv.invitation_task_ids),
         ),
         "voucher_entries": await _count(
             db, VoucherEntry, col(VoucherEntry.id).in_(inv.voucher_entry_ids)
@@ -306,7 +318,8 @@ async def _expire(db: AsyncSession, sandbox: SandboxSetup, *, minutes: int = 5) 
 
 
 async def _add_pending_decisions(db: AsyncSession, sandbox: SandboxSetup) -> User:
-    """Give a demo the invitation and join request the manager variant carries.
+    """Give a demo the invitation (with a task link) and join request the
+    manager variant carries.
 
     Written here rather than taken from ``seed_sandbox(role="manager")`` on
     purpose. The claim under test is that ``purge_sandbox`` removes these two
@@ -329,16 +342,25 @@ async def _add_pending_decisions(db: AsyncSession, sandbox: SandboxSetup) -> Use
     db.add(applicant)
     await db.flush()
 
-    db.add(
-        EventInvitation(
-            event_id=sandbox.event.id,
-            email="sam.rivera@example.invalid",
-            role="member",
-            token=secrets.token_urlsafe(32),
-            invited_by_id=sandbox.guest.id,
-            expires_at=utc_now() + dt.timedelta(days=14),
-        )
+    invitation = EventInvitation(
+        event_id=sandbox.event.id,
+        email="sam.rivera@example.invalid",
+        role="member",
+        token=secrets.token_urlsafe(32),
+        invited_by_id=sandbox.guest.id,
+        expires_at=utc_now() + dt.timedelta(days=14),
+        for_tasks_only=True,
     )
+    db.add(invitation)
+    await db.flush()
+    # A demo cannot invite anyone to run a task; one link anyway, so the
+    # census below is not vacuously zero for that table either.
+    task_id = (
+        await db.execute(
+            select(col(Task.id)).where(col(Task.event_id) == sandbox.event.id).limit(1)
+        )
+    ).scalar_one()
+    db.add(EventInvitationTask(invitation_id=invitation.id, task_id=task_id))
     db.add(
         EventJoinRequest(
             user_id=applicant.id, event_id=sandbox.event.id, status="pending"
@@ -475,9 +497,9 @@ class TestPurgeSandbox:
     ) -> None:
         """Test that every table a demo writes into comes back to zero.
 
-        The invitation, the join request and the booking reminder are added on
-        top of the seed, and a file on a team request, a voucher code and the
-        frozen voucher earnings, so that the census covers all twenty-eight
+        The invitation (with a task link), the join request and the booking
+        reminder are added on top of the seed, and a file on a team request, a voucher code and the
+        frozen voucher earnings, so that the census covers all twenty-nine
         tables rather than the twenty-one a freshly seeded helper demo happens
         to populate. Every line of it starts
         non-zero and must end at zero — a count that was never anything but

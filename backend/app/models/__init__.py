@@ -13,6 +13,7 @@ from .booking_reminder import BookingReminder
 from .calendar_feed import CalendarFeedToken
 from .event import Event
 from .event_invitation import EventInvitation
+from .event_invitation_task import EventInvitationTask
 from .event_join_request import EventJoinRequest
 from .event_membership import EventMembership
 from .event_team import (
@@ -58,6 +59,7 @@ __all__ = [
     "TaskManager",
     "Event",
     "EventInvitation",
+    "EventInvitationTask",
     "EventJoinRequest",
     "EventMembership",
     "EventTeam",
