@@ -18,6 +18,7 @@ import { toast } from 'vue-sonner'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useDialog } from '@/composables/useDialog'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Button from '@/components/ui/button/Button.vue'
@@ -64,6 +65,10 @@ const props = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
+
+/** Removing someone asks first, in a dialog. */
+const menu = useMenuAction()
+
 const { get, post, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
 
@@ -313,11 +318,11 @@ function pendingLine(invitation: TaskManagerInvitationRead): string {
               <EllipsisVertical class="size-4.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" @close-auto-focus="menu.onCloseAutoFocus">
             <DropdownMenuItem
               class="text-destructive focus:text-destructive"
               data-testid="btn-remove-task-manager"
-              @select="remove(m)"
+              @select="menu.after(() => remove(m))"
             >
               <UserMinus class="mr-2 size-4 text-destructive" />
               {{ t('duties.tasks.managers.remove') }}

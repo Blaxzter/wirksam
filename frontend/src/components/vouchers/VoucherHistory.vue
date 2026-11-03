@@ -5,6 +5,7 @@ import { CalendarCheck, Clock, EllipsisVertical, Pencil, Scale, Ticket, Trash2 }
 import { useI18n } from 'vue-i18n'
 
 import { useFormatters } from '@/composables/useFormatters'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -46,6 +47,10 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+
+/** Editing and deleting a correction open a dialog in the parent. */
+const menu = useMenuAction()
+
 const { formatDateLabel, formatTimeRange, hour12 } = useFormatters()
 
 const items = computed(() => voucherHistory(props.account))
@@ -207,15 +212,15 @@ const tileClass = 'flex size-[38px] shrink-0 items-center justify-center rounded
               <EllipsisVertical class="size-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem @select="emit('edit', item.entry)">
+          <DropdownMenuContent align="end" @close-auto-focus="menu.onCloseAutoFocus">
+            <DropdownMenuItem @select="menu.after(() => emit('edit', item.entry))">
               <Pencil class="mr-2 size-4" />
               {{ t('vouchers.admin.editCorrection') }}
             </DropdownMenuItem>
             <DropdownMenuItem
               class="text-destructive focus:text-destructive"
               data-testid="btn-voucher-correction-delete"
-              @select="emit('delete', item.entry)"
+              @select="menu.after(() => emit('delete', item.entry))"
             >
               <Trash2 class="mr-2 size-4 text-destructive" />
               {{ t('vouchers.admin.deleteCorrection') }}

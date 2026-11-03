@@ -8,6 +8,7 @@ import { toast } from 'vue-sonner'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useDialog } from '@/composables/useDialog'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -59,6 +60,10 @@ const props = defineProps<{
 const emit = defineEmits<{ updated: [] }>()
 
 const { t, locale } = useI18n()
+
+/** Recording a check and removing someone open a dialog. */
+const menu = useMenuAction()
+
 const { get, post, patch, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
 
@@ -347,7 +352,7 @@ function onReviewed() {
                 <EllipsisVertical class="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" @close-auto-focus="menu.onCloseAutoFocus">
               <DropdownMenuItem
                 v-if="isEventAdmin"
                 data-testid="btn-toggle-team-lead"
@@ -361,7 +366,7 @@ function onReviewed() {
               <DropdownMenuItem
                 v-if="needsReview(team)"
                 data-testid="btn-team-record-check"
-                @select="recheck(row)"
+                @select="menu.after(() => recheck(row))"
               >
                 <ClipboardCheck class="mr-2 size-4" />
                 {{ t('teams.roster.recordCheck') }}
@@ -371,7 +376,7 @@ function onReviewed() {
                 <DropdownMenuItem
                   variant="destructive"
                   data-testid="btn-remove-team-member"
-                  @select="remove(row)"
+                  @select="menu.after(() => remove(row))"
                 >
                   <UserMinus class="mr-2 size-4" />
                   {{ t('teams.roster.remove') }}

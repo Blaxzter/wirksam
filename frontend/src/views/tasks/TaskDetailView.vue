@@ -31,6 +31,7 @@ import { useBreadcrumbStore } from '@/stores/breadcrumb'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { useFormatters } from '@/composables/useFormatters'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -217,9 +218,14 @@ const addShiftActions = computed<TaskSheetAction[]>(() => [
 ])
 
 /**
- * A ⋯ item, from the desktop menu or the phone sheet. A dialog opens on the
- * next tick, once the menu has handed focus back to its button, so closing
- * the dialog returns focus there instead of to a menu item that is gone.
+ * The desktop menus run their items through `menu.after`, so a dialog an item
+ * opens finds the menu's button focused and hands focus back to it on close.
+ */
+const menu = useMenuAction()
+
+/**
+ * A ⋯ item, from the desktop menu or the phone sheet. The sheet reports a row
+ * as it starts to close, so a dialog waits a tick for it to get out of the way.
  */
 const onMoreAction = async (key: string) => {
   if (key === 'print') {
@@ -1078,7 +1084,11 @@ onMounted(async () => {
                   <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="rounded-[14px] p-1.5">
+              <DropdownMenuContent
+                align="end"
+                class="rounded-[14px] p-1.5"
+                @close-auto-focus="menu.onCloseAutoFocus"
+              >
                 <DropdownMenuItem
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
                   @select="onAddShiftAction('batch')"
@@ -1089,7 +1099,7 @@ onMounted(async () => {
                 <DropdownMenuItem
                   data-testid="btn-add-single-shift"
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
-                  @select="onAddShiftAction('single')"
+                  @select="menu.after(() => onAddShiftAction('single'))"
                 >
                   <Plus />
                   {{ t('duties.tasks.detail.addSingleShift') }}
@@ -1108,11 +1118,15 @@ onMounted(async () => {
                   <Ellipsis class="size-[18px]" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="w-[272px] rounded-[14px] p-1.5">
+              <DropdownMenuContent
+                align="end"
+                class="w-[272px] rounded-[14px] p-1.5"
+                @close-auto-focus="menu.onCloseAutoFocus"
+              >
                 <DropdownMenuItem
                   data-testid="btn-task-managers"
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
-                  @select="onMoreAction('managers')"
+                  @select="menu.after(() => onMoreAction('managers'))"
                 >
                   <UsersRound />
                   {{ t('duties.tasks.managers.manage') }}
@@ -1120,7 +1134,7 @@ onMounted(async () => {
                 <DropdownMenuItem
                   data-testid="btn-task-vouchers"
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
-                  @select="onMoreAction('vouchers')"
+                  @select="menu.after(() => onMoreAction('vouchers'))"
                 >
                   <Ticket />
                   {{ t('vouchers.settings.open') }}
@@ -1137,7 +1151,7 @@ onMounted(async () => {
                 <DropdownMenuItem
                   data-testid="btn-delete-task"
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5 text-destructive focus:text-destructive"
-                  @select="onMoreAction('delete')"
+                  @select="menu.after(() => onMoreAction('delete'))"
                 >
                   <Trash2 class="text-destructive" />
                   {{ t('duties.tasks.delete') }}
@@ -1171,7 +1185,11 @@ onMounted(async () => {
                   <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" class="rounded-[14px] p-1.5">
+              <DropdownMenuContent
+                align="end"
+                class="rounded-[14px] p-1.5"
+                @close-auto-focus="menu.onCloseAutoFocus"
+              >
                 <DropdownMenuItem
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
                   @select="onAddShiftAction('batch')"
@@ -1182,7 +1200,7 @@ onMounted(async () => {
                 <DropdownMenuItem
                   data-testid="btn-add-single-shift"
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
-                  @select="onAddShiftAction('single')"
+                  @select="menu.after(() => onAddShiftAction('single'))"
                 >
                   <Plus />
                   {{ t('duties.tasks.detail.addSingleShift') }}

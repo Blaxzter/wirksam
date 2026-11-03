@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useDialog } from '@/composables/useDialog'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
+import { useMenuItemAction } from '@/composables/useMenuAction'
 
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
@@ -15,6 +16,8 @@ import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 const { t } = useI18n()
 const { info } = useDialog()
 const { canInstall, canPrompt, install } = useInstallPrompt()
+/** The steps open in a dialog, so they wait for the menu to close first. */
+const afterMenu = useMenuItemAction()
 
 async function onSelect() {
   if (canPrompt.value) {
@@ -30,7 +33,11 @@ async function onSelect() {
 </script>
 
 <template>
-  <DropdownMenuItem v-if="canInstall" data-testid="user-menu-install-app" @click="onSelect">
+  <DropdownMenuItem
+    v-if="canInstall"
+    data-testid="user-menu-install-app"
+    @select="afterMenu(onSelect)"
+  >
     <Download />
     {{ t('navigation.user.actions.installApp') }}
   </DropdownMenuItem>

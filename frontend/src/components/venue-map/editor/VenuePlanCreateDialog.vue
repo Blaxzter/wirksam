@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 import { useDialog } from '@/composables/useDialog'
+import { useMenuAction } from '@/composables/useMenuAction'
 import { forgetTemplateShapes, useVenueTemplates } from '@/composables/useVenueTemplates'
 
 import { Button } from '@/components/ui/button'
@@ -68,6 +69,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/** A template's rename and delete open a dialog over this one. */
+const menu = useMenuAction()
+
 const { confirmDestructive } = useDialog()
 const venueTemplates = useVenueTemplates()
 const { templates, loading: templatesLoading, loadError: templatesError } = venueTemplates
@@ -373,10 +378,14 @@ function setActionButton(id: string, el: Element | ComponentPublicInstance | nul
                         </Button>
                       </DropdownMenuTrigger>
                     </HintTooltip>
-                    <DropdownMenuContent align="end" :reference="actionButtons.get(template.id)">
+                    <DropdownMenuContent
+                      align="end"
+                      :reference="actionButtons.get(template.id)"
+                      @close-auto-focus="menu.onCloseAutoFocus"
+                    >
                       <DropdownMenuItem
                         data-testid="template-rename"
-                        @select="openRename(template)"
+                        @select="menu.after(() => openRename(template))"
                       >
                         <Pencil />
                         {{ t('mapEditor.templates.rename') }}
@@ -384,7 +393,7 @@ function setActionButton(id: string, el: Element | ComponentPublicInstance | nul
                       <DropdownMenuItem
                         variant="destructive"
                         data-testid="template-delete"
-                        @select="deleteTemplate(template)"
+                        @select="menu.after(() => deleteTemplate(template))"
                       >
                         <Trash2 />
                         {{ t('mapEditor.templates.delete') }}
