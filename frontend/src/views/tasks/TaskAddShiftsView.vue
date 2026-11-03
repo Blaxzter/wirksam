@@ -199,8 +199,9 @@ const loadTask = async () => {
     task.value = response.data
     const ev = response.data
 
-    // Organisers and the task's people in charge.
-    if (!ev.can_manage) {
+    // Organisers, and the task's people in charge unless its shifts earn
+    // vouchers and the event keeps those with the organisers.
+    if (!ev.can_manage_shifts) {
       router.replace({ name: 'task-detail', params: { eventId: eventId.value } })
       return
     }

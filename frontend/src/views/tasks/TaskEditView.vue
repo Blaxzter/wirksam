@@ -76,6 +76,13 @@ const submitting = ref(false)
 const task = ref<TaskRead | null>(null)
 const batch = ref<ShiftBatchRead | null>(null)
 const parentEvent = ref<EventRead | null>(null)
+/**
+ * Dates, schedule and the shift preview all end in regenerating the shifts.
+ * A person in charge of a task that earns vouchers may not do that unless the
+ * event allows it (`task.voucher_shifts_admin_only`), so they get only the
+ * details, which a plain save of the task covers.
+ */
+const canManageShifts = computed(() => task.value?.can_manage_shifts ?? false)
 
 // --- Form state ---
 const name = ref('')
@@ -198,6 +205,7 @@ const scheduleChanged = computed(() => {
 
 const isValid = computed(() => {
   const hasName = isBatchMode.value || !!name.value.trim()
+  if (!canManageShifts.value) return hasName
   return (
     hasName &&
     !!startDate.value &&
@@ -234,8 +242,9 @@ const loadTask = async () => {
     task.value = response.data
     const ev = response.data
 
-    // Organisers and the task's people in charge.
-    if (!ev.can_manage) {
+    // Organisers and the task's people in charge. A batch is nothing but its
+    // shifts, so it also needs the right to change those.
+    if (!ev.can_manage || (isBatchMode.value && !ev.can_manage_shifts)) {
       router.replace({ name: 'task-detail', params: { eventId: eventId.value } })
       return
     }
@@ -421,7 +430,7 @@ const handleSubmit = async () => {
     if (!isBatchMode.value && teamId.value !== (task.value?.team_id ?? null)) {
       await patch({ url: `/tasks/${eventId.value}`, body: { team_id: teamId.value } })
     }
-    if (!scheduleChanged.value && !isBatchMode.value) {
+    if (!isBatchMode.value && (!scheduleChanged.value || !canManageShifts.value)) {
       // Only details changed — simple PATCH, no shift regeneration
       await patch<{ data: TaskRead }>({
         url: `/tasks/${eventId.value}`,
@@ -526,6 +535,14 @@ onMounted(loadTask)
               : t('duties.tasks.editView.subtitle')
           }}
         </p>
+        <p
+          v-if="!canManageShifts"
+          class="flex gap-2 text-sm text-muted-foreground"
+          data-testid="task-voucher-shifts-locked"
+        >
+          <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          {{ t('duties.tasks.managers.voucherShiftsLocked') }}
+        </p>
       </div>
 
       <!-- Task Details (hidden in batch mode) -->
@@ -604,8 +621,8 @@ onMounted(loadTask)
         </CardContent>
       </Card>
 
-      <!-- Task Dates -->
-      <Card>
+      <!-- Task Dates: they bound the shifts, so they go with the schedule -->
+      <Card v-if="canManageShifts">
         <CardHeader>
           <CardTitle>{{ t('duties.tasks.createView.sections.dates') }}</CardTitle>
           <CardDescription>{{ t('duties.tasks.createView.sections.datesDesc') }}</CardDescription>
@@ -625,7 +642,7 @@ onMounted(loadTask)
       </Card>
 
       <!-- Schedule & Shifts -->
-      <Card data-testid="section-schedule">
+      <Card v-if="canManageShifts" data-testid="section-schedule">
         <CardHeader>
           <div class="flex items-center gap-3">
             <Clock class="h-5 w-5 text-primary" />
@@ -654,8 +671,8 @@ onMounted(loadTask)
         </CardContent>
       </Card>
 
-      <!-- Preview -->
-      <Card>
+      <!-- Preview: leaving a shift out here removes it -->
+      <Card v-if="canManageShifts">
         <CardHeader>
           <div class="flex items-center justify-between">
             <div>
@@ -699,11 +716,11 @@ onMounted(loadTask)
           {{ t('common.actions.cancel') }}
         </Button>
         <Button data-testid="btn-submit" :disabled="!isValid || submitting" @click="handleSubmit">
-          <RefreshCw v-if="scheduleChanged" class="mr-2 h-4 w-4" />
+          <RefreshCw v-if="scheduleChanged && canManageShifts" class="mr-2 h-4 w-4" />
           {{
             submitting
               ? t('duties.tasks.editView.saving')
-              : scheduleChanged
+              : scheduleChanged && canManageShifts
                 ? t('duties.tasks.editView.regenerate')
                 : t('common.actions.save')
           }}

@@ -101,6 +101,11 @@ const eventId = computed(() => route.params.eventId as string)
 
 /** Edit the task and its shifts: organisers and the task's people in charge. */
 const canManageTask = computed(() => task.value?.can_manage ?? false)
+/**
+ * Add, move and delete its shifts: organisers, and its people in charge unless
+ * the task earns vouchers and the event keeps those shifts with the organisers.
+ */
+const canManageShifts = computed(() => task.value?.can_manage_shifts ?? false)
 /** Publish, delete, name people in charge, edit the event's location: organisers only. */
 const canAdminEvent = computed(() => authStore.canManageEvent(task.value?.event_id))
 
@@ -842,6 +847,14 @@ onMounted(async () => {
                 {{ t('vouchers.task.point') }}
               </Badge>
             </div>
+            <p
+              v-if="canManageTask && !canManageShifts"
+              class="flex gap-2 text-sm text-muted-foreground"
+              data-testid="task-voucher-shifts-locked"
+            >
+              <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              {{ t('duties.tasks.managers.voucherShiftsLocked') }}
+            </p>
           </div>
 
           <!-- Desktop actions -->
@@ -874,7 +887,7 @@ onMounted(async () => {
               <Pencil class="mr-2 h-4 w-4" />
               {{ t('duties.tasks.edit') }}
             </Button>
-            <DropdownMenu v-if="canManageTask">
+            <DropdownMenu v-if="canManageShifts">
               <DropdownMenuTrigger as-child>
                 <Button data-testid="btn-add-shifts">
                   <CalendarPlus class="mr-2 h-4 w-4" />
@@ -978,16 +991,22 @@ onMounted(async () => {
                     <Pencil class="mr-2 h-4 w-4" />
                     {{ t('duties.tasks.edit') }}
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    @click="router.push({ name: 'task-add-shifts', params: { eventId: task.id } })"
-                  >
-                    <CalendarPlus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addShiftBatch') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="showCreateShiftDialog = true">
-                    <Plus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addSingleShift') }}
-                  </DropdownMenuItem>
+                  <template v-if="canManageShifts">
+                    <DropdownMenuItem
+                      data-testid="btn-add-shift-batch-mobile"
+                      @click="router.push({ name: 'task-add-shifts', params: { eventId: task.id } })"
+                    >
+                      <CalendarPlus class="mr-2 h-4 w-4" />
+                      {{ t('duties.tasks.detail.addShiftBatch') }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      data-testid="btn-add-single-shift-mobile"
+                      @click="showCreateShiftDialog = true"
+                    >
+                      <Plus class="mr-2 h-4 w-4" />
+                      {{ t('duties.tasks.detail.addSingleShift') }}
+                    </DropdownMenuItem>
+                  </template>
                 </template>
                 <template v-if="canAdminEvent">
                   <DropdownMenuSeparator />
@@ -1234,7 +1253,7 @@ onMounted(async () => {
                     </Badge>
                   </template>
                 </div>
-                <div v-if="canManageTask && event.batch" class="flex gap-1">
+                <div v-if="canManageShifts && event.batch" class="flex gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1392,7 +1411,7 @@ onMounted(async () => {
                       </p>
 
                       <!-- Admin delete (stop propagation so it doesn't trigger booking) -->
-                      <HintTooltip v-if="canManageTask" :label="t('duties.shifts.delete')">
+                      <HintTooltip v-if="canManageShifts" :label="t('duties.shifts.delete')">
                         <Button
                           variant="ghost"
                           size="icon"

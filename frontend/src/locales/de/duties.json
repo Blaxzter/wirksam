@@ -821,6 +821,7 @@
             "stepDownConfirmUnpublished": "Du kannst diese Aufgabe dann nicht mehr bearbeiten. Sie ist nicht veröffentlicht, du siehst sie dann also auch nicht mehr.",
             "steppedDown": "Du bist für diese Aufgabe nicht mehr verantwortlich.",
             "title": "Verantwortliche",
+            "voucherShiftsLocked": "Du kannst Beschreibung und Infos ändern. Für die Schichten hier gibt es Marken, deshalb legen die Organisator:innen sie an.",
             "youAreInCharge": "Du bist verantwortlich"
         },
         "myBookingsFilter": "Nur meine Buchungen",

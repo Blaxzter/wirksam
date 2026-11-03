@@ -821,6 +821,7 @@
             "stepDownConfirmUnpublished": "You will no longer be able to edit this task. It isn't published, so you won't see it any more either.",
             "steppedDown": "You are no longer in charge of this task.",
             "title": "People in charge",
+            "voucherShiftsLocked": "You can change the description and details. Shifts here earn vouchers, so the organisers set them up.",
             "youAreInCharge": "You're in charge"
         },
         "myBookingsFilter": "My bookings only",
