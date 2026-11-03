@@ -1213,6 +1213,10 @@ and `TaskVoucherSettings` artboards):
   a person in charge of a locked task also loses the dates and the shift
   preview, not only the schedule card: both end in regenerating the shifts,
   which the server refuses. They save the details with a plain `PATCH`.
+- On a task with several batches, "Edit task" (desktop and the phone menu)
+  normally gives way to each batch's own Edit. Those change shifts, so a person
+  in charge of a locked task keeps "Edit task" whatever the number of batches;
+  the edit page then offers only the details.
 
 ### Package 7: inviting people in charge
 

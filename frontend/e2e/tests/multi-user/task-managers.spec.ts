@@ -136,6 +136,18 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   disposablePage,
   disposableUser,
 }) => {
+  // A second batch of shifts. Each batch then has its own edit, which changes
+  // shifts, so the task's own edit has to stay for the details.
+  await api(adminPage, 'POST', `/tasks/${task.id}/add-shifts`, {
+    start_date: futureDate(3),
+    end_date: futureDate(3),
+    schedule: {
+      default_start_time: '14:00:00',
+      default_end_time: '16:00:00',
+      shift_duration_minutes: 60,
+      people_per_shift: 2,
+    },
+  })
   await api(adminPage, 'PATCH', `/tasks/${task.id}`, { vouchers_per_shift: 2 })
   await api(adminPage, 'POST', `/tasks/${task.id}/managers`, { user_id: disposableUser.id })
 
@@ -144,6 +156,7 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await expect(disposablePage.getByTestId('page-heading')).toHaveText(task.name)
   await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toBeVisible()
   await expect(disposablePage.getByTestId('btn-add-shifts')).toHaveCount(0)
+  await expect(disposablePage.getByTestId('btn-edit-task')).toBeVisible()
 
   // Editing offers the details only, and saving them leaves the shifts alone.
   const shiftsBefore = (await listShifts(adminPage, task.id)).length
@@ -176,4 +189,6 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await expect(disposablePage.getByTestId('page-heading')).toHaveText(renamed)
   await expect(disposablePage.getByTestId('btn-add-shifts')).toBeVisible()
   await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toHaveCount(0)
+  // With the shifts theirs again, each batch's own edit takes over.
+  await expect(disposablePage.getByTestId('btn-edit-task')).toHaveCount(0)
 })

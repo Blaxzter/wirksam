@@ -207,6 +207,14 @@ const slotDate = ref<DateValue>()
 
 // --- Batch grouping ---
 const hasBatches = computed(() => batches.value.length > 1)
+/**
+ * "Edit task" edits the task as a whole. With several batches each batch has
+ * its own edit instead, but those change shifts; someone who may only change
+ * the details keeps the task's own edit, which then offers just those.
+ */
+const showTaskEdit = computed(
+  () => canManageTask.value && (!hasBatches.value || !canManageShifts.value),
+)
 
 interface BatchGroup {
   batch: ShiftBatchRead | null
@@ -879,7 +887,7 @@ onMounted(async () => {
               </Button>
             </HintTooltip>
             <Button
-              v-if="canManageTask && !hasBatches"
+              v-if="showTaskEdit"
               data-testid="btn-edit-task"
               variant="outline"
               @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
@@ -985,7 +993,7 @@ onMounted(async () => {
                 </DropdownMenuItem>
                 <template v-if="canManageTask">
                   <DropdownMenuItem
-                    v-if="!hasBatches"
+                    v-if="showTaskEdit"
                     @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
                   >
                     <Pencil class="mr-2 h-4 w-4" />
