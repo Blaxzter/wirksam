@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 
 import { Lock, ShieldCheck } from '@lucide/vue'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { SidebarProvider } from '@/components/ui/sidebar'
 
 import NavMain, { type NavItem, type NavSubItem } from '@/components/navigation/NavMain.vue'
 
@@ -18,9 +18,16 @@ import i18n from '@/locales/i18n'
  * "3" next to a shield says nothing about being in charge.
  */
 
+// An open tooltip measures itself; jsdom has no ResizeObserver.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver
+
 const page = { template: '<div />' }
 
-async function mountNav(tasks: NavSubItem[]) {
+async function mountNav(tasks: NavSubItem[], { collapsed = false } = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -35,7 +42,12 @@ async function mountNav(tasks: NavSubItem[]) {
     { title: 'Sommerfest', routeName: 'tasks', isActive: true, items: tasks },
   ]
   return mount(
-    { render: () => h(TooltipProvider, () => h(NavMain, { open: true, items })) },
+    {
+      render: () =>
+        h(SidebarProvider, { defaultOpen: !collapsed }, () =>
+          h(NavMain, { open: !collapsed, items }),
+        ),
+    },
     { global: { plugins: [i18n, router] } },
   )
 }
@@ -121,7 +133,7 @@ describe('NavMain: group label', () => {
     })
     await router.push('/')
     await router.isReady()
-    // A group with sub-items, which needs no surrounding sidebar.
+    // A group with sub-items; its tooltip asks the sidebar whether it is collapsed.
     const items: NavItem[] = [
       {
         title: 'Sommerfest',
@@ -132,7 +144,7 @@ describe('NavMain: group label', () => {
     ]
     return mount(
       {
-        render: () => h(TooltipProvider, () => h(NavMain, { open: true, items, groupLabelKey })),
+        render: () => h(SidebarProvider, () => h(NavMain, { open: true, items, groupLabelKey })),
       },
       { global: { plugins: [i18n, router] } },
     )
@@ -150,5 +162,30 @@ describe('NavMain: group label', () => {
     const w = await mountGroup('admin.sidebar.section')
 
     expect(w.find('[data-sidebar$="-label"]').text()).toBe('Administration')
+  })
+})
+
+describe('NavMain: the icon-only sidebar', () => {
+  // Collapsed to icons, every other entry names itself in a tooltip
+  // (SidebarMenuButton's); one with sub-items has to do the same.
+  async function tooltipOfTasks(collapsed: boolean) {
+    const w = await mountNav([task('stage', undefined)], { collapsed })
+    await w.find('[data-testid="sidebar-link-tasks"]').trigger('focus')
+    await flushPromises()
+    const content = document.body.querySelector('[data-slot="tooltip-content"]')
+    const result = { text: content?.textContent ?? '', hidden: content?.hasAttribute('hidden') }
+    w.unmount()
+    return result
+  }
+
+  it('names an entry with sub-items when collapsed', async () => {
+    const tip = await tooltipOfTasks(true)
+    expect(tip.text).toContain('Sommerfest')
+    expect(tip.hidden).toBe(false)
+  })
+
+  it('keeps that tooltip hidden while the names are on show', async () => {
+    const tip = await tooltipOfTasks(false)
+    expect(tip.hidden).toBe(true)
   })
 })

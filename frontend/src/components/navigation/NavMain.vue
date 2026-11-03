@@ -14,6 +14,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -22,6 +23,8 @@ import SidebarSplitButton from '@/components/navigation/SidebarSplitButton.vue'
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+/** The split buttons' tooltip, like `SidebarMenuButton`'s: only for the icon-only sidebar. */
+const { state, isMobile } = useSidebar()
 
 export interface NavSubItem {
   title: string
@@ -146,15 +149,29 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
           <SidebarMenuItem>
             <SidebarSplitButton :is-active="isRouteActive(item.routeName)">
               <template #link>
-                <RouterLink
-                  v-if="item.routeName"
-                  :to="{ name: item.routeName }"
-                  :data-testid="'sidebar-link-' + item.routeName"
-                  class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-l-md p-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                >
-                  <component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />
-                  <span class="truncate">{{ resolveTitle(item) }}</span>
-                </RouterLink>
+                <!--
+                  Collapsed to icons, the name only shows on hover, as
+                  SidebarMenuButton's tooltip does for the other entries.
+                -->
+                <Tooltip v-if="item.routeName">
+                  <TooltipTrigger as-child>
+                    <RouterLink
+                      :to="{ name: item.routeName }"
+                      :data-testid="'sidebar-link-' + item.routeName"
+                      class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-l-md p-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    >
+                      <component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />
+                      <span class="truncate">{{ resolveTitle(item) }}</span>
+                    </RouterLink>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    align="center"
+                    :hidden="state !== 'collapsed' || isMobile"
+                  >
+                    {{ resolveTitle(item) }}
+                  </TooltipContent>
+                </Tooltip>
               </template>
               <template #action>
                 <CollapsibleTrigger as-child>
