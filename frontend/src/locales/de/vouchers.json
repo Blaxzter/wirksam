@@ -51,6 +51,7 @@
     "afterEventLink": "Deine Marken ansehen",
     "available": "{n} Marke verfügbar | {n} Marken verfügbar",
     "availableShort": "verfügbar",
+    "bookingChip": "+{n} Marke | +{n} Marken",
     "code": {
         "checking": "Wird gerade eingelöst …",
         "expiresIn": "Neuer Code in {s} s",
@@ -96,6 +97,7 @@
         "title": "Verlauf",
         "upcoming": "Kommt noch"
     },
+    "historyLink": "Meine Marken, Verlauf",
     "howItWorks": "Für jede Schicht bekommst du Marken, sobald sie vorbei ist. Zeig deinen Code dort, wo Marken angenommen werden.",
     "loadFailed": "Deine Marken konnten nicht geladen werden.",
     "myTitle": "Meine Marken",
@@ -144,7 +146,6 @@
         "title": "Marken einlösen",
         "typeInstead": "Code stattdessen eintippen"
     },
-    "seeAll": "Details",
     "settings": {
         "dialogTitle": "Marken für {task}",
         "isPoint": "Hier werden Marken eingelöst",
@@ -178,6 +179,7 @@
     "title": "Marken",
     "upcoming": "{n} mehr für deine gebuchten Schichten",
     "upcomingFromShifts": "{n} kommt noch aus gebuchten Schichten | {n} kommen noch aus gebuchten Schichten",
+    "upcomingShort": "+{n} kommt | +{n} kommen",
     "used": "Eingelöst",
     "yours": "Deine Marken"
 }

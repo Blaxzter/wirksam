@@ -3,59 +3,70 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import {
   AlertCircle,
-  Calendar,
-  CalendarDays,
   ChevronDown,
-  Clock,
-  Layers,
+  ChevronRight,
   MapPin,
   Search,
-  Trash2,
+  Ticket,
   XCircle,
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
 
-import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
-import { useDialog } from '@/composables/useDialog'
-import { useFormatters } from '@/composables/useFormatters'
+import { useAuthStore } from '@/stores/auth'
 
-import Badge from '@/components/ui/badge/Badge.vue'
+import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useFormatters } from '@/composables/useFormatters'
+import { useMyVoucherAccount } from '@/composables/useMyVoucherAccount'
+
 import Button from '@/components/ui/button/Button.vue'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import Input from '@/components/ui/input/Input.vue'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import Separator from '@/components/ui/separator/Separator.vue'
 import { Switch } from '@/components/ui/switch'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-import HintTooltip from '@/components/utils/HintTooltip.vue'
 import MyHoursCard from '@/components/bookings/MyHoursCard.vue'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 import MyVouchersCard from '@/components/vouchers/MyVouchersCard.vue'
+import VoucherCodeDialog from '@/components/vouchers/VoucherCodeDialog.vue'
 
 import type { BookingReadWithShift, MyBookingsListResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { shiftHasEnded } from '@/lib/shift-time'
+import { vouchersByBooking } from '@/lib/vouchers'
 
-const { t, locale } = useI18n()
-const { formatTime, formatDateLabel } = useFormatters()
+/**
+ * "My bookings": the volunteer's hours and vouchers in the selected event on
+ * top, then every shift they booked there as a card that opens the booking
+ * (where it can be handed back). The list reads by date, or grouped by task
+ * or by place; on a phone that choice sits in the filter button with the
+ * dates and "cancelled", so the search keeps its width.
+ */
+const { t } = useI18n()
+const { formatDateLabel, formatTimeRange } = useFormatters()
 const { get, delete: del } = useAuthenticatedClient()
-const { confirmDestructive } = useDialog()
-const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 
 const bookings = ref<BookingReadWithShift[]>([])
 const loading = ref(false)
-const hoursCard = ref<InstanceType<typeof MyHoursCard> | null>(null)
-const vouchersCard = ref<InstanceType<typeof MyVouchersCard> | null>(null)
 
-const openBookingDetail = (booking: BookingReadWithShift) => {
-  router.push({ name: 'booking-detail', params: { bookingId: booking.id } })
-}
+// --- Hours and vouchers ---
+
+const {
+  account: voucherAccount,
+  eventId: voucherEventId,
+  visible: vouchersVisible,
+  canShowCode,
+  isExpired: eventExpired,
+  reload: reloadVouchers,
+} = useMyVoucherAccount()
+const codeOpen = ref(false)
+/** What each booking earns, for its "+2 vouchers". */
+const earnedByBooking = computed(() => vouchersByBooking(voucherAccount.value?.shifts ?? []))
 
 // --- Filter state ---
 
@@ -114,18 +125,32 @@ async function handleVisibleMonth(range: { from: string; to: string }) {
   }
 }
 
-// --- Grouping state (persisted in localStorage) ---
-type GroupMode = 'none' | 'date' | 'task' | 'location'
+// --- Arrangement (remembered in this browser) ---
+
+/** By date is the plain list in time order; by task and by place group it. */
+type GroupMode = 'date' | 'task' | 'location'
 const STORAGE_KEY = 'wirksam:bookings:groupBy'
-const activeGrouping = ref<GroupMode>((localStorage.getItem(STORAGE_KEY) as GroupMode) || 'none')
+const GROUP_MODES: GroupMode[] = ['date', 'task', 'location']
 
-watch(activeGrouping, (v) => localStorage.setItem(STORAGE_KEY, v))
+function readGrouping(): GroupMode {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    // An older "none" (the plain list) or "date" (headed by day) is now by date.
+    return stored === 'task' || stored === 'location' ? stored : 'date'
+  } catch {
+    return 'date'
+  }
+}
 
-const groupingOptions = computed(() => [
-  { mode: 'date' as const, icon: CalendarDays, label: t('duties.bookings.groupBy.date') },
-  { mode: 'task' as const, icon: Layers, label: t('duties.bookings.groupBy.task') },
-  { mode: 'location' as const, icon: MapPin, label: t('duties.bookings.groupBy.location') },
-])
+const activeGrouping = ref<GroupMode>(readGrouping())
+
+watch(activeGrouping, (v) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, v)
+  } catch {
+    // Private mode or blocked storage: the choice lasts until the page closes.
+  }
+})
 
 // --- Grouping logic ---
 interface BookingGroup {
@@ -167,87 +192,36 @@ const sortedBookings = computed(() =>
   }),
 )
 
-const groupKey = (booking: BookingReadWithShift): string => {
-  switch (activeGrouping.value) {
-    case 'date':
-      return slotDate(booking) ?? '__none__'
-    case 'task':
-      return eventName(booking) ?? '__none__'
-    case 'location':
-      return slotLocation(booking) ?? '__none__'
-    default:
-      return '__all__'
-  }
-}
+const groupKey = (booking: BookingReadWithShift): string =>
+  (activeGrouping.value === 'task' ? taskName(booking) : slotLocation(booking)) ?? '__none__'
 
 const groupLabel = (key: string): string => {
-  if (key === '__all__') return ''
-  if (key === '__none__') {
-    switch (activeGrouping.value) {
-      case 'date':
-        return t('duties.bookings.noDate')
-      case 'task':
-        return t('duties.bookings.noTask')
-      case 'location':
-        return t('duties.bookings.noLocation')
-      default:
-        return ''
-    }
-  }
-  if (activeGrouping.value === 'date') return formatGroupLabel(key)
-  return key
+  if (key !== '__none__') return key
+  return activeGrouping.value === 'task'
+    ? t('duties.bookings.noTask')
+    : t('duties.bookings.noLocation')
 }
 
 const groupedBookings = computed<BookingGroup[]>(() => {
-  if (activeGrouping.value === 'none') {
+  if (activeGrouping.value === 'date') {
     return [{ key: '__all__', label: '', bookings: sortedBookings.value }]
   }
 
-  const events = new Map<string, BookingReadWithShift[]>()
+  const groups = new Map<string, BookingReadWithShift[]>()
   for (const booking of sortedBookings.value) {
     const k = groupKey(booking)
-    if (!events.has(k)) events.set(k, [])
-    events.get(k)!.push(booking)
+    if (!groups.has(k)) groups.set(k, [])
+    groups.get(k)!.push(booking)
   }
 
-  return Array.from(events.entries()).map(([key, items]) => ({
+  return Array.from(groups.entries()).map(([key, items]) => ({
     key,
     label: groupLabel(key),
     bookings: items,
   }))
 })
 
-const toISODate = (d: Date) => d.toISOString().slice(0, 10)
-
-const formatGroupLabel = (dateStr: string) => {
-  const today = toISODate(new Date())
-  const tomorrow = toISODate(new Date(Date.now() + 86400000))
-  const yesterday = toISODate(new Date(Date.now() - 86400000))
-
-  if (dateStr === today) return t('duties.bookings.today')
-  if (dateStr === tomorrow) return t('duties.bookings.tomorrow')
-  if (dateStr === yesterday) return t('duties.bookings.yesterday')
-
-  const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString(locale.value, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
-
 // --- Data loading ---
-const statusVariant = (status?: string) => {
-  switch (status) {
-    case 'confirmed':
-      return 'default'
-    case 'cancelled':
-      return 'destructive'
-    default:
-      return 'outline'
-  }
-}
 
 const loadBookings = async () => {
   loading.value = true
@@ -269,26 +243,6 @@ const loadBookings = async () => {
 }
 
 watch([dateFrom, dateTo], () => loadBookings())
-
-const handleCancel = async (booking: BookingReadWithShift) => {
-  const confirmed = await confirmDestructive(t('duties.bookings.cancelConfirm'))
-  if (!confirmed) return
-
-  try {
-    await del({ url: `/bookings/${booking.id}` })
-    toast.success(t('duties.bookings.cancelSuccess'))
-    await Promise.all([loadBookings(), hoursCard.value?.reload(), vouchersCard.value?.reload()])
-  } catch (error) {
-    toastApiError(error)
-  }
-}
-
-/** A shift that is over can no longer be cancelled (the server says `booking.shift_over`). */
-const canCancel = (booking: BookingReadWithShift) => {
-  if (booking.status !== 'confirmed') return false
-  const shift = booking.shift
-  return !shift || !shiftHasEnded(shift.date, shift.start_time, shift.end_time)
-}
 
 const handleDismiss = async (booking: BookingReadWithShift) => {
   try {
@@ -326,57 +280,99 @@ const slotLocation = (booking: BookingReadWithShift) => {
   return booking.shift?.location ?? null
 }
 
-const eventName = (booking: BookingReadWithShift) => {
+const taskName = (booking: BookingReadWithShift) => {
   return booking.shift?.task_name ?? booking.cancelled_task_name ?? null
 }
+
+/** "Sat, 18 July · 17:00 – 20:00", and "· over" once the shift has ended. */
+const whenLine = (booking: BookingReadWithShift) => {
+  const date = slotDate(booking)
+  const parts: string[] = []
+  if (date) parts.push(formatDateLabel(date, { weekday: 'short', day: 'numeric', month: 'long' }))
+  const times = formatTimeRange(slotStartTime(booking), slotEndTime(booking))
+  if (times) parts.push(times)
+  if (
+    booking.status === 'confirmed' &&
+    date &&
+    shiftHasEnded(date, slotStartTime(booking), slotEndTime(booking))
+  ) {
+    parts.push(t('duties.bookings.over'))
+  }
+  return parts.join(' · ')
+}
+
+const isCancelled = (booking: BookingReadWithShift) => booking.status === 'cancelled'
+
+const pillClass = (booking: BookingReadWithShift) =>
+  isCancelled(booking) ? 'bg-destructive/10 text-destructive' : 'bg-primary/12 text-primary'
+
+const chipClass =
+  'inline-flex max-w-full min-w-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground/80'
 
 onMounted(loadBookings)
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-6">
-    <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-4">
-      <div class="space-y-2">
-        <h1 data-testid="page-heading" class="text-2xl sm:text-3xl font-bold">
+  <div class="@container mx-auto flex max-w-[70rem] flex-col gap-4 sm:gap-6">
+    <!-- Header: what this is and whose, and how the list is arranged -->
+    <header class="flex flex-wrap items-end justify-between gap-4">
+      <div class="min-w-0">
+        <h1
+          data-testid="page-heading"
+          class="text-[1.625rem] leading-tight font-bold tracking-tight sm:text-[2rem]"
+        >
           {{ t('duties.bookings.title') }}
         </h1>
-        <p class="text-muted-foreground">{{ t('duties.bookings.subtitle') }}</p>
+        <p class="mt-0.5 text-sm text-muted-foreground sm:mt-1 sm:text-[15px]">
+          {{ authStore.selectedEvent?.name ?? t('duties.bookings.subtitle') }}
+        </p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- Grouping icon tabs -->
-        <TooltipProvider :delay-duration="300">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            :model-value="activeGrouping === 'none' ? '' : activeGrouping"
-            @update:model-value="(v) => (activeGrouping = (v as GroupMode) || 'none')"
-          >
-            <Tooltip v-for="opt in groupingOptions" :key="opt.mode">
-              <TooltipTrigger as-child>
-                <ToggleGroupItem :value="opt.mode" :data-testid="`btn-event-${opt.mode}`">
-                  <component :is="opt.icon" class="h-4 w-4" />
-                  <span class="hidden sm:inline">{{ opt.label }}</span>
-                </ToggleGroupItem>
-              </TooltipTrigger>
-              <TooltipContent>
-                {{ opt.label }}
-              </TooltipContent>
-            </Tooltip>
-          </ToggleGroup>
-        </TooltipProvider>
+      <div
+        role="group"
+        :aria-label="t('duties.bookings.arrange')"
+        class="hidden rounded-xl border bg-card p-[3px] sm:flex"
+      >
+        <button
+          v-for="mode in GROUP_MODES"
+          :key="mode"
+          type="button"
+          :aria-pressed="activeGrouping === mode"
+          class="min-h-[38px] rounded-[9px] px-3.5 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          :class="
+            activeGrouping === mode
+              ? 'bg-muted font-semibold text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          "
+          :data-testid="`btn-event-${mode}`"
+          @click="activeGrouping = mode"
+        >
+          {{ t(`duties.bookings.groupBy.${mode}`) }}
+        </button>
       </div>
-    </div>
+    </header>
 
-    <MyHoursCard ref="hoursCard" />
-    <MyVouchersCard ref="vouchersCard" />
+    <!--
+      Hours and vouchers. Tiles side by side on a phone, vouchers first; full
+      cards from @2xl, hours first. Either one alone takes the whole row.
+    -->
+    <div class="grid grid-cols-2 gap-3 @2xl:gap-6">
+      <MyVouchersCard
+        v-if="vouchersVisible && voucherAccount && voucherEventId"
+        class="only:col-span-2 @2xl:order-2"
+        :account="voucherAccount"
+        :event-id="voucherEventId"
+        :expired="eventExpired"
+        :can-show-code="canShowCode"
+        @show-code="codeOpen = true"
+      />
+      <MyHoursCard class="only:col-span-2 @2xl:order-1" />
+    </div>
 
     <!--
       Search & Filter. Phones: the search and one filter button share a row,
-      the date range and "cancelled" behind it. Wider: the search takes what
-      the two controls leave, and they wrap below it once it would drop under
-      20rem.
+      the date range, "cancelled" and the arrangement behind it. Wider: the
+      search takes what the two controls leave, and they wrap below it once it
+      would drop under 20rem.
     -->
     <div class="flex flex-wrap items-center gap-2 sm:gap-4" data-testid="bookings-filter-row">
       <div class="relative min-w-0 flex-1 sm:basis-80">
@@ -428,6 +424,31 @@ onMounted(loadBookings)
               @update:model-value="showCancelled = $event"
             />
           </div>
+          <div class="space-y-2">
+            <p id="bookings-arrange-label" class="text-sm">{{ t('duties.bookings.arrange') }}</p>
+            <div
+              role="group"
+              aria-labelledby="bookings-arrange-label"
+              class="grid grid-cols-3 rounded-xl border bg-card p-[3px]"
+            >
+              <button
+                v-for="mode in GROUP_MODES"
+                :key="mode"
+                type="button"
+                :aria-pressed="activeGrouping === mode"
+                class="min-h-11 rounded-[9px] px-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                :class="
+                  activeGrouping === mode
+                    ? 'bg-muted font-semibold text-foreground'
+                    : 'text-muted-foreground'
+                "
+                :data-testid="`btn-arrange-${mode}`"
+                @click="activeGrouping = mode"
+              >
+                {{ t(`duties.bookings.groupByShort.${mode}`) }}
+              </button>
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
 
@@ -463,150 +484,146 @@ onMounted(loadBookings)
       {{ t('duties.bookings.empty') }}
     </div>
 
-    <!-- Bookings (grouped or flat) -->
+    <!-- Bookings, in time order or grouped by task or place -->
     <div v-else class="space-y-8">
-      <section v-for="event in groupedBookings" :key="event.key">
-        <!-- Group header (only when grouping is active) -->
-        <div v-if="event.label" class="flex items-center gap-3 mb-4">
-          <HintTooltip :label="event.label">
-            <h2 class="text-lg font-semibold truncate min-w-0 max-w-sm">
-              {{ event.label }}
+      <section v-for="group in groupedBookings" :key="group.key">
+        <div v-if="group.label" class="mb-3 flex items-center gap-3 sm:mb-4">
+          <HintTooltip :label="group.label">
+            <h2 class="min-w-0 max-w-sm truncate text-lg font-semibold">
+              {{ group.label }}
             </h2>
           </HintTooltip>
           <Separator class="flex-1" />
-          <span class="text-sm text-muted-foreground whitespace-nowrap">
-            {{ event.bookings.length }}
+          <span class="whitespace-nowrap text-sm text-muted-foreground">
+            {{ group.bookings.length }}
           </span>
         </div>
 
-        <!-- Bookings grid -->
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card
-            v-for="booking in event.bookings"
-            :key="booking.id"
-            data-testid="booking-card"
-            :class="[booking.status === 'cancelled' ? 'opacity-75 border-destructive/30' : '']"
-          >
-            <CardHeader class="pb-3">
-              <div class="flex items-start justify-between gap-2 min-w-0">
-                <div class="min-w-0">
-                  <!-- Use task name as title for active bookings; fall back to shift title for cancelled -->
-                  <HintTooltip :label="eventName(booking) ?? slotTitle(booking)">
-                    <CardTitle class="text-lg truncate">
-                      {{ eventName(booking) ?? slotTitle(booking) }}
-                    </CardTitle>
-                  </HintTooltip>
-                </div>
-                <Badge :variant="statusVariant(booking.status)" class="shrink-0">
-                  {{ t(`duties.bookings.statuses.${booking.status ?? 'confirmed'}`) }}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent class="grow-1 flex flex-col">
-              <div class="space-y-2 text-sm text-muted-foreground">
-                <!-- Date -->
-                <div v-if="slotDate(booking)" class="flex items-center gap-1.5">
-                  <Calendar class="h-3.5 w-3.5" />
-                  {{ formatDateLabel(slotDate(booking)!) }}
+        <ul class="grid gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] sm:gap-4">
+          <li v-for="booking in group.bookings" :key="booking.id" class="min-w-0">
+            <!--
+              One card per booking. The task's name is the link to the booking,
+              stretched over the whole card; only "Remove" on a cancelled one
+              sits above it. A phone puts the day first, behind a coloured bar;
+              wider, the name leads with the status beside it.
+            -->
+            <article
+              data-testid="booking-card"
+              class="relative flex h-full gap-3 rounded-2xl border bg-card px-4 py-3.5 text-card-foreground transition-colors sm:rounded-[18px] sm:px-5 sm:py-[18px]"
+              :class="[
+                booking.shift ? 'hover:bg-muted/30' : '',
+                isCancelled(booking) ? 'border-destructive/30' : '',
+              ]"
+            >
+              <span
+                class="w-1 shrink-0 rounded-full sm:hidden"
+                :class="isCancelled(booking) ? 'bg-destructive/60' : 'bg-primary'"
+                aria-hidden="true"
+              />
+              <div class="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-2">
+                <div class="flex items-start justify-between gap-2 sm:order-first">
+                  <h3
+                    class="min-w-0 text-base leading-snug font-semibold break-words sm:text-lg sm:font-bold"
+                  >
+                    <RouterLink
+                      v-if="booking.shift"
+                      :to="{ name: 'booking-detail', params: { bookingId: booking.id } }"
+                      class="rounded-sm outline-none after:absolute after:inset-0 after:rounded-[inherit] focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50"
+                    >
+                      {{ taskName(booking) ?? slotTitle(booking) }}
+                    </RouterLink>
+                    <template v-else>{{ taskName(booking) ?? slotTitle(booking) }}</template>
+                  </h3>
+                  <span
+                    class="hidden min-h-[22px] shrink-0 items-center rounded-full px-2 text-xs font-bold whitespace-nowrap sm:inline-flex"
+                    :class="pillClass(booking)"
+                  >
+                    {{ t(`duties.bookings.statuses.${booking.status ?? 'confirmed'}`) }}
+                  </span>
                 </div>
 
-                <!-- Time -->
-                <div
-                  v-if="slotStartTime(booking) || slotEndTime(booking)"
-                  class="flex items-center gap-1.5"
+                <p
+                  v-if="whenLine(booking)"
+                  class="order-first text-[13px] text-muted-foreground tabular-nums sm:order-none sm:text-sm"
                 >
-                  <Clock class="h-3.5 w-3.5" />
-                  {{ formatTime(slotStartTime(booking)) }}
-                  <template v-if="slotStartTime(booking) && slotEndTime(booking)"> - </template>
-                  {{ formatTime(slotEndTime(booking)) }}
+                  {{ whenLine(booking) }}
+                </p>
+
+                <div class="mt-1.5 flex flex-wrap items-center gap-1.5 sm:mt-0">
+                  <span
+                    class="inline-flex min-h-[22px] items-center rounded-full px-2 text-xs font-bold sm:hidden"
+                    :class="pillClass(booking)"
+                  >
+                    {{ t(`duties.bookings.statuses.${booking.status ?? 'confirmed'}`) }}
+                  </span>
+                  <span
+                    v-if="!isCancelled(booking) && earnedByBooking.get(booking.id)"
+                    :class="chipClass"
+                    data-testid="booking-card-vouchers"
+                  >
+                    <Ticket class="size-3 shrink-0" aria-hidden="true" />
+                    {{
+                      t(
+                        'vouchers.bookingChip',
+                        { n: earnedByBooking.get(booking.id) },
+                        earnedByBooking.get(booking.id) ?? 0,
+                      )
+                    }}
+                  </span>
+                  <span v-if="slotLocation(booking)" :class="chipClass">
+                    <MapPin class="size-3 shrink-0" aria-hidden="true" />
+                    <span class="truncate">{{ slotLocation(booking) }}</span>
+                  </span>
                 </div>
 
-                <!-- Location -->
-                <div v-if="slotLocation(booking)" class="flex items-center gap-1.5">
-                  <MapPin class="h-3.5 w-3.5" />
-                  {{ slotLocation(booking) }}
-                </div>
-              </div>
-
-              <!-- Cancellation reason -->
-              <div
-                v-if="booking.status === 'cancelled' && booking.cancellation_reason"
-                class="mt-3"
-              >
-                <Separator class="mb-3" />
-                <div class="flex gap-2 rounded-md bg-destructive/10 p-2.5 text-sm">
-                  <AlertCircle class="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <!-- Why it was cancelled, or that the shift is gone -->
+                <div
+                  v-if="isCancelled(booking) && booking.cancellation_reason"
+                  class="mt-2 flex gap-2 rounded-lg bg-destructive/10 p-2.5 text-sm"
+                >
+                  <AlertCircle class="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
                   <div>
                     <p class="font-medium text-destructive">
                       {{ t('duties.bookings.cancellationReason') }}
                     </p>
-                    <p class="text-muted-foreground mt-0.5">
-                      {{ booking.cancellation_reason }}
-                    </p>
+                    <p class="mt-0.5 text-muted-foreground">{{ booking.cancellation_reason }}</p>
                   </div>
                 </div>
-              </div>
-
-              <!-- Shift deleted notice -->
-              <div v-else-if="booking.status === 'cancelled' && !booking.shift_id" class="mt-3">
-                <Separator class="mb-3" />
-                <p class="text-xs text-muted-foreground italic">
+                <p
+                  v-else-if="isCancelled(booking) && !booking.shift_id"
+                  class="mt-2 text-xs text-muted-foreground italic"
+                >
                   {{ t('duties.bookings.slotDeleted') }}
                 </p>
+
+                <div v-if="isCancelled(booking)" class="relative z-10 mt-2 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="-mr-2 -mb-1 h-9 text-muted-foreground"
+                    @click="handleDismiss(booking)"
+                  >
+                    {{ t('duties.bookings.dismiss') }}
+                  </Button>
+                </div>
               </div>
-
-              <!-- Spacer -->
-              <div class="flex-1"></div>
-
-              <!-- Action buttons -->
-              <div class="mt-4 flex items-center gap-2">
-                <!-- Detail button (only for active shifts) -->
-                <Button
-                  v-if="booking.shift"
-                  variant="outline"
-                  size="sm"
-                  @click="openBookingDetail(booking)"
-                >
-                  {{ t('duties.shifts.detail.openDetails') }}
-                </Button>
-
-                <div class="flex-1" />
-
-                <!-- Cancel button -->
-                <TooltipProvider v-if="canCancel(booking)" :delay-duration="300">
-                  <Tooltip>
-                    <TooltipTrigger as-child>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-8 w-8 text-destructive hover:text-destructive"
-                        :aria-label="t('duties.bookings.cancel')"
-                        @click="handleCancel(booking)"
-                      >
-                        <Trash2 class="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {{ t('duties.bookings.cancel') }}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <!-- Dismiss button for cancelled bookings -->
-                <Button
-                  v-if="booking.status === 'cancelled'"
-                  variant="ghost"
-                  size="sm"
-                  class="text-muted-foreground"
-                  @click="handleDismiss(booking)"
-                >
-                  {{ t('duties.bookings.dismiss') }}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <ChevronRight
+                v-if="booking.shift"
+                class="size-4 shrink-0 self-center text-muted-foreground sm:hidden"
+                aria-hidden="true"
+              />
+            </article>
+          </li>
+        </ul>
       </section>
     </div>
+
+    <!-- A code redeemed while it is open changes the numbers above. -->
+    <VoucherCodeDialog
+      v-if="voucherEventId && !eventExpired"
+      v-model:open="codeOpen"
+      :event-id="voucherEventId"
+      @redeemed="reloadVouchers"
+    />
   </div>
 </template>

@@ -55,7 +55,7 @@
             "title": "Aufgaben und ihre Schichten"
         },
         "myBookings": {
-            "body": "Jede Karte ist eine deiner Schichten, vergangen oder kommend, mit Zeit, Ort und den Leuten, die mit dir eingeteilt sind. Genau das brauchst du am Morgen selbst. Hier gibst du eine Schicht auch wieder ab, wenn etwas dazwischenkommt.",
+            "body": "Jede Karte ist eine deiner Schichten, vergangen oder kommend, mit Tag, Zeit und Ort. Genau das brauchst du am Morgen selbst. Öffne eine, um die Schicht wieder abzugeben, wenn etwas dazwischenkommt.",
             "title": "Alles, wozu du Ja gesagt hast"
         },
         "myHours": {

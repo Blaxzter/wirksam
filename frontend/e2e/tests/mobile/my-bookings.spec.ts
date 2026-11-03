@@ -4,7 +4,8 @@
  * The search used to share its row with the date range and the "cancelled"
  * button at a flex basis of zero, which left it a few dozen pixels: the
  * placeholder read "Suchen.". Now it shares the row with one filter button,
- * and that button holds the date range and the cancelled switch.
+ * and that button holds the date range, the cancelled switch and how the
+ * list is arranged (by date, task or place).
  */
 import { expect, test } from '../../fixtures.js'
 
@@ -41,7 +42,7 @@ test.describe('My Bookings – on a phone', () => {
     expect(layout.offset).toBeLessThan(4)
   })
 
-  test('the filter button holds the date range and the cancelled switch', async ({
+  test('the filter button holds the date range, the cancelled switch and the arrangement', async ({
     adminPage: page,
   }) => {
     await page.goto('/app/bookings')
@@ -57,5 +58,13 @@ test.describe('My Bookings – on a phone', () => {
     await expect(cancelled).toHaveAttribute('aria-checked', 'true')
     // The dot on the button says so to the eye; its name says so to a screen reader.
     await expect(button).toHaveAttribute('aria-label', /cancelled bookings shown/i)
+
+    // How the list is arranged lives here too, one choice at a time.
+    const byPlace = menu.getByTestId('btn-arrange-location')
+    await expect(menu.getByTestId('btn-arrange-date')).toHaveAttribute('aria-pressed', 'true')
+    await byPlace.click()
+    await expect(byPlace).toHaveAttribute('aria-pressed', 'true')
+    await expect(menu.getByTestId('btn-arrange-date')).toHaveAttribute('aria-pressed', 'false')
+    await menu.getByTestId('btn-arrange-date').click()
   })
 })

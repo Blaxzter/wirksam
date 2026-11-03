@@ -51,6 +51,7 @@
     "afterEventLink": "See your vouchers",
     "available": "{n} voucher available | {n} vouchers available",
     "availableShort": "available",
+    "bookingChip": "+{n} voucher | +{n} vouchers",
     "code": {
         "checking": "Being redeemed…",
         "expiresIn": "New code in {s} s",
@@ -96,6 +97,7 @@
         "title": "History",
         "upcoming": "Still to come"
     },
+    "historyLink": "My vouchers, history",
     "howItWorks": "You get vouchers for each shift once it is over. Show your code where vouchers are taken.",
     "loadFailed": "Your vouchers could not be loaded.",
     "myTitle": "My vouchers",
@@ -144,7 +146,6 @@
         "title": "Redeem vouchers",
         "typeInstead": "Type the code instead"
     },
-    "seeAll": "Details",
     "settings": {
         "dialogTitle": "Vouchers for {task}",
         "isPoint": "Vouchers are redeemed here",
@@ -178,6 +179,7 @@
     "title": "Vouchers",
     "upcoming": "{n} more for shifts you have booked",
     "upcomingFromShifts": "{n} more to come from booked shifts | {n} more to come from booked shifts",
+    "upcomingShort": "+{n} to come | +{n} to come",
     "used": "Used",
     "yours": "Your vouchers"
 }

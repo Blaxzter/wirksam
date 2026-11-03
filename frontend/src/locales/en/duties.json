@@ -71,6 +71,7 @@
         "yourSummary": "Your summary"
     },
     "bookings": {
+        "arrange": "Arrange",
         "bookConfirm": "Do you want to book this shift?",
         "bookSuccess": "Shift booked.",
         "cancel": "Cancel Booking",
@@ -97,14 +98,18 @@
             "upcoming": "Upcoming"
         },
         "groupBy": {
-            "date": "Group by date",
-            "location": "Group by location",
-            "none": "No grouping",
-            "task": "Group by task"
+            "date": "By date",
+            "location": "By place",
+            "task": "By task"
         },
-        "noDate": "No date",
+        "groupByShort": {
+            "date": "Date",
+            "location": "Place",
+            "task": "Task"
+        },
         "noLocation": "No location",
         "noTask": "No task",
+        "over": "over",
         "slotDeleted": "This shift was removed by an administrator.",
         "statuses": {
             "cancelled": "Cancelled",
@@ -112,10 +117,7 @@
         },
         "subtitle": "The shifts you have booked",
         "title": "My Bookings",
-        "today": "Today",
-        "tomorrow": "Tomorrow",
-        "unknownShift": "Unknown shift",
-        "yesterday": "Yesterday"
+        "unknownShift": "Unknown shift"
     },
     "deleteDialog": {
         "activeBookings": "This cancels {count} active booking(s). The people affected will see the cancellation in their bookings.",
@@ -506,16 +508,19 @@
         },
         "memberBadge": "Worked hours",
         "my": {
+            "breakdown": "Breakdown",
+            "breakdownLabel": "Break down my hours",
             "empty": "No hours yet. They show up here once your first shift is over.",
             "fromShifts": "From shifts",
-            "hideDetails": "Hide breakdown",
             "manual": "Additional",
-            "shiftCount": "{count} shift | {count} shifts",
-            "showDetails": "Show breakdown",
+            "plannedShort": "+{value} planned",
             "subtitle": "Time you have worked in this event",
             "title": "My hours",
-            "total": "Total",
-            "upcoming": "Still ahead"
+            "titleShort": "Hours",
+            "titleYour": "Your hours",
+            "upcomingLine": "{value} h more to come from booked shifts | {value} h more to come from booked shifts",
+            "workedCaption": "h worked",
+            "workedShort": "worked"
         },
         "unit": "{value} h"
     },

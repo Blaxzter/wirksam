@@ -55,7 +55,7 @@
             "title": "Jobs, and the shifts in them"
         },
         "myBookings": {
-            "body": "Each card is one of your shifts, past or upcoming, with the time, the place and the people working alongside you. That's what you need on the morning itself. This is also where you hand a shift back if plans change.",
+            "body": "Each card is one of your shifts, past or upcoming, with the day, the time and the place. That's what you need on the morning itself. Open one to hand the shift back if plans change.",
             "title": "Everything you said yes to"
         },
         "myHours": {

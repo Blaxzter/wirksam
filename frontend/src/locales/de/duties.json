@@ -71,6 +71,7 @@
         "yourSummary": "Deine Zusammenfassung"
     },
     "bookings": {
+        "arrange": "Anordnen",
         "bookConfirm": "Möchtest du diese Schicht buchen?",
         "bookSuccess": "Schicht gebucht.",
         "cancel": "Buchung stornieren",
@@ -99,12 +100,16 @@
         "groupBy": {
             "date": "Nach Datum",
             "location": "Nach Ort",
-            "none": "Keine Gruppierung",
             "task": "Nach Aufgabe"
         },
-        "noDate": "Kein Datum",
+        "groupByShort": {
+            "date": "Datum",
+            "location": "Ort",
+            "task": "Aufgabe"
+        },
         "noLocation": "Kein Ort",
         "noTask": "Keine Aufgabe",
+        "over": "vorbei",
         "slotDeleted": "Diese Schicht wurde von einem Administrator entfernt.",
         "statuses": {
             "cancelled": "Storniert",
@@ -112,10 +117,7 @@
         },
         "subtitle": "Deine gebuchten Schichten",
         "title": "Meine Buchungen",
-        "today": "Heute",
-        "tomorrow": "Morgen",
-        "unknownShift": "Unbekannte Schicht",
-        "yesterday": "Gestern"
+        "unknownShift": "Unbekannte Schicht"
     },
     "deleteDialog": {
         "activeBookings": "Dadurch werden {count} aktive Buchung(en) storniert. Die Betroffenen sehen die Stornierung in ihren Buchungen.",
@@ -506,16 +508,19 @@
         },
         "memberBadge": "Geleistete Stunden",
         "my": {
+            "breakdown": "Aufschlüsseln",
+            "breakdownLabel": "Meine Stunden aufschlüsseln",
             "empty": "Noch keine Stunden. Sie erscheinen hier, sobald deine erste Schicht vorbei ist.",
             "fromShifts": "Aus Schichten",
-            "hideDetails": "Aufschlüsselung ausblenden",
             "manual": "Zusätzlich",
-            "shiftCount": "{count} Schicht | {count} Schichten",
-            "showDetails": "Aufschlüsselung anzeigen",
+            "plannedShort": "+{value} geplant",
             "subtitle": "Deine geleistete Zeit in dieser Veranstaltung",
             "title": "Meine Stunden",
-            "total": "Gesamt",
-            "upcoming": "Noch geplant"
+            "titleShort": "Stunden",
+            "titleYour": "Deine Stunden",
+            "upcomingLine": "{value} Std. kommt noch aus gebuchten Schichten | {value} Std. kommen noch aus gebuchten Schichten",
+            "workedCaption": "Std. geleistet",
+            "workedShort": "geleistet"
         },
         "unit": "{value} Std."
     },

@@ -249,11 +249,11 @@ Not yet covered, and not currently tracked by an issue:
   - shows show cancelled toggle
 - **My Bookings – with data** (2)
   - booked shift appears in bookings list
-  - can cancel a booking from bookings page
+  - a booking opens its details, where it can be handed back
 - **My Bookings – filters** (1)
   - show cancelled toggle can be activated
 - **My Bookings – grouping** (1)
-  - grouping buttons are visible
+  - the list is arranged by date, task or place, one at a time
 
 #### `frontend/e2e/tests/authenticated/calendar-feed.spec.ts` — 3 tests
 
@@ -617,7 +617,7 @@ Not yet covered, and not currently tracked by an issue:
 
 - **My Bookings – on a phone** (2)
   - the search keeps a usable width next to one filter button
-  - the filter button holds the date range and the cancelled switch
+  - the filter button holds the date range, the cancelled switch and the arrangement
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 
