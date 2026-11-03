@@ -104,8 +104,11 @@
         "switch": "Sprache wechseln"
     },
     "memberPicker": {
+        "allMembers": "Alle Mitglieder",
+        "enterKey": "Enter",
         "enterToPick": "Enter zum Auswählen",
-        "noMatch": "Niemand passt."
+        "noMatch": "Niemand passt.",
+        "similar": "Ähnlich in der Veranstaltung"
     },
     "states": {
         "error": "Fehler",

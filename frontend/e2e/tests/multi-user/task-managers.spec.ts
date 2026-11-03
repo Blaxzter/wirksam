@@ -7,9 +7,16 @@
  * task that earns vouchers the shifts stay with the organisers unless the
  * event's voucher rules allow people in charge to change them.
  *
+ * Someone not in the event yet is invited by typing their address into the
+ * same dialog: they get an event invitation that names the task, and
+ * accepting it puts them in charge.
+ *
  * Each test gets its own event, and the person in charge is a disposable
  * user, so nothing leaks into the shared worker fixtures.
  */
+import type { Page } from '@playwright/test'
+
+import type { EventInvitationRead } from '../../../src/client/types.gen.js'
 import { expect, test } from '../../fixtures.js'
 import {
   type EventRead,
@@ -30,7 +37,7 @@ import { pickDate } from '../../helpers/ui.js'
 let event: EventRead
 let task: TaskRead
 
-test.beforeEach(async ({ adminPage, disposablePage, disposableUser }) => {
+test.beforeEach(async ({ adminPage, disposablePage, disposableUser, disposableUserOptions }) => {
   event = await createEvent(adminPage, uniqueName('E2E In Charge'), 'published', 'private', {
     start: futureDate(1),
     end: futureDate(4),
@@ -47,7 +54,10 @@ test.beforeEach(async ({ adminPage, disposablePage, disposableUser }) => {
     peoplePerShift: 2,
   })
   task = created.task
-  await addMember(adminPage, disposablePage, event.id, disposableUser.email)
+  // The invitation tests start with someone who is in no event at all.
+  if (disposableUserOptions.joinWorkerEvent !== false) {
+    await addMember(adminPage, disposablePage, event.id, disposableUser.email)
+  }
 })
 
 test.afterEach(async ({ adminPage }) => {
@@ -169,7 +179,7 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await disposablePage.getByTestId('btn-submit').click()
   await expect(disposablePage).toHaveURL(new RegExp(`/app/tasks/${task.id}$`))
   await expect(disposablePage.getByTestId('page-heading')).toHaveText(renamed)
-  expect((await listShifts(adminPage, task.id))).toHaveLength(shiftsBefore)
+  expect(await listShifts(adminPage, task.id)).toHaveLength(shiftsBefore)
 
   // The organiser allows it in the event's voucher rules.
   await adminPage.goto(`/app/event-settings/${event.id}?tab=vouchers`)
@@ -191,4 +201,77 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toHaveCount(0)
   // With the shifts theirs again, each batch's own edit takes over.
   await expect(disposablePage.getByTestId('btn-edit-task')).toHaveCount(0)
+})
+
+/** Open the task's "People in charge…" dialog as the organiser. */
+async function openManagersDialog(adminPage: Page) {
+  await adminPage.goto(`/app/tasks/${task.id}`)
+  await adminPage.getByTestId('btn-task-more').click()
+  await adminPage.getByTestId('btn-task-managers').click()
+  const dialog = adminPage.getByTestId('task-managers-dialog')
+  await expect(dialog).toBeVisible()
+  return dialog
+}
+
+test.describe('inviting by e-mail', () => {
+  test.use({ disposableUserOptions: { joinWorkerEvent: false } })
+
+  test('an organiser invites an address, and its owner accepts and is in charge of the task', async ({
+    adminPage,
+    disposablePage,
+    disposableUser,
+  }) => {
+    const dialog = await openManagersDialog(adminPage)
+
+    // An address no member has is offered as an invitation; Enter sends it.
+    const search = dialog.getByTestId('task-add-manager')
+    await search.click()
+    await search.fill(disposableUser.email)
+    await expect(adminPage.getByTestId('task-add-manager-invite')).toBeVisible()
+    await search.press('Enter')
+
+    await expect(dialog.getByTestId('task-managers-status')).toContainText(
+      `Invitation sent to ${disposableUser.email}`,
+    )
+    const row = dialog.getByTestId(`task-manager-invitation-${disposableUser.email}`)
+    await expect(row).toContainText('Invited')
+
+    // The invitation is an ordinary event invitation that names the task.
+    const invitations = await api<EventInvitationRead[]>(
+      adminPage,
+      'GET',
+      `/events/${event.id}/invitations`,
+    )
+    const invitation = invitations.find((i) => i.email === disposableUser.email)
+    expect(invitation?.tasks?.map((t) => t.name)).toEqual([task.name])
+
+    // The invitee sees the task on the invitation and lands on it, in charge.
+    await disposablePage.goto(`/invite/${invitation!.token}`)
+    await expect(disposablePage.getByTestId('invite-tasks')).toContainText(task.name)
+    await disposablePage.getByTestId('btn-accept-invite').click()
+    await expect(disposablePage).toHaveURL(new RegExp(`/app/tasks/${task.id}$`))
+    await expect(disposablePage.getByTestId('page-heading')).toHaveText(task.name)
+    await expect(disposablePage.getByTestId('task-you-are-in-charge')).toBeVisible()
+
+    const saved = await api<TaskRead>(adminPage, 'GET', `/tasks/${task.id}`)
+    expect(saved.managers?.map((m) => m.user_id)).toEqual([disposableUser.id])
+  })
+
+  test('an organiser withdraws an invitation to be in charge', async ({ adminPage }) => {
+    const email = `e2e-withdraw-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.example.com`
+    await api(adminPage, 'POST', `/tasks/${task.id}/managers/invite`, { email })
+
+    const dialog = await openManagersDialog(adminPage)
+    const row = dialog.getByTestId(`task-manager-invitation-${email}`)
+    await expect(row).toBeVisible()
+    await row.getByTestId('btn-invitation-withdraw').click()
+    await adminPage.getByTestId('btn-dialog-confirm').click()
+
+    await expect(row).toHaveCount(0)
+    await expect(dialog.getByTestId('task-managers-status')).toContainText('Invitation withdrawn.')
+    await expect(dialog.getByTestId('task-managers-empty')).toBeVisible()
+    expect(
+      await api<unknown[]>(adminPage, 'GET', `/tasks/${task.id}/managers/invitations`),
+    ).toEqual([])
+  })
 })

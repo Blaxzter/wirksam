@@ -17,6 +17,7 @@ import TaskManagersEditor from './TaskManagersEditor.vue'
 /**
  * "People in charge…" from the task page: a dialog on desktop, a drawer on
  * phones. Changes are saved as they are made, so there is no Save button.
+ * Someone not in the event yet is invited by typing their e-mail address.
  */
 defineProps<{
   task: TaskRead
@@ -38,6 +39,7 @@ const { t } = useI18n()
         </ResponsiveDialogTitle>
         <ResponsiveDialogDescription>
           {{ t('duties.tasks.managers.dialogDescription') }}
+          {{ t('duties.tasks.managers.inviteHint') }}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
       <ResponsiveDialogBody class="pb-6">
@@ -45,6 +47,7 @@ const { t } = useI18n()
           v-if="task.event_id"
           :task-id="task.id"
           :event-id="task.event_id"
+          :task-name="task.name"
           :managers="task.managers ?? []"
           :reload="reload"
         />
