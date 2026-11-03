@@ -5,8 +5,8 @@ import { ChevronRight, Plus, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
-import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useDialog } from '@/composables/useDialog'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -76,7 +76,9 @@ const avatarSrc = (b: VoucherBalance) =>
 
 /** People with nothing to their name stay in the members card; here they are noise. */
 const rows = computed(() =>
-  balances.value.filter((b) => b.earned > 0 || b.upcoming > 0 || b.redeemed > 0 || b.adjusted !== 0),
+  balances.value.filter(
+    (b) => b.earned > 0 || b.upcoming > 0 || b.redeemed > 0 || b.adjusted !== 0,
+  ),
 )
 
 /** "8 people · 36 vouchers used · 206 still to come", over everyone, not just the matches. */
@@ -351,28 +353,33 @@ async function afterChange() {
                   </p>
                 </div>
               </div>
+              <!--
+                The last column gets a little more room, so "Kommen noch" fits on
+                one line at phone width; on narrower screens a label may wrap,
+                and the values still sit on one line at the bottom.
+              -->
               <dl
-                class="mt-2.5 grid grid-cols-4 divide-x divide-border/70 rounded-xl bg-muted/60 text-xs"
+                class="mt-2.5 grid grid-cols-[repeat(3,minmax(0,1fr))_minmax(0,1.2fr)] divide-x divide-border/70 rounded-xl bg-muted/60 text-xs"
               >
-                <div class="min-w-0 px-2 py-1.5">
+                <div class="flex min-w-0 flex-col justify-between px-1.5 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colEarned') }}
                   </dt>
                   <dd class="text-[15px] font-bold tabular-nums">{{ row.earned }}</dd>
                 </div>
-                <div class="min-w-0 px-2 py-1.5">
+                <div class="flex min-w-0 flex-col justify-between px-1.5 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colUsed') }}
                   </dt>
                   <dd class="text-[15px] font-bold tabular-nums">{{ row.redeemed }}</dd>
                 </div>
-                <div class="min-w-0 px-2 py-1.5">
+                <div class="flex min-w-0 flex-col justify-between px-1.5 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.correction') }}
                   </dt>
                   <dd class="text-[15px] font-bold tabular-nums">{{ signed(row.adjusted) }}</dd>
                 </div>
-                <div class="min-w-0 px-2 py-1.5">
+                <div class="flex min-w-0 flex-col justify-between px-1.5 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colUpcoming') }}
                   </dt>
@@ -392,11 +399,15 @@ async function afterChange() {
         data-testid="event-vouchers-legend"
       >
         <div class="flex gap-1.5">
-          <dt class="shrink-0 font-semibold text-foreground/80">{{ t('vouchers.admin.colAvailable') }}</dt>
+          <dt class="shrink-0 font-semibold text-foreground/80">
+            {{ t('vouchers.admin.colAvailable') }}
+          </dt>
           <dd>{{ t('vouchers.admin.colAvailableHint') }}</dd>
         </div>
         <div class="flex gap-1.5">
-          <dt class="shrink-0 font-semibold text-foreground/80">{{ t('vouchers.admin.colUpcoming') }}</dt>
+          <dt class="shrink-0 font-semibold text-foreground/80">
+            {{ t('vouchers.admin.colUpcoming') }}
+          </dt>
           <dd>{{ t('vouchers.admin.colUpcomingHint') }}</dd>
         </div>
       </dl>
@@ -419,11 +430,17 @@ async function afterChange() {
             </AvatarFallback>
           </Avatar>
           <ResponsiveDialogTitle class="min-w-0 text-xl leading-tight font-bold">
-            {{ t('vouchers.admin.detailTitle', { name: detail ? displayName(detail.summary) : '' }) }}
+            {{
+              t('vouchers.admin.detailTitle', { name: detail ? displayName(detail.summary) : '' })
+            }}
           </ResponsiveDialogTitle>
         </div>
         <ResponsiveDialogDescription class="sr-only">
-          {{ t('vouchers.admin.detailDescription', { name: detail ? displayName(detail.summary) : '' }) }}
+          {{
+            t('vouchers.admin.detailDescription', {
+              name: detail ? displayName(detail.summary) : '',
+            })
+          }}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
 

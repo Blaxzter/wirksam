@@ -140,6 +140,13 @@ describe('VoucherHistory', () => {
     expect(w.findAll('[data-testid="btn-voucher-correction-actions"]')).toHaveLength(1)
   })
 
+  it("keeps the menu's room on the other rows for organisers, so the amounts line up", () => {
+    expect(mountHistory().find('[data-testid="voucher-history-menu-space"]').exists()).toBe(false)
+    // One shift and one redemption beside the one correction
+    const w = mountHistory({ canEdit: true })
+    expect(w.findAll('[data-testid="voucher-history-menu-space"]')).toHaveLength(2)
+  })
+
   it('says when there is nothing yet', () => {
     const w = mountHistory({ account: { shifts: [], entries: [] }, withUpcoming: true })
     expect(w.text()).toBe('Nothing yet.')

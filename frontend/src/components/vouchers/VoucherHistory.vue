@@ -222,6 +222,13 @@ const tileClass = 'flex size-[38px] shrink-0 items-center justify-center rounded
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <!-- The menu's room on every other row, so the amounts stay in one column -->
+        <span
+          v-else-if="canEdit"
+          class="-mr-2 size-10 shrink-0"
+          aria-hidden="true"
+          data-testid="voucher-history-menu-space"
+        />
       </li>
     </ul>
   </div>
