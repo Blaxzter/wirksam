@@ -293,7 +293,11 @@ test('the dashboard shows a code at the stand, without going to the vouchers pag
   await setSelectedEvent(disposablePage, event.id)
   await disposablePage.goto('/app/home')
   const card = disposablePage.getByTestId('my-vouchers-card')
-  await expect(card.getByTestId('dashboard-voucher-available')).toHaveText('2')
+  // At this width the card shows the numbers block of "My vouchers"; the
+  // phone tile's own number is hidden.
+  await expect(card.getByTestId('voucher-available')).toBeVisible()
+  await expect(card.getByTestId('voucher-available')).toHaveText('2')
+  await expect(card.getByTestId('voucher-adjusted')).toBeVisible()
 
   await card.getByTestId('btn-show-voucher-code').click()
   const codeDialog = disposablePage.getByTestId('voucher-code-dialog')
