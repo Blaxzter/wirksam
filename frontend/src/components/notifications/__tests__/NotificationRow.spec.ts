@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { mount } from '@vue/test-utils'
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { NotificationItem } from '@/stores/notification'
@@ -15,6 +15,9 @@ import i18n from '@/locales/i18n'
  * an emoji; unread with a green tile, a green edge, a bold title, a dot and
  * "Open task ›"; read with a grey tile and none of that.
  */
+
+const auth = vi.hoisted(() => ({ profile: { time_format: 'locale' } as { time_format: string } }))
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => auth }))
 
 const page = { template: '<div />' }
 const router = createRouter({
@@ -59,6 +62,7 @@ function mountRow(n: NotificationItem, dense = false) {
 
 beforeEach(() => {
   i18n.global.locale.value = 'en'
+  auth.profile.time_format = 'locale'
 })
 
 describe('NotificationRow', () => {
@@ -111,6 +115,18 @@ describe('NotificationRow', () => {
     expect(w.emitted('open')).toHaveLength(1)
     expect(w.emitted('read')).toHaveLength(1)
     expect(w.emitted('dismiss')).toHaveLength(1)
+  })
+
+  it("follows the reader's 12 or 24 hour clock for older notices", () => {
+    const yesterday = notice({ created_at: naive(new Date(2026, 10, 2, 18, 40)) })
+    auth.profile.time_format = 'h12'
+    expect(mountRow(yesterday).find('[data-testid="notification-time"]').text()).toMatch(
+      /^Yesterday, 06:40\sPM$/,
+    )
+    auth.profile.time_format = 'h24'
+    expect(mountRow(yesterday).find('[data-testid="notification-time"]').text()).toBe(
+      'Yesterday, 18:40',
+    )
   })
 
   it('keeps the dropdown’s card smaller and its text to two lines', () => {

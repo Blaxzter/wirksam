@@ -27,6 +27,7 @@ const store = vi.hoisted(() => ({
   loadMoreNotifications: vi.fn(),
 }))
 vi.mock('@/stores/notification', () => ({ useNotificationStore: () => store }))
+vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ profile: { time_format: 'h24' } }) }))
 
 const page = { template: '<div />' }
 

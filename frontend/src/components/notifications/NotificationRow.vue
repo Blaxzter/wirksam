@@ -30,6 +30,8 @@ import { RouterLink } from 'vue-router'
 
 import type { NotificationItem } from '@/stores/notification'
 
+import { useFormatters } from '@/composables/useFormatters'
+
 import { Button } from '@/components/ui/button'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
@@ -95,7 +97,10 @@ const ICONS: Record<string, Component> = {
 const icon = computed(() => ICONS[props.notification.notification_type_code] ?? Bell)
 const target = computed(() => notificationTarget(props.notification.data))
 const unread = computed(() => !props.notification.is_read)
-const age = computed(() => noticeTime(props.notification.created_at, props.now, t, locale.value))
+const { hour12 } = useFormatters()
+const age = computed(() =>
+  noticeTime(props.notification.created_at, props.now, t, locale.value, hour12.value),
+)
 </script>
 
 <template>

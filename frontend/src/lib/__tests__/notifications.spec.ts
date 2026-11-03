@@ -134,6 +134,18 @@ describe('noticeTime', () => {
     )
   })
 
+  it("follows the reader's clock setting when one is given", () => {
+    expect(noticeTime(naive(at(2, 18, 40)), NOW, t, 'en', true)).toMatch(
+      /^notifications\.time\.yesterday\{"time":"06:40\sPM"\}$/,
+    )
+    expect(noticeTime(naive(at(2, 18, 40)), NOW, t, 'en', false)).toBe(
+      'notifications.time.yesterday{"time":"18:40"}',
+    )
+    expect(noticeTime(naive(at(1, 9, 5)), NOW, t, 'de', true)).toMatch(
+      /^So\., 1\. Nov\., 09:05\sAM$/,
+    )
+  })
+
   it('is empty for an unreadable date', () => {
     expect(noticeTime('', NOW, t, 'en')).toBe('')
   })

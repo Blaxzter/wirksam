@@ -92,12 +92,19 @@ type Translate = (key: string, named?: Record<string, unknown>) => string
 
 /**
  * How old a notice reads: minutes or hours today ("5 min ago"), "Yesterday,
- * 18:40", then the date with its time.
+ * 18:40", then the date with its time. `hour12` is the reader's clock setting
+ * (`useFormatters().hour12`); left out, the language decides.
  */
-export function noticeTime(iso: string, now: Date, t: Translate, locale: string): string {
+export function noticeTime(
+  iso: string,
+  now: Date,
+  t: Translate,
+  locale: string,
+  hour12?: boolean,
+): string {
   const date = parseServerDate(iso)
   if (!date) return ''
-  const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12 })
   switch (dayGroup(date, now)) {
     case 'today': {
       const minutes = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 60_000))
@@ -115,6 +122,7 @@ export function noticeTime(iso: string, now: Date, t: Translate, locale: string)
         ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
         hour: '2-digit',
         minute: '2-digit',
+        hour12,
       })
   }
 }
