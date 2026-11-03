@@ -30,6 +30,11 @@ const props = defineProps<{
   /** `max_bookings` — how many people the shift is asking for. */
   capacity: number
   loading?: boolean
+  /**
+   * How many the shift itself says are on it (`current_bookings`): the count
+   * and bar show this while the list is still loading, instead of "0 of 3".
+   */
+  booked?: number | null
   /** The shift is over: free places can no longer be filled, so say nothing of them. */
   hideFree?: boolean
   /** Phone layout. */
@@ -40,7 +45,9 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 
-const taken = computed(() => props.bookings.length)
+const taken = computed(() =>
+  props.loading && props.booked != null ? props.booked : props.bookings.length,
+)
 const full = computed(() => taken.value >= props.capacity)
 const fill = computed(() =>
   props.capacity > 0 ? Math.min(100, Math.round((taken.value / props.capacity) * 100)) : 0,
@@ -51,9 +58,7 @@ const fill = computed(() =>
  * twelve people would otherwise push everyone who actually signed up off the
  * screen behind eleven identical placeholders.
  */
-const freeCount = computed(() =>
-  props.hideFree ? 0 : Math.max(0, props.capacity - props.bookings.length),
-)
+const freeCount = computed(() => (props.hideFree ? 0 : Math.max(0, props.capacity - taken.value)))
 
 const countText = computed(() =>
   // The table has room to say what is left; the phone header says it in the list.

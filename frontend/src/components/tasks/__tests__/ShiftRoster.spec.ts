@@ -197,6 +197,15 @@ describe('ShiftRoster, either layout', () => {
     expect(rows(w)).toHaveLength(0)
   })
 
+  it('keeps the shift\'s own count while the list loads, not "0 of 3"', () => {
+    const w = mountRoster({ bookings: [], loading: true, booked: 3 })
+    expect(w.find('[data-testid="shift-roster-count"]').text()).toBe('3 of 3')
+    expect(w.find('[data-testid="shift-roster-count"] span span').classes()).toContain('bg-primary')
+    // Once the list is there, it counts.
+    const loaded = mountRoster({ booked: 3 })
+    expect(loaded.find('[data-testid="shift-roster-count"]').text()).toBe('2 of 3, 1 place free')
+  })
+
   it('fills the bar by how many signed up, green once full', () => {
     const half = mountRoster({ bookings: [vroni()], capacity: 2 })
     const bar = half.find('[data-testid="shift-roster-count"] span span')

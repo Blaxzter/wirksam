@@ -560,6 +560,7 @@ const actionClass = computed(() =>
             :bookings="shiftBookings"
             :capacity="capacity"
             :loading="loadingBookings"
+            :booked="bookedCount"
             :hide-free="hasEnded"
             :compact="isPhone"
             :my-id="myId"
