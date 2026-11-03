@@ -82,8 +82,8 @@
             "title": "Wo noch Hilfe gebraucht wird"
         },
         "shiftHeader": {
-            "body": "Ganz oben: was für eine Schicht das ist, wann sie stattfindet und wie viele ihrer Plätze schon belegt sind. Oft reicht das schon, um zu wissen, ob sie in deinen Tag passt.",
-            "title": "Was, wann und wie voll"
+            "body": "Ganz oben: was für eine Schicht das ist, wann und wo sie stattfindet. Oft reicht das schon, um zu wissen, ob sie in deinen Tag passt.",
+            "title": "Was und wann"
         },
         "shiftMap": {
             "body": "Wenn es einen Plan vom Gelände gibt, zeigt diese kleine Karte die Stelle. Öffne die Karte, um das ganze Gelände mit allen Orten zu sehen, an denen Leute gebraucht werden.",
@@ -94,7 +94,7 @@
             "title": "Wo du hinmusst"
         },
         "shiftRoster": {
-            "body": "In der Liste stehen die, die schon zugesagt haben, und jede leere Zeile ist ein Platz, der noch frei ist. Wenn du siehst, mit wem du zusammenarbeiten würdest, fällt die Entscheidung oft leichter.",
+            "body": "Wie voll sie ist, wer schon zugesagt hat und wie viele Plätze noch frei sind. Wenn du siehst, mit wem du zusammenarbeiten würdest, fällt die Entscheidung oft leichter.",
             "title": "Wer schon dabei ist"
         }
     },

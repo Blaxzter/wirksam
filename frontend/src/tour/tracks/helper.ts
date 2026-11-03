@@ -219,9 +219,27 @@ export const helperTrack = defineTrack('helper', [
     id: 'shiftHeader',
     chapter: 'takingAShift',
     route: 'tasks',
-    // The title line, which carries the taken/needed badge beside it and the
-    // date underneath — the three things the copy names.
+    // The title line, with the date underneath and the place in a chip below
+    // it — the three things the copy names. How full it is moved down to the
+    // roster, the next step.
     element: '[data-testid="shift-detail-title"]',
+    waitFor: SHIFT_FOOTER,
+    inOverlay: true,
+    side: 'top',
+    before: openShiftDialog,
+  },
+  {
+    id: 'shiftRoster',
+    chapter: 'takingAShift',
+    route: 'tasks',
+    // Straight after the header, in the order the dialog reads: who is on it
+    // comes before where it is.
+    element: '[data-testid="shift-roster"]',
+    // Below `sm` the dialog is a bottom sheet, and the roster fills most of it
+    // — there is nowhere left to put a card beside it. The title is a one-line
+    // anchor at the top of the same sheet, so the popover has the whole of the
+    // screen above to sit in and the roster stays visible underneath.
+    mobileElement: '[data-testid="shift-detail-title"]',
     waitFor: SHIFT_FOOTER,
     inOverlay: true,
     side: 'top',
@@ -232,9 +250,9 @@ export const helperTrack = defineTrack('helper', [
     chapter: 'takingAShift',
     route: 'tasks',
     // The location panel only renders when the place has something written
-    // about it. The tour's shift is on the seeder's first task, whose location
-    // always has, so it is there for a demo; anywhere else the short wait
-    // degrades the step to a centred card.
+    // about it or a pin on the plan. The tour's shift is on the seeder's first
+    // task, whose location has both, so it is there for a demo; anywhere else
+    // the short wait degrades the step to a centred card.
     element: '[data-testid="shift-location-details"]',
     anchorTimeout: 1500,
     inOverlay: true,
@@ -248,24 +266,10 @@ export const helperTrack = defineTrack('helper', [
     // Its own step rather than a clause of the one above: the popover for the
     // location panel lands on the map, so copy about both could only ever
     // point at one of them. Same condition as above — the seeder pins the
-    // first task's location on the venue plan.
+    // first task's location on the venue plan — and the map sits inside the
+    // location panel, which a short description (the seeder's) opens.
     element: '[data-testid="shift-mini-map"]',
     anchorTimeout: 1500,
-    inOverlay: true,
-    side: 'top',
-    before: openShiftDialog,
-  },
-  {
-    id: 'shiftRoster',
-    chapter: 'takingAShift',
-    route: 'tasks',
-    element: '[data-testid="shift-roster"]',
-    // Below `sm` the dialog is a bottom sheet, and the roster fills most of it
-    // — there is nowhere left to put a card beside it. The title is a one-line
-    // anchor at the top of the same sheet, so the popover has the whole of the
-    // screen above to sit in and the roster stays visible underneath.
-    mobileElement: '[data-testid="shift-detail-title"]',
-    waitFor: SHIFT_FOOTER,
     inOverlay: true,
     side: 'top',
     before: openShiftDialog,

@@ -82,8 +82,8 @@
             "title": "Where help is still needed"
         },
         "shiftHeader": {
-            "body": "At the top: what the shift is, when it is, and how many of its places are already taken. That's often enough to tell whether it fits your day.",
-            "title": "What, when and how full"
+            "body": "At the top: what the shift is, when it is and where. That's often enough to tell whether it fits your day.",
+            "title": "What and when"
         },
         "shiftMap": {
             "body": "Where the venue has a plan, this small map marks the spot. Open the map to see the whole site, with every place that needs people.",
@@ -94,7 +94,7 @@
             "title": "Where to go"
         },
         "shiftRoster": {
-            "body": "The list shows who has already said yes, and each empty line is a place that is still free. Seeing who you'd work with often makes the decision easier.",
+            "body": "How full it is, who has already said yes and how many places are still free. Seeing who you'd work with often makes the decision easier.",
             "title": "Who is already on it"
         }
     },
