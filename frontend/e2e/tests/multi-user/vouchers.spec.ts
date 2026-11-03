@@ -8,8 +8,8 @@
  *
  * Nobody can book a shift that is over, so the volunteer books a future one
  * first and the organiser then moves it to yesterday (organisers may change
- * the past). The shift's task earns nothing until after that, which is the
- * "changes also count for shifts already worked" rule.
+ * the past). The rate is set while the shift is still ahead: earned is
+ * earned, so a rate raised after a shift is over pays nothing for it.
  *
  * Each test gets its own event, and the volunteer is a disposable user, so
  * nothing leaks into the shared worker fixtures.
@@ -70,11 +70,9 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   disposablePage,
   disposableUser,
 }) => {
-  // The volunteer books a shift while it is still ahead; the organiser then
-  // moves it to yesterday, so it is over without anyone booking a past shift.
+  // The volunteer books a shift while it is still ahead.
   const [shift] = await listShifts(adminPage, shiftTask.id)
   await bookShift(disposablePage, shift.id)
-  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
 
   // The organiser sets two vouchers per shift from the task page...
   await adminPage.goto(`/app/tasks/${shiftTask.id}`)
@@ -89,6 +87,9 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   await expect(adminPage.getByTestId('task-vouchers-per-shift')).toContainText(
     '2 vouchers per shift',
   )
+  // ...moves the booked shift to yesterday, so it is over and has earned them
+  // without anyone booking a past shift...
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
 
   // ...and makes the other task a place that takes them.
   await adminPage.goto(`/app/tasks/${pointTask.id}`)
@@ -170,8 +171,8 @@ test('the dashboard shows a code at the stand, without going to the vouchers pag
   // about the dashboard's own "Show my code", which opens its own dialog.
   const [shift] = await listShifts(adminPage, shiftTask.id)
   await bookShift(disposablePage, shift.id)
-  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
   await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
 
   await setSelectedEvent(disposablePage, event.id)
   await disposablePage.goto('/app/home')
