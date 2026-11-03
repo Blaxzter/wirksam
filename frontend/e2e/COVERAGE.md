@@ -46,10 +46,10 @@ Not yet covered, and not currently tracked by an issue:
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 26      |
 | `mobile`     | 5          | 19      |
-| `multi-user` | 7          | 72      |
+| `multi-user` | 7          | 73      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **445** |
+| **Total**    | **62**     | **446** |
 
 ## Inventory
 
@@ -645,7 +645,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 72 tests
+### Project `multi-user` — 7 files, 73 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -752,9 +752,10 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser puts an invited address in charge once it has joined the event another way
   - an organiser invites an address while creating a task
 
-#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 3 tests
+#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 4 tests
 
 - a volunteer shows their code and an organiser redeems it at a stand
+- without a phone, an organiser picks the person by what they have, then the next one
 - the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 

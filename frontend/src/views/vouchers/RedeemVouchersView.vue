@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { CircleAlert, ChevronDown, Info, Keyboard, MapPin, ScanLine, UserSearch } from '@lucide/vue'
+import {
+  ChevronDown,
+  CircleAlert,
+  Info,
+  Keyboard,
+  MapPin,
+  ScanLine,
+  Ticket,
+  UserSearch,
+} from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -17,6 +27,7 @@ import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import { NativeSelect } from '@/components/ui/native-select'
 import {
+  RESPONSIVE_DIALOG_MOBILE_QUERY,
   ResponsiveDialog,
   ResponsiveDialogBody,
   ResponsiveDialogContent,
@@ -36,6 +47,7 @@ import VoucherScanner, { type ScannerError } from '@/components/vouchers/Voucher
 import type {
   EventMemberRead,
   PointRedemptionList,
+  VoucherBalance,
   VoucherCheckResult,
   VoucherPointRead,
 } from '@/client/types.gen'
@@ -311,17 +323,70 @@ function submitTyped() {
 
 // --- Picking the person ---
 
+/** A phone picks in a full-screen sheet; a wider screen in a dialog with a dropdown. */
+const isPhone = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
+
 const members = ref<EventMemberRead[]>([])
+const membersLoading = ref(false)
+
+/**
+ * user id → how many they can redeem, beside each name in the picker.
+ * Only organisers may read everyone's numbers (`…/vouchers/people`), so for
+ * anyone else this stays `null` and the picker shows names alone.
+ */
+const balances = ref<Record<string, number> | null>(null)
+
+/** Nobody can be picked who has nothing to redeem; the picker says why. */
+const noVouchers = computed<Record<string, string> | undefined>(() => {
+  const counts = balances.value
+  if (!counts) return undefined
+  const reason = t('vouchers.redeem.noVouchersLeft')
+  return Object.fromEntries(
+    members.value.filter((m) => counts[m.user_id] === 0).map((m) => [m.user_id, reason]),
+  )
+})
+
+const countOf = (member: EventMemberRead) => balances.value?.[member.user_id] ?? 0
+
+const pickContext = computed(() =>
+  t(balances.value ? 'vouchers.redeem.pickContextCounts' : 'vouchers.redeem.pickContext', {
+    place: point.value?.name ?? '',
+  }),
+)
+
+async function loadMembers(id: string) {
+  membersLoading.value = true
+  try {
+    const res = await get<{ data: EventMemberRead[] }>({ url: `/events/${id}/members` })
+    if (eventId.value === id) members.value = res.data
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    membersLoading.value = false
+  }
+}
+
+/** Read afresh on every opening: a shift that ended a minute ago counts already. */
+async function loadBalances(id: string) {
+  if (!isAdmin.value) {
+    balances.value = null
+    return
+  }
+  try {
+    const res = await get<{ data: VoucherBalance[] }>({ url: `/events/${id}/vouchers/people` })
+    if (eventId.value !== id) return
+    balances.value = Object.fromEntries(res.data.map((b) => [b.user_id, b.available]))
+  } catch {
+    // Without the numbers the picker still works; it just shows names.
+    balances.value = null
+  }
+}
 
 async function openPicker() {
   pickOpen.value = true
-  if (members.value.length > 0 || !eventId.value) return
-  try {
-    const res = await get<{ data: EventMemberRead[] }>({ url: `/events/${eventId.value}/members` })
-    members.value = res.data
-  } catch (error) {
-    toastApiError(error)
-  }
+  const id = eventId.value
+  if (!id) return
+  await Promise.all([members.value.length > 0 ? null : loadMembers(id), loadBalances(id)])
 }
 
 function pickMember(member: EventMemberRead) {
@@ -329,8 +394,23 @@ function pickMember(member: EventMemberRead) {
   void check({ user_id: member.user_id })
 }
 
+/**
+ * "Next person" in the confirm, once it has closed: the next one is taken the
+ * way this one was. Picked by hand, the picker opens again; a typed code
+ * leaves the cursor in the empty code field. The camera needs nothing: it
+ * scans again as soon as the confirm is gone.
+ */
+function readyNext() {
+  if (!subject.value?.code && point.value?.can_redeem_manually) {
+    void openPicker()
+    return
+  }
+  if (typeOpen.value) document.getElementById('voucher-code-input')?.focus()
+}
+
 watch(eventId, () => {
   members.value = []
+  balances.value = null
 })
 </script>
 
@@ -534,9 +614,45 @@ watch(eventId, () => {
         :event-id="eventId"
         :task-id="point.task_id"
         :subject="subject"
+        @next="readyNext"
       />
 
-      <ResponsiveDialog v-model:open="pickOpen">
+      <!-- Phone: straight into a full-screen list, the keyboard already up -->
+      <EventMemberPicker
+        v-if="isPhone"
+        v-model:sheet-open="pickOpen"
+        :members="members"
+        :unavailable="noVouchers"
+        :label="t('vouchers.redeem.pickPerson')"
+        :placeholder="t('vouchers.redeem.searchPerson')"
+        :empty-text="membersLoading ? t('common.states.loading') : undefined"
+        testid="voucher-pick-person"
+        phone-sheet
+        hide-field
+        :sheet-title="t('vouchers.redeem.pickSheetTitle')"
+        :sheet-context="pickContext"
+        @pick="pickMember"
+      >
+        <template v-if="balances" #trailing="{ member }">
+          <span
+            class="flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[13px] font-bold tabular-nums"
+            :class="
+              countOf(member) > 0
+                ? 'bg-hero-chip text-hero-chip-foreground'
+                : 'bg-secondary text-secondary-foreground'
+            "
+            :data-testid="`voucher-pick-count-${member.user_id}`"
+          >
+            <Ticket class="size-3.5 shrink-0" aria-hidden="true" />
+            <span aria-hidden="true">{{ countOf(member) }}</span>
+            <span class="sr-only">
+              {{ t('vouchers.available', { n: countOf(member) }, countOf(member)) }}
+            </span>
+          </span>
+        </template>
+      </EventMemberPicker>
+
+      <ResponsiveDialog v-else v-model:open="pickOpen">
         <ResponsiveDialogContent dialog-class="sm:max-w-md" data-testid="voucher-pick-dialog">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>{{ t('vouchers.redeem.pickPersonTitle') }}</ResponsiveDialogTitle>
@@ -547,13 +663,33 @@ watch(eventId, () => {
           <ResponsiveDialogBody class="pb-6">
             <EventMemberPicker
               :members="members"
+              :unavailable="noVouchers"
               :label="t('vouchers.redeem.pickPerson')"
               :placeholder="t('vouchers.redeem.searchPerson')"
+              :empty-text="membersLoading ? t('common.states.loading') : undefined"
               input-id="voucher-pick-person"
               :action-hint="t('vouchers.redeem.enterToPick')"
               testid="voucher-pick-person"
               @pick="pickMember"
-            />
+            >
+              <template v-if="balances" #trailing="{ member }">
+                <span
+                  class="flex shrink-0 items-center gap-1 rounded-full px-2 py-px text-xs font-bold tabular-nums"
+                  :class="
+                    countOf(member) > 0
+                      ? 'bg-hero-chip text-hero-chip-foreground'
+                      : 'bg-secondary text-secondary-foreground'
+                  "
+                  :data-testid="`voucher-pick-count-${member.user_id}`"
+                >
+                  <Ticket class="size-3 shrink-0" aria-hidden="true" />
+                  <span aria-hidden="true">{{ countOf(member) }}</span>
+                  <span class="sr-only">
+                    {{ t('vouchers.available', { n: countOf(member) }, countOf(member)) }}
+                  </span>
+                </span>
+              </template>
+            </EventMemberPicker>
           </ResponsiveDialogBody>
         </ResponsiveDialogContent>
       </ResponsiveDialog>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { CircleCheck, Info, Loader2 } from '@lucide/vue'
+import { Check, Info, Loader2, Minus, Plus, ScanLine, Ticket, UserSearch } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
@@ -18,6 +19,7 @@ import {
   NumberFieldInput,
 } from '@/components/ui/number-field'
 import {
+  RESPONSIVE_DIALOG_MOBILE_QUERY,
   ResponsiveDialog,
   ResponsiveDialogBody,
   ResponsiveDialogContent,
@@ -46,6 +48,11 @@ export interface RedeemSubject {
  * The step between "who is this" and "done": how many to take, then the
  * answer. A bottom drawer on phones with one big button.
  *
+ * The person sits on top as a chip with what they have, so whoever is at the
+ * counter can check name and number at a glance; once redeemed the sheet
+ * turns into a big tick with what is left. "Next person" (`next`) closes it
+ * and gets the page ready for the next one; "Done" only closes it.
+ *
  * One `request_id` per opening, reused by every retry, so a redemption whose
  * answer got lost on a busy network is reported rather than taken twice.
  */
@@ -57,10 +64,17 @@ const props = defineProps<{
 
 const open = defineModel<boolean>('open', { required: true })
 
-const emit = defineEmits<{ redeemed: [result: VoucherRedeemResult] }>()
+const emit = defineEmits<{
+  redeemed: [result: VoucherRedeemResult]
+  /** "Next person": the sheet closes, and the page readies the next redemption. */
+  next: []
+}>()
 
 const { t, locale } = useI18n()
 const { post } = useAuthenticatedClient()
+
+/** The same line the dialog itself switches to a bottom drawer at. */
+const isPhone = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
 
 /** One redemption never takes more than this (the server's limit). */
 const MAX_PER_REDEMPTION = 50
@@ -76,6 +90,13 @@ const result = ref<VoucherRedeemResult | null>(null)
 const alreadyUsed = ref<CodeUsedDetails | null>(null)
 
 const name = computed(() => props.subject?.name || '?')
+/** Picked by hand: the next one is probably picked the same way. */
+const byHand = computed(() => !!props.subject && !props.subject.code)
+const avatarUrl = computed(() =>
+  props.subject
+    ? avatarUrlFor({ id: props.subject.userId, avatar_etag: props.subject.avatarEtag })
+    : null,
+)
 const max = computed(() => Math.max(1, Math.min(available.value, MAX_PER_REDEMPTION)))
 
 /** The number in the field right now, typed or committed; `null` while it is empty. */
@@ -88,6 +109,8 @@ const redeemAmount = computed(() =>
   shownAmount.value === null ? null : Math.min(Math.max(1, shownAmount.value), max.value),
 )
 const overMax = computed(() => shownAmount.value !== null && shownAmount.value > max.value)
+/** Nothing left to choose: done, refused, or nothing to take. */
+const finished = computed(() => !!result.value || !!alreadyUsed.value || available.value === 0)
 
 // A committed value (blur, Enter, the ± buttons) replaces what was typed.
 watch(amount, () => {
@@ -99,8 +122,16 @@ function onAmountInput(event: Event) {
   typedAmount.value = text === '' ? Number.NaN : Number.parseInt(text, 10)
 }
 
+/**
+ * "Next person" was pressed. The page is told once the sheet has gone and
+ * would hand focus back, so what it focuses next (the picker, the code field)
+ * is not taken away again by the closing sheet.
+ */
+let nextPending = false
+
 watch(open, (isOpen) => {
   if (!isOpen) return
+  nextPending = false
   amount.value = 1
   typedAmount.value = null
   available.value = props.subject?.available ?? 0
@@ -108,6 +139,18 @@ watch(open, (isOpen) => {
   result.value = null
   alreadyUsed.value = null
 })
+
+function next() {
+  nextPending = true
+  open.value = false
+}
+
+function onCloseAutoFocus(event: Event) {
+  if (!nextPending) return
+  nextPending = false
+  event.preventDefault()
+  emit('next')
+}
 
 function timeOf(d: Date | null): string {
   return d ? d.toLocaleTimeString(locale.value, { hour: '2-digit', minute: '2-digit' }) : ''
@@ -157,138 +200,219 @@ async function redeem() {
 <template>
   <ResponsiveDialog v-model:open="open">
     <ResponsiveDialogContent
-      dialog-class="sm:max-w-sm"
+      dialog-class="sm:max-w-[420px] sm:rounded-[20px]"
       keep-keyboard-closed
       data-testid="voucher-redeem-confirm"
+      @close-auto-focus="onCloseAutoFocus"
     >
-      <ResponsiveDialogHeader>
-        <ResponsiveDialogTitle>
-          {{ t('vouchers.redeem.confirmTitle', { name }) }}
-        </ResponsiveDialogTitle>
-        <ResponsiveDialogDescription class="sr-only">
-          {{ t('vouchers.redeem.hasAvailable', { name, n: available }, available) }}
-        </ResponsiveDialogDescription>
-      </ResponsiveDialogHeader>
-
-      <ResponsiveDialogBody class="space-y-5 pb-4">
-        <div v-if="subject" class="flex items-center gap-3">
-          <Avatar class="size-12 shrink-0">
-            <AvatarImage
-              v-if="avatarUrlFor({ id: subject.userId, avatar_etag: subject.avatarEtag })"
-              :src="avatarUrlFor({ id: subject.userId, avatar_etag: subject.avatarEtag })!"
-            />
-            <AvatarFallback>{{ initials(name) }}</AvatarFallback>
-          </Avatar>
-          <div class="min-w-0">
-            <p class="truncate font-semibold">{{ name }}</p>
-            <p
-              v-if="available > 0 || result"
-              class="text-sm text-muted-foreground"
-              data-testid="voucher-redeem-available"
-            >
-              {{ t('vouchers.redeem.hasAvailable', { name, n: available }, available) }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Done -->
-        <div
-          v-if="result"
-          class="flex items-start gap-2 rounded-md border border-green-600/30 bg-green-500/10 p-3 text-sm text-green-800 dark:text-green-300"
-          role="status"
-          data-testid="voucher-redeem-success"
+      <!-- Done: a big tick, who it was for and what is left -->
+      <ResponsiveDialogBody
+        v-if="result"
+        class="flex flex-col items-center gap-3.5 pb-2 text-center"
+        :class="isPhone ? 'pt-4' : 'pt-7'"
+      >
+        <span
+          class="flex shrink-0 items-center justify-center rounded-full bg-primary/18 text-primary"
+          :class="isPhone ? 'size-18' : 'size-16'"
+          aria-hidden="true"
         >
-          <CircleCheck class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {{
-            t('vouchers.redeem.success', {
-              n: -result.entry.amount,
-              name: result.name || name,
-              left: result.available,
-            })
-          }}
-        </div>
-
-        <!-- The code had been used before: say where, not just "error" -->
-        <div
-          v-else-if="alreadyUsed"
-          class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-          role="status"
-          data-testid="voucher-redeem-already"
-        >
-          <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          {{
-            t(
-              'vouchers.redeem.alreadyRedeemed',
-              {
-                n: alreadyUsed.amount ?? 0,
-                place: alreadyUsed.taskName ?? '?',
-                time: timeOf(alreadyUsed.usedAt),
-              },
-              alreadyUsed.amount ?? 0,
-            )
-          }}
-        </div>
-
-        <p v-else-if="available === 0" class="text-sm text-muted-foreground">
-          {{ t('vouchers.redeem.noneLeft', { name }) }}
-        </p>
-
-        <NumberField
-          v-else
-          id="voucher-redeem-amount"
-          v-model="amount"
-          :min="1"
-          :max="max"
-          :disabled="busy"
-          data-testid="voucher-redeem-amount"
-        >
-          <Label for="voucher-redeem-amount">{{ t('vouchers.redeem.amount') }}</Label>
-          <NumberFieldContent>
-            <NumberFieldDecrement
-              class="p-4"
-              :aria-label="t('common.actions.decrease')"
-              data-testid="btn-voucher-amount-decrease"
-            />
-            <NumberFieldInput
-              class="h-14 text-2xl font-semibold"
-              @input="onAmountInput"
-              @blur="typedAmount = null"
-              @keydown.enter="typedAmount = null"
-            />
-            <NumberFieldIncrement
-              class="p-4"
-              :aria-label="t('common.actions.increase')"
-              data-testid="btn-voucher-amount-increase"
-            />
-          </NumberFieldContent>
-          <p
-            v-if="overMax"
-            class="text-sm text-muted-foreground"
-            data-testid="voucher-redeem-max"
+          <Check :class="isPhone ? 'size-9' : 'size-8'" :stroke-width="2.5" />
+        </span>
+        <div role="status" data-testid="voucher-redeem-success">
+          <ResponsiveDialogTitle class="font-bold" :class="isPhone ? 'text-2xl' : 'text-[22px]'">
+            {{ t('vouchers.redeem.done', { n: -result.entry.amount }, -result.entry.amount) }}
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription
+            class="mt-1 text-muted-foreground"
+            :class="isPhone ? 'text-base' : 'text-[15px]'"
           >
-            {{ t('vouchers.redeem.atMost', { n: max }) }}
-          </p>
-        </NumberField>
+            {{ t('vouchers.redeem.doneFor', { name: result.name || name }) }}
+          </ResponsiveDialogDescription>
+        </div>
+        <span
+          class="flex items-center gap-1.5 rounded-full bg-secondary font-bold text-secondary-foreground tabular-nums"
+          :class="isPhone ? 'px-3 py-1 text-[15px]' : 'px-[11px] py-1 text-sm'"
+          data-testid="voucher-redeem-left"
+        >
+          <Ticket class="size-4 shrink-0" aria-hidden="true" />
+          {{ t('vouchers.redeem.left', { n: result.available }, result.available) }}
+        </span>
       </ResponsiveDialogBody>
 
-      <ResponsiveDialogFooter>
-        <template v-if="result || alreadyUsed || available === 0">
-          <Button size="lg" class="w-full sm:w-auto" data-testid="btn-voucher-next" @click="open = false">
+      <template v-else>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle class="text-xl font-bold">
+            {{ t('vouchers.redeem.title') }}
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription class="sr-only">
+            {{ t('vouchers.redeem.hasAvailable', { name, n: available }, available) }}
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+
+        <ResponsiveDialogBody class="space-y-[18px] pb-4">
+          <!-- Who: the name and what they have, to check at a glance -->
+          <div
+            v-if="subject"
+            class="flex items-center rounded-2xl border bg-card"
+            :class="isPhone ? 'gap-3.5 p-3.5' : 'gap-3 px-3.5 py-3'"
+            data-testid="voucher-redeem-person"
+          >
+            <Avatar class="shrink-0" :class="isPhone ? 'size-12' : 'size-11'">
+              <AvatarImage v-if="avatarUrl" :src="avatarUrl" />
+              <AvatarFallback
+                class="bg-accent font-bold text-accent-foreground"
+                :class="isPhone ? 'text-base' : 'text-[15px]'"
+              >
+                {{ initials(name) }}
+              </AvatarFallback>
+            </Avatar>
+            <!-- Two lines rather than "Vroni Hartm…": the name is what gets checked -->
+            <span
+              class="line-clamp-2 min-w-0 flex-1 leading-tight font-bold break-words"
+              :class="isPhone ? 'text-lg' : 'text-[17px]'"
+            >
+              {{ name }}
+            </span>
+            <span
+              class="flex shrink-0 items-center gap-1.5 rounded-full font-bold tabular-nums"
+              :class="[
+                available > 0
+                  ? 'bg-hero-chip text-hero-chip-foreground'
+                  : 'bg-secondary text-secondary-foreground',
+                isPhone ? 'px-3 py-1 text-[15px]' : 'px-[11px] py-1 text-sm',
+              ]"
+              data-testid="voucher-redeem-available"
+            >
+              <Ticket class="size-4 shrink-0" aria-hidden="true" />
+              {{ t('vouchers.redeem.availableChip', { n: available }) }}
+            </span>
+          </div>
+
+          <!-- The code had been used before: say where, not just "error" -->
+          <div
+            v-if="alreadyUsed"
+            class="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+            role="status"
+            data-testid="voucher-redeem-already"
+          >
+            <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            {{
+              t(
+                'vouchers.redeem.alreadyRedeemed',
+                {
+                  n: alreadyUsed.amount ?? 0,
+                  place: alreadyUsed.taskName ?? '?',
+                  time: timeOf(alreadyUsed.usedAt),
+                },
+                alreadyUsed.amount ?? 0,
+              )
+            }}
+          </div>
+
+          <p v-else-if="available === 0" class="text-sm text-muted-foreground">
+            {{ t('vouchers.redeem.noneLeft', { name }) }}
+          </p>
+
+          <NumberField
+            v-else
+            id="voucher-redeem-amount"
+            v-model="amount"
+            :min="1"
+            :max="max"
+            :disabled="busy"
+            class="gap-2"
+            data-testid="voucher-redeem-amount"
+          >
+            <Label
+              for="voucher-redeem-amount"
+              class="font-bold"
+              :class="isPhone ? 'text-[15px]' : 'text-sm'"
+            >
+              {{ t('vouchers.redeem.amount') }}
+            </Label>
+            <NumberFieldContent
+              class="flex items-center border bg-card focus-within:ring-[3px] focus-within:ring-ring/50"
+              :class="isPhone ? 'rounded-2xl' : 'rounded-[14px]'"
+            >
+              <NumberFieldDecrement
+                class="static flex shrink-0 translate-y-0 items-center justify-center p-0 disabled:opacity-30"
+                :class="isPhone ? 'size-16' : 'size-14'"
+                :aria-label="t('common.actions.decrease')"
+                data-testid="btn-voucher-amount-decrease"
+              >
+                <Minus class="size-6" />
+              </NumberFieldDecrement>
+              <NumberFieldInput
+                class="min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 font-bold tabular-nums shadow-none focus-visible:ring-0"
+                :class="isPhone ? 'h-16 text-[30px]' : 'h-14 text-[26px]'"
+                @input="onAmountInput"
+                @blur="typedAmount = null"
+                @keydown.enter="typedAmount = null"
+              />
+              <NumberFieldIncrement
+                class="static flex shrink-0 translate-y-0 items-center justify-center p-0 disabled:opacity-30"
+                :class="isPhone ? 'size-16' : 'size-14'"
+                :aria-label="t('common.actions.increase')"
+                data-testid="btn-voucher-amount-increase"
+              >
+                <Plus class="size-6" />
+              </NumberFieldIncrement>
+            </NumberFieldContent>
+            <p
+              v-if="overMax"
+              class="text-sm text-muted-foreground"
+              data-testid="voucher-redeem-max"
+            >
+              {{ t('vouchers.redeem.atMost', { n: max }) }}
+            </p>
+          </NumberField>
+        </ResponsiveDialogBody>
+      </template>
+
+      <!--
+        A phone stacks the buttons with the main one on top (the footer
+        reverses them); a desktop dialog puts them in a row, the main one last.
+      -->
+      <ResponsiveDialogFooter :class="isPhone ? 'border-t-0' : result ? 'justify-center' : ''">
+        <template v-if="finished">
+          <Button
+            :variant="isPhone ? 'ghost' : 'outline'"
+            :class="isPhone ? 'h-12 text-base font-semibold' : 'h-11 px-[18px] font-semibold'"
+            data-testid="btn-voucher-done"
+            @click="open = false"
+          >
+            {{ t('vouchers.redeem.finish') }}
+          </Button>
+          <Button
+            :class="
+              isPhone ? 'h-[54px] rounded-[14px] text-[17px] font-bold' : 'h-11 px-5 font-bold'
+            "
+            data-testid="btn-voucher-next"
+            @click="next"
+          >
+            <UserSearch v-if="byHand" class="size-5" aria-hidden="true" />
+            <ScanLine v-else class="size-5" aria-hidden="true" />
             {{ t('vouchers.redeem.next') }}
           </Button>
         </template>
         <template v-else>
-          <Button variant="outline" :disabled="busy" @click="open = false">
+          <Button
+            :variant="isPhone ? 'ghost' : 'outline'"
+            :class="isPhone ? 'h-12 text-base font-semibold' : 'h-11 px-[18px] font-semibold'"
+            :disabled="busy"
+            @click="open = false"
+          >
             {{ t('common.actions.cancel') }}
           </Button>
           <Button
-            size="lg"
-            class="w-full sm:w-auto"
+            :class="
+              isPhone ? 'h-[54px] rounded-[14px] text-[17px] font-bold' : 'h-11 px-5 font-bold'
+            "
             :disabled="busy || !subject || redeemAmount === null"
             data-testid="btn-voucher-redeem"
             @click="redeem"
           >
-            <Loader2 v-if="busy" class="mr-2 size-4 animate-spin" aria-hidden="true" />
+            <Loader2 v-if="busy" class="size-4 animate-spin" aria-hidden="true" />
             {{
               redeemAmount === null
                 ? t('vouchers.redeem.confirmNoAmount')

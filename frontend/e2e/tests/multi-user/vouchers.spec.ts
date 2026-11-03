@@ -134,11 +134,13 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   await adminPage.getByTestId('voucher-code-input').fill(code)
   await adminPage.getByTestId('btn-voucher-check').click()
   const confirm = adminPage.getByTestId('voucher-redeem-confirm')
-  await expect(confirm.getByTestId('voucher-redeem-available')).toContainText('has 2 vouchers')
+  await expect(confirm.getByTestId('voucher-redeem-person')).toContainText(disposableUser.name)
+  await expect(confirm.getByTestId('voucher-redeem-available')).toHaveText('2 available')
   await confirm.getByTestId('btn-voucher-redeem').click()
-  await expect(confirm.getByTestId('voucher-redeem-success')).toContainText(
-    `1 redeemed for ${disposableUser.name}. 1 left.`,
-  )
+  const success = confirm.getByTestId('voucher-redeem-success')
+  await expect(success).toContainText('1 voucher redeemed')
+  await expect(success).toContainText(`for ${disposableUser.name}`)
+  await expect(confirm.getByTestId('voucher-redeem-left')).toHaveText('1 left')
 
   // The volunteer's screen follows within a couple of seconds, with what is left.
   const used = codeDialog.getByTestId('voucher-code-used')
@@ -146,9 +148,11 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   await expect(used.getByTestId('voucher-code-left')).toHaveText('1 voucher available')
   await expect(codeDialog.getByTestId('btn-voucher-code-new')).toBeVisible()
 
+  // "Next person" closes it and leaves the cursor in the empty code field.
   // Showing the same code again at the stand says where it went, and stays.
   await confirm.getByTestId('btn-voucher-next').click()
   await expect(confirm).toBeHidden()
+  await expect(adminPage.getByTestId('voucher-code-input')).toBeFocused()
   // The list under the scanner reads as vouchers, with today's total on top.
   const recentCard = adminPage.getByTestId('voucher-recent')
   await expect(recentCard.getByTestId('voucher-recent-today')).toHaveText('Today: 1 voucher')
@@ -159,6 +163,52 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   await expect(adminPage.getByTestId('voucher-check-problem')).toContainText(
     `Already redeemed: 1 voucher at ${pointTask.name}`,
   )
+})
+
+test('without a phone, an organiser picks the person by what they have, then the next one', async ({
+  adminPage,
+  disposablePage,
+  disposableUser,
+}) => {
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await bookShift(disposablePage, shift.id)
+  await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+  await api(adminPage, 'PATCH', `/tasks/${pointTask.id}`, { is_voucher_point: true })
+
+  await adminPage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('No camera', 'NotFoundError')),
+      },
+    })
+  })
+  await adminPage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
+  await adminPage.getByTestId('btn-voucher-pick-person').click()
+  const dialog = adminPage.getByTestId('voucher-pick-dialog')
+  await dialog.getByTestId('voucher-pick-person').click()
+
+  // Beside each name what they can redeem; the organiser has nothing and
+  // cannot be picked.
+  const list = adminPage.getByTestId('voucher-pick-person-list')
+  const volunteer = list.getByTestId(`voucher-pick-person-option-${disposableUser.id}`)
+  await expect(volunteer.getByTestId(`voucher-pick-count-${disposableUser.id}`)).toContainText('2')
+  await expect(list.getByRole('option', { name: /No vouchers left/ })).toHaveAttribute(
+    'data-disabled',
+    '',
+  )
+
+  await volunteer.click()
+  const confirm = adminPage.getByTestId('voucher-redeem-confirm')
+  await expect(confirm.getByTestId('voucher-redeem-person')).toContainText(disposableUser.name)
+  await confirm.getByTestId('btn-voucher-redeem').click()
+  await expect(confirm.getByTestId('voucher-redeem-left')).toHaveText('1 left')
+
+  // Picked by hand, so "Next person" goes straight back to the list.
+  await confirm.getByTestId('btn-voucher-next').click()
+  await expect(confirm).toBeHidden()
+  await expect(dialog).toBeVisible()
 })
 
 test('the dashboard shows a code at the stand, without going to the vouchers page', async ({

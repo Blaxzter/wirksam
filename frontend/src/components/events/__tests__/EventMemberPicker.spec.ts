@@ -160,6 +160,26 @@ describe('EventMemberPicker with allowEmail', () => {
     expect(wrapper.emitted('invite')).toBeUndefined()
   })
 
+  it('renders nothing with hideField on a wider screen', () => {
+    wrapper = mountPicker({ phoneSheet: true, hideField: true })
+    expect(wrapper.find('input').exists()).toBe(false)
+    expect(wrapper.find('label').exists()).toBe(false)
+    expect(options(wrapper)).toEqual([])
+  })
+
+  it('puts the trailing slot into each dropdown row', () => {
+    wrapper = mount(EventMemberPicker, {
+      props: { members, label: 'Pick', testid: 'p' },
+      attachTo: document.body,
+      global: { plugins: [i18n], stubs: comboboxStubs },
+      slots: {
+        trailing:
+          '<template #trailing="{ member }"><b class="n">{{ member.user_id }}</b></template>',
+      },
+    })
+    expect(wrapper.find('[data-testid="p-option-u-mira"] .n').text()).toBe('u-mira')
+  })
+
   it('does not pick someone who is unavailable', async () => {
     wrapper = mountPicker({ unavailable: { 'u-pia': 'Already in charge' } })
     pickValue(wrapper, 'u-pia')
@@ -238,6 +258,41 @@ describe('EventMemberPicker on a phone with phoneSheet', () => {
     expect(wrapper.emitted('pick')).toBeUndefined()
     expect(wrapper.emitted('invite')).toBeUndefined()
     expect(sheet()).not.toBeNull()
+  })
+
+  it('leaves the field out with hideField: the parent opens the sheet itself', async () => {
+    isPhone.value = true
+    wrapper = mountPicker({ phoneSheet: true, hideField: true, sheetOpen: false })
+    expect(wrapper.find('[data-testid="p"]').exists()).toBe(false)
+    expect(wrapper.find('label').exists()).toBe(false)
+    expect(sheet()).toBeNull()
+
+    await wrapper.setProps({ sheetOpen: true })
+    await nextTick()
+    expect(sheet()).not.toBeNull()
+
+    document.querySelector<HTMLButtonElement>('[data-testid="p-option-u-jonas"]')!.click()
+    await nextTick()
+    expect(wrapper.emitted('pick')?.[0]?.[0]).toMatchObject({ user_id: 'u-jonas' })
+    // Picking closes the sheet the parent opened.
+    expect(wrapper.emitted('update:sheetOpen')?.at(-1)).toEqual([false])
+  })
+
+  it('shows what the parent puts at the end of each row', async () => {
+    isPhone.value = true
+    wrapper = mount(EventMemberPicker, {
+      props: { members, label: 'Pick', testid: 'p', phoneSheet: true, hideField: true },
+      attachTo: document.body,
+      global: { plugins: [i18n], stubs: comboboxStubs },
+      slots: {
+        trailing:
+          '<template #trailing="{ member }"><b class="n">{{ member.name.length }}</b></template>',
+      },
+    })
+    await wrapper.setProps({ sheetOpen: true })
+    await nextTick()
+    const jonas = document.querySelector('[data-testid="p-option-u-jonas"]')!
+    expect(jonas.querySelector('.n')?.textContent).toBe(String('Jonas Albrecht'.length))
   })
 
   it('keeps the dropdown on a phone when the caller did not ask for the sheet', () => {

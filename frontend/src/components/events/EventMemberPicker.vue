@@ -47,7 +47,12 @@ import { initials } from '@/lib/format'
  *
  * With `phoneSheet`, a phone gets a full-screen picker instead of a dropdown:
  * the field opens it, and the list fills the screen above the keyboard rather
- * than squeezing into a popup over a bottom sheet.
+ * than squeezing into a popup over a bottom sheet. With `hideField` as well,
+ * the field is left out and the parent opens the sheet from a button of its
+ * own through `v-model:sheet-open` (the redeem page's "Pick a person").
+ *
+ * The `trailing` slot puts something at the end of each row, in the sheet and
+ * in the dropdown alike (how many vouchers someone has, when redeeming).
  */
 const props = withDefaults(
   defineProps<{
@@ -72,6 +77,12 @@ const props = withDefaults(
     sheetTitle?: string
     /** The line under the search field in the full-screen sheet. */
     sheetContext?: string
+    /**
+     * With `phoneSheet`, on a phone: no field and no label, only the sheet,
+     * which the parent opens through `v-model:sheet-open`. Elsewhere the
+     * picker renders nothing, so the parent shows its own picker there.
+     */
+    hideField?: boolean
   }>(),
   {
     unavailable: undefined,
@@ -86,6 +97,14 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ pick: [member: EventMemberRead]; invite: [email: string] }>()
+
+defineSlots<{
+  /** At the end of a member's row, in the sheet and in the dropdown. */
+  trailing?: (props: { member: EventMemberRead }) => unknown
+}>()
+
+/** The full-screen sheet is open. */
+const sheetOpen = defineModel<boolean>('sheetOpen', { default: false })
 
 const { t } = useI18n()
 
@@ -104,7 +123,6 @@ const INVITE = 'invite:'
 
 const isPhone = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
 const usesSheet = computed(() => props.phoneSheet && isPhone.value)
-const sheetOpen = ref(false)
 
 /** The typed address when it can be invited: no member has it. */
 const inviteEmail = computed(() => {
@@ -198,11 +216,12 @@ watch(sheetOpen, (isOpen) => {
 
 <template>
   <div class="space-y-1.5">
-    <label :for="inputId" class="text-sm font-medium">{{ label }}</label>
+    <label v-if="!hideField" :for="inputId" class="text-sm font-medium">{{ label }}</label>
 
     <!-- Phone: a field that opens the full-screen picker -->
     <template v-if="usesSheet">
       <button
+        v-if="!hideField"
         :id="inputId"
         type="button"
         class="border-input focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground flex h-11 w-full items-center gap-2 rounded-md border bg-transparent px-3 text-left text-base shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
@@ -318,6 +337,7 @@ watch(sheetOpen, (isOpen) => {
                         {{ unavailable?.[member.user_id] ?? (member.name ? member.email : '') }}
                       </span>
                     </span>
+                    <slot name="trailing" :member="member" />
                   </button>
                 </li>
               </ul>
@@ -335,7 +355,7 @@ watch(sheetOpen, (isOpen) => {
 
     <!-- Wider screens: a search field with a dropdown -->
     <Combobox
-      v-else
+      v-else-if="!hideField"
       v-model:open="open"
       :model-value="null"
       ignore-filter
@@ -419,6 +439,7 @@ watch(sheetOpen, (isOpen) => {
                 · {{ t('duties.tasks.managers.inEvent') }}
               </span>
             </span>
+            <slot name="trailing" :member="member" />
             <span
               v-if="unavailable?.[member.user_id]"
               class="text-muted-foreground shrink-0 text-xs"
