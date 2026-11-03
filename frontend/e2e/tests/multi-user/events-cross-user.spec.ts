@@ -31,16 +31,19 @@ test.describe('Cross-user – task booking flow', () => {
   })
 
   test('member books shift, admin sees updated count', async ({ adminPage, memberPage }) => {
-    // Member navigates to task and books first shift (dynamic shift counts)
+    // Member navigates to the task and books the first shift; a volunteer's
+    // tap on a shift books it, after a confirmation.
     await memberPage.goto(`/app/tasks/${created.task.id}`)
-    await expect(memberPage.getByText(/0\/3/).first()).toBeVisible()
-    await memberPage.getByText(/0\/3/).first().click()
+    const memberCard = memberPage.locator('[data-testid^="shift-card-"]').first()
+    await expect(memberCard).toContainText('0 of 3')
+    await memberCard.click()
     await memberPage.getByTestId('btn-dialog-confirm').click()
-    await expect(memberPage.getByText(/1\/3/).first()).toBeVisible()
+    await expect(memberCard).toContainText('1 of 3')
 
-    // Admin sees the updated booking count (dynamic shift counts)
+    // Admin sees the updated booking count on the same (first) shift
     await adminPage.goto(`/app/tasks/${created.task.id}`)
-    await expect(adminPage.getByText(/1\/3/).first()).toBeVisible()
+    const adminCard = adminPage.locator('[data-testid^="shift-card-"]').first()
+    await expect(adminCard).toContainText('1 of 3')
   })
 
   test('admin-created task visible to member in tasks list', async ({ memberPage }) => {
