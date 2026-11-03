@@ -126,12 +126,26 @@ function ruleIdsWithReasons(rules: DisabledRule[]): string[] {
  * ("4 people are waiting to join") the moment its feed arrives, which is when
  * a scan that waits for the cards starts: its "Review" button came out at
  * 4.35:1 mid-fade, against about 8:1 once it has settled.
+ *
+ * And so do dialogs: the content fades and zooms in over 200 ms above an
+ * overlay that fades in over 150 ms, and `toBeVisible()` passes on the first
+ * frame. The team review dialog's small `text-muted-foreground` lines were
+ * measured part-way, as #7b766f on #ada79d and 4.37:1, against 6.9:1 once open.
  */
+const OPENING_LAYERS = [
+  '[role="dialog"][data-state="open"]',
+  '[role="alertdialog"][data-state="open"]',
+  '[data-slot$="-overlay"][data-state="open"]',
+].join(', ')
+
 async function settleOverlays(page: Page): Promise<void> {
   const notice = page.getByTestId('cookie-notice')
   if ((await notice.count()) > 0) await expect(notice).toHaveCSS('opacity', '1')
   for (const toast of await page.locator('[data-sonner-toast][data-visible="true"]').all()) {
     await expect(toast).toHaveCSS('opacity', '1')
+  }
+  for (const layer of await page.locator(OPENING_LAYERS).all()) {
+    await expect(layer).toHaveCSS('opacity', '1')
   }
 }
 
