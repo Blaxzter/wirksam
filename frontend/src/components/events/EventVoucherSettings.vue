@@ -115,9 +115,11 @@ async function save() {
 </script>
 
 <template>
-  <Card data-testid="section-event-voucher-rules">
+  <Card class="rounded-[20px] sm:rounded-[22px]" data-testid="section-event-voucher-rules">
     <CardHeader>
-      <CardTitle>{{ t('vouchers.eventSettings.title') }}</CardTitle>
+      <CardTitle class="text-[17px] leading-snug font-bold sm:text-lg">
+        {{ t('vouchers.eventSettings.title') }}
+      </CardTitle>
       <CardDescription class="max-sm:hidden">
         {{ t('vouchers.eventSettings.description') }}
       </CardDescription>
@@ -127,7 +129,7 @@ async function save() {
       <!-- Who may pick the person instead of scanning a code -->
       <div class="space-y-3">
         <div class="space-y-1">
-          <h3 id="voucher-manual-title" class="font-semibold">
+          <h3 id="voucher-manual-title" class="text-[15px] font-bold">
             {{ t('vouchers.eventSettings.manualTitle') }}
           </h3>
           <p id="voucher-manual-hint" class="text-sm text-muted-foreground">
@@ -156,11 +158,11 @@ async function save() {
               :data-testid="`voucher-manual-${option.value}`"
             />
             <span class="space-y-1">
-              <span class="block font-semibold leading-snug">{{ option.title }}</span>
-              <span class="block text-xs text-muted-foreground">{{ option.hint }}</span>
+              <span class="block text-[15px] font-bold leading-snug">{{ option.title }}</span>
+              <span class="block text-[13px] leading-snug text-foreground/80">{{ option.hint }}</span>
               <span
                 v-if="option.value === 'on_shift' && manual === 'on_shift'"
-                class="flex gap-1.5 text-xs text-amber-800 dark:text-amber-300"
+                class="flex gap-1.5 text-xs leading-snug text-warning"
                 data-testid="voucher-manual-on-shift-warning"
               >
                 <TriangleAlert class="mt-px size-3.5 shrink-0" aria-hidden="true" />
@@ -171,7 +173,7 @@ async function save() {
         </RadioGroup>
 
         <p
-          class="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground"
+          class="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground"
           data-testid="voucher-points"
         >
           <span>{{ t('vouchers.eventSettings.points') }}</span>
@@ -195,7 +197,7 @@ async function save() {
       <!-- May people in charge change the shifts of tasks that earn vouchers? -->
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0 space-y-1">
-          <Label for="voucher-managers-edit-shifts" class="font-semibold leading-snug">
+          <Label for="voucher-managers-edit-shifts" class="text-[15px] font-bold leading-snug">
             {{ t('vouchers.eventSettings.shiftsTitle') }}
           </Label>
           <p
@@ -225,7 +227,7 @@ async function save() {
           {{ t('vouchers.admin.afterEventHint') }}
         </p>
         <Button
-          class="max-sm:w-full"
+          class="h-11 rounded-xl px-5 font-bold max-sm:h-12 max-sm:w-full"
           :disabled="!dirty || saving"
           data-testid="btn-save-voucher-rules"
           @click="save"

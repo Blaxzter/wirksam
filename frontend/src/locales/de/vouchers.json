@@ -43,6 +43,7 @@
         "summaryPeople": "{n} Person | {n} Personen",
         "summaryUpcoming": "{n} kommt noch | {n} kommen noch",
         "summaryUsed": "{n} Marke eingelöst | {n} Marken eingelöst",
+        "summaryUsedShort": "{n} eingelöst | {n} eingelöst",
         "takeAway": "Abziehen",
         "takeAwayMax": "Höchstens {n}, so viele kann {name} noch einlösen.",
         "takeAwayMaxEdit": "Höchstens {n}: {name} kann noch {available} einlösen, diese Korrektur schon eingerechnet."

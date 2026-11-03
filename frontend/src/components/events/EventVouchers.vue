@@ -43,6 +43,7 @@ import type {
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { initials } from '@/lib/format'
+import { signedVoucherAmount } from '@/lib/vouchers'
 
 /**
  * "Who has how many vouchers", the organisers' overview in the event settings'
@@ -68,7 +69,7 @@ const balances = ref<VoucherBalance[]>([])
 const displayName = (b: Pick<VoucherBalance, 'name' | 'email'>) => b.name ?? b.email ?? '?'
 
 /** Corrections with their sign, so `+5` and `−4` read as what they did. */
-const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`)
+const signed = signedVoucherAmount
 
 const avatarSrc = (b: VoucherBalance) =>
   avatarUrlFor({ id: b.user_id, avatar_etag: b.avatar_etag }) ?? undefined
@@ -79,15 +80,17 @@ const rows = computed(() =>
 )
 
 /** "8 people · 36 vouchers used · 206 still to come", over everyone, not just the matches. */
-const summary = computed(() => {
+function summaryLine(usedKey: string) {
   const used = rows.value.reduce((sum, b) => sum + b.redeemed, 0)
   const coming = rows.value.reduce((sum, b) => sum + b.upcoming, 0)
   return [
     t('vouchers.admin.summaryPeople', { n: rows.value.length }, rows.value.length),
-    t('vouchers.admin.summaryUsed', { n: used }, used),
+    t(usedKey, { n: used }, used),
     t('vouchers.admin.summaryUpcoming', { n: coming }, coming),
   ].join(' · ')
-})
+}
+const summary = computed(() => summaryLine('vouchers.admin.summaryUsed'))
+const summaryShort = computed(() => summaryLine('vouchers.admin.summaryUsedShort'))
 
 const search = ref('')
 const shownRows = computed(() => {
@@ -177,12 +180,27 @@ async function afterChange() {
 </script>
 
 <template>
-  <Card data-testid="section-event-vouchers">
-    <CardHeader>
+  <!--
+    A card on a desktop; on a phone the people are cards themselves, so the
+    section around them drops its own frame and sits on the page.
+  -->
+  <Card
+    class="gap-4 rounded-[22px] max-sm:gap-3 max-sm:border-0 max-sm:bg-transparent max-sm:py-0 max-sm:shadow-none"
+    data-testid="section-event-vouchers"
+  >
+    <CardHeader class="max-sm:px-0">
       <div class="flex flex-wrap items-end justify-between gap-3">
-        <div class="space-y-1">
-          <CardTitle>{{ t('vouchers.admin.overviewTitle') }}</CardTitle>
-          <CardDescription data-testid="event-vouchers-summary">{{ summary }}</CardDescription>
+        <div class="space-y-1 max-sm:space-y-0.5">
+          <CardTitle class="text-[17px] leading-snug font-bold sm:text-lg">
+            {{ t('vouchers.admin.overviewTitle') }}
+          </CardTitle>
+          <!-- A phone's line is shorter: "8 people · 36 used · 206 still to come" -->
+          <CardDescription class="max-sm:text-[13px]">
+            <span class="sm:hidden" data-testid="event-vouchers-summary-short">
+              {{ summaryShort }}
+            </span>
+            <span class="max-sm:hidden" data-testid="event-vouchers-summary">{{ summary }}</span>
+          </CardDescription>
         </div>
         <div class="flex w-full gap-2 sm:w-auto">
           <div v-if="rows.length > 0" class="relative min-w-0 flex-1 sm:w-60 sm:flex-none">
@@ -212,7 +230,7 @@ async function afterChange() {
       </div>
     </CardHeader>
 
-    <CardContent class="space-y-3">
+    <CardContent class="space-y-3 max-sm:px-0">
       <p v-if="rows.length === 0" class="text-sm text-muted-foreground">
         {{ t('vouchers.admin.empty') }}
       </p>
@@ -280,7 +298,7 @@ async function afterChange() {
                   class="text-right tabular-nums"
                   :class="
                     row.adjusted !== 0
-                      ? 'text-amber-700 dark:text-amber-400'
+                      ? 'text-warning'
                       : 'text-muted-foreground'
                   "
                   data-testid="event-vouchers-adjusted"
@@ -312,7 +330,7 @@ async function afterChange() {
           <li v-for="row in shownRows" :key="row.user_id">
             <button
               type="button"
-              class="w-full rounded-xl border p-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              class="w-full rounded-2xl border bg-card px-3.5 pt-3 pb-3.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               data-testid="event-vouchers-card"
               :aria-label="t('vouchers.admin.openDetails', { name: displayName(row) })"
               @click="openDetail(row)"
@@ -325,7 +343,7 @@ async function afterChange() {
                   </AvatarFallback>
                 </Avatar>
                 <div class="min-w-0 flex-1">
-                  <p class="truncate font-medium">{{ displayName(row) }}</p>
+                  <p class="truncate text-base font-semibold">{{ displayName(row) }}</p>
                   <p v-if="!row.role" class="text-xs text-muted-foreground">
                     {{ t('vouchers.admin.left') }}
                   </p>
@@ -338,31 +356,31 @@ async function afterChange() {
                 </div>
               </div>
               <dl
-                class="mt-2.5 grid grid-cols-4 divide-x divide-border/70 rounded-lg bg-muted/60 text-xs"
+                class="mt-2.5 grid grid-cols-4 divide-x divide-border/70 rounded-xl bg-muted/60 text-xs"
               >
                 <div class="min-w-0 px-2 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colEarned') }}
                   </dt>
-                  <dd class="text-sm font-semibold tabular-nums">{{ row.earned }}</dd>
+                  <dd class="text-[15px] font-bold tabular-nums">{{ row.earned }}</dd>
                 </div>
                 <div class="min-w-0 px-2 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colUsed') }}
                   </dt>
-                  <dd class="text-sm font-semibold tabular-nums">{{ row.redeemed }}</dd>
+                  <dd class="text-[15px] font-bold tabular-nums">{{ row.redeemed }}</dd>
                 </div>
                 <div class="min-w-0 px-2 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.correction') }}
                   </dt>
-                  <dd class="text-sm font-semibold tabular-nums">{{ signed(row.adjusted) }}</dd>
+                  <dd class="text-[15px] font-bold tabular-nums">{{ signed(row.adjusted) }}</dd>
                 </div>
                 <div class="min-w-0 px-2 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colUpcoming') }}
                   </dt>
-                  <dd class="text-sm font-semibold tabular-nums text-muted-foreground">
+                  <dd class="text-[15px] font-bold tabular-nums text-muted-foreground">
                     {{ row.upcoming }}
                   </dd>
                 </div>
@@ -390,34 +408,61 @@ async function afterChange() {
   </Card>
 
   <ResponsiveDialog v-model:open="detailOpen">
-    <ResponsiveDialogContent dialog-class="sm:max-w-lg" data-testid="event-vouchers-detail">
-      <ResponsiveDialogHeader>
-        <ResponsiveDialogTitle>
-          {{ t('vouchers.admin.detailTitle', { name: detail ? displayName(detail.summary) : '' }) }}
-        </ResponsiveDialogTitle>
+    <ResponsiveDialogContent
+      class="bg-card"
+      dialog-class="rounded-[20px] sm:max-w-[520px]"
+      drawer-class="rounded-t-[22px]"
+      data-testid="event-vouchers-detail"
+    >
+      <ResponsiveDialogHeader class="sm:px-7 sm:pt-[26px] sm:pb-[18px]">
+        <div class="flex min-w-0 items-center gap-3">
+          <Avatar v-if="detail" class="size-10 shrink-0">
+            <AvatarImage v-if="avatarSrc(detail.summary)" :src="avatarSrc(detail.summary)!" />
+            <AvatarFallback class="bg-accent text-sm font-bold">
+              {{ initials(displayName(detail.summary)) }}
+            </AvatarFallback>
+          </Avatar>
+          <ResponsiveDialogTitle class="min-w-0 text-xl leading-tight font-bold">
+            {{ t('vouchers.admin.detailTitle', { name: detail ? displayName(detail.summary) : '' }) }}
+          </ResponsiveDialogTitle>
+        </div>
         <ResponsiveDialogDescription class="sr-only">
           {{ t('vouchers.admin.detailDescription', { name: detail ? displayName(detail.summary) : '' }) }}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
 
-      <ResponsiveDialogBody class="space-y-4 pb-2">
+      <ResponsiveDialogBody class="flex flex-col gap-[18px] pb-2 sm:px-7">
         <div v-if="!detail" class="py-6 text-center text-sm text-muted-foreground">
           {{ t('common.states.loading') }}
         </div>
         <template v-else>
-          <VoucherBalanceSummary :summary="detail.summary" compact other />
-          <VoucherHistory
-            :account="detail"
-            can-edit
-            @edit="editCorrection"
-            @delete="deleteCorrection"
-          />
+          <div class="rounded-2xl border bg-card p-4" data-testid="event-vouchers-detail-summary">
+            <VoucherBalanceSummary :summary="detail.summary" compact other />
+          </div>
+          <section aria-labelledby="event-vouchers-detail-history">
+            <h3
+              id="event-vouchers-detail-history"
+              class="mb-1 text-xs font-bold tracking-[0.05em] text-muted-foreground uppercase"
+            >
+              {{ t('vouchers.history.title') }}
+            </h3>
+            <VoucherHistory
+              :account="detail"
+              can-edit
+              @edit="editCorrection"
+              @delete="deleteCorrection"
+            />
+          </section>
         </template>
       </ResponsiveDialogBody>
 
-      <ResponsiveDialogFooter v-if="detail" class="sm:justify-start">
-        <Button size="sm" @click="addCorrection(detail.summary)">
-          <Plus class="mr-1.5 size-4" />
+      <ResponsiveDialogFooter v-if="detail" class="sm:px-7 sm:pb-6">
+        <Button
+          class="h-11 rounded-xl px-[18px] font-bold"
+          data-testid="btn-person-add-correction"
+          @click="addCorrection(detail.summary)"
+        >
+          <Plus class="size-4" aria-hidden="true" />
           {{ t('vouchers.admin.addCorrection') }}
         </Button>
       </ResponsiveDialogFooter>

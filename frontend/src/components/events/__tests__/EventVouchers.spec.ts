@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -22,6 +22,9 @@ vi.mock('@/composables/useDialog', () => ({
   useDialog: () => ({ confirmDestructive: vi.fn() }),
 }))
 vi.mock('vue-sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => ({ profile: { id: 'u-org', time_format: 'h24' } }),
+}))
 vi.mock('@/lib/api-errors', () => ({ toastApiError: vi.fn() }))
 
 function balance(overrides: Partial<VoucherBalance>): VoucherBalance {
@@ -94,6 +97,10 @@ describe('EventVouchers', () => {
     expect(w.find('[data-testid="event-vouchers-summary"]').text()).toBe(
       '3 people · 8 vouchers used · 94 still to come',
     )
+    // A phone has less room for the line.
+    expect(w.find('[data-testid="event-vouchers-summary-short"]').text()).toBe(
+      '3 people · 8 used · 94 still to come',
+    )
     expect(rowNames(w)).toEqual(['Mira Lindqvist', 'Tomas Neruda', 'Vroni Hartmann'])
     expect(w.findAll('[data-testid="event-vouchers-adjusted"]').map((c) => c.text())).toEqual([
       '0',
@@ -127,5 +134,21 @@ describe('EventVouchers', () => {
     expect(w.find('[data-testid="event-vouchers-summary"]').text()).toBe(
       '0 people · 0 vouchers used · 0 still to come',
     )
+  })
+
+  it('opens one person with their numbers in a card, their history and a way to correct', async () => {
+    const w = await mountOverview()
+    api.get.mockResolvedValueOnce({ data: { summary: BALANCES[2], shifts: [], entries: [] } })
+    await w.findAll('[data-testid="event-vouchers-row"]')[2].trigger('click')
+    await flushPromises()
+
+    const detail = w.find('[data-testid="event-vouchers-detail"]')
+    expect(api.get).toHaveBeenLastCalledWith({ url: '/events/e1/vouchers/people/u3' })
+    expect(detail.text()).toContain('Vouchers of Vroni Hartmann')
+    const summary = detail.find('[data-testid="event-vouchers-detail-summary"]')
+    expect(summary.find('[data-testid="voucher-available"]').text()).toBe('2')
+    expect(summary.text()).toContain('No more shifts booked.')
+    expect(detail.text()).toContain('History')
+    expect(detail.find('[data-testid="btn-person-add-correction"]').text()).toBe('Add correction')
   })
 })

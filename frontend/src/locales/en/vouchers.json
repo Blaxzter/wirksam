@@ -43,6 +43,7 @@
         "summaryPeople": "{n} person | {n} people",
         "summaryUpcoming": "{n} still to come | {n} still to come",
         "summaryUsed": "{n} voucher used | {n} vouchers used",
+        "summaryUsedShort": "{n} used | {n} used",
         "takeAway": "Take away",
         "takeAwayMax": "At most {n}: that's what {name} can still redeem.",
         "takeAwayMaxEdit": "At most {n}: {name} can still redeem {available}, with this correction already counted."
