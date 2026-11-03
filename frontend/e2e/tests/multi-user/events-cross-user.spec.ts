@@ -35,6 +35,10 @@ test.describe('Cross-user – task booking flow', () => {
     memberPage,
     memberUser,
   }) => {
+    // Two people, a page load each after their own sign-in: 5 s on its own, but
+    // with a full set of local workers 20-30 s, out of time at the last step.
+    test.slow()
+
     // The tile names who is on it by first name, for everyone who sees the task.
     const firstName = memberUser.name.split(' ')[0]
 

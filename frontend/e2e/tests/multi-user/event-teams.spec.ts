@@ -230,6 +230,11 @@ test.describe('Event teams – asking, reviewing and booking', () => {
     disposablePage,
     disposableUser,
   }) => {
+    // Two people through three page loads, an upload and the review dialog:
+    // 6 s on its own, but with a full set of local workers 25-30 s, out of
+    // time at a different step each run.
+    test.slow()
+
     // ── The volunteer asks to join and attaches their certificate ──
     await disposablePage.goto(teamsUrl(event.id))
     await disposablePage.getByTestId(`btn-join-team-${team.id}`).click()
