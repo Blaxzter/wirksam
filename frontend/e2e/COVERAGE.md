@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 34      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 233     |
+| `chromium`   | 28         | 234     |
 | `member`     | 3          | 26      |
 | `mobile`     | 5          | 19      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **449** |
+| **Total**    | **62**     | **450** |
 
 ## Inventory
 
@@ -160,7 +160,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 233 tests
+### Project `chromium` — 28 files, 234 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -187,17 +187,18 @@ Not yet covered, and not currently tracked by an issue:
   - user table is visible with data
   - shows stat cards for filtering
 
-#### `frontend/e2e/tests/authenticated/admin-users.spec.ts` — 13 tests
+#### `frontend/e2e/tests/authenticated/admin-users.spec.ts` — 14 tests
 
 - **Admin Users – navigation** (3)
   - sidebar shows User Management link for admin
   - clicking sidebar link navigates to /app/admin/users
   - direct navigation to /app/admin/users works
-- **Admin Users – page structure** (7)
+- **Admin Users – page structure** (8)
   - shows heading
   - shows stats section
   - shows individual stat cards
   - hides the approval queue when signup is open
+  - keeps the approval queue while someone is still waiting
   - shows user table
   - current admin user appears in the list
   - no longer offers an approval password
