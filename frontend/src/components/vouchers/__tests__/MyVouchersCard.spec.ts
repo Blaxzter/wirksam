@@ -70,9 +70,12 @@ describe('MyVouchersCard', () => {
     for (const link of links) {
       expect(link.props('to')).toEqual({ name: 'my-vouchers', params: { eventId: 'e1' } })
     }
-    expect(w.find('[data-testid="btn-my-vouchers-details"]').attributes('aria-label')).toBe(
-      'My vouchers, history',
-    )
+    // One link, chevron in the tile and "History" on the card, so the test id
+    // never lands on a copy hidden at the current width.
+    const details = w.findAll('[data-testid="btn-my-vouchers-details"]')
+    expect(details).toHaveLength(1)
+    expect(details[0]!.attributes('aria-label')).toBe('My vouchers, history')
+    expect(details[0]!.text()).toBe('History')
   })
 
   it('shows the code on request, disabled with nothing to use, and not after the event', async () => {

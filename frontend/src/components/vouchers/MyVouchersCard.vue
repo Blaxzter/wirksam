@@ -61,20 +61,18 @@ const to = computed(() => ({ name: 'my-vouchers', params: { eventId: props.event
         <span class="truncate @2xl:hidden">{{ t('vouchers.title') }}</span>
         <span class="hidden truncate @2xl:inline">{{ t('vouchers.yours') }}</span>
       </h2>
-      <!-- A chevron in the tile, "History" on the card; 44 px either way. -->
+      <!--
+        A chevron in the tile, "History" on the card: one link either way, so
+        its test id always finds the one that shows. 44 px in the tile.
+      -->
       <RouterLink
         :to="to"
         :aria-label="t('vouchers.historyLink')"
         data-testid="btn-my-vouchers-details"
-        class="-my-3 -mr-3 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 @2xl:hidden"
+        class="-my-3 -mr-3 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 @2xl:-my-2 @2xl:mr-0 @2xl:size-auto @2xl:min-h-8 @2xl:rounded-md @2xl:px-1 @2xl:text-sm @2xl:font-semibold @2xl:text-primary @2xl:hover:underline"
       >
-        <ChevronRight class="size-4" aria-hidden="true" />
-      </RouterLink>
-      <RouterLink
-        :to="to"
-        class="-my-2 hidden min-h-8 items-center rounded-md px-1 text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 @2xl:flex"
-      >
-        {{ t('vouchers.history.title') }}
+        <ChevronRight class="size-4 @2xl:hidden" aria-hidden="true" />
+        <span class="hidden @2xl:inline">{{ t('vouchers.history.title') }}</span>
       </RouterLink>
     </div>
 
