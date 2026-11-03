@@ -100,6 +100,29 @@ async function handleMarkAllAsRead() {
   await notificationStore.markAllAsRead()
 }
 
+/**
+ * "Delete all" asks first, in a dialog, which opens only once the ⋯ menu has
+ * finished closing and its button has focus again. Opened straight from the
+ * item, the dialog would remember the item as where to return focus, and the
+ * item is gone by then, so a keyboard user would land at the top of the page.
+ */
+const menuTrigger = ref<{ $el: HTMLElement } | null>(null)
+let deleteAllQueued = false
+
+function queueDismissAll() {
+  deleteAllQueued = true
+}
+
+function onMenuCloseAutoFocus(event: Event) {
+  if (!deleteAllQueued) return
+  deleteAllQueued = false
+  // Focus the button here rather than leave it to the menu, which would do
+  // it a moment later, after the dialog has taken focus.
+  event.preventDefault()
+  menuTrigger.value?.$el.focus()
+  void handleDismissAll()
+}
+
 async function handleDismissAll() {
   const confirmed = await confirmDestructive({
     title: t('notifications.deleteAllTitle'),
@@ -272,6 +295,7 @@ onMounted(() => {
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button
+              ref="menuTrigger"
               variant="ghost"
               size="icon"
               class="size-11"
@@ -281,7 +305,11 @@ onMounted(() => {
               <Ellipsis class="size-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="min-w-56">
+          <DropdownMenuContent
+            align="end"
+            class="min-w-56"
+            @close-auto-focus="onMenuCloseAutoFocus"
+          >
             <DropdownMenuItem class="min-h-11 md:min-h-0" @select="goToPreferences">
               <Settings />
               {{ t('notifications.managePreferences') }}
@@ -290,7 +318,7 @@ onMounted(() => {
               v-if="hasAny"
               class="text-destructive focus:text-destructive min-h-11 md:min-h-0"
               data-testid="btn-notifications-delete-all"
-              @select="handleDismissAll"
+              @select="queueDismissAll"
             >
               <Trash2 class="text-destructive" />
               {{ t('notifications.deleteAll') }}
