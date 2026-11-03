@@ -325,7 +325,7 @@ watch(sheetOpen, (isOpen) => {
                 <li v-for="member in matches" :key="member.user_id">
                   <button
                     type="button"
-                    class="hover:bg-accent focus-visible:ring-ring flex min-h-15 w-full items-center gap-3 rounded-xl px-3 py-2 text-left focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+                    class="enabled:hover:bg-accent focus-visible:ring-ring flex min-h-15 w-full items-center gap-3 rounded-xl px-3 py-2 text-left focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
                     :disabled="!!unavailable?.[member.user_id]"
                     :data-testid="`${testid}-option-${member.user_id}`"
                     @click="pickMember(member)"
