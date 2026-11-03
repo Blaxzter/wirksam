@@ -64,9 +64,12 @@ function onDrawerOpenAutoFocus(event: Event) {
       `focus-visible` rather than `focus`: reka moves focus here on open, and a
       plain `focus:` ring would draw a box around the ✕ every time the sheet is
       opened by touch.
+
+      The glyph is 16 px; the invisible 44 px square centred on it (`after:`)
+      is what a thumb actually has to hit, as in `DialogContent`.
     -->
     <DrawerClose
-      class="ring-offset-background focus-visible:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0"
+      class="ring-offset-background focus-visible:ring-ring absolute top-4 right-4 rounded-xs opacity-70 transition-opacity after:absolute after:top-1/2 after:left-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0"
     >
       <X class="size-4" />
       <span class="sr-only">{{ t('common.actions.close') }}</span>

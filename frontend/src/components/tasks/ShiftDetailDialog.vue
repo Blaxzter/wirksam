@@ -474,7 +474,7 @@ const actionClass = computed(() =>
       drawer-class="rounded-t-[22px] data-[swipe-direction=down]:max-h-[calc(100dvh-2.25rem)]"
       :priority="priority"
     >
-      <ResponsiveDialogHeader :class="isPhone ? 'gap-0.5 pt-2.5' : 'gap-1 px-7 pt-[26px] pb-5'">
+      <ResponsiveDialogHeader :class="isPhone ? 'gap-0.5 pt-2.5' : 'gap-1 pt-[26px] pb-5 pl-7'">
         <ResponsiveDialogTitle
           data-testid="shift-detail-title"
           class="text-[22px] leading-tight font-bold"

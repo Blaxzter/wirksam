@@ -421,7 +421,7 @@ async function afterChange() {
       drawer-class="rounded-t-[22px]"
       data-testid="event-vouchers-detail"
     >
-      <ResponsiveDialogHeader class="sm:px-7 sm:pt-[26px] sm:pb-[18px]">
+      <ResponsiveDialogHeader class="sm:pt-[26px] sm:pb-[18px] sm:pl-7">
         <div class="flex min-w-0 items-center gap-3">
           <Avatar v-if="detail" class="size-10 shrink-0">
             <AvatarImage v-if="avatarSrc(detail.summary)" :src="avatarSrc(detail.summary)!" />

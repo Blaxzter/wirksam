@@ -1162,7 +1162,9 @@ const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
             {{ t('venueMap.panel.overviewOn', { day: dataDayLabel }) }}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
-        <ResponsiveDialogBody class="pb-4">
+        <!-- The header is only read out, so in the wide dialog the list would
+             start at its very top edge, level with the close button. -->
+        <ResponsiveDialogBody class="pb-4 md:pt-6">
           <VenuePlaceOverview :items="placeItems" :day-label="dataDayLabel" @select="selectPlace" />
         </ResponsiveDialogBody>
       </ResponsiveDialogContent>
