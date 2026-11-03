@@ -30,17 +30,25 @@
         "time_conflict_with": "Diese Schicht überschneidet sich mit Ihrer Schicht „{name}“ ({when})"
     },
     "event": {
+        "already_invited": "An diese Adresse ging schon eine Einladung, die noch offen ist.",
+        "already_member": "Diese Person ist schon bei dieser Veranstaltung dabei.",
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
         "forbidden": "Dafür hast du in dieser Veranstaltung keine Berechtigung.",
+        "invitation_not_found": "Diese Einladung wurde nicht gefunden.",
         "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
     "invitation": {
         "address_limited": "An diese Adresse gingen heute schon mehrere Einladungen. Versuch es morgen noch einmal.",
+        "already_used": "Diese Einladung wurde schon benutzt.",
+        "email_mismatch": "Diese Einladung ging an eine andere E-Mail-Adresse.",
+        "event_gone": "Die Veranstaltung dieser Einladung gibt es nicht mehr.",
         "expired": "Diese Einladung ist abgelaufen. Schick eine neue.",
+        "not_found": "Dieser Einladungslink funktioniert nicht.",
         "rate_limited": "Du hast heute schon sehr viele Einladungen verschickt. Versuch es morgen noch einmal.",
-        "resend_too_soon": "Vor ein paar Minuten ging schon eine E-Mail raus. Warte etwas, bevor du sie noch einmal sendest."
+        "resend_too_soon": "Vor ein paar Minuten ging schon eine E-Mail raus. Warte etwas, bevor du sie noch einmal sendest.",
+        "revoked": "Diese Einladung wurde zurückgezogen."
     },
     "location": {
         "name_taken": "In dieser Veranstaltung gibt es schon einen Ort mit diesem Namen.",

@@ -353,6 +353,7 @@
             "emailsLabel": "Email addresses",
             "emailsPlaceholder": "anna{'@'}example.com, ben{'@'}example.com",
             "empty": "No open invitations.",
+            "forTasks": "In charge of: {tasks}",
             "linkCopied": "Link copied",
             "linksTitle": "Share links",
             "pendingTitle": "Waiting for a reply",
@@ -363,12 +364,14 @@
             "sendMany": "Send {count} invitations",
             "sent": "Invitation sent | Invitation sent | {count} invitations sent",
             "skipped": "Already invited or taking part: {emails}",
+            "skippedRateLimited": "Not sent, too many invitations today: {emails}",
             "subtitle": "Invite people by email, or share a link.",
             "title": "Invitations",
             "uses": "not used yet | used once | used {count} times"
         },
         "invite": {
             "accept": "Accept and join",
+            "acceptTasks": "Accept",
             "alreadyMember": "You are already taking part in this event.",
             "asRole": "You will join as",
             "createAccount": "Create an account",
@@ -383,12 +386,16 @@
                 "revoked": "This invitation was withdrawn."
             },
             "joined": "Welcome to {name}",
+            "joinedInCharge": "Welcome to {name}. You're now in charge of {task}.",
             "notFoundBody": "The invitation may have been withdrawn, or the link was mistyped.",
             "notFoundTitle": "This link does not work",
+            "nowInCharge": "You're now in charge of {task}.",
             "openEvent": "Open event",
             "signIn": "I already have an account",
             "signedOutBody": "Sign in or create an account to see the invitation and accept it.",
-            "signedOutTitle": "You have been invited"
+            "signedOutTitle": "You have been invited",
+            "tasksHint": "As the person in charge you can edit the task and its shifts and see who has booked.",
+            "tasksTitle": "You're asked to be in charge of"
         },
         "join": {
             "request": "Ask to join",

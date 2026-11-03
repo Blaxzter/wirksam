@@ -30,17 +30,25 @@
         "time_conflict_with": "This shift overlaps your shift “{name}” ({when})"
     },
     "event": {
+        "already_invited": "That address already has an open invitation.",
+        "already_member": "That person is already taking part in this event.",
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
         "forbidden": "You do not have permission to do this in this event.",
+        "invitation_not_found": "That invitation could not be found.",
         "member_not_found": "That person is not a member of this event.",
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
     "invitation": {
         "address_limited": "This address has already received several invitations today. Try again tomorrow.",
+        "already_used": "This invitation has already been used.",
+        "email_mismatch": "This invitation was sent to a different e-mail address.",
+        "event_gone": "The event of this invitation no longer exists.",
         "expired": "This invitation has expired. Send a new one.",
+        "not_found": "This invitation link doesn't work.",
         "rate_limited": "You have sent a lot of invitations today. Try again tomorrow.",
-        "resend_too_soon": "An e-mail went out a few minutes ago. Wait a little before sending it again."
+        "resend_too_soon": "An e-mail went out a few minutes ago. Wait a little before sending it again.",
+        "revoked": "This invitation was withdrawn."
     },
     "location": {
         "name_taken": "There is already a location with this name in this event.",

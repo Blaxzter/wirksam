@@ -353,6 +353,7 @@
             "emailsLabel": "E-Mail-Adressen",
             "emailsPlaceholder": "anna{'@'}example.com, ben{'@'}example.com",
             "empty": "Keine offenen Einladungen.",
+            "forTasks": "Verantwortlich für: {tasks}",
             "linkCopied": "Link kopiert",
             "linksTitle": "Geteilte Links",
             "pendingTitle": "Warten auf Antwort",
@@ -363,12 +364,14 @@
             "sendMany": "{count} Einladungen senden",
             "sent": "Einladung gesendet | Einladung gesendet | {count} Einladungen gesendet",
             "skipped": "Schon eingeladen oder dabei: {emails}",
+            "skippedRateLimited": "Nicht gesendet, heute schon zu viele Einladungen: {emails}",
             "subtitle": "Lade Personen per E-Mail ein oder teile einen Link.",
             "title": "Einladungen",
             "uses": "noch nicht genutzt | einmal genutzt | {count}-mal genutzt"
         },
         "invite": {
             "accept": "Annehmen und mitmachen",
+            "acceptTasks": "Annehmen",
             "alreadyMember": "Du machst bei dieser Veranstaltung schon mit.",
             "asRole": "Du machst mit als",
             "createAccount": "Konto anlegen",
@@ -383,12 +386,16 @@
                 "revoked": "Diese Einladung wurde zurückgezogen."
             },
             "joined": "Willkommen bei {name}",
+            "joinedInCharge": "Willkommen bei {name}. Du bist jetzt verantwortlich für {task}.",
             "notFoundBody": "Die Einladung wurde vielleicht zurückgezogen oder der Link ist falsch.",
             "notFoundTitle": "Dieser Link funktioniert nicht",
+            "nowInCharge": "Du bist jetzt verantwortlich für {task}.",
             "openEvent": "Veranstaltung öffnen",
             "signIn": "Ich habe schon ein Konto",
             "signedOutBody": "Melde dich an oder lege ein Konto an, um die Einladung zu sehen und anzunehmen.",
-            "signedOutTitle": "Du wurdest eingeladen"
+            "signedOutTitle": "Du wurdest eingeladen",
+            "tasksHint": "Als Verantwortliche:r kannst du die Aufgabe und ihre Schichten bearbeiten und sehen, wer gebucht hat.",
+            "tasksTitle": "Du sollst verantwortlich sein für"
         },
         "join": {
             "request": "Mitmachen anfragen",

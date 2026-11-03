@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { CalendarDays, CheckCircle2, XCircle } from '@lucide/vue'
+import { CalendarDays, CheckCircle2, UserCheck, XCircle } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -19,7 +19,7 @@ import { toastApiError } from '@/lib/api-errors'
 import { roleLabelKey } from '@/lib/event-roles'
 import { formatDate } from '@/lib/format'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -72,7 +72,34 @@ async function loadPreview() {
   }
 }
 
+/**
+ * The tasks this invitation asks the person to run. The server lists them to
+ * the addressee only; to anyone else (`email_mismatch`) the list is empty.
+ */
+const tasks = computed(() => preview.value?.tasks ?? [])
+
+/**
+ * Someone who joined the event another way still holds an invitation to be
+ * in charge: accepting it puts them in charge, so they get the button too.
+ */
+const canAcceptTasks = computed(
+  () => !!preview.value?.already_member && !!preview.value.is_valid && tasks.value.length > 0,
+)
+
+function taskDates(task: { start_date: string; end_date: string }): string {
+  const day = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString(locale.value, {
+      day: 'numeric',
+      month: 'short',
+    })
+  return task.start_date === task.end_date
+    ? day(task.start_date)
+    : `${day(task.start_date)} – ${day(task.end_date)}`
+}
+
 async function accept() {
+  const wasMember = !!preview.value?.already_member
+  const asked = tasks.value
   accepting.value = true
   try {
     const res = await post<{ data: EventRead }>({
@@ -82,6 +109,18 @@ async function accept() {
     // then drop the user straight into the event they just joined.
     await authStore.loadProfile()
     await authStore.setSelectedEvent(res.data.id)
+    // Asked to run one task: that task is where they want to be. With
+    // several, the dashboard lists them.
+    if (asked.length === 1) {
+      const task = asked[0]
+      toast.success(
+        wasMember
+          ? t('duties.events.invite.nowInCharge', { task: task.name })
+          : t('duties.events.invite.joinedInCharge', { name: res.data.name, task: task.name }),
+      )
+      router.push({ name: 'task-detail', params: { eventId: task.task_id } })
+      return
+    }
     toast.success(t('duties.events.invite.joined', { name: res.data.name }))
     router.push({ name: 'home' })
   } catch (error) {
@@ -190,7 +229,49 @@ onMounted(loadPreview)
             </p>
           </div>
 
-          <template v-if="preview.already_member">
+          <div
+            v-if="tasks.length > 0"
+            class="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm"
+            data-testid="invite-tasks"
+          >
+            <p class="flex items-center gap-2 font-semibold">
+              <UserCheck class="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              {{ t('duties.events.invite.tasksTitle') }}
+            </p>
+            <ul class="space-y-1">
+              <li
+                v-for="task in tasks"
+                :key="task.task_id"
+                class="flex flex-wrap items-baseline justify-between gap-x-3"
+              >
+                <span class="font-medium">{{ task.name }}</span>
+                <span class="text-xs text-muted-foreground">{{ taskDates(task) }}</span>
+              </li>
+            </ul>
+            <p class="text-muted-foreground">{{ t('duties.events.invite.tasksHint') }}</p>
+          </div>
+
+          <template v-if="canAcceptTasks">
+            <p
+              class="text-center text-sm text-muted-foreground"
+              data-testid="invite-already-member"
+            >
+              {{ t('duties.events.invite.alreadyMember') }}
+            </p>
+            <Button
+              class="w-full"
+              data-testid="btn-accept-invite"
+              :disabled="accepting"
+              @click="accept"
+            >
+              {{ t('duties.events.invite.acceptTasks') }}
+            </Button>
+            <Button class="w-full" variant="ghost" :disabled="accepting" @click="goToEvent">
+              {{ t('duties.events.invite.openEvent') }}
+            </Button>
+          </template>
+
+          <template v-else-if="preview.already_member">
             <p
               class="text-center text-sm text-muted-foreground"
               data-testid="invite-already-member"
