@@ -252,24 +252,29 @@ function pendingLine(invitation: TaskManagerInvitationRead): string {
       @invite="invite"
     />
 
-    <div
-      v-if="status"
-      role="status"
-      class="bg-primary/10 text-primary space-y-1 rounded-xl px-3 py-2.5 text-sm font-semibold"
-      data-testid="task-managers-status"
-    >
-      <p class="flex items-start gap-2">
-        <CircleCheck class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <span class="min-w-0 break-words">{{ status.text }}</span>
-      </p>
-      <p
-        v-if="status.warning"
-        class="text-warning flex items-start gap-2 font-normal"
-        data-testid="task-managers-domain-warning"
+    <!-- The live region is always there and only its content comes and goes:
+         one inserted together with its text is often not read out. Empty, it
+         takes no room (`mb-0` beats the parent's spacing, the box brings its
+         own). -->
+    <div role="status" aria-live="polite" class="mb-0" data-testid="task-managers-status-region">
+      <div
+        v-if="status"
+        class="bg-primary/10 text-primary mb-4 space-y-1 rounded-xl px-3 py-2.5 text-sm font-semibold"
+        data-testid="task-managers-status"
       >
-        <CircleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        <span>{{ status.warning }}</span>
-      </p>
+        <p class="flex items-start gap-2">
+          <CircleCheck class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span class="min-w-0 break-words">{{ status.text }}</span>
+        </p>
+        <p
+          v-if="status.warning"
+          class="text-warning flex items-start gap-2 font-normal"
+          data-testid="task-managers-domain-warning"
+        >
+          <CircleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>{{ status.warning }}</span>
+        </p>
+      </div>
     </div>
 
     <p
@@ -365,7 +370,7 @@ function pendingLine(invitation: TaskManagerInvitationRead): string {
             v-if="invitation.is_member_now"
             variant="ghost"
             size="sm"
-            class="text-primary h-9 font-semibold"
+            class="text-primary h-11 font-semibold sm:h-9"
             :disabled="busyId === invitation.id"
             data-testid="btn-invitation-add-now"
             @click="invite(invitation.email, invitation.id)"
@@ -377,7 +382,7 @@ function pendingLine(invitation: TaskManagerInvitationRead): string {
             v-else-if="invitation.expired"
             variant="ghost"
             size="sm"
-            class="text-primary h-9 font-semibold"
+            class="text-primary h-11 font-semibold sm:h-9"
             :disabled="busyId === invitation.id"
             data-testid="btn-invitation-invite-again"
             @click="invite(invitation.email, invitation.id)"
@@ -389,7 +394,7 @@ function pendingLine(invitation: TaskManagerInvitationRead): string {
             v-else
             variant="ghost"
             size="sm"
-            class="text-muted-foreground h-9 font-semibold"
+            class="text-muted-foreground h-11 font-semibold sm:h-9"
             :disabled="busyId === invitation.id"
             data-testid="btn-invitation-resend"
             @click="resend(invitation)"
@@ -400,7 +405,7 @@ function pendingLine(invitation: TaskManagerInvitationRead): string {
           <Button
             variant="ghost"
             size="sm"
-            class="text-muted-foreground h-9 font-semibold"
+            class="text-muted-foreground h-11 font-semibold sm:h-9"
             :disabled="busyId === invitation.id"
             data-testid="btn-invitation-withdraw"
             @click="withdraw(invitation)"
