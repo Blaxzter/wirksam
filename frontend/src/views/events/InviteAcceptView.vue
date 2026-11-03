@@ -75,8 +75,20 @@ async function loadPreview() {
 /**
  * The tasks this invitation asks the person to run. The server lists them to
  * the addressee only; to anyone else (`email_mismatch`) the list is empty.
+ * It also lists them to a member whose invitation is spent, expired or
+ * withdrawn, but nothing is asked of them any more, so they are not shown.
  */
-const tasks = computed(() => preview.value?.tasks ?? [])
+const tasks = computed(() => (preview.value?.is_valid ? (preview.value.tasks ?? []) : []))
+
+/**
+ * A member who opens an invitation that is gone: they are in the event, but
+ * not put in charge of anything, and they should be told why. A used one
+ * needs no word, as they have already accepted it.
+ */
+const memberInvalidMessage = computed(() => {
+  const reason = preview.value?.invalid_reason
+  return reason === 'expired' || reason === 'revoked' ? invalidMessage.value : null
+})
 
 /**
  * Someone who joined the event another way still holds an invitation to be
@@ -272,6 +284,13 @@ onMounted(loadPreview)
           </template>
 
           <template v-else-if="preview.already_member">
+            <p
+              v-if="memberInvalidMessage"
+              class="text-center text-sm text-destructive"
+              data-testid="invite-invalid"
+            >
+              {{ memberInvalidMessage }}
+            </p>
             <p
               class="text-center text-sm text-muted-foreground"
               data-testid="invite-already-member"
