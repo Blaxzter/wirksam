@@ -44,7 +44,16 @@ test.describe('Cross-user – picker visibility', () => {
     adminPage,
     memberPage,
   }) => {
-    const event = await createEvent(adminPage, uniqueName('E2E Cross Discover'))
+    // Discover lists the first 100 by start date, and every worker's event starts
+    // tomorrow and stays in the database. Starting today keeps this one in reach
+    // however many of them a reused stack has piled up.
+    const event = await createEvent(
+      adminPage,
+      uniqueName('E2E Cross Discover'),
+      'published',
+      'public',
+      { start: futureDate(0), end: futureDate(4) },
+    )
     try {
       await memberPage.goto('/app/select-event?mode=switch')
       // Not a member yet, so it must not be in the "My events" list…
@@ -88,12 +97,17 @@ test.describe('Cross-user – picker visibility', () => {
  * before it responds (`get_db` in `app/api/deps.py`). So one visit is enough,
  * and what has to be waited for is the page, which with a dozen workers on the
  * Docker stack takes up to two seconds after `goto` to fetch both.
+ *
+ * This wait starts before `goto`, so it has to outlast the whole page load as
+ * well. The 5 s action timeout from the config does not: a busy stack can spend
+ * that on the load alone, before the page has asked for anything.
  */
 async function openTeamView(adminPage: Page, eventId: string): Promise<Locator> {
   const listed = adminPage.waitForResponse(
     (r) =>
       r.request().method() === 'GET' &&
       new URL(r.url()).pathname.endsWith(`/events/${eventId}/availabilities`),
+    { timeout: 20_000 },
   )
   await adminPage.goto('/app/availability')
   expect((await listed).ok()).toBe(true)
