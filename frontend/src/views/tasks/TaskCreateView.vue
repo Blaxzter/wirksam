@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref, toRaw, watch } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
 import { getLocalTimeZone, parseDate, today } from '@internationalized/date'
-import { ArrowLeft, CalendarDays, CalendarPlus, Clock, Plus, Users, X } from '@lucide/vue'
+import { ArrowLeft, CalendarDays, CalendarPlus, Clock, Mail, Plus, Users, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -47,7 +47,12 @@ import ScheduleConfigForm from '@/components/tasks/ScheduleConfigForm.vue'
 import ShiftPreviewGrid from '@/components/tasks/ShiftPreviewGrid.vue'
 import TaskVoucherSettingsFields from '@/components/tasks/vouchers/TaskVoucherSettingsFields.vue'
 
-import type { EventListResponse, EventMemberRead, EventRead } from '@/client/types.gen'
+import type {
+  EventListResponse,
+  EventMemberRead,
+  EventRead,
+  TaskCreateWithShiftsResponse,
+} from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
@@ -69,6 +74,8 @@ const category = ref('')
 const teamId = ref<string | null>(null)
 /** People in charge, picked from the chosen event's members. */
 const managers = ref<EventMemberRead[]>([])
+/** Addresses to invite to be in charge, typed into the same field. */
+const managerEmails = ref<string[]>([])
 // Vouchers: how many a shift earns and whether the task takes them.
 const vouchersPerShift = ref(0)
 const isVoucherPoint = ref(false)
@@ -181,6 +188,7 @@ watch(locationEventId, () => {
   teamId.value = null
   // So do the people who can be put in charge.
   managers.value = []
+  managerEmails.value = []
 })
 
 // The chosen event's roster, to pick people in charge from.
@@ -211,6 +219,33 @@ function addManager(member: EventMemberRead) {
 
 function removeManager(userId: string) {
   managers.value = managers.value.filter((m) => m.user_id !== userId)
+}
+
+/** The picker only offers addresses no member has; the server decides the rest. */
+function addManagerEmail(email: string) {
+  const lower = email.toLocaleLowerCase()
+  if (!managerEmails.value.some((e) => e.toLocaleLowerCase() === lower)) {
+    managerEmails.value.push(email)
+  }
+}
+
+function removeManagerEmail(email: string) {
+  managerEmails.value = managerEmails.value.filter((e) => e !== email)
+}
+
+/**
+ * Say what the invitations did. The task exists either way: an address
+ * refused by a daily limit or a demo is listed instead of failing the form.
+ */
+function reportManagerInvites(results: TaskCreateWithShiftsResponse['manager_invites']) {
+  const invited = (results ?? []).filter((r) => r.status === 'invited').length
+  if (invited > 0) {
+    toast.success(t('duties.events.invitations.sent', { count: invited }, invited))
+  }
+  const skipped = (results ?? []).filter((r) => r.status === 'skipped').map((r) => r.email ?? '')
+  if (skipped.length > 0) {
+    toast.warning(t('duties.tasks.managers.createSkipped', { emails: skipped.join(', ') }))
+  }
 }
 
 // Clear dates when event changes (constraints may have changed)
@@ -442,6 +477,7 @@ const handleSubmit = async () => {
       category: category.value || null,
       team_id: locationEventId.value ? teamId.value : null,
       manager_ids: locationEventId.value ? managers.value.map((m) => m.user_id) : [],
+      manager_emails: locationEventId.value ? managerEmails.value : [],
       // Only inside an event, where the section is shown: switching to "No
       // event" afterwards must not leave a task its creator cannot reset.
       vouchers_per_shift: inEvent ? vouchersPerShift.value || 0 : 0,
@@ -482,12 +518,13 @@ const handleSubmit = async () => {
       }
     }
 
-    const response = await post<{ data: { task: { id: string }; shifts_created: number } }>({
+    const response = await post<{ data: TaskCreateWithShiftsResponse }>({
       url: '/tasks/with-shifts',
       body,
     })
 
     toast.success(t('duties.tasks.createView.success', { count: response.data.shifts_created }))
+    reportManagerInvites(response.data.manager_invites)
     router.push({ name: 'task-detail', params: { eventId: response.data.task.id } })
   } catch (error) {
     toastApiError(error)
@@ -675,13 +712,18 @@ const handleSubmit = async () => {
               :members="eventMembers"
               :unavailable="pickedManagerIds"
               :label="t('duties.tasks.managers.add')"
-              :placeholder="t('teams.roster.addPlaceholder')"
+              :placeholder="t('duties.tasks.managers.searchPlaceholder')"
               input-id="task-create-manager"
               :action-hint="t('teams.roster.enterToAdd')"
               testid="task-create-manager"
+              allow-email
+              phone-sheet
+              :sheet-title="t('duties.tasks.managers.pickerTitle')"
+              :sheet-context="t('duties.tasks.managers.pickerContextNew')"
               @pick="addManager"
+              @invite="addManagerEmail"
             />
-            <ul v-if="managers.length" class="flex flex-wrap gap-2">
+            <ul v-if="managers.length || managerEmails.length" class="flex flex-wrap gap-2">
               <li v-for="m in managers" :key="m.user_id">
                 <Badge
                   variant="secondary"
@@ -696,6 +738,27 @@ const handleSubmit = async () => {
                       t('duties.events.members.remove', { name: m.name || m.email || '?' })
                     "
                     @click="removeManager(m.user_id)"
+                  >
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </Badge>
+              </li>
+              <!-- Invited, not picked: they are in charge once they accept. -->
+              <li v-for="email in managerEmails" :key="email" class="max-w-full min-w-0">
+                <Badge
+                  variant="outline"
+                  class="bg-warning/10 text-warning max-w-full gap-1.5 border-transparent py-1 pr-1 pl-2.5 text-sm"
+                  :data-testid="`task-create-manager-email-${email}`"
+                >
+                  <Mail class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span class="min-w-0 truncate">
+                    {{ t('duties.tasks.managers.createInvitedChip', { email }) }}
+                  </span>
+                  <button
+                    type="button"
+                    class="hover:bg-warning/20 focus-visible:ring-ring shrink-0 rounded-full p-0.5 focus-visible:ring-2 focus-visible:outline-none"
+                    :aria-label="t('duties.tasks.managers.createInvitedRemove', { email })"
+                    @click="removeManagerEmail(email)"
                   >
                     <X class="h-3.5 w-3.5" />
                   </button>
