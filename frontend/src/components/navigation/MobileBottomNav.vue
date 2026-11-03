@@ -278,6 +278,12 @@ const notificationDisplayCount = computed(() => {
           {{ t('navigation.mobileBottomNav.moreDescription') }}
         </DrawerDescription>
       </DrawerHeader>
+      <!--
+        `focus-visible`, not `focus`: the sheet moves focus to its first link
+        when it opens, and a plain `focus:` background made that link look
+        like the current page every time the sheet was opened by touch. From
+        the keyboard the highlight still follows focus.
+      -->
       <div class="overflow-y-auto px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <ul
           v-for="(group, index) in moreGroups"
@@ -287,7 +293,7 @@ const notificationDisplayCount = computed(() => {
           <li v-for="item in group" :key="item.routeName">
             <RouterLink
               :to="{ name: item.routeName, query: item.query }"
-              class="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
+              class="flex w-full items-center gap-3 rounded-md px-3 py-3 text-left text-sm outline-none transition-colors hover:bg-accent focus-visible:bg-accent"
               :class="route.name === item.routeName ? 'bg-accent/50 font-medium' : ''"
               :aria-current="route.name === item.routeName ? 'page' : undefined"
               :data-testid="`mobile-more-${item.routeName}`"

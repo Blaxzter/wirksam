@@ -127,4 +127,15 @@ describe('MobileBottomNav', () => {
     expect(w.find('[data-testid="mobile-more-teams"]').exists()).toBe(true)
     expect(w.find('[data-testid="mobile-more-event-map"]').exists()).toBe(true)
   })
+
+  // The sheet puts focus on its first link as it opens. Styled with plain
+  // `focus:`, that link looked like the current page every time the sheet
+  // was opened by touch; `focus-visible:` keeps the highlight for keyboards.
+  it('highlights a sheet link for keyboard focus only', async () => {
+    const w = await mountAt('home')
+    await w.find('[data-testid="mobile-nav-more"]').trigger('click')
+    const link = w.find('[data-testid="mobile-more-availability"]')
+    expect(link.classes()).toContain('focus-visible:bg-accent')
+    expect(link.classes().filter((c) => c.startsWith('focus:'))).toEqual([])
+  })
 })
