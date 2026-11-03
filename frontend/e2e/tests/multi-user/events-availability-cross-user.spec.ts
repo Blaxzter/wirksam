@@ -9,6 +9,8 @@
  * Availability is now an inline editor and the admin team view renders a
  * heatmap with one row per member (commit 649a9f5).
  */
+import type { Locator, Page } from '@playwright/test'
+
 import { expect, test } from '../../fixtures.js'
 import {
   addMember,
@@ -78,6 +80,26 @@ test.describe('Cross-user – picker visibility', () => {
 
 // ── Availability flow between member and admin ───────────────────────────────
 
+/**
+ * Open the admin's availability page once its team list has arrived.
+ *
+ * The page asks for the team's availability once, after the admin's own, and a
+ * write the test made before is already in that answer: the backend commits
+ * before it responds (`get_db` in `app/api/deps.py`). So one visit is enough,
+ * and what has to be waited for is the page, which with a dozen workers on the
+ * Docker stack takes up to two seconds after `goto` to fetch both.
+ */
+async function openTeamView(adminPage: Page, eventId: string): Promise<Locator> {
+  const listed = adminPage.waitForResponse(
+    (r) =>
+      r.request().method() === 'GET' &&
+      new URL(r.url()).pathname.endsWith(`/events/${eventId}/availabilities`),
+  )
+  await adminPage.goto('/app/availability')
+  expect((await listed).ok()).toBe(true)
+  return adminPage.getByTestId('section-admin-availabilities')
+}
+
 test.describe('Cross-user – availability flow', () => {
   test.beforeEach(async ({ adminPage, memberPage, workerEvent }) => {
     await clearAvailability(adminPage, workerEvent.id).catch(() => {})
@@ -93,22 +115,15 @@ test.describe('Cross-user – availability flow', () => {
     adminPage,
     memberPage,
     memberUser,
+    workerEvent,
   }) => {
     await memberPage.goto('/app/availability')
     await memberPage.getByTestId('availability-type-fully_available').first().click()
     await memberPage.getByTestId('btn-save').click()
     await expect(memberPage.getByTestId('btn-remove-availability')).toBeVisible()
 
-    // The admin page fetches the availabilities list once on mount; under
-    // parallel worker load the backend write is occasionally not yet visible
-    // to the follow-up GET. Re-navigate until the row surfaces.
-    await expect(async () => {
-      await adminPage.goto('/app/availability')
-      const adminSection = adminPage.getByTestId('section-admin-availabilities')
-      await expect(adminSection.getByText(memberUser.name).first()).toBeVisible({
-        timeout: 2_000,
-      })
-    }).toPass({ timeout: 15_000 })
+    const team = await openTeamView(adminPage, workerEvent.id)
+    await expect(team.getByText(memberUser.name).first()).toBeVisible()
   })
 
   test('member removing availability is reflected in admin team view', async ({
@@ -131,13 +146,10 @@ test.describe('Cross-user – availability flow', () => {
     }
     await expect(memberPage.getByTestId('btn-remove-availability')).toBeHidden()
 
-    await expect(async () => {
-      await adminPage.goto('/app/availability')
-      const adminSection = adminPage.getByTestId('section-admin-availabilities')
-      await expect(
-        adminSection.getByText(/no teammates have registered|noch keine teammitglieder/i),
-      ).toBeVisible({ timeout: 2_000 })
-    }).toPass({ timeout: 15_000 })
+    const team = await openTeamView(adminPage, workerEvent.id)
+    await expect(
+      team.getByText(/no teammates have registered|noch keine teammitglieder/i),
+    ).toBeVisible()
   })
 
   test('admin sees multiple members in the team heatmap', async ({
@@ -156,15 +168,8 @@ test.describe('Cross-user – availability flow', () => {
       dates: [futureDate(10), futureDate(11)],
     })
 
-    await expect(async () => {
-      await adminPage.goto('/app/availability')
-      const adminSection = adminPage.getByTestId('section-admin-availabilities')
-      await expect(adminSection.getByText(adminUser.name).first()).toBeVisible({
-        timeout: 2_000,
-      })
-      await expect(adminSection.getByText(memberUser.name).first()).toBeVisible({
-        timeout: 2_000,
-      })
-    }).toPass({ timeout: 15_000 })
+    const team = await openTeamView(adminPage, workerEvent.id)
+    await expect(team.getByText(adminUser.name).first()).toBeVisible()
+    await expect(team.getByText(memberUser.name).first()).toBeVisible()
   })
 })
