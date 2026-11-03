@@ -45,6 +45,24 @@ export function firstName(name: string): string {
   return words[0] || name.trim()
 }
 
+/**
+ * The first names of the first `limit` people, and how many more there are:
+ * a shift tile's "Tomas, Adaeze +2". An address used as a name gives the part
+ * before the "@". Someone without a name is not written out but counts in
+ * `more`, so the two always add up to everyone.
+ */
+export function firstNamesPreview(
+  names: ReadonlyArray<string | null | undefined>,
+  limit: number,
+): { shown: string[]; more: number } {
+  const shown = names
+    .map((n) => (n ?? '').trim())
+    .filter(Boolean)
+    .slice(0, Math.max(0, limit))
+    .map((n) => firstName(n).split('@')[0] || n)
+  return { shown, more: names.length - shown.length }
+}
+
 /** Two letters for an avatar fallback, skipping a "[DEMO]" style prefix. */
 export function initials(name: string | null | undefined): string {
   const words = (name ?? '')

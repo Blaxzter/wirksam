@@ -783,7 +783,9 @@
             "tapToSeeWho": "Tipp eine Schicht an, um zu sehen, wer dabei ist.",
             "tileFree": "{n} frei",
             "tileFull": "Voll",
+            "tileMoreLabel": "{names} und {n} weitere Person | {names} und {n} weitere Personen",
             "tileNobody": "Noch niemand",
+            "tileStillFree": "noch frei",
             "tileTaken": "{taken} von {max}",
             "title": "Aufgabendetails",
             "unbatchedShifts": "Weitere Schichten"

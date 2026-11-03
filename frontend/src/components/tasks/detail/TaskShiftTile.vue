@@ -9,6 +9,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import type { ShiftRead } from '@/client/types.gen'
+import { firstNamesPreview } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 /**
@@ -23,6 +24,10 @@ import { cn } from '@/lib/utils'
  *
  * `compact` is the phone tile of the two-column grid: the badge moves under
  * the bar and carries the count ("2 of 3") itself.
+ *
+ * When the page loaded the shifts with their bookers, the tile also says who
+ * is on it in first names ("2 of 3 · Tomas, Adaeze"; on a phone a line under
+ * the badge), cut off with "+2" for the rest.
  */
 const props = defineProps<{
   shift: ShiftRead
@@ -65,6 +70,37 @@ const countText = computed(() =>
   t('duties.tasks.detail.tileTaken', { taken: taken.value, max: capacity.value }),
 )
 
+/**
+ * Who is on it, in first names: "Tomas, Adaeze" and "+2" for the rest. Only
+ * when the page asked for the names (`shift.bookers`), which the server sends
+ * to whoever may open the shift's roster anyway. A phone tile has room for two.
+ */
+const who = computed(() => {
+  const bookers = props.shift.bookers
+  if (!bookers) return null
+  const { shown, more } = firstNamesPreview(
+    bookers.map((b) => b.name),
+    props.compact ? 2 : 3,
+  )
+  return { names: shown.join(', '), more }
+})
+
+/**
+ * The names as a screen reader says them: "Tomas, Adaeze and 2 more". Without
+ * a single name to say, the count before it says it all.
+ */
+const whoLabel = computed(() => {
+  const w = who.value
+  if (!w?.names) return null
+  if (!w.more) return w.names
+  return t('duties.tasks.detail.tileMoreLabel', { names: w.names, n: w.more }, w.more)
+})
+
+/** "still free" after "0 of 3" on a wide tile, unless it can't be booked any more. */
+const stillFree = computed(
+  () => !!props.shift.bookers && taken.value === 0 && !props.note && !full.value,
+)
+
 const badge = computed(() => {
   if (full.value) {
     return { text: t('duties.tasks.detail.tileFull'), tone: 'bg-primary/12 text-primary' }
@@ -99,7 +135,13 @@ const hint = computed<string | null>(() => {
 })
 
 const label = computed(() =>
-  [time.value, countText.value, props.mine ? t('duties.tasks.detail.booked') : null, hint.value]
+  [
+    time.value,
+    countText.value,
+    whoLabel.value,
+    props.mine ? t('duties.tasks.detail.booked') : null,
+    hint.value,
+  ]
     .filter(Boolean)
     .join(', '),
 )
@@ -209,15 +251,40 @@ const tileClass = computed(() =>
       />
     </span>
 
-    <span
-      v-if="compact"
-      class="self-start rounded-full px-2 py-px text-xs font-bold"
-      :class="badge.tone"
-    >
-      {{ badge.text }}
-    </span>
+    <template v-if="compact">
+      <span class="self-start rounded-full px-2 py-px text-xs font-bold" :class="badge.tone">
+        {{ badge.text }}
+      </span>
+      <!-- The names cut off in the narrow tile; "+2" always stays in view -->
+      <p
+        v-if="who && (who.names || who.more)"
+        class="-mt-0.5 flex min-w-0 text-xs text-muted-foreground"
+        :data-testid="`shift-who-${shift.id}`"
+      >
+        <span class="truncate">{{ who.names }}</span>
+        <span v-if="who.more" class="shrink-0 whitespace-pre">
+          {{ `${who.names ? ' ' : ''}+${who.more}` }}
+        </span>
+      </p>
+    </template>
     <div v-else class="flex min-h-6 items-center justify-between gap-2">
-      <span class="truncate text-[13px] text-muted-foreground">{{ countText }}</span>
+      <!-- "2 of 3 · Tomas, Adaeze +1": the count and "+1" never cut off -->
+      <span
+        class="flex min-w-0 text-[13px] text-muted-foreground"
+        :data-testid="`shift-who-${shift.id}`"
+      >
+        <span class="shrink-0">{{ countText }}</span>
+        <template v-if="who && (who.names || who.more)">
+          <span class="shrink-0 whitespace-pre">{{ ' · ' }}</span>
+          <span class="truncate">{{ who.names }}</span>
+          <span v-if="who.more" class="shrink-0 whitespace-pre">
+            {{ `${who.names ? ' ' : ''}+${who.more}` }}
+          </span>
+        </template>
+        <span v-else-if="stillFree" class="overflow-hidden text-ellipsis whitespace-pre">
+          {{ ` · ${t('duties.tasks.detail.tileStillFree')}` }}
+        </span>
+      </span>
       <HintTooltip v-if="canDelete" :label="t('duties.shifts.delete')">
         <button
           type="button"

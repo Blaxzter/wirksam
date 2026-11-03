@@ -127,6 +127,65 @@ describe('TaskShiftTile', () => {
     }
   })
 
+  describe('who is on it', () => {
+    const booked = (...names: (string | null)[]) =>
+      shift({
+        current_bookings: names.length,
+        max_bookings: Math.max(3, names.length),
+        bookers: names.map((name, i) => ({ user_id: `u${i}`, name })),
+      })
+    const who = (w: ReturnType<typeof mountTile>) => w.find('[data-testid="shift-who-s1"]')
+
+    it('adds their first names after the count, as the roster names them', () => {
+      const w = mountTile({ shift: booked('Tomas Neruda', 'Adaeze Okafor') })
+      expect(who(w).text()).toBe('2 of 3 · Tomas, Adaeze')
+      expect(main(w).attributes('aria-label')).toBe('14:00 – 17:00, 2 of 3, Tomas, Adaeze')
+    })
+
+    it('writes out three and counts the rest, which stays in view', () => {
+      const w = mountTile({ shift: booked('Vroni A', 'Yuki B', 'Ben C', 'Sina D', 'Jonas E') })
+      expect(who(w).text()).toBe('5 of 5 · Vroni, Yuki, Ben +2')
+      const more = who(w).findAll('span').at(-1)!
+      expect(more.text()).toBe('+2')
+      expect(more.classes()).toContain('shrink-0')
+      expect(main(w).attributes('aria-label')).toContain('Vroni, Yuki, Ben and 2 more')
+    })
+
+    it('says a shift nobody is on yet is still free, unless it is over', () => {
+      expect(who(mountTile({ shift: booked() })).text()).toBe('0 of 3 · still free')
+      const over = mountTile({ shift: booked(), note: 'This shift is over.' })
+      expect(who(over).text()).toBe('0 of 3')
+    })
+
+    it('counts someone without a name without writing them out', () => {
+      const w = mountTile({ shift: booked(null, 'Tomas Neruda') })
+      expect(who(w).text()).toBe('2 of 3 · Tomas +1')
+      const nameless = mountTile({ shift: booked(null) })
+      expect(who(nameless).text()).toBe('1 of 3 · +1')
+      expect(main(nameless).attributes('aria-label')).toBe('14:00 – 17:00, 1 of 3')
+    })
+
+    it('puts two names on a line of their own under the badge on a phone', () => {
+      const w = mountTile({ shift: booked('Vroni A', 'Yuki B', 'Ben C'), compact: true })
+      expect(who(w).text()).toBe('Vroni, Yuki +1')
+      expect(who(w).find('span').classes()).toContain('truncate')
+      expect(who(mountTile({ shift: booked(), compact: true })).exists()).toBe(false)
+    })
+
+    it('shows the count alone when the page did not ask for names', () => {
+      const w = mountTile()
+      expect(who(w).text()).toBe('1 of 3')
+      expect(who(mountTile({ compact: true })).exists()).toBe(false)
+    })
+
+    it('says it in German too', () => {
+      i18n.global.locale.value = 'de'
+      expect(who(mountTile({ shift: booked() })).text()).toBe('0 von 3 · noch frei')
+      const w = mountTile({ shift: booked('Vroni A', 'Yuki B', 'Ben C', 'Sina D') })
+      expect(main(w).attributes('aria-label')).toContain('Vroni, Yuki, Ben und 1 weitere Person')
+    })
+  })
+
   it('offers the details to a volunteer, whose tap books, but not to whoever runs the task', async () => {
     for (const compact of [false, true]) {
       const w = mountTile({ compact })

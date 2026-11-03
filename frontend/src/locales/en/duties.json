@@ -783,7 +783,9 @@
             "tapToSeeWho": "Tap a shift to see who's on it.",
             "tileFree": "{n} free",
             "tileFull": "Full",
+            "tileMoreLabel": "{names} and {n} more | {names} and {n} more",
             "tileNobody": "Nobody yet",
+            "tileStillFree": "still free",
             "tileTaken": "{taken} of {max}",
             "title": "Task Details",
             "unbatchedShifts": "Other Shifts"

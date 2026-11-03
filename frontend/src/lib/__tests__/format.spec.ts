@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { firstName, formatDate, formatHours, initials, telHref } from '@/lib/format'
+import {
+  firstName,
+  firstNamesPreview,
+  formatDate,
+  formatHours,
+  initials,
+  telHref,
+} from '@/lib/format'
 import i18n from '@/locales/i18n'
 
 /**
@@ -161,5 +168,39 @@ describe('firstName', () => {
   it('falls back to the whole name when nothing is left after the prefix', () => {
     expect(firstName('[DEMO]')).toBe('[DEMO]')
     expect(firstName('')).toBe('')
+  })
+})
+
+describe('firstNamesPreview', () => {
+  it('gives the first names of the first few and counts the rest', () => {
+    expect(firstNamesPreview(['Tomas Neruda', 'Adaeze Okafor'], 3)).toEqual({
+      shown: ['Tomas', 'Adaeze'],
+      more: 0,
+    })
+    expect(firstNamesPreview(['Vroni A', 'Yuki B', 'Ben C', 'Sina D'], 2)).toEqual({
+      shown: ['Vroni', 'Yuki'],
+      more: 2,
+    })
+  })
+
+  it('counts someone without a name without writing them out', () => {
+    expect(firstNamesPreview([null, 'Tomas Neruda', '  ', undefined], 3)).toEqual({
+      shown: ['Tomas'],
+      more: 3,
+    })
+  })
+
+  it('skips a "[DEMO]" prefix and keeps an address to the part before the @', () => {
+    expect(firstNamesPreview(['[DEMO] Carla Meier', 'jonas.weber@example.org'], 3)).toEqual({
+      shown: ['Carla', 'jonas.weber'],
+      more: 0,
+    })
+    expect(firstNamesPreview(['@example.org'], 3).shown).toEqual(['@example.org'])
+  })
+
+  it('is empty for nobody, and for a limit of zero or less', () => {
+    expect(firstNamesPreview([], 3)).toEqual({ shown: [], more: 0 })
+    expect(firstNamesPreview(['Tomas'], 0)).toEqual({ shown: [], more: 1 })
+    expect(firstNamesPreview(['Tomas'], -1)).toEqual({ shown: [], more: 1 })
   })
 })

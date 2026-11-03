@@ -589,6 +589,9 @@ const handleShiftClick = async (shift: ShiftRead) => {
           (shifts.value[idx].current_bookings ?? 1) - 1,
         )
         shifts.value[idx].is_booked_by_me = false
+        shifts.value[idx].bookers = shifts.value[idx].bookers?.filter(
+          (b) => b.user_id !== booking.user_id,
+        )
       }
       myBookings.value = myBookings.value.filter((b) => b.id !== booking.id)
       toast.success(t('duties.bookings.cancelSuccess'))
@@ -616,6 +619,13 @@ const handleShiftClick = async (shift: ShiftRead) => {
       if (idx !== -1) {
         shifts.value[idx].current_bookings = (shifts.value[idx].current_bookings ?? 0) + 1
         shifts.value[idx].is_booked_by_me = true
+        const bookers = shifts.value[idx].bookers
+        if (bookers) {
+          shifts.value[idx].bookers = [
+            ...bookers,
+            { user_id: res.data.user_id, name: authStore.profile?.name ?? null },
+          ]
+        }
       }
       myBookings.value.push({
         ...res.data,
@@ -699,9 +709,11 @@ const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}): Promise<bo
 
 const loadShifts = async () => {
   try {
+    // With who booked each shift, for the tiles' "2 of 3 · Tomas, Adaeze":
+    // one request for the task, not a roster read per tile.
     const response = await get<{ data: ShiftListResponse }>({
       url: '/shifts/',
-      query: { task_id: eventId.value, limit: 200 },
+      query: { task_id: eventId.value, limit: 200, with_bookers: true },
     })
     shifts.value = response.data.items
   } catch (error) {
