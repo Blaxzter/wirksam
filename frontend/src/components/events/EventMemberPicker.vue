@@ -175,8 +175,13 @@ function onPick(value: unknown) {
   if (member) pickMember(member)
 }
 
-/** Enter in the full-screen search: what the first row offers. */
+/**
+ * Enter in the full-screen search: what the first row offers. Only once
+ * something is typed: the sheet highlights no row, so "Go" on the whole
+ * roster would quietly pick whoever happens to be first.
+ */
 function pickFirst() {
+  if (!search.value.trim()) return
   if (inviteEmail.value) {
     invite()
     return

@@ -224,6 +224,22 @@ describe('EventMemberPicker on a phone with phoneSheet', () => {
     expect(wrapper.emitted('pick')?.[0]?.[0]).toMatchObject({ user_id: 'u-jonas' })
   })
 
+  it('does nothing on Enter before anything is typed', async () => {
+    isPhone.value = true
+    wrapper = mountPicker({ allowEmail: true, phoneSheet: true })
+    await wrapper.find('button[data-testid="p"]').trigger('click')
+    await nextTick()
+
+    // Nothing is highlighted in the sheet, so "Go" must not put the first
+    // member of the roster in charge.
+    await typeInSheet('   ')
+    sheetInput().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await nextTick()
+    expect(wrapper.emitted('pick')).toBeUndefined()
+    expect(wrapper.emitted('invite')).toBeUndefined()
+    expect(sheet()).not.toBeNull()
+  })
+
   it('keeps the dropdown on a phone when the caller did not ask for the sheet', () => {
     isPhone.value = true
     wrapper = mountPicker()
