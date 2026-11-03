@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { CalendarRange, History, QrCode, ScanLine, Ticket } from '@lucide/vue'
+import { CalendarRange, QrCode, ScanLine, Ticket } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -11,7 +11,7 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Button from '@/components/ui/button/Button.vue'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import VoucherBalanceSummary from '@/components/vouchers/VoucherBalanceSummary.vue'
@@ -95,13 +95,22 @@ watch(eventId, load, { immediate: true })
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-6">
-    <div class="space-y-1">
-      <h1 data-testid="page-heading" class="text-2xl font-bold sm:text-3xl">
+  <!--
+    One column on a phone; from about 56rem of room the numbers sit on the
+    left at most 26rem wide and the history takes the rest.
+  -->
+  <div class="@container mx-auto flex max-w-[65rem] flex-col gap-4 sm:gap-6">
+    <header>
+      <h1
+        data-testid="page-heading"
+        class="text-[1.625rem] leading-tight font-bold tracking-tight sm:text-[2rem]"
+      >
         {{ t('vouchers.myTitle') }}
       </h1>
-      <p v-if="event" class="text-muted-foreground">{{ event.name }}</p>
-    </div>
+      <p v-if="event" class="mt-0.5 text-sm text-muted-foreground sm:mt-1 sm:text-[15px]">
+        {{ event.name }}
+      </p>
+    </header>
 
     <!-- No event at all: the way out is the picker -->
     <Card v-if="!eventId" data-testid="my-vouchers-no-event">
@@ -117,9 +126,12 @@ watch(eventId, load, { immediate: true })
       </CardContent>
     </Card>
 
-    <div v-else-if="loading" class="space-y-4">
-      <Skeleton class="h-48 w-full rounded-xl" />
-      <Skeleton class="h-64 w-full rounded-xl" />
+    <div
+      v-else-if="loading"
+      class="grid gap-4 sm:gap-6 @4xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
+    >
+      <Skeleton class="h-80 w-full rounded-[20px] sm:rounded-[22px]" />
+      <Skeleton class="h-64 w-full rounded-[20px] sm:rounded-[22px]" />
     </div>
 
     <Alert v-else-if="failed" variant="destructive">
@@ -131,55 +143,68 @@ watch(eventId, load, { immediate: true })
         <AlertDescription>{{ t('vouchers.expired') }}</AlertDescription>
       </Alert>
 
-      <Card data-testid="my-vouchers-balance">
-        <CardHeader class="pb-3">
-          <CardTitle class="flex items-center gap-2 text-lg">
-            <Ticket class="size-5 shrink-0" />
-            {{ t('vouchers.title') }}
-          </CardTitle>
-          <CardDescription>{{ t('vouchers.howItWorks') }}</CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <VoucherBalanceSummary :summary="account.summary" />
+      <div class="grid items-start gap-4 sm:gap-6 @4xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+        <section
+          aria-labelledby="my-vouchers-stats"
+          data-testid="my-vouchers-balance"
+          class="flex min-w-0 flex-col rounded-[20px] border bg-card px-4 pt-[18px] pb-4 text-card-foreground sm:rounded-[22px] sm:p-6"
+        >
+          <h2
+            id="my-vouchers-stats"
+            class="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground sm:text-base sm:font-bold sm:text-card-foreground"
+          >
+            <Ticket class="size-4 shrink-0 sm:size-[18px]" aria-hidden="true" />
+            {{ t('vouchers.yours') }}
+          </h2>
+          <VoucherBalanceSummary class="mt-2.5 sm:mt-3.5" :summary="account.summary" />
+
           <template v-if="!expired">
             <Button
-              size="lg"
-              class="w-full"
+              class="mt-4 h-[50px] w-full rounded-xl text-base font-bold sm:mt-[18px] sm:h-12 sm:text-[15px]"
               :disabled="account.summary.available === 0"
               data-testid="btn-show-voucher-code"
               @click="codeOpen = true"
             >
-              <QrCode class="mr-2 size-5" />
+              <QrCode class="size-[18px]" aria-hidden="true" />
               {{ t('vouchers.showCode') }}
             </Button>
-            <p v-if="account.summary.available === 0" class="text-sm text-muted-foreground">
+            <p v-if="account.summary.available === 0" class="mt-2 text-sm text-muted-foreground">
               {{ t('vouchers.noneAvailable') }}
             </p>
+            <Button
+              v-if="canRedeemSomewhere"
+              variant="outline"
+              class="mt-2 h-11 w-full rounded-xl font-semibold"
+              data-testid="btn-open-redeem"
+              @click="router.push({ name: 'voucher-redeem', params: { eventId } })"
+            >
+              <ScanLine class="size-4" aria-hidden="true" />
+              {{ t('vouchers.redeem.open') }}
+            </Button>
           </template>
-          <Button
-            v-if="canRedeemSomewhere && !expired"
-            variant="outline"
-            class="w-full"
-            data-testid="btn-open-redeem"
-            @click="router.push({ name: 'voucher-redeem', params: { eventId } })"
-          >
-            <ScanLine class="mr-2 size-4" />
-            {{ t('vouchers.redeem.open') }}
-          </Button>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader class="pb-1">
-          <CardTitle class="flex items-center gap-2 text-lg">
-            <History class="size-5 shrink-0" />
+          <p class="mt-3 text-[13px] text-muted-foreground sm:mt-3.5">
+            {{ t('vouchers.howItWorks') }}
+          </p>
+        </section>
+
+        <section
+          aria-labelledby="my-vouchers-history"
+          class="min-w-0 rounded-[20px] border bg-card text-card-foreground sm:rounded-[22px]"
+        >
+          <h2
+            id="my-vouchers-history"
+            class="px-4 pt-4 pb-1 text-[17px] font-bold sm:px-6 sm:pt-5 sm:pb-1.5 sm:text-lg"
+          >
             {{ t('vouchers.history.title') }}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <VoucherHistory :account="account" />
-        </CardContent>
-      </Card>
+          </h2>
+          <VoucherHistory
+            :account="account"
+            with-upcoming
+            class="px-2 pb-2.5 sm:px-4 sm:pb-3.5"
+          />
+        </section>
+      </div>
     </template>
 
     <VoucherCodeDialog

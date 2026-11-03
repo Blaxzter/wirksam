@@ -1,5 +1,5 @@
 {
-    "adjusted": "Corrections",
+    "adjusted": "Correction",
     "admin": {
         "add": "Add",
         "addCorrection": "Add correction",
@@ -49,7 +49,7 @@
     },
     "afterEventLink": "See your vouchers",
     "available": "{n} voucher available | {n} vouchers available",
-    "availableCaption": "voucher available | vouchers available",
+    "availableShort": "available",
     "code": {
         "checking": "Being redeemed…",
         "expiresIn": "New code in {s} s",
@@ -88,14 +88,18 @@
         "adjustment": "Correction",
         "by": "by {name}",
         "empty": "Nothing yet.",
+        "past": "So far",
         "redeemed": "Used at {place}",
-        "shift": "Shift: {task}, {date}",
-        "title": "History"
+        "redeemedBy": "by {name}",
+        "shift": "Shift: {task}",
+        "title": "History",
+        "upcoming": "Still to come"
     },
     "howItWorks": "You get vouchers for each shift once it is over. Show your code where vouchers are taken.",
     "loadFailed": "Your vouchers could not be loaded.",
     "myTitle": "My vouchers",
     "noEvent": "Pick an event to see your vouchers.",
+    "noMoreShifts": "No more shifts booked.",
     "noneAvailable": "You have no vouchers to use right now.",
     "pickEvent": "Pick an event",
     "redeem": {
@@ -172,6 +176,7 @@
     },
     "title": "Vouchers",
     "upcoming": "{n} more for shifts you have booked",
-    "upcomingOther": "{n} more for booked shifts still to come",
-    "used": "Used"
+    "upcomingFromShifts": "{n} more to come from booked shifts | {n} more to come from booked shifts",
+    "used": "Used",
+    "yours": "Your vouchers"
 }

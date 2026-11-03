@@ -1,5 +1,5 @@
 {
-    "adjusted": "Korrekturen",
+    "adjusted": "Korrektur",
     "admin": {
         "add": "Hinzufügen",
         "addCorrection": "Korrektur hinzufügen",
@@ -49,7 +49,7 @@
     },
     "afterEventLink": "Deine Marken ansehen",
     "available": "{n} Marke verfügbar | {n} Marken verfügbar",
-    "availableCaption": "Marke verfügbar | Marken verfügbar",
+    "availableShort": "verfügbar",
     "code": {
         "checking": "Wird gerade eingelöst …",
         "expiresIn": "Neuer Code in {s} s",
@@ -88,14 +88,18 @@
         "adjustment": "Korrektur",
         "by": "von {name}",
         "empty": "Noch nichts.",
+        "past": "Bisher",
         "redeemed": "Eingelöst bei {place}",
-        "shift": "Schicht: {task}, {date}",
-        "title": "Verlauf"
+        "redeemedBy": "bei {name}",
+        "shift": "Schicht: {task}",
+        "title": "Verlauf",
+        "upcoming": "Kommt noch"
     },
     "howItWorks": "Für jede Schicht bekommst du Marken, sobald sie vorbei ist. Zeig deinen Code dort, wo Marken angenommen werden.",
     "loadFailed": "Deine Marken konnten nicht geladen werden.",
     "myTitle": "Meine Marken",
     "noEvent": "Wähl eine Veranstaltung, um deine Marken zu sehen.",
+    "noMoreShifts": "Keine weiteren Schichten gebucht.",
     "noneAvailable": "Du hast gerade keine Marken zum Einlösen.",
     "pickEvent": "Veranstaltung wählen",
     "redeem": {
@@ -172,6 +176,7 @@
     },
     "title": "Marken",
     "upcoming": "{n} mehr für deine gebuchten Schichten",
-    "upcomingOther": "{n} mehr für gebuchte Schichten, die noch kommen",
-    "used": "Eingelöst"
+    "upcomingFromShifts": "{n} kommt noch aus gebuchten Schichten | {n} kommen noch aus gebuchten Schichten",
+    "used": "Eingelöst",
+    "yours": "Deine Marken"
 }

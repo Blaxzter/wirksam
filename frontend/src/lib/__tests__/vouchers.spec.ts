@@ -15,7 +15,10 @@ import {
   normalizeVoucherCode,
   parseVoucherPayload,
   secondsLeft,
+  signedVoucherAmount,
+  upcomingVoucherShifts,
   voucherHistory,
+  vouchersByBooking,
 } from '@/lib/vouchers'
 
 describe('normalizeVoucherCode', () => {
@@ -171,6 +174,41 @@ describe('voucherHistory', () => {
     const gone = shift({ booking_id: 'gone', shift_id: null, task_id: null, settled: true })
     const items = voucherHistory({ shifts: [gone], entries: [] })
     expect(items).toEqual([{ kind: 'shift', key: 'shift-gone', shift: gone }])
+  })
+})
+
+describe('upcomingVoucherShifts', () => {
+  it('keeps the shifts still to come, in the order they came', () => {
+    const items = upcomingVoucherShifts({
+      shifts: [
+        shift({ booking_id: 'done' }),
+        shift({ booking_id: 'next', completed: false }),
+        shift({ booking_id: 'later', completed: false }),
+      ],
+    })
+    expect(items.map((s) => s.booking_id)).toEqual(['next', 'later'])
+  })
+})
+
+describe('vouchersByBooking', () => {
+  it('maps each booking to what it earns, leaving out what earns nothing', () => {
+    const map = vouchersByBooking([
+      shift({ booking_id: 'a', vouchers: 2 }),
+      shift({ booking_id: 'b', vouchers: 0 }),
+      shift({ booking_id: 'c', vouchers: 3, completed: false }),
+    ])
+    expect([...map.entries()]).toEqual([
+      ['a', 2],
+      ['c', 3],
+    ])
+  })
+})
+
+describe('signedVoucherAmount', () => {
+  it('signs additions and takings, with a real minus sign', () => {
+    expect(signedVoucherAmount(2)).toBe('+2')
+    expect(signedVoucherAmount(-1)).toBe('−1')
+    expect(signedVoucherAmount(0)).toBe('0')
   })
 })
 

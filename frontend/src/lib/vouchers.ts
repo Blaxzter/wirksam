@@ -118,6 +118,33 @@ export function voucherHistory(account: Pick<VoucherAccount, 'shifts' | 'entries
   return items.sort((a, b) => historySortKey(b) - historySortKey(a))
 }
 
+/**
+ * The booked shifts whose vouchers are still to come, in the order the server
+ * lists them (by date and start, as the rota reads), so the next one is first.
+ */
+export function upcomingVoucherShifts(account: Pick<VoucherAccount, 'shifts'>): VoucherShift[] {
+  return account.shifts.filter((s) => !s.completed)
+}
+
+/**
+ * What each booking earns, by booking id, for the "+2 vouchers" on the
+ * bookings list. Only bookings that earn something are in it.
+ */
+export function vouchersByBooking(shifts: VoucherShift[]): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const s of shifts) {
+    if (s.vouchers > 0) map.set(s.booking_id, s.vouchers)
+  }
+  return map
+}
+
+/** A voucher amount with its sign: "+2", "−1" (a real minus sign), "0". */
+export function signedVoucherAmount(amount: number): string {
+  if (amount > 0) return `+${amount}`
+  if (amount < 0) return `−${Math.abs(amount)}`
+  return '0'
+}
+
 type RandomSource = {
   randomUUID?: () => string
   getRandomValues: (array: Uint8Array<ArrayBuffer>) => Uint8Array<ArrayBuffer>
