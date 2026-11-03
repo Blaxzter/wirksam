@@ -56,23 +56,6 @@ class CRUDEventInvitation:
         )
         return list(result.scalars().all())
 
-    async def find_pending_for_email(
-        self,
-        session: AsyncSession,
-        *,
-        event_id: uuid.UUID,
-        email: str,
-    ) -> EventInvitation | None:
-        result = await session.execute(
-            select(EventInvitation).where(
-                col(EventInvitation.event_id) == event_id,
-                func.lower(col(EventInvitation.email)) == email.lower(),
-                col(EventInvitation.revoked_at).is_(None),
-                col(EventInvitation.accepted_at).is_(None),
-            )
-        )
-        return result.scalars().first()
-
     async def list_pending_for_email(
         self,
         session: AsyncSession,

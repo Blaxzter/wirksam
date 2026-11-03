@@ -268,8 +268,9 @@ async def dispatch_task_manager_added(
 ) -> None:
     """Tell people an organiser has put them in charge of a task.
 
-    Queued by ``POST /tasks/{id}/managers`` and ``POST /tasks/with-shifts``,
-    one call per task with everyone it names. Never for someone who names
+    Queued by ``POST /tasks/{id}/managers``, ``POST /tasks/with-shifts`` and
+    ``POST /tasks/{id}/managers/invite`` when the address is a member's, one
+    call per task with everyone it names. Never for someone who names
     themselves (the actor is dropped here as well as at the call sites), on
     clone (``event.cloned`` already tells the new roster, and a notice per task
     would bury it), or when someone accepts an invitation to be in charge

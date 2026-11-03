@@ -36,6 +36,12 @@
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
+    "invitation": {
+        "address_limited": "An diese Adresse gingen heute schon mehrere Einladungen. Versuch es morgen noch einmal.",
+        "expired": "Diese Einladung ist abgelaufen. Schick eine neue.",
+        "rate_limited": "Du hast heute schon sehr viele Einladungen verschickt. Versuch es morgen noch einmal.",
+        "resend_too_soon": "Vor ein paar Minuten ging schon eine E-Mail raus. Warte etwas, bevor du sie noch einmal sendest."
+    },
     "location": {
         "name_taken": "In dieser Veranstaltung gibt es schon einen Ort mit diesem Namen.",
         "not_found": "Dieser Ort wurde nicht gefunden.",
@@ -61,6 +67,8 @@
         "admin_only_field": "Nur Organisator:innen können eine Aufgabe veröffentlichen, ändern, wer sie buchen kann oder wie viele Marken es gibt, oder sie in eine andere Veranstaltung verschieben.",
         "forbidden": "Das können nur die Verantwortlichen dieser Aufgabe und die Organisator:innen.",
         "manager_already": "Diese Person ist für diese Aufgabe schon verantwortlich.",
+        "manager_already_invited": "Diese Adresse ist schon eingeladen, für diese Aufgabe verantwortlich zu sein.",
+        "manager_invitation_not_found": "Diese Einladung wurde nicht gefunden. Vielleicht wurde sie schon angenommen oder zurückgezogen.",
         "manager_not_event_member": "Nur Leute aus dieser Veranstaltung können für ihre Aufgaben verantwortlich sein.",
         "manager_not_found": "Diese Person ist für diese Aufgabe nicht verantwortlich.",
         "not_found": "Diese Aufgabe wurde nicht gefunden.",

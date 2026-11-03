@@ -669,7 +669,7 @@ class TestUserDirectory:
 
 @pytest.mark.asyncio
 class TestInvitationsFromADemo:
-    """``routes.events._refuse_if_sandbox`` — the guard in front of outbound mail.
+    """``logic.sandbox.guards.refuse_if_sandbox`` — the guard in front of outbound mail.
 
     Necessary because a guest is seeded as *owner* of their sandbox so that the
     organiser tour can show them the screens an organiser uses. That role

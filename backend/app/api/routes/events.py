@@ -15,7 +15,9 @@ from app.crud.booking import booking as crud_booking
 from app.crud.event import EventScope
 from app.crud.event import event as crud_event
 from app.crud.event_invitation import event_invitation as crud_invitation
-from app.crud.event_invitation import invitation_invalid_reason
+from app.crud.event_invitation_task import (
+    event_invitation_task as crud_invitation_task,
+)
 from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
@@ -25,7 +27,9 @@ from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic import clock, vouchers
+from app.logic.invitations import check_new_invitation_quota, mark_sent, quota_refusal
 from app.logic.permissions import require_event_role, require_event_visible
+from app.logic.sandbox.guards import refuse_if_sandbox
 from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
 from app.models.event_membership import EventMembership
@@ -55,6 +59,7 @@ from app.schemas.event_invitation import (
     EventInvitationBulkResult,
     EventInvitationCreate,
     EventInvitationRead,
+    InvitationTaskBrief,
 )
 from app.schemas.event_join_request import (
     EventJoinRequestCreate,
@@ -344,34 +349,6 @@ async def update_event(
         )
 
     return await decorate_event(session, current_user, updated)
-
-
-async def _refuse_if_sandbox(
-    session: DBDep,
-    event_id: uuid.UUID,
-    *,
-    code: str = "sandbox.invitations_disabled",
-    detail: str = "Invitations cannot be sent from a demo event",
-) -> None:
-    """Block anything a demo event must not do.
-
-    A guest is seeded as ``owner`` of their sandbox so the manager tour can
-    show them the screens an organiser uses. That role passes
-    ``require_event_role(minimum="admin")``, which means the invitation
-    endpoints would happily post an email to any address an anonymous visitor
-    typed in. The existing ``demo|`` guard does not help here: it tests the
-    *recipient*, and the recipient of an invitation is whoever was named.
-
-    The tour visits these screens deliberately and explains that sending is
-    switched off in the demo, so this is the enforcement behind that sentence.
-
-    ``code``/``detail`` default to the invitation wording every existing caller
-    wants; cloning passes its own so a refused clone does not talk about
-    invitations.
-    """
-    event = await crud_event.get(session, event_id, raise_404_error=True)
-    if event.is_sandbox:
-        raise_problem(403, code=code, detail=detail)
 
 
 class FeaturedUpdate(BaseModel):
@@ -833,7 +810,7 @@ async def clone_event(
     await require_event_role(current_user, session, source.id, minimum="admin")
     # A demo is seeded with its guest as owner, so the role check above passes
     # for an anonymous visitor. A sandbox must never produce a real event.
-    await _refuse_if_sandbox(
+    await refuse_if_sandbox(
         session,
         source.id,
         code="sandbox.clone_disabled",
@@ -1594,10 +1571,24 @@ async def list_event_invitations(
     session: DBDep,
     current_user: CurrentUser,
 ) -> list[EventInvitationRead]:
+    """The event's open invitations, with the tasks each asks someone to run."""
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
     invitations = await crud_invitation.list_open_for_event(session, event_id=event_id)
-    return [EventInvitationRead.model_validate(i) for i in invitations]
+    tasks = await crud_invitation_task.tasks_for_invitations(
+        session, invitation_ids=[i.id for i in invitations]
+    )
+    reads: list[EventInvitationRead] = []
+    for invitation in invitations:
+        read = EventInvitationRead.model_validate(invitation)
+        read.tasks = [
+            InvitationTaskBrief(
+                task_id=t.id, name=t.name, start_date=t.start_date, end_date=t.end_date
+            )
+            for t in tasks.get(invitation.id, [])
+        ]
+        reads.append(read)
+    return reads
 
 
 @router.post(
@@ -1612,10 +1603,16 @@ async def create_event_invitation(
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
 ) -> EventInvitationRead:
-    """Invite one person by email, or mint a shareable link (omit ``email``)."""
+    """Invite one person by email, or mint a shareable link (omit ``email``).
+
+    A targeted invitation is mailed (``dispatch_event_invitation``: a
+    notification to an account, the invitation mail to an address without
+    one) and counts against the daily limits (``429 invitation.*``).
+    """
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    await _refuse_if_sandbox(session, event_id)
+    await refuse_if_sandbox(session, event_id)
+    now = clock.utc_now()
 
     if body.email:
         existing_user = await crud_user.get_by_email(session, email=str(body.email))
@@ -1629,15 +1626,17 @@ async def create_event_invitation(
                     code="event.already_member",
                     detail="That person is already a member of this event",
                 )
-        open_invite = await crud_invitation.find_pending_for_email(
+        if await crud_invitation_task.open_for_address(
             session, event_id=event_id, email=str(body.email)
-        )
-        if open_invite and invitation_invalid_reason(open_invite) is None:
+        ):
             raise_problem(
                 409,
                 code="event.already_invited",
                 detail="That address already has an open invitation",
             )
+        await check_new_invitation_quota(
+            session, inviter=current_user, email=str(body.email), now=now
+        )
 
     invitation = await crud_invitation.create(
         session,
@@ -1651,6 +1650,9 @@ async def create_event_invitation(
     if invitation.email:
         from app.logic.notifications.triggers import dispatch_event_invitation
 
+        mark_sent(invitation, now)
+        session.add(invitation)
+        await session.flush()
         background_tasks.add_task(
             dispatch_event_invitation,
             invitation_id=invitation.id,
@@ -1675,15 +1677,18 @@ async def create_event_invitations_bulk(
 
     Addresses that are already members or already invited are reported back
     rather than failing the whole batch — pasting a team list twice should be
-    harmless.
+    harmless. So are addresses a daily limit refuses
+    (``skipped_rate_limited``).
     """
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    await _refuse_if_sandbox(session, event_id)
+    await refuse_if_sandbox(session, event_id)
+    now = clock.utc_now()
 
     created: list[EventInvitationRead] = []
     skipped_members: list[str] = []
     skipped_invited: list[str] = []
+    skipped_rate_limited: list[str] = []
 
     for address in body.emails:
         email = str(address)
@@ -1693,11 +1698,13 @@ async def create_event_invitations_bulk(
         ):
             skipped_members.append(email)
             continue
-        open_invite = await crud_invitation.find_pending_for_email(
+        if await crud_invitation_task.open_for_address(
             session, event_id=event_id, email=email
-        )
-        if open_invite and invitation_invalid_reason(open_invite) is None:
+        ):
             skipped_invited.append(email)
+            continue
+        if await quota_refusal(session, inviter=current_user, email=email, now=now):
+            skipped_rate_limited.append(email)
             continue
 
         invitation = await crud_invitation.create(
@@ -1708,6 +1715,9 @@ async def create_event_invitations_bulk(
             invited_by_id=current_user.id,
             expires_in_days=body.expires_in_days,
         )
+        mark_sent(invitation, now)
+        session.add(invitation)
+        await session.flush()
         created.append(EventInvitationRead.model_validate(invitation))
 
         from app.logic.notifications.triggers import dispatch_event_invitation
@@ -1720,6 +1730,7 @@ async def create_event_invitations_bulk(
         created=created,
         skipped_existing_members=skipped_members,
         skipped_already_invited=skipped_invited,
+        skipped_rate_limited=skipped_rate_limited,
     )
 
 

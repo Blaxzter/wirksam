@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, NoReturn
 
 from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import select
@@ -16,9 +16,14 @@ from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
+from app.crud.user import user as crud_user
 from app.logic import clock, vouchers
+from app.logic.invitations import invite_to_task
 from app.logic.locations import resolve_location
-from app.logic.notifications.triggers import dispatch_task_manager_added
+from app.logic.notifications.triggers import (
+    dispatch_event_invitation,
+    dispatch_task_manager_added,
+)
 from app.logic.permissions import (
     check_shift_history,
     require_event_role,
@@ -47,6 +52,7 @@ from app.schemas.task import (
     TaskRead,
     TaskUpdateWithShifts,
 )
+from app.schemas.task_manager import TaskManagerInviteResult
 
 router = APIRouter()
 
@@ -78,12 +84,51 @@ async def _validate_manager_ids(
         else set()
     )
     if any(i not in member_ids for i in ids):
-        raise_problem(
-            422,
-            code="task.manager_not_event_member",
-            detail="Only members of this event can be put in charge of its tasks",
-        )
+        _not_event_member()
     return ids
+
+
+def _not_event_member() -> NoReturn:
+    raise_problem(
+        422,
+        code="task.manager_not_event_member",
+        detail="Only members of this event can be put in charge of its tasks",
+    )
+
+
+async def _invite_by_email(
+    session: AsyncSession,
+    *,
+    task: Task,
+    inviter: User,
+    emails: list[str],
+    manager_ids: list[uuid.UUID],
+) -> list[TaskManagerInviteResult]:
+    """Put the people behind ``emails`` in charge of a task just created.
+
+    Each address goes through ``invite_to_task`` as in ``POST
+    /tasks/{id}/managers/invite``, except that a daily limit or a demo event
+    comes back as ``skipped`` instead of an error: raising would roll back the
+    task the organiser just built. The address of someone already named in
+    ``manager_ids`` is left out.
+    """
+    results: list[TaskManagerInviteResult] = []
+    now = clock.utc_now()
+    for email in emails:
+        account = await crud_user.get_by_email(session, email=email)
+        if account is not None and account.id in manager_ids:
+            continue
+        results.append(
+            await invite_to_task(
+                session,
+                task=task,
+                inviter=inviter,
+                email=email,
+                now=now,
+                skip_refusals=True,
+            )
+        )
+    return results
 
 
 @router.post(
@@ -98,11 +143,18 @@ async def create_task_with_shifts(
     """Create a task with auto-generated duty shifts in a single transaction.
 
     The people named in ``manager_ids`` are told they are in charge, in one
-    queued call, except the creator if they named themselves.
+    queued call, except the creator if they named themselves. Each address in
+    ``manager_emails`` is put in charge if it is a member's, or invited, and
+    reported in ``manager_invites``.
     """
     # Check access for the target event (if any)
     await require_event_role(current_user, session, payload.event_id)
     manager_ids = await _validate_manager_ids(session, payload)
+    manager_emails = [str(e) for e in payload.manager_emails]
+    if manager_emails and (payload.event_id is None or payload.new_event is not None):
+        # A brand-new event (or none) has nobody to put in charge yet, and
+        # an invitation needs an event to invite into.
+        _not_event_member()
     # A location belongs to an existing event. Resolved before anything is
     # written, against ``payload.event_id`` only: an event created by this
     # very request has no locations yet, so any id is foreign to it.
@@ -198,12 +250,25 @@ async def create_task_with_shifts(
         slot_in.batch_id = db_batch.id
         await crud_shift.create(session, obj_in=slot_in)
 
-    # 5. The people in charge, validated above.
+    # 5. The people in charge, validated above, then the addresses.
     for user_id in manager_ids:
         await crud_task_manager.add(
             session, task_id=db_task.id, user_id=user_id, added_by=current_user
         )
-    told = [user_id for user_id in manager_ids if user_id != current_user.id]
+    manager_invites = await _invite_by_email(
+        session,
+        task=db_task,
+        inviter=current_user,
+        emails=manager_emails,
+        manager_ids=manager_ids,
+    )
+    # One notice per person: members added by address join the ones named by
+    # id in the same queued call.
+    told = [user_id for user_id in manager_ids if user_id != current_user.id] + [
+        r.manager.user_id
+        for r in manager_invites
+        if r.status == "added" and r.manager and r.manager.user_id != current_user.id
+    ]
     if told:
         background_tasks.add_task(
             dispatch_task_manager_added,
@@ -211,6 +276,11 @@ async def create_task_with_shifts(
             user_ids=told,
             actor_id=current_user.id,
         )
+    for r in manager_invites:
+        if r.status == "invited" and r.emailed and r.invitation is not None:
+            background_tasks.add_task(
+                dispatch_event_invitation, invitation_id=r.invitation.id
+            )
 
     await session.flush()
     await session.refresh(db_task)
@@ -219,6 +289,7 @@ async def create_task_with_shifts(
         task=await _task_read(session, current_user, db_task),
         shifts_created=len(slot_creates),
         event=event_read,
+        manager_invites=manager_invites,
     )
 
 

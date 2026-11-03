@@ -436,57 +436,6 @@ export const zEventInvitationCreate = z
   })
 
 /**
- * EventInvitationPreview
- *
- * What an invitee sees before deciding to accept.
- *
- * Deliberately narrow: it is reachable by anyone holding the token, so it
- * exposes the event's identity and nothing about its members or contents.
- */
-export const zEventInvitationPreview = z
-  .object({
-    event_id: z.uuid(),
-    event_name: z.string(),
-    event_description: z.string().nullish(),
-    start_date: z.iso.date(),
-    end_date: z.iso.date(),
-    role: z.enum(['admin', 'member']),
-    invited_by_name: z.string().nullish(),
-    is_valid: z.boolean(),
-    invalid_reason: z.string().nullish(),
-    already_member: z.boolean().optional().default(false),
-  })
-  .register(z.globalRegistry, {
-    description:
-      "What an invitee sees before deciding to accept.\n\nDeliberately narrow: it is reachable by anyone holding the token, so it\nexposes the event's identity and nothing about its members or contents.",
-  })
-
-/**
- * EventInvitationRead
- */
-export const zEventInvitationRead = z.object({
-  id: z.uuid(),
-  event_id: z.uuid(),
-  email: z.string().nullish(),
-  role: z.enum(['admin', 'member']),
-  token: z.string(),
-  invited_by_id: z.uuid().nullish(),
-  expires_at: z.iso.datetime().nullish(),
-  revoked_at: z.iso.datetime().nullish(),
-  accepted_at: z.iso.datetime().nullish(),
-  use_count: z.int().optional().default(0),
-})
-
-/**
- * EventInvitationBulkResult
- */
-export const zEventInvitationBulkResult = z.object({
-  created: z.array(zEventInvitationRead),
-  skipped_existing_members: z.array(z.string()).optional(),
-  skipped_already_invited: z.array(z.string()).optional(),
-})
-
-/**
  * EventJoinRequestCreate
  */
 export const zEventJoinRequestCreate = z.object({
@@ -724,6 +673,78 @@ export const zGlobalChannelSettingsUpdate = z.object({
   notify_email: z.boolean().nullish(),
   notify_push: z.boolean().nullish(),
   notify_telegram: z.boolean().nullish(),
+})
+
+/**
+ * InvitationTaskBrief
+ *
+ * A task an invitation asks its invitee to be in charge of.
+ */
+export const zInvitationTaskBrief = z
+  .object({
+    task_id: z.uuid(),
+    name: z.string(),
+    start_date: z.iso.date(),
+    end_date: z.iso.date(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A task an invitation asks its invitee to be in charge of.',
+  })
+
+/**
+ * EventInvitationPreview
+ *
+ * What an invitee sees before deciding to accept.
+ *
+ * Deliberately narrow: it is reachable by anyone holding the token, so it
+ * exposes the event's identity and nothing about its members or contents.
+ */
+export const zEventInvitationPreview = z
+  .object({
+    event_id: z.uuid(),
+    event_name: z.string(),
+    event_description: z.string().nullish(),
+    start_date: z.iso.date(),
+    end_date: z.iso.date(),
+    role: z.enum(['admin', 'member']),
+    invited_by_name: z.string().nullish(),
+    is_valid: z.boolean(),
+    invalid_reason: z.string().nullish(),
+    already_member: z.boolean().optional().default(false),
+    tasks: z.array(zInvitationTaskBrief).optional(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "What an invitee sees before deciding to accept.\n\nDeliberately narrow: it is reachable by anyone holding the token, so it\nexposes the event's identity and nothing about its members or contents.",
+  })
+
+/**
+ * EventInvitationRead
+ */
+export const zEventInvitationRead = z.object({
+  id: z.uuid(),
+  event_id: z.uuid(),
+  email: z.string().nullish(),
+  role: z.enum(['admin', 'member']),
+  token: z.string(),
+  invited_by_id: z.uuid().nullish(),
+  expires_at: z.iso.datetime().nullish(),
+  revoked_at: z.iso.datetime().nullish(),
+  accepted_at: z.iso.datetime().nullish(),
+  use_count: z.int().optional().default(0),
+  tasks: z.array(zInvitationTaskBrief).optional(),
+  for_tasks_only: z.boolean().optional().default(false),
+  last_sent_at: z.iso.datetime().nullish(),
+})
+
+/**
+ * EventInvitationBulkResult
+ */
+export const zEventInvitationBulkResult = z.object({
+  created: z.array(zEventInvitationRead),
+  skipped_existing_members: z.array(z.string()).optional(),
+  skipped_already_invited: z.array(z.string()).optional(),
+  skipped_rate_limited: z.array(z.string()).optional(),
 })
 
 /**
@@ -1629,6 +1650,7 @@ export const zTaskCreateWithShifts = z.object({
   new_event: zEventCreate.nullish(),
   schedule: zShiftGenerationConfig,
   manager_ids: z.array(z.uuid()).optional().default([]),
+  manager_emails: z.array(z.email()).max(20).optional().default([]),
 })
 
 /**
@@ -1729,6 +1751,68 @@ export const zTaskFeedResponse = z.object({
 })
 
 /**
+ * TaskManagerInvitationRead
+ *
+ * An open invitation that asks an address to be in charge of a task.
+ *
+ * Event admins only, so the address is shown in full.
+ */
+export const zTaskManagerInvitationRead = z
+  .object({
+    id: z.uuid(),
+    email: z.string(),
+    invited_by_name: z.string().nullish(),
+    created_at: z.iso.datetime(),
+    expires_at: z.iso.datetime().nullish(),
+    last_sent_at: z.iso.datetime().nullish(),
+    expired: z.boolean().optional().default(false),
+    is_member_now: z.boolean().optional().default(false),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'An open invitation that asks an address to be in charge of a task.\n\nEvent admins only, so the address is shown in full.',
+  })
+
+/**
+ * TaskManagerInvite
+ *
+ * Put someone in charge by e-mail address: a member at once, anyone else
+ * through an event invitation that names the task.
+ */
+export const zTaskManagerInvite = z
+  .object({
+    email: z.email(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Put someone in charge by e-mail address: a member at once, anyone else\nthrough an event invitation that names the task.',
+  })
+
+/**
+ * TaskManagerInviteResult
+ *
+ * What inviting one address to be in charge did.
+ *
+ * An account that is not a member and an address nobody has get the same
+ * answer (``invited``), so the dialog cannot be used to find out who has an
+ * account.
+ */
+export const zTaskManagerInviteResult = z
+  .object({
+    status: z.enum(['added', 'invited', 'skipped']),
+    manager: zTaskManagerBrief.nullish(),
+    invitation: zTaskManagerInvitationRead.nullish(),
+    emailed: z.boolean().optional().default(false),
+    registration_may_fail: z.boolean().optional().default(false),
+    skipped_reason: z.enum(['rate_limited', 'address_limited', 'sandbox']).nullish(),
+    email: z.string().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'What inviting one address to be in charge did.\n\nAn account that is not a member and an address nobody has get the same\nanswer (``invited``), so the dialog cannot be used to find out who has an\naccount.',
+  })
+
+/**
  * TaskRead
  */
 export const zTaskRead = z.object({
@@ -1789,6 +1873,7 @@ export const zTaskCreateWithShiftsResponse = z.object({
   task: zTaskRead,
   shifts_created: z.int(),
   event: zEventRead.nullish(),
+  manager_invites: z.array(zTaskManagerInviteResult).optional().default([]),
 })
 
 /**
@@ -3578,6 +3663,7 @@ export const zTaskCreateWithShiftsResponseWritable = z.object({
   task: zTaskRead,
   shifts_created: z.int(),
   event: zEventReadWritable.nullish(),
+  manager_invites: z.array(zTaskManagerInviteResult).optional().default([]),
 })
 
 /**
@@ -4146,6 +4232,54 @@ export const zTasksRemoveTaskManagerPath = z.object({
  * Successful Response
  */
 export const zTasksRemoveTaskManagerResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zTasksInviteTaskManagerBody = zTaskManagerInvite
+
+export const zTasksInviteTaskManagerPath = z.object({
+  task_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTasksInviteTaskManagerResponse = zTaskManagerInviteResult
+
+export const zTasksListTaskManagerInvitationsPath = z.object({
+  task_id: z.uuid(),
+})
+
+/**
+ * Response Tasks-List Task Manager Invitations
+ *
+ * Successful Response
+ */
+export const zTasksListTaskManagerInvitationsResponse = z
+  .array(zTaskManagerInvitationRead)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zTasksResendTaskManagerInvitationPath = z.object({
+  task_id: z.uuid(),
+  invitation_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTasksResendTaskManagerInvitationResponse = zTaskManagerInvitationRead
+
+export const zTasksWithdrawTaskManagerInvitationPath = z.object({
+  task_id: z.uuid(),
+  invitation_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zTasksWithdrawTaskManagerInvitationResponse = z.void().register(z.globalRegistry, {
   description: 'Successful Response',
 })
 

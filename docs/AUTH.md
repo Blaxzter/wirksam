@@ -362,7 +362,23 @@ it writes a row.
 (`invitation_token` on `POST /auth/register`; the invite page hands it to the
 form) or an open invitation addressed to their email. A revoked, used or
 expired invitation does not count, nor does one for a different address, nor
-one to a demo event, since anyone can start a demo.
+one to a demo event, since anyone can start a demo. An invitation to be in
+charge of a task (an organiser typed the address into a task's people in
+charge) is an ordinary targeted invitation with the tasks linked
+(`event_invitation_tasks`), so it counts the same way.
+
+**How the invitation arrives.** An address with an account gets the
+`event.invitation` notification, so its preferences apply. An address without
+one gets the invitation mail directly (`app/logic/invitation_emails.py`,
+through the same SMTP path as the verification mail), in the inviter's
+language, with one button to `/invite/{token}`; before this, such an
+invitation reached nobody. Because anyone can create an event and so mail
+strangers, targeted invitations have daily limits, counted in the database
+(`app/logic/invitations.py`): 200 per organiser (`429
+invitation.rate_limited`), 3 per address across the installation (`429
+invitation.address_limited`), and one mail per invitation every ten minutes
+(`last_sent_at`, `429 invitation.resend_too_soon`). The superadmin is exempt,
+and the limits are off under `TESTING`, like the rate limiter.
 
 `REGISTRATION_ALLOWED_DOMAINS` applies on top of any mode and refuses addresses
 outside the list with `auth.email_domain_not_allowed`. With

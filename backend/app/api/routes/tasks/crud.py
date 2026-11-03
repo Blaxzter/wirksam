@@ -8,6 +8,9 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.event_invitation_task import (
+    event_invitation_task as crud_invitation_task,
+)
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
@@ -249,8 +252,10 @@ async def update_task(
         # text to fall back on: the gate simply goes.
         if "team_id" not in update_data:
             update_data["team_id"] = None
-        # People in charge are members of the source event, not the target.
+        # People in charge are members of the source event, not the target,
+        # and an invitation to run it was an invitation into the source event.
         await crud_task_manager.remove_all_for_task(session, task_id=db_task.id)
+        await crud_invitation_task.detach_task(session, task_id=db_task.id)
     await ensure_team_in_event(
         session,
         team_id=update_data.get("team_id", db_task.team_id),
@@ -326,6 +331,9 @@ async def delete_task(
     await vouchers.settle_earnings(
         session, now=clock.wall_clock_now(), task_ids=[db_task.id]
     )
+    # An invitation that existed only to run this task is withdrawn, so its
+    # link says so; the links themselves would go by cascade.
+    await crud_invitation_task.detach_task(session, task_id=db_task.id)
     # Cancel confirmed bookings with snapshot before deleting
     await crud_booking.cancel_bookings_for_shifts(
         session,

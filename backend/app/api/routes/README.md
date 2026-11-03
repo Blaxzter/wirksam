@@ -80,7 +80,11 @@ Inside an event, a few gates in the same file narrow or widen those two:
   `managers_edit_voucher_shifts` is on; `PATCH /shifts/{id}` asks
   `check_voucher_shifts` only when it changes `SHIFT_EARNING_FIELDS`) and
   `require_task_visible` (reading one task; drafts for admins and the task's
-  people in charge).
+  people in charge). Naming people in charge, and inviting them by address
+  (`POST /tasks/{id}/managers/invite` and `.../managers/invitations`), is
+  `require_event_role` (event admins only); inviting refuses demo events
+  through `logic/sandbox/guards.py::refuse_if_sandbox`, the same guard the
+  event invitations use.
 - **Vouchers** (`vouchers.py`) add `require_voucher_redeemer` (taking vouchers
   at a task flagged `is_voucher_point`: event admins, its people in charge,
   and whoever is on a running shift there; without a code, admins and people

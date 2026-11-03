@@ -36,6 +36,12 @@
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
     },
+    "invitation": {
+        "address_limited": "This address has already received several invitations today. Try again tomorrow.",
+        "expired": "This invitation has expired. Send a new one.",
+        "rate_limited": "You have sent a lot of invitations today. Try again tomorrow.",
+        "resend_too_soon": "An e-mail went out a few minutes ago. Wait a little before sending it again."
+    },
     "location": {
         "name_taken": "There is already a location with this name in this event.",
         "not_found": "That location could not be found.",
@@ -61,6 +67,8 @@
         "admin_only_field": "Only organisers can publish a task, change who can book it or its vouchers, or move it to another event.",
         "forbidden": "Only the people in charge of this task and the organisers can do this.",
         "manager_already": "That person is already in charge of this task.",
+        "manager_already_invited": "That address is already invited to be in charge of this task.",
+        "manager_invitation_not_found": "That invitation could not be found. It may have been accepted or withdrawn.",
         "manager_not_event_member": "Only people in this event can be put in charge of its tasks.",
         "manager_not_found": "That person is not in charge of this task.",
         "not_found": "That task could not be found.",

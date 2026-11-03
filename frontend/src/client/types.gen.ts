@@ -954,6 +954,10 @@ export type EventInvitationBulkResult = {
    * Skipped Already Invited
    */
   skipped_already_invited?: Array<string>
+  /**
+   * Skipped Rate Limited
+   */
+  skipped_rate_limited?: Array<string>
 }
 
 /**
@@ -1029,6 +1033,10 @@ export type EventInvitationPreview = {
    * Already Member
    */
   already_member?: boolean
+  /**
+   * Tasks
+   */
+  tasks?: Array<InvitationTaskBrief>
 }
 
 /**
@@ -1075,6 +1083,18 @@ export type EventInvitationRead = {
    * Use Count
    */
   use_count?: number
+  /**
+   * Tasks
+   */
+  tasks?: Array<InvitationTaskBrief>
+  /**
+   * For Tasks Only
+   */
+  for_tasks_only?: boolean
+  /**
+   * Last Sent At
+   */
+  last_sent_at?: string | null
 }
 
 /**
@@ -1956,6 +1976,30 @@ export type GlobalChannelSettingsUpdate = {
    * Notify Telegram
    */
   notify_telegram?: boolean | null
+}
+
+/**
+ * InvitationTaskBrief
+ *
+ * A task an invitation asks its invitee to be in charge of.
+ */
+export type InvitationTaskBrief = {
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Start Date
+   */
+  start_date: string
+  /**
+   * End Date
+   */
+  end_date: string
 }
 
 /**
@@ -3805,6 +3849,10 @@ export type TaskCreateWithShifts = {
    * Manager Ids
    */
   manager_ids?: Array<string>
+  /**
+   * Manager Emails
+   */
+  manager_emails?: Array<string>
 }
 
 /**
@@ -3817,6 +3865,10 @@ export type TaskCreateWithShiftsResponse = {
    */
   shifts_created: number
   event?: EventRead | null
+  /**
+   * Manager Invites
+   */
+  manager_invites?: Array<TaskManagerInviteResult>
 }
 
 /**
@@ -3919,6 +3971,95 @@ export type TaskManagerBrief = {
    * Avatar Etag
    */
   avatar_etag?: string | null
+}
+
+/**
+ * TaskManagerInvitationRead
+ *
+ * An open invitation that asks an address to be in charge of a task.
+ *
+ * Event admins only, so the address is shown in full.
+ */
+export type TaskManagerInvitationRead = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Email
+   */
+  email: string
+  /**
+   * Invited By Name
+   */
+  invited_by_name?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Expires At
+   */
+  expires_at?: string | null
+  /**
+   * Last Sent At
+   */
+  last_sent_at?: string | null
+  /**
+   * Expired
+   */
+  expired?: boolean
+  /**
+   * Is Member Now
+   */
+  is_member_now?: boolean
+}
+
+/**
+ * TaskManagerInvite
+ *
+ * Put someone in charge by e-mail address: a member at once, anyone else
+ * through an event invitation that names the task.
+ */
+export type TaskManagerInvite = {
+  /**
+   * Email
+   */
+  email: string
+}
+
+/**
+ * TaskManagerInviteResult
+ *
+ * What inviting one address to be in charge did.
+ *
+ * An account that is not a member and an address nobody has get the same
+ * answer (``invited``), so the dialog cannot be used to find out who has an
+ * account.
+ */
+export type TaskManagerInviteResult = {
+  /**
+   * Status
+   */
+  status: 'added' | 'invited' | 'skipped'
+  manager?: TaskManagerBrief | null
+  invitation?: TaskManagerInvitationRead | null
+  /**
+   * Emailed
+   */
+  emailed?: boolean
+  /**
+   * Registration May Fail
+   */
+  registration_may_fail?: boolean
+  /**
+   * Skipped Reason
+   */
+  skipped_reason?: 'rate_limited' | 'address_limited' | 'sandbox' | null
+  /**
+   * Email
+   */
+  email?: string | null
 }
 
 /**
@@ -6918,6 +7059,10 @@ export type TaskCreateWithShiftsResponseWritable = {
    */
   shifts_created: number
   event?: EventReadWritable | null
+  /**
+   * Manager Invites
+   */
+  manager_invites?: Array<TaskManagerInviteResult>
 }
 
 /**
@@ -10008,6 +10153,256 @@ export type TasksRemoveTaskManagerResponses = {
 
 export type TasksRemoveTaskManagerResponse =
   TasksRemoveTaskManagerResponses[keyof TasksRemoveTaskManagerResponses]
+
+export type TasksInviteTaskManagerData = {
+  body: TaskManagerInvite
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string
+  }
+  query?: never
+  url: '/api/v1/tasks/{task_id}/managers/invite'
+}
+
+export type TasksInviteTaskManagerErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TasksInviteTaskManagerError =
+  TasksInviteTaskManagerErrors[keyof TasksInviteTaskManagerErrors]
+
+export type TasksInviteTaskManagerResponses = {
+  /**
+   * Successful Response
+   */
+  201: TaskManagerInviteResult
+}
+
+export type TasksInviteTaskManagerResponse =
+  TasksInviteTaskManagerResponses[keyof TasksInviteTaskManagerResponses]
+
+export type TasksListTaskManagerInvitationsData = {
+  body?: never
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string
+  }
+  query?: never
+  url: '/api/v1/tasks/{task_id}/managers/invitations'
+}
+
+export type TasksListTaskManagerInvitationsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TasksListTaskManagerInvitationsError =
+  TasksListTaskManagerInvitationsErrors[keyof TasksListTaskManagerInvitationsErrors]
+
+export type TasksListTaskManagerInvitationsResponses = {
+  /**
+   * Response Tasks-List Task Manager Invitations
+   *
+   * Successful Response
+   */
+  200: Array<TaskManagerInvitationRead>
+}
+
+export type TasksListTaskManagerInvitationsResponse =
+  TasksListTaskManagerInvitationsResponses[keyof TasksListTaskManagerInvitationsResponses]
+
+export type TasksResendTaskManagerInvitationData = {
+  body?: never
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string
+    /**
+     * Invitation Id
+     */
+    invitation_id: string
+  }
+  query?: never
+  url: '/api/v1/tasks/{task_id}/managers/invitations/{invitation_id}/resend'
+}
+
+export type TasksResendTaskManagerInvitationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TasksResendTaskManagerInvitationError =
+  TasksResendTaskManagerInvitationErrors[keyof TasksResendTaskManagerInvitationErrors]
+
+export type TasksResendTaskManagerInvitationResponses = {
+  /**
+   * Successful Response
+   */
+  200: TaskManagerInvitationRead
+}
+
+export type TasksResendTaskManagerInvitationResponse =
+  TasksResendTaskManagerInvitationResponses[keyof TasksResendTaskManagerInvitationResponses]
+
+export type TasksWithdrawTaskManagerInvitationData = {
+  body?: never
+  path: {
+    /**
+     * Task Id
+     */
+    task_id: string
+    /**
+     * Invitation Id
+     */
+    invitation_id: string
+  }
+  query?: never
+  url: '/api/v1/tasks/{task_id}/managers/invitations/{invitation_id}'
+}
+
+export type TasksWithdrawTaskManagerInvitationErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TasksWithdrawTaskManagerInvitationError =
+  TasksWithdrawTaskManagerInvitationErrors[keyof TasksWithdrawTaskManagerInvitationErrors]
+
+export type TasksWithdrawTaskManagerInvitationResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type TasksWithdrawTaskManagerInvitationResponse =
+  TasksWithdrawTaskManagerInvitationResponses[keyof TasksWithdrawTaskManagerInvitationResponses]
 
 export type ShiftsListShiftsData = {
   body?: never
