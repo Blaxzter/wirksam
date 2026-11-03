@@ -121,9 +121,11 @@
         "open": "Marken…",
         "perShift": "Marken pro Schicht",
         "perShiftHint": "So viele bekommt jede Person pro Schicht, sobald sie vorbei ist. 0 heißt keine.",
+        "perShiftShort": "Pro Schicht",
         "rateHint": "Gilt für Schichten, die noch nicht vorbei sind. Schon verdiente Marken bleiben.",
         "saved": "Marken-Einstellungen gespeichert.",
-        "title": "Marken"
+        "title": "Marken",
+        "zeroMeansNone": "0 heißt keine"
     },
     "showCode": "Code zeigen",
     "task": {

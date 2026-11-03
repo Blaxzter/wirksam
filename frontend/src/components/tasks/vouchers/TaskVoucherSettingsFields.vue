@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Ticket } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import Label from '@/components/ui/label/Label.vue'
@@ -20,6 +21,13 @@ import Switch from '@/components/ui/switch/Switch.vue'
 const props = defineProps<{
   /** Prefix for the field ids, so two forms on one page never share one. */
   idPrefix: string
+  /**
+   * The create form's version: its own "Vouchers" group with a heading, and
+   * the number on one short line ("Per shift", the field, "0 means none")
+   * instead of the dialog's label and full sentence. The dialog's title
+   * already says what the fields are about, so it leaves this off.
+   */
+  compact?: boolean
 }>()
 
 const perShift = defineModel<number>('vouchersPerShift', { required: true })
@@ -42,18 +50,25 @@ const id = (name: string) => `${props.idPrefix}-${name}`
 </script>
 
 <template>
-  <div class="space-y-4">
+  <component :is="compact ? 'fieldset' : 'div'" class="min-w-0 space-y-4">
+    <legend v-if="compact" class="flex items-center gap-2 font-semibold">
+      <Ticket class="size-4 text-primary" aria-hidden="true" />
+      {{ t('vouchers.settings.title') }}
+    </legend>
+
     <NumberField
       :id="id('per-shift')"
       :model-value="perShift"
       :min="0"
       :max="MAX_PER_SHIFT"
-      class="max-w-48"
+      :class="compact ? 'flex flex-wrap items-center gap-3' : 'max-w-48'"
       data-testid="voucher-per-shift"
       @update:model-value="setPerShift"
     >
-      <Label :for="id('per-shift')">{{ t('vouchers.settings.perShift') }}</Label>
-      <NumberFieldContent>
+      <Label :for="id('per-shift')">
+        {{ compact ? t('vouchers.settings.perShiftShort') : t('vouchers.settings.perShift') }}
+      </Label>
+      <NumberFieldContent :class="compact ? 'w-40' : undefined">
         <NumberFieldDecrement :aria-label="t('common.actions.decrease')" />
         <NumberFieldInput />
         <NumberFieldIncrement
@@ -61,8 +76,13 @@ const id = (name: string) => `${props.idPrefix}-${name}`
           data-testid="btn-voucher-per-shift-increase"
         />
       </NumberFieldContent>
+      <span v-if="compact" class="text-xs text-muted-foreground">
+        {{ t('vouchers.settings.zeroMeansNone') }}
+      </span>
     </NumberField>
-    <p class="-mt-2 text-xs text-muted-foreground">{{ t('vouchers.settings.perShiftHint') }}</p>
+    <p v-if="!compact" class="-mt-2 text-xs text-muted-foreground">
+      {{ t('vouchers.settings.perShiftHint') }}
+    </p>
 
     <div class="flex items-start justify-between gap-4 rounded-md border p-3">
       <div class="space-y-1">
@@ -80,5 +100,5 @@ const id = (name: string) => `${props.idPrefix}-${name}`
     </div>
 
     <p class="text-xs text-muted-foreground">{{ t('vouchers.settings.rateHint') }}</p>
-  </div>
+  </component>
 </template>

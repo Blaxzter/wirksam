@@ -121,9 +121,11 @@
         "open": "Vouchers…",
         "perShift": "Vouchers per shift",
         "perShiftHint": "Each person gets this many per shift once it's over. 0 means none.",
+        "perShiftShort": "Per shift",
         "rateHint": "Applies to shifts that aren't over yet. Vouchers already earned stay.",
         "saved": "Voucher settings saved.",
-        "title": "Vouchers"
+        "title": "Vouchers",
+        "zeroMeansNone": "0 means none"
     },
     "showCode": "Show my code",
     "task": {

@@ -703,20 +703,17 @@ const handleSubmit = async () => {
               </li>
             </ul>
           </section>
-          <!-- Vouchers: only meaningful inside an event -->
+          <!-- Vouchers: only meaningful inside an event. The fields bring their own group heading. -->
           <section
             v-if="eventMode !== 'none'"
-            class="mt-4 space-y-3 border-t pt-4"
+            class="mt-4 border-t pt-4"
             data-testid="section-task-vouchers"
-            aria-labelledby="task-vouchers-heading"
           >
-            <h3 id="task-vouchers-heading" class="font-semibold">
-              {{ t('vouchers.settings.title') }}
-            </h3>
             <TaskVoucherSettingsFields
               v-model:vouchers-per-shift="vouchersPerShift"
               v-model:is-point="isVoucherPoint"
               id-prefix="task-create-vouchers"
+              compact
             />
           </section>
           <div class="mt-4 flex justify-end">
