@@ -13,6 +13,12 @@
  * The code button stays when nothing is available, disabled, as on the
  * bookings page; the big "0 available" already says why. After the event it
  * goes, and the history link remains.
+ *
+ * As a phone tile it stretches to the height of the tile beside it, the
+ * button pinned to the bottom of both. As the desktop side card it keeps its
+ * own height (`@4xl:self-start`): stretched to the next-shift card, which is
+ * taller once it has a map button, it left a hole between the numbers and
+ * the button.
  */
 import { computed } from 'vue'
 
@@ -72,7 +78,7 @@ const adjustedText = computed(() => {
   <section
     data-testid="my-vouchers-card"
     aria-labelledby="dashboard-vouchers-title"
-    class="flex min-w-0 flex-col rounded-2xl border bg-card p-4 text-card-foreground @4xl:gap-1.5 @4xl:rounded-[22px] @4xl:p-6"
+    class="flex min-w-0 flex-col rounded-2xl border bg-card p-4 text-card-foreground @4xl:gap-1.5 @4xl:self-start @4xl:rounded-[22px] @4xl:p-6"
   >
     <div class="flex items-center justify-between gap-2">
       <h2

@@ -152,4 +152,13 @@ describe('DashboardVoucherCard', () => {
       .find((c) => c.attributes('data-testid') === 'btn-my-vouchers-details')!
     expect(link.props('to')).toEqual({ name: 'my-vouchers', params: { eventId: 'e1' } })
   })
+
+  // Stretched to the next-shift card beside it, which is taller once it has a
+  // map button, the side card had a hole between its numbers and the button.
+  // As a phone tile it still stretches, so both tiles keep their buttons level.
+  it('keeps its own height as the desktop side card', () => {
+    const classes = mountCard().find('[data-testid="my-vouchers-card"]').classes()
+    expect(classes).toContain('@4xl:self-start')
+    expect(classes).not.toContain('self-start')
+  })
 })
