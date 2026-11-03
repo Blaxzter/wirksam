@@ -158,7 +158,7 @@ class EmailChannel(NotificationChannel):
         from_email = settings.EMAILS_FROM_EMAIL or "noreply@example.com"
 
         msg = EmailMessage()
-        msg["Subject"] = f"[{settings.PROJECT_NAME}] {title}"
+        msg["Subject"] = subject_line(title)
         msg["From"] = f"{from_name} <{from_email}>"
         msg["To"] = to
         msg.set_content(content.text)
@@ -177,6 +177,17 @@ class EmailChannel(NotificationChannel):
             start_tls=settings.SMTP_TLS,
             use_tls=settings.SMTP_SSL,
         )
+
+
+def subject_line(title: str) -> str:
+    """A mail's subject: its title, on one line.
+
+    No "[WirkSam]" in front: the approved mail designs leave it out, as the
+    sender's name already says who writes. A title can carry names people
+    typed, and a line break in a header is refused outright, so whitespace
+    runs collapse to one space.
+    """
+    return " ".join(title.split())
 
 
 def _build_html(

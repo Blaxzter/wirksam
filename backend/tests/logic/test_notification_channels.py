@@ -364,8 +364,28 @@ class TestEmailChannel:
         assert call is not None
         msg = call.args[0]
         assert msg["To"] == "recipient@example.test"
-        assert msg["Subject"] == "[Wirksam Test] Shift changed"
+        # Just the title: the sender's name already says who writes.
+        assert msg["Subject"] == "Shift changed"
         assert msg["From"] == "Wirksam Test Sender <sender@example.test>"
+
+    async def test_a_line_break_in_the_title_stays_out_of_the_subject(self) -> None:
+        """A task name typed with a line break must not break the header."""
+        with (
+            _email_settings(),
+            patch.object(EmailChannel, "_smtp_send", new_callable=AsyncMock) as smtp,
+        ):
+            result = await EmailChannel().send(
+                recipient=_make_user(),
+                title="In charge of Bar\r\nBcc: x@y.z",
+                body="B",
+            )
+
+        assert result is True
+        call = smtp.await_args
+        assert call is not None
+        msg = call.args[0]
+        assert msg["Subject"] == "In charge of Bar Bcc: x@y.z"
+        assert msg["Bcc"] is None
 
     async def test_send_falls_back_to_project_name_as_sender(self) -> None:
         """Test that a missing EMAILS_FROM_NAME falls back to PROJECT_NAME."""
@@ -698,7 +718,7 @@ class TestOwnEmailBody:
         call = smtp.await_args
         assert call is not None
         msg = call.args[0]
-        assert msg["Subject"] == "[Wirksam Test] You're now in charge of Bar · Fair"
+        assert msg["Subject"] == "You're now in charge of Bar · Fair"
         plain = msg.get_body(preferencelist=("plain",))
         rich = msg.get_body(preferencelist=("html",))
         assert plain is not None and rich is not None

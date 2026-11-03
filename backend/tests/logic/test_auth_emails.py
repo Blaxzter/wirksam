@@ -149,7 +149,7 @@ class TestSendVerifyEmail:
 
         message = _sent_message(smtp)
         assert message["To"] == "new@example.test"
-        assert message["Subject"] == "[Wirksam Test] Confirm your email address"
+        assert message["Subject"] == "Confirm your email address"
         assert message["From"] == "Wirksam Test Sender <sender@example.test>"
 
     async def test_greets_the_recipient_by_name(self) -> None:
@@ -218,7 +218,7 @@ class TestSendVerifyEmail:
             )
 
         message = _sent_message(smtp)
-        assert message["Subject"] == "[Wirksam Test] Bestätige deine E-Mail-Adresse"
+        assert message["Subject"] == "Bestätige deine E-Mail-Adresse"
         html = _part(message, "html")
         assert "Hallo Ada," in html
         assert "E-Mail bestätigen" in html
@@ -325,7 +325,7 @@ class TestSendPasswordResetEmail:
         link = "https://app.example.test/reset-password?token=reset-token-456"
         assert link in _part(message, "plain")
         assert link in _part(message, "html")
-        assert message["Subject"] == "[Wirksam Test] Reset your password"
+        assert message["Subject"] == "Reset your password"
 
     async def test_single_hour_expiry_is_not_pluralised(self) -> None:
         """Test that the one-hour default reads as "1 hour", not "1 hours"."""

@@ -30,6 +30,7 @@ from app.logic.notifications.channels.email import (
     card_html,
     link_fallback_html,
     paragraphs_html,
+    subject_line,
 )
 from app.logic.notifications.messages import (
     DEFAULT_LANGUAGE,
@@ -209,11 +210,7 @@ def _build_message(
     from_email = settings.EMAILS_FROM_EMAIL or "noreply@example.com"
 
     msg = EmailMessage()
-    # Same bracketed prefix the notification channel uses, so everything the
-    # product sends threads together in an inbox. A title can carry names
-    # people typed (the invitation mail's does), and a line break in a header
-    # is refused outright, so whitespace runs collapse to one space.
-    msg["Subject"] = " ".join(f"[{settings.PROJECT_NAME}] {title}".split())
+    msg["Subject"] = subject_line(title)
     # formataddr quotes a display name with a comma or an "@" in it, which a
     # name a person typed (``from_name``) may well have.
     msg["From"] = formataddr((sender, from_email))

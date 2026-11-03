@@ -110,7 +110,7 @@ class TestTaskInvitation:
         message = await _send()
         assert message["To"] == "jonas@example.org"
         assert message["Subject"] == (
-            "[Wirksam Test] Anna Berger bittet dich, „Cafétheke“ zu übernehmen"
+            "Anna Berger bittet dich, „Cafétheke“ zu übernehmen"
         )
         name, address = parseaddr(str(message["From"]))
         assert (name, address) == (
@@ -151,7 +151,7 @@ class TestTaskInvitation:
     async def test_english_and_several_tasks(self) -> None:
         message = await _send(tasks=[CAFE, GRILL], language="en")
         assert message["Subject"] == (
-            "[Wirksam Test] Anna Berger asks you to take on “Cafétheke” and “Grill”"
+            "Anna Berger asks you to take on “Cafétheke” and “Grill”"
         )
         text = _part(message, "plain")
         assert "Tasks: Cafétheke, Grill" in text
@@ -208,7 +208,7 @@ class TestPlainInvitation:
     async def test_names_the_event_not_a_task(self) -> None:
         message = await _send(tasks=[], language="en")
         assert message["Subject"] == (
-            "[Wirksam Test] Anna Berger invites you to “Sommerfest am Fluss”"
+            "Anna Berger invites you to “Sommerfest am Fluss”"
         )
         text = _part(message, "plain")
         assert "take part in “Sommerfest am Fluss”" in text
@@ -220,9 +220,7 @@ class TestPlainInvitation:
         self,
     ) -> None:
         message = await _send(tasks=[], inviter_name=None, language="en")
-        assert message["Subject"] == (
-            "[Wirksam Test] Someone invites you to “Sommerfest am Fluss”"
-        )
+        assert message["Subject"] == ("Someone invites you to “Sommerfest am Fluss”")
         assert parseaddr(str(message["From"]))[0] == "Wirksam Test Sender"
 
     async def test_a_long_or_odd_inviter_name_stays_on_one_line(self) -> None:
