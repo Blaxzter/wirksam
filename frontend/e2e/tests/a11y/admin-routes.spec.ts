@@ -120,6 +120,42 @@ test.describe('a11y – admin teams', () => {
   })
 })
 
+// The event settings' Vouchers tab: the voucher rules and who has how many.
+// Its own event with a task that earns vouchers and one that takes them, so
+// the worker event never gains a voucher entry in the navigation.
+test.describe('a11y – admin event vouchers', () => {
+  test('voucher rules and overview', async ({ adminPage: page }) => {
+    const event = await createEvent(page, uniqueName('E2E a11y Vouchers'), 'published', 'private')
+    const tasks: string[] = []
+    try {
+      for (const [name, body] of [
+        ['E2E Bar', { vouchers_per_shift: 2 }],
+        ['E2E Food stand', { is_voucher_point: true }],
+      ] as const) {
+        const { task } = await createTaskWithShifts(page, {
+          name: uniqueName(name),
+          eventId: event.id,
+          status: 'published',
+          startDate: event.start_date,
+          endDate: event.start_date,
+        })
+        tasks.push(task.id)
+        await api(page, 'PATCH', `/tasks/${task.id}`, body)
+      }
+
+      await page.goto(`/app/event-settings/${event.id}?tab=vouchers`)
+      await expect(page.getByTestId('section-event-voucher-rules')).toBeVisible()
+      await expect(page.getByTestId('section-event-vouchers')).toBeVisible()
+      await expectNoA11yViolations(page, {
+        label: 'admin event vouchers (/app/event-settings/:id?tab=vouchers)',
+      })
+    } finally {
+      for (const id of tasks) await deleteTask(page, id).catch(() => {})
+      await deleteEvent(page, event.id).catch(() => {})
+    }
+  })
+})
+
 // ── Routes that need a task to exist ─────────────────────────────────────────
 
 test.describe('a11y – admin task detail', () => {

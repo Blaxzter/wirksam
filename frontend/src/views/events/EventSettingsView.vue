@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Map as MapIcon, MapPin, Pencil, Users, UsersRound } from '@lucide/vue'
+import { Map as MapIcon, MapPin, Pencil, Ticket, Users, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -13,6 +13,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import EventEditForm from '@/components/events/EventEditForm.vue'
 import EventHours from '@/components/events/EventHours.vue'
+import EventVoucherSettings from '@/components/events/EventVoucherSettings.vue'
 import EventVouchers from '@/components/events/EventVouchers.vue'
 import EventInvitations from '@/components/events/EventInvitations.vue'
 import EventJoinRequests from '@/components/events/EventJoinRequests.vue'
@@ -43,7 +44,7 @@ const targetEventId = computed<string | null>(() => {
   return authStore.selectedEventId ?? null
 })
 
-type Tab = 'details' | 'people' | 'locations' | 'map'
+type Tab = 'details' | 'people' | 'vouchers' | 'locations' | 'map'
 const activeTab = ref<Tab>('details')
 
 function readTabFromQuery() {
@@ -59,7 +60,7 @@ function readTabFromQuery() {
   }
   // "managers" is the old name for this tab; keep old links working.
   if (qTab === 'people' || qTab === 'managers') activeTab.value = 'people'
-  else if (qTab === 'locations' || qTab === 'map') activeTab.value = qTab
+  else if (qTab === 'vouchers' || qTab === 'locations' || qTab === 'map') activeTab.value = qTab
   else activeTab.value = 'details'
 }
 readTabFromQuery()
@@ -95,20 +96,30 @@ const isMember = computed(() =>
 )
 
 /**
- * The tab actually shown: "locations" and "map" are for event admins, so a
- * shared `?tab=map` link falls back to the details for everyone else.
+ * Once a task earns vouchers (published or archived) or takes them, the
+ * organisers get the Vouchers tab: its rules and who has how many. A draft
+ * counts here too, although not in the event's counts, so the rules can be
+ * set before the task goes out (its people in charge are already bound by
+ * them).
+ */
+const usesVouchers = computed(
+  () =>
+    (event.value?.voucher_task_count ?? 0) > 0 ||
+    (event.value?.voucher_point_count ?? 0) > 0 ||
+    tasks.value.some((task) => (task.vouchers_per_shift ?? 0) > 0 || task.is_voucher_point),
+)
+
+/**
+ * The tab actually shown: "vouchers", "locations" and "map" are for event
+ * admins (vouchers only once the event uses them), so a shared `?tab=map` link
+ * falls back to the details for everyone else.
  */
 const shownTab = computed<Tab>(() => {
   if ((activeTab.value === 'locations' || activeTab.value === 'map') && !canManage.value)
     return 'details'
+  if (activeTab.value === 'vouchers' && !(canManage.value && usesVouchers.value)) return 'details'
   return activeTab.value
 })
-
-/** Once a task earns vouchers (published or archived) or takes them, the organisers get the overview. */
-const usesVouchers = computed(
-  () =>
-    (event.value?.voucher_task_count ?? 0) > 0 || (event.value?.voucher_point_count ?? 0) > 0,
-)
 
 /** Requests a lead or admin could decide, across every team they manage. */
 const teamRequestCount = computed(() => event.value?.pending_team_request_count ?? 0)
@@ -302,6 +313,19 @@ onMounted(loadEvent)
       </Button>
       <template v-if="canManage">
         <Button
+          v-if="usesVouchers"
+          variant="ghost"
+          :class="[
+            'shrink-0 rounded-none border-b-2',
+            shownTab === 'vouchers' ? 'border-primary text-primary' : 'border-transparent',
+          ]"
+          data-testid="tab-vouchers"
+          @click="setTab('vouchers')"
+        >
+          <Ticket class="mr-2 h-4 w-4" />
+          {{ t('vouchers.eventSettings.tab') }}
+        </Button>
+        <Button
           variant="ghost"
           :class="[
             'shrink-0 rounded-none border-b-2',
@@ -364,17 +388,16 @@ onMounted(loadEvent)
           :members="members"
           @updated="loadHours"
         />
-        <EventVouchers
-          v-if="canManage && usesVouchers"
-          :event-id="targetEventId"
-          :members="members"
-        />
         <EventInvitations
           v-if="canManage"
           :event-id="targetEventId"
           :invitations="invitations"
           @updated="loadInvitations"
         />
+      </div>
+      <div v-else-if="shownTab === 'vouchers'" class="space-y-6">
+        <EventVoucherSettings :event="event" :tasks="tasks" @updated="handleUpdated" />
+        <EventVouchers :event-id="targetEventId" :members="members" />
       </div>
       <EventLocations v-else-if="shownTab === 'locations'" :event-id="targetEventId" />
       <VenueMapEditor

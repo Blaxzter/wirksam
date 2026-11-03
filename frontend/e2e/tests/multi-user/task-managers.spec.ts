@@ -3,7 +3,9 @@
  *
  * An organiser puts an event member in charge of a task from the task page.
  * That member can then edit the task and its shifts, but cannot delete or
- * publish it: the draft banner asks them to get an organiser to publish.
+ * publish it: the draft banner asks them to get an organiser to publish. On a
+ * task that earns vouchers the shifts stay with the organisers unless the
+ * event's voucher rules allow people in charge to change them.
  *
  * Each test gets its own event, and the person in charge is a disposable
  * user, so nothing leaks into the shared worker fixtures.
@@ -127,4 +129,51 @@ test('a person in charge edits the task and adds a shift, but cannot delete or p
   await expect
     .poll(async () => (await listShifts(adminPage, task.id)).length)
     .toBe(shiftsBefore + 1)
+})
+
+test('the shifts of a voucher task stay with the organisers until the event lets people in charge change them', async ({
+  adminPage,
+  disposablePage,
+  disposableUser,
+}) => {
+  await api(adminPage, 'PATCH', `/tasks/${task.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'POST', `/tasks/${task.id}/managers`, { user_id: disposableUser.id })
+
+  // The details are still theirs; the shifts are not, and the page says why.
+  await disposablePage.goto(`/app/tasks/${task.id}`)
+  await expect(disposablePage.getByTestId('page-heading')).toHaveText(task.name)
+  await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toBeVisible()
+  await expect(disposablePage.getByTestId('btn-add-shifts')).toHaveCount(0)
+
+  // Editing offers the details only, and saving them leaves the shifts alone.
+  const shiftsBefore = (await listShifts(adminPage, task.id)).length
+  const renamed = uniqueName('E2E Bar renamed')
+  await disposablePage.getByTestId('btn-edit-task').click()
+  await expect(disposablePage).toHaveURL(new RegExp(`/app/tasks/${task.id}/edit`))
+  await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toBeVisible()
+  await expect(disposablePage.getByTestId('section-schedule')).toHaveCount(0)
+  await disposablePage.getByTestId('input-task-name').fill(renamed)
+  await disposablePage.getByTestId('btn-submit').click()
+  await expect(disposablePage).toHaveURL(new RegExp(`/app/tasks/${task.id}$`))
+  await expect(disposablePage.getByTestId('page-heading')).toHaveText(renamed)
+  expect((await listShifts(adminPage, task.id))).toHaveLength(shiftsBefore)
+
+  // The organiser allows it in the event's voucher rules.
+  await adminPage.goto(`/app/event-settings/${event.id}?tab=vouchers`)
+  const rules = adminPage.getByTestId('section-event-voucher-rules')
+  await expect(rules).toBeVisible()
+  await expect(rules.getByTestId('voucher-manual-on_shift')).toHaveAttribute(
+    'data-state',
+    'checked',
+  )
+  await rules.getByTestId('switch-managers-edit-voucher-shifts').click()
+  await rules.getByTestId('btn-save-voucher-rules').click()
+  await expect(adminPage.locator('[data-sonner-toast]')).toContainText('Voucher rules saved.')
+  const saved = await api<EventRead>(adminPage, 'GET', `/events/${event.id}`)
+  expect(saved.managers_edit_voucher_shifts).toBe(true)
+
+  await disposablePage.reload()
+  await expect(disposablePage.getByTestId('page-heading')).toHaveText(renamed)
+  await expect(disposablePage.getByTestId('btn-add-shifts')).toBeVisible()
+  await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toHaveCount(0)
 })

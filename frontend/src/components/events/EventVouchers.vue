@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Plus, Ticket } from '@lucide/vue'
+import { ChevronRight, Plus, Search } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
+import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Input from '@/components/ui/input/Input.vue'
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -39,12 +42,14 @@ import type {
   VoucherEntryRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { initials } from '@/lib/format'
 
 /**
- * The organisers' overview of everyone's vouchers, modelled on `EventHours`:
- * a table on desktop, cards on phones. Most available first, so a person in
- * charge handing out more than their task earns shows up at the top. A row
- * opens that person's history, where corrections can be changed.
+ * "Who has how many vouchers", the organisers' overview in the event settings'
+ * Vouchers tab, under the voucher rules: a table on desktop, cards on phones,
+ * with a search by name. Most available first, so a person in charge handing
+ * out more than their task earns shows up at the top. A row opens that
+ * person's history, where corrections can be changed.
  *
  * "Available" is the one number: earned vouchers stay earned and corrections
  * can't take away more than is left, so it never goes below zero.
@@ -65,10 +70,33 @@ const displayName = (b: Pick<VoucherBalance, 'name' | 'email'>) => b.name ?? b.e
 /** Corrections with their sign, so `+5` and `−4` read as what they did. */
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`)
 
+const avatarSrc = (b: VoucherBalance) =>
+  avatarUrlFor({ id: b.user_id, avatar_etag: b.avatar_etag }) ?? undefined
+
 /** People with nothing to their name stay in the members card; here they are noise. */
 const rows = computed(() =>
   balances.value.filter((b) => b.earned > 0 || b.upcoming > 0 || b.redeemed > 0 || b.adjusted !== 0),
 )
+
+/** "8 people · 36 vouchers used · 206 still to come", over everyone, not just the matches. */
+const summary = computed(() => {
+  const used = rows.value.reduce((sum, b) => sum + b.redeemed, 0)
+  const coming = rows.value.reduce((sum, b) => sum + b.upcoming, 0)
+  return [
+    t('vouchers.admin.summaryPeople', { n: rows.value.length }, rows.value.length),
+    t('vouchers.admin.summaryUsed', { n: used }, used),
+    t('vouchers.admin.summaryUpcoming', { n: coming }, coming),
+  ].join(' · ')
+})
+
+const search = ref('')
+const shownRows = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  if (!query) return rows.value
+  return rows.value.filter((b) =>
+    [b.name, b.email].some((field) => field?.toLowerCase().includes(query)),
+  )
+})
 
 async function load() {
   try {
@@ -151,18 +179,36 @@ async function afterChange() {
 <template>
   <Card data-testid="section-event-vouchers">
     <CardHeader>
-      <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="flex flex-wrap items-end justify-between gap-3">
         <div class="space-y-1">
-          <CardTitle class="flex items-center gap-2">
-            <Ticket class="size-5 shrink-0" />
-            {{ t('vouchers.admin.title') }}
-          </CardTitle>
-          <CardDescription>{{ t('vouchers.admin.subtitle') }}</CardDescription>
+          <CardTitle>{{ t('vouchers.admin.overviewTitle') }}</CardTitle>
+          <CardDescription data-testid="event-vouchers-summary">{{ summary }}</CardDescription>
         </div>
-        <Button size="sm" data-testid="btn-add-voucher-correction" @click="addCorrection()">
-          <Plus class="mr-1.5 size-4" />
-          {{ t('vouchers.admin.addCorrection') }}
-        </Button>
+        <div class="flex w-full gap-2 sm:w-auto">
+          <div v-if="rows.length > 0" class="relative min-w-0 flex-1 sm:w-60 sm:flex-none">
+            <Search
+              class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              v-model="search"
+              type="search"
+              :aria-label="t('vouchers.admin.search')"
+              :placeholder="t('vouchers.admin.search')"
+              class="h-11 pl-9 sm:h-9"
+              data-testid="event-vouchers-search"
+            />
+          </div>
+          <Button
+            class="h-11 shrink-0 sm:h-9"
+            :aria-label="t('vouchers.admin.addCorrection')"
+            data-testid="btn-add-voucher-correction"
+            @click="addCorrection()"
+          >
+            <Plus class="size-4" aria-hidden="true" />
+            {{ t('vouchers.admin.correction') }}
+          </Button>
+        </div>
       </div>
     </CardHeader>
 
@@ -171,96 +217,148 @@ async function afterChange() {
         {{ t('vouchers.admin.empty') }}
       </p>
 
+      <p
+        v-else-if="shownRows.length === 0"
+        class="py-4 text-center text-sm text-muted-foreground"
+        data-testid="event-vouchers-no-match"
+      >
+        {{ t('vouchers.admin.noMatch', { q: search.trim() }) }}
+      </p>
+
       <template v-else>
         <!-- Desktop: a table -->
-        <Table class="hidden sm:table">
-          <TableHeader>
-            <TableRow>
-              <TableHead>{{ t('vouchers.admin.person') }}</TableHead>
-              <TableHead class="text-right text-foreground">
-                {{ t('vouchers.admin.colAvailable') }}
-              </TableHead>
-              <TableHead class="text-right">{{ t('vouchers.admin.colEarned') }}</TableHead>
-              <TableHead class="text-right">{{ t('vouchers.admin.colUsed') }}</TableHead>
-              <TableHead class="text-right">{{ t('vouchers.adjusted') }}</TableHead>
-              <TableHead class="text-right">{{ t('vouchers.admin.colUpcoming') }}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow
-              v-for="row in rows"
-              :key="row.user_id"
-              class="cursor-pointer"
-              data-testid="event-vouchers-row"
-              tabindex="0"
-              :aria-label="t('vouchers.admin.openDetails', { name: displayName(row) })"
-              @click="openDetail(row)"
-              @keydown.enter="openDetail(row)"
-            >
-              <TableCell>
-                <p class="font-medium">{{ displayName(row) }}</p>
-                <p v-if="!row.role" class="text-xs text-muted-foreground">
-                  {{ t('vouchers.admin.left') }}
-                </p>
-              </TableCell>
-              <TableCell
-                class="text-right text-base font-bold tabular-nums"
-                data-testid="event-vouchers-available"
+        <div class="hidden overflow-hidden rounded-xl border sm:block">
+          <Table>
+            <TableHeader class="bg-muted/60">
+              <TableRow>
+                <TableHead class="pl-4">{{ t('vouchers.admin.person') }}</TableHead>
+                <TableHead class="text-right font-bold text-foreground">
+                  {{ t('vouchers.admin.colAvailable') }}
+                </TableHead>
+                <TableHead class="text-right">{{ t('vouchers.admin.colEarned') }}</TableHead>
+                <TableHead class="text-right">{{ t('vouchers.admin.colUsed') }}</TableHead>
+                <TableHead class="text-right">{{ t('vouchers.admin.correction') }}</TableHead>
+                <TableHead class="text-right">{{ t('vouchers.admin.colUpcoming') }}</TableHead>
+                <TableHead class="w-12">
+                  <span class="sr-only">{{ t('vouchers.admin.open') }}</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="row in shownRows"
+                :key="row.user_id"
+                class="cursor-pointer"
+                data-testid="event-vouchers-row"
+                @click="openDetail(row)"
               >
-                {{ row.available }}
-              </TableCell>
-              <TableCell class="text-right tabular-nums">{{ row.earned }}</TableCell>
-              <TableCell class="text-right tabular-nums">{{ row.redeemed }}</TableCell>
-              <TableCell class="text-right tabular-nums" data-testid="event-vouchers-adjusted">
-                {{ signed(row.adjusted) }}
-              </TableCell>
-              <TableCell class="text-right tabular-nums text-muted-foreground">
-                {{ row.upcoming }}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+                <TableCell class="pl-4">
+                  <div class="flex items-center gap-2.5">
+                    <Avatar class="size-8">
+                      <AvatarImage v-if="avatarSrc(row)" :src="avatarSrc(row)!" />
+                      <AvatarFallback class="text-xs font-semibold">
+                        {{ initials(displayName(row)) }}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div class="min-w-0">
+                      <p class="truncate font-medium">{{ displayName(row) }}</p>
+                      <p v-if="!row.role" class="text-xs text-muted-foreground">
+                        {{ t('vouchers.admin.left') }}
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell
+                  class="text-right text-base font-bold tabular-nums"
+                  data-testid="event-vouchers-available"
+                >
+                  {{ row.available }}
+                </TableCell>
+                <TableCell class="text-right tabular-nums">{{ row.earned }}</TableCell>
+                <TableCell class="text-right tabular-nums">{{ row.redeemed }}</TableCell>
+                <TableCell
+                  class="text-right tabular-nums"
+                  :class="
+                    row.adjusted !== 0
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'text-muted-foreground'
+                  "
+                  data-testid="event-vouchers-adjusted"
+                >
+                  {{ signed(row.adjusted) }}
+                </TableCell>
+                <TableCell class="text-right tabular-nums text-muted-foreground">
+                  {{ row.upcoming }}
+                </TableCell>
+                <TableCell class="py-1 pr-2 text-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="text-muted-foreground"
+                    :aria-label="t('vouchers.admin.openDetails', { name: displayName(row) })"
+                    data-testid="event-vouchers-open"
+                    @click.stop="openDetail(row)"
+                  >
+                    <ChevronRight class="size-4" aria-hidden="true" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
 
         <!-- Phone: one card per person -->
-        <ul class="space-y-2 sm:hidden">
-          <li v-for="row in rows" :key="row.user_id">
+        <ul class="space-y-2.5 sm:hidden">
+          <li v-for="row in shownRows" :key="row.user_id">
             <button
               type="button"
-              class="w-full rounded-md border p-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              class="w-full rounded-xl border p-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               data-testid="event-vouchers-card"
               :aria-label="t('vouchers.admin.openDetails', { name: displayName(row) })"
               @click="openDetail(row)"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
+              <div class="flex items-center gap-2.5">
+                <Avatar class="size-9">
+                  <AvatarImage v-if="avatarSrc(row)" :src="avatarSrc(row)!" />
+                  <AvatarFallback class="text-xs font-semibold">
+                    {{ initials(displayName(row)) }}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="min-w-0 flex-1">
                   <p class="truncate font-medium">{{ displayName(row) }}</p>
                   <p v-if="!row.role" class="text-xs text-muted-foreground">
                     {{ t('vouchers.admin.left') }}
                   </p>
                 </div>
                 <div class="shrink-0 text-right">
-                  <p class="text-xl leading-none font-bold tabular-nums">{{ row.available }}</p>
-                  <p class="text-xs text-muted-foreground">{{ t('vouchers.admin.colAvailable') }}</p>
+                  <p class="text-2xl leading-none font-bold tabular-nums">{{ row.available }}</p>
+                  <p class="text-[11px] text-muted-foreground">
+                    {{ t('vouchers.admin.availableCaption') }}
+                  </p>
                 </div>
               </div>
               <dl
-                class="mt-2 grid grid-cols-4 divide-x divide-border/70 rounded-md bg-muted/60 text-xs"
+                class="mt-2.5 grid grid-cols-4 divide-x divide-border/70 rounded-lg bg-muted/60 text-xs"
               >
-                <div class="min-w-0 px-1.5 py-1.5">
+                <div class="min-w-0 px-2 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colEarned') }}
                   </dt>
                   <dd class="text-sm font-semibold tabular-nums">{{ row.earned }}</dd>
                 </div>
-                <div class="min-w-0 px-1.5 py-1.5">
-                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">{{ t('vouchers.admin.colUsed') }}</dt>
+                <div class="min-w-0 px-2 py-1.5">
+                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
+                    {{ t('vouchers.admin.colUsed') }}
+                  </dt>
                   <dd class="text-sm font-semibold tabular-nums">{{ row.redeemed }}</dd>
                 </div>
-                <div class="min-w-0 px-1.5 py-1.5">
-                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">{{ t('vouchers.adjusted') }}</dt>
+                <div class="min-w-0 px-2 py-1.5">
+                  <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
+                    {{ t('vouchers.admin.correction') }}
+                  </dt>
                   <dd class="text-sm font-semibold tabular-nums">{{ signed(row.adjusted) }}</dd>
                 </div>
-                <div class="min-w-0 px-1.5 py-1.5">
+                <div class="min-w-0 px-2 py-1.5">
                   <dt class="text-[11px] leading-tight hyphens-auto text-muted-foreground">
                     {{ t('vouchers.admin.colUpcoming') }}
                   </dt>
@@ -272,23 +370,22 @@ async function afterChange() {
             </button>
           </li>
         </ul>
-
-        <dl
-          class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground"
-          data-testid="event-vouchers-legend"
-        >
-          <div class="flex gap-1.5">
-            <dt class="font-semibold text-foreground/80">{{ t('vouchers.admin.colAvailable') }}</dt>
-            <dd>{{ t('vouchers.admin.colAvailableHint') }}</dd>
-          </div>
-          <div class="flex gap-1.5">
-            <dt class="font-semibold text-foreground/80">{{ t('vouchers.admin.colUpcoming') }}</dt>
-            <dd>{{ t('vouchers.admin.colUpcomingHint') }}</dd>
-          </div>
-        </dl>
       </template>
 
-      <p class="text-xs text-muted-foreground">{{ t('vouchers.admin.afterEventHint') }}</p>
+      <dl
+        v-if="rows.length > 0"
+        class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground"
+        data-testid="event-vouchers-legend"
+      >
+        <div class="flex gap-1.5">
+          <dt class="shrink-0 font-semibold text-foreground/80">{{ t('vouchers.admin.colAvailable') }}</dt>
+          <dd>{{ t('vouchers.admin.colAvailableHint') }}</dd>
+        </div>
+        <div class="flex gap-1.5">
+          <dt class="shrink-0 font-semibold text-foreground/80">{{ t('vouchers.admin.colUpcoming') }}</dt>
+          <dd>{{ t('vouchers.admin.colUpcomingHint') }}</dd>
+        </div>
+      </dl>
     </CardContent>
   </Card>
 

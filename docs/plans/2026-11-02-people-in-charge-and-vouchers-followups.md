@@ -1195,6 +1195,25 @@ use them, so this package removes them:
   to `task-detail`, as the existing `can_manage` guard does.
 - `views/tasks/TaskAddShiftsView.vue`: the guard checks `can_manage_shifts`.
 
+As built, following the approved design (`EventVouchers` / `EventVouchersMobile`
+and `TaskVoucherSettings` artboards):
+- The card is not in the Details tab. The event settings get a **Vouchers** tab
+  (`?tab=vouchers`, between Teams and Locations, organisers only, once a task
+  earns or takes vouchers, drafts included) holding "Voucher rules"
+  (`EventVoucherSettings.vue`: the two redeem options as cards side by side,
+  the places that take vouchers as links, the switch, and the after-the-event
+  hint next to "Save") and, below it, the voucher overview moved over from the
+  People tab and laid out as the design shows ("Who has how many vouchers",
+  a summary line, a search by name, avatars).
+- The on-shift warning shows inside that option while it is chosen; the design's
+  short description says the rest.
+- The task's voucher dialog shows no hint about the event's rules at all, so
+  `settings.managersLockedHint` was not added.
+- The locked note on the task page uses the design's wording. On the edit page
+  a person in charge of a locked task also loses the dates and the shift
+  preview, not only the schedule card: both end in regenerating the shifts,
+  which the server refuses. They save the details with a plain `PATCH`.
+
 ### Package 7: inviting people in charge
 
 - `components/events/EventMemberPicker.vue`: new optional prop `allowEmail`

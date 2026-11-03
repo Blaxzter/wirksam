@@ -41,21 +41,21 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 33      |
+| `a11y`       | 5          | 34      |
 | `auth`       | 5          | 20      |
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 26      |
 | `mobile`     | 4          | 16      |
-| `multi-user` | 7          | 65      |
+| `multi-user` | 7          | 66      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **61**     | **434** |
+| **Total**    | **61**     | **436** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 33 tests
+### Project `a11y` — 5 files, 34 tests
 
-#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 12 tests
+#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 13 tests
 
 - **a11y – admin routes** (10)
   - dashboard
@@ -70,6 +70,8 @@ Not yet covered, and not currently tracked by an issue:
   - admin user management
 - **a11y – admin teams** (1)
   - teams page and the review dialog
+- **a11y – admin event vouchers** (1)
+  - voucher rules and overview
 - **a11y – admin task detail** (1)
   - task detail
 
@@ -636,7 +638,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 65 tests
+### Project `multi-user` — 7 files, 66 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -730,10 +732,11 @@ Not yet covered, and not currently tracked by an issue:
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
 
-#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 2 tests
+#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 3 tests
 
 - an organiser puts a member in charge from the task page
 - a person in charge edits the task and adds a shift, but cannot delete or publish it
+- the shifts of a voucher task stay with the organisers until the event lets people in charge change them
 
 #### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 3 tests
 
