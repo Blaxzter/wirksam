@@ -26,8 +26,8 @@
         "shift_started": "Diese Schicht hat schon begonnen. Schichten mit Marken lassen sich nur vor Beginn buchen. Wenn du trotzdem hilfst, sag den Verantwortlichen Bescheid.",
         "slot_full": "Diese Dienstschicht ist ausgebucht",
         "team_required": "Nur Mitglieder des Teams dieser Aufgabe können ihre Schichten buchen. Frag auf der Seite „Teams“ den Beitritt zum Team an.",
-        "time_conflict": "Diese Schicht überschneidet sich mit einer Ihrer gebuchten Schichten",
-        "time_conflict_with": "Diese Schicht überschneidet sich mit Ihrer Schicht „{name}“ ({when})"
+        "time_conflict": "Diese Schicht überschneidet sich mit einer deiner gebuchten Schichten",
+        "time_conflict_with": "Diese Schicht überschneidet sich mit deiner Schicht „{name}“ ({when})"
     },
     "event": {
         "already_invited": "An diese Adresse ging schon eine Einladung, die noch offen ist.",
