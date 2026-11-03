@@ -70,7 +70,12 @@ const badge = computed(() => {
     return { text: t('duties.tasks.detail.tileFull'), tone: 'bg-primary/12 text-primary' }
   }
   if (taken.value === 0) {
-    return { text: t('duties.tasks.detail.tileNobody'), tone: 'bg-warning/12 text-warning' }
+    // Amber asks for people; a shift that is over or under way can't take
+    // any more, so it says so in grey like its other words.
+    return {
+      text: t('duties.tasks.detail.tileNobody'),
+      tone: props.note ? 'bg-muted text-muted-foreground' : 'bg-warning/12 text-warning',
+    }
   }
   return {
     // On a phone the badge is the only place the count is written.
@@ -171,7 +176,7 @@ const tileClass = computed(() =>
         <HintTooltip v-if="canDelete" :label="t('duties.shifts.delete')">
           <button
             type="button"
-            class="relative z-[2] -my-2 -mr-2 flex size-10 shrink-0 items-center justify-center rounded-lg text-destructive outline-none hover:bg-destructive/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            class="relative z-[2] -my-2.5 -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-lg text-destructive outline-none hover:bg-destructive/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
             :aria-label="t('duties.shifts.delete')"
             @click.stop="emit('delete')"
           >
@@ -181,7 +186,7 @@ const tileClass = computed(() =>
         <button
           v-else-if="!manage"
           type="button"
-          class="relative z-[2] -my-2 -mr-2 flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          class="relative z-[2] -my-2.5 -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50"
           :aria-label="t('duties.shifts.detail.openDetails')"
           @click.stop="emit('details')"
         >

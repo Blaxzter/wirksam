@@ -95,6 +95,16 @@ describe('TaskShiftTile', () => {
     expect(main(w).attributes('aria-label')).toContain('This shift is over.')
   })
 
+  it('asks for people in amber only while a shift can still take them', () => {
+    const badge = (w: ReturnType<typeof mountTile>) =>
+      w.findAll('span').find((s) => s.text() === 'Nobody yet')!
+    const empty = shift({ current_bookings: 0 })
+    expect(badge(mountTile({ shift: empty })).classes()).toContain('text-warning')
+    const over = badge(mountTile({ shift: empty, note: 'This shift is over.' }))
+    expect(over.classes()).not.toContain('text-warning')
+    expect(over.classes()).toContain('text-muted-foreground')
+  })
+
   it('marks a shift that clashes with one of yours, or is kept for a team', () => {
     expect(
       mountTile({ shift: shift({ collides_with_my_booking: true }) })
