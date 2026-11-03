@@ -145,6 +145,7 @@
         "isPoint": "Hier werden Marken eingelöst",
         "isPointOff": "Dieser Ort nimmt keine Marken in der App an. Papiermarken gehen trotzdem.",
         "isPointOn": "Verantwortliche und wer hier gerade Schicht hat, nehmen Marken in der App an.",
+        "managersLockedHint": "Die Verantwortlichen können dann bei dieser Aufgabe keine Schichten mehr anlegen, verlegen oder löschen.",
         "open": "Marken…",
         "perShift": "Marken pro Schicht",
         "perShiftHint": "So viele bekommt jede Person pro Schicht, sobald sie vorbei ist. 0 heißt keine.",

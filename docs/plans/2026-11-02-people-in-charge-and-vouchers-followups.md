@@ -1207,8 +1207,11 @@ and `TaskVoucherSettings` artboards):
   a summary line, a search by name, avatars).
 - The on-shift warning shows inside that option while it is chosen; the design's
   short description says the rest.
-- The task's voucher dialog shows no hint about the event's rules at all, so
-  `settings.managersLockedHint` was not added.
+- The task's voucher dialog says nothing about who may redeem without a code
+  (Decision C). It does show `settings.managersLockedHint` under the fields
+  under the conditions above: the artboard draws the dialog in one state only,
+  and Decision D asks for the notice. The German text uses the event
+  settings' words ("anlegen, verlegen oder löschen").
 - The locked note on the task page uses the design's wording. On the edit page
   a person in charge of a locked task also loses the dates and the shift
   preview, not only the schedule card: both end in regenerating the shifts,

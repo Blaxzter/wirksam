@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { Ticket } from '@lucide/vue'
+import { Info, Ticket } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -43,6 +43,23 @@ const authStore = useAuthStore()
 const perShift = ref(0)
 const isPoint = ref(false)
 const saving = ref(false)
+
+/**
+ * A rate above 0 takes the shifts away from the task's people in charge when
+ * the event keeps the shifts of voucher tasks with the organisers, so the
+ * dialog says so before the organiser saves. Only the selected event is
+ * loaded; on a task of another event it says nothing rather than guess.
+ */
+const locksManagers = computed(() => {
+  const event = authStore.selectedEvent
+  return (
+    perShift.value > 0 &&
+    (props.task.managers?.length ?? 0) > 0 &&
+    !!event &&
+    event.id === props.task.event_id &&
+    event.managers_edit_voucher_shifts === false
+  )
+})
 
 watch(open, (isOpen) => {
   if (!isOpen) return
@@ -96,6 +113,14 @@ async function save() {
           v-model:is-point="isPoint"
           id-prefix="task-vouchers"
         />
+        <p
+          v-if="locksManagers"
+          class="mt-4 flex gap-2 text-xs text-muted-foreground"
+          data-testid="task-vouchers-managers-locked"
+        >
+          <Info class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          {{ t('vouchers.settings.managersLockedHint') }}
+        </p>
       </ResponsiveDialogBody>
       <ResponsiveDialogFooter>
         <Button variant="outline" :disabled="saving" @click="open = false">

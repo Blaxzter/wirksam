@@ -145,6 +145,7 @@
         "isPoint": "Vouchers are redeemed here",
         "isPointOff": "This place doesn't take vouchers in the app. It can still accept paper vouchers.",
         "isPointOn": "The people in charge and whoever is on shift here take vouchers in the app.",
+        "managersLockedHint": "The people in charge of this task can then no longer add, move or delete its shifts.",
         "open": "Vouchers…",
         "perShift": "Vouchers per shift",
         "perShiftHint": "Each person gets this many per shift once it's over. 0 means none.",
