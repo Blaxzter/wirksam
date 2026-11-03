@@ -36,6 +36,8 @@ import { pickDate } from '../../helpers/ui.js'
 
 let event: EventRead
 let task: TaskRead
+/** Tasks a test creates through the form, for the clean-up. */
+let createdTaskIds: string[] = []
 
 test.beforeEach(async ({ adminPage, disposablePage, disposableUser, disposableUserOptions }) => {
   event = await createEvent(adminPage, uniqueName('E2E In Charge'), 'published', 'private', {
@@ -63,6 +65,8 @@ test.beforeEach(async ({ adminPage, disposablePage, disposableUser, disposableUs
 test.afterEach(async ({ adminPage }) => {
   // Tasks outlive their event, so they go first; the task takes its people
   // in charge with it.
+  for (const id of createdTaskIds) await deleteTask(adminPage, id).catch(() => {})
+  createdTaskIds = []
   await deleteTask(adminPage, task.id).catch(() => {})
   await deleteEvent(adminPage, event.id).catch(() => {})
 })
@@ -273,5 +277,111 @@ test.describe('inviting by e-mail', () => {
     expect(
       await api<unknown[]>(adminPage, 'GET', `/tasks/${task.id}/managers/invitations`),
     ).toEqual([])
+  })
+
+  test('an organiser puts an invited address in charge once it has joined the event another way', async ({
+    adminPage,
+    disposablePage,
+    disposableUser,
+  }) => {
+    await api(adminPage, 'POST', `/tasks/${task.id}/managers/invite`, {
+      email: disposableUser.email,
+    })
+    // A share link makes them a member and leaves the task invitation open.
+    const link = await api<{ token: string }>(
+      adminPage,
+      'POST',
+      `/events/${event.id}/invitations`,
+      { role: 'member' },
+    )
+    await api(disposablePage, 'POST', `/invitations/${link.token}/accept`)
+
+    const dialog = await openManagersDialog(adminPage)
+    const row = dialog.getByTestId(`task-manager-invitation-${disposableUser.email}`)
+    await expect(row).toContainText('Already in the event now')
+    await row.getByTestId('btn-invitation-add-now').click()
+
+    await expect(dialog.getByTestId(`task-manager-row-${disposableUser.id}`)).toBeVisible()
+    await expect(row).toHaveCount(0)
+    const saved = await api<TaskRead>(adminPage, 'GET', `/tasks/${task.id}`)
+    expect(saved.managers?.map((m) => m.user_id)).toEqual([disposableUser.id])
+  })
+
+  test('an organiser invites an address while creating a task', async ({ adminPage }) => {
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    const email = `e2e-create-${stamp}@test.example.com`
+    const dropped = `e2e-dropped-${stamp}@test.example.com`
+    // Passes the picker's loose check; the server refuses the underscore.
+    const refused = `e2e-refused-${stamp}@ex_ample.de`
+    const name = uniqueName('E2E Bar invite')
+
+    await adminPage.goto(`/app/tasks/create?eventId=${event.id}`)
+    await adminPage.getByTestId('input-task-name').fill(name)
+    await adminPage
+      .getByTestId('section-task-details')
+      .getByRole('button', { name: 'Next', exact: true })
+      .click()
+
+    // A typed address no member has becomes an "invited" chip.
+    const managers = adminPage.getByTestId('section-task-managers')
+    const search = managers.getByTestId('task-create-manager')
+    const invite = async (address: string) => {
+      await search.click()
+      await search.fill(address)
+      await expect(adminPage.getByTestId('task-create-manager-invite')).toBeVisible()
+      await search.press('Enter')
+    }
+    await invite(email)
+    await expect(managers.getByTestId(`task-create-manager-email-${email}`)).toContainText(
+      'will be invited',
+    )
+    // The same address again, in other letters, is not a second chip.
+    await invite(email.toUpperCase())
+    // One added by mistake comes off again.
+    await invite(dropped)
+    await managers.getByRole('button', { name: `Remove the invitation to ${dropped}` }).click()
+    await expect(managers.getByTestId(/^task-create-manager-email-/)).toHaveCount(1)
+    await invite(refused)
+
+    const next = (section: string) =>
+      adminPage.getByTestId(section).getByRole('button', { name: 'Next', exact: true }).click()
+    await next('section-event')
+    await pickDate(
+      adminPage.getByTestId('section-task-dates').getByRole('button', { name: 'Pick a date' }),
+      futureDate(2),
+    )
+    await next('section-task-dates')
+    await next('section-schedule')
+    await adminPage.getByTestId('btn-submit').click()
+
+    // The refused address is named, its chip marked, and nothing is created.
+    await expect(adminPage.locator('[data-sonner-toast]')).toContainText([
+      `This e-mail address can't be used: ${refused}`,
+    ])
+    const refusedChip = managers.getByTestId(`task-create-manager-email-${refused}`)
+    await expect(refusedChip).toHaveAttribute('data-refused', 'true')
+    await expect(adminPage).toHaveURL(/\/app\/tasks\/create/)
+    await managers.getByRole('button', { name: `Remove the invitation to ${refused}` }).click()
+    await expect(refusedChip).toHaveCount(0)
+
+    await next('section-event')
+    await next('section-task-dates')
+    await next('section-schedule')
+    await adminPage.getByTestId('btn-submit').click()
+
+    await expect(adminPage).toHaveURL(/\/app\/tasks\/[0-9a-f-]{36}$/)
+    const createdId = adminPage.url().split('/').at(-1)!
+    createdTaskIds.push(createdId)
+    await expect(adminPage.locator('[data-sonner-toast]')).toContainText(['Invitation sent'])
+
+    // One invitation, to the address that stayed, naming the new task.
+    const invitations = await api<EventInvitationRead[]>(
+      adminPage,
+      'GET',
+      `/events/${event.id}/invitations`,
+    )
+    const sent = invitations.filter((i) => i.tasks?.some((t) => t.task_id === createdId))
+    expect(sent.map((i) => i.email)).toEqual([email])
+    expect(invitations.some((i) => i.email === dropped)).toBe(false)
   })
 })

@@ -46,10 +46,10 @@ Not yet covered, and not currently tracked by an issue:
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 26      |
 | `mobile`     | 4          | 16      |
-| `multi-user` | 7          | 68      |
+| `multi-user` | 7          | 70      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **61**     | **438** |
+| **Total**    | **61**     | **440** |
 
 ## Inventory
 
@@ -638,7 +638,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 68 tests
+### Project `multi-user` — 7 files, 70 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -732,14 +732,16 @@ Not yet covered, and not currently tracked by an issue:
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
 
-#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 5 tests
+#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 7 tests
 
 - an organiser puts a member in charge from the task page
 - a person in charge edits the task and adds a shift, but cannot delete or publish it
 - the shifts of a voucher task stay with the organisers until the event lets people in charge change them
-- **inviting by e-mail** (2)
+- **inviting by e-mail** (4)
   - an organiser invites an address, and its owner accepts and is in charge of the task
   - an organiser withdraws an invitation to be in charge
+  - an organiser puts an invited address in charge once it has joined the event another way
+  - an organiser invites an address while creating a task
 
 #### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 3 tests
 
