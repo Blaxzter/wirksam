@@ -23,7 +23,7 @@ vi.mock('@/composables/useAuthenticatedClient', () => ({
   useAuthenticatedClient: () => ({ post: api.post }),
 }))
 
-const toastApiError = vi.fn((_error: unknown) => ({ code: null }))
+const toastApiError = vi.fn<(error: unknown) => { code: null }>(() => ({ code: null }))
 vi.mock('@/lib/api-errors', () => ({ toastApiError: (e: unknown) => toastApiError(e) }))
 
 const isPhone = ref(true)
