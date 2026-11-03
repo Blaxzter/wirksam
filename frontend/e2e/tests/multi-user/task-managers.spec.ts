@@ -428,6 +428,19 @@ test.describe('inviting by e-mail', () => {
     const refusedChip = managers.getByTestId(`task-create-manager-email-${refused}`)
     await expect(refusedChip).toHaveAttribute('data-refused', 'true')
     await expect(adminPage).toHaveURL(/\/app\/tasks\/create/)
+    // The section is opening again. For its first 100 ms or so the chip does not
+    // move, so it counts as stable, but something else is still on top of it,
+    // and a click in that moment can get lost.
+    await expect
+      .poll(() =>
+        adminPage
+          .getByTestId('section-event')
+          .evaluate(
+            (el) =>
+              el.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length,
+          ),
+      )
+      .toBe(0)
     await managers.getByRole('button', { name: `Remove the invitation to ${refused}` }).click()
     await expect(refusedChip).toHaveCount(0)
 
