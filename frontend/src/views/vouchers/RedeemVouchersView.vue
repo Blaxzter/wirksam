@@ -46,8 +46,8 @@ import VoucherScanner, { type ScannerError } from '@/components/vouchers/Voucher
 
 import type {
   EventMemberRead,
+  PointPersonVouchers,
   PointRedemptionList,
-  VoucherBalance,
   VoucherCheckResult,
   VoucherPointRead,
 } from '@/client/types.gen'
@@ -330,19 +330,24 @@ const members = ref<EventMemberRead[]>([])
 const membersLoading = ref(false)
 
 /**
- * user id → how many they can redeem, beside each name in the picker.
- * Only organisers may read everyone's numbers (`…/vouchers/people`), so for
- * anyone else this stays `null` and the picker shows names alone.
+ * user id → how many they can redeem, beside each name in the picker. Read
+ * from the point itself (`…/points/{task}/people`), which answers everyone
+ * who may pick the person there: organisers, the people in charge and, when
+ * the event allows it, the staff on shift. `null` until it loaded, or when it
+ * could not: the picker then shows names alone.
  */
 const balances = ref<Record<string, number> | null>(null)
 
-/** Nobody can be picked who has nothing to redeem; the picker says why. */
+/**
+ * Nobody can be picked who has nothing to redeem; the picker says why. Someone
+ * missing from the numbers joined after they were read, and has none either.
+ */
 const noVouchers = computed<Record<string, string> | undefined>(() => {
   const counts = balances.value
   if (!counts) return undefined
   const reason = t('vouchers.redeem.noVouchersLeft')
   return Object.fromEntries(
-    members.value.filter((m) => counts[m.user_id] === 0).map((m) => [m.user_id, reason]),
+    members.value.filter((m) => !counts[m.user_id]).map((m) => [m.user_id, reason]),
   )
 })
 
@@ -366,18 +371,21 @@ async function loadMembers(id: string) {
   }
 }
 
-/** Read afresh on every opening: a shift that ended a minute ago counts already. */
-async function loadBalances(id: string) {
-  if (!isAdmin.value) {
-    balances.value = null
-    return
-  }
+/**
+ * Read afresh on every opening: a shift that ended a minute ago counts
+ * already, and so does what was redeemed meanwhile at another stand.
+ */
+async function loadBalances(id: string, taskId: string) {
+  balances.value = null
   try {
-    const res = await get<{ data: VoucherBalance[] }>({ url: `/events/${id}/vouchers/people` })
-    if (eventId.value !== id) return
+    const res = await get<{ data: PointPersonVouchers[] }>({
+      url: `/events/${id}/vouchers/points/${taskId}/people`,
+    })
+    if (eventId.value !== id || pointId.value !== taskId) return
     balances.value = Object.fromEntries(res.data.map((b) => [b.user_id, b.available]))
   } catch {
-    // Without the numbers the picker still works; it just shows names.
+    // Without the numbers the picker still works; it just shows names, and
+    // the server still refuses more than someone has.
     balances.value = null
   }
 }
@@ -385,8 +393,9 @@ async function loadBalances(id: string) {
 async function openPicker() {
   pickOpen.value = true
   const id = eventId.value
-  if (!id) return
-  await Promise.all([members.value.length > 0 ? null : loadMembers(id), loadBalances(id)])
+  const taskId = point.value?.task_id
+  if (!id || !taskId) return
+  await Promise.all([members.value.length > 0 ? null : loadMembers(id), loadBalances(id, taskId)])
 }
 
 function pickMember(member: EventMemberRead) {
@@ -462,11 +471,7 @@ watch(eventId, () => {
 
       <!-- The camera: always mounted while it works, never hidden -->
       <div v-if="!scannerError" class="mx-auto w-full space-y-2 sm:max-w-sm">
-        <VoucherScanner
-          :paused="busy || pickOpen"
-          @detect="onDetect"
-          @error="onScannerError"
-        />
+        <VoucherScanner :paused="busy || pickOpen" @detect="onDetect" @error="onScannerError" />
         <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
           <ScanLine class="size-4 shrink-0" aria-hidden="true" />
           {{ t('vouchers.redeem.scanHint') }}
@@ -488,7 +493,11 @@ watch(eventId, () => {
         "
         data-testid="voucher-check-problem"
       >
-        <Info v-if="checkProblem.kind === 'used'" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <Info
+          v-if="checkProblem.kind === 'used'"
+          class="mt-0.5 size-4 shrink-0"
+          aria-hidden="true"
+        />
         <CircleAlert v-else class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span>{{ checkProblem.text }}</span>
       </div>
@@ -576,13 +585,19 @@ watch(eventId, () => {
               class="shrink-0 text-sm text-muted-foreground tabular-nums"
               data-testid="voucher-recent-today"
             >
-              {{ t('vouchers.redeem.recentToday', { n: recent.today_amount }, recent.today_amount) }}
+              {{
+                t('vouchers.redeem.recentToday', { n: recent.today_amount }, recent.today_amount)
+              }}
             </span>
           </div>
         </CardHeader>
         <CardContent>
           <p v-if="recent.items.length === 0" class="text-sm text-muted-foreground">
-            {{ seesAllEntries ? t('vouchers.redeem.recentEmpty') : t('vouchers.redeem.recentOwnEmpty') }}
+            {{
+              seesAllEntries
+                ? t('vouchers.redeem.recentEmpty')
+                : t('vouchers.redeem.recentOwnEmpty')
+            }}
           </p>
           <ul v-else class="divide-y">
             <li
@@ -655,7 +670,9 @@ watch(eventId, () => {
       <ResponsiveDialog v-else v-model:open="pickOpen">
         <ResponsiveDialogContent dialog-class="sm:max-w-md" data-testid="voucher-pick-dialog">
           <ResponsiveDialogHeader>
-            <ResponsiveDialogTitle>{{ t('vouchers.redeem.pickPersonTitle') }}</ResponsiveDialogTitle>
+            <ResponsiveDialogTitle>{{
+              t('vouchers.redeem.pickPersonTitle')
+            }}</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
               {{ t('vouchers.redeem.personHint') }}
             </ResponsiveDialogDescription>

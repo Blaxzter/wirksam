@@ -14,7 +14,7 @@
  * Each test gets its own event, and the volunteer is a disposable user, so
  * nothing leaks into the shared worker fixtures.
  */
-import { expect, test } from '../../fixtures.js'
+import { expect, joinEvent, serverApi, test } from '../../fixtures.js'
 import {
   type EventRead,
   type TaskRead,
@@ -214,6 +214,72 @@ test('without a phone, an organiser picks the person by what they have, then the
   await confirm.getByTestId('btn-voucher-next').click()
   await expect(confirm).toBeHidden()
   await expect(dialog).toBeVisible()
+
+  // The stand's task page counts what was redeemed there so far.
+  await adminPage.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await adminPage.goto(`/app/tasks/${pointTask.id}`)
+  await expect(adminPage.getByTestId('task-voucher-point')).toHaveText('1 redeemed here so far')
+})
+
+test('someone in charge of the stand picks the person by what they have, as an organiser does', async ({
+  adminPage,
+  adminUser,
+  disposablePage,
+  disposableUser,
+  seedDisposableUser,
+}) => {
+  // The disposable user runs the stand; a second one earned the vouchers.
+  const volunteer = await seedDisposableUser({ joinWorkerEvent: false })
+  await joinEvent(event.id, adminUser.email, volunteer.email)
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await serverApi('POST', '/bookings/', volunteer.email, { shift_id: shift.id })
+  await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+  await api(adminPage, 'PATCH', `/tasks/${pointTask.id}`, { is_voucher_point: true })
+  await api(adminPage, 'POST', `/tasks/${pointTask.id}/managers`, {
+    user_id: disposableUser.id,
+  })
+
+  await disposablePage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('No camera', 'NotFoundError')),
+      },
+    })
+  })
+  await disposablePage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
+  await disposablePage.getByTestId('btn-voucher-pick-person').click()
+  const dialog = disposablePage.getByTestId('voucher-pick-dialog')
+  await expect(dialog).toContainText('The number shows how many vouchers each person has.')
+  await dialog.getByTestId('voucher-pick-person').click()
+
+  // The same numbers the organisers see: the volunteer has 2, the person in
+  // charge themselves none, so they cannot be picked.
+  const list = disposablePage.getByTestId('voucher-pick-person-list')
+  const option = list.getByTestId(`voucher-pick-person-option-${volunteer.id}`)
+  await expect(option.getByTestId(`voucher-pick-count-${volunteer.id}`)).toContainText('2')
+  await expect(list.getByTestId(`voucher-pick-person-option-${disposableUser.id}`)).toHaveAttribute(
+    'data-disabled',
+    '',
+  )
+
+  await option.click()
+  const confirm = disposablePage.getByTestId('voucher-redeem-confirm')
+  await expect(confirm.getByTestId('voucher-redeem-person')).toContainText(volunteer.name)
+  await confirm.getByTestId('btn-voucher-redeem').click()
+  await expect(confirm.getByTestId('voucher-redeem-left')).toHaveText('1 left')
+
+  // Back in the list, read again: one left.
+  await confirm.getByTestId('btn-voucher-next').click()
+  await expect(dialog).toBeVisible()
+  await dialog.getByTestId('voucher-pick-person').click()
+  await expect(
+    list
+      .getByTestId(`voucher-pick-person-option-${volunteer.id}`)
+      .getByTestId(`voucher-pick-count-${volunteer.id}`),
+  ).toContainText('1')
 })
 
 test('the dashboard shows a code at the stand, without going to the vouchers page', async ({
