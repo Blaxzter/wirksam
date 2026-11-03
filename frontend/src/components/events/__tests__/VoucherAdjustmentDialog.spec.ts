@@ -106,6 +106,16 @@ describe('VoucherAdjustmentDialog', () => {
     expect(input(w).attributes('aria-valuemax')).toBe('3')
   })
 
+  it('draws the person row and the chosen direction as the voucher screens do', async () => {
+    const w = await openDialog(3)
+    const row = w.find('[data-testid="voucher-adjustment-person-row"]')
+    expect(row.text()).toContain('SI')
+    expect(w.find('[data-testid="voucher-adjustment-current"]').classes()).toContain('bg-hero-chip')
+    const take = w.find('[data-testid="voucher-adjustment-take"]')
+    expect(take.classes()).toContain('data-[state=on]:bg-primary/12')
+    expect(take.classes()).not.toContain('data-[state=on]:bg-accent')
+  })
+
   it('takes exactly what is left and says nothing remains', async () => {
     api.post.mockResolvedValue({ data: {} })
     const w = await openDialog(3)
@@ -166,7 +176,9 @@ describe('VoucherAdjustmentDialog', () => {
     await input(w).trigger('blur')
 
     const max = w.find('[data-testid="voucher-adjustment-max"]')
-    expect(max.text()).toBe('At most 0: Sina can still redeem 2, with this correction already counted.')
+    expect(max.text()).toBe(
+      'At most 0: Sina can still redeem 2, with this correction already counted.',
+    )
     expect(max.classes()).toContain('text-destructive')
     expect(w.find('[data-testid="voucher-adjustment-after"]').exists()).toBe(false)
 

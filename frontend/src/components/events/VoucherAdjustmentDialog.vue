@@ -6,7 +6,9 @@ import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { avatarUrlFor } from '@/composables/useAvatarUrl'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import Button from '@/components/ui/button/Button.vue'
 import Label from '@/components/ui/label/Label.vue'
@@ -33,6 +35,7 @@ import EventMemberPicker from '@/components/events/EventMemberPicker.vue'
 
 import type { EventMemberRead, VoucherBalance, VoucherEntryRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { initials } from '@/lib/format'
 import { correctionAddMin, correctionTakeAwayMax } from '@/lib/vouchers'
 
 /**
@@ -102,6 +105,17 @@ const current = computed(() => {
 const currentName = computed(() =>
   current.value ? (current.value.name ?? current.value.email ?? '?') : '',
 )
+const currentAvatar = computed(() =>
+  current.value
+    ? (avatarUrlFor({ id: current.value.user_id, avatar_etag: current.value.avatar_etag }) ??
+      undefined)
+    : undefined,
+)
+
+/** The chosen direction in the house's soft green, as the voucher screens draw it. */
+const directionClass =
+  'data-[state=on]:bg-primary/12 data-[state=on]:font-bold data-[state=on]:text-primary'
+
 /** The amount an edit replaces; 0 for a new correction. */
 const oldAmount = computed(() => props.entry?.amount ?? 0)
 /** The most "Take away" may take; `null` while nobody (or nobody known) is chosen. */
@@ -266,13 +280,19 @@ async function save() {
           class="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5"
           data-testid="voucher-adjustment-person-row"
         >
-          <span class="min-w-0 flex-1 truncate text-sm font-semibold">
+          <Avatar class="size-9 shrink-0">
+            <AvatarImage v-if="currentAvatar" :src="currentAvatar" />
+            <AvatarFallback class="bg-accent text-xs font-bold">
+              {{ initials(userName || currentName) }}
+            </AvatarFallback>
+          </Avatar>
+          <span class="min-w-0 flex-1 truncate text-[15px] font-semibold">
             <span class="sr-only">{{ t('vouchers.admin.person') }}:</span>
             {{ userName || currentName }}
           </span>
           <Badge
             v-if="current"
-            class="shrink-0 gap-1 tabular-nums"
+            class="shrink-0 gap-1 rounded-full border-transparent bg-hero-chip px-2.5 text-[13px] font-bold text-hero-chip-foreground tabular-nums"
             data-testid="voucher-adjustment-current"
           >
             <Ticket class="size-3.5" aria-hidden="true" />
@@ -309,11 +329,19 @@ async function save() {
               :model-value="direction"
               @update:model-value="(v) => v && (direction = v as 'add' | 'take')"
             >
-              <ToggleGroupItem value="add" data-testid="voucher-adjustment-add">
+              <ToggleGroupItem
+                value="add"
+                :class="directionClass"
+                data-testid="voucher-adjustment-add"
+              >
                 <Plus class="size-4" />
                 {{ t('vouchers.admin.add') }}
               </ToggleGroupItem>
-              <ToggleGroupItem value="take" data-testid="voucher-adjustment-take">
+              <ToggleGroupItem
+                value="take"
+                :class="directionClass"
+                data-testid="voucher-adjustment-take"
+              >
                 <Minus class="size-4" />
                 {{ t('vouchers.admin.takeAway') }}
               </ToggleGroupItem>
@@ -323,7 +351,7 @@ async function save() {
               v-model="amount"
               :min="amountMin"
               :max="amountMax"
-              class="w-32"
+              class="min-w-32 flex-1"
               data-testid="voucher-adjustment-amount"
             >
               <NumberFieldContent>
@@ -361,7 +389,9 @@ async function save() {
             rows="2"
             required
             :aria-invalid="attempted && noteMissing ? 'true' : undefined"
-            :aria-describedby="attempted && noteMissing ? 'voucher-adjustment-note-error' : undefined"
+            :aria-describedby="
+              attempted && noteMissing ? 'voucher-adjustment-note-error' : undefined
+            "
             data-testid="voucher-adjustment-note"
           />
           <p
