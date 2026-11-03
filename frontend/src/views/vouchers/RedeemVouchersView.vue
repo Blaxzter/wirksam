@@ -44,6 +44,7 @@ import { parseServerDate } from '@/lib/server-time'
 import {
   codeUsedDetails,
   createDetectionGate,
+  noPhoneContact,
   normalizeVoucherCode,
   parseVoucherPayload,
 } from '@/lib/vouchers'
@@ -82,17 +83,12 @@ const isInCharge = computed(
 /** Someone redeeming only because they are on shift sees just their own. */
 const seesAllEntries = computed(() => isAdmin.value || isInCharge.value)
 
-/**
- * Who to send someone without a phone to, when the caller may not pick the
- * person (the event keeps that with organisers and people in charge): the
- * point's people in charge by name, or the organisers when it has none.
- */
+/** Who to send someone without a phone to, when the caller may not pick the person. */
 const askManagers = computed(() => {
-  const p = point.value
-  if (!p || p.can_redeem_manually) return null
-  if (p.managers.length === 0) return t('vouchers.redeem.askOrganisers')
-  const names = p.managers.map((m) => m.name || '?')
-  return t('vouchers.redeem.askManagers', { names: joinNames(names, locale.value) })
+  const contact = point.value ? noPhoneContact(point.value) : null
+  if (!contact) return null
+  if (contact.kind === 'organisers') return t('vouchers.redeem.askOrganisers')
+  return t('vouchers.redeem.askManagers', { names: joinNames(contact.names, locale.value) })
 })
 
 // --- Which point ---

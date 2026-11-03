@@ -6,7 +6,12 @@
  * the screens need before a request is worth sending: whether something typed
  * or scanned can be a code at all, and how to show one.
  */
-import type { VoucherAccount, VoucherEntryRead, VoucherShift } from '@/client/types.gen'
+import type {
+  VoucherAccount,
+  VoucherEntryRead,
+  VoucherPointRead,
+  VoucherShift,
+} from '@/client/types.gen'
 import { parseServerDate } from '@/lib/server-time'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -220,4 +225,20 @@ export function codeUsedDetails(error: unknown): CodeUsedDetails | null {
     actorName: typeof data.actor_name === 'string' ? data.actor_name : null,
     usedAt: typeof data.used_at === 'string' ? parseServerDate(data.used_at) : null,
   }
+}
+
+export type NoPhoneContact = { kind: 'managers'; names: string[] } | { kind: 'organisers' }
+
+/**
+ * Who the redeem page sends someone without a phone to, when the caller may
+ * not pick the person (the event keeps that with organisers and people in
+ * charge): the point's people in charge by name, or the organisers when it has
+ * none. `null` when the caller may pick the person themselves.
+ */
+export function noPhoneContact(
+  point: Pick<VoucherPointRead, 'can_redeem_manually' | 'managers'>,
+): NoPhoneContact | null {
+  if (point.can_redeem_manually) return null
+  if (point.managers.length === 0) return { kind: 'organisers' }
+  return { kind: 'managers', names: point.managers.map((m) => m.name || '?') }
 }

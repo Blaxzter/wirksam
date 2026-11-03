@@ -11,6 +11,7 @@ import {
   formatVoucherCode,
   historySortKey,
   newRequestId,
+  noPhoneContact,
   normalizeVoucherCode,
   parseVoucherPayload,
   secondsLeft,
@@ -348,5 +349,30 @@ describe('codeUsedDetails', () => {
     expect(codeUsedDetails({ response: null })).toBeNull()
     expect(codeUsedDetails(new Error('Network Error'))).toBeNull()
     expect(codeUsedDetails(null)).toBeNull()
+  })
+})
+
+describe('noPhoneContact', () => {
+  const managers = [
+    { user_id: 'u1', name: 'Mira' },
+    { user_id: 'u2', name: null },
+  ]
+
+  it('is nobody when the caller may pick the person', () => {
+    expect(noPhoneContact({ can_redeem_manually: true, managers })).toBeNull()
+    expect(noPhoneContact({ can_redeem_manually: true, managers: [] })).toBeNull()
+  })
+
+  it("names the point's people in charge, a missing name as ?", () => {
+    expect(noPhoneContact({ can_redeem_manually: false, managers })).toEqual({
+      kind: 'managers',
+      names: ['Mira', '?'],
+    })
+  })
+
+  it('sends people to an organiser at a point nobody is in charge of', () => {
+    expect(noPhoneContact({ can_redeem_manually: false, managers: [] })).toEqual({
+      kind: 'organisers',
+    })
   })
 })
