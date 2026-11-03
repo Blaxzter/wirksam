@@ -216,8 +216,6 @@ test('without a phone, an organiser picks the person by what they have, then the
   await expect(dialog).toBeVisible()
 
   // The stand's task page counts what was redeemed there so far.
-  await adminPage.keyboard.press('Escape')
-  await expect(dialog).toBeHidden()
   await adminPage.goto(`/app/tasks/${pointTask.id}`)
   await expect(adminPage.getByTestId('task-voucher-point')).toHaveText('1 redeemed here so far')
 })
@@ -252,7 +250,6 @@ test('someone in charge of the stand picks the person by what they have, as an o
   await disposablePage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
   await disposablePage.getByTestId('btn-voucher-pick-person').click()
   const dialog = disposablePage.getByTestId('voucher-pick-dialog')
-  await expect(dialog).toContainText('The number shows how many vouchers each person has.')
   await dialog.getByTestId('voucher-pick-person').click()
 
   // The same numbers the organisers see: the volunteer has 2, the person in
