@@ -65,6 +65,8 @@ def _email_settings(*, configured: bool = True) -> Generator[None, None, None]:
         patch.object(settings, "EMAILS_FROM_NAME", "Wirksam Test Sender"),
         patch.object(settings, "FRONTEND_HOST", "https://app.example.test"),
         patch.object(settings, "EVENT_TIMEZONE", "Europe/Berlin"),
+        # A date in the current year is written without it.
+        patch("app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 7, 1, 9)),
     ):
         yield
 
@@ -122,10 +124,10 @@ class TestTaskInvitation:
             "zu verantworten." in text
         )
         assert "Ort: Foyer-Café" in text
-        assert "Wann: 17.07.2026 – 19.07.2026" in text
+        assert "Wann: Fr, 17. – So, 19. Juli" in text
         assert "löst bei „Cafétheke“ Marken ein" in text
         assert "Mira Lindqvist und Pia Incharge sind auch dabei." in text
-        assert "Die Einladung gilt bis 18.11.2026." in text
+        assert "Die Einladung gilt bis Mi, 18. November." in text
         # "diese Mail", not "sie": that could read as ignoring the person.
         assert (
             "Wenn du die Person nicht kennst, kannst du diese Mail einfach ignorieren."
@@ -154,11 +156,23 @@ class TestTaskInvitation:
         text = _part(message, "plain")
         assert "Tasks: Cafétheke, Grill" in text
         assert "Event: Sommerfest am Fluss" in text
-        assert "When: 17.07.2026 – 19.07.2026" in text
+        assert "When: Fri 17 – Sun 19 July" in text
         assert "redeem vouchers at “Cafétheke”" in text
         # Who else runs which task is only said for a single task.
         assert "in charge too" not in text
-        assert "The invitation is valid until 18.11.2026." in text
+        assert "The invitation is valid until Wed 18 November." in text
+
+    async def test_a_task_next_year_names_the_year(self) -> None:
+        task = InvitedTask(
+            name="Cafétheke",
+            location=None,
+            first_date=dt.date(2027, 7, 17),
+            last_date=dt.date(2027, 7, 19),
+            is_voucher_point=False,
+        )
+        message = await _send(tasks=[task])
+        assert "Wann: Sa, 17. – Mo, 19. Juli 2027" in _part(message, "plain")
+        assert "Sa, 17. – Mo, 19. Juli 2027</td>" in _part(message, "html")
 
     async def test_user_text_is_escaped(self) -> None:
         sneaky = Event(

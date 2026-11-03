@@ -661,7 +661,20 @@ class TestEmailHtmlBody:
             html = _build_html(title="T", body="B")
 
         assert "https://app.example.test/app/settings/notifications" in html
-        assert "https://app.example.test/icon.svg" in html
+        assert "https://app.example.test/icons/icon-192.png" in html
+
+    def test_the_frame_is_mail_safe(self) -> None:
+        """Inline styles and tables only: no stylesheet a client would drop,
+        no CSS variables or oklch() it cannot read."""
+        with _email_settings():
+            html = _build_html(title="T", body="B", data={"task_id": "task-1"})
+
+        assert "<style" not in html
+        assert "<link" not in html
+        assert "var(--" not in html
+        assert "oklch(" not in html
+        assert "<div" not in html
+        assert 'role="presentation"' in html
 
 
 @pytest.mark.asyncio
@@ -757,7 +770,8 @@ class TestDetailsHtml:
     def test_empty_parts_are_left_out(self) -> None:
         html = self._html(details=(), items=(), note="")
 
-        assert "<table" not in html
+        # The frame and the button are tables too, so look for a fact's cell.
+        assert "Aufgabe</td>" not in html
         assert "<ul" not in html
         assert "Das kannst du jetzt" not in html
         assert "Passt das nicht?" not in html

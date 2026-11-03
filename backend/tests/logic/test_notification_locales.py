@@ -47,7 +47,11 @@ def test_same_email_strings() -> None:
     assert set(DE["email"]) - set(EN["email"]) == set(), "missing in en.json"
 
 
-@pytest.mark.parametrize("key", sorted(k for k in EN if k != "email"))
+#: Blocks that are not a notification message: e-mail chrome, date names.
+NOT_MESSAGES = {"email", "dates"}
+
+
+@pytest.mark.parametrize("key", sorted(k for k in EN if k not in NOT_MESSAGES))
 def test_each_message_has_a_title_a_body_and_the_same_placeholders(key: str) -> None:
     assert set(EN[key]) == {"title", "body"}
     assert set(DE[key]) == {"title", "body"}
@@ -58,3 +62,22 @@ def test_each_message_has_a_title_a_body_and_the_same_placeholders(key: str) -> 
 @pytest.mark.parametrize("key", sorted(EN["email"]))
 def test_each_email_string_has_the_same_placeholders(key: str) -> None:
     assert _fields(EN["email"][key]) == _fields(DE["email"][key]), key
+
+
+def test_same_date_strings() -> None:
+    assert set(EN["dates"]) == set(DE["dates"])
+
+
+@pytest.mark.parametrize("lang", [EN, DE], ids=["en", "de"])
+def test_a_name_for_every_weekday_and_month(lang: dict[str, Any]) -> None:
+    assert len(lang["dates"]["weekdays"]) == 7
+    assert len(lang["dates"]["months"]) == 12
+    assert all(isinstance(name, str) and name for name in lang["dates"]["weekdays"])
+    assert all(isinstance(name, str) and name for name in lang["dates"]["months"])
+
+
+@pytest.mark.parametrize(
+    "key", sorted(k for k, v in EN["dates"].items() if isinstance(v, str))
+)
+def test_each_date_template_has_the_same_placeholders(key: str) -> None:
+    assert _fields(EN["dates"][key]) == _fields(DE["dates"][key]), key

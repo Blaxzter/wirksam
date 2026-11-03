@@ -55,6 +55,27 @@
     "title": "Reset your password",
     "body": "Someone asked to set a new password for your {project_name} account.\n\nThe link expires in {expires_in}. If that wasn't you, ignore this email. Your current password stays valid."
   },
+  "dates": {
+    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "day": "{weekday} {day}",
+    "day_month": "{weekday} {day} {month}",
+    "day_month_year": "{weekday} {day} {month} {year}",
+    "span": "{first} – {last}"
+  },
   "email": {
     "view_details": "View Details",
     "footer_text": "You received this because of your notification settings.",

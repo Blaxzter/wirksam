@@ -1263,6 +1263,8 @@ class TestDispatchTaskManagerAdded:
                 new_callable=AsyncMock,
                 return_value=True,
             ) as send_batch,
+            # The mail leaves out the year of a date in the current one.
+            patch("app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 6, 1, 9)),
         ):
             await triggers.dispatch_task_manager_added(
                 task_id=test_task.id,
@@ -1285,7 +1287,7 @@ class TestDispatchTaskManagerAdded:
             "at “Kirchentags Woche 2026”."
         )
         assert "Where: Foyer-Café" in text
-        assert "When: 11.06.2026 – 13.06.2026 · 2 shifts" in text
+        assert "When: Thu 11 – Sat 13 June · 2 shifts" in text
         assert "Also in charge: User in-charge-mira" in text
         assert "Redeem vouchers at “Pfingsten 2026”" in text
         assert f"/app/tasks/{test_task.id}" in text

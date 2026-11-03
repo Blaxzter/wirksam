@@ -21,7 +21,7 @@ from app.core.config import settings
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.notifications.channels.email import EmailBody, build_details_html
 from app.logic.notifications.messages import (
-    date_range,
+    day_span,
     get_email_strings,
     get_message,
 )
@@ -68,7 +68,7 @@ class InChargeMail:
             actor=actor, task_name=self.task_name, event_name=self.event_name
         )
 
-        when = date_range(self.first_date, self.last_date)
+        when = day_span(self.first_date, self.last_date, lang)
         if self.shift_count == 1:
             when = f"{when} · {strings['shift_count_one']}"
         elif self.shift_count > 1:

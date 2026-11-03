@@ -22,10 +22,15 @@ account there to notify at all.
 
 from email.message import EmailMessage
 from email.utils import formataddr
-from html import escape
 
 from app.core.config import settings
 from app.core.logger import get_logger
+from app.logic.notifications.channels.email import (
+    button_html,
+    card_html,
+    link_fallback_html,
+    paragraphs_html,
+)
 from app.logic.notifications.messages import (
     DEFAULT_LANGUAGE,
     get_email_strings,
@@ -94,8 +99,18 @@ async def _send_action_email(
             project_name=settings.PROJECT_NAME,
             expires_in=_expiry_phrase(expires_in_hours, language),
         )
-        text_body = (
-            f"{_greeting(name, language)}\n\n{body}\n\n{action_label}:\n{action_url}"
+        opening = f"{_greeting(name, language)}\n\n{body}"
+        text_body = f"{opening}\n\n{action_label}:\n{action_url}"
+        footer = _chrome(language, "transactional_footer")
+        # The HTML part says the link once, as the button (and the fallback
+        # under it), not also as the plain text's "label: link" line.
+        html_body = _build_auth_html(
+            title=title,
+            body=opening,
+            action_url=action_url,
+            action_label=action_label,
+            language=language,
+            footer=footer,
         )
     except Exception:
         logger.exception(f"Failed to render the {message_code} email for {email}")
@@ -107,8 +122,9 @@ async def _send_action_email(
         text_body=text_body,
         action_url=action_url,
         action_label=action_label,
-        footer=_chrome(language, "transactional_footer"),
+        footer=footer,
         kind=message_code,
+        html_body=html_body,
     )
 
 
@@ -273,85 +289,34 @@ def _build_auth_html(
     language: str,
     footer: str | None = None,
 ) -> str:
-    """Render the transactional card: the notification look, no preferences link.
+    """Render the transactional card: the shared frame, no preferences link.
 
-    Deliberately a sibling of ``_build_html`` in the notification email channel
-    rather than a call into it. That renderer derives its call to action from a
-    notification payload (a task or an event id) and always closes with "you
-    received this because of your notification settings" above a link to the
-    preferences page. Neither is true of a security mail, and sending a
-    logged-out recipient to a settings page in the middle of a password reset
-    is worse than useless.
+    The frame is the one every mail wears (``card_html`` in the notification
+    e-mail channel), but not the notification body inside it: that renderer
+    derives its call to action from a notification payload (a task or an
+    event id) and always closes with "you received this because of your
+    notification settings" above a link to the preferences page. Neither is
+    true of a security mail, and sending a logged-out recipient to a settings
+    page in the middle of a password reset is worse than useless.
 
-    ``footer`` is plain text, escaped here; it defaults to the auth mails'
-    "it was requested for this address".
+    ``body`` is plain text: a blank line starts a paragraph, a single newline
+    breaks the line. It carries a display name the account holder chose, so
+    everything is escaped. ``footer`` is plain text too; it defaults to the
+    auth mails' "it was requested for this address".
     """
-    frontend_url = settings.FRONTEND_HOST
-    logo_url = f"{frontend_url}/icon.svg"
-
-    # The body carries a display name the account holder chose, so escape
-    # everything interpolated into the markup; none of our own copy contains
-    # HTML. The URL additionally escapes quotes because it lands in an
-    # attribute.
-    safe_title = escape(title, quote=False)
-    safe_body = escape(body, quote=False).replace("\n", "<br>")
-    safe_label = escape(action_label, quote=False)
-    safe_url = escape(action_url, quote=True)
-    safe_footer = escape(
-        footer if footer is not None else _chrome(language, "transactional_footer"),
-        quote=False,
+    paragraphs = [part for part in body.split("\n\n") if part.strip()]
+    content = (
+        paragraphs_html(paragraphs)
+        + button_html(action_url, action_label)
+        # Mail clients that strip the button still have to leave a way to
+        # reach the link, so it is written out once more.
+        + link_fallback_html(action_url, _chrome(language, "action_url_fallback"))
     )
-
-    return f"""
-    <!DOCTYPE html>
-    <html lang="{language}">
-    <head><meta charset="utf-8"></head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                 margin: 0; padding: 0; background-color: #f3f4f6; color: #1f2937;">
-        <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
-            <!-- Card -->
-            <div style="background-color: #ffffff; border-radius: 12px; overflow: hidden;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                <!-- Header -->
-                <div style="background-color: #1f2937; padding: 24px; text-align: center;">
-                    <img src="{logo_url}" alt="{settings.PROJECT_NAME}"
-                         style="height: 40px; width: 40px; margin-bottom: 8px;" />
-                    <div style="color: #ffffff; font-size: 18px; font-weight: 600;">
-                        {settings.PROJECT_NAME}
-                    </div>
-                </div>
-                <!-- Body -->
-                <div style="padding: 32px 24px;">
-                    <h2 style="margin: 0 0 12px; font-size: 20px; color: #1f2937;">{safe_title}</h2>
-                    <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.6;">
-                        {safe_body}
-                    </p>
-                    <div style="text-align: center;">
-                        <a href="{safe_url}"
-                           style="background-color: #1f2937; color: #ffffff; padding: 12px 28px;
-                                  text-decoration: none; border-radius: 8px; display: inline-block;
-                                  font-size: 14px; font-weight: 600;">
-                            {safe_label}
-                        </a>
-                    </div>
-                    <!-- Mail clients that strip the button still have to leave a
-                         way to reach the link, so it is repeated verbatim. -->
-                    <p style="margin: 24px 0 0; font-size: 12px; color: #9ca3af;
-                              line-height: 1.5; word-break: break-all;">
-                        {_chrome(language, "action_url_fallback")}
-                        <br />
-                        <a href="{safe_url}" style="color: #6b7280;">{safe_url}</a>
-                    </p>
-                </div>
-                <!-- Footer -->
-                <div style="border-top: 1px solid #e5e7eb; padding: 16px 24px;
-                            background-color: #f9fafb; text-align: center;">
-                    <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
-                        {safe_footer}
-                    </p>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    return card_html(
+        title=title,
+        content=content,
+        language=language,
+        footer_text=(
+            footer if footer is not None else _chrome(language, "transactional_footer")
+        ),
+    )

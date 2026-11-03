@@ -55,6 +55,27 @@
     "title": "Passwort zurücksetzen",
     "body": "für dein {project_name}-Konto wurde ein neues Passwort angefordert.\n\nDer Link ist {expires_in} gültig. Falls du das nicht warst, ignoriere diese E-Mail. Dein aktuelles Passwort bleibt gültig."
   },
+  "dates": {
+    "weekdays": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+    "months": [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ],
+    "day": "{weekday}, {day}.",
+    "day_month": "{weekday}, {day}. {month}",
+    "day_month_year": "{weekday}, {day}. {month} {year}",
+    "span": "{first} – {last}"
+  },
   "email": {
     "view_details": "Details anzeigen",
     "footer_text": "Du erhältst diese Nachricht wegen deiner Benachrichtigungseinstellungen.",

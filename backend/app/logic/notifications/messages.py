@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.logic import clock
+
 DEFAULT_LANGUAGE = "en"
 
 _LOCALES_DIR = Path(__file__).parent / "locales"
@@ -79,14 +81,54 @@ def name_list(names: list[str], lang: str) -> str:
     return ", ".join(names[:-1]) + last_joiner + names[-1]
 
 
-def date_range(first: dt.date, last: dt.date) -> str:
-    """``17.07.2026`` for one day, ``17.07.2026 – 19.07.2026`` for several.
+def get_date_strings(language: str) -> dict[str, Any]:
+    """The ``dates`` block: weekday and month names and how a day is written.
 
-    The date format ``booking.confirmed`` uses, the same in both languages.
+    Falls back to English per key, as ``auth/emails.py::_chrome`` does for the
+    e-mail strings, so a key missing from one file degrades to English rather
+    than raising inside a mail being sent.
     """
+    english: dict[str, Any] = _messages[DEFAULT_LANGUAGE]["dates"]
+    return {**english, **_messages[_resolve_lang(language)].get("dates", {})}
+
+
+def day_span(
+    first: dt.date, last: dt.date, language: str, *, today: dt.date | None = None
+) -> str:
+    """The days something runs, as a mail says them.
+
+    ``Fr, 17. – So, 19. Juli`` and ``Fri 17 – Sun 19 July``; one day is
+    ``Fr, 17. Juli``, two months ``Fr, 31. Juli – So, 2. August``. The year
+    is added only when either end is outside the current one (on the events'
+    wall clock), the rule ``formatDaySpan`` follows in the app, so a mail and
+    the task page it links to read the same. The names and the order come
+    from the ``dates`` block of the recipient's locale file.
+    """
+    if last < first:
+        first, last = last, first
+    strings = get_date_strings(language)
+    if today is None:
+        today = clock.wall_clock_now().date()
+    with_year = first.year != today.year or last.year != today.year
+
+    def write(day: dt.date, template: str) -> str:
+        return strings[template].format(
+            weekday=strings["weekdays"][day.weekday()],
+            day=day.day,
+            month=strings["months"][day.month - 1],
+            year=day.year,
+        )
+
+    full = "day_month_year" if with_year else "day_month"
     if first == last:
-        return first.strftime("%d.%m.%Y")
-    return f"{first.strftime('%d.%m.%Y')} – {last.strftime('%d.%m.%Y')}"
+        return write(first, full)
+    if first.year != last.year:
+        start = write(first, "day_month_year")
+    elif first.month != last.month:
+        start = write(first, "day_month")
+    else:
+        start = write(first, "day")
+    return strings["span"].format(first=start, last=write(last, full))
 
 
 def format_time_until(offset_minutes: int, lang: str) -> str:

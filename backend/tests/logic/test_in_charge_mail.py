@@ -28,7 +28,12 @@ TASK = uuid.uuid4()
 
 @contextmanager
 def _host() -> Generator[None, None, None]:
-    with patch.object(settings, "FRONTEND_HOST", "https://app.example.test"):
+    # A date in the current year is written without it, so "now" is pinned
+    # to the summer the tasks below run in.
+    with (
+        patch.object(settings, "FRONTEND_HOST", "https://app.example.test"),
+        patch("app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 7, 1, 9)),
+    ):
         yield
 
 
@@ -83,7 +88,7 @@ class TestRender:
             "eingetragen.\n\n"
             "Aufgabe: Cafétheke\n"
             "Ort: Foyer-Café\n"
-            "Wann: 17.07.2026 – 19.07.2026 · 8 Schichten\n"
+            "Wann: Fr, 17. – So, 19. Juli · 8 Schichten\n"
             "Auch verantwortlich: Mira Lindqvist\n\n"
             "Das kannst du jetzt\n"
             "- Beschreibung und Infos der Aufgabe ändern\n"
@@ -98,6 +103,7 @@ class TestRender:
         )
         assert f"https://app.example.test/app/tasks/{TASK}" in body.html
         assert "Aufgabe öffnen" in body.html
+        assert "Fr, 17. – So, 19. Juli · 8 Schichten</td>" in body.html
         assert '<html lang="de">' in body.html
 
     def test_english_mail(self) -> None:
@@ -108,7 +114,7 @@ class TestRender:
             "Hi Pia,\n\nAnna Berger put you in charge of “Cafétheke” at "
             "“Sommerfest am Fluss”."
         )
-        assert "When: 17.07.2026 – 19.07.2026 · 8 shifts" in body.text
+        assert "When: Fri 17 – Sun 19 July · 8 shifts" in body.text
         assert "Also in charge: Mira Lindqvist" in body.text
         assert "Redeem vouchers at “Cafétheke”" in body.text
         assert "Open task" in body.html
@@ -128,13 +134,13 @@ class TestRender:
         assert "Ort:" not in body.text
         assert "Auch verantwortlich" not in body.text
         assert "Marken" not in body.text
-        assert "Wann: 17.07.2026 · 1 Schicht\n" in body.text
+        assert "Wann: Fr, 17. Juli · 1 Schicht\n" in body.text
 
     def test_no_shifts_yet_gives_just_the_dates(self) -> None:
         with _host():
             body = _mail(shift_count=0).render(_pia())
 
-        assert "Wann: 17.07.2026 – 19.07.2026\n" in body.text
+        assert "Wann: Fr, 17. – So, 19. Juli\n" in body.text
 
     def test_an_organiser_who_is_gone_reads_as_someone(self) -> None:
         with _host():

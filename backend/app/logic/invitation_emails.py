@@ -36,13 +36,20 @@ from app.core.logger import get_logger
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.auth.emails import send_action_mail
 from app.logic.notifications.channels.email import (
+    avatar_row_html,
     button_html,
     card_html,
     details_table_html,
+    heading_html,
+    link_fallback_html,
+    paragraphs_html,
+    quiet_html,
+    small_print_html,
+    text_link_html,
 )
 from app.logic.notifications.messages import (
     DEFAULT_LANGUAGE,
-    date_range,
+    day_span,
     get_email_strings,
     get_message,
     name_list,
@@ -167,12 +174,14 @@ def _initials(name: str) -> str:
     return letters or "?"
 
 
-def _expiry_date(expires_at: dt.datetime) -> str:
+def _expiry_date(expires_at: dt.datetime, language: str) -> str:
     """The last day the invitation works, on the events' wall clock."""
-    local = expires_at.replace(tzinfo=dt.UTC).astimezone(
-        ZoneInfo(settings.EVENT_TIMEZONE)
+    local = (
+        expires_at.replace(tzinfo=dt.UTC)
+        .astimezone(ZoneInfo(settings.EVENT_TIMEZONE))
+        .date()
     )
-    return local.strftime("%d.%m.%Y")
+    return day_span(local, local, language)
 
 
 def render_event_invitation_email(
@@ -208,13 +217,13 @@ def render_event_invitation_email(
             if task.location:
                 details.append((s["detail_location"], task.location))
             details.append(
-                (s["detail_when"], date_range(task.first_date, task.last_date))
+                (s["detail_when"], day_span(task.first_date, task.last_date, language))
             )
         else:
             details = [
                 (s["detail_tasks"], ", ".join(names)),
                 (s["detail_event"], event_name),
-                (s["detail_when"], date_range(event_start, event_end)),
+                (s["detail_when"], day_span(event_start, event_end, language)),
             ]
         points = [t.name for t in tasks if t.is_voucher_point]
         means = (
@@ -239,7 +248,7 @@ def render_event_invitation_email(
         heading = s["invite_heading"].format(event_name=event_name)
         details = [
             (s["detail_event"], event_name),
-            (s["detail_when"], date_range(event_start, event_end)),
+            (s["detail_when"], day_span(event_start, event_end, language)),
         ]
         means = ""
 
@@ -255,9 +264,11 @@ def render_event_invitation_email(
     note_parts: list[str] = []
     if expires_at is not None:
         note_parts.append(
-            get_message("invite.email.expiry", language, date=_expiry_date(expires_at))[
-                1
-            ]
+            get_message(
+                "invite.email.expiry",
+                language,
+                date=_expiry_date(expires_at, language),
+            )[1]
         )
     note_parts.append(s["invite_decline"])
     note = " ".join(note_parts)
@@ -282,43 +293,22 @@ def render_event_invitation_email(
     # (our own copy) first, then put the escaped anchor where it says {link}.
     before, _, after = sign_in_template.partition("{link}")
     sign_in_html = (
-        f"{html.escape(before)}"
-        f'<a href="{html.escape(login_url)}" style="color: #1f2937; font-weight: 700;">'
-        f"{html.escape(sign_in_label)}</a>"
+        f"{html.escape(before)}{text_link_html(login_url, sign_in_label)}"
         f"{html.escape(after)}"
     )
-    means_html = (
-        f"""
-                    <p style="margin: 18px 0 0; color: #4b5563; font-size: 14px; line-height: 1.6;">{html.escape(means)}</p>"""
-        if means
-        else ""
+    content = (
+        avatar_row_html(initials=_initials(inviter), name=inviter, subline=organiser)
+        + heading_html(heading, margin_top=20)
+        + paragraphs_html([greeting, intro], first_margin=12)
+        + details_table_html(details, label_width=110)
+        + (quiet_html(html.escape(means)) if means else "")
+        + button_html(action_url, action_label)
+        + quiet_html(sign_in_html, margin_top=16, center=True)
+        + small_print_html(note)
+        # Mail clients that strip the button still have to leave a way to
+        # reach the link, so it is written out once more.
+        + link_fallback_html(action_url, s["action_url_fallback"])
     )
-    content = f"""
-                    <table role="presentation" style="border-collapse: collapse; margin: 0 0 20px;">
-                        <tr>
-                            <td style="width: 44px; height: 44px; border-radius: 22px; background-color: #f3e3d3;
-                                       text-align: center; vertical-align: middle; font-size: 15px;
-                                       font-weight: 700; color: #1f2937;">{html.escape(_initials(inviter))}</td>
-                            <td style="padding-left: 12px; font-size: 14px; color: #4b5563; line-height: 1.4;">
-                                <strong style="color: #1f2937;">{html.escape(inviter)}</strong><br />{html.escape(organiser)}
-                            </td>
-                        </tr>
-                    </table>
-                    <h1 style="margin: 0 0 12px; font-size: 22px; line-height: 1.25; color: #1f2937;">{html.escape(heading)}</h1>
-                    <p style="margin: 0 0 8px; color: #1f2937; font-size: 15px; line-height: 1.6;">{html.escape(greeting)}</p>
-                    <p style="margin: 0; color: #1f2937; font-size: 15px; line-height: 1.6;">{html.escape(intro)}</p>{details_table_html(details)}{means_html}
-                    <div style="height: 24px;"></div>
-                    {button_html(action_url, action_label)}
-                    <p style="margin: 16px 0 0; text-align: center; color: #4b5563; font-size: 14px; line-height: 1.6;">{sign_in_html}</p>
-                    <p style="margin: 22px 0 0; color: #6b7280; font-size: 13px; line-height: 1.5;">{html.escape(note)}</p>
-                    <!-- Mail clients that strip the button still have to leave a
-                         way to reach the link, so it is repeated verbatim. -->
-                    <p style="margin: 16px 0 0; font-size: 12px; color: #9ca3af;
-                              line-height: 1.5; word-break: break-all;">
-                        {html.escape(s["action_url_fallback"])}
-                        <br />
-                        <a href="{html.escape(action_url)}" style="color: #6b7280;">{html.escape(action_url)}</a>
-                    </p>"""
     rendered_html = card_html(
         title=title,
         content=content,
