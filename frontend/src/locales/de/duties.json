@@ -806,6 +806,7 @@
             "batchesNote": "Die Schichten dieser Aufgabe sind in {count} Serien aufgeteilt. Tage, Zeiten, Ort und Kategorie änderst du auf der Aufgabenseite, jeweils mit „Bearbeiten“ bei der Serie.",
             "editBatch": "Schichtserie bearbeiten",
             "editBatchSubtitle": "Zeitplan der Serie ändern und ihre Schichten neu erstellen",
+            "placeInListNote": "Dieser Ort und diese Kategorie stehen in der Aufgabenliste und auf dem Ausdruck. Die Schichten jeder Serie behalten ihre eigenen.",
             "preview": {
                 "added": "{count} neu",
                 "booked": "{count} gebucht",

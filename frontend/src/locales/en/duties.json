@@ -806,6 +806,7 @@
             "batchesNote": "This task's shifts come in {count} series. Change their dates, times, place and category with each series' own Edit on the task page.",
             "editBatch": "Edit shift series",
             "editBatchSubtitle": "Change this batch's schedule and recreate its shifts",
+            "placeInListNote": "This place and category show in the task list and on the printout. The shifts of each series keep their own.",
             "preview": {
                 "added": "{count} new",
                 "booked": "{count} booked",

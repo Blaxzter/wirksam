@@ -5,10 +5,9 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import TaskEditView from '@/views/tasks/TaskEditView.vue'
-
 import type { ShiftBatchRead, TaskRead } from '@/client/types.gen'
 import i18n from '@/locales/i18n'
+import TaskEditView from '@/views/tasks/TaskEditView.vue'
 
 /**
  * What the task's own edit offers. With several batches the shifts belong to
@@ -103,7 +102,7 @@ async function mountEdit(query: Record<string, string> = {}) {
       plugins: [i18n, router],
       stubs: {
         DatePicker: true,
-        LocationPicker: { template: '<input id="task-location" />' },
+        LocationPicker: { props: ['inputId'], template: '<input :id="inputId" />' },
         TeamPicker: true,
         ScheduleConfigForm: true,
         ShiftPreviewGrid: true,
@@ -126,9 +125,12 @@ describe('TaskEditView: the task with several batches', () => {
     expect(wrapper.find('[data-testid="input-task-name"]').exists()).toBe(true)
     expect(wrapper.find('#task-description').exists()).toBe(true)
     expect(wrapper.find('[data-testid="section-schedule"]').exists()).toBe(false)
-    // Place and category are each batch's own.
-    expect(wrapper.find('#task-location').exists()).toBe(false)
     expect(wrapper.find('[data-testid="task-shifts-in-batches"]').text()).toContain('2 series')
+    // The task's own place and category, which the task list and the
+    // printout show; each series keeps its own for its shifts.
+    expect(wrapper.find('#task-location').exists()).toBe(true)
+    expect(wrapper.find('#task-category').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="task-place-in-list"]').exists()).toBe(true)
     // The team is the task's, so it is still offered to an organiser.
     expect(wrapper.find('[data-testid="section-who-can-book"]').exists()).toBe(true)
   })
@@ -137,6 +139,7 @@ describe('TaskEditView: the task with several batches', () => {
     const { wrapper, router } = await mountEdit()
 
     await wrapper.find('[data-testid="input-task-name"]').setValue('Café')
+    await wrapper.find('#task-category').setValue('Getränke')
     await wrapper.find('[data-testid="btn-submit"]').trigger('click')
     await flushPromises()
 
@@ -144,7 +147,13 @@ describe('TaskEditView: the task with several batches', () => {
     expect(api.patch).toHaveBeenCalledTimes(1)
     expect(api.patch).toHaveBeenCalledWith({
       url: '/tasks/t1',
-      body: { name: 'Café', description: 'Drinks' },
+      body: {
+        name: 'Café',
+        description: 'Drinks',
+        location_id: null,
+        location: 'Foyer',
+        category: 'Getränke',
+      },
     })
     expect(router.currentRoute.value.name).toBe('task-detail')
   })
@@ -170,6 +179,7 @@ describe('TaskEditView: a task with one batch', () => {
     expect(wrapper.find('[data-testid="section-schedule"]').exists()).toBe(true)
     expect(wrapper.find('#task-location').exists()).toBe(true)
     expect(wrapper.find('[data-testid="task-shifts-in-batches"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="task-place-in-list"]').exists()).toBe(false)
   })
 
   it('gives a person in charge of a locked voucher task the details only', async () => {
@@ -210,6 +220,21 @@ describe('TaskEditView: a person in charge of a locked task with several batches
     expect(wrapper.find('[data-testid="task-voucher-shifts-locked"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="task-shifts-in-batches"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="section-schedule"]').exists()).toBe(false)
+  })
+
+  it('still changes the place and category of the task, as before the second series', async () => {
+    const { wrapper } = await mountEdit()
+
+    expect(wrapper.find('#task-location').exists()).toBe(true)
+    await wrapper.find('#task-category').setValue('Getränke')
+    await wrapper.find('[data-testid="btn-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(api.post).not.toHaveBeenCalled()
+    expect(api.patch).toHaveBeenCalledWith({
+      url: '/tasks/t1',
+      body: expect.objectContaining({ location: 'Foyer', category: 'Getränke' }),
+    })
   })
 
   it('is sent back from a batch, whose shifts are not theirs', async () => {

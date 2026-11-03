@@ -95,8 +95,6 @@ const severalBatches = computed(() => batches.value.length > 1)
 const editsShifts = computed(
   () => canManageShifts.value && (isBatchMode.value || !severalBatches.value),
 )
-/** Place and category are each batch's own when there are several. */
-const showsPlace = computed(() => !severalBatches.value)
 
 // --- Form state ---
 const name = ref('')
@@ -455,11 +453,9 @@ const handleSubmit = async () => {
         body: {
           name: name.value,
           description: description.value || null,
-          ...(showsPlace.value && {
-            location_id: locationId.value,
-            location: location.value || null,
-            category: category.value || null,
-          }),
+          location_id: locationId.value,
+          location: location.value || null,
+          category: category.value || null,
         },
       })
       toast.success(t('duties.tasks.editView.saveSuccess'))
@@ -588,14 +584,9 @@ onMounted(loadTask)
           </div>
           <div class="space-y-2">
             <Label for="task-description">{{ t('duties.tasks.fields.description') }}</Label>
-            <Textarea
-              id="task-description"
-              v-model="description"
-              :rows="3"
-              class="max-h-[150px]"
-            />
+            <Textarea id="task-description" v-model="description" :rows="3" class="max-h-[150px]" />
           </div>
-          <div v-if="showsPlace" class="grid items-start gap-4 sm:grid-cols-2">
+          <div class="grid items-start gap-4 sm:grid-cols-2">
             <div class="space-y-2">
               <Label for="task-location">{{ t('duties.tasks.fields.location') }}</Label>
               <LocationPicker
@@ -610,6 +601,18 @@ onMounted(loadTask)
               <Input id="task-category" v-model="category" />
             </div>
           </div>
+          <!--
+            With several series the task's place and category are what the task
+            list, its quick view and the printout show; each series' shifts keep
+            their own, which the series' Edit changes.
+          -->
+          <p
+            v-if="severalBatches"
+            class="text-sm text-muted-foreground"
+            data-testid="task-place-in-list"
+          >
+            {{ t('duties.tasks.editView.placeInListNote') }}
+          </p>
         </CardContent>
       </Card>
 
