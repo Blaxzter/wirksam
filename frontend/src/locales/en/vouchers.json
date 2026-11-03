@@ -186,7 +186,6 @@
         "startedNote": "Already started. Shifts that earn vouchers can only be booked before they start."
     },
     "title": "Vouchers",
-    "upcoming": "{n} more for shifts you have booked",
     "upcomingFromShifts": "{n} more to come from booked shifts | {n} more to come from booked shifts",
     "upcomingShort": "+{n} to come | +{n} to come",
     "used": "Used",

@@ -186,7 +186,6 @@
         "startedNote": "Schon begonnen. Schichten mit Marken lassen sich nur vor Beginn buchen."
     },
     "title": "Marken",
-    "upcoming": "{n} mehr für deine gebuchten Schichten",
     "upcomingFromShifts": "{n} kommt noch aus gebuchten Schichten | {n} kommen noch aus gebuchten Schichten",
     "upcomingShort": "+{n} kommt | +{n} kommen",
     "used": "Eingelöst",

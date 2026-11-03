@@ -348,23 +348,6 @@ export function formatCount(n: number): string {
   return n > 99 ? '99+' : String(n)
 }
 
-/** Vouchers still to come from today's not-yet-completed voucher shifts, and how many shifts. */
-export function upcomingToday(
-  shifts: readonly { date: string; completed: boolean; vouchers: number }[],
-  now: Date,
-): { vouchers: number; shifts: number } {
-  const today = localIsoDate(now)
-  let vouchers = 0
-  let count = 0
-  for (const shift of shifts) {
-    if (shift.date === today && !shift.completed && shift.vouchers > 0) {
-      vouchers += shift.vouchers
-      count += 1
-    }
-  }
-  return { vouchers, shifts: count }
-}
-
 /** First letter upper-cased in the given locale ("heute" → "Heute"); "" stays "". */
 export function capitalizeFirst(text: string, locale: string): string {
   return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1)

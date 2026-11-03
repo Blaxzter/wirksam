@@ -5,10 +5,11 @@
  * Purely presentational: the account comes from `useMyVoucherAccount` in the
  * page, which also decides whether this is mounted at all (the same rule as
  * `MyVouchersCard`: not in an event without vouchers). On desktop it is the
- * side card "Your vouchers" with what was earned and used; when the page is
- * narrower than its `@4xl` container width it shrinks to a tile next to the
- * "Signed up" tile, with only the number and the code button, because those
- * are what you need at the stand.
+ * side card "Your vouchers" with the numbers block of "My vouchers"
+ * (`VoucherBalanceSummary`), so the balance reads the same on every page;
+ * when the page is narrower than its `@4xl` container width it shrinks to a
+ * tile next to the "Signed up" tile, with only the number, the line under it
+ * and the code button, because those are what you need at the stand.
  *
  * The code button stays when nothing is available, disabled, as on the
  * bookings page; the big "0 available" already says why. After the event it
@@ -27,12 +28,12 @@ import { useI18n } from 'vue-i18n'
 
 import { Button } from '@/components/ui/button'
 
+import VoucherBalanceSummary from '@/components/vouchers/VoucherBalanceSummary.vue'
+
 import type { VoucherAccount } from '@/client/types.gen'
-import { upcomingToday } from '@/lib/dashboard'
 
 const props = defineProps<{
   account: VoucherAccount
-  now: Date
   eventId: string
   expired: boolean
   canShowCode: boolean
@@ -44,33 +45,11 @@ const { t } = useI18n()
 
 const summary = computed(() => props.account.summary)
 
-/**
- * `summary.upcoming` counts every booked voucher shift that has not ended, on
- * any day. "+2 more after your shift today" is only true when all of them are
- * today, so the card says that only then and the plain line otherwise.
- */
-const upcomingLine = computed(() => {
-  const n = summary.value.upcoming
-  const today = upcomingToday(props.account.shifts, props.now)
-  if (today.vouchers > 0 && today.vouchers === n) {
-    return today.shifts === 1
-      ? t('dashboard.home.vouchers.upcomingTodayOne', { n }, n)
-      : t('dashboard.home.vouchers.upcomingTodayMany', { n }, n)
-  }
-  return t('vouchers.upcoming', { n })
-})
-
-/** The phone tile has room for one line: "available, +2 to come". */
+/** The phone tile has room for one line: "available, +2 to come", as on the bookings page. */
 const availableShort = computed(() => {
-  const available = t('dashboard.home.vouchers.available')
   const n = summary.value.upcoming
-  if (n <= 0) return available
-  return `${available}, ${t('dashboard.home.vouchers.upcomingShort', { n }, n)}`
-})
-
-const adjustedText = computed(() => {
-  const a = summary.value.adjusted
-  return a > 0 ? `+${a}` : String(a)
+  const available = t('vouchers.availableShort')
+  return n > 0 ? `${available}, ${t('vouchers.upcomingShort', { n }, n)}` : available
 })
 </script>
 
@@ -104,49 +83,20 @@ const adjustedText = computed(() => {
       </RouterLink>
     </div>
 
-    <p class="mt-1.5 flex flex-col @4xl:mt-3.5 @4xl:flex-row @4xl:items-baseline @4xl:gap-2">
-      <span
+    <!-- The tile: the number and one line -->
+    <div class="@4xl:hidden">
+      <p
         data-testid="dashboard-voucher-available"
-        class="text-[2rem] leading-none font-bold tabular-nums @4xl:text-[3.25rem]"
+        class="mt-1.5 text-[2rem] leading-none font-bold tabular-nums"
       >
         {{ summary.available }}
-      </span>
-      <span class="text-[13px] text-muted-foreground @4xl:text-[15px]">
-        <span data-testid="dashboard-voucher-available-short" class="@4xl:hidden">
-          {{ availableShort }}
-        </span>
-        <span class="hidden @4xl:inline">{{ t('dashboard.home.vouchers.available') }}</span>
-      </span>
-    </p>
-    <p
-      v-if="summary.upcoming > 0"
-      data-testid="dashboard-voucher-upcoming"
-      class="hidden text-sm text-muted-foreground @4xl:block"
-    >
-      {{ upcomingLine }}
-    </p>
-
-    <dl
-      class="mt-3.5 hidden gap-2 @4xl:grid"
-      :class="summary.adjusted !== 0 ? 'grid-cols-3' : 'grid-cols-2'"
-    >
-      <div class="rounded-xl bg-muted/60 px-3 py-2.5">
-        <dt class="text-xs text-muted-foreground">{{ t('vouchers.earned') }}</dt>
-        <dd class="mt-0.5 text-lg font-bold tabular-nums">{{ summary.earned }}</dd>
-      </div>
-      <div class="rounded-xl bg-muted/60 px-3 py-2.5">
-        <dt class="text-xs text-muted-foreground">{{ t('vouchers.used') }}</dt>
-        <dd class="mt-0.5 text-lg font-bold tabular-nums">{{ summary.redeemed }}</dd>
-      </div>
-      <div
-        v-if="summary.adjusted !== 0"
-        data-testid="dashboard-voucher-adjusted"
-        class="rounded-xl bg-muted/60 px-3 py-2.5"
-      >
-        <dt class="text-xs text-muted-foreground">{{ t('vouchers.adjusted') }}</dt>
-        <dd class="mt-0.5 text-lg font-bold tabular-nums">{{ adjustedText }}</dd>
-      </div>
-    </dl>
+      </p>
+      <p data-testid="dashboard-voucher-available-short" class="text-[13px] text-muted-foreground">
+        {{ availableShort }}
+      </p>
+    </div>
+    <!-- The card: the numbers block of "My vouchers" -->
+    <VoucherBalanceSummary class="mt-3.5 hidden @4xl:block" :summary="summary" />
 
     <!--
       The phone tile is 104 px wide inside at 320 px, less than the icon and

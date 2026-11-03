@@ -78,12 +78,8 @@
             "title": "Your plan"
         },
         "vouchers": {
-            "available": "available",
             "history": "History",
-            "title": "Your vouchers",
-            "upcomingShort": "+{n} to come | +{n} to come",
-            "upcomingTodayMany": "+{n} more after your shifts today | +{n} more after your shifts today",
-            "upcomingTodayOne": "+{n} more after your shift today | +{n} more after your shift today"
+            "title": "Your vouchers"
         }
     }
 }

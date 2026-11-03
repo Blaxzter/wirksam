@@ -78,12 +78,8 @@
             "title": "Dein Plan"
         },
         "vouchers": {
-            "available": "verfügbar",
             "history": "Verlauf",
-            "title": "Deine Marken",
-            "upcomingShort": "+{n} kommt noch | +{n} kommen noch",
-            "upcomingTodayMany": "+{n} kommt nach deinen Schichten heute dazu | +{n} kommen nach deinen Schichten heute dazu",
-            "upcomingTodayOne": "+{n} kommt nach deiner Schicht heute dazu | +{n} kommen nach deiner Schicht heute dazu"
+            "title": "Deine Marken"
         }
     }
 }

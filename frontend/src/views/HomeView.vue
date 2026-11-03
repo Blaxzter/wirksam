@@ -238,7 +238,6 @@ watch([voucherShiftsDue, now], ([due]) => {
           v-if="showVouchers && vouchers.account.value && vouchers.eventId.value"
           :class="hasShift ? 'col-span-1' : 'col-span-2 @4xl:col-span-1'"
           :account="vouchers.account.value"
-          :now="now"
           :event-id="vouchers.eventId.value"
           :expired="vouchers.isExpired.value"
           :can-show-code="vouchers.canShowCode.value"

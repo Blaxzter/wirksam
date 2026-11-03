@@ -5,38 +5,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import DashboardVoucherCard from '@/components/dashboard/DashboardVoucherCard.vue'
 
-import type { VoucherAccount, VoucherShift } from '@/client/types.gen'
+import type { VoucherAccount } from '@/client/types.gen'
 import i18n from '@/locales/i18n'
 
 /**
- * The voucher card beside the next shift: the balance, what is still to come
- * (said as "after your shift today" only when that is the whole truth), the
- * corrections tile only when there are any, and the code button's states.
+ * The voucher card beside the next shift: the phone tile's number and line,
+ * the numbers block it shares with "My vouchers" (corrections always shown,
+ * the same line for what is still to come), and the code button's states.
  */
 
-const NOW = new Date(2026, 6, 18, 9, 0)
-
-function voucherShift(overrides: Partial<VoucherShift> = {}): VoucherShift {
-  return {
-    booking_id: 'b1',
-    shift_id: 's1',
-    task_id: 't1',
-    task_name: 'Cafétheke',
-    title: 'Cafétheke 14:00-17:00',
-    date: '2026-07-18',
-    start_time: '14:00',
-    end_time: '17:00',
-    ends_at: '2026-07-18T17:00:00',
-    vouchers: 2,
-    completed: false,
-    ...overrides,
-  }
-}
-
-function account(
-  summary: Partial<VoucherAccount['summary']> = {},
-  shifts: VoucherShift[] = [],
-): VoucherAccount {
+function account(summary: Partial<VoucherAccount['summary']> = {}): VoucherAccount {
   return {
     summary: {
       user_id: 'u1',
@@ -47,7 +25,7 @@ function account(
       available: 4,
       ...summary,
     },
-    shifts,
+    shifts: [],
     entries: [],
   }
 }
@@ -56,7 +34,6 @@ function mountCard(props: Record<string, unknown> = {}) {
   return mount(DashboardVoucherCard, {
     props: {
       account: account(),
-      now: NOW,
       eventId: 'e1',
       expired: false,
       canShowCode: true,
@@ -71,66 +48,40 @@ beforeEach(() => {
 })
 
 describe('DashboardVoucherCard', () => {
-  it('shows what is available, earned and used', () => {
+  it('shows what is available, earned, used and corrected in the shared block', () => {
     const w = mountCard()
     expect(w.find('[data-testid="dashboard-voucher-available"]').text()).toBe('4')
-    expect(w.text()).toContain('Earned')
-    expect(w.text()).toContain('6')
-    expect(w.text()).toContain('Used')
+    const block = w.find('[data-testid="voucher-balance"]')
+    expect(block.find('[data-testid="voucher-available"]').text()).toBe('4')
+    expect(block.find('[data-testid="voucher-earned"]').text()).toBe('6')
+    expect(block.find('[data-testid="voucher-used"]').text()).toBe('2')
+    // A correction tile even at 0, as on "My vouchers", so the sum always adds up.
+    expect(block.find('[data-testid="voucher-adjusted"]').text()).toBe('0')
+  })
+
+  it('signs a correction', () => {
+    const tile = (adjusted: number) =>
+      mountCard({ account: account({ adjusted }) })
+        .find('[data-testid="voucher-adjusted"]')
+        .text()
+    expect(tile(2)).toBe('+2')
+    expect(tile(-1)).toBe('−1')
   })
 
   it('says nothing about upcoming vouchers when none are due', () => {
     const w = mountCard()
     expect(w.find('[data-testid="dashboard-voucher-available-short"]').text()).toBe('available')
-    expect(w.find('[data-testid="dashboard-voucher-upcoming"]').exists()).toBe(false)
+    expect(w.find('[data-testid="voucher-upcoming"]').exists()).toBe(false)
   })
 
-  it('says "after your shift today" when every upcoming voucher is from today', () => {
-    const w = mountCard({ account: account({ upcoming: 2 }, [voucherShift()]) })
+  it('says what is still to come in the words of "My vouchers"', () => {
+    const w = mountCard({ account: account({ upcoming: 2 }) })
     expect(w.find('[data-testid="dashboard-voucher-available-short"]').text()).toBe(
       'available, +2 to come',
     )
-    expect(w.find('[data-testid="dashboard-voucher-upcoming"]').text()).toBe(
-      '+2 more after your shift today',
+    expect(w.find('[data-testid="voucher-upcoming"]').text()).toBe(
+      '2 more to come from booked shifts',
     )
-  })
-
-  it('says "shifts" when today holds more than one', () => {
-    const w = mountCard({
-      account: account({ upcoming: 3 }, [
-        voucherShift(),
-        voucherShift({ booking_id: 'b2', shift_id: 's2', vouchers: 1 }),
-      ]),
-    })
-    expect(w.find('[data-testid="dashboard-voucher-upcoming"]').text()).toBe(
-      '+3 more after your shifts today',
-    )
-  })
-
-  it('falls back to the plain line when some upcoming vouchers are another day’s', () => {
-    const w = mountCard({
-      account: account({ upcoming: 4 }, [
-        voucherShift(),
-        voucherShift({ booking_id: 'b2', date: '2026-07-19' }),
-      ]),
-    })
-    expect(w.find('[data-testid="dashboard-voucher-upcoming"]').text()).toBe(
-      '4 more for shifts you have booked',
-    )
-  })
-
-  it('shows corrections only when there are any', () => {
-    expect(mountCard().find('[data-testid="dashboard-voucher-adjusted"]').exists()).toBe(false)
-    expect(
-      mountCard({ account: account({ adjusted: 2 }) })
-        .find('[data-testid="dashboard-voucher-adjusted"]')
-        .text(),
-    ).toContain('+2')
-    expect(
-      mountCard({ account: account({ adjusted: -1 }) })
-        .find('[data-testid="dashboard-voucher-adjusted"]')
-        .text(),
-    ).toContain('-1')
   })
 
   it('shows the code on request, disables it with nothing to show, and hides it after the event', async () => {

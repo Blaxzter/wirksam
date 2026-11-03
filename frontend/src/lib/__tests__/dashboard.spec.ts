@@ -22,7 +22,6 @@ import {
   shiftCountdown,
   shiftHeadline,
   twelveHourFormatter,
-  upcomingToday,
   voucherShiftsDueKey,
 } from '@/lib/dashboard'
 
@@ -371,23 +370,6 @@ describe('attentionItems', () => {
     expect(attentionItems({ empty_shifts_soon: 0, short_shifts_soon: 3 })).toEqual([
       { key: 'short', count: 3, tone: 'warning', days: 7 },
     ])
-  })
-})
-
-describe('upcomingToday', () => {
-  it('sums the vouchers of today’s shifts that are still to come', () => {
-    const shifts = [
-      { date: '2026-07-18', completed: false, vouchers: 2 },
-      { date: '2026-07-18', completed: false, vouchers: 1 },
-      { date: '2026-07-18', completed: true, vouchers: 2 },
-      { date: '2026-07-18', completed: false, vouchers: 0 },
-      { date: '2026-07-19', completed: false, vouchers: 2 },
-    ]
-    expect(upcomingToday(shifts, at(9))).toEqual({ vouchers: 3, shifts: 2 })
-  })
-
-  it('is zero with nothing today', () => {
-    expect(upcomingToday([], at(9))).toEqual({ vouchers: 0, shifts: 0 })
   })
 })
 
