@@ -442,7 +442,7 @@ const navAdmin = computed(() => {
       <RouterLink
         :to="{ name: 'changelog' }"
         data-testid="sidebar-version-link"
-        class="inline-flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors pb-1 event-data-[collapsible=icon]:hidden"
+        class="inline-flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors pb-1 group-data-[collapsible=icon]:hidden"
       >
         <span>WirkSam {{ appVersion }}</span>
         <span v-if="hasNewVersions" class="size-1.5 rounded-full bg-primary" />

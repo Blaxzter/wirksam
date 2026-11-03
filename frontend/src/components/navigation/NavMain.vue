@@ -141,7 +141,7 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
           </SidebarMenuButton>
         </SidebarMenuItem>
 
-        <!-- Collapsible event (has sub-items) — split: left navigates, right toggles -->
+        <!-- Collapsible group (has sub-items) — split: left navigates, right toggles -->
         <Collapsible v-else as-child :default-open="item.isActive" class="group/collapsible">
           <SidebarMenuItem>
             <SidebarSplitButton :is-active="isRouteActive(item.routeName)">

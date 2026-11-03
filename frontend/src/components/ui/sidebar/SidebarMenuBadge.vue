@@ -19,7 +19,7 @@ const props = defineProps<{
         'peer-data-[size=sm]/menu-button:top-1',
         'peer-data-[size=default]/menu-button:top-1.5',
         'peer-data-[size=lg]/menu-button:top-2.5',
-        'event-data-[collapsible=icon]:hidden',
+        'group-data-[collapsible=icon]:hidden',
         props.class,
       )
     "
