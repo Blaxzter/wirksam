@@ -594,14 +594,12 @@
     "shifts": {
         "availability": "{current} / {max} gebucht",
         "available": "Verfügbar",
-        "book": "Dienstschicht buchen",
         "create": "Dienstschicht erstellen",
         "created": "Schicht hinzugefügt.",
         "delete": "Dienstschicht löschen",
         "deleteConfirm": "Möchtest du diese Schicht wirklich löschen?",
         "deleted": "Schicht gelöscht.",
         "detail": {
-            "booked": "Gebucht",
             "bookedAt": "Gebucht am",
             "bookedUsers": "Gebuchte Benutzer",
             "capacity": "Kapazität",
@@ -610,7 +608,6 @@
             "clashesWithMine": "Überschneidet sich mit einer Ihrer Schichten",
             "date": "Datum",
             "description": "Beschreibung",
-            "freeSlots": "Noch 1 Platz frei | Noch {count} Plätze frei",
             "fullyBooked": "Ausgebucht",
             "location": "Ort",
             "myNotes": "Meine Anmerkungen",
@@ -621,12 +618,15 @@
             "openBookingDetails": "Buchungsdetails öffnen",
             "openDetails": "Details anzeigen",
             "over": "Diese Schicht ist vorbei.",
+            "placeAndPlan": "Ort und Lageplan",
+            "signMeUp": "Mich eintragen",
             "task": "Aufgabe",
             "time": "Zeit",
             "title": "Schicht-Details",
             "userName": "Name",
             "userNotes": "Anmerkungen",
-            "viewTask": "Aufgabe anzeigen"
+            "viewTask": "Aufgabe anzeigen",
+            "youInList": "du"
         },
         "edit": "Dienstschicht bearbeiten",
         "empty": "Noch keine Dienstschichten für diese Aufgabe.",
@@ -642,6 +642,22 @@
         },
         "full": "Ausgebucht",
         "pickDate": "Datum auswählen",
+        "roster": {
+            "call": "{name} anrufen",
+            "colContact": "Kontakt",
+            "colPerson": "Person",
+            "colSince": "Dabei seit",
+            "count": "{taken} von {max}",
+            "countFree": "{taken} von {max}, 1 Platz frei | {taken} von {max}, {n} Plätze frei",
+            "email": "{name} eine E-Mail schreiben",
+            "free": "1 Platz frei | {n} Plätze frei",
+            "noNumber": "keine Nummer",
+            "nobody": "Niemand hat sich eingetragen.",
+            "since": "seit {date} dabei",
+            "tableLabel": "Wer dabei ist",
+            "title": "Dabei",
+            "you": "Du"
+        },
         "title": "Dienstschicht"
     },
     "tasks": {

@@ -380,6 +380,7 @@ onMounted(loadTasks)
       :task-name="selectedShiftTaskName"
       :vouchers-per-shift="selectedShiftTask?.vouchers_per_shift ?? 0"
       :can-manage-task="selectedShiftTask?.can_manage ?? false"
+      :managers="selectedShiftTask?.managers"
       :open="showShiftDialog"
       @update:open="showShiftDialog = $event"
       @booking-updated="loadTasks"

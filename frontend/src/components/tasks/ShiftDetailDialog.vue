@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { ChevronRight, EllipsisVertical, ExternalLink, Lock, MapPin, Tag, Users } from '@lucide/vue'
+import {
+  ChevronDown,
+  EllipsisVertical,
+  ExternalLink,
+  Lock,
+  Map as MapIcon,
+  MapPin,
+  Tag,
+  Ticket,
+} from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -9,10 +19,11 @@ import { toast } from 'vue-sonner'
 import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { avatarUrlFor } from '@/composables/useAvatarUrl'
 import { useDialog } from '@/composables/useDialog'
 import { useFormatters } from '@/composables/useFormatters'
 
-import Badge from '@/components/ui/badge/Badge.vue'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Button from '@/components/ui/button/Button.vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
@@ -22,16 +33,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  RESPONSIVE_DIALOG_MOBILE_QUERY,
   ResponsiveDialog,
   ResponsiveDialogBody,
+  ResponsiveDialogClose,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
   ResponsiveDialogFooter,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from '@/components/ui/responsive-dialog'
-import Separator from '@/components/ui/separator/Separator.vue'
 
+import { joinNames } from '@/components/events/teams/teamHelpers'
 import LocationDescription from '@/components/locations/LocationDescription.vue'
 import ShiftRoster from '@/components/tasks/ShiftRoster.vue'
 import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
@@ -42,8 +55,11 @@ import type {
   LocationDetailRead,
   ShiftBookingEntry,
   ShiftRead,
+  TaskManagerBrief,
+  TaskRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { initials } from '@/lib/format'
 import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
 
 const props = withDefaults(
@@ -67,9 +83,20 @@ const props = withDefaults(
     vouchersPerShift?: number | null
     /** The viewer is an organiser or in charge of the task. */
     canManageTask?: boolean
+    /**
+     * Who is in charge of the task. Omitted, the dialog reads the task itself,
+     * which also fills in its vouchers and whether the viewer runs it.
+     */
+    managers?: TaskManagerBrief[]
     open: boolean
   }>(),
-  { showTaskLink: true, priority: false, vouchersPerShift: null, canManageTask: false },
+  {
+    showTaskLink: true,
+    priority: false,
+    vouchersPerShift: null,
+    canManageTask: false,
+    managers: undefined,
+  },
 )
 
 const emit = defineEmits<{
@@ -79,8 +106,9 @@ const emit = defineEmits<{
   'team-joined': [status: 'approved' | 'pending']
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { formatTimeRange, formatDateLabel } = useFormatters()
+const isPhone = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
 const router = useRouter()
 const { get, post, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
@@ -162,8 +190,9 @@ watch(
 )
 
 // --- Location details ---
-// Descriptions up to this length start expanded; longer ones would push the
-// roster out of view, so they start folded.
+// "Location and site plan", below the roster: how to get there, who to ask and
+// where on the map. Descriptions up to this length start expanded; a longer
+// one starts folded, so the plan under it stays in reach.
 const SHORT_DESCRIPTION = 280
 
 const locationDetail = ref<LocationDetailRead | null>(null)
@@ -174,6 +203,7 @@ const locationHasDetails = computed(() => {
   return !!(l && (l.description?.trim() || l.address || l.map_url || l.contact))
 })
 const locationPin = computed(() => locationDetail.value?.pins?.[0] ?? null)
+const showLocation = computed(() => locationHasDetails.value || !!locationPin.value)
 
 watch(
   () => (props.open ? (resolvedShift.value?.location_id ?? null) : null),
@@ -197,6 +227,69 @@ watch(
   { immediate: true },
 )
 
+// --- The task behind it ---
+// Callers on the task page and the task list hand over the people in charge;
+// the dashboard and the map only know the shift, so the dialog reads the task
+// for them. Failing that (an archived task a booker reopens, say) costs only
+// the "In charge" line.
+const fetchedTask = ref<TaskRead | null>(null)
+
+watch(
+  () =>
+    props.open && props.managers === undefined ? (resolvedShift.value?.task_id ?? null) : null,
+  async (taskId) => {
+    if (!taskId) {
+      fetchedTask.value = null
+      return
+    }
+    if (fetchedTask.value?.id === taskId) return
+    try {
+      const res = await get<{ data: TaskRead }>({ url: `/tasks/${taskId}` })
+      if ((resolvedShift.value?.task_id ?? null) !== taskId) return
+      fetchedTask.value = res.data
+    } catch {
+      fetchedTask.value = null
+    }
+  },
+  { immediate: true },
+)
+
+const taskManagers = computed(() => props.managers ?? fetchedTask.value?.managers ?? [])
+const voucherCount = computed(
+  () => props.vouchersPerShift ?? fetchedTask.value?.vouchers_per_shift ?? null,
+)
+const canManage = computed(() => props.canManageTask || !!fetchedTask.value?.can_manage)
+
+const myId = computed(() => authStore.profile?.id ?? authStore.user?.id ?? null)
+
+/** Others first, the viewer last: "Mira Lindqvist and you". */
+const managersInOrder = computed(() => {
+  const me = myId.value
+  return [
+    ...taskManagers.value.filter((m) => m.user_id !== me),
+    ...taskManagers.value.filter((m) => m.user_id === me),
+  ]
+})
+
+const managerNames = computed(() => {
+  const me = myId.value
+  const others = managersInOrder.value.filter((m) => m.user_id !== me).map((m) => m.name || '?')
+  const mine = managersInOrder.value.length > others.length
+  if (mine && others.length === 0) return t('duties.tasks.managers.you')
+  return joinNames(mine ? [...others, t('duties.shifts.detail.youInList')] : others, locale.value)
+})
+
+/** Three faces at most, the viewer's among them; the names say the rest. */
+const managerFaces = computed(() => {
+  const all = managersInOrder.value
+  if (all.length <= 3) return all
+  const mine = all.filter((m) => m.user_id === myId.value)
+  return [...all.filter((m) => m.user_id !== myId.value).slice(0, 3 - mine.length), ...mine]
+})
+
+const managerAvatar = (m: TaskManagerBrief) =>
+  avatarUrlFor({ id: m.user_id, avatar_etag: m.avatar_etag ?? null })
+
 /**
  * What the shift *is*, in the reader's terms.
  *
@@ -212,16 +305,16 @@ const headline = computed(
 const capacity = computed(() => resolvedShift.value?.max_bookings ?? 1)
 const bookedCount = computed(() => resolvedShift.value?.current_bookings ?? 0)
 
-/** "Thu, 27 Aug 2026 · 09:00 – 11:00" — the one line people actually scan for. */
+/**
+ * "Saturday, 18 July · 14:00 – 17:00" — the one line people actually scan for.
+ * The year only when it isn't this one.
+ */
 const whenLine = computed(() => {
   const s = resolvedShift.value
   if (!s) return loadingShift.value ? t('common.states.loading') : (props.taskName ?? '')
-  const date = formatDateLabel(s.date, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' }
+  if (Number(s.date.slice(0, 4)) !== new Date().getFullYear()) options.year = 'numeric'
+  const date = formatDateLabel(s.date, options)
   const time = formatTimeRange(s.start_time, s.end_time)
   return time ? `${date} · ${time}` : date
 })
@@ -274,8 +367,8 @@ const startedForVouchers = computed(() => {
   const s = resolvedShift.value
   return (
     !!s &&
-    (props.vouchersPerShift ?? 0) > 0 &&
-    !props.canManageTask &&
+    (voucherCount.value ?? 0) > 0 &&
+    !canManage.value &&
     shiftHasStarted(s.date, s.start_time)
   )
 })
@@ -346,120 +439,194 @@ const navigateToBooking = () => {
     router.push({ name: 'booking-detail', params: { bookingId: booking.id } })
   }
 }
+
+// --- Presentation ---
+const chipClass =
+  'flex min-h-[30px] max-w-full min-w-0 items-center gap-1.5 rounded-full bg-muted px-2.5 text-[13px] font-semibold'
+
+const earns = computed(() => (voucherCount.value ?? 0) > 0)
+const facts = computed(
+  () =>
+    !!resolvedShift.value?.location ||
+    (!!resolvedShift.value?.category && !isPhone.value) ||
+    earns.value,
+)
+
+/** A footer note fills the row on a phone and sits left of the buttons on a desktop. */
+const noteClass = computed(() =>
+  isPhone.value ? 'flex-1 text-sm text-muted-foreground' : 'text-sm text-muted-foreground',
+)
+
+/** Thumb-sized and full width on a phone; a 44px row on a desktop. */
+const actionClass = computed(() =>
+  isPhone.value
+    ? 'h-[50px] flex-1 rounded-xl text-base font-bold'
+    : 'h-11 rounded-xl px-[18px] font-bold',
+)
 </script>
 
 <template>
   <ResponsiveDialog v-model:open="dialogOpen">
     <ResponsiveDialogContent
       data-testid="dialog-shift-detail"
-      dialog-class="sm:max-w-lg"
+      class="bg-card"
+      dialog-class="rounded-[20px] sm:max-w-[620px]"
+      drawer-class="rounded-t-[22px] data-[swipe-direction=down]:max-h-[calc(100dvh-2.25rem)]"
       :priority="priority"
     >
-      <ResponsiveDialogHeader>
-        <div class="flex items-start justify-between gap-3">
-          <ResponsiveDialogTitle data-testid="shift-detail-title">{{
-            headline
-          }}</ResponsiveDialogTitle>
-          <Badge v-if="resolvedShift" variant="secondary" class="mt-0.5 shrink-0">
-            <Users />
-            {{ bookedCount }}/{{ capacity }}
-          </Badge>
-        </div>
-        <ResponsiveDialogDescription>{{ whenLine }}</ResponsiveDialogDescription>
+      <ResponsiveDialogHeader :class="isPhone ? 'gap-0.5 pt-2.5' : 'gap-1 px-7 pt-[26px] pb-5'">
+        <ResponsiveDialogTitle
+          data-testid="shift-detail-title"
+          class="text-[22px] leading-tight font-bold"
+        >
+          {{ headline }}
+        </ResponsiveDialogTitle>
+        <ResponsiveDialogDescription class="text-[15px] text-foreground/80 tabular-nums">
+          {{ whenLine }}
+        </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
 
-      <ResponsiveDialogBody class="space-y-4 pb-4">
-        <p v-if="loadingShift" class="text-muted-foreground py-8 text-center text-sm">
+      <ResponsiveDialogBody
+        class="flex flex-col"
+        :class="isPhone ? 'gap-[18px] pt-1 pb-4' : 'gap-5 px-7 pb-2'"
+      >
+        <p v-if="loadingShift" class="py-8 text-center text-sm text-muted-foreground">
           {{ t('common.states.loading') }}
         </p>
 
         <template v-else-if="resolvedShift">
-          <!--
-            Where and what, inline. These were two of five icon/label/value
-            blocks that stacked full-width on a phone and pushed the roster —
-            the part that changes — below the fold.
-          -->
-          <div
-            v-if="resolvedShift.location || resolvedShift.category"
-            class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm"
-          >
-            <span v-if="resolvedShift.location" class="flex min-w-0 items-center gap-1.5">
-              <MapPin class="text-muted-foreground size-4 shrink-0" />
+          <!-- Where, what, and what it earns: a row of chips that wraps -->
+          <ul v-if="facts" class="flex flex-wrap gap-1.5" data-testid="shift-detail-facts">
+            <li v-if="resolvedShift.location" :class="chipClass">
+              <MapPin class="size-3.5 shrink-0" aria-hidden="true" />
               <span class="truncate">{{ resolvedShift.location }}</span>
-            </span>
-            <span v-if="resolvedShift.category" class="flex min-w-0 items-center gap-1.5">
-              <Tag class="text-muted-foreground size-4 shrink-0" />
+            </li>
+            <!-- A phone keeps the chips to one row; the category is the one to go -->
+            <li v-if="resolvedShift.category && !isPhone" :class="chipClass">
+              <Tag class="size-3.5 shrink-0" aria-hidden="true" />
               <span class="truncate">{{ resolvedShift.category }}</span>
-            </span>
-          </div>
+            </li>
+            <li v-if="earns" :class="chipClass" data-testid="shift-detail-vouchers">
+              <Ticket class="size-3.5 shrink-0" aria-hidden="true" />
+              {{ t('vouchers.task.perPerson', { n: voucherCount }, voucherCount ?? 0) }}
+            </li>
+          </ul>
 
           <p v-if="resolvedShift.description" class="text-sm whitespace-pre-line">
             {{ resolvedShift.description }}
           </p>
 
-          <!-- The place itself: how to get there, who to ask, where on the map -->
-          <Collapsible
-            v-if="locationDetail && locationHasDetails"
-            v-model:open="locationDetailsOpen"
-            class="rounded-md border"
-            data-testid="shift-location-details"
+          <!-- Who runs it: faces, then names, the viewer last as "you" -->
+          <section
+            v-if="managersInOrder.length > 0"
+            aria-labelledby="shift-in-charge-title"
+            class="flex items-center gap-3 rounded-[14px] bg-muted/60 px-3.5 py-3"
+            data-testid="shift-in-charge"
           >
-            <CollapsibleTrigger as-child>
-              <button
-                type="button"
-                class="hover:bg-muted/50 focus-visible:ring-ring/50 flex w-full items-center gap-1.5 rounded-md px-3 py-2 text-left text-sm font-medium outline-none focus-visible:ring-[3px]"
+            <span class="flex shrink-0" aria-hidden="true">
+              <Avatar
+                v-for="(m, i) in managerFaces"
+                :key="m.user_id"
+                class="size-[34px] border-2 border-card"
+                :class="i > 0 ? '-ml-2.5' : ''"
               >
-                <ChevronRight
-                  class="text-muted-foreground size-4 shrink-0 transition-transform"
-                  :class="{ 'rotate-90': locationDetailsOpen }"
-                />
-                {{ t('locations.details.title') }}
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div class="px-3 pb-3">
-                <LocationDescription :location="locationDetail" />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          <!-- Following the link leaves this dialog behind, so close it. -->
-          <div
-            v-if="locationDetail && locationPin"
-            data-testid="shift-mini-map"
-            @click="dialogOpen = false"
-          >
-            <VenueMiniMap
-              :event-id="locationDetail.event_id"
-              :pin="locationPin"
-              :location-id="locationDetail.id"
-            />
-          </div>
-
-          <!-- Extensibility shift: future fields (materials, protection, etc.) go here -->
-          <slot name="extra-details" />
-
-          <Separator />
+                <AvatarImage v-if="managerAvatar(m)" :src="managerAvatar(m)!" alt="" />
+                <AvatarFallback
+                  class="text-xs font-bold"
+                  :class="
+                    m.user_id === myId
+                      ? 'bg-primary/15 text-primary'
+                      : 'bg-accent text-accent-foreground'
+                  "
+                >
+                  {{ initials(m.name || '?') }}
+                </AvatarFallback>
+              </Avatar>
+            </span>
+            <div class="min-w-0 flex-1">
+              <h3
+                id="shift-in-charge-title"
+                class="text-xs font-bold tracking-[0.05em] text-muted-foreground uppercase"
+              >
+                {{ t('duties.tasks.managers.label') }}
+              </h3>
+              <p class="text-[15px] font-semibold" data-testid="shift-in-charge-names">
+                {{ managerNames }}
+              </p>
+            </div>
+          </section>
 
           <ShiftRoster
             :bookings="shiftBookings"
             :capacity="capacity"
             :loading="loadingBookings"
             :hide-free="hasEnded"
+            :compact="isPhone"
+            :my-id="myId"
           />
+
+          <!-- The place itself: how to get there, who to ask, where on the map -->
+          <Collapsible
+            v-if="locationDetail && showLocation"
+            v-model:open="locationDetailsOpen"
+            class="rounded-[14px] border bg-card"
+            data-testid="shift-location-details"
+          >
+            <CollapsibleTrigger as-child>
+              <button
+                type="button"
+                class="flex min-h-12 w-full items-center gap-2.5 rounded-[14px] px-3.5 text-left text-[15px] font-semibold outline-none hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 md:min-h-[46px]"
+              >
+                <MapIcon class="size-[18px] shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span class="flex-1">
+                  {{
+                    locationPin
+                      ? t('duties.shifts.detail.placeAndPlan')
+                      : t('locations.details.title')
+                  }}
+                </span>
+                <ChevronDown
+                  class="size-4 shrink-0 text-muted-foreground transition-transform"
+                  :class="{ 'rotate-180': locationDetailsOpen }"
+                  aria-hidden="true"
+                />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div class="flex flex-col gap-3 px-3.5 pb-3.5">
+                <LocationDescription v-if="locationHasDetails" :location="locationDetail" />
+                <!-- Following the link leaves this dialog behind, so close it. -->
+                <div v-if="locationPin" data-testid="shift-mini-map" @click="dialogOpen = false">
+                  <VenueMiniMap
+                    :event-id="locationDetail.event_id"
+                    :pin="locationPin"
+                    :location-id="locationDetail.id"
+                  />
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <!-- Extensibility shift: future fields (materials, protection, etc.) go here -->
+          <slot name="extra-details" />
 
           <!-- Extensibility shift: additional sections below the table -->
           <slot name="extra-sections" />
         </template>
       </ResponsiveDialogBody>
 
-      <ResponsiveDialogFooter v-if="resolvedShift" data-testid="shift-detail-footer" layout="row">
+      <ResponsiveDialogFooter
+        v-if="resolvedShift"
+        data-testid="shift-detail-footer"
+        layout="row"
+        :class="isPhone ? 'pb-[max(1.25rem,env(safe-area-inset-bottom))]' : 'px-7 pt-5 pb-6'"
+      >
         <DropdownMenu v-if="hasMenuItems">
           <DropdownMenuTrigger as-child>
             <Button
               variant="outline"
               size="icon"
-              class="size-10 md:size-9"
+              :class="isPhone ? 'size-[50px] rounded-xl' : 'size-11 rounded-xl'"
               :aria-label="t('common.actions.moreActions')"
             >
               <EllipsisVertical class="size-4" />
@@ -479,41 +646,34 @@ const navigateToBooking = () => {
 
         <!--
           The action fills the row on a phone so it sits under the thumb, and
-          keeps its natural width beside a spacer on a desktop dialog.
+          keeps its natural width at the right of a desktop dialog.
         -->
-        <div class="hidden flex-1 md:block" />
+        <div v-if="!isPhone" class="flex-1" />
 
-        <p
-          v-if="hasEnded && !resolvedMyBooking"
-          data-testid="shift-over-note"
-          class="text-muted-foreground flex-1 text-sm md:flex-none"
-        >
+        <p v-if="hasEnded && !resolvedMyBooking" data-testid="shift-over-note" :class="noteClass">
           {{ t('duties.shifts.detail.over') }}
         </p>
         <p
           v-else-if="startedForVouchers && !resolvedMyBooking"
           data-testid="shift-started-note"
-          class="text-muted-foreground flex-1 text-sm md:flex-none"
+          :class="noteClass"
         >
           {{ t('vouchers.task.startedNote') }}
         </p>
-        <p
-          v-else-if="isShiftFull && !resolvedMyBooking"
-          class="text-muted-foreground flex-1 text-sm md:flex-none"
-        >
+        <p v-else-if="isShiftFull && !resolvedMyBooking" :class="noteClass">
           {{ t('duties.shifts.detail.fullyBooked') }}
         </p>
         <p
           v-else-if="clashesWithMine"
           data-testid="shift-clash-note"
-          class="text-destructive flex-1 text-sm md:flex-none"
+          :class="[noteClass, 'text-destructive']"
         >
           {{ t('duties.shifts.detail.clashesWithMine') }}
         </p>
         <template v-else-if="lockedByTeam && resolvedShift?.team_id">
           <p
             data-testid="shift-team-note"
-            class="text-muted-foreground flex min-w-0 flex-1 items-center gap-1.5 text-sm md:flex-none"
+            :class="[noteClass, 'flex min-w-0 items-center gap-1.5']"
           >
             <Lock class="size-3.5 shrink-0" aria-hidden="true" />
             {{
@@ -528,26 +688,32 @@ const navigateToBooking = () => {
             :team-name="resolvedShift.team_name ?? ''"
             :requires-approval="resolvedShift.team_requires_approval ?? true"
             :my-status="joinedStatus ?? resolvedShift.my_team_status"
-            class="h-10 flex-1 md:h-9 md:flex-none"
+            :class="actionClass"
             priority
             @joined="onTeamJoined"
           />
         </template>
 
+        <ResponsiveDialogClose v-if="!isPhone" as-child>
+          <Button variant="outline" :class="[actionClass, 'font-semibold']">
+            {{ t('common.actions.close') }}
+          </Button>
+        </ResponsiveDialogClose>
+
         <Button
           v-if="canBook"
           data-testid="btn-book-shift"
-          class="h-10 flex-1 md:h-9 md:flex-none"
+          :class="actionClass"
           :disabled="bookingInProgress"
           @click="handleBook"
         >
-          {{ t('duties.shifts.book') }}
+          {{ t('duties.shifts.detail.signMeUp') }}
         </Button>
         <Button
           v-if="resolvedMyBooking && !hasEnded"
           data-testid="btn-cancel-shift-booking"
           variant="destructive"
-          class="h-10 flex-1 md:h-9 md:flex-none"
+          :class="actionClass"
           :disabled="bookingInProgress"
           @click="handleCancelBooking"
         >

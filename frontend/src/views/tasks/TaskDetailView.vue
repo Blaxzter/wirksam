@@ -1660,6 +1660,7 @@ onMounted(async () => {
       :show-task-link="false"
       :vouchers-per-shift="task?.vouchers_per_shift ?? 0"
       :can-manage-task="canManageTask"
+      :managers="task?.managers ?? []"
       :my-booking="selectedShift ? (getBookingForShift(selectedShift.id) ?? null) : null"
       @booking-updated="reloadShiftsAndBookings"
       @team-joined="onTeamJoined"

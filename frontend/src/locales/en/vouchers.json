@@ -161,6 +161,7 @@
         "noneEarned": "Shifts here earn no vouchers.",
         "notPoint": "Vouchers aren't taken here.",
         "notPointShort": "Not a place to redeem",
+        "perPerson": "{n} voucher per person | {n} vouchers per person",
         "perShift": "{n} voucher per shift | {n} vouchers per shift",
         "perShiftCaption": "per shift, once it's over",
         "perShiftShort": "per shift",

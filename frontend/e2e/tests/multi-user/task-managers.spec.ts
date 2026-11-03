@@ -24,6 +24,7 @@ import {
   addMember,
   api,
   apiStatus,
+  bookShift,
   createEvent,
   createTaskWithShifts,
   deleteEvent,
@@ -205,6 +206,38 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toHaveCount(0)
   // With the shifts theirs again, each batch's own edit takes over.
   await expect(disposablePage.getByTestId('btn-edit-task')).toHaveCount(0)
+})
+
+test('a person in charge opens a shift and sees who is on it and how to reach them', async ({
+  adminPage,
+  adminUser,
+  disposablePage,
+  disposableUser,
+}) => {
+  await api(adminPage, 'POST', `/tasks/${task.id}/managers`, { user_id: disposableUser.id })
+  const [shift] = await listShifts(adminPage, task.id)
+  const booking = await bookShift(adminPage, shift.id)
+  await api(adminPage, 'PATCH', `/bookings/${booking.id}`, { notes: 'Bringing the till key.' })
+
+  await disposablePage.goto(`/app/tasks/${task.id}`)
+  await disposablePage.getByTestId(`shift-card-${shift.id}`).click()
+
+  const dialog = disposablePage.getByTestId('dialog-shift-detail')
+  await expect(dialog.getByTestId('shift-in-charge-names')).toHaveText('You')
+  await expect(dialog.getByTestId('shift-roster-count')).toHaveText('1 of 2, 1 place free')
+
+  // The organiser's booking, with what only those who run the task get to see.
+  const row = dialog.getByTestId('shift-roster-entry')
+  await expect(row).toHaveCount(1)
+  await expect(row.getByTestId('shift-roster-note')).toHaveText('Bringing the till key.')
+  await expect(row.getByTestId('shift-roster-email')).toHaveAttribute(
+    'href',
+    `mailto:${adminUser.email}`,
+  )
+  await expect(dialog.getByTestId('shift-roster-free')).toContainText('1 place free')
+
+  // And they can take a place themselves.
+  await expect(dialog.getByTestId('btn-book-shift')).toHaveText('Sign me up')
 })
 
 test('a person in charge steps down from the task page', async ({

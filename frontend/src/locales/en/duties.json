@@ -594,14 +594,12 @@
     "shifts": {
         "availability": "{current} / {max} booked",
         "available": "Available",
-        "book": "Book this shift",
         "create": "Create Duty Shift",
         "created": "Shift added.",
         "delete": "Delete Duty Shift",
         "deleteConfirm": "Are you sure you want to delete this duty shift?",
         "deleted": "Shift deleted.",
         "detail": {
-            "booked": "Booked",
             "bookedAt": "Booked at",
             "bookedUsers": "Booked Users",
             "capacity": "Capacity",
@@ -610,7 +608,6 @@
             "clashesWithMine": "Clashes with one of your shifts",
             "date": "Date",
             "description": "Description",
-            "freeSlots": "1 spot still free | {count} spots still free",
             "fullyBooked": "Fully booked",
             "location": "Location",
             "myNotes": "My Notes",
@@ -621,12 +618,15 @@
             "openBookingDetails": "Open booking details",
             "openDetails": "View details",
             "over": "This shift is over.",
+            "placeAndPlan": "Location and site plan",
+            "signMeUp": "Sign me up",
             "task": "Task",
             "time": "Time",
             "title": "Shift Details",
             "userName": "Name",
             "userNotes": "Notes",
-            "viewTask": "View Task"
+            "viewTask": "View Task",
+            "youInList": "you"
         },
         "edit": "Edit Duty Shift",
         "empty": "No duty shifts for this task yet.",
@@ -642,6 +642,22 @@
         },
         "full": "Fully booked",
         "pickDate": "Pick a date",
+        "roster": {
+            "call": "Call {name}",
+            "colContact": "Contact",
+            "colPerson": "Person",
+            "colSince": "Signed up",
+            "count": "{taken} of {max}",
+            "countFree": "{taken} of {max}, 1 place free | {taken} of {max}, {n} places free",
+            "email": "Email {name}",
+            "free": "1 place free | {n} places free",
+            "noNumber": "no number",
+            "nobody": "Nobody signed up.",
+            "since": "signed up {date}",
+            "tableLabel": "Who is signed up",
+            "title": "Signed up",
+            "you": "You"
+        },
         "title": "Duty Shift"
     },
     "tasks": {

@@ -161,6 +161,7 @@
         "noneEarned": "Schichten hier bringen keine Marken.",
         "notPoint": "Hier werden keine Marken angenommen.",
         "notPointShort": "Hier keine Einlösestelle",
+        "perPerson": "{n} Marke pro Person | {n} Marken pro Person",
         "perShift": "{n} Marke pro Schicht | {n} Marken pro Schicht",
         "perShiftCaption": "pro Schicht, sobald sie vorbei ist",
         "perShiftShort": "pro Schicht",
