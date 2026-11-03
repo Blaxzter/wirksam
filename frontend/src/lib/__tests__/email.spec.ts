@@ -25,6 +25,8 @@ describe('looksLikeEmail', () => {
     ['a dot at the end', 'jonas@example.'],
     ['a dot at the start of the domain', 'jonas@.org'],
     ['a space inside', 'jonas weber@example.org'],
+    ['two dots in a row in the domain', 'anna@b..de'],
+    ['two dots in a row before the @', 'anna..maria@example.org'],
   ])('rejects %s', (_label, text) => {
     expect(looksLikeEmail(text)).toBe(false)
   })

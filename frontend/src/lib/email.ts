@@ -3,12 +3,13 @@
  *
  * Deliberately loose: it only decides whether a picker offers "Invite … by
  * e-mail". One `@` with something before it, a domain with a dot that neither
- * starts nor ends it, and no spaces. The server validates the address
- * properly and answers with a message when it disagrees.
+ * starts nor ends it, no two dots in a row, and no spaces. The server
+ * validates the address properly and answers with a message when it
+ * disagrees.
  */
 export function looksLikeEmail(text: string): boolean {
   const value = text.trim()
-  if (!value || /\s/.test(value)) return false
+  if (!value || /\s/.test(value) || value.includes('..')) return false
   const at = value.indexOf('@')
   if (at <= 0 || at !== value.lastIndexOf('@')) return false
   const domain = value.slice(at + 1)

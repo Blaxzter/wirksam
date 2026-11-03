@@ -53,7 +53,7 @@ import type {
   EventRead,
   TaskCreateWithShiftsResponse,
 } from '@/client/types.gen'
-import { toastApiError } from '@/lib/api-errors'
+import { normalizeApiError, toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
 const { formatDateLabel } = useFormatters()
@@ -76,6 +76,10 @@ const teamId = ref<string | null>(null)
 const managers = ref<EventMemberRead[]>([])
 /** Addresses to invite to be in charge, typed into the same field. */
 const managerEmails = ref<string[]>([])
+/** Addresses the server refused as no address at all; their chips are marked. */
+const refusedEmails = ref<string[]>([])
+/** As many as `manager_emails` takes in one create (`TaskCreateWithShifts`). */
+const MAX_MANAGER_EMAILS = 20
 // Vouchers: how many a shift earns and whether the task takes them.
 const vouchersPerShift = ref(0)
 const isVoucherPoint = ref(false)
@@ -189,6 +193,7 @@ watch(locationEventId, () => {
   // So do the people who can be put in charge.
   managers.value = []
   managerEmails.value = []
+  refusedEmails.value = []
 })
 
 // The chosen event's roster, to pick people in charge from.
@@ -221,31 +226,64 @@ function removeManager(userId: string) {
   managers.value = managers.value.filter((m) => m.user_id !== userId)
 }
 
-/** The picker only offers addresses no member has; the server decides the rest. */
+/**
+ * The picker only offers addresses no member has; the server decides the rest.
+ * Past the limit the whole create would be refused, so the field says so here.
+ */
 function addManagerEmail(email: string) {
   const lower = email.toLocaleLowerCase()
-  if (!managerEmails.value.some((e) => e.toLocaleLowerCase() === lower)) {
-    managerEmails.value.push(email)
+  if (managerEmails.value.some((e) => e.toLocaleLowerCase() === lower)) return
+  if (managerEmails.value.length >= MAX_MANAGER_EMAILS) {
+    toast.warning(t('duties.tasks.managers.createEmailLimit', { count: MAX_MANAGER_EMAILS }))
+    return
   }
+  managerEmails.value.push(email)
 }
 
 function removeManagerEmail(email: string) {
   managerEmails.value = managerEmails.value.filter((e) => e !== email)
+  refusedEmails.value = refusedEmails.value.filter((e) => e !== email)
+}
+
+/**
+ * The addresses a 422 refused, found by their place in what was sent. The
+ * picker's check is loose on purpose and the server has the last word; this
+ * turns its answer into the address the organiser typed, instead of a raw
+ * validation message.
+ */
+function refusedManagerEmails(error: unknown, sent: string[]): string[] {
+  const { status, errors } = normalizeApiError(error)
+  if (status !== 422 || !errors) return []
+  return errors.flatMap(({ loc }) => {
+    const [where, field, index] = loc
+    const email =
+      where === 'body' && field === 'manager_emails' && typeof index === 'number'
+        ? sent[index]
+        : undefined
+    return email ? [email] : []
+  })
 }
 
 /**
  * Say what the invitations did. The task exists either way: an address
  * refused by a daily limit or a demo is listed instead of failing the form.
+ * A demo can never invite, so it is not told to try again later.
  */
 function reportManagerInvites(results: TaskCreateWithShiftsResponse['manager_invites']) {
   const invited = (results ?? []).filter((r) => r.status === 'invited').length
   if (invited > 0) {
     toast.success(t('duties.events.invitations.sent', { count: invited }, invited))
   }
-  const skipped = (results ?? []).filter((r) => r.status === 'skipped').map((r) => r.email ?? '')
-  if (skipped.length > 0) {
-    toast.warning(t('duties.tasks.managers.createSkipped', { emails: skipped.join(', ') }))
-  }
+  const skipped = (results ?? []).filter((r) => r.status === 'skipped')
+  const emails = (reason: 'demo' | 'later') =>
+    skipped
+      .filter((r) => (r.skipped_reason === 'sandbox') === (reason === 'demo'))
+      .map((r) => r.email ?? '')
+      .join(', ')
+  const inDemo = emails('demo')
+  if (inDemo) toast.warning(t('duties.tasks.managers.createSkippedDemo', { emails: inDemo }))
+  const later = emails('later')
+  if (later) toast.warning(t('duties.tasks.managers.createSkipped', { emails: later }))
 }
 
 // Clear dates when event changes (constraints may have changed)
@@ -464,6 +502,8 @@ const isValid = computed(() => {
 const handleSubmit = async () => {
   if (!isValid.value || submitting.value) return
   submitting.value = true
+  // Kept to match a refusal back to the address it was about.
+  const sentEmails = locationEventId.value ? [...managerEmails.value] : []
 
   try {
     const inEvent = eventMode.value !== 'none'
@@ -477,7 +517,7 @@ const handleSubmit = async () => {
       category: category.value || null,
       team_id: locationEventId.value ? teamId.value : null,
       manager_ids: locationEventId.value ? managers.value.map((m) => m.user_id) : [],
-      manager_emails: locationEventId.value ? managerEmails.value : [],
+      manager_emails: sentEmails,
       // Only inside an event, where the section is shown: switching to "No
       // event" afterwards must not leave a task its creator cannot reset.
       vouchers_per_shift: inEvent ? vouchersPerShift.value || 0 : 0,
@@ -527,7 +567,21 @@ const handleSubmit = async () => {
     reportManagerInvites(response.data.manager_invites)
     router.push({ name: 'task-detail', params: { eventId: response.data.task.id } })
   } catch (error) {
-    toastApiError(error)
+    const refused = refusedManagerEmails(error, sentEmails)
+    if (refused.length > 0) {
+      refusedEmails.value = refused
+      // Back to the section with the chips, where the refused ones are marked.
+      activeSection.value = 'event'
+      toast.error(
+        t(
+          'duties.tasks.managers.createInvalidEmail',
+          { emails: refused.join(', ') },
+          refused.length,
+        ),
+      )
+    } else {
+      toastApiError(error)
+    }
   } finally {
     submitting.value = false
   }
@@ -723,17 +777,19 @@ const handleSubmit = async () => {
               @pick="addManager"
               @invite="addManagerEmail"
             />
-            <ul v-if="managers.length || managerEmails.length" class="flex flex-wrap gap-2">
+            <!-- The chips' remove buttons reach 44px past their small circle
+                 (an `after:` hit area), so the chips get room around them. -->
+            <ul v-if="managers.length || managerEmails.length" class="flex flex-wrap gap-2.5">
               <li v-for="m in managers" :key="m.user_id">
                 <Badge
                   variant="secondary"
-                  class="gap-1 py-1 pr-1 pl-2.5 text-sm"
+                  class="gap-1 overflow-visible py-1 pr-1 pl-2.5 text-sm"
                   :data-testid="`task-create-manager-chip-${m.user_id}`"
                 >
                   <span class="max-w-48 truncate">{{ m.name || m.email || '?' }}</span>
                   <button
                     type="button"
-                    class="rounded-full p-0.5 hover:bg-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    class="relative rounded-full p-0.5 after:absolute after:-inset-[13px] hover:bg-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     :aria-label="
                       t('duties.events.members.remove', { name: m.name || m.email || '?' })
                     "
@@ -747,8 +803,14 @@ const handleSubmit = async () => {
               <li v-for="email in managerEmails" :key="email" class="max-w-full min-w-0">
                 <Badge
                   variant="outline"
-                  class="bg-warning/10 text-warning max-w-full gap-1.5 border-transparent py-1 pr-1 pl-2.5 text-sm"
+                  class="max-w-full gap-1.5 overflow-visible border-transparent py-1 pr-1 pl-2.5 text-sm"
+                  :class="
+                    refusedEmails.includes(email)
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-warning/10 text-warning'
+                  "
                   :data-testid="`task-create-manager-email-${email}`"
+                  :data-refused="refusedEmails.includes(email) || undefined"
                 >
                   <Mail class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   <span class="min-w-0 truncate">
@@ -756,7 +818,7 @@ const handleSubmit = async () => {
                   </span>
                   <button
                     type="button"
-                    class="hover:bg-warning/20 focus-visible:ring-ring shrink-0 rounded-full p-0.5 focus-visible:ring-2 focus-visible:outline-none"
+                    class="focus-visible:ring-ring relative shrink-0 rounded-full p-0.5 after:absolute after:-inset-[13px] hover:bg-current/15 focus-visible:ring-2 focus-visible:outline-none"
                     :aria-label="t('duties.tasks.managers.createInvitedRemove', { email })"
                     @click="removeManagerEmail(email)"
                   >
