@@ -128,6 +128,8 @@ class TestTaskInvitation:
         assert "löst bei „Cafétheke“ Marken ein" in text
         assert "Mira Lindqvist und Pia Incharge sind auch dabei." in text
         assert "Die Einladung gilt bis Mi, 18. November." in text
+        # The house term for the role, not the artboard's "Organisation".
+        assert "Organisator:in, Sommerfest am Fluss" in _part(message, "html")
         # "diese Mail", not "sie": that could read as ignoring the person.
         assert (
             "Wenn du die Person nicht kennst, kannst du diese Mail einfach ignorieren."

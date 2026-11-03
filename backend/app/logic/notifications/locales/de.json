@@ -104,7 +104,7 @@
     "invite_cta": "Konto anlegen und zusagen",
     "invite_footer": "Du bekommst diese Mail, weil {inviter} deine Adresse in {project_name} eingegeben hat. Wenn du die Person nicht kennst, kannst du diese Mail einfach ignorieren.",
     "invite_from": "{inviter} über {project_name}",
-    "invite_organiser": "Organisation, {event_name}",
+    "invite_organiser": "Organisator:in, {event_name}",
     "invite_heading": "Machst du bei „{event_name}“ mit?",
     "invite_heading_tasks": "Übernimmst du {tasks}?",
     "invite_in_charge_means": "Verantwortlich heißt: Du kannst die Beschreibung ändern und siehst, wer Schicht hat.",
