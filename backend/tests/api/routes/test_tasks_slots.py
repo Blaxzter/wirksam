@@ -1,5 +1,7 @@
 """Route tests for Task Shifts (generation/regeneration) endpoints."""
 
+from typing import Any
+
 import pytest
 from httpx import AsyncClient
 
@@ -178,3 +180,72 @@ class TestTaskShiftsRoutes:
 
         assert r.status_code == 200
         assert isinstance(r.json(), list)
+
+    async def test_renaming_the_task_renames_its_generated_shifts(
+        self, async_client: AsyncClient, as_admin: None
+    ):
+        """A plain save of the details takes the new name to every batch.
+
+        With several batches the task's edit page only ever patches the task,
+        so the shift titles ("<name> 10:00-12:00") have to follow from there.
+        A title somebody typed is theirs and stays.
+        """
+        schedule: dict[str, Any] = {
+            "default_start_time": "10:00:00",
+            "default_end_time": "12:00:00",
+            "shift_duration_minutes": 60,
+            "people_per_shift": 1,
+            "overrides": [],
+        }
+        r = await async_client.post(
+            "/api/v1/tasks/with-shifts",
+            json={
+                "name": "Bar",
+                "start_date": "2026-07-01",
+                "end_date": "2026-07-01",
+                "new_event": {
+                    "name": "Sommerfest",
+                    "start_date": "2026-07-01",
+                    "end_date": "2026-07-05",
+                },
+                "schedule": schedule,
+            },
+        )
+        assert r.status_code == 201, r.text
+        task_id = r.json()["task"]["id"]
+        r = await async_client.post(
+            f"/api/v1/tasks/{task_id}/add-shifts",
+            json={
+                "start_date": "2026-07-03",
+                "end_date": "2026-07-03",
+                "schedule": schedule,
+            },
+        )
+        assert r.status_code == 201, r.text
+        r = await async_client.post(
+            "/api/v1/shifts/",
+            json={
+                "task_id": task_id,
+                "title": "Bar aufräumen",
+                "date": "2026-07-04",
+                "start_time": "18:00:00",
+                "end_time": "19:00:00",
+                "max_bookings": 2,
+            },
+        )
+        assert r.status_code == 201, r.text
+
+        r = await async_client.patch(f"/api/v1/tasks/{task_id}", json={"name": "Café"})
+        assert r.status_code == 200, r.text
+
+        shifts = await async_client.get(
+            "/api/v1/shifts/", params={"task_id": task_id, "limit": 200}
+        )
+        titles = sorted(s["title"] for s in shifts.json()["items"])
+        assert titles == [
+            "Bar aufräumen",
+            "Café 10:00-11:00",
+            "Café 10:00-11:00",
+            "Café 11:00-12:00",
+            "Café 11:00-12:00",
+        ]

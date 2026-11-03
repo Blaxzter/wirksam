@@ -28,6 +28,7 @@ from app.logic.permissions import (
     require_task_visible,
     task_access,
 )
+from app.logic.shift_generator import renamed_shift_title
 from app.logic.task_managers import decorate_task_reads
 from app.logic.teams import ensure_team_in_event
 from app.models.shift import Shift
@@ -264,6 +265,11 @@ async def update_task(
     update_data.update(
         await location_patch(session, db_task, update_data, event_id=target_event_id)
     )
+    new_name = update_data.get("name")
+    if new_name and new_name != db_task.name:
+        await _retitle_shifts(
+            session, db_task.id, old_name=db_task.name, new_name=new_name
+        )
     updated = await crud_task.update(session, db_obj=db_task, obj_in=update_data)
 
     # Notify when task is published
@@ -283,6 +289,27 @@ async def update_task(
         )
 
     return await _decorated(session, current_user, updated)
+
+
+async def _retitle_shifts(
+    session: AsyncSession, task_id: uuid.UUID, *, old_name: str, new_name: str
+) -> None:
+    """Take a rename to the shifts whose titles carry the task's name.
+
+    Generated shifts are titled "<task name> 10:00-12:00", and the dashboard,
+    the bookings and the print views show that title. Regenerating renames the
+    shifts it keeps; a plain save of the details has to do the same, or a task
+    with several batches (whose edit never regenerates) keeps its old name on
+    every shift. Titles someone typed stay (``renamed_shift_title``).
+    """
+    shifts = (
+        await session.execute(select(Shift).where(col(Shift.task_id) == task_id))
+    ).scalars()
+    for shift in shifts:
+        title = renamed_shift_title(shift.title, old_name=old_name, new_name=new_name)
+        if title is not None:
+            shift.title = title
+            session.add(shift)
 
 
 @router.get("/{task_id}/bookings", response_model=list[TaskBookingEntry])

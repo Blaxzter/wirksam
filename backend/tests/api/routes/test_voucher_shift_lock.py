@@ -377,6 +377,30 @@ class TestWhatStaysEditable:
         assert r.json()["can_manage"] is True
         assert r.json()["can_manage_shifts"] is False
 
+    async def test_a_rename_reaches_the_generated_shift_titles(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        locked: Shift,
+    ) -> None:
+        """A title is no earning field, so the shifts follow the task's name."""
+        generated = await _shift(db_session, cast.task)
+        generated.title = f"{cast.task.name} 08:00-12:00"
+        db_session.add(generated)
+        await db_session.flush()
+
+        with act_as(app, cast.manager):
+            r = await async_client.patch(
+                f"/api/v1/tasks/{cast.task.id}", json={"name": "Getränke"}
+            )
+        assert r.status_code == 200, r.text
+        await db_session.refresh(generated)
+        await db_session.refresh(locked)
+        assert generated.title == "Getränke 08:00-12:00"
+        assert locked.title == "Theke"
+
 
 @pytest.mark.asyncio
 async def test_raising_the_rate_from_zero_locks_the_shifts_and_keeps_them(

@@ -5,7 +5,7 @@ from datetime import date, time
 
 import pytest
 
-from app.logic.shift_generator import generate_shifts
+from app.logic.shift_generator import generate_shifts, renamed_shift_title
 from app.schemas.shift import ShiftCreate
 from app.schemas.task import ExcludedShift, ScheduleOverride
 
@@ -420,3 +420,52 @@ class TestSpecificDates:
         assert not any(
             s.date == date(2026, 3, 2) and s.start_time == time(9, 0) for s in shifts
         )
+
+
+class TestRenamedShiftTitle:
+    """A task's rename reaches the titles the generator wrote, and no others."""
+
+    @pytest.mark.parametrize(
+        ("title", "expected"),
+        [
+            ("Bar 10:00-12:00", "Café 10:00-12:00"),
+            # A generated shift that was moved later keeps its old times in the
+            # title; it still follows the task's name.
+            ("Bar 23:30-00:30", "Café 23:30-00:30"),
+            # Typed by someone: kept.
+            ("Late shift", None),
+            ("Bar", None),
+            ("Bar - set up 10:00-12:00", None),
+            # Another word that starts with the old name is not the old name.
+            ("Barbecue 10:00-12:00", None),
+            ("Bar 10:00-12:00 extra", None),
+        ],
+    )
+    def test_only_generated_titles_follow(self, title: str, expected: str | None):
+        assert renamed_shift_title(title, old_name="Bar", new_name="Café") == expected
+
+    def test_an_empty_old_name_matches_nothing(self):
+        assert renamed_shift_title(" 10:00-12:00", old_name="", new_name="Café") is None
+
+    def test_generated_titles_round_trip(self):
+        """What ``generate_shifts`` writes is what a rename recognises."""
+        shifts = generate_shifts(
+            task_id=uuid.uuid4(),
+            task_name="Bierstand",
+            start_date=date(2026, 6, 1),
+            end_date=date(2026, 6, 1),
+            default_start_time=time(10, 0),
+            default_end_time=time(11, 15),
+            shift_duration_minutes=30,
+            remainder_mode="short",
+        )
+
+        renamed = [
+            renamed_shift_title(s.title, old_name="Bierstand", new_name="Theke")
+            for s in shifts
+        ]
+        assert renamed == [
+            "Theke 10:00-10:30",
+            "Theke 10:30-11:00",
+            "Theke 11:00-11:15",
+        ]
