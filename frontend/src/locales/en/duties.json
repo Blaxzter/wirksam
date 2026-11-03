@@ -803,7 +803,8 @@
                 "title": "Affected Bookings",
                 "user": "User"
             },
-            "editBatch": "Edit Batch",
+            "batchesNote": "This task's shifts come in {count} series. Change their dates, times, place and category with each series' own Edit on the task page.",
+            "editBatch": "Edit shift series",
             "editBatchSubtitle": "Change this batch's schedule and recreate its shifts",
             "preview": {
                 "added": "{count} new",
@@ -815,6 +816,7 @@
             "saveSuccess": "Task updated.",
             "saving": "Saving...",
             "subtitle": "Change the task details and recreate its shifts",
+            "subtitleDetails": "Change the task details",
             "title": "Edit Task"
         },
         "empty": "No tasks found.",

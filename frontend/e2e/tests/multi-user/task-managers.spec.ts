@@ -157,7 +157,7 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   test.slow()
 
   // A second batch of shifts. Each batch then has its own edit, which changes
-  // shifts, so the task's own edit has to stay for the details.
+  // shifts; the task's own edit stays for the details.
   await api(adminPage, 'POST', `/tasks/${task.id}/add-shifts`, {
     start_date: futureDate(3),
     end_date: futureDate(3),
@@ -209,8 +209,12 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await expect(disposablePage.getByTestId('page-heading')).toHaveText(renamed)
   await expect(disposablePage.getByTestId('btn-add-shifts')).toBeVisible()
   await expect(disposablePage.getByTestId('task-voucher-shifts-locked')).toHaveCount(0)
-  // With the shifts theirs again, each batch's own edit takes over.
-  await expect(disposablePage.getByTestId('btn-edit-task')).toHaveCount(0)
+  // With the shifts theirs again, each batch has its own edit for them, and
+  // the task's own edit still offers the details.
+  await expect(disposablePage.getByTestId('btn-edit-batch')).toHaveCount(2)
+  await disposablePage.getByTestId('btn-edit-task').click()
+  await expect(disposablePage.getByTestId('task-shifts-in-batches')).toBeVisible()
+  await expect(disposablePage.getByTestId('section-schedule')).toHaveCount(0)
 })
 
 test('a person in charge opens a shift and sees who is on it and how to reach them', async ({

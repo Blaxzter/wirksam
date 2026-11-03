@@ -803,6 +803,7 @@
                 "title": "Betroffene Buchungen",
                 "user": "Benutzer"
             },
+            "batchesNote": "Die Schichten dieser Aufgabe sind in {count} Serien aufgeteilt. Tage, Zeiten, Ort und Kategorie änderst du auf der Aufgabenseite, jeweils mit „Bearbeiten“ bei der Serie.",
             "editBatch": "Schichtserie bearbeiten",
             "editBatchSubtitle": "Zeitplan der Serie ändern und ihre Schichten neu erstellen",
             "preview": {
@@ -815,6 +816,7 @@
             "saveSuccess": "Aufgabe gespeichert.",
             "saving": "Wird gespeichert...",
             "subtitle": "Aufgabendetails ändern und Schichten neu erstellen",
+            "subtitleDetails": "Aufgabendetails ändern",
             "title": "Aufgabe bearbeiten"
         },
         "empty": "Keine Aufgaben gefunden.",

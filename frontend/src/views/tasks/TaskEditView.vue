@@ -74,6 +74,7 @@ const canAdminEvent = computed(() => authStore.canManageEvent(task.value?.event_
 const loading = ref(true)
 const submitting = ref(false)
 const task = ref<TaskRead | null>(null)
+const batches = ref<ShiftBatchRead[]>([])
 const batch = ref<ShiftBatchRead | null>(null)
 const parentEvent = ref<EventRead | null>(null)
 /**
@@ -83,6 +84,19 @@ const parentEvent = ref<EventRead | null>(null)
  * details, which a plain save of the task covers.
  */
 const canManageShifts = computed(() => task.value?.can_manage_shifts ?? false)
+/**
+ * With several batches the shifts belong to the batches, each with its own
+ * dates and schedule (and its own edit on the task page). Regenerating the
+ * task as a whole would rebuild all of them from one schedule, so the task's
+ * own edit offers just the details then.
+ */
+const severalBatches = computed(() => batches.value.length > 1)
+/** Whether this page changes shifts at all, or only the task's details. */
+const editsShifts = computed(
+  () => canManageShifts.value && (isBatchMode.value || !severalBatches.value),
+)
+/** Place and category are each batch's own when there are several. */
+const showsPlace = computed(() => !severalBatches.value)
 
 // --- Form state ---
 const name = ref('')
@@ -205,7 +219,7 @@ const scheduleChanged = computed(() => {
 
 const isValid = computed(() => {
   const hasName = isBatchMode.value || !!name.value.trim()
-  if (!canManageShifts.value) return hasName
+  if (!editsShifts.value) return hasName
   return (
     hasName &&
     !!startDate.value &&
@@ -249,6 +263,18 @@ const loadTask = async () => {
       return
     }
 
+    // How many batches there are decides what the task's own edit offers; in
+    // batch mode the batch's config fills the form.
+    try {
+      const batchRes = await get<{ data: ShiftBatchRead[] }>({
+        url: `/tasks/${eventId.value}/batches`,
+      })
+      batches.value = batchRes.data
+    } catch {
+      // Non-critical: the task-level config fills the form.
+      batches.value = []
+    }
+
     // Load parent event for default-window context (non-critical)
     if (ev.event_id) {
       try {
@@ -265,15 +291,7 @@ const loadTask = async () => {
     teamId.value = ev.team_id ?? null
 
     if (batchId.value) {
-      // Load batch and use its config
-      try {
-        const batchRes = await get<{ data: ShiftBatchRead[] }>({
-          url: `/tasks/${eventId.value}/batches`,
-        })
-        batch.value = batchRes.data.find((b: ShiftBatchRead) => b.id === batchId.value) ?? null
-      } catch {
-        // Fall through to task-level config
-      }
+      batch.value = batches.value.find((b) => b.id === batchId.value) ?? null
     }
 
     const src = batch.value
@@ -430,16 +448,18 @@ const handleSubmit = async () => {
     if (!isBatchMode.value && teamId.value !== (task.value?.team_id ?? null)) {
       await patch({ url: `/tasks/${eventId.value}`, body: { team_id: teamId.value } })
     }
-    if (!isBatchMode.value && (!scheduleChanged.value || !canManageShifts.value)) {
+    if (!isBatchMode.value && (!scheduleChanged.value || !editsShifts.value)) {
       // Only details changed — simple PATCH, no shift regeneration
       await patch<{ data: TaskRead }>({
         url: `/tasks/${eventId.value}`,
         body: {
           name: name.value,
           description: description.value || null,
-          location_id: locationId.value,
-          location: location.value || null,
-          category: category.value || null,
+          ...(showsPlace.value && {
+            location_id: locationId.value,
+            location: location.value || null,
+            category: category.value || null,
+          }),
         },
       })
       toast.success(t('duties.tasks.editView.saveSuccess'))
@@ -532,7 +552,9 @@ onMounted(loadTask)
           {{
             isBatchMode
               ? t('duties.tasks.editView.editBatchSubtitle')
-              : t('duties.tasks.editView.subtitle')
+              : editsShifts
+                ? t('duties.tasks.editView.subtitle')
+                : t('duties.tasks.editView.subtitleDetails')
           }}
         </p>
         <p
@@ -542,6 +564,14 @@ onMounted(loadTask)
         >
           <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           {{ t('duties.tasks.managers.voucherShiftsLocked') }}
+        </p>
+        <p
+          v-else-if="!editsShifts"
+          class="flex gap-2 text-sm text-muted-foreground"
+          data-testid="task-shifts-in-batches"
+        >
+          <Info class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          {{ t('duties.tasks.editView.batchesNote', { count: batches.length }) }}
         </p>
       </div>
 
@@ -565,7 +595,7 @@ onMounted(loadTask)
               class="max-h-[150px]"
             />
           </div>
-          <div class="grid items-start gap-4 sm:grid-cols-2">
+          <div v-if="showsPlace" class="grid items-start gap-4 sm:grid-cols-2">
             <div class="space-y-2">
               <Label for="task-location">{{ t('duties.tasks.fields.location') }}</Label>
               <LocationPicker
@@ -622,7 +652,7 @@ onMounted(loadTask)
       </Card>
 
       <!-- Task Dates: they bound the shifts, so they go with the schedule -->
-      <Card v-if="canManageShifts">
+      <Card v-if="editsShifts">
         <CardHeader>
           <CardTitle>{{ t('duties.tasks.createView.sections.dates') }}</CardTitle>
           <CardDescription>{{ t('duties.tasks.createView.sections.datesDesc') }}</CardDescription>
@@ -642,7 +672,7 @@ onMounted(loadTask)
       </Card>
 
       <!-- Schedule & Shifts -->
-      <Card v-if="canManageShifts" data-testid="section-schedule">
+      <Card v-if="editsShifts" data-testid="section-schedule">
         <CardHeader>
           <div class="flex items-center gap-3">
             <Clock class="h-5 w-5 text-primary" />
@@ -672,7 +702,7 @@ onMounted(loadTask)
       </Card>
 
       <!-- Preview: leaving a shift out here removes it -->
-      <Card v-if="canManageShifts">
+      <Card v-if="editsShifts">
         <CardHeader>
           <div class="flex items-center justify-between">
             <div>
@@ -716,11 +746,11 @@ onMounted(loadTask)
           {{ t('common.actions.cancel') }}
         </Button>
         <Button data-testid="btn-submit" :disabled="!isValid || submitting" @click="handleSubmit">
-          <RefreshCw v-if="scheduleChanged && canManageShifts" class="mr-2 h-4 w-4" />
+          <RefreshCw v-if="scheduleChanged && editsShifts" class="mr-2 h-4 w-4" />
           {{
             submitting
               ? t('duties.tasks.editView.saving')
-              : scheduleChanged && canManageShifts
+              : scheduleChanged && editsShifts
                 ? t('duties.tasks.editView.regenerate')
                 : t('common.actions.save')
           }}

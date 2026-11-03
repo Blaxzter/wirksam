@@ -333,15 +333,12 @@ const slotForm = ref({
 const slotDate = ref<DateValue>()
 
 // --- Batch grouping ---
-const hasBatches = computed(() => batches.value.length > 1)
 /**
- * "Edit task" edits the task as a whole. With several batches each batch has
- * its own edit instead, but those change shifts; someone who may only change
- * the details keeps the task's own edit, which then offers just those.
+ * Several batches each get a header with their own Edit, which changes that
+ * batch's shifts. "Edit task" stays for the task's own details either way; on
+ * such a task its edit page leaves the shifts to the batches.
  */
-const showTaskEdit = computed(
-  () => canManageTask.value && (!hasBatches.value || !canManageShifts.value),
-)
+const hasBatches = computed(() => batches.value.length > 1)
 
 interface BatchGroup {
   batch: ShiftBatchRead | null
@@ -1029,7 +1026,7 @@ onMounted(async () => {
           </p>
 
           <!-- Phone actions, under the details and within reach -->
-          <div v-if="isPhone && (canManageShifts || showTaskEdit)" class="mt-1 flex gap-2">
+          <div v-if="isPhone && canManageTask" class="mt-1 flex gap-2">
             <template v-if="canManageShifts">
               <Button
                 data-testid="btn-add-shifts"
@@ -1040,7 +1037,6 @@ onMounted(async () => {
                 {{ t('duties.tasks.detail.addShifts') }}
               </Button>
               <Button
-                v-if="showTaskEdit"
                 data-testid="btn-edit-task"
                 variant="outline"
                 class="h-12 shrink-0 rounded-xl px-4 text-[15px] font-semibold shadow-none"
@@ -1067,7 +1063,6 @@ onMounted(async () => {
         <div v-if="!isPhone" class="flex shrink-0 items-center gap-2">
           <template v-if="canAdminEvent">
             <Button
-              v-if="showTaskEdit"
               data-testid="btn-edit-task"
               variant="outline"
               class="h-11 rounded-xl px-4 font-semibold shadow-none"
@@ -1208,7 +1203,7 @@ onMounted(async () => {
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
-              v-if="showTaskEdit"
+              v-if="canManageTask"
               data-testid="btn-edit-task"
               class="h-11 rounded-xl px-[18px] font-bold"
               @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
@@ -1488,7 +1483,9 @@ onMounted(async () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    class="max-md:h-10"
+                    class="max-md:h-11"
+                    :aria-label="t('duties.tasks.editView.editBatch')"
+                    data-testid="btn-edit-batch"
                     @click="
                       router.push({
                         name: 'task-edit',
@@ -1498,13 +1495,14 @@ onMounted(async () => {
                     "
                   >
                     <Pencil class="mr-1.5 h-3.5 w-3.5" />
-                    {{ t('duties.tasks.edit') }}
+                    {{ t('common.actions.edit') }}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    class="text-destructive hover:text-destructive max-md:size-10"
+                    class="text-destructive hover:text-destructive max-md:size-11"
                     :aria-label="t('duties.tasks.detail.deleteBatch')"
+                    data-testid="btn-delete-batch"
                     @click="handleDeleteBatch(event.batch!)"
                   >
                     <Trash2 class="h-3.5 w-3.5" />

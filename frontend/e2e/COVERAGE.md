@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 34      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 231     |
+| `chromium`   | 28         | 232     |
 | `member`     | 3          | 26      |
 | `mobile`     | 5          | 19      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **447** |
+| **Total**    | **62**     | **448** |
 
 ## Inventory
 
@@ -160,7 +160,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 231 tests
+### Project `chromium` — 28 files, 232 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -504,13 +504,15 @@ Not yet covered, and not currently tracked by an issue:
   - admin sees Add Shifts button
   - admin can delete task
 
-#### `frontend/e2e/tests/authenticated/task-edit.spec.ts` — 9 tests
+#### `frontend/e2e/tests/authenticated/task-edit.spec.ts` — 10 tests
 
 - **Task Edit – page access** (4)
   - can navigate to edit page via URL
   - shows edit page heading
   - shows back button
   - shows schedule configuration section
+- **Task Edit – a task with several shift series** (1)
+  - an organiser renames it, and every series keeps its shifts
 - **Task Add Shifts – page access** (3)
   - can navigate to add-shifts page via URL
   - shows add-shifts heading
