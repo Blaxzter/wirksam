@@ -7,6 +7,7 @@ import {
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogOverlay,
   DialogPortal,
   DialogRoot,
   DialogTitle,
@@ -236,9 +237,15 @@ watch(sheetOpen, (isOpen) => {
 
       <DialogRoot v-model:open="sheetOpen">
         <DialogPortal>
+          <!--
+            The overlay is what locks the page behind: reka's scroll lock lives
+            in it. Without one the page keeps a scrollbar of its own beside the
+            list's, and a swipe past the end of the list scrolls the page.
+          -->
+          <DialogOverlay class="bg-background fixed inset-0 z-60" />
           <!-- Above the bottom sheet it is opened from (z-50). -->
           <DialogContent
-            class="bg-background text-foreground fixed inset-0 z-60 flex flex-col focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-4"
+            class="bg-background text-foreground fixed inset-0 z-60 flex flex-col overflow-hidden focus:outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom-4"
             :data-testid="`${testid}-sheet`"
           >
             <VisuallyHidden>
@@ -260,7 +267,7 @@ watch(sheetOpen, (isOpen) => {
                     autocapitalize="off"
                     spellcheck="false"
                     enterkeyhint="go"
-                    class="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
+                    class="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:appearance-none"
                     :placeholder="placeholder"
                     :data-testid="`${testid}-sheet-input`"
                     @keydown.enter.prevent="pickFirst"
@@ -275,8 +282,14 @@ watch(sheetOpen, (isOpen) => {
               <p v-if="sheetContext" class="text-muted-foreground text-sm">{{ sheetContext }}</p>
             </header>
 
+            <!--
+              The one thing that scrolls. The app's thin standard scrollbar is
+              turned off here so Chrome falls back to the custom webkit one in
+              index.css: Chrome on Windows draws the standard one with ▲/▼
+              buttons, which have no place in a phone list.
+            -->
             <div
-              class="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]"
+              class="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] [scrollbar-color:auto] [scrollbar-width:auto]"
             >
               <div v-if="inviteEmail" class="px-3 pt-3 pb-1">
                 <button

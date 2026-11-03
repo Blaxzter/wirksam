@@ -260,6 +260,17 @@ describe('EventMemberPicker on a phone with phoneSheet', () => {
     expect(sheet()).not.toBeNull()
   })
 
+  it('locks the page behind the sheet, so its list is the only thing that scrolls', async () => {
+    isPhone.value = true
+    wrapper = mountPicker({ phoneSheet: true })
+    expect(document.body.style.overflow).not.toBe('hidden')
+
+    await wrapper.find('button[data-testid="p"]').trigger('click')
+    await nextTick()
+    await nextTick()
+    expect(document.body.style.overflow).toBe('hidden')
+  })
+
   it('leaves the field out with hideField: the parent opens the sheet itself', async () => {
     isPhone.value = true
     wrapper = mountPicker({ phoneSheet: true, hideField: true, sheetOpen: false })
