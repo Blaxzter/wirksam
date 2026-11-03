@@ -70,6 +70,11 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   disposablePage,
   disposableUser,
 }) => {
+  // Two people through six screens, and a wait for the volunteer's
+  // screen to follow the redemption: with a full set of local workers this
+  // runs past the default 30 seconds.
+  test.slow()
+
   // The volunteer books a shift while it is still ahead.
   const [shift] = await listShifts(adminPage, shiftTask.id)
   await bookShift(disposablePage, shift.id)

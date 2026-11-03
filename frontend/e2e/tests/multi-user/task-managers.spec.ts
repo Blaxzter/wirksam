@@ -151,6 +151,11 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   disposablePage,
   disposableUser,
 }) => {
+  // Two people through the task page, its edit form, the event's settings and
+  // a reload: with a full set of local workers this nears the default 30
+  // seconds.
+  test.slow()
+
   // A second batch of shifts. Each batch then has its own edit, which changes
   // shifts, so the task's own edit has to stay for the details.
   await api(adminPage, 'POST', `/tasks/${task.id}/add-shifts`, {
