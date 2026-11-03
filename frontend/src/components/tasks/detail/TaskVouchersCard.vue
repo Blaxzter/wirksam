@@ -17,15 +17,14 @@ import type { PointRedemptionList, TaskRead } from '@/client/types.gen'
  * them here right now.
  *
  * At a place that takes vouchers, the organisers and the people in charge
- * also see how many were redeemed here today, from the same list the redeem
- * page shows. The server keeps no running total over every day, so "today" is
- * what there is.
+ * also see how many were redeemed here so far, over every day, from the same
+ * read the redeem page lists its entries with (which shows today's figure).
  */
 const props = defineProps<{
   task: TaskRead
   /** The viewer is an organiser: offer the voucher settings. */
   canAdmin?: boolean
-  /** The viewer runs the task (organiser or in charge): show today's count. */
+  /** The viewer runs the task (organiser or in charge): show the count. */
   canManage?: boolean
   /** The viewer may redeem here right now. */
   canRedeem?: boolean
@@ -43,12 +42,13 @@ const { get } = useAuthenticatedClient()
 const perShift = computed(() => props.task.vouchers_per_shift ?? 0)
 const isPoint = computed(() => !!props.task.is_voucher_point)
 
-const redeemedToday = ref<number | null>(null)
+/** Vouchers redeemed here on every day so far, or null when not shown. */
+const redeemedHere = ref<number | null>(null)
 
-async function loadToday() {
+async function loadRedeemed() {
   const tk = props.task
   if (!tk.event_id || !isPoint.value || !props.canRedeem || !props.canManage) {
-    redeemedToday.value = null
+    redeemedHere.value = null
     return
   }
   try {
@@ -56,14 +56,14 @@ async function loadToday() {
       url: `/events/${tk.event_id}/vouchers/points/${tk.id}/entries`,
       query: { limit: 1 },
     })
-    if (props.task.id === tk.id) redeemedToday.value = res.data.today_amount
+    if (props.task.id === tk.id) redeemedHere.value = res.data.total_amount
   } catch {
     // Only a number on a card; the tile falls back to "Takes vouchers".
-    redeemedToday.value = null
+    redeemedHere.value = null
   }
 }
 
-watch(() => [props.task.id, isPoint.value, props.canRedeem, props.canManage], loadToday, {
+watch(() => [props.task.id, isPoint.value, props.canRedeem, props.canManage], loadRedeemed, {
   immediate: true,
 })
 
@@ -138,15 +138,15 @@ const emptyTileClass = computed(() => [
 
       <template v-if="isPoint">
         <div
-          v-if="redeemedToday !== null"
+          v-if="redeemedHere !== null"
           :class="[tileClass, 'bg-muted/70']"
           data-testid="task-voucher-point"
         >
           <p :class="captionClass">
-            <span :class="numberClass" data-testid="task-vouchers-redeemed-today">
-              {{ redeemedToday }}
+            <span :class="numberClass" data-testid="task-vouchers-redeemed-here">
+              {{ redeemedHere }}
             </span>
-            {{ t('vouchers.task.redeemedToday') }}
+            {{ compact ? t('vouchers.task.redeemedHereShort') : t('vouchers.task.redeemedHere') }}
           </p>
         </div>
         <div

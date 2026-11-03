@@ -180,7 +180,8 @@
         "perShiftCaption": "pro Schicht, sobald sie vorbei ist",
         "perShiftShort": "pro Schicht",
         "point": "Nimmt Marken an",
-        "redeemedToday": "heute hier eingelöst",
+        "redeemedHere": "hier schon eingelöst",
+        "redeemedHereShort": "hier eingelöst",
         "setUp": "Einstellen",
         "startedNote": "Schon begonnen. Schichten mit Marken lassen sich nur vor Beginn buchen."
     },

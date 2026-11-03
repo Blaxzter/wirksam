@@ -10,8 +10,8 @@ import i18n from '@/locales/i18n'
 
 /**
  * "Vouchers" on the task page: what a shift here earns, whether vouchers are
- * taken here (with today's count for those who run the task), and the way to
- * the redeem page for whoever may take them now.
+ * taken here (with how many were redeemed here so far, for those who run the
+ * task), and the way to the redeem page for whoever may take them now.
  */
 
 const api = vi.hoisted(() => ({ get: vi.fn() }))
@@ -52,7 +52,9 @@ const find = (w: Awaited<ReturnType<typeof mountCard>>, id: string) =>
 beforeEach(() => {
   i18n.global.locale.value = 'en'
   vi.clearAllMocks()
-  api.get.mockResolvedValue({ data: { items: [], today_count: 5, today_amount: 9 } })
+  api.get.mockResolvedValue({
+    data: { items: [], today_count: 5, today_amount: 9, total_count: 21, total_amount: 38 },
+  })
 })
 
 describe('TaskVouchersCard', () => {
@@ -73,14 +75,26 @@ describe('TaskVouchersCard', () => {
     expect(w.text()).toContain('Shifts here earn no vouchers.')
   })
 
-  it('counts what was redeemed here today for whoever runs the task', async () => {
+  it('counts what was redeemed here on every day so far for whoever runs the task', async () => {
     const w = await mountCard({ canManage: true, canRedeem: true })
     expect(api.get).toHaveBeenCalledWith({
       url: '/events/e1/vouchers/points/t1/entries',
       query: { limit: 1 },
     })
-    expect(find(w, 'task-vouchers-redeemed-today').text()).toBe('9')
-    expect(find(w, 'task-voucher-point').text()).toContain('redeemed here today')
+    // The total, not today's 9: the redeem page has today's figure.
+    expect(find(w, 'task-vouchers-redeemed-here').text()).toBe('38')
+    expect(find(w, 'task-voucher-point').text()).toBe('38 redeemed here so far')
+  })
+
+  it('keeps the caption short on a phone, in both languages', async () => {
+    const phone = await mountCard({ canManage: true, canRedeem: true, compact: true })
+    expect(find(phone, 'task-voucher-point').text()).toBe('38 redeemed here')
+
+    i18n.global.locale.value = 'de'
+    const desktop = await mountCard({ canManage: true, canRedeem: true })
+    expect(find(desktop, 'task-voucher-point').text()).toBe('38 hier schon eingelöst')
+    const de = await mountCard({ canManage: true, canRedeem: true, compact: true })
+    expect(find(de, 'task-voucher-point').text()).toBe('38 hier eingelöst')
   })
 
   it('only says that vouchers are taken here to everyone else', async () => {

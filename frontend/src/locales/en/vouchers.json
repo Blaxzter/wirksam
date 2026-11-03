@@ -180,7 +180,8 @@
         "perShiftCaption": "per shift, once it's over",
         "perShiftShort": "per shift",
         "point": "Takes vouchers",
-        "redeemedToday": "redeemed here today",
+        "redeemedHere": "redeemed here so far",
+        "redeemedHereShort": "redeemed here",
         "setUp": "Set up",
         "startedNote": "Already started. Shifts that earn vouchers can only be booked before they start."
     },
