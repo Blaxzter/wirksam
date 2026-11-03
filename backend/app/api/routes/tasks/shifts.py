@@ -559,6 +559,14 @@ async def regenerate_task_shifts(
 
         # 6a. Update task fields (only when not scoped to a batch)
         if not batch_id:
+            if payload.name and payload.name != db_task.name:
+                # The task page heads a series with its batch's label.
+                await crud_shift_batch.follow_task_rename(
+                    session,
+                    task_id=db_task.id,
+                    old_name=db_task.name,
+                    new_name=payload.name,
+                )
             if payload.name is not None:
                 db_task.name = payload.name
             if payload.description is not None:

@@ -249,3 +249,65 @@ class TestTaskShiftsRoutes:
             "Café 11:00-12:00",
             "Café 11:00-12:00",
         ]
+
+    async def test_renaming_the_task_renames_the_series_named_after_it(
+        self, async_client: AsyncClient, as_admin: None
+    ):
+        """The task page heads each series with its batch's label.
+
+        The first batch is labelled with the task's name, and so is a batch
+        added without a place or category: both follow a rename, whether it
+        comes from a plain save or from regenerating. A place stays.
+        """
+        schedule: dict[str, Any] = {
+            "default_start_time": "10:00:00",
+            "default_end_time": "12:00:00",
+            "shift_duration_minutes": 60,
+            "people_per_shift": 1,
+            "overrides": [],
+        }
+        r = await async_client.post(
+            "/api/v1/tasks/with-shifts",
+            json={
+                "name": "Bar",
+                "start_date": "2026-07-01",
+                "end_date": "2026-07-01",
+                "new_event": {
+                    "name": "Sommerfest",
+                    "start_date": "2026-07-01",
+                    "end_date": "2026-07-05",
+                },
+                "schedule": schedule,
+            },
+        )
+        assert r.status_code == 201, r.text
+        task_id = r.json()["task"]["id"]
+
+        # Regenerating with a new name, while the task has one batch.
+        r = await async_client.post(
+            f"/api/v1/tasks/{task_id}/regenerate-shifts",
+            json={"name": "Theke", "schedule": schedule},
+        )
+        assert r.status_code == 200, r.text
+
+        for extra in ({}, {"location": "Zelt"}):
+            r = await async_client.post(
+                f"/api/v1/tasks/{task_id}/add-shifts",
+                json={
+                    "start_date": "2026-07-03",
+                    "end_date": "2026-07-03",
+                    "schedule": schedule,
+                    **extra,
+                },
+            )
+            assert r.status_code == 201, r.text
+
+        r = await async_client.get(f"/api/v1/tasks/{task_id}/batches")
+        assert [b["label"] for b in r.json()] == ["Theke", "Theke", "Zelt"]
+
+        # A plain save of the details, as the edit page does with several.
+        r = await async_client.patch(f"/api/v1/tasks/{task_id}", json={"name": "Café"})
+        assert r.status_code == 200, r.text
+
+        r = await async_client.get(f"/api/v1/tasks/{task_id}/batches")
+        assert [b["label"] for b in r.json()] == ["Café", "Café", "Zelt"]

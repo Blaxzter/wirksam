@@ -12,6 +12,7 @@ from app.crud.event_invitation_task import (
     event_invitation_task as crud_invitation_task,
 )
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic import clock, vouchers
@@ -269,6 +270,9 @@ async def update_task(
     if new_name and new_name != db_task.name:
         await _retitle_shifts(
             session, db_task.id, old_name=db_task.name, new_name=new_name
+        )
+        await crud_shift_batch.follow_task_rename(
+            session, task_id=db_task.id, old_name=db_task.name, new_name=new_name
         )
     updated = await crud_task.update(session, db_obj=db_task, obj_in=update_data)
 
