@@ -58,7 +58,12 @@ function handleNotificationClick(notification: (typeof notifications.value)[0]) 
 
   const data = notification.data
   if (data) {
-    if (data.task_id) {
+    if (data.token) {
+      // An invitation opens the invitation itself: its event's page is a 404
+      // to someone not in a private event yet.
+      emit('navigate')
+      router.push({ name: 'invite-accept', params: { token: data.token as string } })
+    } else if (data.task_id) {
       emit('navigate')
       router.push({ name: 'task-detail', params: { eventId: data.task_id as string } })
     } else if (data.team_id && data.event_id) {
@@ -108,6 +113,8 @@ function getNotificationIcon(typeCode: string): string {
     'task.manager_added': '🛡️',
     'task.manager_removed': '✕',
     'event.cloned': '📑',
+    'event.invitation': '✉️',
+    'event.invitation_accepted': '🤝',
     'event.published': '📋',
     'user.suspended': '⛔',
     'user.reinstated': '✓',

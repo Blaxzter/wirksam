@@ -131,6 +131,9 @@ async function handleDismiss(id: string) {
 function routeFor(n: NotificationItem) {
   const data = n.data
   if (!data) return null
+  // An invitation opens the invitation itself: its event's page is a 404 to
+  // someone not in a private event yet.
+  if (data.token) return { name: 'invite-accept', params: { token: data.token as string } }
   if (data.task_id) return { name: 'task-detail', params: { eventId: data.task_id as string } }
   // Team requests and decisions open the Teams page on that team.
   if (data.team_id && data.event_id)

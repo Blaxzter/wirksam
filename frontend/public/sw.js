@@ -99,7 +99,11 @@ self.addEventListener('notificationclick', (task) => {
   // NotificationsView.vue). `/app/events/{id}` is not a route and fell through
   // to not-found, e.g. for "no longer in charge" of a draft, which carries
   // only the event.
-  if (data.task_id) {
+  if (data.token) {
+    // An invitation opens the invitation, not its event's page, which is a
+    // 404 to someone not in a private event yet.
+    url = `/invite/${encodeURIComponent(data.token)}`
+  } else if (data.task_id) {
     url = `/app/tasks/${data.task_id}`
   } else if (data.team_id && data.event_id) {
     url = `/app/teams/${data.event_id}?team=${data.team_id}`
