@@ -1,28 +1,37 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Bell, Check, Loader2, Trash2 } from '@lucide/vue'
+import { Bell, Loader2 } from '@lucide/vue'
+import { useNow } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
-import { useNotificationStore } from '@/stores/notification'
+import { type NotificationItem, useNotificationStore } from '@/stores/notification'
 
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
-import HintTooltip from '@/components/utils/HintTooltip.vue'
+import NotificationRow from '@/components/notifications/NotificationRow.vue'
 
+import { groupByDay, notificationTarget } from '@/lib/notifications'
+
+/**
+ * The bell's dropdown: the newest notices as small cards under "Today",
+ * "Yesterday" and "Earlier", the same rows the inbox page shows. Clicking one
+ * marks it read and opens what it is about (`navigate` closes the dropdown).
+ */
 const emit = defineEmits<{
   navigate: []
 }>()
 
 const { t } = useI18n()
-const router = useRouter()
 const notificationStore = useNotificationStore()
 
 const notifications = computed(() => notificationStore.notifications)
 const hasMore = computed(() => notificationStore.hasMore)
 const loading = computed(() => notificationStore.loading)
+
+/** One clock for the whole list, so "5 min ago" moves on while it is open. */
+const now = useNow({ interval: 60_000 })
+const groups = computed(() => groupByDay(notifications.value, now.value))
 
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
@@ -43,89 +52,10 @@ watch(sentinel, (el) => {
   }
 })
 
-async function handleMarkAsRead(id: string) {
-  await notificationStore.markAsRead(id)
-}
-
-async function handleDismiss(id: string) {
-  await notificationStore.dismissNotification(id)
-}
-
-function handleNotificationClick(notification: (typeof notifications.value)[0]) {
-  if (!notification.is_read) {
-    notificationStore.markAsRead(notification.id)
-  }
-
-  const data = notification.data
-  if (data) {
-    if (data.token) {
-      // An invitation opens the invitation itself: its event's page is a 404
-      // to someone not in a private event yet.
-      emit('navigate')
-      router.push({ name: 'invite-accept', params: { token: data.token as string } })
-    } else if (data.task_id) {
-      emit('navigate')
-      router.push({ name: 'task-detail', params: { eventId: data.task_id as string } })
-    } else if (data.team_id && data.event_id) {
-      // Team requests and decisions open the Teams page on that team.
-      emit('navigate')
-      router.push({
-        name: 'teams',
-        params: { eventId: data.event_id as string },
-        query: { team: data.team_id as string },
-      })
-    } else if (data.event_id) {
-      emit('navigate')
-      router.push({
-        name: 'event-settings',
-        params: { eventId: data.event_id as string },
-      })
-    } else if (data.booking_id) {
-      emit('navigate')
-      router.push({ name: 'my-bookings' })
-    }
-  }
-}
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMin / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMin < 1) return t('notifications.timeAgo.justNow')
-  if (diffMin < 60) return t('notifications.timeAgo.minutes', { n: diffMin })
-  if (diffHours < 24) return t('notifications.timeAgo.hours', { n: diffHours })
-  if (diffDays < 7) return t('notifications.timeAgo.days', { n: diffDays })
-  return date.toLocaleDateString()
-}
-
-function getNotificationIcon(typeCode: string): string {
-  const iconMap: Record<string, string> = {
-    'booking.confirmed': '✓',
-    'booking.cancelled_by_user': '✕',
-    'booking.cancelled_by_admin': '⚠',
-    'booking.shift_cobooked': '👥',
-    'shift.time_changed': '🕐',
-    'task.published': '📅',
-    'task.manager_added': '🛡️',
-    'task.manager_removed': '✕',
-    'event.cloned': '📑',
-    'event.invitation': '✉️',
-    'event.invitation_accepted': '🤝',
-    'event.published': '📋',
-    'user.suspended': '⛔',
-    'user.reinstated': '✓',
-    'user.registered': '👤',
-    'user.approved': '✓',
-    'user.rejected': '✕',
-    'team.join_requested': '🙋',
-    'team.join_approved': '✓',
-    'team.join_declined': '✕',
-  }
-  return iconMap[typeCode] || '📌'
+function open(notification: NotificationItem) {
+  if (!notification.is_read) notificationStore.markAsRead(notification.id)
+  // The row is a link; the dropdown only has to get out of the way.
+  if (notificationTarget(notification.data)) emit('navigate')
 }
 </script>
 
@@ -136,9 +66,10 @@ function getNotificationIcon(typeCode: string): string {
       v-if="loading && notifications.length === 0"
       aria-busy="true"
       :aria-label="t('notifications.title')"
+      class="space-y-2 p-3"
     >
-      <div v-for="i in 3" :key="i" class="flex gap-3 px-4 py-3">
-        <Skeleton class="mt-0.5 h-5 w-5 rounded-full" />
+      <div v-for="i in 3" :key="i" class="flex gap-2.5 rounded-2xl border p-3">
+        <Skeleton class="size-9 shrink-0 rounded-[10px]" />
         <div class="min-w-0 flex-1">
           <Skeleton class="mb-1.5 h-4 w-2/3" />
           <Skeleton class="mb-1.5 h-3 w-full" />
@@ -154,58 +85,31 @@ function getNotificationIcon(typeCode: string): string {
       </p>
     </div>
 
-    <div
-      v-for="notification in notifications"
-      :key="notification.id"
-      class="event hover:bg-muted/50 flex cursor-pointer gap-3 px-4 py-3 transition-colors"
-      :class="{ 'bg-muted/30': !notification.is_read }"
-      @click="handleNotificationClick(notification)"
-    >
-      <div class="flex-shrink-0 pt-0.5 text-lg">
-        {{ getNotificationIcon(notification.notification_type_code) }}
-      </div>
-
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-medium" :class="{ 'font-bold': !notification.is_read }">
-          {{ notification.title }}
-        </p>
-        <p class="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
-          {{ notification.body }}
-        </p>
-        <p class="text-muted-foreground mt-1 text-[10px]">
-          {{ formatTimeAgo(notification.created_at) }}
-        </p>
-      </div>
-
-      <div class="flex flex-shrink-0 items-start pt-1">
-        <span v-if="!notification.is_read" class="bg-primary h-2 w-2 rounded-full" />
-        <span v-else class="h-2 w-2" />
-      </div>
-
-      <div class="hidden flex-shrink-0 flex-col gap-1 event-hover:flex">
-        <HintTooltip v-if="!notification.is_read" :label="t('notifications.markRead')">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-6 w-6 cursor-pointer hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
-            :aria-label="t('notifications.markRead')"
-            @click.stop="handleMarkAsRead(notification.id)"
-          >
-            <Check class="h-3 w-3" />
-          </Button>
-        </HintTooltip>
-        <HintTooltip :label="t('notifications.dismiss')">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-6 w-6 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-            :aria-label="t('notifications.dismiss')"
-            @click.stop="handleDismiss(notification.id)"
-          >
-            <Trash2 class="h-3 w-3" />
-          </Button>
-        </HintTooltip>
-      </div>
+    <div v-else class="px-3 pt-1 pb-3">
+      <section
+        v-for="group in groups"
+        :key="group.key"
+        :aria-labelledby="`bell-group-${group.key}`"
+      >
+        <h4
+          :id="`bell-group-${group.key}`"
+          class="text-muted-foreground px-1 pt-3 pb-2 text-xs font-bold tracking-wide uppercase"
+        >
+          {{ t(`notifications.groups.${group.key}`) }}
+        </h4>
+        <ul class="space-y-2">
+          <li v-for="notification in group.items" :key="notification.id">
+            <NotificationRow
+              :notification="notification"
+              :now="now"
+              dense
+              @open="open(notification)"
+              @read="notificationStore.markAsRead(notification.id)"
+              @dismiss="notificationStore.dismissNotification(notification.id)"
+            />
+          </li>
+        </ul>
+      </section>
     </div>
 
     <div v-if="hasMore" ref="sentinel" class="flex justify-center py-3">
@@ -214,7 +118,7 @@ function getNotificationIcon(typeCode: string): string {
 
     <div
       v-if="!hasMore && notifications.length > 0"
-      class="text-muted-foreground py-3 text-center text-xs"
+      class="text-muted-foreground pb-3 text-center text-xs"
     >
       {{ t('notifications.allLoaded') }}
     </div>

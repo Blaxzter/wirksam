@@ -400,13 +400,13 @@ const navAdmin = computed(() => {
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
-            :tooltip="t('notifications.title')"
+            :tooltip="t('notifications.inboxTitle')"
             :is-active="route.name === 'notifications'"
             as-child
           >
             <RouterLink :to="{ name: 'notifications' }" data-testid="sidebar-link-notifications">
               <Bell />
-              <span>{{ t('notifications.title') }}</span>
+              <span>{{ t('notifications.inboxTitle') }}</span>
               <span
                 v-if="notificationStore.hasUnread"
                 class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white"

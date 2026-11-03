@@ -333,7 +333,7 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           meta: {
             breadcrumbs: [
               { title: 'Home', titleKey: 'navigation.breadcrumbs.home', to: { name: 'home' } },
-              { title: 'Notifications', titleKey: 'notifications.title' },
+              { title: 'Inbox', titleKey: 'notifications.inboxTitle' },
             ],
           },
         },
