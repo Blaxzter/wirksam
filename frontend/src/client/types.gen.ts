@@ -2644,6 +2644,25 @@ export type OwnershipTransferResult = {
 }
 
 /**
+ * PointPersonVouchers
+ *
+ * What one member of the event can redeem now, for the redeem picker.
+ *
+ * Nothing else about them: the picker takes names and faces from the
+ * event's member list.
+ */
+export type PointPersonVouchers = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Available
+   */
+  available: number
+}
+
+/**
  * PointRedemptionList
  */
 export type PointRedemptionList = {
@@ -2659,6 +2678,14 @@ export type PointRedemptionList = {
    * Today Amount
    */
   today_amount: number
+  /**
+   * Total Count
+   */
+  total_count: number
+  /**
+   * Total Amount
+   */
+  total_amount: number
 }
 
 /**
@@ -3215,6 +3242,22 @@ export type ShiftBatchRead = {
 }
 
 /**
+ * ShiftBooker
+ *
+ * Someone with a confirmed booking on a shift, as its tile names them.
+ */
+export type ShiftBooker = {
+  /**
+   * User Id
+   */
+  user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+}
+
+/**
  * ShiftBookingEntry
  *
  * A confirmed booking for a shift, with basic user info.
@@ -3470,6 +3513,10 @@ export type ShiftRead = {
    * Locked By Team
    */
   locked_by_team?: boolean
+  /**
+   * Bookers
+   */
+  bookers?: Array<ShiftBooker> | null
 }
 
 /**
@@ -10428,6 +10475,12 @@ export type ShiftsListShiftsData = {
      * Limit
      */
     limit?: number
+    /**
+     * With Bookers
+     *
+     * With task_id: add who booked each shift (bookers), for the task page's shift tiles. Ignored without task_id.
+     */
+    with_bookers?: boolean
   }
   url: '/api/v1/shifts/'
 }
@@ -15080,6 +15133,72 @@ export type VouchersListPointRedemptionsResponses = {
 
 export type VouchersListPointRedemptionsResponse =
   VouchersListPointRedemptionsResponses[keyof VouchersListPointRedemptionsResponses]
+
+export type VouchersListPointPeopleData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+    /**
+     * Task Id
+     */
+    task_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/vouchers/points/{task_id}/people'
+}
+
+export type VouchersListPointPeopleErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type VouchersListPointPeopleError =
+  VouchersListPointPeopleErrors[keyof VouchersListPointPeopleErrors]
+
+export type VouchersListPointPeopleResponses = {
+  /**
+   * Response Vouchers-List Point People
+   *
+   * Successful Response
+   */
+  200: Array<PointPersonVouchers>
+}
+
+export type VouchersListPointPeopleResponse =
+  VouchersListPointPeopleResponses[keyof VouchersListPointPeopleResponses]
 
 export type VouchersCheckVoucherData = {
   body: VoucherCheckRequest

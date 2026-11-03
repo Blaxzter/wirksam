@@ -1039,6 +1039,24 @@ export const zOwnershipTransferResult = z
   })
 
 /**
+ * PointPersonVouchers
+ *
+ * What one member of the event can redeem now, for the redeem picker.
+ *
+ * Nothing else about them: the picker takes names and faces from the
+ * event's member list.
+ */
+export const zPointPersonVouchers = z
+  .object({
+    user_id: z.uuid(),
+    available: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "What one member of the event can redeem now, for the redeem picker.\n\nNothing else about them: the picker takes names and faces from the\nevent's member list.",
+  })
+
+/**
  * PointRedemptionRead
  *
  * A redemption made at one point, with whose vouchers it took.
@@ -1069,6 +1087,8 @@ export const zPointRedemptionList = z.object({
   items: z.array(zPointRedemptionRead),
   today_count: z.int(),
   today_amount: z.int(),
+  total_count: z.int(),
+  total_amount: z.int(),
 })
 
 /**
@@ -1356,6 +1376,20 @@ export const zShiftBatchRead = z.object({
 })
 
 /**
+ * ShiftBooker
+ *
+ * Someone with a confirmed booking on a shift, as its tile names them.
+ */
+export const zShiftBooker = z
+  .object({
+    user_id: z.uuid(),
+    name: z.string().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Someone with a confirmed booking on a shift, as its tile names them.',
+  })
+
+/**
  * ShiftBookingEntry
  *
  * A confirmed booking for a shift, with basic user info.
@@ -1452,6 +1486,7 @@ export const zShiftRead = z.object({
   team_requires_approval: z.boolean().nullish(),
   my_team_status: z.enum(['pending', 'approved', 'declined']).nullish(),
   locked_by_team: z.boolean().optional().default(false),
+  bookers: z.array(zShiftBooker).nullish(),
 })
 
 /**
@@ -4289,6 +4324,14 @@ export const zShiftsListShiftsQuery = z.object({
   search: z.string().nullish(),
   skip: z.int().gte(0).optional().default(0),
   limit: z.int().gte(1).lte(200).optional().default(100),
+  with_bookers: z
+    .boolean()
+    .register(z.globalRegistry, {
+      description:
+        "With task_id: add who booked each shift (bookers), for the task page's shift tiles. Ignored without task_id.",
+    })
+    .optional()
+    .default(false),
 })
 
 /**
@@ -5163,6 +5206,22 @@ export const zVouchersListPointRedemptionsQuery = z.object({
  * Successful Response
  */
 export const zVouchersListPointRedemptionsResponse = zPointRedemptionList
+
+export const zVouchersListPointPeoplePath = z.object({
+  event_id: z.uuid(),
+  task_id: z.uuid(),
+})
+
+/**
+ * Response Vouchers-List Point People
+ *
+ * Successful Response
+ */
+export const zVouchersListPointPeopleResponse = z
+  .array(zPointPersonVouchers)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
 
 export const zVouchersCheckVoucherBody = zVoucherCheckRequest
 

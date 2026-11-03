@@ -29,6 +29,7 @@ from app.logic.teams import mark_team_locks
 from app.models.shift import Shift
 from app.schemas.booking import ShiftBookingEntry
 from app.schemas.shift import (
+    ShiftBooker,
     ShiftCreate,
     ShiftListResponse,
     ShiftRead,
@@ -66,6 +67,13 @@ async def list_shifts(
     search: str | None = None,
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=200),
+    with_bookers: bool = Query(
+        default=False,
+        description=(
+            "With task_id: add who booked each shift (bookers), for the task "
+            "page's shift tiles. Ignored without task_id."
+        ),
+    ),
 ) -> ShiftListResponse:
     if task_id:
         db_task = await crud_task.get(session, task_id, raise_404_error=True)
@@ -107,6 +115,19 @@ async def list_shifts(
     enriched = [await _enrich_shift(session, s, user_id=current_user.id) for s in items]
     await mark_collisions(session, user_id=current_user.id, entries=enriched)
     await mark_team_locks(session, current_user, enriched)
+    if task_id and with_bookers:
+        # The names the roster (``GET /shifts/{id}/bookings``) shows, for
+        # every shift at once: the task's read gate above is the roster's
+        # gate, and every shift listed belongs to that task. Only with a
+        # task_id, so the rule never has to be worked out shift by shift.
+        bookers = await crud_booking.confirmed_bookers(
+            session, slot_ids=[s.id for s in enriched]
+        )
+        for read in enriched:
+            read.bookers = [
+                ShiftBooker(user_id=user_id, name=name)
+                for user_id, name in bookers.get(read.id, [])
+            ]
     total = await crud_shift.get_count_filtered(
         session,
         task_id=task_id,

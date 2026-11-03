@@ -1019,6 +1019,43 @@ class TestRedeemManually:
         assert r.status_code == 404
         assert _code(r) == "event.member_not_found"
 
+    @pytest.mark.parametrize("who", ["admin", "manager", "staff"])
+    async def test_never_more_than_they_have_whatever_the_picker_showed(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        who: str,
+    ) -> None:
+        """The picker's counts are a read from a moment ago; the server checks
+        the balance again under the ledger lock, for every redeemer."""
+        redeemer: User = getattr(cast, who)
+        volunteer = str(cast.volunteer.id)
+        r = await _redeem(
+            async_client, app, cast, redeemer, user_id=volunteer, amount=4
+        )
+        assert r.status_code == 409
+        assert _code(r) == "voucher.insufficient"
+        assert r.json()["available"] == 3
+        assert await _entries(db_session, cast) == []
+
+        r = await _redeem(
+            async_client, app, cast, redeemer, user_id=volunteer, amount=3
+        )
+        assert r.status_code == 201
+        r = await _redeem(async_client, app, cast, redeemer, user_id=volunteer)
+        assert r.status_code == 409
+        assert _code(r) == "voucher.insufficient"
+        assert r.json()["available"] == 0
+        # Someone who never earned any is refused the same way.
+        r = await _redeem(
+            async_client, app, cast, redeemer, user_id=str(cast.bystander.id)
+        )
+        assert r.status_code == 409
+        assert _code(r) == "voucher.insufficient"
+        assert len(await _entries(db_session, cast)) == 1
+
 
 @pytest.mark.asyncio
 class TestSnapshotsAndSandbox:
@@ -1515,7 +1552,8 @@ class TestPoints:
             assert r.status_code == 200
             assert r.json()["today_amount"] == 3
             assert r.json()["today_count"] == 2
-            assert "total_amount" not in r.json()
+            assert r.json()["total_amount"] == 3
+            assert r.json()["total_count"] == 2
             assert len(r.json()["items"]) == 2
             assert r.json()["items"][0]["user_name"] == cast.volunteer.name
 
@@ -1525,6 +1563,8 @@ class TestPoints:
         assert [i["actor_name"] for i in r.json()["items"]] == [cast.staff.name]
         assert r.json()["today_amount"] == 1
         assert r.json()["today_count"] == 1
+        assert r.json()["total_amount"] == 1
+        assert r.json()["total_count"] == 1
 
         with act_as(app, cast.bystander):
             r = await async_client.get(url)
@@ -1579,12 +1619,49 @@ class TestPoints:
         assert len(r.json()["items"]) == 1
         assert r.json()["today_count"] == 3
         assert r.json()["today_amount"] == 6
+        # The total takes in yesterday as well, still not just the page.
+        assert r.json()["total_count"] == 4
+        assert r.json()["total_amount"] == 11
 
         with act_as(app, cast.staff):
             r = await async_client.get(url)
         assert r.status_code == 200
         assert r.json()["today_count"] == 2
         assert r.json()["today_amount"] == 4
+        assert r.json()["total_count"] == 2
+        assert r.json()["total_amount"] == 4
+
+    async def test_the_totals_leave_out_other_points_and_corrections(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """What "redeemed here" means: redemptions at this point, and nothing
+        else in the volunteer's ledger."""
+        await _redeem(
+            async_client, app, cast, cast.admin, user_id=str(cast.volunteer.id)
+        )
+        await _redeem(
+            async_client,
+            app,
+            cast,
+            cast.admin,
+            task=cast.second_point,
+            user_id=str(cast.volunteer.id),
+        )
+        with act_as(app, cast.admin):
+            r = await async_client.post(
+                f"{_base(cast.event)}/adjustments",
+                json={"user_id": str(cast.volunteer.id), "amount": 5, "note": "Bonus"},
+            )
+        assert r.status_code == 201, r.text
+        with act_as(app, cast.admin):
+            r = await async_client.get(
+                f"{_base(cast.event)}/points/{cast.point.id}/entries"
+            )
+        assert (r.json()["total_count"], r.json()["total_amount"]) == (1, 1)
 
     async def test_recent_redemptions_need_the_task_in_this_event(
         self, async_client: AsyncClient, app: FastAPI, cast: Cast
@@ -1600,6 +1677,177 @@ class TestPoints:
             )
             assert r.status_code == 422
             assert _code(r) == "voucher.not_a_point"
+
+
+@pytest.mark.asyncio
+class TestPointPeople:
+    """``GET .../points/{task_id}/people``: what everyone can redeem, for
+    whoever may pick the person at that point."""
+
+    def _url(self, cast: Cast, task: Task | None = None) -> str:
+        return f"{_base(cast.event)}/points/{(task or cast.point).id}/people"
+
+    async def _get(
+        self,
+        client: AsyncClient,
+        app: FastAPI,
+        cast: Cast,
+        user: User,
+        task: Task | None = None,
+    ) -> Response:
+        with act_as(app, user):
+            return await client.get(self._url(cast, task))
+
+    async def _member_ids(self, db: AsyncSession, event: Event) -> set[str]:
+        rows = await db.execute(
+            select(col(EventMembership.user_id)).where(
+                col(EventMembership.event_id) == event.id
+            )
+        )
+        return {str(uid) for uid in rows.scalars()}
+
+    @pytest.mark.parametrize("rule", ["on_shift", "in_charge"])
+    @pytest.mark.parametrize("who", ["admin", "manager"])
+    async def test_admins_and_people_in_charge_see_everyones_count(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        who: str,
+        rule: str,
+    ) -> None:
+        await _manual_rule(db_session, cast, rule)
+        r = await self._get(async_client, app, cast, getattr(cast, who))
+        assert r.status_code == 200, r.text
+        counts = {p["user_id"]: p["available"] for p in r.json()}
+        # Every member of the event, and only them.
+        assert set(counts) == await self._member_ids(db_session, cast.event)
+        assert counts[str(cast.volunteer.id)] == 3
+        assert counts[str(cast.bystander.id)] == 0
+        # Nothing but the number: names and faces come from the member list.
+        assert all(set(p) == {"user_id", "available"} for p in r.json())
+
+    async def test_staff_on_shift_see_the_same_numbers_by_default(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        admin_view = await self._get(async_client, app, cast, cast.admin)
+        staff_view = await self._get(async_client, app, cast, cast.staff)
+        assert staff_view.status_code == 200, staff_view.text
+        assert sorted(staff_view.json(), key=lambda p: p["user_id"]) == sorted(
+            admin_view.json(), key=lambda p: p["user_id"]
+        )
+        # The second point's staff, at their own point.
+        r = await self._get(
+            async_client, app, cast, cast.second_staff, task=cast.second_point
+        )
+        assert r.status_code == 200
+
+    async def test_with_in_charge_staff_on_shift_get_none(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """They need the code there, so they have no use for anyone's count."""
+        await _manual_rule(db_session, cast, "in_charge")
+        r = await self._get(async_client, app, cast, cast.staff)
+        assert r.status_code == 403
+        assert _code(r) == "voucher.manual_not_allowed"
+
+    @pytest.mark.parametrize("rule", ["on_shift", "in_charge"])
+    @pytest.mark.parametrize("who", ["bystander", "second_staff", "volunteer"])
+    async def test_a_member_not_redeeming_here_gets_none(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        who: str,
+        rule: str,
+    ) -> None:
+        await _manual_rule(db_session, cast, rule)
+        r = await self._get(async_client, app, cast, getattr(cast, who))
+        assert r.status_code == 403
+        assert _code(r) == "voucher.not_allowed"
+
+    async def test_after_the_shift_the_staff_get_none(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        monkeypatch: pytest.MonkeyPatch,
+        cast: Cast,
+    ) -> None:
+        """Half an hour after 18:00 the shift no longer runs."""
+        monkeypatch.setattr(
+            "app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 6, 11, 18, 31)
+        )
+        r = await self._get(async_client, app, cast, cast.staff)
+        assert r.status_code == 403
+        assert _code(r) == "voucher.not_allowed"
+
+    async def test_another_event_stays_out_of_it(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        # Someone in no event may look at this public one, and gets nothing.
+        r = await self._get(async_client, app, cast, cast.outsider)
+        assert r.status_code == 403
+        assert _code(r) == "voucher.not_allowed"
+        # The other event's point through this event's address is no point here.
+        r = await self._get(async_client, app, cast, cast.admin, task=cast.other_point)
+        assert r.status_code == 404
+        assert _code(r) == "task.not_found"
+        # And a member here who is in no role there cannot read that event's.
+        with act_as(app, cast.manager):
+            r = await async_client.get(
+                f"{_base(cast.other_event)}/points/{cast.other_point.id}/people"
+            )
+        assert r.status_code == 404
+
+    async def test_only_at_a_point(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        r = await self._get(async_client, app, cast, cast.admin, task=cast.plain)
+        assert r.status_code == 422
+        assert _code(r) == "voucher.not_a_point"
+
+    async def test_someone_who_left_is_not_listed(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """They keep their vouchers in the organisers' overview, but nobody can
+        pick them at a stand any more."""
+        await db_session.execute(
+            delete(EventMembership).where(
+                col(EventMembership.user_id) == cast.volunteer.id,
+                col(EventMembership.event_id) == cast.event.id,
+            )
+        )
+        await db_session.flush()
+        r = await self._get(async_client, app, cast, cast.manager)
+        assert str(cast.volunteer.id) not in {p["user_id"] for p in r.json()}
+        with act_as(app, cast.admin):
+            overview = await async_client.get(f"{_base(cast.event)}/people")
+        assert str(cast.volunteer.id) in {p["user_id"] for p in overview.json()}
+
+    async def test_a_redemption_shows_in_the_next_read(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        await _redeem(
+            async_client,
+            app,
+            cast,
+            cast.staff,
+            user_id=str(cast.volunteer.id),
+            amount=2,
+        )
+        r = await self._get(async_client, app, cast, cast.staff)
+        counts = {p["user_id"]: p["available"] for p in r.json()}
+        assert counts[str(cast.volunteer.id)] == 1
 
 
 # ── Flags on events and tasks ─────────────────────────────────────

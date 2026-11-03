@@ -1060,6 +1060,95 @@ class TestBookingLists:
         phones = {row["user_phone_number"] for row in r.json()}
         assert ("+49 151 2222" in phones) == sees_phone
 
+    async def _tiles(self, client: AsyncClient, task: Task, **params: str) -> Response:
+        return await client.get(
+            "/api/v1/shifts/",
+            params={"task_id": str(task.id), "with_bookers": "true", **params},
+        )
+
+    @pytest.mark.parametrize(
+        "role", ["member", "sibling", "elsewhere", "manager", "admin"]
+    )
+    async def test_the_shift_list_names_the_bookers_to_whoever_sees_the_roster(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        booked: Shift,
+        role: str,
+    ) -> None:
+        """The tiles' "2 of 3 · Member, Sibling" in the one shift-list request:
+        the roster's names for everyone who may open the roster, earliest
+        booking first, and nothing else about them."""
+        late = await _book(db_session, booked, cast.manager)
+        late.created_at = dt.datetime(2030, 1, 1)
+        db_session.add(late)
+        empty = await _shift(db_session, cast.task, date=dt.date(2026, 6, 13))
+        cancelled = await _book(db_session, empty, cast.admin)
+        cancelled.status = "cancelled"
+        db_session.add(cancelled)
+        await db_session.flush()
+
+        with act_as(app, cast[role]):
+            r = await self._tiles(async_client, cast.task)
+            roster = await async_client.get(f"/api/v1/shifts/{booked.id}/bookings")
+        assert r.status_code == 200, r.text
+        tiles = {s["id"]: s for s in r.json()["items"]}
+        bookers = tiles[str(booked.id)]["bookers"]
+        assert {b["user_id"] for b in bookers} == {
+            row["user_id"] for row in roster.json()
+        }
+        assert bookers[-1] == {"user_id": str(cast.manager.id), "name": "Manager"}
+        assert {b["name"] for b in bookers[:2]} == {cast.member.name, "Sibling"}
+        assert all(set(b) == {"user_id", "name"} for b in bookers)
+        # A cancelled booking is no one on the shift.
+        assert tiles[str(empty.id)]["bookers"] == []
+
+    async def test_the_shift_list_names_nobody_unless_asked_for_one_task(
+        self, app: FastAPI, async_client: AsyncClient, cast: Cast, booked: Shift
+    ) -> None:
+        with act_as(app, cast.member):
+            plain = await async_client.get(
+                "/api/v1/shifts/", params={"task_id": str(cast.task.id)}
+            )
+            unfiltered = await async_client.get(
+                "/api/v1/shifts/", params={"with_bookers": "true"}
+            )
+        assert all(s["bookers"] is None for s in plain.json()["items"])
+        assert unfiltered.status_code == 200
+        assert any(s["id"] == str(booked.id) for s in unfiltered.json()["items"])
+        assert all(s["bookers"] is None for s in unfiltered.json()["items"])
+
+    async def test_the_shift_list_gives_names_no_wider_than_the_roster(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        booked: Shift,
+    ) -> None:
+        """An outsider sees no task; a draft's shifts only its people in charge
+        and the event admins, the booker's way back in being the single shift
+        dialog (``GET /shifts/{id}``), never the whole task's list."""
+        with act_as(app, cast.outsider):
+            r = await self._tiles(async_client, cast.task)
+        assert r.status_code == 404
+
+        cast.task.status = "draft"
+        db_session.add(cast.task)
+        await db_session.flush()
+        for role in ("member", "elsewhere"):
+            with act_as(app, cast[role]):
+                r = await self._tiles(async_client, cast.task)
+            assert r.status_code == 403
+            assert r.json()["code"] == "task.not_published"
+        with act_as(app, cast.manager):
+            r = await self._tiles(async_client, cast.task)
+        assert r.status_code == 200
+        [tile] = [s for s in r.json()["items"] if s["id"] == str(booked.id)]
+        assert len(tile["bookers"]) == 2
+
     async def test_task_batches_are_404_for_an_outsider(
         self, app: FastAPI, async_client: AsyncClient, cast: Cast
     ) -> None:

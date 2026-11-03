@@ -486,6 +486,28 @@ async def available_for(
     return max(tally.balance, 0) if tally else 0
 
 
+async def available_for_members(
+    session: AsyncSession,
+    event_id: uuid.UUID,
+    *,
+    now: dt.datetime,
+) -> dict[uuid.UUID, int]:
+    """``{user_id: available}`` for every current member of the event.
+
+    The same figure as :func:`available_for` and the organisers' overview
+    (:func:`balances`), but only the number and only for members: former
+    members cannot be picked at a stand, and whoever reads this need not be
+    an organiser.
+    """
+    member_ids = await crud_membership.list_user_ids(session, event_id=event_id)
+    tallies = await _tally(session, event_id, now=now)
+    out: dict[uuid.UUID, int] = {}
+    for user_id in member_ids:
+        tally = tallies.get(user_id)
+        out[user_id] = max(tally.balance, 0) if tally else 0
+    return out
+
+
 async def account(
     session: AsyncSession,
     event_id: uuid.UUID,

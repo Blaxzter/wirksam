@@ -12,6 +12,7 @@ from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.shift import Shift
 from app.models.task import Task
+from app.models.user import User
 from app.schemas.booking import BookingCreate, BookingUpdate
 
 
@@ -309,6 +310,35 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             )
         )
         return [(t, d, s, e) for t, d, s, e in result.all()]
+
+    async def confirmed_bookers(
+        self,
+        db: AsyncSession,
+        *,
+        slot_ids: list[uuid.UUID],
+    ) -> dict[uuid.UUID, list[tuple[uuid.UUID, str | None]]]:
+        """``{shift_id: [(user_id, name), ...]}`` of confirmed bookings,
+        earliest booking first, for a page of shifts in one query.
+
+        Shifts nobody has booked are missing from the result. Who may read
+        the names is the caller's business (see ``GET /shifts/``).
+        """
+        if not slot_ids:
+            return {}
+        result = await db.execute(
+            select(col(Booking.shift_id), col(User.id), col(User.name))
+            .join(User, col(User.id) == col(Booking.user_id))
+            .where(
+                col(Booking.shift_id).in_(slot_ids),
+                col(Booking.status) == "confirmed",
+            )
+            .order_by(col(Booking.created_at), col(Booking.id))
+        )
+        out: dict[uuid.UUID, list[tuple[uuid.UUID, str | None]]] = {}
+        for shift_id, user_id, name in result.all():
+            if shift_id is not None:  # matched by IN above; for the checker
+                out.setdefault(shift_id, []).append((user_id, name))
+        return out
 
     async def count_confirmed_for_shifts(
         self,

@@ -9,7 +9,7 @@ passes them in: this module only knows the rows.
 import datetime as dt
 import uuid
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 from sqlalchemy import CursorResult, and_, delete, func, or_, select, text, update
 from sqlalchemy.exc import IntegrityError
@@ -22,6 +22,15 @@ from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 #: How many fresh codes ``issue_pass`` tries before giving up. With 31^6
 #: codes and a few dozen live ones, a second attempt is already rare.
 _ISSUE_ATTEMPTS = 5
+
+
+class PointTotals(NamedTuple):
+    """Redemptions at one point and the vouchers they took (positive)."""
+
+    today_count: int
+    today_amount: int
+    total_count: int
+    total_amount: int
 
 
 class CRUDVoucher:
@@ -103,34 +112,45 @@ class CRUDVoucher:
             query = query.where(col(VoucherEntry.actor_id) == actor_id)
         return [(e, u) for e, u in (await session.execute(query)).all()]
 
-    async def point_totals_since(
+    async def point_totals(
         self,
         session: AsyncSession,
         *,
         event_id: uuid.UUID,
         task_id: uuid.UUID,
         actor_id: uuid.UUID | None = None,
-        since: dt.datetime,
-    ) -> tuple[int, int]:
-        """``(redemptions, vouchers)`` made at one point from ``since`` on.
+        today_since: dt.datetime,
+    ) -> PointTotals:
+        """What was redeemed at one point: from ``today_since`` on, and ever.
 
         The same rows as :meth:`list_for_point`, counted in the database, so
-        the total is not limited to the page on screen. ``since`` is naive
-        UTC, like ``created_at``; vouchers come back as a positive number.
+        neither figure is limited to the page on screen; one statement, so
+        today's figure is always part of the total. ``today_since`` is naive
+        UTC, like ``created_at``; vouchers come back as positive numbers.
         """
+        today = col(VoucherEntry.created_at) >= today_since
+        amount = col(VoucherEntry.amount)
         query = select(
+            func.count().filter(today),
+            func.coalesce(func.sum(amount).filter(today), 0),
             func.count(),
-            func.coalesce(func.sum(col(VoucherEntry.amount)), 0),
+            func.coalesce(func.sum(amount), 0),
         ).where(
             col(VoucherEntry.event_id) == event_id,
             col(VoucherEntry.task_id) == task_id,
             col(VoucherEntry.kind) == "redemption",
-            col(VoucherEntry.created_at) >= since,
         )
         if actor_id is not None:
             query = query.where(col(VoucherEntry.actor_id) == actor_id)
-        count, total = (await session.execute(query)).one()
-        return int(count), -int(total)
+        today_count, today_sum, total_count, total_sum = (
+            await session.execute(query)
+        ).one()
+        return PointTotals(
+            today_count=int(today_count),
+            today_amount=-int(today_sum),
+            total_count=int(total_count),
+            total_amount=-int(total_sum),
+        )
 
     async def get_in_event(
         self,

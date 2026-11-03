@@ -42,6 +42,7 @@ from app.models.user import User
 from app.models.voucher import VoucherEntry
 from app.schemas.task_manager import TaskManagerBrief
 from app.schemas.voucher import (
+    PointPersonVouchers,
     PointRedemptionList,
     PointRedemptionRead,
     VoucherAccount,
@@ -233,12 +234,13 @@ async def list_point_redemptions(
     current_user: CurrentUser,
     limit: int = Query(default=50, ge=1, le=200),
 ) -> PointRedemptionList:
-    """Redemptions made at one point, newest first, and today's totals there.
+    """Redemptions made at one point, newest first, and the totals there:
+    today's and over every day.
 
     Event admins and its people in charge see every one; someone redeeming
     because they are on shift there sees the ones they made, and their own
-    totals. "Today" is the event wall-clock day, counted over every entry
-    rather than the ``limit`` on screen.
+    totals. "Today" is the event wall-clock day. Both totals count every
+    entry rather than the ``limit`` on screen.
     """
     event = await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=task_id)
@@ -263,16 +265,48 @@ async def list_point_redemptions(
         )
         for entry, user in rows
     ]
-    today_count, today_amount = await crud_voucher.point_totals_since(
+    totals = await crud_voucher.point_totals(
         session,
         event_id=event_id,
         task_id=task.id,
         actor_id=actor_id,
-        since=vouchers.to_utc(dt.datetime.combine(wall_now.date(), dt.time())),
+        today_since=vouchers.to_utc(dt.datetime.combine(wall_now.date(), dt.time())),
     )
-    return PointRedemptionList(
-        items=items, today_count=today_count, today_amount=today_amount
+    return PointRedemptionList(items=items, **totals._asdict())
+
+
+@router.get(
+    "/{event_id}/vouchers/points/{task_id}/people",
+    response_model=list[PointPersonVouchers],
+)
+async def list_point_people(
+    event_id: uuid.UUID,
+    task_id: uuid.UUID,
+    session: DBDep,
+    current_user: CurrentUser,
+) -> list[PointPersonVouchers]:
+    """What each member of the event can redeem now, for picking the person
+    at one point without a code.
+
+    For whoever may redeem manually there (``require_voucher_redeemer`` with
+    ``manual``: 403 ``voucher.not_allowed`` or ``voucher.manual_not_allowed``
+    otherwise), so the people in charge and the staff on shift see the same
+    numbers as the organisers. Current members of this event only, and only
+    their id and what they can redeem: the picker has the rest from the
+    member list, and a redemption checks the balance again under its lock.
+    """
+    event = await _event_for(session, current_user, event_id)
+    task = await _point_in_event(session, event_id=event_id, task_id=task_id)
+    wall_now = clock.wall_clock_now()
+    await require_voucher_redeemer(
+        current_user, session, task, event=event, now=wall_now, manual=True
     )
+    _require_point(task)
+    available = await vouchers.available_for_members(session, event_id, now=wall_now)
+    return [
+        PointPersonVouchers(user_id=user_id, available=n)
+        for user_id, n in available.items()
+    ]
 
 
 @router.post("/{event_id}/vouchers/check", response_model=VoucherCheckResult)

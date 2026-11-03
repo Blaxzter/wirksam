@@ -248,3 +248,20 @@ class PointRedemptionList(BaseModel):
     today_count: int
     #: Vouchers those took, as a positive number.
     today_amount: int
+    #: Redemptions made here on every day so far, counted the same way (an
+    #: on-shift redeemer's own); includes today's.
+    total_count: int
+    #: Vouchers those took, as a positive number.
+    total_amount: int
+
+
+class PointPersonVouchers(BaseModel):
+    """What one member of the event can redeem now, for the redeem picker.
+
+    Nothing else about them: the picker takes names and faces from the
+    event's member list.
+    """
+
+    user_id: uuid.UUID
+    #: What they can redeem right now; 0 when nothing is left.
+    available: int
