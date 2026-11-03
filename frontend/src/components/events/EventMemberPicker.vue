@@ -25,7 +25,6 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  ComboboxViewport,
 } from '@/components/ui/combobox'
 import { RESPONSIVE_DIALOG_MOBILE_QUERY } from '@/components/ui/responsive-dialog'
 
@@ -390,83 +389,85 @@ watch(sheetOpen, (isOpen) => {
           :data-testid="testid"
         />
       </ComboboxAnchor>
+      <!--
+        The list scrolls itself, with no ComboboxViewport inside. Focus stays in
+        the field and the arrow keys walk the list, so a scrolling listbox that
+        belongs to the combobox is fine by axe (scrollable-region-focusable); a
+        plain scrolling wrapper inside it is not, as nothing in it can take
+        focus. The scrollbar stays hidden, as the viewport hid it.
+      -->
       <ComboboxList
         align="start"
-        class="w-(--reka-combobox-trigger-width) min-w-64"
+        class="w-(--reka-combobox-trigger-width) max-h-[300px] min-w-64 scroll-py-1 overflow-y-auto p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         :data-testid="`${testid}-list`"
       >
-        <ComboboxViewport class="p-1">
-          <ComboboxEmpty class="text-muted-foreground px-2 py-4">
-            <Search class="mx-auto mb-1 size-4" />
-            {{ emptyText ?? t('common.memberPicker.noMatch') }}
-          </ComboboxEmpty>
-          <ComboboxItem
-            v-if="inviteEmail"
-            :value="INVITE + inviteEmail"
-            :text-value="inviteEmail"
-            class="group gap-3 py-2"
-            :data-testid="`${testid}-invite`"
+        <ComboboxEmpty class="text-muted-foreground px-2 py-4">
+          <Search class="mx-auto mb-1 size-4" />
+          {{ emptyText ?? t('common.memberPicker.noMatch') }}
+        </ComboboxEmpty>
+        <ComboboxItem
+          v-if="inviteEmail"
+          :value="INVITE + inviteEmail"
+          :text-value="inviteEmail"
+          class="group gap-3 py-2"
+          :data-testid="`${testid}-invite`"
+        >
+          <span
+            class="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full"
+            aria-hidden="true"
           >
-            <span
-              class="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-full"
-              aria-hidden="true"
-            >
-              <Send class="text-primary-foreground size-3.5" />
+            <Send class="text-primary-foreground size-3.5" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-semibold">
+              {{ t('duties.tasks.managers.inviteOption', { email: inviteEmail }) }}
             </span>
-            <span class="min-w-0 flex-1">
-              <span class="block truncate font-semibold">
-                {{ t('duties.tasks.managers.inviteOption', { email: inviteEmail }) }}
-              </span>
-              <span class="text-muted-foreground block text-xs">
-                {{ t('duties.tasks.managers.inviteOptionHint') }}
-              </span>
+            <span class="text-muted-foreground block text-xs">
+              {{ t('duties.tasks.managers.inviteOptionHint') }}
             </span>
-            <kbd
-              class="text-muted-foreground hidden shrink-0 rounded border px-1.5 py-0.5 font-sans text-[11px] group-data-[highlighted]:sm:inline"
-            >
-              {{ t('common.memberPicker.enterKey') }}
-            </kbd>
-          </ComboboxItem>
-          <ComboboxItem
-            v-for="member in matches"
-            :key="member.user_id"
-            :value="member.user_id"
-            :text-value="nameOf(member)"
-            :disabled="!!unavailable?.[member.user_id]"
-            class="group gap-3"
-            :data-testid="`${testid}-option-${member.user_id}`"
+          </span>
+          <kbd
+            class="text-muted-foreground hidden shrink-0 rounded border px-1.5 py-0.5 font-sans text-[11px] group-data-[highlighted]:sm:inline"
           >
-            <Avatar class="size-7">
-              <AvatarImage
-                v-if="avatarUrlFor({ id: member.user_id, avatar_etag: member.avatar_etag })"
-                :src="avatarUrlFor({ id: member.user_id, avatar_etag: member.avatar_etag })!"
-              />
-              <AvatarFallback class="text-[10px]">{{ initials(nameOf(member)) }}</AvatarFallback>
-            </Avatar>
-            <span class="min-w-0 flex-1 truncate">
-              <span class="font-medium">{{ nameOf(member) }}</span>
-              <span v-if="member.name && member.email" class="text-muted-foreground text-xs">
-                · {{ member.email }}
-              </span>
-              <span v-if="inviteEmail" class="text-muted-foreground text-xs">
-                · {{ t('duties.tasks.managers.inEvent') }}
-              </span>
+            {{ t('common.memberPicker.enterKey') }}
+          </kbd>
+        </ComboboxItem>
+        <ComboboxItem
+          v-for="member in matches"
+          :key="member.user_id"
+          :value="member.user_id"
+          :text-value="nameOf(member)"
+          :disabled="!!unavailable?.[member.user_id]"
+          class="group gap-3"
+          :data-testid="`${testid}-option-${member.user_id}`"
+        >
+          <Avatar class="size-7">
+            <AvatarImage
+              v-if="avatarUrlFor({ id: member.user_id, avatar_etag: member.avatar_etag })"
+              :src="avatarUrlFor({ id: member.user_id, avatar_etag: member.avatar_etag })!"
+            />
+            <AvatarFallback class="text-[10px]">{{ initials(nameOf(member)) }}</AvatarFallback>
+          </Avatar>
+          <span class="min-w-0 flex-1 truncate">
+            <span class="font-medium">{{ nameOf(member) }}</span>
+            <span v-if="member.name && member.email" class="text-muted-foreground text-xs">
+              · {{ member.email }}
             </span>
-            <slot name="trailing" :member="member" />
-            <span
-              v-if="unavailable?.[member.user_id]"
-              class="text-muted-foreground shrink-0 text-xs"
-            >
-              {{ unavailable[member.user_id] }}
+            <span v-if="inviteEmail" class="text-muted-foreground text-xs">
+              · {{ t('duties.tasks.managers.inEvent') }}
             </span>
-            <span
-              v-else-if="!inviteEmail"
-              class="text-muted-foreground hidden shrink-0 text-xs group-data-[highlighted]:sm:inline"
-            >
-              {{ actionHint ?? t('common.memberPicker.enterToPick') }}
-            </span>
-          </ComboboxItem>
-        </ComboboxViewport>
+          </span>
+          <slot name="trailing" :member="member" />
+          <span v-if="unavailable?.[member.user_id]" class="text-muted-foreground shrink-0 text-xs">
+            {{ unavailable[member.user_id] }}
+          </span>
+          <span
+            v-else-if="!inviteEmail"
+            class="text-muted-foreground hidden shrink-0 text-xs group-data-[highlighted]:sm:inline"
+          >
+            {{ actionHint ?? t('common.memberPicker.enterToPick') }}
+          </span>
+        </ComboboxItem>
       </ComboboxList>
     </Combobox>
   </div>
