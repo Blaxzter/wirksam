@@ -18,7 +18,7 @@ from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.logic import clock, vouchers
-from app.logic.invitations import invite_to_task
+from app.logic.invitations import invite_to_task, lock_invitation_quota
 from app.logic.locations import resolve_location
 from app.logic.notifications.triggers import (
     dispatch_event_invitation,
@@ -114,6 +114,9 @@ async def _invite_by_email(
     """
     results: list[TaskManagerInviteResult] = []
     now = clock.utc_now()
+    # Every address's limit lock up front, in sorted order, as bulk does:
+    # taken one by one in the order typed, two requests could deadlock.
+    await lock_invitation_quota(session, inviter=inviter, emails=emails)
     for email in emails:
         account = await crud_user.get_by_email(session, email=email)
         if account is not None and account.id in manager_ids:

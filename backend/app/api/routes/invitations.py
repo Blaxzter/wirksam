@@ -14,6 +14,7 @@ instead.
 """
 
 import uuid
+from typing import NoReturn
 
 from fastapi import APIRouter, BackgroundTasks
 from sqlalchemy.exc import IntegrityError
@@ -30,6 +31,7 @@ from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.logic.permissions import role_at_least
 from app.models.event_invitation import EventInvitation
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.task import Task
 from app.schemas.event import EventRead
 from app.schemas.event_invitation import EventInvitationPreview, InvitationTaskBrief
@@ -51,19 +53,36 @@ def _email_matches(invitation_email: str | None, user_email: str | None) -> bool
 
 
 async def _targeted_for_address(
-    session: AsyncSession, invitation: EventInvitation
+    session: AsyncSession, invitation: EventInvitation, *, lock: bool = False
 ) -> list[EventInvitation]:
     """This targeted invitation and every other open, valid one to its address
     in its event.
 
     Normally just this one: inviting an address that already has one adds the
     task to it. Two organisers inviting at the same moment can leave two.
+
+    With ``lock`` (accepting) the rows stay locked until commit, so a task an
+    organiser links at the same moment is either seen here or lands on a new
+    invitation (``invite_to_task`` locks the same rows). If this invitation
+    stopped being valid while the lock was awaited, the accept is refused
+    as it would have been a moment later.
     """
     assert invitation.email is not None
     others = await crud_links.open_for_address(
-        session, event_id=invitation.event_id, email=invitation.email
+        session, event_id=invitation.event_id, email=invitation.email, for_update=lock
     )
+    if lock and all(i.id != invitation.id for i in others):
+        await session.refresh(invitation)
+        _refuse(invitation_invalid_reason(invitation) or "already_used")
     return [invitation, *(i for i in others if i.id != invitation.id)]
+
+
+def _refuse(reason: str) -> NoReturn:
+    raise_problem(
+        410,
+        code=f"invitation.{reason}",
+        detail="This invitation can no longer be used",
+    )
 
 
 async def _linked_tasks(
@@ -71,22 +90,21 @@ async def _linked_tasks(
     invitations: list[EventInvitation],
     *,
     event_id: uuid.UUID,
-) -> list[Task]:
-    """The tasks the invitations ask for that still belong to the event.
+) -> list[tuple[Task, EventInvitationTask]]:
+    """The tasks the invitations ask for that still belong to the event, each
+    with the link that asked first (who asked is on it).
 
     A task moved to another event has lost its links already
     (``detach_task``); filtering on the event as well keeps a straggler from
     making someone in charge of a task in an event they did not join.
     """
-    by_invitation = await crud_links.tasks_for_invitations(
+    seen: dict[uuid.UUID, tuple[Task, EventInvitationTask]] = {}
+    for link, task in await crud_links.links_with_tasks(
         session, invitation_ids=[i.id for i in invitations]
-    )
-    seen: dict[uuid.UUID, Task] = {}
-    for tasks in by_invitation.values():
-        for task in tasks:
-            if task.event_id == event_id:
-                seen.setdefault(task.id, task)
-    return sorted(seen.values(), key=lambda t: (t.name, str(t.id)))
+    ):
+        if task.event_id == event_id:
+            seen.setdefault(task.id, (task, link))
+    return list(seen.values())
 
 
 @router.get("/{token}", response_model=EventInvitationPreview)
@@ -150,7 +168,7 @@ async def preview_invitation(
             InvitationTaskBrief(
                 task_id=t.id, name=t.name, start_date=t.start_date, end_date=t.end_date
             )
-            for t in await _linked_tasks(session, pending, event_id=db_event.id)
+            for t, _ in await _linked_tasks(session, pending, event_id=db_event.id)
         ]
 
     return EventInvitationPreview(
@@ -192,11 +210,7 @@ async def accept_invitation(
 
     reason = invitation_invalid_reason(invitation)
     if reason is not None:
-        raise_problem(
-            410,
-            code=f"invitation.{reason}",
-            detail="This invitation can no longer be used",
-        )
+        _refuse(reason)
     if not _email_matches(invitation.email, current_user.email):
         raise_problem(
             403,
@@ -212,13 +226,15 @@ async def accept_invitation(
             detail="The event this invitation points to no longer exists",
         )
 
-    existing = await crud_membership.get(
-        session, user_id=current_user.id, event_id=db_event.id
-    )
+    # Locked before anything is read from them or written, see
+    # ``_targeted_for_address``.
     targeted = (
-        await _targeted_for_address(session, invitation)
+        await _targeted_for_address(session, invitation, lock=True)
         if invitation.email is not None
         else []
+    )
+    existing = await crud_membership.get(
+        session, user_id=current_user.id, event_id=db_event.id
     )
     if existing is None:
         # The strongest role among them: an organiser invitation must not be
@@ -240,18 +256,21 @@ async def accept_invitation(
 
     applied: list[uuid.UUID] = []
     if targeted:
-        for task in await _linked_tasks(session, targeted, event_id=db_event.id):
+        for task, link in await _linked_tasks(session, targeted, event_id=db_event.id):
             if await crud_task_manager.is_manager(
                 session, task_id=task.id, user_id=current_user.id
             ):
                 continue
             try:
                 async with session.begin_nested():
-                    await crud_task_manager.add(
+                    # The organiser who asked put them in charge, not the
+                    # invitee who accepted.
+                    await crud_task_manager.add_asked_by(
                         session,
                         task_id=task.id,
                         user_id=current_user.id,
-                        added_by=current_user,
+                        added_by_id=link.added_by_id,
+                        added_by_name=link.added_by_name,
                     )
             except IntegrityError:
                 # A concurrent accept put them in charge first.

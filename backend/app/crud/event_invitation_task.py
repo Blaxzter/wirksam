@@ -182,6 +182,28 @@ class CRUDEventInvitationTask:
             out[invitation_id].append(task)
         return dict(out)
 
+    async def links_with_tasks(
+        self,
+        session: AsyncSession,
+        *,
+        invitation_ids: Iterable[uuid.UUID],
+    ) -> list[tuple[EventInvitationTask, Task]]:
+        """Every link of these invitations with its task, by task name.
+
+        A task linked from more than one of them comes once per link, the
+        oldest link first, so a caller keeping the first sees who asked first.
+        """
+        ids = set(invitation_ids)
+        if not ids:
+            return []
+        rows = await session.execute(
+            select(EventInvitationTask, Task)
+            .join(Task, col(Task.id) == col(EventInvitationTask.task_id))
+            .where(col(EventInvitationTask.invitation_id).in_(ids))
+            .order_by(col(Task.name), col(Task.id), col(EventInvitationTask.created_at))
+        )
+        return [(link, task) for link, task in rows.all()]
+
     async def open_invitations_for_task(
         self,
         session: AsyncSession,
@@ -207,6 +229,7 @@ class CRUDEventInvitationTask:
         event_id: uuid.UUID,
         email: str,
         include_expired: bool = False,
+        for_update: bool = False,
     ) -> list[EventInvitation]:
         """Open targeted invitations to ``email`` in this event, newest first.
 
@@ -214,6 +237,14 @@ class CRUDEventInvitationTask:
         lowercased (``crud.event_invitation.create``), so the comparison is on
         the lowercased address and the index on ``(event_id, email)`` serves
         it.
+
+        ``for_update`` locks the rows until commit, for a write that must not
+        interleave with accepting them: adding or removing a task link, and
+        accepting itself (``POST /invitations/{token}/accept``). A request
+        that waits re-checks "open" against what the other one committed, so
+        an invitation accepted meanwhile is left out rather than gaining a
+        link nobody will ever apply. The rows are locked in the order they are
+        returned, the same in every caller, and the objects are refreshed.
         """
         where = [
             col(EventInvitation.event_id) == event_id,
@@ -227,11 +258,16 @@ class CRUDEventInvitationTask:
                     col(EventInvitation.expires_at) > clock.utc_now(),
                 )
             )
-        rows = await session.execute(
+        statement = (
             select(EventInvitation)
             .where(*where)
             .order_by(col(EventInvitation.created_at).desc(), col(EventInvitation.id))
         )
+        if for_update:
+            statement = statement.with_for_update().execution_options(
+                populate_existing=True
+            )
+        rows = await session.execute(statement)
         return list(rows.scalars().all())
 
     async def detach_task(self, session: AsyncSession, *, task_id: uuid.UUID) -> None:

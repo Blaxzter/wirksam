@@ -19,6 +19,14 @@ they are off under ``settings.TESTING``, because the E2E fixtures invite the
 same seeded people into many events; the backend tests switch them on where
 they test them.
 
+A count followed by an insert only holds if nobody else inserts in between,
+so the first two are counted under transaction-scoped advisory locks, one per
+organiser and one per address (:func:`lock_invitation_quota`). Two requests
+that would together break a limit then run one after the other, and the
+second counts what the first committed. Every caller takes the organiser's
+lock first and the addresses' in sorted order, before any invitation row
+lock, so two requests can never each hold what the other waits for.
+
 :func:`invite_to_task` is ``POST /tasks/{id}/managers/invite``, shared with
 ``POST /tasks/with-shifts``. It never queues anything itself: the caller reads
 the result and queues ``dispatch_task_manager_added`` (``added``, unless the
@@ -29,10 +37,10 @@ tests replace them.
 
 import datetime as dt
 import uuid
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from typing import Literal, NoReturn
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
@@ -71,6 +79,34 @@ QuotaRefusal = Literal["rate_limited", "address_limited"]
 # ── Limits ────────────────────────────────────────────────────────
 
 
+def _limits_apply(inviter: User) -> bool:
+    return not (inviter.is_admin or settings.TESTING)
+
+
+async def lock_invitation_quota(
+    session: AsyncSession, *, inviter: User, emails: Iterable[str]
+) -> None:
+    """Hold the daily-limit locks for ``inviter`` and ``emails`` until commit.
+
+    Transaction-scoped advisory locks, as ``crud.voucher.lock_ledger`` takes:
+    the limits count rows, so there is no row to lock until the invitation
+    exists. Under READ COMMITTED every count after the lock sees what the
+    previous holder committed. The organiser's lock comes first and the
+    addresses' follow in sorted order, so a request inviting several
+    addresses (bulk, create-with-shifts) takes them all up front, before
+    anything else; :func:`quota_refusal` takes them again for its one address,
+    which is free for a lock already held. Skipped where the limits are.
+    """
+    if not _limits_apply(inviter):
+        return
+    addresses = sorted({e.strip().lower() for e in emails})
+    for key in [f"invite-by:{inviter.id}", *(f"invite-to:{a}" for a in addresses)]:
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+            {"key": key},
+        )
+
+
 async def quota_refusal(
     session: AsyncSession, *, inviter: User, email: str, now: dt.datetime
 ) -> QuotaRefusal | None:
@@ -78,10 +114,13 @@ async def quota_refusal(
 
     ``None`` when it may be created. Counts every targeted invitation created
     in the last 24 hours, revoked or accepted ones included: what is limited
-    is mail going out, and each of them sent one.
+    is mail going out, and each of them sent one. Takes the limit locks first
+    (:func:`lock_invitation_quota`), so the caller's insert lands before a
+    concurrent request counts.
     """
-    if inviter.is_admin or settings.TESTING:
+    if not _limits_apply(inviter):
         return None
+    await lock_invitation_quota(session, inviter=inviter, emails=[email])
     since = now - _QUOTA_WINDOW
     by_inviter = await session.scalar(
         select(func.count(col(EventInvitation.id))).where(
@@ -246,6 +285,32 @@ def _already_invited() -> NoReturn:
     )
 
 
+async def release_task_invitations(
+    session: AsyncSession, *, event_id: uuid.UUID, email: str, task_id: uuid.UUID
+) -> None:
+    """Take ``task_id`` off every open invitation to ``email`` in the event.
+
+    For a member who is being put in charge of the task directly, by address
+    or picked from the list: an invitation that asked them to run it has done
+    its job, and would otherwise stay in the dialog with an "Add now" that
+    can only fail. A task-only invitation left without tasks is revoked
+    (``crud_links.remove``).
+
+    Call it *before* inserting the ``TaskManager`` row. The invitations are
+    locked first, as accepting locks them before it inserts its own rows, so
+    the two cannot each wait on the other; and if the insert then fails, the
+    request rolls back and the links come back with it.
+    """
+    for invitation in await crud_links.open_for_address(
+        session,
+        event_id=event_id,
+        email=email,
+        include_expired=True,
+        for_update=True,
+    ):
+        await crud_links.remove(session, invitation=invitation, task_id=task_id)
+
+
 async def _add_member(
     session: AsyncSession,
     *,
@@ -258,6 +323,9 @@ async def _add_member(
     """The address belongs to a member: put them in charge at once."""
     if await crud_task_manager.is_manager(session, task_id=task.id, user_id=member.id):
         _already_in_charge()
+    await release_task_invitations(
+        session, event_id=event_id, email=address, task_id=task.id
+    )
     try:
         async with session.begin_nested():
             await crud_task_manager.add(
@@ -266,11 +334,6 @@ async def _add_member(
     except IntegrityError:
         # Someone else added the same person between the check and the insert.
         _already_in_charge()
-    # An earlier invitation that asked them to run this task has done its job.
-    for invitation in await crud_links.open_for_address(
-        session, event_id=event_id, email=address, include_expired=True
-    ):
-        await crud_links.remove(session, invitation=invitation, task_id=task.id)
     return TaskManagerInviteResult(
         status="added",
         manager=TaskManagerBrief(
@@ -350,8 +413,17 @@ async def invite_to_task(
     else:
         await refuse_if_sandbox(session, event_id)
 
+    # The limit locks before the row locks, in the order every caller uses
+    # (see the module docstring); then the address's invitations are locked,
+    # so an accept running alongside either sees the link added here or has
+    # already closed the invitation, and a new one is made instead.
+    await lock_invitation_quota(session, inviter=inviter, emails=[address])
     open_invitations = await crud_links.open_for_address(
-        session, event_id=event_id, email=address, include_expired=True
+        session,
+        event_id=event_id,
+        email=address,
+        include_expired=True,
+        for_update=True,
     )
     valid = [i for i in open_invitations if not is_expired(i, now)]
     expired = [i for i in open_invitations if is_expired(i, now)]

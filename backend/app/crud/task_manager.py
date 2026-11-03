@@ -92,11 +92,33 @@ class CRUDTaskManager:
         added_by: User,
     ) -> TaskManager:
         """Insert one row and flush, so a duplicate surfaces as IntegrityError."""
-        row = TaskManager(
+        return await self.add_asked_by(
+            session,
             task_id=task_id,
             user_id=user_id,
             added_by_id=added_by.id,
             added_by_name=added_by.name or added_by.email,
+        )
+
+    async def add_asked_by(
+        self,
+        session: AsyncSession,
+        *,
+        task_id: uuid.UUID,
+        user_id: uuid.UUID,
+        added_by_id: uuid.UUID | None,
+        added_by_name: str | None,
+    ) -> TaskManager:
+        """``add``, with who put them in charge given as stored values.
+
+        Accepting an invitation records the organiser who asked, kept on the
+        invitation's task link, not the invitee who clicked "accept".
+        """
+        row = TaskManager(
+            task_id=task_id,
+            user_id=user_id,
+            added_by_id=added_by_id,
+            added_by_name=added_by_name,
         )
         session.add(row)
         await session.flush()

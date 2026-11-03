@@ -202,7 +202,10 @@ async def _pending(
     for task in tasks:
         db.add(
             EventInvitationTask(
-                invitation_id=invitation.id, task_id=task.id, added_by_id=inviter.id
+                invitation_id=invitation.id,
+                task_id=task.id,
+                added_by_id=inviter.id,
+                added_by_name=inviter.name,
             )
         )
     await db.flush()
@@ -760,6 +763,111 @@ class TestList:
 
 
 @pytest.mark.asyncio
+class TestPickingAnInvitedMember:
+    """Someone invited to run a task joins the event another way, and an
+    organiser then picks them from the member list rather than "Add now"."""
+
+    async def test_their_invitation_loses_the_task(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        queued: Calls,
+    ) -> None:
+        joined = await _user(db_session, "joined")
+        db_session.add(EventMembership(user_id=joined.id, event_id=cast.event.id))
+        task_only = await _pending(
+            db_session, cast.event, cast.admin, joined.email or "", [cast.task]
+        )
+        plain = await _pending(
+            db_session,
+            cast.event,
+            cast.superadmin,
+            joined.email or "",
+            [cast.task, cast.other_task],
+            for_tasks_only=False,
+        )
+
+        with act_as(app, cast.admin):
+            r = await async_client.post(
+                f"{API}/tasks/{cast.task.id}/managers",
+                json={"user_id": str(joined.id)},
+            )
+            assert r.status_code == 201, r.text
+            listed = await async_client.get(
+                f"{API}/tasks/{cast.task.id}/managers/invitations"
+            )
+        assert joined.id in await _managers(db_session, cast.task)
+        # No row left offering an "Add now" that could only fail.
+        assert listed.json() == []
+        for invitation in (task_only, plain):
+            await db_session.refresh(invitation)
+        # Asked only for this task: withdrawn. The other keeps its other task.
+        assert task_only.revoked_at is not None
+        assert await _linked(db_session, task_only.id) == set()
+        assert plain.revoked_at is None
+        assert await _linked(db_session, plain.id) == {cast.other_task.id}
+
+    async def test_a_refused_pick_leaves_the_invitation_alone(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+    ) -> None:
+        """Already in charge: the 409 rolls the whole request back."""
+        invitation = await _pending(
+            db_session, cast.event, cast.admin, cast.manager.email or "", [cast.task]
+        )
+        with act_as(app, cast.admin):
+            r = await async_client.post(
+                f"{API}/tasks/{cast.task.id}/managers",
+                json={"user_id": str(cast.manager.id)},
+            )
+        assert r.status_code == 409
+        assert r.json()["code"] == "task.manager_already"
+        await db_session.refresh(invitation)
+        assert invitation.revoked_at is None
+        assert await _linked(db_session, invitation.id) == {cast.task.id}
+
+
+@pytest.mark.asyncio
+class TestEventSettingsExpiry:
+    """The event settings' invitations expire when asked; only sending a task
+    invitation again moves an expiry out."""
+
+    async def test_a_short_expiry_is_kept(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        queued: Calls,
+    ) -> None:
+        with act_as(app, cast.admin):
+            single = await async_client.post(
+                f"{API}/events/{cast.event.id}/invitations",
+                json={"email": STRANGER, "expires_in_days": 3},
+            )
+            bulk = await async_client.post(
+                f"{API}/events/{cast.event.id}/invitations/bulk",
+                json={"emails": ["two@example.org"], "expires_in_days": 3},
+            )
+        assert single.status_code == 201, single.text
+        assert bulk.status_code == 201, bulk.text
+        expected = clock.utc_now() + dt.timedelta(days=3)
+        for read in (single.json(), bulk.json()["created"][0]):
+            # Naive UTC, whether or not the serialiser marks it as UTC.
+            expires_at = dt.datetime.fromisoformat(read["expires_at"]).replace(
+                tzinfo=None
+            )
+            assert abs(expires_at - expected) < dt.timedelta(minutes=5)
+            assert read["last_sent_at"] is not None
+        assert len(queued["invitation"]) == 2
+
+
+@pytest.mark.asyncio
 class TestWithdraw:
     async def test_the_last_task_takes_a_task_only_invitation_with_it(
         self,
@@ -964,6 +1072,15 @@ class TestAccept:
         [call] = accepted
         assert call["user_id"] == invitee.id
         assert set(call["task_ids"]) == {cast.task.id, cast.other_task.id}
+        # Put in charge by the organiser who asked, not by the invitee.
+        rows = await db_session.execute(
+            select(TaskManager).where(col(TaskManager.user_id) == invitee.id)
+        )
+        asked_by = {m.task_id: (m.added_by_id, m.added_by_name) for m in rows.scalars()}
+        assert asked_by == {
+            cast.task.id: (cast.admin.id, cast.admin.name),
+            cast.other_task.id: (cast.superadmin.id, cast.superadmin.name),
+        }
 
     async def test_an_organiser_invitation_is_not_used_up_as_a_plain_one(
         self,

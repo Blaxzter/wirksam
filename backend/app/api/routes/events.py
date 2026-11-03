@@ -27,7 +27,11 @@ from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic import clock, vouchers
-from app.logic.invitations import check_new_invitation_quota, mark_sent, quota_refusal
+from app.logic.invitations import (
+    check_new_invitation_quota,
+    lock_invitation_quota,
+    quota_refusal,
+)
 from app.logic.permissions import require_event_role, require_event_visible
 from app.logic.sandbox.guards import refuse_if_sandbox
 from app.logic.shift_generator import generate_shifts
@@ -1607,7 +1611,9 @@ async def create_event_invitation(
 
     A targeted invitation is mailed (``dispatch_event_invitation``: a
     notification to an account, the invitation mail to an address without
-    one) and counts against the daily limits (``429 invitation.*``).
+    one) and counts against the daily limits (``429 invitation.*``). It
+    expires after ``expires_in_days``, as asked: only sending a task
+    invitation again pushes an expiry out.
     """
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
@@ -1615,6 +1621,11 @@ async def create_event_invitation(
     now = clock.utc_now()
 
     if body.email:
+        # Before the "already invited" check too, so that check and the
+        # daily limits both see whatever a parallel request committed.
+        await lock_invitation_quota(
+            session, inviter=current_user, emails=[str(body.email)]
+        )
         existing_user = await crud_user.get_by_email(session, email=str(body.email))
         if existing_user:
             already = await crud_membership.get(
@@ -1650,7 +1661,7 @@ async def create_event_invitation(
     if invitation.email:
         from app.logic.notifications.triggers import dispatch_event_invitation
 
-        mark_sent(invitation, now)
+        invitation.last_sent_at = now
         session.add(invitation)
         await session.flush()
         background_tasks.add_task(
@@ -1684,6 +1695,11 @@ async def create_event_invitations_bulk(
     await require_event_role(current_user, session, event_id, minimum="admin")
     await refuse_if_sandbox(session, event_id)
     now = clock.utc_now()
+    # Every address's limit lock up front, in sorted order, so two batches
+    # sharing addresses cannot each hold one the other waits for.
+    await lock_invitation_quota(
+        session, inviter=current_user, emails=[str(a) for a in body.emails]
+    )
 
     created: list[EventInvitationRead] = []
     skipped_members: list[str] = []
@@ -1715,7 +1731,7 @@ async def create_event_invitations_bulk(
             invited_by_id=current_user.id,
             expires_in_days=body.expires_in_days,
         )
-        mark_sent(invitation, now)
+        invitation.last_sent_at = now
         session.add(invitation)
         await session.flush()
         created.append(EventInvitationRead.model_validate(invitation))

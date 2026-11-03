@@ -374,7 +374,9 @@ through the same SMTP path as the verification mail), in the inviter's
 language, with one button to `/invite/{token}`; before this, such an
 invitation reached nobody. Because anyone can create an event and so mail
 strangers, targeted invitations have daily limits, counted in the database
-(`app/logic/invitations.py`): 200 per organiser (`429
+under an advisory lock per organiser and per address, so requests sent in
+parallel cannot all pass the same count (`app/logic/invitations.py`,
+`lock_invitation_quota`): 200 per organiser (`429
 invitation.rate_limited`), 3 per address across the installation (`429
 invitation.address_limited`), and one mail per invitation every ten minutes
 (`last_sent_at`, `429 invitation.resend_too_soon`). The superadmin is exempt,

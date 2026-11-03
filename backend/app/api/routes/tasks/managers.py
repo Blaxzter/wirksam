@@ -38,6 +38,7 @@ from app.logic.invitations import (
     is_expired,
     mark_sent,
     may_resend,
+    release_task_invitations,
     task_invitation_reads,
 )
 from app.logic.notifications.triggers import (
@@ -81,7 +82,9 @@ async def add_task_manager(
 ) -> TaskManagerBrief:
     """Put an event member in charge of this task. Event admins only.
 
-    The person is told, unless they named themselves.
+    The person is told, unless they named themselves. An open invitation that
+    asked them to run this task (they joined the event another way) loses
+    the task, as when their address is typed in.
     """
     task = await _get_task(session, task_id)
     await require_event_role(current_user, session, task.event_id)
@@ -95,16 +98,17 @@ async def add_task_manager(
         if task.event_id is not None
         else set[uuid.UUID]()
     )
-    if body.user_id not in members:
-        raise_problem(
-            422,
-            code="task.manager_not_event_member",
-            detail="Only members of this event can be put in charge of its tasks",
-        )
+    if task.event_id is None or body.user_id not in members:
+        _not_event_member()
     if await crud_task_manager.is_manager(
         session, task_id=task.id, user_id=body.user_id
     ):
         _already()
+    user = await crud_user.get(session, id=body.user_id, raise_404_error=True)
+    if user.email:
+        await release_task_invitations(
+            session, event_id=task.event_id, email=user.email, task_id=task.id
+        )
     try:
         async with session.begin_nested():
             await crud_task_manager.add(
@@ -113,7 +117,6 @@ async def add_task_manager(
     except IntegrityError:
         # Someone else added the same person between the check and the insert.
         _already()
-    user = await crud_user.get(session, id=body.user_id, raise_404_error=True)
     if body.user_id != current_user.id:
         background_tasks.add_task(
             dispatch_task_manager_added,
