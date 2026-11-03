@@ -381,7 +381,7 @@ onMounted(loadBookings)
           v-model="searchQuery"
           data-testid="input-search"
           :placeholder="t('common.actions.search')"
-          class="h-11 pl-10 sm:h-9"
+          class="h-11 pl-10"
         />
       </div>
 
@@ -452,7 +452,8 @@ onMounted(loadBookings)
         </PopoverContent>
       </Popover>
 
-      <div class="hidden sm:contents">
+      <!-- One height for the row, the search's: the date picker's trigger is its own -->
+      <div class="hidden sm:contents [&>button]:h-11 [&>button]:px-3.5">
         <DateRangePicker
           :date-from="dateFrom"
           :date-to="dateTo"
@@ -465,7 +466,6 @@ onMounted(loadBookings)
         <Button
           data-testid="btn-toggle-cancelled"
           :variant="showCancelled ? 'default' : 'outline'"
-          size="sm"
           @click="showCancelled = !showCancelled"
         >
           <XCircle class="h-4 w-4 mr-1.5" />
