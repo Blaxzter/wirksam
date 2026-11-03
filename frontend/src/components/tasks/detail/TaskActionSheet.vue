@@ -11,6 +11,8 @@ export interface TaskSheetAction {
 </script>
 
 <script setup lang="ts">
+import { nextTick, watch } from 'vue'
+
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -41,8 +43,24 @@ const emit = defineEmits<{ select: [key: string] }>()
 
 const { t } = useI18n()
 
-function pick(key: string) {
+/** The button that opened the sheet (the page's ⋯), noted as the sheet opens. */
+let opener: HTMLElement | null = null
+watch(open, (isOpen) => {
+  if (!isOpen) return
+  const active = document.activeElement
+  opener = active instanceof HTMLElement && active !== document.body ? active : null
+})
+
+/**
+ * A row's dialog opens while the sheet is still sliding away, and remembers
+ * whatever has focus then to give it back on close. That would be the row,
+ * gone by then, so the sheet's button takes focus first: once the sheet is
+ * closing it no longer holds on to focus.
+ */
+async function pick(key: string) {
   open.value = false
+  await nextTick()
+  if (opener?.isConnected) opener.focus({ preventScroll: true })
   emit('select', key)
 }
 </script>

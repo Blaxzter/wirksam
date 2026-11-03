@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 
 import { Printer, Trash2 } from '@lucide/vue'
 import { describe, expect, it } from 'vitest'
@@ -15,10 +15,11 @@ import i18n from '@/locales/i18n'
 
 const passthrough = { template: '<div><slot /></div>' }
 
-function mountSheet() {
+function mountSheet(extra: { open?: boolean; onSelect?: (key: string) => void } = {}) {
   return mount(TaskActionSheet, {
     props: {
       open: true,
+      ...extra,
       title: 'Cafétheke',
       actions: [
         { key: 'print', label: 'Print', icon: Printer, testid: 'row-print' },
@@ -49,8 +50,32 @@ describe('TaskActionSheet', () => {
     const w = mountSheet()
     expect(w.text()).toContain('Cafétheke')
     await w.find('[data-testid="row-delete"]').trigger('click')
+    await flushPromises()
     expect(w.emitted('update:open')).toEqual([[false]])
     expect(w.emitted('select')).toEqual([['delete']])
+  })
+
+  it('gives focus back to its button before reporting the row', async () => {
+    // A dialog the row opens remembers what has focus, to return there on
+    // close: that has to be the page's ⋯, not the row, which goes away.
+    const opener = document.createElement('button')
+    document.body.appendChild(opener)
+    opener.focus()
+    let focusedOnSelect: Element | null = null
+    const w = mountSheet({
+      open: false,
+      onSelect: () => {
+        focusedOnSelect = document.activeElement
+      },
+    })
+    await w.setProps({ open: true })
+    opener.blur()
+
+    await w.find('[data-testid="row-delete"]').trigger('click')
+    await flushPromises()
+
+    expect(focusedOnSelect).toBe(opener)
+    opener.remove()
   })
 
   it('marks a destructive row', () => {

@@ -45,11 +45,11 @@ Not yet covered, and not currently tracked by an issue:
 | `auth`       | 5          | 20      |
 | `chromium`   | 28         | 234     |
 | `member`     | 3          | 26      |
-| `mobile`     | 5          | 19      |
+| `mobile`     | 5          | 20      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **450** |
+| **Total**    | **62**     | **451** |
 
 ## Inventory
 
@@ -607,7 +607,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 5 files, 19 tests
+### Project `mobile` — 5 files, 20 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -634,10 +634,11 @@ Not yet covered, and not currently tracked by an issue:
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
 
-#### `frontend/e2e/tests/mobile/task-detail.spec.ts` — 3 tests
+#### `frontend/e2e/tests/mobile/task-detail.spec.ts` — 4 tests
 
-- **Task page – on a phone** (3)
+- **Task page – on a phone** (4)
   - the organiser's ⋯ opens a sheet whose rows open the task's dialogs
+  - closing the sheet, or a dialog one of its rows opened, puts focus back on ⋯
   - "Add shifts" opens a sheet with both ways to add them
   - the vouchers card comes first, and a tap on a shift opens it
 

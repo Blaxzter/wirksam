@@ -62,6 +62,31 @@ test.describe('Task page – on a phone', () => {
     await expect(page.getByTestId('task-managers-dialog')).toBeVisible()
   })
 
+  test('closing the sheet, or a dialog one of its rows opened, puts focus back on ⋯', async ({
+    adminPage: page,
+  }) => {
+    // reka's sheet only hands focus back to a trigger of its own, and these
+    // open through v-model: without the fix focus dropped to <body>.
+    await page.goto(`/app/tasks/${created.task.id}`)
+    const more = page.getByTestId('btn-task-more')
+    const sheet = page.getByTestId('task-more-sheet')
+
+    await more.focus()
+    await page.keyboard.press('Enter')
+    await sheet.getByTestId('btn-task-vouchers-mobile').focus()
+    await page.keyboard.press('Enter')
+    const dialog = page.getByTestId('task-voucher-settings-dialog')
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(more).toBeFocused()
+
+    await page.keyboard.press('Enter')
+    await sheet.getByRole('button', { name: 'Cancel' }).click()
+    await expect(sheet).toBeHidden()
+    await expect(more).toBeFocused()
+  })
+
   test('"Add shifts" opens a sheet with both ways to add them', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
 
