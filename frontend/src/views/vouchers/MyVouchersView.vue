@@ -198,11 +198,7 @@ watch(eventId, load, { immediate: true })
           >
             {{ t('vouchers.history.title') }}
           </h2>
-          <VoucherHistory
-            :account="account"
-            with-upcoming
-            class="px-2 pb-2.5 sm:px-4 sm:pb-3.5"
-          />
+          <VoucherHistory :account="account" with-upcoming class="px-2 pb-2.5 sm:px-4 sm:pb-3.5" />
         </section>
       </div>
     </template>

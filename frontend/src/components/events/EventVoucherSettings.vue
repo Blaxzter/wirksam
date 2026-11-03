@@ -159,7 +159,9 @@ async function save() {
             />
             <span class="space-y-1">
               <span class="block text-[15px] font-bold leading-snug">{{ option.title }}</span>
-              <span class="block text-[13px] leading-snug text-foreground/80">{{ option.hint }}</span>
+              <span class="block text-[13px] leading-snug text-foreground/80">
+                {{ option.hint }}
+              </span>
               <span
                 v-if="option.value === 'on_shift' && manual === 'on_shift'"
                 class="flex gap-1.5 text-xs leading-snug text-warning"

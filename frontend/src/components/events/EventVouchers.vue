@@ -296,11 +296,7 @@ async function afterChange() {
                 <TableCell class="text-right tabular-nums">{{ row.redeemed }}</TableCell>
                 <TableCell
                   class="text-right tabular-nums"
-                  :class="
-                    row.adjusted !== 0
-                      ? 'text-warning'
-                      : 'text-muted-foreground'
-                  "
+                  :class="row.adjusted !== 0 ? 'text-warning' : 'text-muted-foreground'"
                   data-testid="event-vouchers-adjusted"
                 >
                   {{ signed(row.adjusted) }}
