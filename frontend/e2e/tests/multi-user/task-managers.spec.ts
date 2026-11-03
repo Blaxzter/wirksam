@@ -110,7 +110,7 @@ test('a person in charge edits the task and adds a shift, but cannot delete or p
 
   // A draft they can see, but only an organiser can publish.
   await expect(disposablePage.getByTestId('task-draft-banner')).toContainText(
-    'Ask an organiser to publish it',
+    'The organisers can publish it.',
   )
   await expect(disposablePage.getByTestId('task-you-are-in-charge')).toBeVisible()
   await expect(disposablePage.getByTestId('btn-edit-task')).toBeVisible()
@@ -207,7 +207,28 @@ test('the shifts of a voucher task stay with the organisers until the event lets
   await expect(disposablePage.getByTestId('btn-edit-task')).toHaveCount(0)
 })
 
-/** Open the task's "People in charge…" dialog as the organiser. */
+test('a person in charge steps down from the task page', async ({
+  adminPage,
+  disposablePage,
+  disposableUser,
+}) => {
+  await api(adminPage, 'POST', `/tasks/${task.id}/managers`, { user_id: disposableUser.id })
+
+  await disposablePage.goto(`/app/tasks/${task.id}`)
+  await expect(disposablePage.getByTestId('task-you-are-in-charge')).toBeVisible()
+  await disposablePage.getByTestId('btn-task-step-down').click()
+  const confirm = disposablePage.getByRole('dialog')
+  await expect(confirm).toContainText('Step down?')
+  // The task is a draft, so it drops out of sight as well; the prompt says so.
+  await expect(confirm).toContainText("It isn't published")
+  await disposablePage.getByTestId('btn-dialog-confirm').click()
+
+  await expect(disposablePage).toHaveURL(/\/app\/tasks$/)
+  const saved = await api<TaskRead>(adminPage, 'GET', `/tasks/${task.id}`)
+  expect(saved.managers ?? []).toEqual([])
+})
+
+/** Open the task's "People in charge" dialog as the organiser. */
 async function openManagersDialog(adminPage: Page) {
   await adminPage.goto(`/app/tasks/${task.id}`)
   await adminPage.getByTestId('btn-task-more').click()
@@ -239,6 +260,10 @@ test.describe('inviting by e-mail', () => {
     )
     const row = dialog.getByTestId(`task-manager-invitation-${disposableUser.email}`)
     await expect(row).toContainText('Invited')
+    // The task page lists it under "In charge" too, waiting for an answer.
+    await expect(
+      adminPage.getByTestId(`task-in-charge-invitation-${disposableUser.email}`),
+    ).toContainText('Waiting for them to accept')
 
     // The invitation is an ordinary event invitation that names the task.
     const invitations = await api<EventInvitationRead[]>(

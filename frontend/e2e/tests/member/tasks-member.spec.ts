@@ -38,9 +38,7 @@ test.describe('Member – tasks RBAC', () => {
     await expect(member.getByTestId('btn-create-task')).toBeHidden()
   })
 
-  test('member does not see edit/delete buttons on task detail', async ({
-    memberPage: member,
-  }) => {
+  test('member does not see edit/delete buttons on task detail', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
     await expect(member.getByRole('heading', { name: created.task.name })).toBeVisible()
     await expect(member.getByTestId('btn-edit-task')).toBeHidden()
@@ -68,14 +66,16 @@ test.describe('Member – tasks viewing', () => {
     await member.goto(`/app/tasks/${created.task.id}`)
     await expect(member.getByRole('heading', { name: created.task.name })).toBeVisible()
     // Shifts should be visible (dynamic data)
-    await expect(member.getByText(/0\/5/).first()).toBeVisible()
+    await expect(member.getByText('0 of 5', { exact: true }).first()).toBeVisible()
   })
 
   test('member can book a shift', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
-    await expect(member.getByText(/0\/5/).first()).toBeVisible()
-    await member.getByText(/0\/5/).first().click()
+    // A volunteer's tap on a shift books it, after a confirmation.
+    const card = member.locator('[data-testid^="shift-card-"]').first()
+    await expect(card).toContainText('0 of 5')
+    await card.click()
     await member.getByTestId('btn-dialog-confirm').click()
-    await expect(member.getByText(/1\/5/).first()).toBeVisible()
+    await expect(card).toContainText('1 of 5')
   })
 })

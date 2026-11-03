@@ -306,7 +306,7 @@ test.describe('Event teams – asking, reviewing and booking', () => {
     await expect(disposablePage.getByTestId(`shift-team-locked-${shift.id}`)).toHaveCount(0)
     await disposablePage.getByTestId(`shift-card-${shift.id}`).click()
     await disposablePage.getByTestId('btn-dialog-confirm').click()
-    await expect(disposablePage.getByTestId(`shift-card-${shift.id}`)).toContainText('1/2')
+    await expect(disposablePage.getByTestId(`shift-card-${shift.id}`)).toContainText('1 of 2')
   })
 
   test('declining keeps the task locked and deletes the file', async ({

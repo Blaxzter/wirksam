@@ -45,11 +45,11 @@ Not yet covered, and not currently tracked by an issue:
 | `auth`       | 5          | 20      |
 | `chromium`   | 28         | 231     |
 | `member`     | 3          | 26      |
-| `mobile`     | 4          | 16      |
-| `multi-user` | 7          | 70      |
+| `mobile`     | 5          | 19      |
+| `multi-user` | 7          | 71      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **61**     | **440** |
+| **Total**    | **62**     | **444** |
 
 ## Inventory
 
@@ -494,13 +494,13 @@ Not yet covered, and not currently tracked by an issue:
   - shows shift time cards
   - back button navigates to tasks list
 - **Task Detail – booking** (3)
-  - clicking a shift books it
+  - an organiser opens a shift and books it from there
   - booked shift shows in My Bookings summary
-  - clicking a booked shift cancels it
+  - an organiser opens a booked shift and cancels it
 - **Task Detail – admin actions** (5)
   - admin can change task status to archived
   - admin sees edit button
-  - admin sees delete button
+  - admin finds delete in the more-actions menu
   - admin sees Add Shifts button
   - admin can delete task
 
@@ -603,7 +603,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 4 files, 16 tests
+### Project `mobile` — 5 files, 19 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -630,6 +630,13 @@ Not yet covered, and not currently tracked by an issue:
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
 
+#### `frontend/e2e/tests/mobile/task-detail.spec.ts` — 3 tests
+
+- **Task page – on a phone** (3)
+  - the organiser's ⋯ opens a sheet whose rows open the task's dialogs
+  - "Add shifts" opens a sheet with both ways to add them
+  - the vouchers card comes first, and a tap on a shift opens it
+
 #### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
 
 - **Venue map – on a phone** (4)
@@ -638,7 +645,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 70 tests
+### Project `multi-user` — 7 files, 71 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -732,11 +739,12 @@ Not yet covered, and not currently tracked by an issue:
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
 
-#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 7 tests
+#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 8 tests
 
 - an organiser puts a member in charge from the task page
 - a person in charge edits the task and adds a shift, but cannot delete or publish it
 - the shifts of a voucher task stay with the organisers until the event lets people in charge change them
+- a person in charge steps down from the task page
 - **inviting by e-mail** (4)
   - an organiser invites an address, and its owner accepts and is in charge of the task
   - an organiser withdraws an invitation to be in charge

@@ -84,9 +84,7 @@ test('a volunteer shows their code and an organiser redeems it at a stand', asyn
   await settings.getByTestId('btn-voucher-per-shift-increase').click()
   await settings.getByTestId('btn-save-task-vouchers').click()
   await expect(settings).toBeHidden()
-  await expect(adminPage.getByTestId('task-vouchers-per-shift')).toContainText(
-    '2 vouchers per shift',
-  )
+  await expect(adminPage.getByTestId('task-vouchers-per-shift')).toContainText('2 per shift')
   // ...moves the booked shift to yesterday, so it is over and has earned them
   // without anyone booking a past shift...
   await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
