@@ -51,10 +51,12 @@ Whoever opens an invitation sees the event, its dates, its description and the r
 
 ## Private or public
 
-You choose this when creating the event, under "Who can see this event".
+You choose this when creating the event, under "Who can see this event". You can change it later in the event's settings on the Details tab.
 
 - **Private** (the default): only people you invite can find it or join it. For everyone else it doesn't exist.
 - **Public:** anyone signed in can find it and ask to join.
+
+A public event only shows to others once its status, on the same tab, is "Published". A draft or an archived event stays hidden from everyone who isn't in it. Publishing sends everyone in the event a message.
 
 Public events are listed on the "Select an event" page on the Discover tab, with their name, dates, description and number of people. Tasks and shifts only show once you're a member. A new account without an event lands on this tab directly. At the top, "Recommended" shows events picked by whoever runs this WirkSam site.
 
@@ -100,4 +102,4 @@ There's no way to prevent that, because anyone with the link can join. Once you 
 
 ### Can we make a private event public later?
 
-The event's settings have no switch for that at the moment, so decide when you create it. A copy for next year takes the setting from the original.
+Yes. In the event's settings on the Details tab, choose "Public" under "Who can see this event" and save. It works the other way round too: a private event disappears from Discover, and people who are already in stay in. A copy for next year takes the setting from the original.

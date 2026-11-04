@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 237     |
+| `chromium`   | 29         | 238     |
 | `member`     | 3          | 26      |
 | `mobile`     | 6          | 21      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **466** |
+| **Total**    | **64**     | **467** |
 
 ## Inventory
 
@@ -164,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 237 tests
+### Project `chromium` — 29 files, 238 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -330,13 +330,14 @@ Not yet covered, and not currently tracked by an issue:
   - a plain participant is bounced off the wizard
   - running some other event does not open the wizard for this one
 
-#### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 15 tests
+#### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 16 tests
 
-- **Event Settings – details tab** (5)
+- **Event Settings – details tab** (6)
   - details tab is the default view
   - edit form is pre-filled with the target event data
   - can update event name via edit form
   - can update event description
+  - a draft can be published and made public
   - falls back to selected event when no eventId query is provided
 - **Event Settings – date constraints** (4)
   - shows calendar legend when tasks exist

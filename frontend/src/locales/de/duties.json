@@ -195,7 +195,7 @@
                 "sameWeekday": "Volle Wochen: Jede Aufgabe fällt wieder auf denselben Wochentag wie beim letzten Mal."
             },
             "review": {
-                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen kannst du sie in den Einstellungen der Veranstaltung.",
+                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen kannst du sie in den Einstellungen der Veranstaltung, im Tab „Details“.",
                 "people": "Übernommene Personen",
                 "perTask": "Aufgabe für Aufgabe",
                 "problemItem": "{task}: {problem}",
@@ -280,7 +280,7 @@
                 "basicsHint": "Was andere sehen, wenn sie diese Veranstaltung suchen.",
                 "dates": "Zeitraum",
                 "datesHint": "Die Tage, an denen die Veranstaltung läuft. Aufgaben lassen sich nur innerhalb dieses Zeitraums planen.",
-                "visibilityHint": "Du kannst das später in den Einstellungen der Veranstaltung ändern."
+                "visibilityHint": "Du kannst das später in den Einstellungen der Veranstaltung ändern, im Tab „Details“."
             },
             "submit": "Veranstaltung erstellen",
             "subtitle": "Ein Name und ein Zeitraum genügen. Alles andere lässt sich später ändern.",
@@ -310,6 +310,7 @@
                 "tasks": "Aufgaben"
             },
             "printDescription": "Druckbare Übersichtsblätter oder vollständige Aufgabendetails für diese Gruppe erstellen.",
+            "publicNotPublished": "Von außen findet sie erst jemand, wenn du den Status auf „Veröffentlicht“ setzt.",
             "shiftApply": "Alle Termine verschieben",
             "shiftBackward": "zurück",
             "shiftDates": "Termine verschieben",
@@ -323,7 +324,6 @@
             "title": "Veranstaltungsdetails",
             "updated": "Veranstaltung aktualisiert."
         },
-        "draftBanner": "Diese Veranstaltung ist ein Entwurf, Mitglieder sehen sie noch nicht. Setze den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
         "edit": "Veranstaltung bearbeiten",
         "empty": "Keine Veranstaltungen gefunden.",
         "expired": "Abgelaufen",
@@ -441,6 +441,11 @@
         },
         "status": {
             "draft": "Entwurf"
+        },
+        "statusHints": {
+            "archived": "Abgeschlossen. Nur die Personen darin sehen sie noch.",
+            "draft": "Noch in Vorbereitung. Nur die Personen darin sehen sie.",
+            "published": "Fertig geplant. Alle darin bekommen beim Veröffentlichen eine Nachricht, und eine öffentliche Veranstaltung können auch andere finden."
         },
         "statuses": {
             "archived": "Archiviert",

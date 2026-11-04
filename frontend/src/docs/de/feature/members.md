@@ -51,10 +51,12 @@ Wer eine Einladung öffnet, sieht Veranstaltung, Termine, Beschreibung und Rolle
 
 ## Privat oder öffentlich
 
-Das wählt ihr beim Anlegen unter „Wer die Veranstaltung sehen kann“.
+Das wählt ihr beim Anlegen unter „Wer die Veranstaltung sehen kann“. Ändern könnt ihr es später in den Einstellungen der Veranstaltung im Tab „Details“.
 
 - **Privat** (voreingestellt): Nur eingeladene Personen finden die Veranstaltung und können mitmachen. Für alle anderen gibt es sie nicht.
 - **Öffentlich:** Alle Angemeldeten finden sie und können anfragen.
+
+Andere sehen eine öffentliche Veranstaltung erst, wenn ihr Status im selben Tab „Veröffentlicht“ ist. Ein Entwurf oder eine archivierte Veranstaltung bleibt allen verborgen, die nicht dabei sind. Beim Veröffentlichen bekommen alle in der Veranstaltung eine Nachricht.
 
 Öffentliche Veranstaltungen stehen auf der Seite „Veranstaltung auswählen“ im Tab „Entdecken“, mit Name, Zeitraum, Beschreibung und Personenzahl. Aufgaben und Schichten sieht man erst als Mitglied. Ein neues Konto ohne Veranstaltung landet direkt in diesem Tab. Oben stehen unter „Empfohlen“ Veranstaltungen, die der Betreiber der WirkSam-Seite ausgewählt hat.
 
@@ -100,4 +102,4 @@ Das lässt sich nicht verhindern, denn wer den Link hat, kann beitreten. Zieht i
 
 ### Können wir eine private Veranstaltung später öffentlich machen?
 
-In den Einstellungen der Veranstaltung gibt es dafür im Moment keinen Schalter, entscheidet es also beim Anlegen. Eine Kopie fürs nächste Jahr übernimmt die Einstellung der Vorlage.
+Ja. Wählt in den Einstellungen der Veranstaltung im Tab „Details“ unter „Wer die Veranstaltung sehen kann“ die Option „Öffentlich“ und speichert. Das geht auch umgekehrt: Eine private Veranstaltung verschwindet aus „Entdecken“, und wer schon dabei ist, bleibt dabei. Eine Kopie fürs nächste Jahr übernimmt die Einstellung der Vorlage.

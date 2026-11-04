@@ -195,7 +195,7 @@
                 "sameWeekday": "Whole weeks, so every task lands on the same day of the week as last time."
             },
             "review": {
-                "draftNote": "The new event itself starts as a draft, so nobody outside it can find it. You can publish it from the event settings.",
+                "draftNote": "The new event itself starts as a draft, so nobody outside it can find it. You can publish it in the event settings, on the Details tab.",
                 "people": "People brought across",
                 "perTask": "Task by task",
                 "problemItem": "{task}: {problem}",
@@ -280,7 +280,7 @@
                 "basicsHint": "What people will see when they look for this event.",
                 "dates": "Dates",
                 "datesHint": "The days the event runs. Tasks can only be scheduled inside this range.",
-                "visibilityHint": "You can change this later in the event settings."
+                "visibilityHint": "You can change this later in the event settings, on the Details tab."
             },
             "submit": "Create event",
             "subtitle": "All you need is a name and a date range. You can change everything else later.",
@@ -310,6 +310,7 @@
                 "tasks": "Tasks"
             },
             "printDescription": "Generate printable overview sheets or full task details for this group.",
+            "publicNotPublished": "Nobody outside the event can find it until you set the status to \"Published\".",
             "shiftApply": "Shift all dates",
             "shiftBackward": "backward",
             "shiftDates": "Shift Dates",
@@ -323,7 +324,6 @@
             "title": "Event Details",
             "updated": "Event updated."
         },
-        "draftBanner": "This event is a draft, so members can't see it yet. Set the status to \"Published\" to make it visible.",
         "edit": "Edit Event",
         "empty": "No events found.",
         "expired": "Expired",
@@ -441,6 +441,11 @@
         },
         "status": {
             "draft": "Draft"
+        },
+        "statusHints": {
+            "archived": "Over and done with. Only the people in it can still see it.",
+            "draft": "Still being prepared. Only the people in it can see it.",
+            "published": "Ready to go. Everyone in it gets a message when you publish, and a public event can be found by others."
         },
         "statuses": {
             "archived": "Archived",

@@ -41,10 +41,10 @@ Unter „Bescheid geben“ ist „Alle benachrichtigen“ ausgeschaltet. Schalte
 
 Unter „Noch einmal ansehen“ stehen die Zahlen und jede Aufgabe. „Kopie anlegen“ legt die Veranstaltung an und öffnet ihre Einstellungen.
 
-## Aufgaben veröffentlichen
+## Veranstaltung und Aufgaben veröffentlichen
 
-Wechsle zur neuen Veranstaltung: Tippe oben in der Seitenleiste auf den Namen der aktuellen, auf dem Handy auf „Mehr“ und „Veranstaltung wechseln“. Öffne unter „Aufgaben“ jede Aufgabe, die noch Entwurf ist, und wähle „Jetzt veröffentlichen“. Auf dem Handy tippst du dafür auf den Status neben dem Namen. Bis dahin kann niemand ihre Schichten buchen.
+Die neue Veranstaltung startet als Entwurf. Von außen ist sie dann nicht zu finden, wer dabei ist, sieht sie trotzdem. Wähle in den Einstellungen, die sich gerade geöffnet haben, im Tab „Details“ unter „Status“ die Option „Veröffentlicht“ und tippe auf „Speichern“. Alle in der Veranstaltung bekommen eine Nachricht, und eine öffentliche Veranstaltung können von da an auch andere finden.
 
-Die neue Veranstaltung selbst startet ebenfalls als Entwurf. Von außen ist sie dann nicht zu finden, wer dabei ist, sieht sie trotzdem.
+Die Aufgaben sind damit noch nicht veröffentlicht. Wechsle zur neuen Veranstaltung: Tippe oben in der Seitenleiste auf den Namen der aktuellen, auf dem Handy auf „Mehr“ und „Veranstaltung wechseln“. Öffne unter „Aufgaben“ jede Aufgabe, die noch Entwurf ist, und wähle „Jetzt veröffentlichen“. Auf dem Handy tippst du dafür auf den Status neben dem Namen. Bis dahin kann niemand ihre Schichten buchen.
 
 ![Die Seite einer Aufgabe mit den Karten für Verantwortliche und Marken und den Schichten](shot:task-detail)

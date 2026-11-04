@@ -41,10 +41,10 @@ Under "Tell people", "Let everyone know" is off. If you turn it on, the people y
 
 "Look it over" shows the numbers and each task. "Create the copy" creates the event and opens its settings.
 
-## Publish the tasks
+## Publish the event and its tasks
 
-Switch to the new event: tap the current event's name at the top of the sidebar, or on a phone "More" and "Change event". Under "Tasks", open each task that's still a draft and choose "Publish now". On a phone, tap the status next to the name instead. Until then, nobody can book its shifts.
+The new event starts as a draft. That keeps it hidden from outsiders, while the people in it can still see it. In the settings that have just opened, on the Details tab, choose "Published" under "Status" and tap "Save". Everyone in the event gets a message, and if the event is public, others can find it from then on.
 
-The new event itself also starts as a draft. That keeps it hidden from outsiders, while the people in it can still see it.
+That doesn't publish the tasks. Switch to the new event: tap the current event's name at the top of the sidebar, or on a phone "More" and "Change event". Under "Tasks", open each task that's still a draft and choose "Publish now". On a phone, tap the status next to the name instead. Until then, nobody can book its shifts.
 
 ![A task's page with the cards for people in charge and vouchers, and the shifts](shot:task-detail)
