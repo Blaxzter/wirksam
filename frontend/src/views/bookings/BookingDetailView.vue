@@ -38,10 +38,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
 
+import EventZoneHint from '@/components/events/EventZoneHint.vue'
 import ShiftBookingsTable from '@/components/tasks/ShiftBookingsTable.vue'
 import ReminderEntryRow from '@/components/notifications/ReminderEntryRow.vue'
 
-import type { BookingRead, ShiftRead, ShiftBookingEntry } from '@/client/types.gen'
+import type { BookingRead, ShiftRead, ShiftBookingEntry, TaskRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { shiftHasEnded } from '@/lib/shift-time'
 
@@ -68,6 +69,7 @@ const shift = ref<ShiftRead | null>(null)
 /** Who else is booked; null when the roster could not be loaded, which hides its card. */
 const slotBookings = ref<ShiftBookingEntry[] | null>(null)
 const eventName = ref<string | null>(null)
+const eventZone = ref<string | null>(null)
 
 // Notes
 const editingNotes = ref(false)
@@ -143,10 +145,11 @@ async function loadData() {
       // Get task name from shift
       if (slotRes.data.task_id) {
         try {
-          const eventRes = await get<{ data: { name: string } }>({
+          const eventRes = await get<{ data: TaskRead }>({
             url: `/tasks/${slotRes.data.task_id}`,
           })
           eventName.value = eventRes.data.name
+          eventZone.value = eventRes.data.event_timezone ?? null
         } catch {
           // Non-critical
         }
@@ -304,6 +307,7 @@ onMounted(loadData)
               {{ shift.title }}
             </h1>
             <p v-if="eventName" class="text-muted-foreground mt-1">{{ eventName }}</p>
+            <EventZoneHint class="mt-1" :zone="eventZone" />
           </div>
           <Badge
             data-testid="booking-status"

@@ -59,6 +59,7 @@ import {
 import Separator from '@/components/ui/separator/Separator.vue'
 import { TimePicker } from '@/components/ui/time-picker'
 
+import EventZoneHint from '@/components/events/EventZoneHint.vue'
 import { joinNames } from '@/components/events/teams/teamHelpers'
 import LocationFormDialog from '@/components/locations/LocationFormDialog.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
@@ -996,6 +997,8 @@ onMounted(async () => {
               <span class="truncate">{{ audience }}</span>
             </span>
           </div>
+
+          <EventZoneHint :zone="task.event_timezone" />
 
           <!-- A draft, said calmly: who can't see it yet and who can change that -->
           <p

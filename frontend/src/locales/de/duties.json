@@ -209,6 +209,7 @@
                 "taskStatusAllOpen": "Alle Aufgaben sind sofort buchbar, die übernommenen Personen können sich also eintragen, sobald die Kopie existiert.",
                 "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Wenn du die Veranstaltung veröffentlichst, bleiben diese trotzdem Entwürfe. Öffne deshalb jede davon in der neuen Veranstaltung und veröffentliche sie dort. Die übrigen sind sofort buchbar.",
                 "tasks": "Aufgaben",
+                "timezone": "Wie das Original liegt die Kopie in der Zeitzone {zone}.",
                 "untouched": "{name} bleibt genau so, wie es ist.",
                 "visibilityPrivate": "Wie das Original ist die Kopie privat: Nur übernommene oder eingeladene Personen sehen sie.",
                 "visibilityPublic": "Wie das Original ist die Kopie öffentlich: Sobald du sie veröffentlichst, kann jede Person sie finden und um Aufnahme bitten.",
@@ -447,6 +448,14 @@
             "published": "Veröffentlicht"
         },
         "subtitle": "Anstehende Programme durchsuchen",
+        "timezone": {
+            "changeNote": "Eine Schicht um 10:00 Uhr bleibt um 10:00 Uhr, dann in {zone}. Erinnerungen ziehen mit.",
+            "hint": "Schichtzeiten gelten in dieser Zeitzone. Erinnerungen und Kalender richten sich danach.",
+            "label": "Zeitzone",
+            "localTimes": "Zeiten in Ortszeit: {zone}",
+            "noMatch": "Keine Zeitzone gefunden",
+            "search": "Stadt oder Region suchen"
+        },
         "title": "Veranstaltungen",
         "visibility": {
             "private": {

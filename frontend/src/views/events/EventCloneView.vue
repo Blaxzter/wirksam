@@ -75,6 +75,7 @@ import type {
   TaskRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { timeZoneLabel } from '@/lib/timezones'
 
 const { t, locale } = useI18n()
 const { formatTimeRange } = useFormatters()
@@ -1939,6 +1940,14 @@ async function handleSubmit() {
                 sourceEvent.visibility === 'public'
                   ? t('duties.events.clone.review.visibilityPublic')
                   : t('duties.events.clone.review.visibilityPrivate')
+              }}
+            </p>
+
+            <p class="text-sm text-muted-foreground" data-testid="review-timezone">
+              {{
+                t('duties.events.clone.review.timezone', {
+                  zone: timeZoneLabel(sourceEvent.timezone),
+                })
               }}
             </p>
 

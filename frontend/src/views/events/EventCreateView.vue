@@ -11,6 +11,7 @@ import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
+import EventTimezonePicker from '@/components/events/EventTimezonePicker.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -23,6 +24,7 @@ import { TimePicker } from '@/components/ui/time-picker'
 import type { EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import type { EventVisibility } from '@/lib/event-roles'
+import { browserTimeZone } from '@/lib/timezones'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -70,6 +72,8 @@ const name = ref('')
 const description = ref('')
 const startDate = ref<DateValue>()
 const endDate = ref<DateValue>()
+// Whoever creates an event is usually where it happens.
+const timezone = ref(browserTimeZone())
 // Private by default: an event should not be discoverable until its owner
 // decides it should be.
 const visibility = ref<EventVisibility>('private')
@@ -117,6 +121,7 @@ async function handleSubmit() {
         description: description.value.trim() || undefined,
         start_date: startDate.value!.toString(),
         end_date: endDate.value!.toString(),
+        timezone: timezone.value,
         visibility: visibility.value,
         default_start_time: startTime.value ? `${startTime.value}:00` : undefined,
         default_end_time: endTime.value ? `${endTime.value}:00` : undefined,
@@ -220,6 +225,13 @@ async function handleSubmit() {
           <p v-if="dayCount" class="text-xs text-muted-foreground">
             {{ t('duties.events.createView.duration', { days: dayCount }, dayCount) }}
           </p>
+          <div class="space-y-2">
+            <Label for="event-timezone">{{ t('duties.events.timezone.label') }}</Label>
+            <EventTimezonePicker v-model="timezone" input-id="event-timezone" />
+            <p class="text-xs text-muted-foreground">
+              {{ t('duties.events.timezone.hint') }}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

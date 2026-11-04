@@ -209,6 +209,7 @@
                 "taskStatusAllOpen": "Every task is open for booking straight away, so the people you bring across can sign up as soon as the copy exists.",
                 "taskStatusMixed": "{draft} of the {total} tasks come across as drafts. Publishing the event does not publish them, so open each of those in the new event and publish it there. The rest are open for booking straight away.",
                 "tasks": "Tasks",
+                "timezone": "Like the original, the copy is in the time zone {zone}.",
                 "untouched": "{name} stays exactly as it is.",
                 "visibilityPrivate": "Like the original, the copy is private: only the people you bring across or invite can see it.",
                 "visibilityPublic": "Like the original, the copy is public: once you publish it, anyone can find it and ask to join.",
@@ -447,6 +448,14 @@
             "published": "Published"
         },
         "subtitle": "Browse upcoming task programmes",
+        "timezone": {
+            "changeNote": "A shift at 10:00 stays at 10:00, then in {zone}. Reminders move with it.",
+            "hint": "Shift times count in this time zone. Reminders and calendars follow it.",
+            "label": "Time zone",
+            "localTimes": "Times are local to the event: {zone}",
+            "noMatch": "No time zone found",
+            "search": "Search for a city or region"
+        },
         "title": "Events",
         "visibility": {
             "private": {

@@ -41,27 +41,28 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 37      |
+| `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 234     |
+| `chromium`   | 29         | 237     |
 | `member`     | 3          | 26      |
-| `mobile`     | 5          | 20      |
+| `mobile`     | 6          | 21      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **461** |
+| **Total**    | **64**     | **466** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 37 tests
+### Project `a11y` — 5 files, 38 tests
 
-#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 13 tests
+#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 14 tests
 
-- **a11y – admin routes** (10)
+- **a11y – admin routes** (11)
   - dashboard
   - tasks list
   - task create wizard
   - events list
+  - time zone picker
   - event detail / settings
   - event picker
   - my bookings
@@ -163,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 234 tests
+### Project `chromium` — 29 files, 237 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -350,6 +351,14 @@ Not yet covered, and not currently tracked by an issue:
 - **Event Settings – member restrictions** (2)
   - a non-member cannot see the event settings content
   - member cannot shift dates via API
+
+#### `frontend/e2e/tests/authenticated/event-timezone.spec.ts` — 3 tests
+
+- **Event time zone** (2)
+  - an event created with a chosen zone shows it again in the settings
+  - changing the zone says what happens before it is saved
+- **Event time zone › on a device in Lisbon** (1)
+  - the task page mentions the zone only when the event is elsewhere
 
 #### `frontend/e2e/tests/authenticated/locations.spec.ts` — 5 tests
 
@@ -610,7 +619,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 5 files, 20 tests
+### Project `mobile` — 6 files, 21 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -644,6 +653,10 @@ Not yet covered, and not currently tracked by an issue:
   - closing the sheet, or a dialog one of its rows opened, puts focus back on ⋯
   - "Add shifts" opens a sheet with both ways to add them
   - the vouchers card comes first, and a tap on a shift opens it
+
+#### `frontend/e2e/tests/mobile/timezone-picker.spec.ts` — 1 test
+
+- the time zone picker fills a phone screen and picks a zone
 
 #### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
 

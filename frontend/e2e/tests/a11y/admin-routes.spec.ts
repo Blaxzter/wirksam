@@ -49,6 +49,13 @@ test.describe('a11y – admin routes', () => {
     await expectNoA11yViolations(page, { label: 'admin events list (/app/events)' })
   })
 
+  test('time zone picker', async ({ adminPage: page }) => {
+    await page.goto('/app/events/create')
+    await page.getByTestId('timezone-picker').click()
+    await expect(page.getByTestId('timezone-picker-input')).toBeFocused()
+    await expectNoA11yViolations(page, { label: 'time zone picker (/app/events/create)' })
+  })
+
   test('event detail / settings', async ({ adminPage: page, workerEvent }) => {
     await page.goto(`/app/event-settings/${workerEvent.id}`)
     await expect(page.getByTestId('page-heading')).toBeVisible()
