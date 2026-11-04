@@ -21,7 +21,13 @@
  */
 import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
 
-import { type Locale, type TaskSeed, WORLD } from './screenshots.data.js'
+import {
+  type CastMember,
+  type Locale,
+  type TaskSeed,
+  type TeamSeed,
+  WORLD,
+} from './screenshots.data.js'
 
 const BASE_URL = 'http://localhost:5555'
 const API = process.env.VITE_API_URL ?? 'http://localhost:8787/api/v1'
@@ -29,6 +35,8 @@ const API = process.env.VITE_API_URL ?? 'http://localhost:8787/api/v1'
 const LANG: Locale = process.env.LANG === 'de' ? 'de' : 'en'
 const SCREENSHOT_DIR = `public/screenshots/${LANG}`
 const VIEWPORT = { width: 1440, height: 900 }
+// Sizes in `components/landing/ScreenshotFrame.vue` follow this.
+const PHONE_VIEWPORT = { width: 390, height: 844 }
 const MODES = ['light', 'dark'] as const
 
 const EMAIL_DOMAIN = 'example.org'
@@ -101,8 +109,10 @@ interface SeededWorld {
   organiserEmail: string
   eventId: string
   tasks: SeededTask[]
-  /** Task the `task-detail` capture opens. */
+  /** Task the `task-detail` capture opens, which runs a stand that takes vouchers. */
   featuredTaskId: string
+  /** A shift of the featured task, for the shift dialog. */
+  featuredShiftId: string
 }
 
 async function seedWorld(): Promise<SeededWorld> {
@@ -173,8 +183,181 @@ async function seedWorld(): Promise<SeededWorld> {
   await fillRoster(tasks, organiserEmail)
   await bookOrganiser(tasks, organiserEmail)
 
-  const featured = tasks.find((t) => t.seed.key === 'welcome') ?? tasks[0]
-  return { organiserEmail, eventId: event.id, tasks, featuredTaskId: featured.id }
+  const featured = tasks.find((t) => t.seed.key === 'kitchen') ?? tasks[0]
+  await seedPeopleInCharge(featured.id, organiserEmail)
+  await seedVouchers(event.id, tasks, organiserEmail)
+  await seedTeams(event.id, tasks, organiserEmail)
+
+  const { items: featuredShifts } = await apiAs<{
+    items: { id: string; date: string; start_time: string }[]
+  }>('GET', `/shifts/?task_id=${featured.id}&limit=200`, organiserEmail)
+  const [firstShift] = featuredShifts.sort((a, b) =>
+    `${a.date}${a.start_time}`.localeCompare(`${b.date}${b.start_time}`),
+  )
+
+  return {
+    organiserEmail,
+    eventId: event.id,
+    tasks,
+    featuredTaskId: featured.id,
+    featuredShiftId: firstShift.id,
+  }
+}
+
+/** The cast member with this first name. Throws on a typo rather than capturing nobody. */
+function volunteer(firstName: string): CastMember {
+  const found = world.volunteers.find((v) => v.name.startsWith(firstName))
+  if (!found) throw new Error(`No volunteer called ${firstName}`)
+  return found
+}
+
+async function userId(handle: string): Promise<string> {
+  const me = await apiAs<{ id: string }>('GET', '/users/me', addressOf(handle))
+  return me.id
+}
+
+/** Two people run the featured task, and a third has an invitation they haven't answered. */
+async function seedPeopleInCharge(taskId: string, organiserEmail: string): Promise<void> {
+  for (const name of ['Miriam', 'Jonas']) {
+    await apiAs('POST', `/tasks/${taskId}/managers`, organiserEmail, {
+      user_id: await userId(volunteer(name).handle),
+    })
+  }
+  await apiAs('POST', `/tasks/${taskId}/managers/invite`, organiserEmail, {
+    email: addressOf('anna.weber'),
+  })
+}
+
+/**
+ * Shifts that earn vouchers, a stand that takes them, and a job already done, so
+ * balances, history and worked hours have something to show. The done job's
+ * shifts are booked while still ahead and then moved back, which is the only way
+ * into the past: booking a shift that is over is refused.
+ */
+async function seedVouchers(
+  eventId: string,
+  tasks: SeededTask[],
+  organiserEmail: string,
+): Promise<void> {
+  const byKey = (key: string) => tasks.find((task) => task.seed.key === key)!
+  await apiAs('PATCH', `/tasks/${byKey('welcome').id}`, organiserEmail, { vouchers_per_shift: 2 })
+  await apiAs('PATCH', `/tasks/${byKey('stage').id}`, organiserEmail, { vouchers_per_shift: 3 })
+  await apiAs('PATCH', `/tasks/${byKey('kitchen').id}`, organiserEmail, {
+    vouchers_per_shift: 2,
+    is_voucher_point: true,
+  })
+
+  const prep = world.prep
+  const { task } = await apiAs<{ task: { id: string } }>(
+    'POST',
+    '/tasks/with-shifts',
+    organiserEmail,
+    {
+      name: prep.name,
+      description: prep.description,
+      start_date: isoDate(EVENT_START_OFFSET + prep.days[0]),
+      end_date: isoDate(EVENT_START_OFFSET + prep.days[prep.days.length - 1]),
+      status: 'published',
+      location: prep.location,
+      category: prep.category,
+      event_id: eventId,
+      schedule: {
+        default_start_time: `${prep.startTime}:00`,
+        default_end_time: `${prep.endTime}:00`,
+        shift_duration_minutes: prep.shiftMinutes,
+        people_per_shift: prep.peoplePerShift,
+        remainder_mode: 'drop',
+        overrides: [],
+        excluded_shifts: [],
+      },
+    },
+  )
+  await apiAs('PATCH', `/tasks/${task.id}`, organiserEmail, { vouchers_per_shift: 2 })
+
+  const { items: shifts } = await apiAs<{ items: { id: string; date: string }[] }>(
+    'GET',
+    `/shifts/?task_id=${task.id}&limit=200`,
+    organiserEmail,
+  )
+  shifts.sort((a, b) => a.date.localeCompare(b.date))
+  const rosters = [
+    ['Hannah', 'Noah', 'Clara', 'Sofia'],
+    ['Hannah', 'Elias', 'David', 'Jonas'],
+  ]
+  for (const [index, shift] of shifts.entries()) {
+    for (const name of rosters[index] ?? []) {
+      await apiAs('POST', '/bookings/', addressOf(volunteer(name).handle), { shift_id: shift.id })
+    }
+  }
+  for (const [index, shift] of shifts.entries()) {
+    await apiAs('PATCH', `/shifts/${shift.id}`, organiserEmail, {
+      date: isoDate(-(shifts.length - index)),
+    })
+  }
+
+  const redemptions: [string, number][] = [
+    ['Hannah', 2],
+    ['Noah', 1],
+    ['Sofia', 2],
+    ['David', 1],
+  ]
+  for (const [name, amount] of redemptions) {
+    await apiAs('POST', `/events/${eventId}/vouchers/redeem`, organiserEmail, {
+      task_id: byKey('kitchen').id,
+      user_id: await userId(volunteer(name).handle),
+      amount,
+      request_id: crypto.randomUUID(),
+    })
+  }
+  await apiAs('POST', `/events/${eventId}/vouchers/adjustments`, organiserEmail, {
+    user_id: await userId(volunteer('Hannah').handle),
+    amount: 1,
+    note: world.correctionNote,
+  })
+}
+
+/** A team with checks and two requests waiting, and an open team people simply joined. */
+async function seedTeams(
+  eventId: string,
+  tasks: SeededTask[],
+  organiserEmail: string,
+): Promise<void> {
+  const [checked, open] = world.teams
+  const create = (team: TeamSeed) =>
+    apiAs<{ id: string }>('POST', `/events/${eventId}/teams`, organiserEmail, {
+      name: team.name,
+      description: team.description,
+      requires_approval: team.requiresApproval,
+      requirements: team.requirements.map((item) => ({
+        label: item.label,
+        ask_issue_date: item.askIssueDate,
+        valid_for_years: item.validForYears,
+      })),
+    })
+
+  const checkedTeam = await create(checked)
+  for (const name of ['Miriam', 'Noah']) {
+    await apiAs(
+      'POST',
+      `/events/${eventId}/teams/${checkedTeam.id}/join`,
+      addressOf(volunteer(name).handle),
+      {
+        message: checked.joinMessage,
+      },
+    )
+  }
+  const kids = tasks.find((task) => task.seed.key === 'kids')!
+  await apiAs('PATCH', `/tasks/${kids.id}`, organiserEmail, { team_id: checkedTeam.id })
+
+  const openTeam = await create(open)
+  for (const name of ['David', 'Sofia', 'Elias']) {
+    await apiAs(
+      'POST',
+      `/events/${eventId}/teams/${openTeam.id}/join`,
+      addressOf(volunteer(name).handle),
+      {},
+    )
+  }
 }
 
 /**
@@ -291,8 +474,11 @@ async function openContext(
   browser: Browser,
   email: string,
   mode: (typeof MODES)[number],
+  { name = world.organiser.name, phone = false }: { name?: string; phone?: boolean } = {},
 ): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ viewport: VIEWPORT })
+  const context = await browser.newContext(
+    phone ? { viewport: PHONE_VIEWPORT, deviceScaleFactor: 2 } : { viewport: VIEWPORT },
+  )
   await context.addCookies([{ name: 'e2e_bypass', value: '1', domain: 'localhost', path: '/' }])
 
   await context.addInitScript(
@@ -312,7 +498,7 @@ async function openContext(
       localStorage.setItem('wirksam-cookie-notice-dismissed', '1')
       localStorage.setItem('wirksam-last-seen-changelog', '99.99.99')
     },
-    { email, name: world.organiser.name, lang: LANG, mode },
+    { email, name, lang: LANG, mode },
   )
 
   const page = await context.newPage()
@@ -330,6 +516,12 @@ async function capture(page: Page, name: string, mode: string): Promise<void> {
   // Let data fetches and transitions settle. `networkidle` is unusable here —
   // Vite's HMR socket keeps the connection busy and would burn the timeout.
   await page.waitForTimeout(900)
+  // Loading placeholders pulse. Wait them out, so no capture shows a skeleton.
+  await page
+    .waitForFunction(() => document.querySelectorAll('.animate-pulse').length === 0, null, {
+      timeout: 15_000,
+    })
+    .catch(() => console.log(`  still loading: ${name}`))
   // The dev server injects Vue DevTools' floating button; it is not the app.
   await page.addStyleTag({
     content: '#__vue-devtools-container__, #vue-inspector-container { display: none !important; }',
@@ -403,6 +595,112 @@ async function captureVenueMap(browser: Browser, mode: (typeof MODES)[number]): 
   await context.close()
 }
 
+/** What the feature pages and guides show of the organiser's screens. */
+async function captureOrganiserDocs(
+  page: Page,
+  seeded: SeededWorld,
+  mode: (typeof MODES)[number],
+): Promise<void> {
+  const taskPath = `/app/tasks/${seeded.featuredTaskId}`
+
+  await open(page, taskPath)
+  await page.getByTestId(`shift-card-${seeded.featuredShiftId}`).locator('button').first().click()
+  await page.getByRole('dialog').waitFor()
+  await capture(page, 'shift-dialog', mode)
+
+  await open(page, taskPath)
+  await page.getByTestId('btn-task-more').filter({ visible: true }).first().click()
+  await page.getByTestId('btn-task-managers').click()
+  const managers = page.getByTestId('task-managers-dialog')
+  await managers.waitFor()
+  await managers.locator('input').first().fill(addressOf('ben.wolf'))
+  await capture(page, 'people-in-charge', mode)
+
+  const settings = `${BASE_URL}/app/event-settings/${seeded.eventId}`
+  await page.goto(`${settings}?tab=vouchers`)
+  await page.getByTestId('tab-vouchers').waitFor()
+  await capture(page, 'vouchers-settings', mode)
+
+  await page.goto(`${settings}?tab=people`)
+  await page.getByTestId('tab-people').waitFor()
+  await capture(page, 'event-people', mode)
+
+  const hours = page.getByTestId('section-event-hours')
+  await hours.waitFor()
+  await hours.scrollIntoViewIfNeeded()
+  await capture(page, 'event-hours', mode)
+
+  await open(page, '/app/reporting')
+  await capture(page, 'reports', mode)
+
+  await open(page, `/app/teams/${seeded.eventId}`)
+  await capture(page, 'teams', mode)
+
+  await page.locator('[data-testid^="btn-review-team-request-"]').first().click()
+  await page.getByTestId('team-review-dialog').waitFor()
+  await capture(page, 'team-review', mode)
+}
+
+/** Volunteers and the people at a stand mostly see WirkSam on a phone. */
+async function capturePhoneDocs(
+  browser: Browser,
+  seeded: SeededWorld,
+  mode: (typeof MODES)[number],
+): Promise<void> {
+  const signIn = async (member: CastMember) => {
+    const email = addressOf(member.handle)
+    await apiAs('PUT', '/users/me/selected-event', email, { selected_event_id: seeded.eventId })
+    return openContext(browser, email, mode, { name: member.name, phone: true })
+  }
+
+  const helper = await signIn(volunteer('Hannah'))
+  await helper.page.goto(`${BASE_URL}/app/home`)
+  await capture(helper.page, 'dashboard-phone', mode)
+
+  await helper.page.goto(`${BASE_URL}/app/bookings`)
+  await capture(helper.page, 'bookings-phone', mode)
+
+  await helper.page.goto(`${BASE_URL}/app/vouchers/${seeded.eventId}`)
+  await helper.page.getByTestId('my-vouchers-balance').waitFor()
+  await capture(helper.page, 'vouchers-my', mode)
+
+  await helper.page.getByTestId('btn-show-voucher-code').filter({ visible: true }).first().click()
+  await helper.page.getByTestId('voucher-code-dialog').waitFor()
+  await capture(helper.page, 'vouchers-code', mode)
+  await helper.context.close()
+
+  const atStand = await signIn(volunteer('Miriam'))
+  // Headless Chromium has no camera, and the screen would say so in the capture.
+  // This stands in for one: a plain surface with nothing to scan on it.
+  await atStand.page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 640
+      canvas.height = 480
+      const paint = () => {
+        const context = canvas.getContext('2d')!
+        const surface = context.createLinearGradient(0, 0, 640, 480)
+        surface.addColorStop(0, '#77706a')
+        surface.addColorStop(1, '#4b4641')
+        context.fillStyle = surface
+        context.fillRect(0, 0, 640, 480)
+      }
+      paint()
+      setInterval(paint, 200)
+      return canvas.captureStream(5)
+    }
+  })
+  await atStand.page.goto(`${BASE_URL}/app/vouchers/redeem/${seeded.eventId}`)
+  await atStand.page.getByTestId('btn-voucher-pick-person').waitFor()
+  await capture(atStand.page, 'vouchers-redeem', mode)
+
+  await atStand.page.getByTestId('btn-voucher-pick-person').click()
+  await atStand.page.waitForTimeout(600)
+  await atStand.page.mouse.move(2, 2)
+  await capture(atStand.page, 'vouchers-picker', mode)
+  await atStand.context.close()
+}
+
 // ── Captures ─────────────────────────────────────────────────────────────────
 
 test(`screenshots [${LANG}]`, async ({ browser }) => {
@@ -443,7 +741,11 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
     await page.locator('[data-testid="step-tasks"]').click()
     await capture(page, 'clone-event', mode)
 
+    await captureOrganiserDocs(page, seeded, mode)
+
     await context.close()
+
+    await capturePhoneDocs(browser, seeded, mode)
   }
 
   for (const mode of MODES) {
