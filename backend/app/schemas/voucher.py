@@ -58,7 +58,7 @@ class VoucherShift(BaseModel):
     ends_at: dt.datetime = Field(
         description=(
             "When the shift ends, as naive UTC (the wall clock converted through "
-            "EVENT_TIMEZONE), the same convention as created_at, so shifts and "
+            "the event's zone), the same convention as created_at, so shifts and "
             "entries sort on one time line"
         )
     )

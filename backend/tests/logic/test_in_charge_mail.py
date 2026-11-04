@@ -9,6 +9,7 @@ import datetime as dt
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import replace
 from unittest.mock import patch
 
 import pytest
@@ -16,10 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.logic.notifications.in_charge_mail import InChargeMail, load_in_charge_mail
+from app.models.event import Event
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
+from tests.fixtures.clock import fixed_clock, instant_clock
 
 PIA = uuid.uuid4()
 MIRA = uuid.uuid4()
@@ -32,7 +35,10 @@ def _host() -> Generator[None, None, None]:
     # to the summer the tasks below run in.
     with (
         patch.object(settings, "FRONTEND_HOST", "https://app.example.test"),
-        patch("app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 7, 1, 9)),
+        patch(
+            "app.logic.clock.wall_clock_now",
+            fixed_clock(dt.datetime(2026, 7, 1, 9)),
+        ),
     ):
         yield
 
@@ -231,3 +237,38 @@ class TestLoad:
         )
         assert mail.shift_count == 0
         assert mail.managers == ()
+
+
+class TestOnTheEventsClock:
+    def test_this_year_is_the_events(self) -> None:
+        """At the turn of the year, 2027 has begun in Tokyo and not in Berlin."""
+        instant = instant_clock(dt.datetime(2026, 12, 31, 20, 0))
+        first = dt.date(2027, 3, 5)
+        with (
+            patch.object(settings, "FRONTEND_HOST", "https://app.example.test"),
+            patch("app.logic.clock.wall_clock_now", instant),
+        ):
+            in_tokyo = replace(
+                _mail(first=first, last=first), zone="Asia/Tokyo"
+            ).render(_pia())
+            in_berlin = replace(
+                _mail(first=first, last=first), zone="Europe/Berlin"
+            ).render(_pia())
+        assert "2027" not in in_tokyo.text
+        assert "2027" in in_berlin.text
+
+    async def test_loading_the_mail_reads_the_events_zone(
+        self,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+    ) -> None:
+        test_event.timezone = "Asia/Tokyo"
+        db_session.add(test_event)
+        await db_session.flush()
+
+        mail = await load_in_charge_mail(
+            db_session, task=test_task, event_name=test_event.name, actor=None
+        )
+
+        assert mail.zone == "Asia/Tokyo"

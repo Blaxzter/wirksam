@@ -43,6 +43,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.schemas.task_manager import TaskManagerAdd
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import fixed_clock
 
 #: The clock for the shift history tests: the morning of the fixture task's
 #: first day, so a 08:00-12:00 shift that day is running.
@@ -203,7 +204,7 @@ async def _manager_rows(db: AsyncSession, **where: Any) -> list[TaskManager]:
 
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> dt.datetime:
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(NOW))
     return NOW
 
 

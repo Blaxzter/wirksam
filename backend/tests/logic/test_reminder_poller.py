@@ -24,6 +24,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.logic.notifications.messages import format_time_until
 from app.logic.notifications.reminder_poller import (
@@ -438,6 +439,43 @@ class TestPollCycle:
 @pytest.mark.asyncio
 class TestProcessReminder:
     """Test suite for dispatching a single reminder."""
+
+    @pytest.mark.parametrize(
+        ("zone", "expected"),
+        [("Asia/Tokyo", " (Asia/Tokyo)"), ("Europe/Berlin", "")],
+    )
+    async def test_the_time_says_whose_clock_it_is_when_that_is_not_the_usual_one(
+        self,
+        db_session: AsyncSession,
+        test_booking: Booking,
+        test_user: User,
+        test_shift: Shift,
+        test_event: Event,
+        monkeypatch: pytest.MonkeyPatch,
+        zone: str,
+        expected: str,
+    ) -> None:
+        monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Europe/Berlin")
+        test_event.timezone = zone
+        db_session.add(test_event)
+        await db_session.flush()
+        reminder = await _create_reminder(
+            db_session,
+            booking=test_booking,
+            user=test_user,
+            shift_id=test_shift.id,
+            remind_at=dt.datetime(2026, 5, 24, 7, 0),
+            offset_minutes=60,
+        )
+
+        _, notify = await _dispatch_reminder(db_session, reminder)
+
+        call = notify.await_args
+        assert call is not None
+        _, body = call.kwargs["message_factory"]("en")
+        end = test_shift.end_time
+        assert end is not None
+        assert f"–{end.strftime('%H:%M')}{expected}\n" in body
 
     async def test_dispatches_and_marks_sent(
         self,

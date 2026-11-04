@@ -15,6 +15,25 @@ def test_utc_now_is_naive_utc() -> None:
     assert abs(now - expected) < dt.timedelta(seconds=5)
 
 
+def test_wall_clock_now_reads_the_zone_it_is_given(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The setting is only the fallback."""
+    monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Etc/GMT+12")
+    west = clock.wall_clock_now()
+    east = clock.wall_clock_now("Etc/GMT-12")
+    assert abs((east - west) - dt.timedelta(hours=24)) < dt.timedelta(seconds=5)
+
+
+def test_wall_clock_to_utc_reads_the_zone_it_is_given(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Europe/Berlin")
+    wall = dt.datetime(2026, 7, 1, 18, 0)
+    assert clock.wall_clock_to_utc(wall) == dt.datetime(2026, 7, 1, 16, 0)
+    assert clock.wall_clock_to_utc(wall, "Asia/Tokyo") == dt.datetime(2026, 7, 1, 9, 0)
+
+
 def test_wall_clock_now_honours_event_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
     """Twelve hours apart on the two sides of the date line, whatever the date."""
     monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Etc/GMT+12")
@@ -48,6 +67,8 @@ def test_the_default_zone_is_berlin() -> None:
 
 def test_an_unknown_zone_refuses_to_boot() -> None:
     assert parse_timezone("Europe/Berlin") == "Europe/Berlin"
-    for bad in ("Mars/Olympus_Mons", "", "../etc/passwd"):
-        with pytest.raises(ValueError, match="EVENT_TIMEZONE"):
+    # "Europe" is a directory in the database, and a very long name doesn't fit
+    # in a file name: both raise something other than "not found".
+    for bad in ("Mars/Olympus_Mons", "", "../etc/passwd", "Europe", "A" * 300):
+        with pytest.raises(ValueError, match="not a known time zone"):
             parse_timezone(bad)

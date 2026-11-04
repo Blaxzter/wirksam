@@ -46,6 +46,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.voucher import VoucherEntry, VoucherPass
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import fixed_clock
 from tests.fixtures.sandbox import SandboxSetup
 
 DAY = dt.date(2026, 6, 11)
@@ -139,7 +140,7 @@ async def cast(
     test_outsider_user: User,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Cast:
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(NOW))
     manager = await _user(db_session, "manager")
     staff = await _user(db_session, "staff")
     second_staff = await _user(db_session, "second_staff")
@@ -1781,7 +1782,8 @@ class TestPointPeople:
     ) -> None:
         """Half an hour after 18:00 the shift no longer runs."""
         monkeypatch.setattr(
-            "app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 6, 11, 18, 31)
+            "app.logic.clock.wall_clock_now",
+            fixed_clock(dt.datetime(2026, 6, 11, 18, 31)),
         )
         r = await self._get(async_client, app, cast, cast.staff)
         assert r.status_code == 403

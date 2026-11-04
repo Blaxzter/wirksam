@@ -74,6 +74,9 @@ class TaskUpdate(BaseModel):
 
 
 class TaskRead(TaskBase):
+    #: The zone of the task's event, which its shift times are in. On reads of
+    #: one task only (``GET /tasks/{id}`` and the write responses), not in lists.
+    event_timezone: str | None = None
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     created_at: dt.datetime

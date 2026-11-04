@@ -174,14 +174,14 @@ def _initials(name: str) -> str:
     return letters or "?"
 
 
-def _expiry_date(expires_at: dt.datetime, language: str) -> str:
-    """The last day the invitation works, on the events' wall clock."""
+def _expiry_date(expires_at: dt.datetime, language: str, zone: str | None) -> str:
+    """The last day the invitation works, on the wall clock of the event."""
     local = (
         expires_at.replace(tzinfo=dt.UTC)
-        .astimezone(ZoneInfo(settings.EVENT_TIMEZONE))
+        .astimezone(ZoneInfo(zone or settings.EVENT_TIMEZONE))
         .date()
     )
-    return day_span(local, local, language)
+    return day_span(local, local, language, zone=zone)
 
 
 def render_event_invitation_email(
@@ -194,6 +194,7 @@ def render_event_invitation_email(
     token: str,
     expires_at: dt.datetime | None,
     language: str,
+    event_zone: str | None = None,
 ) -> RenderedInvitation:
     """The mail, in ``language``, as subject, plain text, HTML and sender name."""
     s = _strings(language)
@@ -217,13 +218,21 @@ def render_event_invitation_email(
             if task.location:
                 details.append((s["detail_location"], task.location))
             details.append(
-                (s["detail_when"], day_span(task.first_date, task.last_date, language))
+                (
+                    s["detail_when"],
+                    day_span(
+                        task.first_date, task.last_date, language, zone=event_zone
+                    ),
+                )
             )
         else:
             details = [
                 (s["detail_tasks"], ", ".join(names)),
                 (s["detail_event"], event_name),
-                (s["detail_when"], day_span(event_start, event_end, language)),
+                (
+                    s["detail_when"],
+                    day_span(event_start, event_end, language, zone=event_zone),
+                ),
             ]
         points = [t.name for t in tasks if t.is_voucher_point]
         means = (
@@ -248,7 +257,10 @@ def render_event_invitation_email(
         heading = s["invite_heading"].format(event_name=event_name)
         details = [
             (s["detail_event"], event_name),
-            (s["detail_when"], day_span(event_start, event_end, language)),
+            (
+                s["detail_when"],
+                day_span(event_start, event_end, language, zone=event_zone),
+            ),
         ]
         means = ""
 
@@ -267,7 +279,7 @@ def render_event_invitation_email(
             get_message(
                 "invite.email.expiry",
                 language,
-                date=_expiry_date(expires_at, language),
+                date=_expiry_date(expires_at, language, event_zone),
             )[1]
         )
     note_parts.append(s["invite_decline"])
@@ -358,6 +370,7 @@ async def send_event_invitation_email(
             token=token,
             expires_at=expires_at,
             language=language,
+            event_zone=event.timezone,
         )
     except Exception:
         logger.exception(f"Failed to render the event invitation email for {email}")

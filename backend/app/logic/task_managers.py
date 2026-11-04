@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.event import event as crud_event
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic import clock
 from app.logic.permissions import (
@@ -117,9 +118,19 @@ async def mark_task_access(
         if r.is_voucher_point and not r.can_manage and roles[r.event_id] is not None
     ]
     if on_shift_candidates:
-        on_shift = await on_shift_task_ids(
-            user, session, on_shift_candidates, now=clock.wall_clock_now()
+        # Each point on its own event's clock: one query per zone in play.
+        zones = await crud_event.zones_by_id(
+            session, (r.event_id for r in reads if r.id in on_shift_candidates)
         )
+        by_zone: dict[str | None, list[uuid.UUID]] = {}
+        for read in reads:
+            if read.id in on_shift_candidates:
+                by_zone.setdefault(zones.get(read.event_id), []).append(read.id)
+        on_shift: set[uuid.UUID] = set()
+        for zone, task_ids in by_zone.items():
+            on_shift |= await on_shift_task_ids(
+                user, session, task_ids, now=clock.wall_clock_now(zone)
+            )
         for read in reads:
             if read.id in on_shift:
                 read.can_redeem = True

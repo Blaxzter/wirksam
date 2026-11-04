@@ -5,6 +5,7 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.event import event as crud_event
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.logic import clock, vouchers
@@ -66,6 +67,7 @@ async def delete_batch(
         ).scalars()
     )
     slot_ids = [s.id for s in shifts]
+    zone = await crud_event.zone_of(session, db_task.event_id)
 
     if access == "manager" and slot_ids:
         booked = set(
@@ -80,7 +82,7 @@ async def delete_batch(
                 )
             ).scalars()
         )
-        now = clock.wall_clock_now()
+        now = clock.wall_clock_now(zone)
         for shift in shifts:
             check_shift_history(
                 access,
@@ -93,7 +95,7 @@ async def delete_batch(
     # What the batch's worked shifts earned stays earned; then cancel the
     # confirmed bookings with a snapshot.
     await vouchers.settle_earnings(
-        session, now=clock.wall_clock_now(), shift_ids=slot_ids
+        session, now=clock.wall_clock_now(zone), shift_ids=slot_ids
     )
     await crud_booking.cancel_bookings_for_shifts(
         session,

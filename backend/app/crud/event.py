@@ -1,5 +1,6 @@
 import datetime as dt
 import uuid
+from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 from sqlalchemy import CursorResult, and_, false, func, or_, select, update
@@ -25,6 +26,29 @@ EventScope = Literal["mine", "discover", "featured", "all"]
 
 
 class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
+    async def zone_of(self, db: AsyncSession, event_id: uuid.UUID | None) -> str | None:
+        """The event's zone for ``clock``. ``None`` for a task without an event,
+        which the clock reads as ``settings.EVENT_TIMEZONE``.
+
+        ``session.get``, so an event the request has loaded costs no query.
+        """
+        if event_id is None:
+            return None
+        event = await db.get(Event, event_id)
+        return event.timezone if event is not None else None
+
+    async def zones_by_id(
+        self, db: AsyncSession, event_ids: Iterable[uuid.UUID | None]
+    ) -> dict[uuid.UUID | None, str]:
+        """``{event_id: zone}`` for several events, in one query."""
+        ids = {event_id for event_id in event_ids if event_id is not None}
+        if not ids:
+            return {}
+        result = await db.execute(
+            select(col(Event.id), col(Event.timezone)).where(col(Event.id).in_(ids))
+        )
+        return {row[0]: row[1] for row in result.all()}
+
     def _apply_scope(
         self,
         query: Select[Any],

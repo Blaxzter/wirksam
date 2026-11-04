@@ -35,6 +35,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.core.config import settings
 from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.notification_type import notification_type as crud_notification_type
 from app.logic.notifications import triggers
@@ -48,6 +49,7 @@ from app.models.shift import Shift
 from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
+from tests.fixtures.clock import fixed_clock
 
 MODULE = "app.logic.notifications.triggers"
 SERVICE = "app.logic.notifications.service"
@@ -401,6 +403,45 @@ class TestDispatchBookingConfirmed:
 
         assert await _recipients(db_session, "booking.confirmed") == {test_user.id}
         assert bystander.id not in await _recipients(db_session, "booking.confirmed")
+
+    @pytest.mark.parametrize(
+        ("zone", "expected"),
+        [
+            ("Asia/Tokyo", "09:30–11:00 (Asia/Tokyo)"),
+            ("Europe/Berlin", "09:30–11:00\n"),
+        ],
+    )
+    async def test_the_time_says_whose_clock_it_is_when_that_is_not_the_usual_one(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+        monkeypatch: pytest.MonkeyPatch,
+        zone: str,
+        expected: str,
+    ) -> None:
+        monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Europe/Berlin")
+        with _dispatch_env(db_session):
+            await triggers.dispatch_booking_confirmed(
+                booking_id=uuid.uuid4(),
+                user_id=test_user.id,
+                slot_title="Morning Shift",
+                slot_date=dt.date(2026, 3, 14),
+                slot_start_time=dt.time(9, 30),
+                slot_end_time=dt.time(11, 0),
+                slot_location="Main Hall",
+                slot_zone=zone,
+                task_name="Kitchen Duty",
+                slot_id=uuid.uuid4(),
+                task_id=uuid.uuid4(),
+            )
+
+        result = await db_session.execute(
+            select(Notification).where(
+                col(Notification.notification_type_code) == "booking.confirmed"
+            )
+        )
+        assert expected in result.scalar_one().body
 
     async def test_english_body_renders_every_detail(
         self,
@@ -1297,7 +1338,10 @@ class TestDispatchTaskManagerAdded:
                 return_value=True,
             ) as send_batch,
             # The mail leaves out the year of a date in the current one.
-            patch("app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 6, 1, 9)),
+            patch(
+                "app.logic.clock.wall_clock_now",
+                fixed_clock(dt.datetime(2026, 6, 1, 9)),
+            ),
         ):
             await triggers.dispatch_task_manager_added(
                 task_id=test_task.id,

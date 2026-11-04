@@ -37,6 +37,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.core.config import settings
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic import clock, vouchers
 from app.logic.notifications.registry import classification_for_code
@@ -147,6 +148,11 @@ class TestSeededEvent:
         assert test_sandbox.event.status == "published"
         assert test_sandbox.event.visibility == "private"
         assert test_sandbox.event.is_featured is False
+
+    async def test_is_in_the_default_time_zone(
+        self, test_sandbox: SandboxSetup
+    ) -> None:
+        assert test_sandbox.event.timezone == settings.EVENT_TIMEZONE
 
     async def test_carries_a_deadline_and_belongs_to_its_guest(
         self, test_sandbox: SandboxSetup

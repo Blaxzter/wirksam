@@ -8,6 +8,8 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking_reminder import booking_reminder as crud_reminder
+from app.crud.event import event as crud_event
 from app.crud.event_invitation_task import (
     event_invitation_task as crud_invitation_task,
 )
@@ -164,6 +166,7 @@ async def get_task(
 async def _decorated(session: AsyncSession, user: User, task: Task) -> TaskRead:
     """A task read with its viewer-relative fields (team lock, access) filled."""
     read = TaskRead.model_validate(task)
+    read.event_timezone = await crud_event.zone_of(session, task.event_id)
     await decorate_task_reads(session, user, [read])
     return read
 
@@ -240,7 +243,9 @@ async def update_task(
         # shifts not over yet.
         await vouchers.settle_earnings(
             session,
-            now=clock.wall_clock_now(),
+            now=clock.wall_clock_now(
+                await crud_event.zone_of(session, db_task.event_id)
+            ),
             task_ids=[db_task.id],
             include_zero=rate_changing,
         )
@@ -275,6 +280,9 @@ async def update_task(
             session, task_id=db_task.id, old_name=db_task.name, new_name=new_name
         )
     updated = await crud_task.update(session, db_obj=db_task, obj_in=update_data)
+    if moving:
+        # Its shifts are now read in the target event's zone.
+        await crud_reminder.reschedule(session, task_id=updated.id)
 
     # Notify when task is published
     if old_status != "published" and updated.status == "published":
@@ -356,7 +364,9 @@ async def delete_task(
 
     # What the worked shifts earned stays earned, under the task's name.
     await vouchers.settle_earnings(
-        session, now=clock.wall_clock_now(), task_ids=[db_task.id]
+        session,
+        now=clock.wall_clock_now(await crud_event.zone_of(session, db_task.event_id)),
+        task_ids=[db_task.id],
     )
     # An invitation that existed only to run this task is withdrawn, so its
     # link says so; the links themselves would go by cascade.

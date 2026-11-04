@@ -2,11 +2,12 @@
 
 **Earned is earned.** A volunteer earns ``task.vouchers_per_shift`` for every
 booking that counts as worked (``work_hours.counts_as_worked``) on a shift that
-has ended (``work_hours.shift_ends_at`` against ``clock.wall_clock_now()``).
-That figure is *derived*, like worked hours (``app.logic.work_hours``), until
-something would change it for a shift already over: a rate change, deleting
-or moving a shift, a batch or the task, the event's shift dates, deleting the
-account that created the task. Every one of those routes first calls
+has ended (``work_hours.shift_ends_at`` against ``clock.wall_clock_now(zone)``,
+the event's zone). That figure is *derived*, like worked hours
+(``app.logic.work_hours``), until something would change it for a shift already
+over: a rate change, deleting or moving a shift, a batch or the task, the event's
+shift dates or time zone, deleting the account that created the task. Every one
+of those routes first calls
 :func:`settle_earnings`, which freezes what the ended bookings earned in
 ``voucher_earnings``. Reads (:func:`_voucher_shifts`) add the settled rows to
 the bookings not settled yet, in one statement.
@@ -56,7 +57,6 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, NoReturn
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import exists, false, select, true, union_all
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -65,8 +65,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from sqlmodel import col
 
-from app.core.config import settings
 from app.core.errors import raise_problem
+from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.voucher import voucher as crud_voucher
 from app.logic import clock
@@ -164,12 +164,6 @@ def pass_redeemable(p: VoucherPass, utc_now: dt.datetime) -> bool:
     if p.expires_at > utc_now:
         return True
     return p.checked_at is not None and p.checked_at + PASS_HOLD > utc_now
-
-
-def to_utc(wall: dt.datetime) -> dt.datetime:
-    """A wall-clock time in ``EVENT_TIMEZONE`` as naive UTC (stored timestamps)."""
-    aware = wall.replace(tzinfo=ZoneInfo(settings.EVENT_TIMEZONE))
-    return aware.astimezone(dt.UTC).replace(tzinfo=None)
 
 
 # --- What someone has ------------------------------------------------------
@@ -353,6 +347,7 @@ async def _voucher_shifts(
     A settled row's ``shift_id`` / ``task_id`` are None once that shift or
     task is gone, so the client does not link to it.
     """
+    zone = await crud_event.zone_of(session, event_id)
     live_shift = aliased(Shift, name="live_shift")
     live_task = aliased(Task, name="live_task")
     settled = (
@@ -431,7 +426,7 @@ async def _voucher_shifts(
                     date=date,
                     start_time=start,
                     end_time=end,
-                    ends_at=to_utc(ends),
+                    ends_at=clock.wall_clock_to_utc(ends, zone),
                     vouchers=amount,
                     completed=bool(is_settled) or ends <= now,
                     settled=bool(is_settled),

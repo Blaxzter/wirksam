@@ -98,10 +98,10 @@ async def get_my_vouchers(
     current_user: CurrentUser,
 ) -> VoucherAccount:
     """The caller's vouchers in the event, with the shifts and entries behind them."""
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="member")
     return await vouchers.account(
-        session, event_id, current_user, now=clock.wall_clock_now()
+        session, event_id, current_user, now=clock.wall_clock_now(event.timezone)
     )
 
 
@@ -140,7 +140,7 @@ async def get_my_pass_status(
 ) -> VoucherPassStatus:
     """What happened to one of the caller's codes: still showing, being
     redeemed, used, or expired. 404 once it was replaced or is not theirs."""
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="member")
     return await vouchers.pass_status(
         session,
@@ -148,7 +148,7 @@ async def get_my_pass_status(
         user_id=current_user.id,
         pass_id=pass_id,
         utc_now=clock.utc_now(),
-        wall_now=clock.wall_clock_now(),
+        wall_now=clock.wall_clock_now(event.timezone),
     )
 
 
@@ -191,7 +191,7 @@ async def list_voucher_points(
         current_user,
         session,
         [t.id for t in points if not is_admin and t.id not in in_charge],
-        now=clock.wall_clock_now(),
+        now=clock.wall_clock_now(event.timezone),
     )
     out: list[VoucherPointRead] = []
     for t in points:
@@ -244,7 +244,7 @@ async def list_point_redemptions(
     """
     event = await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=task_id)
-    wall_now = clock.wall_clock_now()
+    wall_now = clock.wall_clock_now(event.timezone)
     kind = await require_voucher_redeemer(
         current_user, session, task, event=event, now=wall_now
     )
@@ -270,7 +270,9 @@ async def list_point_redemptions(
         event_id=event_id,
         task_id=task.id,
         actor_id=actor_id,
-        today_since=vouchers.to_utc(dt.datetime.combine(wall_now.date(), dt.time())),
+        today_since=clock.wall_clock_to_utc(
+            dt.datetime.combine(wall_now.date(), dt.time()), event.timezone
+        ),
     )
     return PointRedemptionList(items=items, **totals._asdict())
 
@@ -297,7 +299,7 @@ async def list_point_people(
     """
     event = await _event_for(session, current_user, event_id)
     task = await _point_in_event(session, event_id=event_id, task_id=task_id)
-    wall_now = clock.wall_clock_now()
+    wall_now = clock.wall_clock_now(event.timezone)
     await require_voucher_redeemer(
         current_user, session, task, event=event, now=wall_now, manual=True
     )
@@ -328,7 +330,7 @@ async def check_voucher(
         session,
         task,
         event=event,
-        now=clock.wall_clock_now(),
+        now=clock.wall_clock_now(event.timezone),
         manual=body.user_id is not None,
     )
     _require_point(task)
@@ -339,7 +341,7 @@ async def check_voucher(
         event_id=event_id,
         code=body.code,
         user_id=body.user_id,
-        wall_now=clock.wall_clock_now(),
+        wall_now=clock.wall_clock_now(event.timezone),
         utc_now=clock.utc_now(),
     )
 
@@ -365,7 +367,7 @@ async def redeem_vouchers(
         session,
         task,
         event=event,
-        now=clock.wall_clock_now(),
+        now=clock.wall_clock_now(event.timezone),
         manual=body.user_id is not None,
     )
     _require_point(task)
@@ -380,7 +382,7 @@ async def redeem_vouchers(
         user_id=body.user_id,
         amount=body.amount,
         request_id=body.request_id,
-        wall_now=clock.wall_clock_now(),
+        wall_now=clock.wall_clock_now(event.timezone),
         utc_now=clock.utc_now(),
     )
 
@@ -395,9 +397,11 @@ async def list_voucher_balances(
     current_user: CurrentUser,
 ) -> list[VoucherBalance]:
     """Everyone's vouchers, most available first. Event admins only."""
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    return await vouchers.balances(session, event_id, now=clock.wall_clock_now())
+    return await vouchers.balances(
+        session, event_id, now=clock.wall_clock_now(event.timezone)
+    )
 
 
 @router.get("/{event_id}/vouchers/people/{user_id}", response_model=VoucherAccount)
@@ -411,7 +415,7 @@ async def get_voucher_account(
     someone else's needs admin, and that someone must have a part in the event
     (the rule corrections use): anyone can create an event and so be its
     admin, and the account carries a name and e-mail address."""
-    await _event_for(session, current_user, event_id)
+    event = await _event_for(session, current_user, event_id)
     is_self = user_id == current_user.id
     await require_event_role(
         current_user, session, event_id, minimum="member" if is_self else "admin"
@@ -422,7 +426,9 @@ async def get_voucher_account(
         if not await _appears_in_event(session, event_id=event_id, user_id=user_id):
             _no_part_in_event()
         user = await crud_user.get(session, id=user_id, raise_404_error=True)
-    return await vouchers.account(session, event_id, user, now=clock.wall_clock_now())
+    return await vouchers.account(
+        session, event_id, user, now=clock.wall_clock_now(event.timezone)
+    )
 
 
 @router.post(
@@ -547,7 +553,10 @@ async def _refuse_below_zero(
     if change >= 0:
         return
     available = await vouchers.available_for(
-        session, event_id, user_id, now=clock.wall_clock_now()
+        session,
+        event_id,
+        user_id,
+        now=clock.wall_clock_now(await crud_event.zone_of(session, event_id)),
     )
     if -change > available:
         raise_problem(

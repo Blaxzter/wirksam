@@ -60,6 +60,7 @@ router = APIRouter()
 async def _task_read(session: AsyncSession, user: User, task: Task) -> TaskRead:
     """The task inside a write response, with its viewer-relative fields."""
     read = TaskRead.model_validate(task)
+    read.event_timezone = await crud_event.zone_of(session, task.event_id)
     await decorate_task_reads(session, user, [read])
     return read
 
@@ -509,7 +510,7 @@ async def regenerate_task_shifts(
             shifts_to_create.append(new_shift)
 
     # 5. Find unmatched existing shifts (to be deleted) and their confirmed bookings
-    now = clock.wall_clock_now()
+    now = clock.wall_clock_now(await crud_event.zone_of(session, db_task.event_id))
     affected_bookings: list[AffectedBookingInfo] = []
     shifts_to_delete: list[Shift] = []
     any_locked = False

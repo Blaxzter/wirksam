@@ -40,6 +40,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 from app.schemas.voucher import VoucherAdjustmentUpdate, VoucherRedeemResult
+from tests.fixtures.clock import fixed_clock
 
 #: After the shift below has ended (event wall clock).
 WALL_NOW = dt.datetime(2026, 6, 11, 20, 0)
@@ -420,7 +421,7 @@ async def test_two_organisers_changing_one_correction(
     it to -5. Checked against the -1 that would take 4; against the +5 now
     stored it takes 10, more than the 8 left, so the second is refused and
     the balance never goes below zero."""
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: WALL_NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(WALL_NOW))
     entry_id = await _committed_correction(committed, amount=-1)
 
     results = await asyncio.gather(
@@ -445,7 +446,7 @@ async def test_changing_a_correction_another_organiser_deleted(
     """One organiser deletes a correction while another, who read it before
     that committed, changes it: the change finds it gone (404), rather than
     updating a row that no longer exists."""
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: WALL_NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(WALL_NOW))
     entry_id = await _committed_correction(committed, amount=-1)
 
     results = await asyncio.gather(

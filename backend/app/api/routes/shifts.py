@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking_reminder import booking_reminder as crud_reminder
+from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
@@ -203,6 +205,7 @@ async def update_shift(
     old_start = db_shift.start_time
     old_end = db_shift.end_time
     old_date = db_shift.date
+    zone = await crud_event.zone_of(session, db_task.event_id)
     update_data = slot_in.model_dump(exclude_unset=True)
     if any(
         k in update_data and update_data[k] != getattr(db_shift, k)
@@ -223,7 +226,7 @@ async def update_shift(
             new_date=update_data.get("date") or db_shift.date,
             new_start=update_data.get("start_time", db_shift.start_time),
             new_end=update_data.get("end_time", db_shift.end_time),
-            now=clock.wall_clock_now(),
+            now=clock.wall_clock_now(zone),
         )
     if any(
         k in update_data and update_data[k] != getattr(db_shift, k)
@@ -231,12 +234,16 @@ async def update_shift(
     ):
         # Moving an ended shift, even into the future, keeps what it earned.
         await vouchers.settle_earnings(
-            session, now=clock.wall_clock_now(), shift_ids=[db_shift.id]
+            session, now=clock.wall_clock_now(zone), shift_ids=[db_shift.id]
         )
     update_data.update(
         await location_patch(session, db_shift, update_data, event_id=db_task.event_id)
     )
     updated = await crud_shift.update(session, db_obj=db_shift, obj_in=update_data)
+
+    # A moved shift's reminders move with it, or they'd fire for the old time.
+    if updated.date != old_date or updated.start_time != old_start:
+        await crud_reminder.reschedule(session, shift_ids=[updated.id])
 
     # Notify bookers if time changed
     time_changed = (
@@ -275,6 +282,7 @@ async def delete_shift(
     # Get task name for snapshot
     db_task = await crud_task.get(session, str(shift.task_id), raise_404_error=True)
     access = await require_shift_editor(current_user, session, db_task)
+    zone = await crud_event.zone_of(session, db_task.event_id)
     if access == "manager":
         count = await crud_booking.get_confirmed_count(session, shift_id=shift.id)
         check_shift_history(
@@ -282,13 +290,13 @@ async def delete_shift(
             before=shift,
             has_bookings=count > 0,
             deleting=True,
-            now=clock.wall_clock_now(),
+            now=clock.wall_clock_now(zone),
         )
 
     # What its bookers earned stays earned; then cancel the confirmed
     # bookings with a snapshot before deleting the shift.
     await vouchers.settle_earnings(
-        session, now=clock.wall_clock_now(), shift_ids=[shift.id]
+        session, now=clock.wall_clock_now(zone), shift_ids=[shift.id]
     )
     await crud_booking.cancel_bookings_for_shifts(
         session,

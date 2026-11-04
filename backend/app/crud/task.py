@@ -8,7 +8,7 @@ from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
-from app.crud.shift import upcoming_condition
+from app.crud.shift import WallClocks, on_own_clock, task_zone, upcoming_condition
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.shift import Shift
@@ -47,7 +47,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.datetime | None = None,
+        not_ended_on: WallClocks | None = None,
+        has_future_shifts: WallClocks | None = None,
         open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
         open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
@@ -140,6 +141,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query = query.where(col(Task.end_date) >= date_from)
         if date_to:
             query = query.where(col(Task.start_date) <= date_to)
+        if not_ended_on is not None:
+            # "Today" differs per zone, so each task's own event decides.
+            query = query.where(
+                on_own_clock(
+                    not_ended_on,
+                    task_zone(),
+                    lambda now: col(Task.end_date) >= now.date(),
+                )
+            )
         if has_future_shifts is not None:
             # A shift still to come (event wall clock) with a free place. Plain
             # members do not get a fully booked task in the default list; the
@@ -159,9 +169,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             )
             open_shift = col(Task.id).in_(
                 select(col(Shift.task_id)).where(
-                    upcoming_condition(
-                        has_future_shifts.date(), has_future_shifts.time()
-                    ),
+                    upcoming_condition(has_future_shifts),
                     col(Shift.max_bookings) > booking_count_sq,
                 )
             )
@@ -186,7 +194,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.datetime | None = None,
+        not_ended_on: WallClocks | None = None,
+        has_future_shifts: WallClocks | None = None,
         open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
         open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         sort_by: TaskSortField = "start_date",
@@ -209,6 +218,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             booked_by_user_id=booked_by_user_id,
             date_from=date_from,
             date_to=date_to,
+            not_ended_on=not_ended_on,
             has_future_shifts=has_future_shifts,
             open_shift_exempt_task_ids=open_shift_exempt_task_ids,
             open_shift_exempt_event_ids=open_shift_exempt_event_ids,
@@ -239,7 +249,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.datetime | None = None,
+        not_ended_on: WallClocks | None = None,
+        has_future_shifts: WallClocks | None = None,
         open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
         open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
@@ -260,6 +271,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             booked_by_user_id=booked_by_user_id,
             date_from=date_from,
             date_to=date_to,
+            not_ended_on=not_ended_on,
             has_future_shifts=has_future_shifts,
             open_shift_exempt_task_ids=open_shift_exempt_task_ids,
             open_shift_exempt_event_ids=open_shift_exempt_event_ids,
@@ -318,14 +330,20 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         )
         return result.scalar_one()
 
-    async def ids_created_by(
+    async def ids_created_by_zone(
         self, db: AsyncSession, *, user_id: uuid.UUID
-    ) -> list[uuid.UUID]:
-        """The ids of the tasks created by the given user."""
+    ) -> dict[str | None, list[uuid.UUID]]:
+        """The ids of the tasks created by the given user, by their event's zone
+        (``None`` for a task without an event)."""
         result = await db.execute(
-            select(col(Task.id)).where(col(Task.created_by_id) == user_id)
+            select(col(Task.id), col(Event.timezone))
+            .outerjoin(Event, col(Event.id) == col(Task.event_id))
+            .where(col(Task.created_by_id) == user_id)
         )
-        return list(result.scalars().all())
+        by_zone: dict[str | None, list[uuid.UUID]] = {}
+        for task_id, zone in result.all():
+            by_zone.setdefault(zone, []).append(task_id)
+        return by_zone
 
     async def reassign_owner(
         self,

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session
 from app.core.logger import get_logger
-from app.logic.notifications.messages import get_message
+from app.logic.notifications.messages import get_message, shift_times
 from app.logic.notifications.service import EmailBodyFactory, NotificationService
 from app.schemas.notification import NotificationData
 
@@ -27,6 +27,7 @@ async def dispatch_booking_confirmed(
     slot_start_time: dt.time | None = None,
     slot_end_time: dt.time | None = None,
     slot_location: str | None = None,
+    slot_zone: str | None = None,
     task_name: str | None = None,
     slot_id: uuid.UUID,
     task_id: uuid.UUID,
@@ -45,10 +46,7 @@ async def dispatch_booking_confirmed(
                     slot_title=slot_title,
                     task_name=task_name or "",
                     date=slot_date.strftime("%d.%m.%Y") if slot_date else "",
-                    start_time=slot_start_time.strftime("%H:%M")
-                    if slot_start_time
-                    else "",
-                    end_time=slot_end_time.strftime("%H:%M") if slot_end_time else "",
+                    **shift_times(slot_start_time, slot_end_time, slot_zone),
                     location=slot_location or "",
                 )
 
