@@ -14,7 +14,7 @@ const props = defineProps<{
     :class="
       cn(
         'flex w-full items-stretch rounded-md text-sm text-sidebar-foreground transition-colors',
-        'event-data-[collapsible=icon]:size-8! event-data-[collapsible=icon]:overflow-hidden',
+        'group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:overflow-hidden',
         props.isActive && 'bg-black/10 dark:bg-white/10 font-medium text-sidebar-accent-foreground',
         props.class,
       )
@@ -28,7 +28,7 @@ const props = defineProps<{
       :class="
         cn(
           'w-px shrink-0 self-stretch bg-sidebar-border my-1.5',
-          'event-data-[collapsible=icon]:hidden',
+          'group-data-[collapsible=icon]:hidden',
         )
       "
     />

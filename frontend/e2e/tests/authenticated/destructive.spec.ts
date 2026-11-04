@@ -34,7 +34,23 @@ const DELETE_ACCOUNT = {
   confirm: 'Yes, delete my account',
 } as const
 
-/** Open the admin users page and narrow the table down to one user's row. */
+/**
+ * Why the two tests that take a role or the account away and give it back are
+ * marked slow. They drive two people in two browser contexts through five full
+ * page loads (both fixtures, the admin screen, and two loads for the person to
+ * pick up the change), and with a dozen local workers sharing the Docker
+ * stack's Vite dev server each load takes seconds: 26–30 s in full runs, which
+ * timed out at the default 30 s, and still 20–25 s with every load they can do
+ * without taken out (`--repeat-each=10`, 12 workers).
+ */
+const TWO_PEOPLE_SLOW = 'two people through five full page loads'
+
+/**
+ * Open the admin users page and narrow the table down to one user's row.
+ *
+ * Once only per test: the page stays on that row, and the row follows each
+ * change in place. See `TWO_PEOPLE_SLOW` for why every page load counts.
+ */
 async function findUserRow(page: Page, email: string): Promise<Locator> {
   await page.goto('/app/admin/users')
   const table = page.getByTestId('users-table')
@@ -103,6 +119,7 @@ test.describe('Destructive – deactivate and reactivate', () => {
     disposablePage,
     disposableUser,
   }) => {
+    test.slow(true, TWO_PEOPLE_SLOW)
     // Baseline: the account works.
     await expect(disposablePage).toHaveURL(/\/app\/home/)
 
@@ -119,9 +136,8 @@ test.describe('Destructive – deactivate and reactivate', () => {
     const blocked = await serverApiRaw('GET', '/users/me/export', disposableUser.email)
     expect(blocked.status).toBe(403)
 
-    const rowAgain = await findUserRow(adminPage, disposableUser.email)
-    await runRowAction(adminPage, rowAgain, MENU.activate)
-    await expect(rowAgain).toContainText(STATUS.active)
+    await runRowAction(adminPage, row, MENU.activate)
+    await expect(row).toContainText(STATUS.active)
 
     await disposablePage.goto('/app/home')
     await expect(disposablePage).toHaveURL(/\/app\/home/)
@@ -138,12 +154,12 @@ test.describe('Destructive – grant and revoke admin', () => {
     disposablePage,
     disposableUser,
   }) => {
+    test.slow(true, TWO_PEOPLE_SLOW)
     const adminNavLink = disposablePage.getByTestId('sidebar-link-admin-users')
 
-    // Baseline: a plain member has neither the nav entry nor the route.
+    // Baseline: a plain member has no nav entry. (That the route turns them
+    // away is checked at the end, once the role is gone again.)
     await expect(adminNavLink).toBeHidden()
-    await disposablePage.goto('/app/admin/users')
-    await expect(disposablePage).toHaveURL(/\/app\/home/)
 
     const row = await findUserRow(adminPage, disposableUser.email)
     await runRowAction(adminPage, row, MENU.makeAdmin)
@@ -156,9 +172,8 @@ test.describe('Destructive – grant and revoke admin', () => {
     await expect(disposablePage).toHaveURL(/\/app\/admin\/users/)
     await expect(disposablePage.getByTestId('users-table')).toBeVisible()
 
-    const rowAgain = await findUserRow(adminPage, disposableUser.email)
-    await runRowAction(adminPage, rowAgain, MENU.removeAdmin)
-    await expect(rowAgain).not.toContainText('admin')
+    await runRowAction(adminPage, row, MENU.removeAdmin)
+    await expect(row).not.toContainText('admin')
 
     await disposablePage.goto('/app/admin/users')
     await expect(disposablePage).toHaveURL(/\/app\/home/)

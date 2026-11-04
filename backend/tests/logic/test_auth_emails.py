@@ -113,7 +113,11 @@ class TestSendVerifyEmail:
         message = _sent_message(smtp)
         link = "https://app.example.test/verify-email?token=verify-token-123"
         assert link in _part(message, "plain")
-        assert link in _part(message, "html")
+        # In the HTML part only as the button and the fallback link (its href
+        # and its text), not again as the plain text's "Confirm email:" line.
+        html = _part(message, "html")
+        assert html.count(link) == 3
+        assert "Confirm email:" not in html
 
     async def test_is_still_sent_in_the_local_environment(self) -> None:
         """Test that ENVIRONMENT=local does not suppress the mail."""
@@ -145,7 +149,7 @@ class TestSendVerifyEmail:
 
         message = _sent_message(smtp)
         assert message["To"] == "new@example.test"
-        assert message["Subject"] == "[Wirksam Test] Confirm your email address"
+        assert message["Subject"] == "Confirm your email address"
         assert message["From"] == "Wirksam Test Sender <sender@example.test>"
 
     async def test_greets_the_recipient_by_name(self) -> None:
@@ -214,7 +218,7 @@ class TestSendVerifyEmail:
             )
 
         message = _sent_message(smtp)
-        assert message["Subject"] == "[Wirksam Test] Bestätige deine E-Mail-Adresse"
+        assert message["Subject"] == "Bestätige deine E-Mail-Adresse"
         html = _part(message, "html")
         assert "Hallo Ada," in html
         assert "E-Mail bestätigen" in html
@@ -321,7 +325,7 @@ class TestSendPasswordResetEmail:
         link = "https://app.example.test/reset-password?token=reset-token-456"
         assert link in _part(message, "plain")
         assert link in _part(message, "html")
-        assert message["Subject"] == "[Wirksam Test] Reset your password"
+        assert message["Subject"] == "Reset your password"
 
     async def test_single_hour_expiry_is_not_pluralised(self) -> None:
         """Test that the one-hour default reads as "1 hour", not "1 hours"."""
@@ -435,7 +439,10 @@ class TestAuthEmailHtml:
         assert "If the button does not work" in html
 
     def test_carries_the_brand_header(self) -> None:
-        """Test that the card keeps the shared logo and project name."""
+        """Test that the card keeps the shared logo and project name.
+
+        The logo is the PNG app icon: Gmail and Outlook show no SVG.
+        """
         with _email_settings():
             html = _build_auth_html(
                 title="T",
@@ -445,8 +452,23 @@ class TestAuthEmailHtml:
                 language="en",
             )
 
-        assert "https://app.example.test/icon.svg" in html
+        assert "https://app.example.test/icons/icon-192.png" in html
+        assert "icon.svg" not in html
         assert "Wirksam Test" in html
+
+    def test_a_blank_line_starts_a_paragraph(self) -> None:
+        """Test that the greeting and the message are paragraphs of their own."""
+        with _email_settings():
+            html = _build_auth_html(
+                title="T",
+                body="Hi Ada,\n\nPlease confirm.",
+                action_url="https://app.example.test/verify-email?token=abc",
+                action_label="Confirm email",
+                language="en",
+            )
+
+        assert ">Hi Ada,</p>" in html
+        assert ">Please confirm.</p>" in html
 
     def test_newlines_become_line_breaks(self) -> None:
         """Test that plain-text newlines survive into the HTML alternative."""

@@ -44,6 +44,7 @@ from app.models.auth_session import AuthSession
 from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.event import Event
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_membership import EventMembership
 from app.models.event_team import (
     EventTeam,
@@ -56,10 +57,12 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.user_availability import UserAvailability
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.models.venue_template import VenueTemplate, VenueTemplateImage
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 
 logger = get_logger(__name__)
 
@@ -136,11 +139,22 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
         await db.execute(delete(Shift).where(col(Shift.id).in_(shift_ids)))
 
     # 2. Tasks explicitly, never by cascade from the event — see the module
-    #    docstring. Batches would cascade from the task; being explicit keeps
-    #    the order readable and survives someone loosening that cascade later.
+    #    docstring. Batches, the people in charge and the invitations' task
+    #    links would cascade from the task; being explicit keeps the order
+    #    readable and survives someone loosening that cascade later. A demo
+    #    cannot invite, so the links are there only if one got in some
+    #    other way.
     if task_ids:
         await db.execute(
             delete(ShiftBatch).where(col(ShiftBatch.task_id).in_(task_ids))
+        )
+        await db.execute(
+            delete(TaskManager).where(col(TaskManager.task_id).in_(task_ids))
+        )
+        await db.execute(
+            delete(EventInvitationTask).where(
+                col(EventInvitationTask.task_id).in_(task_ids)
+            )
         )
         await db.execute(delete(Task).where(col(Task.id).in_(task_ids)))
 
@@ -152,6 +166,16 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
     )
     await db.execute(
         delete(EventMembership).where(col(EventMembership.event_id) == event_id)
+    )
+    #    Voucher codes, the ledger and the frozen earnings. All three cascade
+    #    from the event (and from the guests); spelled out like the teams
+    #    below so a reader of this function sees every table a demo writes to
+    #    go. Earnings carry no foreign key to the tasks, shifts and bookings
+    #    deleted above, so the order among these does not matter.
+    await db.execute(delete(VoucherPass).where(col(VoucherPass.event_id) == event_id))
+    await db.execute(delete(VoucherEntry).where(col(VoucherEntry.event_id) == event_id))
+    await db.execute(
+        delete(VoucherEarning).where(col(VoucherEarning.event_id) == event_id)
     )
     #    Teams after the tasks that pointed at them (``tasks.team_id``), and
     #    leaf first: a request's attached file and the checks, then the member

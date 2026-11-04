@@ -7,8 +7,11 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.booking import Booking
 from app.models.shift import Shift
+from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.user import User
 
 
 @pytest.mark.asyncio
@@ -134,8 +137,8 @@ class TestShiftRoutes:
 
 
 @pytest.mark.asyncio
-class TestShiftsTaskManagerRole:
-    """Test task_manager role access on /shifts/ routes."""
+class TestShiftsEventAdminRole:
+    """Event admins manage every shift of their event's tasks."""
 
     async def test_create_shift_as_event_admin(
         self,
@@ -143,7 +146,7 @@ class TestShiftsTaskManagerRole:
         as_event_admin: None,
         test_task: Task,
     ):
-        """Test that a task_manager can create duty shifts."""
+        """Test that an event admin can create duty shifts."""
         r = await async_client.post(
             "/api/v1/shifts/",
             json={
@@ -183,7 +186,7 @@ class TestShiftsTaskManagerRole:
         as_event_admin: None,
         test_shift: Shift,
     ):
-        """Test that a task_manager can update duty shifts."""
+        """Test that an event admin can update duty shifts."""
         r = await async_client.patch(
             f"/api/v1/shifts/{test_shift.id}",
             json={"title": "Updated by Manager"},
@@ -212,7 +215,7 @@ class TestShiftsTaskManagerRole:
         db_session: AsyncSession,
         test_task: Task,
     ):
-        """Test that a task_manager can delete duty shifts."""
+        """Test that an event admin can delete duty shifts."""
         shift = Shift(
             task_id=test_task.id,
             title="Manager Delete Me",
@@ -247,3 +250,77 @@ class TestShiftsTaskManagerRole:
 
         r = await async_client.delete(f"/api/v1/shifts/{shift.id}")
         assert r.status_code == 403
+        assert r.json()["code"] == "task.forbidden"
+
+
+@pytest.mark.asyncio
+class TestShiftBatchesAndRegeneration:
+    async def test_another_tasks_batch_is_refused(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_draft_task: Task,
+    ):
+        """Otherwise deleting that batch would take this shift with it."""
+        foreign = ShiftBatch(
+            task_id=test_draft_task.id,
+            start_date=test_draft_task.start_date,
+            end_date=test_draft_task.end_date,
+        )
+        db_session.add(foreign)
+        await db_session.flush()
+
+        r = await async_client.post(
+            "/api/v1/shifts/",
+            json={
+                "task_id": str(test_task.id),
+                "batch_id": str(foreign.id),
+                "title": "Wrong batch",
+                "date": "2026-06-12",
+            },
+        )
+
+        assert r.status_code == 400
+        assert r.json()["code"] == "batch.wrong_task"
+
+    async def test_regenerating_a_booked_shift_away_cancels_with_a_snapshot(
+        self,
+        async_client: AsyncClient,
+        as_event_admin: None,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_user: User,
+    ):
+        """Not left confirmed with no shift, dropping out of everyone's hours."""
+        shift = Shift(
+            task_id=test_task.id,
+            title="Old slot",
+            date=date(2026, 6, 12),
+            start_time=time(7, 0),
+            end_time=time(8, 0),
+        )
+        db_session.add(shift)
+        await db_session.flush()
+        booking = Booking(shift_id=shift.id, user_id=test_user.id, status="confirmed")
+        db_session.add(booking)
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/tasks/{test_task.id}/regenerate-shifts",
+            json={
+                "schedule": {
+                    "default_start_time": "09:00:00",
+                    "default_end_time": "11:00:00",
+                    "shift_duration_minutes": 60,
+                }
+            },
+        )
+
+        assert r.status_code == 200, r.text
+        assert r.json()["shifts_removed"] == 1
+        await db_session.refresh(booking)
+        assert booking.status == "cancelled"
+        assert booking.cancelled_task_name == test_task.name
+        assert booking.cancelled_shift_title == "Old slot"

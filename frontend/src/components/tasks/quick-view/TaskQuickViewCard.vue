@@ -1,12 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
-import { Lock, MapPin, ShieldCheck, Tag, Trash2, UsersRound } from '@lucide/vue'
+import {
+  Lock,
+  MapPin,
+  ScanLine,
+  ShieldCheck,
+  Tag,
+  Ticket,
+  Trash2,
+  UserCheck,
+  UsersRound,
+} from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
 import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useFormatters } from '@/composables/useFormatters'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -37,8 +48,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const authStore = useAuthStore()
 const { get } = useAuthenticatedClient()
+const { formatDateLabel } = useFormatters()
 
-const canManage = computed(() => authStore.canManageEvent(props.task.event_id))
+/** Organisers and the task's people in charge see its status. */
+const canManage = computed(() => props.task.can_manage ?? false)
+/** Deleting the task stays with the organisers. */
+const canAdminEvent = computed(() => authStore.canManageEvent(props.task.event_id))
 
 const numDays = computed(() => props.visibleDays ?? 5)
 const expanded = ref(false)
@@ -130,13 +145,61 @@ const days = computed<DayColumn[]>(() => {
   return result
 })
 
-const totalAvailableShifts = computed(() => {
-  const shifts = props.task.shifts ?? []
-  return shifts.filter((s) => {
-    if (!s.max_bookings) return true
-    return (s.current_bookings ?? 0) < s.max_bookings
-  }).length
+/**
+ * What there is to book, over every shift still to come rather than the days
+ * on screen: a task whose only shift is ten days out is listed, and saying
+ * "0 available" next to it read as "nothing to book here".
+ */
+const shiftsLabel = computed(() => {
+  const open = props.task.open_shifts ?? 0
+  if (open > 0) return t('duties.tasks.quickView.openShifts', { count: open }, open)
+  if (props.task.next_shift_date) return t('duties.tasks.quickView.allTaken')
+  return t('duties.tasks.quickView.noUpcoming')
 })
+
+/** Same rule as the chips' (`WeekDayColumns`): no limit means room. */
+function hasRoom(shift: DayShiftEntry): boolean {
+  if (!shift.maxBookings) return true
+  return (shift.currentBookings ?? 0) < shift.maxBookings
+}
+
+/**
+ * The next shift worth showing, when the days on screen hold none (after the
+ * hide-full filter, if it is on) and it lies beyond them. The strip stays on
+ * the shared window by default, which lines the cards up by date; this lets
+ * one card move there on request.
+ */
+const nextShiftBeyond = computed<string | null>(() => {
+  const next = props.hideFullShifts ? props.task.next_open_shift_date : props.task.next_shift_date
+  if (!next) return null
+  const onScreen = days.value.some((day) =>
+    day.shifts.some((s) => !props.hideFullShifts || hasRoom(s)),
+  )
+  if (onScreen) return null
+  return next >= dateStr(rangeEnd.value) ? next : null // ISO dates compare lexicographically
+})
+
+const jumping = ref(false)
+
+/**
+ * Every card's button says "Show"; a screen reader also hears which task and
+ * which day it moves to.
+ */
+const cardId = useId()
+const nameId = `${cardId}-name`
+const nextShiftId = `${cardId}-next-shift`
+
+/** Move the strip to start on `date`; swiping back still reaches the days before. */
+async function jumpTo(date: string) {
+  if (jumping.value) return
+  jumping.value = true
+  const start = parseDate(date)
+  if (await fetchDays(start, numDays.value)) {
+    rangeStart.value = start
+    rangeEnd.value = addDays(start, numDays.value)
+  }
+  jumping.value = false
+}
 
 async function fetchDays(start: Date, count: number): Promise<boolean> {
   try {
@@ -222,7 +285,7 @@ watch(
       >
         <div class="space-y-2">
           <div class="flex items-start justify-between gap-2">
-            <h3 class="text-sm font-semibold leading-tight line-clamp-2 break-words">
+            <h3 :id="nameId" class="text-sm font-semibold leading-tight line-clamp-2 break-words">
               {{ task.name }}
             </h3>
             <div v-if="canManage" class="flex shrink-0 items-center gap-1">
@@ -256,6 +319,46 @@ watch(
             </span>
           </Badge>
 
+          <Badge
+            v-if="canManage && !canAdminEvent"
+            variant="outline"
+            class="text-[11px]"
+            :data-testid="`task-in-charge-badge-${task.id}`"
+          >
+            <UserCheck aria-hidden="true" />
+            {{ t('duties.tasks.managers.label') }}
+          </Badge>
+
+          <div
+            v-if="(task.vouchers_per_shift ?? 0) > 0 || task.is_voucher_point"
+            class="flex flex-wrap gap-1"
+          >
+            <Badge
+              v-if="(task.vouchers_per_shift ?? 0) > 0"
+              variant="secondary"
+              class="text-[11px]"
+              :data-testid="`task-vouchers-badge-${task.id}`"
+            >
+              <Ticket aria-hidden="true" />
+              {{
+                t(
+                  'vouchers.task.perShift',
+                  { n: task.vouchers_per_shift },
+                  task.vouchers_per_shift ?? 0,
+                )
+              }}
+            </Badge>
+            <Badge
+              v-if="task.is_voucher_point"
+              variant="outline"
+              class="text-[11px]"
+              :data-testid="`task-voucher-point-badge-${task.id}`"
+            >
+              <ScanLine aria-hidden="true" />
+              {{ t('vouchers.task.point') }}
+            </Badge>
+          </div>
+
           <p v-if="task.description" class="text-xs text-muted-foreground line-clamp-2 break-words">
             {{ task.description }}
           </p>
@@ -285,10 +388,10 @@ watch(
             class="h-auto min-w-0 justify-start px-0 text-xs font-semibold whitespace-normal text-left"
             @joined="emit('teamJoined')"
           />
-          <span v-else class="text-xs text-muted-foreground">
-            {{ t('duties.tasks.quickView.availableShifts', { count: totalAvailableShifts }) }}
+          <span v-else class="text-xs text-muted-foreground" data-testid="task-row-shifts-label">
+            {{ shiftsLabel }}
           </span>
-          <HintTooltip v-if="canManage" :label="t('duties.tasks.delete')">
+          <HintTooltip v-if="canAdminEvent" :label="t('duties.tasks.delete')">
             <Button
               variant="ghost"
               size="icon"
@@ -311,6 +414,7 @@ watch(
           :expanded="expanded"
           :hide-full-shifts="hideFullShifts"
           :team-name="task.team_name"
+          :book-before-start="(task.vouchers_per_shift ?? 0) > 0 && !canManage"
           :has-more-next="hasMoreNext"
           :has-more-previous="hasMorePrevious"
           :loading-next="loadingNext"
@@ -320,6 +424,26 @@ watch(
           @click-shift="(slotId) => emit('clickShift', slotId, task)"
           @toggle-expand="expanded = !expanded"
         />
+        <div
+          v-if="nextShiftBeyond"
+          class="mx-1 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md bg-muted/60 px-3 py-1.5 text-xs"
+          data-testid="task-row-next-shift"
+        >
+          <span :id="nextShiftId" class="text-muted-foreground">
+            {{ t('duties.tasks.quickView.nextShiftOn', { date: formatDateLabel(nextShiftBeyond) }) }}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-11 px-3 text-xs sm:h-7 sm:px-2.5"
+            :disabled="jumping"
+            :aria-describedby="`${nameId} ${nextShiftId}`"
+            data-testid="btn-task-row-jump"
+            @click="jumpTo(nextShiftBeyond)"
+          >
+            {{ t('duties.tasks.quickView.jumpTo') }}
+          </Button>
+        </div>
       </div>
     </div>
   </div>

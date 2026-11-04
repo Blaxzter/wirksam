@@ -43,6 +43,7 @@ import ReminderEntryRow from '@/components/notifications/ReminderEntryRow.vue'
 
 import type { BookingRead, ShiftRead, ShiftBookingEntry } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { shiftHasEnded } from '@/lib/shift-time'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -64,7 +65,8 @@ const bookingId = computed(() => route.params.bookingId as string)
 const loading = ref(true)
 const booking = ref<BookingRead | null>(null)
 const shift = ref<ShiftRead | null>(null)
-const slotBookings = ref<ShiftBookingEntry[]>([])
+/** Who else is booked; null when the roster could not be loaded, which hides its card. */
+const slotBookings = ref<ShiftBookingEntry[] | null>(null)
 const eventName = ref<string | null>(null)
 
 // Notes
@@ -103,11 +105,11 @@ const timeDisplay = computed(() => {
 
 const isConfirmed = computed(() => booking.value?.status === 'confirmed')
 
+/** Over, so it can no longer be cancelled (the server says `booking.shift_over`). */
 const isInPast = computed(() => {
   const s = shift.value
   if (!s) return false
-  const slotDate = new Date(s.date + 'T' + (s.end_time ?? s.start_time ?? '23:59'))
-  return slotDate < new Date()
+  return shiftHasEnded(s.date, s.start_time, s.end_time)
 })
 
 // ── Data loading ──────────────────────────────────────────────
@@ -124,19 +126,19 @@ async function loadData() {
 
     // Load shift if booking has one
     if (bookingRes.data.shift_id) {
-      const [slotRes, bookingsRes, reminders] = await Promise.all([
+      const [slotRes, reminders] = await Promise.all([
         get<{ data: ShiftRead }>({
           url: `/shifts/${bookingRes.data.shift_id}`,
-        }),
-        get<{ data: ShiftBookingEntry[] }>({
-          url: `/shifts/${bookingRes.data.shift_id}/bookings`,
         }),
         reminderStore.fetchBookingReminders(bookingId.value),
         notificationStore.fetchTelegramBinding(),
       ])
       shift.value = slotRes.data
-      slotBookings.value = bookingsRes.data
       bookingReminders.value = reminders
+
+      // On its own: a refused or failed roster hides its card rather than
+      // sending the volunteer back to My Bookings.
+      await loadSlotBookings(bookingRes.data.shift_id)
 
       // Get task name from shift
       if (slotRes.data.task_id) {
@@ -158,6 +160,15 @@ async function loadData() {
   }
 }
 
+async function loadSlotBookings(shiftId: string) {
+  try {
+    const res = await get<{ data: ShiftBookingEntry[] }>({ url: `/shifts/${shiftId}/bookings` })
+    slotBookings.value = res.data
+  } catch {
+    slotBookings.value = null
+  }
+}
+
 // ── Actions ───────────────────────────────────────────────────
 
 async function saveNotes() {
@@ -173,12 +184,7 @@ async function saveNotes() {
     toast.success(t('duties.shifts.detail.notesSaved'))
 
     // Reload bookings table
-    if (booking.value.shift_id) {
-      const res = await get<{ data: ShiftBookingEntry[] }>({
-        url: `/shifts/${booking.value.shift_id}/bookings`,
-      })
-      slotBookings.value = res.data
-    }
+    if (booking.value.shift_id) await loadSlotBookings(booking.value.shift_id)
   } catch (error) {
     toastApiError(error)
   } finally {
@@ -510,7 +516,7 @@ onMounted(loadData)
       </Card>
 
       <!-- ── Co-bookers Card ─────────────────────────────────── -->
-      <Card>
+      <Card v-if="slotBookings">
         <CardHeader>
           <CardTitle class="text-base">{{ t('duties.shifts.detail.bookedUsers') }}</CardTitle>
         </CardHeader>
@@ -520,7 +526,7 @@ onMounted(loadData)
       </Card>
 
       <!-- ── Danger Zone ─────────────────────────────────────── -->
-      <div v-if="isConfirmed" class="flex justify-end pt-2">
+      <div v-if="isConfirmed && !isInPast" class="flex justify-end pt-2">
         <Button
           data-testid="btn-cancel-booking"
           variant="destructive"

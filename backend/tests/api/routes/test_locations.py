@@ -20,6 +20,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 
@@ -720,6 +721,55 @@ class TestLocationShifts:
         )
 
         assert len(r.json()) == 2
+
+    async def test_says_what_vouchers_a_shift_earns_and_who_runs_it(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_location: Location,
+        test_user: User,
+    ):
+        # The map hides Book on a voucher shift that has started, unless the
+        # caller runs the task (booking.shift_started): it needs both.
+        earning = await self._task(db_session, test_event)
+        earning.vouchers_per_shift = 3
+        plain = await self._task(db_session, test_event)
+        db_session.add(TaskManager(task_id=earning.id, user_id=test_user.id))
+        await db_session.flush()
+        a = await self._shift(
+            db_session, earning, test_location, start=dt.time(9, 0), title="A"
+        )
+        b = await self._shift(
+            db_session, plain, test_location, start=dt.time(10, 0), title="B"
+        )
+
+        r = await async_client.get(
+            f"/api/v1/locations/{test_location.id}/shifts", params={"on": str(DAY)}
+        )
+
+        by_id = {s["id"]: s for s in r.json()}
+        assert by_id[str(a.id)]["vouchers_per_shift"] == 3
+        assert by_id[str(a.id)]["can_manage"] is True
+        assert by_id[str(b.id)]["vouchers_per_shift"] == 0
+        assert by_id[str(b.id)]["can_manage"] is False
+
+    async def test_event_admin_runs_every_task(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_location: Location,
+        as_event_admin: None,
+    ):
+        task = await self._task(db_session, test_event)
+        await self._shift(db_session, task, test_location)
+
+        r = await async_client.get(
+            f"/api/v1/locations/{test_location.id}/shifts", params={"on": str(DAY)}
+        )
+
+        assert r.json()[0]["can_manage"] is True
 
     async def test_defaults_to_today(
         self,

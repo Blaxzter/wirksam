@@ -57,6 +57,25 @@ test.describe('Availability – fully available', () => {
     await expect(page.getByTestId('btn-save')).toBeDisabled()
   })
 
+  test('a mode cannot be picked before the saved one has loaded', async ({ adminPage: page }) => {
+    // Hold the saved availability back. A pick made before it arrives would
+    // be overwritten by it and leave nothing to save.
+    let release = () => {}
+    const held = new Promise<void>((resolve) => (release = resolve))
+    await page.route('**/availability/me', async (route) => {
+      await held
+      await route.fallback()
+    })
+    await page.goto('/app/availability')
+    const full = page.getByTestId('availability-type-fully_available').first()
+    await expect(full).toBeDisabled()
+    await expect(page.getByTestId('section-my-availability')).toHaveAttribute('aria-busy', 'true')
+
+    release()
+    await full.click()
+    await expect(page.getByTestId('btn-save')).toBeEnabled()
+  })
+
   test('can register as fully available', async ({ adminPage: page }) => {
     await page.goto('/app/availability')
     await page.getByTestId('availability-type-fully_available').first().click()

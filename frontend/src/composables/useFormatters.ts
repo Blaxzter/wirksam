@@ -62,6 +62,23 @@ export function useFormatters() {
   }
 
   /**
+   * "17.–19. Juli", "July 17 – August 2": the days something runs, for a
+   * header line. The year only appears when either end is not in this year;
+   * one day, or an end before the start, gives that one day.
+   */
+  const formatDaySpan = (start: string | null | undefined, end?: string | null): string => {
+    if (!start) return ''
+    const from = new Date(start + 'T00:00:00')
+    const to = new Date((end || start) + 'T00:00:00')
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return ''
+    const thisYear = new Date().getFullYear()
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }
+    if (from.getFullYear() !== thisYear || to.getFullYear() !== thisYear) options.year = 'numeric'
+    const fmt = new Intl.DateTimeFormat(locale.value, options)
+    return to > from ? fmt.formatRange(from, to) : fmt.format(from)
+  }
+
+  /**
    * "Today", "Tomorrow", "in 3 days" — and a plain date once that stops being
    * the useful answer.
    *
@@ -116,6 +133,7 @@ export function useFormatters() {
     formatTimeRange,
     formatDateLabel,
     formatDate,
+    formatDaySpan,
     formatRelativeDay,
     formatDateWithTime,
     formatDateTime,

@@ -14,6 +14,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -22,6 +23,8 @@ import SidebarSplitButton from '@/components/navigation/SidebarSplitButton.vue'
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+/** The split buttons' tooltip, like `SidebarMenuButton`'s: only for the icon-only sidebar. */
+const { state, isMobile } = useSidebar()
 
 export interface NavSubItem {
   title: string
@@ -36,8 +39,19 @@ export interface NavSubItem {
     variant?: 'default' | 'secondary' | 'destructive' | 'outline'
     /** Drawn before the text; with no text, `tooltip` is also what a screen reader hears. */
     icon?: LucideIcon
+    /**
+     * What a screen reader hears in place of the icon and text, when they
+     * mean more than the text says: a hover tooltip never reaches a screen
+     * reader, a keyboard or a phone.
+     */
+    label?: string
   }
 }
+
+type NavBadge = NonNullable<NavSubItem['badge']>
+
+/** The badge's words for a screen reader, when the visible text is not enough. */
+const badgeSrText = (badge: NavBadge) => badge.label ?? (badge.text ? undefined : badge.tooltip)
 
 export interface NavItem {
   title: string
@@ -130,20 +144,34 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
           </SidebarMenuButton>
         </SidebarMenuItem>
 
-        <!-- Collapsible event (has sub-items) — split: left navigates, right toggles -->
+        <!-- Collapsible group (has sub-items) — split: left navigates, right toggles -->
         <Collapsible v-else as-child :default-open="item.isActive" class="group/collapsible">
           <SidebarMenuItem>
             <SidebarSplitButton :is-active="isRouteActive(item.routeName)">
               <template #link>
-                <RouterLink
-                  v-if="item.routeName"
-                  :to="{ name: item.routeName }"
-                  :data-testid="'sidebar-link-' + item.routeName"
-                  class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-l-md p-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                >
-                  <component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />
-                  <span class="truncate">{{ resolveTitle(item) }}</span>
-                </RouterLink>
+                <!--
+                  Collapsed to icons, the name only shows on hover, as
+                  SidebarMenuButton's tooltip does for the other entries.
+                -->
+                <Tooltip v-if="item.routeName">
+                  <TooltipTrigger as-child>
+                    <RouterLink
+                      :to="{ name: item.routeName }"
+                      :data-testid="'sidebar-link-' + item.routeName"
+                      class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-l-md p-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                    >
+                      <component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />
+                      <span class="truncate">{{ resolveTitle(item) }}</span>
+                    </RouterLink>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    align="center"
+                    :hidden="state !== 'collapsed' || isMobile"
+                  >
+                    {{ resolveTitle(item) }}
+                  </TooltipContent>
+                </Tooltip>
               </template>
               <template #action>
                 <CollapsibleTrigger as-child>
@@ -192,12 +220,14 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
                               class="size-3"
                               aria-hidden="true"
                             />
-                            {{ subItem.badge.text }}
                             <span
-                              v-if="!subItem.badge.text && subItem.badge.tooltip"
-                              class="sr-only"
+                              v-if="subItem.badge.text"
+                              :aria-hidden="subItem.badge.label ? 'true' : undefined"
                             >
-                              {{ subItem.badge.tooltip }}
+                              {{ subItem.badge.text }}
+                            </span>
+                            <span v-if="badgeSrText(subItem.badge)" class="sr-only">
+                              {{ badgeSrText(subItem.badge) }}
                             </span>
                           </Badge>
                         </TooltipTrigger>

@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.logic.notifications import triggers as triggers_module
+from app.logic.vouchers import generate_code
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
@@ -24,8 +25,10 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from app.models.voucher import VoucherEntry, VoucherPass
 from tests.fixtures.storage import stored_bytes
 
 # ``test_event`` runs 2026-06-10 → 2026-06-14. Cloning it to 2027-06-09 is a
@@ -1036,6 +1039,167 @@ class TestCloneMembers:
         assert [(m.user_id, m.role) for m in rows] == [
             (test_event_admin_user.id, "owner")
         ]
+
+
+# ── People in charge ────────────────────────────────────────────────────────
+
+
+async def _managers_of(db: AsyncSession, task_id: uuid.UUID) -> list[TaskManager]:
+    result = await db.execute(
+        select(TaskManager).where(col(TaskManager.task_id) == task_id)
+    )
+    return list(result.scalars().all())
+
+
+@pytest.mark.asyncio
+class TestCloneTaskManagers:
+    """People in charge come along only with the members they are."""
+
+    @pytest.fixture
+    async def in_charge(
+        self,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_user: User,
+        test_admin_user: User,
+    ) -> User:
+        """``test_user`` and a suspended member in charge of the source task."""
+        suspended = User(
+            subject="local|suspended-in-charge",
+            email="suspended-in-charge@example.com",
+            name="Suspended",
+            is_active=False,
+            roles=[],
+        )
+        db_session.add(suspended)
+        await db_session.flush()
+        db_session.add(
+            EventMembership(
+                user_id=suspended.id, event_id=source_event["event"].id, role="member"
+            )
+        )
+        for user in (test_user, suspended):
+            db_session.add(
+                TaskManager(
+                    task_id=source_event["task"].id,
+                    user_id=user.id,
+                    added_by_id=test_admin_user.id,
+                    added_by_name="Admin User",
+                )
+            )
+        await db_session.flush()
+        return suspended
+
+    async def test_with_members_active_people_in_charge_keep_the_role(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        in_charge: User,
+        as_event_admin: None,
+        test_user: User,
+    ):
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event, copy_members=True),
+        )
+        assert r.status_code == 201
+
+        [new_task] = await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"]))
+        rows = await _managers_of(db_session, new_task.id)
+        # The suspended member is not copied into the event, so not in charge.
+        assert [(m.user_id, m.added_by_name) for m in rows] == [
+            (test_user.id, "Admin User")
+        ]
+        # The source keeps its own rows.
+        assert len(await _managers_of(db_session, source_event["task"].id)) == 2
+
+    async def test_without_members_nobody_is_in_charge(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        in_charge: User,
+        as_event_admin: None,
+    ):
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event),
+        )
+        assert r.status_code == 201
+
+        [new_task] = await _tasks_of(db_session, uuid.UUID(r.json()["event"]["id"]))
+        assert await _managers_of(db_session, new_task.id) == []
+
+
+# ── Vouchers ────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestCloneVouchers:
+    """The voucher settings are part of the event again; balances are not."""
+
+    async def test_settings_come_along_and_no_ledger_or_code_does(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        test_user: User,
+        test_admin_user: User,
+        as_event_admin: None,
+    ):
+        task = source_event["task"]
+        task.vouchers_per_shift = 3
+        task.is_voucher_point = True
+        db_session.add(task)
+        source = source_event["event"]
+        source.voucher_manual_redeem = "in_charge"
+        source.managers_edit_voucher_shifts = True
+        db_session.add(source)
+        db_session.add_all(
+            [
+                VoucherEntry(
+                    event_id=source_event["event"].id,
+                    user_id=test_user.id,
+                    kind="adjustment",
+                    amount=4,
+                    note="Aufbau",
+                    actor_id=test_admin_user.id,
+                ),
+                VoucherPass(
+                    event_id=source_event["event"].id,
+                    user_id=test_user.id,
+                    code=generate_code(),
+                    expires_at=datetime.datetime(2099, 1, 1),
+                ),
+            ]
+        )
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event, copy_members=True),
+        )
+        assert r.status_code == 201
+        new_event_id = uuid.UUID(r.json()["event"]["id"])
+        # The event's voucher rules come along too, in the response and stored.
+        assert r.json()["event"]["voucher_manual_redeem"] == "in_charge"
+        assert r.json()["event"]["managers_edit_voucher_shifts"] is True
+        new_event = await db_session.get(Event, new_event_id, populate_existing=True)
+        assert new_event is not None
+        assert new_event.voucher_manual_redeem == "in_charge"
+        assert new_event.managers_edit_voucher_shifts is True
+
+        [new_task] = await _tasks_of(db_session, new_event_id)
+        assert new_task.vouchers_per_shift == 3
+        assert new_task.is_voucher_point is True
+        for model in (VoucherEntry, VoucherPass):
+            count = await db_session.scalar(
+                select(sa_func.count())
+                .select_from(model)
+                .where(col(model.event_id) == new_event_id)
+            )
+            assert count == 0
 
 
 # ── Announcement ────────────────────────────────────────────────────────────

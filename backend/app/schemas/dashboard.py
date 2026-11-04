@@ -29,6 +29,9 @@ class DashboardShift(BaseModel):
     start_time: dt.time | None = None
     end_time: dt.time | None = None
     location: str | None = None
+    # The venue location behind ``location``, so the row can point at it on
+    # the venue map. ``None`` for a free-text place, or once it is deleted.
+    location_id: uuid.UUID | None = None
     taken: int
     capacity: int
 
@@ -48,6 +51,8 @@ class DashboardOpenShift(BaseModel):
     start_time: dt.time | None = None
     end_time: dt.time | None = None
     location: str | None = None
+    # As on ``DashboardShift``: the venue location to show on the map.
+    location_id: uuid.UUID | None = None
     taken: int
     capacity: int
     places_left: int

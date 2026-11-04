@@ -26,6 +26,7 @@ from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.event import event as crud_event
 from app.crud.location import location as crud_location
+from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.locations import propagate_rename
 from app.logic.permissions import (
     require_event_role,
@@ -251,6 +252,7 @@ async def list_location_shifts(
         select(
             Shift,
             col(Task.name),
+            col(Task.vouchers_per_shift),
             count_sq.label("current_bookings"),
             my_booking_sq.label("my_booking_id"),
         )
@@ -266,12 +268,20 @@ async def list_location_shifts(
             col(Shift.id),
         )
     )
-    if not role_at_least(role, "admin"):
+    is_admin = role_at_least(role, "admin")
+    if not is_admin:
         query = query.where(col(Task.status) == "published")
+    in_charge: set[uuid.UUID] = (
+        set()
+        if is_admin
+        else set(
+            await crud_task_manager.task_ids_for_user(session, user_id=current_user.id)
+        )
+    )
 
     result = await session.execute(query)
     shifts: list[LocationShiftRead] = []
-    for shift, task_name, current, booking_id in result.all():
+    for shift, task_name, per_shift, current, booking_id in result.all():
         # A scalar subquery is NULL when nothing matched, whatever its type says.
         my_booking_id = cast(uuid.UUID | None, booking_id)
         shifts.append(
@@ -287,6 +297,8 @@ async def list_location_shifts(
                 current_bookings=current or 0,
                 is_booked_by_me=my_booking_id is not None,
                 my_booking_id=my_booking_id,
+                vouchers_per_shift=per_shift,
+                can_manage=is_admin or shift.task_id in in_charge,
             )
         )
     await mark_team_locks(session, current_user, shifts)

@@ -35,7 +35,7 @@ const props = withDefaults(
         'data-[active=true]:bg-black/10 data-[active=true]:dark:bg-white/10 data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium',
         size === 'sm' && 'text-xs',
         size === 'md' && 'text-sm',
-        'event-data-[collapsible=icon]:hidden',
+        'group-data-[collapsible=icon]:hidden',
         props.class,
       )
     "

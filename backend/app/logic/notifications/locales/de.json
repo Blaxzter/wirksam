@@ -27,6 +27,14 @@
     "title": "Neue Aufgabe veröffentlicht",
     "body": "Die Aufgabe „{task_name}“ wurde veröffentlicht. Schau sie dir an."
   },
+  "task.manager_added": {
+    "title": "Du bist jetzt verantwortlich für {task_name} · {event_name}",
+    "body": "{actor} hat dich eingetragen. Du kannst die Aufgabe bearbeiten und siehst, wer gebucht hat."
+  },
+  "task.manager_removed": {
+    "title": "Nicht mehr verantwortlich für {task_name} · {event_name}",
+    "body": "{actor} hat dich ausgetragen. Du kannst die Aufgabe nicht mehr bearbeiten."
+  },
   "event.published": {
     "title": "Neue Veranstaltung veröffentlicht",
     "body": "Die Veranstaltung „{event_name}“ wurde veröffentlicht."
@@ -47,6 +55,27 @@
     "title": "Passwort zurücksetzen",
     "body": "für dein {project_name}-Konto wurde ein neues Passwort angefordert.\n\nDer Link ist {expires_in} gültig. Falls du das nicht warst, ignoriere diese E-Mail. Dein aktuelles Passwort bleibt gültig."
   },
+  "dates": {
+    "weekdays": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+    "months": [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ],
+    "day": "{weekday}, {day}.",
+    "day_month": "{weekday}, {day}. {month}",
+    "day_month_year": "{weekday}, {day}. {month} {year}",
+    "span": "{first} – {last}"
+  },
   "email": {
     "view_details": "Details anzeigen",
     "footer_text": "Du erhältst diese Nachricht wegen deiner Benachrichtigungseinstellungen.",
@@ -58,15 +87,63 @@
     "verify_cta": "E-Mail bestätigen",
     "reset_cta": "Neues Passwort setzen",
     "action_url_fallback": "Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:",
-    "transactional_footer": "Du erhältst diese E-Mail, weil sie für diese Adresse angefordert wurde. Falls du das nicht warst, musst du nichts tun."
+    "transactional_footer": "Du erhältst diese E-Mail, weil sie für diese Adresse angefordert wurde. Falls du das nicht warst, musst du nichts tun.",
+    "open_task": "Aufgabe öffnen",
+    "detail_task": "Aufgabe",
+    "detail_location": "Ort",
+    "detail_when": "Wann",
+    "detail_also_in_charge": "Auch verantwortlich",
+    "shift_count_one": "1 Schicht",
+    "shift_count_other": "{n} Schichten",
+    "in_charge_intro": "{actor} hat dich bei „{event_name}“ für „{task_name}“ eingetragen.",
+    "in_charge_can_heading": "Das kannst du jetzt",
+    "in_charge_can_edit": "Beschreibung und Infos der Aufgabe ändern",
+    "in_charge_can_see": "sehen, wer Schicht hat, und die Leute erreichen",
+    "in_charge_can_redeem": "bei „{task_name}“ Marken einlösen",
+    "in_charge_step_down": "Passt das nicht? Du kannst die Verantwortung auf der Aufgabe abgeben.",
+    "invite_cta": "Konto anlegen und zusagen",
+    "invite_footer": "Du bekommst diese Mail, weil {inviter} deine Adresse in {project_name} eingegeben hat. Wenn du die Person nicht kennst, kannst du diese Mail einfach ignorieren.",
+    "invite_from": "{inviter} über {project_name}",
+    "invite_organiser": "Organisator:in, {event_name}",
+    "invite_heading": "Machst du bei „{event_name}“ mit?",
+    "invite_heading_tasks": "Übernimmst du {tasks}?",
+    "invite_in_charge_means": "Verantwortlich heißt: Du kannst die Beschreibung ändern und siehst, wer Schicht hat.",
+    "invite_in_charge_means_redeem": "Verantwortlich heißt: Du kannst die Beschreibung ändern, siehst, wer Schicht hat, und löst bei {points} Marken ein.",
+    "invite_also_in_charge_one": "{names} ist auch dabei.",
+    "invite_also_in_charge_other": "{names} sind auch dabei.",
+    "invite_sign_in": "Du hast schon ein Konto? {link} mit dieser Adresse, dann wartet die Einladung dort.",
+    "invite_sign_in_link": "Anmelden",
+    "invite_decline": "Möchtest du nicht? Dann musst du nichts tun. Ohne Zusage wirst du nirgends eingetragen.",
+    "detail_tasks": "Aufgaben",
+    "detail_event": "Veranstaltung"
   },
   "event.invitation": {
     "title": "Einladung zu einer Veranstaltung",
     "body": "Du wurdest zu „{event_name}“ eingeladen."
   },
+  "event.invitation.tasks": {
+    "title": "Einladung als Verantwortliche:r",
+    "body": "{inviter} hat dich zu „{event_name}“ eingeladen und möchte, dass du für {tasks} verantwortlich bist."
+  },
   "event.invitation_accepted": {
     "title": "Einladung angenommen",
     "body": "{name} ist „{event_name}“ beigetreten."
+  },
+  "event.invitation_accepted.tasks": {
+    "title": "Einladung angenommen",
+    "body": "{name} ist „{event_name}“ beigetreten und jetzt verantwortlich für {tasks}."
+  },
+  "invite.email": {
+    "title": "{inviter} lädt dich zu „{event_name}“ ein",
+    "body": "{inviter} lädt dich ein, bei „{event_name}“ mitzumachen. Leg dir mit dieser E-Mail-Adresse ein Konto an und sag zu, dann bist du dabei."
+  },
+  "invite.email.tasks": {
+    "title": "{inviter} bittet dich, {tasks} zu übernehmen",
+    "body": "{inviter} hat dich gebeten, {tasks} bei „{event_name}“ zu verantworten. Leg dir mit dieser E-Mail-Adresse ein Konto an und sag zu, dann bist du dabei und eingetragen."
+  },
+  "invite.email.expiry": {
+    "title": "",
+    "body": "Die Einladung gilt bis {date}."
   },
   "event.join_requested": {
     "title": "Beitrittsanfrage",
@@ -106,6 +183,10 @@
   },
   "role.member": {
     "title": "Mitglied",
+    "body": ""
+  },
+  "someone": {
+    "title": "Jemand",
     "body": ""
   },
   "user.reinstated": {

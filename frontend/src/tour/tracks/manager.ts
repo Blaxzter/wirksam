@@ -116,12 +116,12 @@ export const managerTrack = defineTrack('manager', [
     id: 'attention',
     chapter: 'whereThingsStand',
     route: 'home',
-    // The one conditional anchor in either track: `AttentionStrip` renders
-    // nothing when it has nothing to report. The seeder always leaves a pending
-    // join request, so for a demo it is there — but the copy is written to read
-    // correctly either way, and the short timeout means a well-run real event
-    // degrades to a centred popover in a second and a half rather than freezing
-    // the tour for the full six.
+    // The one conditional anchor in either track: `AttentionList` renders
+    // nothing when it has nothing to report. The seeder always leaves a
+    // pending join request, so for a demo it is there — but the copy is written
+    // to read correctly either way, and the short timeout means a well-run real
+    // event degrades to a centred popover in a second and a half rather than
+    // freezing the tour for the full six.
     element: '[data-testid="dashboard-attention"]',
     anchorTimeout: 1500,
     side: 'bottom',
@@ -354,7 +354,9 @@ export const managerTrack = defineTrack('manager', [
     id: 'finish',
     chapter: 'peopleAndNumbers',
     route: 'home',
-    element: '[data-testid="dashboard-quick-actions"]',
-    side: 'top',
+    // The header: the quick-actions block went (it repeated the navigation),
+    // and the header is the one thing always on the dashboard.
+    element: '[data-testid="dashboard-header"]',
+    side: 'bottom',
   },
 ])

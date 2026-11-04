@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Bell, CheckCheck, ExternalLink, Loader2, Settings, Trash2 } from '@lucide/vue'
+import { Bell, CheckCheck, Ellipsis, Loader2, Settings, Trash2 } from '@lucide/vue'
+import { useNow } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -14,12 +15,28 @@ import {
 } from '@/stores/notification'
 
 import { useDialog } from '@/composables/useDialog'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 
-import HintTooltip from '@/components/utils/HintTooltip.vue'
+import NotificationRow from '@/components/notifications/NotificationRow.vue'
 
+import { groupByDay } from '@/lib/notifications'
+
+/**
+ * The inbox: every notice as a card, newest first, under "Today",
+ * "Yesterday" and "Earlier". A card opens what it is about and marks the
+ * notice read; on a phone a swipe right marks it read and a swipe left
+ * deletes it. "Mark all read" sits by the title, the rarer "Delete all" and
+ * the settings in the menu beside it.
+ */
 const { t } = useI18n()
 const router = useRouter()
 const notificationStore = useNotificationStore()
@@ -52,6 +69,10 @@ const filtered = computed<NotificationItem[]>(() => {
   return notifications.value.filter((n) => n.classification === activeFilter.value)
 })
 
+/** One clock for every card, so "5 min ago" moves on while the page is open. */
+const now = useNow({ interval: 60_000 })
+const groups = computed(() => groupByDay(filtered.value, now.value))
+
 const filterPills = computed<{ key: Filter; label: string; count: number }[]>(() => [
   {
     key: 'all',
@@ -76,35 +97,15 @@ function pluralKey(c: NotificationClassification): string {
   )[c]
 }
 
-const TONE_BY_CLASSIFICATION: Record<NotificationClassification, { bg: string; fg: string }> = {
-  reminder: { bg: 'bg-[#D9E4EC]', fg: 'text-[#4E7A95]' },
-  change: { bg: 'bg-[#F7EAC8]', fg: 'text-[#8C6418]' },
-  match: { bg: 'bg-[#E3EDE3]', fg: 'text-[#2F5D3A]' },
-  announcement: { bg: 'bg-[#F5E1D3]', fg: 'text-[#C96A3C]' },
-}
-
-function classificationLabel(c: NotificationClassification): string {
-  return t(`notifications.classifications.${c}`)
-}
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMin / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMin < 1) return t('notifications.timeAgo.justNow')
-  if (diffMin < 60) return t('notifications.timeAgo.minutes', { n: diffMin })
-  if (diffHours < 24) return t('notifications.timeAgo.hours', { n: diffHours })
-  if (diffDays < 7) return t('notifications.timeAgo.days', { n: diffDays })
-  return date.toLocaleDateString()
-}
-
 async function handleMarkAllAsRead() {
   await notificationStore.markAllAsRead()
 }
+
+/**
+ * "Delete all" asks first, in a dialog, which opens only once the ⋯ menu has
+ * closed and given focus back to its button (see `useMenuAction`).
+ */
+const menu = useMenuAction()
 
 async function handleDismissAll() {
   const confirmed = await confirmDestructive({
@@ -128,39 +129,9 @@ async function handleDismiss(id: string) {
   await notificationStore.dismissNotification(id)
 }
 
-function routeFor(n: NotificationItem) {
-  const data = n.data
-  if (!data) return null
-  if (data.task_id) return { name: 'task-detail', params: { eventId: data.task_id as string } }
-  // Team requests and decisions open the Teams page on that team.
-  if (data.team_id && data.event_id)
-    return {
-      name: 'teams',
-      params: { eventId: data.event_id as string },
-      query: { team: data.team_id as string },
-    }
-  if (data.event_id) return { name: 'event-settings', params: { eventId: data.event_id as string } }
-  if (data.booking_id) return { name: 'my-bookings' }
-  return null
-}
-
-// ── Click → expand inline action row ─────────────────────────────
-const expandedId = ref<string | null>(null)
-
-function handleClick(n: NotificationItem) {
-  if (!n.is_read) notificationStore.markAsRead(n.id)
-  if (!routeFor(n)) {
-    expandedId.value = null
-    return
-  }
-  expandedId.value = expandedId.value === n.id ? null : n.id
-}
-
-function openTarget(n: NotificationItem) {
-  const route = routeFor(n)
-  if (!route) return
-  expandedId.value = null
-  router.push(route)
+/** A card was clicked: it opens by itself when it is a link; reading it is ours. */
+function handleOpen(n: NotificationItem) {
+  if (!n.is_read) void notificationStore.markAsRead(n.id)
 }
 
 function goToPreferences() {
@@ -213,7 +184,7 @@ function rowTransform(id: string) {
 function onPointerDown(n: NotificationItem, e: PointerEvent) {
   // Only react to touch / pen — desktop mouse uses click + hover.
   if (e.pointerType === 'mouse') return
-  // Don't treat taps on the action panel as the start of a swipe.
+  // Don't treat taps on the action buttons as the start of a swipe.
   if ((e.target as HTMLElement).closest('[data-no-swipe]')) return
   swipingId.value = n.id
   swipeStartX = e.clientX
@@ -270,6 +241,7 @@ async function onPointerUp(n: NotificationItem) {
   resetSwipe()
 }
 
+/** A swipe that ends over a card is no click on it: the link must not open. */
 function onRowClickCapture(e: MouseEvent) {
   if (swipeWasDrag) {
     e.stopPropagation()
@@ -285,43 +257,57 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-5">
-    <!-- Header -->
-    <div class="flex flex-wrap items-baseline justify-between gap-3">
-      <h1 data-testid="page-heading" class="text-2xl sm:text-3xl font-bold tracking-tight">
-        {{ t('notifications.title') }}
+  <div class="mx-auto max-w-2xl space-y-4">
+    <!-- Header: the title, "Mark all read", and the rarer actions in a menu -->
+    <div class="flex items-end justify-between gap-3">
+      <h1
+        data-testid="page-heading"
+        class="text-[26px] leading-tight font-bold tracking-tight sm:text-3xl"
+      >
+        {{ t('notifications.inboxTitle') }}
       </h1>
-      <div class="flex items-center gap-1">
+      <div class="-mr-2 flex items-center">
         <button
           v-if="hasUnread"
           type="button"
-          class="text-primary hover:text-primary/80 cursor-pointer text-xs font-semibold tracking-wide transition-colors"
+          class="text-primary hover:text-primary/80 focus-visible:ring-ring min-h-11 cursor-pointer rounded-md px-2 text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          data-testid="btn-notifications-read-all"
           @click="handleMarkAllAsRead"
         >
           {{ t('notifications.markAllRead') }}
         </button>
-        <HintTooltip v-if="hasAny" :label="t('notifications.deleteAll')">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7 hover:text-red-700 dark:hover:text-red-400"
-            :aria-label="t('notifications.deleteAll')"
-            @click="handleDismissAll"
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="size-11"
+              :aria-label="t('notifications.moreActions')"
+              data-testid="btn-notifications-menu"
+            >
+              <Ellipsis class="size-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            class="min-w-56"
+            @close-auto-focus="menu.onCloseAutoFocus"
           >
-            <Trash2 class="h-3.5 w-3.5" />
-          </Button>
-        </HintTooltip>
-        <HintTooltip :label="t('notifications.managePreferences')">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7"
-            :aria-label="t('notifications.managePreferences')"
-            @click="goToPreferences"
-          >
-            <Settings class="h-3.5 w-3.5" />
-          </Button>
-        </HintTooltip>
+            <DropdownMenuItem class="min-h-11 md:min-h-0" @select="goToPreferences">
+              <Settings />
+              {{ t('notifications.managePreferences') }}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              v-if="hasAny"
+              class="text-destructive focus:text-destructive min-h-11 md:min-h-0"
+              data-testid="btn-notifications-delete-all"
+              @select="menu.after(handleDismissAll)"
+            >
+              <Trash2 class="text-destructive" />
+              {{ t('notifications.deleteAll') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
 
@@ -371,25 +357,19 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Initial load: skeleton rows mirroring real entries. -->
+    <!-- Initial load: skeleton cards mirroring real entries. -->
     <ul
       v-if="initialLoading"
       aria-busy="true"
       :aria-label="t('notifications.title')"
-      class="divide-border divide-y sm:divide-y-0 sm:divide-transparent sm:space-y-2"
+      class="space-y-2 pt-2"
     >
-      <li
-        v-for="i in 3"
-        :key="i"
-        class="bg-background relative flex gap-3 py-3.5 pr-4 pl-6 sm:bg-card sm:border-border sm:rounded-lg sm:border sm:px-5 sm:py-4 sm:pl-7"
-      >
-        <div class="min-w-0 flex-1 pr-20">
-          <div class="mb-2 flex items-center gap-2">
-            <Skeleton class="h-4 w-16 rounded-full" />
-            <Skeleton class="h-3 w-12" />
-          </div>
-          <Skeleton class="mb-1.5 h-4 w-2/3" />
-          <Skeleton class="h-3 w-5/6" />
+      <li v-for="i in 3" :key="i" class="bg-card/60 flex gap-3 rounded-2xl border p-3.5">
+        <Skeleton class="size-10.5 shrink-0 rounded-xl" />
+        <div class="min-w-0 flex-1">
+          <Skeleton class="mb-2 h-4 w-2/3" />
+          <Skeleton class="mb-2 h-3 w-5/6" />
+          <Skeleton class="h-3 w-16" />
         </div>
       </li>
     </ul>
@@ -397,133 +377,67 @@ onMounted(() => {
     <!-- Empty state -->
     <div
       v-else-if="filtered.length === 0"
-      class="bg-card border-border rounded-lg border px-4 py-12 text-center"
+      class="bg-card border-border rounded-2xl border px-4 py-12 text-center"
     >
       <Bell class="text-muted-foreground mx-auto mb-2 h-8 w-8" />
       <p class="text-muted-foreground text-sm">{{ t('notifications.empty') }}</p>
     </div>
 
-    <!-- Mobile: flat list with row dividers, no card chrome.
-         Desktop (sm+): each entry becomes its own card with spacing. -->
-    <ul v-else class="divide-border divide-y sm:divide-y-0 sm:divide-transparent sm:space-y-2">
-      <li
-        v-for="n in filtered"
-        :key="n.id"
-        data-testid="notification-row"
-        class="relative overflow-hidden sm:overflow-visible"
+    <!-- The notices, under the day they came -->
+    <template v-else>
+      <section
+        v-for="group in groups"
+        :key="group.key"
+        :aria-labelledby="`inbox-group-${group.key}`"
+        data-testid="notification-group"
       >
-        <!-- Swipe action backgrounds (revealed under the row) -->
-        <div
-          v-if="swipingId === n.id"
-          class="pointer-events-none absolute inset-0 flex items-center justify-between px-5 sm:hidden"
-          :class="
-            swipeOffset > 0
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-              : swipeOffset < 0
-                ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                : ''
-          "
+        <h2
+          :id="`inbox-group-${group.key}`"
+          class="text-muted-foreground mt-2 mb-2 text-xs font-bold tracking-wide uppercase"
         >
-          <CheckCheck v-if="swipeOffset > 0" class="h-5 w-5" />
-          <span v-else />
-          <Trash2 v-if="swipeOffset < 0" class="h-5 w-5" />
-          <span v-else />
-        </div>
-
-        <div
-          class="bg-background relative flex cursor-pointer touch-pan-y gap-3 py-3.5 pr-4 pl-6 transition-colors hover:bg-black/[0.025] sm:bg-card sm:border-border sm:rounded-lg sm:border sm:px-5 sm:py-4 sm:pl-7 sm:hover:bg-card/80"
-          :style="rowTransform(n.id)"
-          @click="handleClick(n)"
-          @click.capture="onRowClickCapture($event)"
-          @pointerdown="onPointerDown(n, $event)"
-          @pointermove="onPointerMove(n, $event)"
-          @pointerup="onPointerUp(n)"
-          @pointercancel="resetSwipe"
-        >
-          <span
-            v-if="!n.is_read"
-            aria-hidden="true"
-            class="absolute top-4.5 left-2 h-2 w-2 rounded-full bg-[#C96A3C] sm:left-2.5"
-          />
-
-          <div class="min-w-0 flex-1 pr-20">
-            <div class="mb-1 flex items-center gap-2">
-              <span
-                class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium"
-                :class="[
-                  TONE_BY_CLASSIFICATION[n.classification].bg,
-                  TONE_BY_CLASSIFICATION[n.classification].fg,
-                ]"
-              >
-                {{ classificationLabel(n.classification) }}
-              </span>
-              <span class="text-muted-foreground text-[11px]">{{
-                formatTimeAgo(n.created_at)
-              }}</span>
+          {{ t(`notifications.groups.${group.key}`) }}
+        </h2>
+        <ul class="space-y-2">
+          <li v-for="n in group.items" :key="n.id" class="relative overflow-hidden rounded-2xl">
+            <!-- What a swipe does, revealed under the card -->
+            <div
+              v-if="swipingId === n.id"
+              class="pointer-events-none absolute inset-0 flex items-center justify-between rounded-2xl px-5 sm:hidden"
+              :class="
+                swipeOffset > 0
+                  ? 'bg-primary/15 text-primary'
+                  : swipeOffset < 0
+                    ? 'bg-destructive/15 text-destructive'
+                    : ''
+              "
+            >
+              <CheckCheck v-if="swipeOffset > 0" class="h-5 w-5" />
+              <span v-else />
+              <Trash2 v-if="swipeOffset < 0" class="h-5 w-5" />
+              <span v-else />
             </div>
-            <p
-              class="text-sm leading-snug tracking-tight"
-              :class="n.is_read ? 'font-medium' : 'font-semibold'"
-            >
-              {{ n.title }}
-            </p>
-            <p class="text-muted-foreground mt-0.5 text-xs leading-snug">
-              {{ n.body }}
-            </p>
 
-            <!-- Inline action row, expands when the user clicks an item that
-                 has a navigable target. Replaces the previous full-screen sheet. -->
-            <Transition
-              enter-active-class="transition-all duration-150 ease-out"
-              enter-from-class="-translate-y-1 opacity-0"
-              enter-to-class="translate-y-0 opacity-100"
-              leave-active-class="transition-all duration-100 ease-in"
-              leave-from-class="opacity-100"
-              leave-to-class="opacity-0"
+            <div
+              class="bg-background relative touch-pan-y"
+              :style="rowTransform(n.id)"
+              @click.capture="onRowClickCapture($event)"
+              @pointerdown="onPointerDown(n, $event)"
+              @pointermove="onPointerMove(n, $event)"
+              @pointerup="onPointerUp(n)"
+              @pointercancel="resetSwipe"
             >
-              <div v-if="expandedId === n.id && routeFor(n)" class="mt-3 flex gap-2">
-                <Button size="sm" @click.stop="openTarget(n)">
-                  <ExternalLink class="mr-1.5 h-3.5 w-3.5" />
-                  {{ t('notifications.detail.open') }}
-                </Button>
-                <Button variant="ghost" size="sm" @click.stop="expandedId = null">
-                  {{ t('notifications.detail.close') }}
-                </Button>
-              </div>
-            </Transition>
-          </div>
-
-          <!-- Always-visible quick actions (mark read + dismiss) -->
-          <div
-            data-no-swipe
-            class="bg-background border-border absolute top-2 right-2 flex gap-1 rounded-md border p-0.5 shadow-sm"
-          >
-            <HintTooltip v-if="!n.is_read" :label="t('notifications.markRead')">
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-7 w-7 cursor-pointer hover:bg-green-100 hover:text-green-700 dark:hover:bg-green-900/30 dark:hover:text-green-400"
-                :aria-label="t('notifications.markRead')"
-                @click.stop="handleMarkAsRead(n.id)"
-              >
-                <CheckCheck class="h-3.5 w-3.5" />
-              </Button>
-            </HintTooltip>
-            <HintTooltip :label="t('notifications.dismiss')">
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-7 w-7 cursor-pointer hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                :aria-label="t('notifications.dismiss')"
-                @click.stop="handleDismiss(n.id)"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-              </Button>
-            </HintTooltip>
-          </div>
-        </div>
-      </li>
-    </ul>
+              <NotificationRow
+                :notification="n"
+                :now="now"
+                @open="handleOpen(n)"
+                @read="handleMarkAsRead(n.id)"
+                @dismiss="handleDismiss(n.id)"
+              />
+            </div>
+          </li>
+        </ul>
+      </section>
+    </template>
 
     <div v-if="hasMore" class="flex justify-center pt-1">
       <Button variant="ghost" size="sm" :disabled="loading" @click="loadMore">

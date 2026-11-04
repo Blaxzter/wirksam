@@ -41,21 +41,21 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 31      |
+| `a11y`       | 5          | 34      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 231     |
-| `member`     | 3          | 25      |
-| `mobile`     | 2          | 10      |
-| `multi-user` | 5          | 60      |
+| `chromium`   | 28         | 234     |
+| `member`     | 3          | 26      |
+| `mobile`     | 5          | 20      |
+| `multi-user` | 7          | 74      |
 | `public`     | 8          | 42      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **57**     | **420** |
+| **Total**    | **62**     | **451** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 31 tests
+### Project `a11y` — 5 files, 34 tests
 
-#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 12 tests
+#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 13 tests
 
 - **a11y – admin routes** (10)
   - dashboard
@@ -70,6 +70,8 @@ Not yet covered, and not currently tracked by an issue:
   - admin user management
 - **a11y – admin teams** (1)
   - teams page and the review dialog
+- **a11y – admin event vouchers** (1)
+  - voucher rules and overview
 - **a11y – admin task detail** (1)
   - task detail
 
@@ -88,7 +90,7 @@ Not yet covered, and not currently tracked by an issue:
   - dashboard in English
   - dashboard in German
 
-#### `frontend/e2e/tests/a11y/member-routes.spec.ts` — 7 tests
+#### `frontend/e2e/tests/a11y/member-routes.spec.ts` — 9 tests
 
 - **a11y – member routes** (6)
   - dashboard
@@ -97,6 +99,9 @@ Not yet covered, and not currently tracked by an issue:
   - my bookings
   - availability
   - settings
+- **a11y – member dashboard with a booked shift** (2)
+  - next-shift card, light
+  - next-shift card, dark
 - **a11y – member task detail** (1)
   - task detail
 
@@ -155,7 +160,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 231 tests
+### Project `chromium` — 28 files, 234 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -182,17 +187,18 @@ Not yet covered, and not currently tracked by an issue:
   - user table is visible with data
   - shows stat cards for filtering
 
-#### `frontend/e2e/tests/authenticated/admin-users.spec.ts` — 13 tests
+#### `frontend/e2e/tests/authenticated/admin-users.spec.ts` — 14 tests
 
 - **Admin Users – navigation** (3)
   - sidebar shows User Management link for admin
   - clicking sidebar link navigates to /app/admin/users
   - direct navigation to /app/admin/users works
-- **Admin Users – page structure** (7)
+- **Admin Users – page structure** (8)
   - shows heading
   - shows stats section
   - shows individual stat cards
   - hides the approval queue when signup is open
+  - keeps the approval queue while someone is still waiting
   - shows user table
   - current admin user appears in the list
   - no longer offers an approval password
@@ -202,14 +208,15 @@ Not yet covered, and not currently tracked by an issue:
   - approving lets the account in
   - rejecting asks for a reason and keeps the account
 
-#### `frontend/e2e/tests/authenticated/availability.spec.ts` — 11 tests
+#### `frontend/e2e/tests/authenticated/availability.spec.ts` — 12 tests
 
 - **Availability – page structure** (3)
   - heading and My Availability section are visible
   - admin sees the member availabilities section
   - mode picker shows all three availability types
-- **Availability – fully available** (4)
+- **Availability – fully available** (5)
   - Save button is disabled when there are no changes
+  - a mode cannot be picked before the saved one has loaded
   - can register as fully available
   - can remove availability
   - can switch from fully available to specific dates
@@ -244,11 +251,11 @@ Not yet covered, and not currently tracked by an issue:
   - shows show cancelled toggle
 - **My Bookings – with data** (2)
   - booked shift appears in bookings list
-  - can cancel a booking from bookings page
+  - a booking opens its details, where it can be handed back
 - **My Bookings – filters** (1)
   - show cancelled toggle can be activated
 - **My Bookings – grouping** (1)
-  - grouping buttons are visible
+  - the list is arranged by date, task or place, one at a time
 
 #### `frontend/e2e/tests/authenticated/calendar-feed.spec.ts` — 3 tests
 
@@ -272,25 +279,26 @@ Not yet covered, and not currently tracked by an issue:
 - **Dashboard – page structure** (3)
   - leads with the next-shift card
   - shows the shifts that still need people
-  - shows Quick Actions section
+  - greets you in the page header
 - **Dashboard – shifts that need people** (4)
   - lists a shift from a freshly published job
   - a shift nobody has taken is marked as such
-  - pressing a row opens the shift
+  - Sign up opens the shift
   - Browse shifts goes to the task list
-- **Dashboard – what you have said yes to** (3)
+- **Dashboard – what you have said yes to** (4)
   - a booked shift becomes the headline and leaves the offer list
   - the headline opens the shift it names
-  - a second booking lands in the list under the headline
+  - the next shift says how far away it is
+  - every booking is in your plan, the next one marked
 - **Dashboard – the organiser view** (3)
   - an organiser is told which shifts have nobody on them
   - the gap link leads to the task list
   - somebody who only helps out sees none of it
-- **Dashboard – quick actions** (4)
-  - shows Browse Tasks button
-  - shows My Bookings button
-  - Browse Tasks navigates to tasks page
-  - My Bookings quick action navigates to bookings
+- **Dashboard – getting around** (2)
+  - Find a shift in the header opens the open shifts
+  - All bookings opens your bookings
+- **Dashboard – switching event** (1)
+  - the dashboard follows a switch from the sidebar without a reload
 
 #### `frontend/e2e/tests/authenticated/dashboard.spec.ts` — 2 tests
 
@@ -488,23 +496,25 @@ Not yet covered, and not currently tracked by an issue:
   - shows shift time cards
   - back button navigates to tasks list
 - **Task Detail – booking** (3)
-  - clicking a shift books it
+  - an organiser opens a shift and books it from there
   - booked shift shows in My Bookings summary
-  - clicking a booked shift cancels it
+  - an organiser opens a booked shift and cancels it
 - **Task Detail – admin actions** (5)
   - admin can change task status to archived
   - admin sees edit button
-  - admin sees delete button
+  - admin finds delete in the more-actions menu
   - admin sees Add Shifts button
   - admin can delete task
 
-#### `frontend/e2e/tests/authenticated/task-edit.spec.ts` — 9 tests
+#### `frontend/e2e/tests/authenticated/task-edit.spec.ts` — 10 tests
 
 - **Task Edit – page access** (4)
   - can navigate to edit page via URL
   - shows edit page heading
   - shows back button
   - shows schedule configuration section
+- **Task Edit – a task with several shift series** (1)
+  - an organiser renames it, and every series keeps its shifts
 - **Task Add Shifts – page access** (3)
   - can navigate to add-shifts page via URL
   - shows add-shifts heading
@@ -552,7 +562,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue plan templates** (1)
   - save a plan as a template, start a new plan from it, rename and delete it
 
-### Project `member` — 3 files, 25 tests
+### Project `member` — 3 files, 26 tests
 
 #### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
 
@@ -583,12 +593,13 @@ Not yet covered, and not currently tracked by an issue:
   - member can view task detail
   - member can book a shift
 
-#### `frontend/e2e/tests/member/venue-map.spec.ts` — 7 tests
+#### `frontend/e2e/tests/member/venue-map.spec.ts` — 8 tests
 
-- **Venue map – helper view** (3)
+- **Venue map – helper view** (4)
   - tap a pin, read the place, book a shift there
   - search finds a place and zooms to it
   - a deep link opens the place’s sheet
+  - the next-shift card points at the shift’s place on the map
 - **Venue map – nothing to show** (2)
   - an event without plans shows the empty state and no nav entry
   - someone outside the event cannot read its map
@@ -596,7 +607,21 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 2 files, 10 tests
+### Project `mobile` — 5 files, 20 tests
+
+#### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
+
+- **Dashboard – on a phone** (4)
+  - the bottom nav starts with Home and marks the current page
+  - Home brings you back to the dashboard
+  - the More sheet no longer lists Home
+  - on a phone the open shifts stop at four
+
+#### `frontend/e2e/tests/mobile/my-bookings.spec.ts` — 2 tests
+
+- **My Bookings – on a phone** (2)
+  - the search keeps a usable width next to one filter button
+  - the filter button holds the date range, the cancelled switch and the arrangement
 
 #### `frontend/e2e/tests/mobile/responsive-dialog.spec.ts` — 6 tests
 
@@ -609,6 +634,14 @@ Not yet covered, and not currently tracked by an issue:
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
 
+#### `frontend/e2e/tests/mobile/task-detail.spec.ts` — 4 tests
+
+- **Task page – on a phone** (4)
+  - the organiser's ⋯ opens a sheet whose rows open the task's dialogs
+  - closing the sheet, or a dialog one of its rows opened, puts focus back on ⋯
+  - "Add shifts" opens a sheet with both ways to add them
+  - the vouchers card comes first, and a tap on a shift opens it
+
 #### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
 
 - **Venue map – on a phone** (4)
@@ -617,7 +650,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 5 files, 60 tests
+### Project `multi-user` — 7 files, 74 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -710,6 +743,27 @@ Not yet covered, and not currently tracked by an issue:
 - **Cross-user – task booking flow** (2)
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
+
+#### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 9 tests
+
+- an organiser puts a member in charge from the task page
+- a person in charge edits the task and adds a shift, but cannot delete or publish it
+- the shifts of a voucher task stay with the organisers until the event lets people in charge change them
+- a person in charge opens a shift and sees who is on it and how to reach them
+- a person in charge steps down from the task page
+- **inviting by e-mail** (4)
+  - an organiser invites an address, and its owner accepts and is in charge of the task
+  - an organiser withdraws an invitation to be in charge
+  - an organiser puts an invited address in charge once it has joined the event another way
+  - an organiser invites an address while creating a task
+
+#### `frontend/e2e/tests/multi-user/vouchers.spec.ts` — 5 tests
+
+- a volunteer shows their code and an organiser redeems it at a stand
+- without a phone, an organiser picks the person by what they have, then the next one
+- someone in charge of the stand picks the person by what they have, as an organiser does
+- the dashboard shows a code at the stand, without going to the vouchers page
+- a refused camera says so, and a bad code is explained next to the field
 
 ### Project `public` — 8 files, 42 tests
 

@@ -98,7 +98,7 @@ function barSize(count: number): string {
     </CardHeader>
     <CardContent class="flex-1 flex flex-col justify-between">
       <div class="flex flex-col justify-between h-full gap-0.5">
-        <div v-for="bar in bars" :key="bar.hour" class="flex items-center gap-2 event flex-1">
+        <div v-for="bar in bars" :key="bar.hour" class="flex items-center gap-2 group flex-1">
           <span class="text-[11px] text-muted-foreground tabular-nums w-12 text-right shrink-0">
             {{ formatHour(bar.hour) }}
           </span>

@@ -151,12 +151,7 @@ export function displayName(row: Pick<EventTeamMemberRead, 'user_name' | 'user_e
   return row.user_name || row.user_email || '?'
 }
 
-/** First word of a name, for "Approve Carla". */
-export function firstName(name: string): string {
-  return name.replace(/^\[[^\]]*\]\s*/, '').split(/\s+/)[0] || name
-}
-
-export { initials } from '@/lib/format'
+export { firstName, initials } from '@/lib/format'
 
 /** Teams with requirements need the review dialog; plain ones are decided inline. */
 export function needsReview(team: Pick<EventTeamRead, 'requirements'> | undefined): boolean {

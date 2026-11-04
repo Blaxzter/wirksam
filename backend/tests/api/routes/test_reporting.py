@@ -124,8 +124,8 @@ class TestReportingRoutes:
 
 
 @pytest.mark.asyncio
-class TestReportingTaskManagerRole:
-    """Test task_manager scoped access to /reporting/ endpoints."""
+class TestReportingEventAdminRole:
+    """Event-admin scoped access to /reporting/ endpoints."""
 
     async def test_reporting_overview_accessible_as_event_admin(
         self,
@@ -147,7 +147,7 @@ class TestReportingTaskManagerRole:
         test_event: Event,
         as_event_admin: None,
     ):
-        """Test that a task_manager can access the CSV export."""
+        """Test that an event admin can access the CSV export."""
         r = await async_client.get("/api/v1/reporting/export")
 
         assert r.status_code == 200

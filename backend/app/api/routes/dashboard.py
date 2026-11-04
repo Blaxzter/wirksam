@@ -5,12 +5,15 @@ import uuid
 
 import sqlalchemy as sa
 from fastapi import APIRouter
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.crud.event_team import event_team as crud_team
+from app.crud.shift import upcoming_condition
+from app.crud.task_manager import task_manager as crud_task_manager
+from app.logic import clock
 from app.logic.event_scope import (
     get_manageable_event_ids,
     get_user_event_scope,
@@ -63,8 +66,12 @@ async def dashboard_feed(
     duty you have promised to turn up to should not disappear because the event
     switcher is pointing somewhere else. Everything else - the open shifts, the
     organiser's counts - is about the event in view.
+
+    "Now" is the events' wall clock (``EVENT_TIMEZONE``), the zone shift times
+    are written in. The server's own clock is UTC in a container, which kept
+    shifts that had started up to two hours ago on a German volunteer's feed.
     """
-    now = dt.datetime.now()
+    now = clock.wall_clock_now()
     today = now.date()
 
     visible_event_ids = await get_visible_event_ids(session, current_user)
@@ -118,7 +125,11 @@ async def _load_my_shifts(
     today: dt.date,
     now_time: dt.time,
 ) -> tuple[list[DashboardShift], int, int]:
-    """The user's upcoming confirmed bookings, soonest first.
+    """The user's confirmed bookings that are not over yet, soonest first.
+
+    A shift that has started stays until it ends, so the dashboard can say
+    "happening now" to somebody who opens it while they are on duty, rather
+    than offering them "find a shift" while they are standing at one.
 
     Returns the rows, how many there are and how many minutes they add up to.
     A shift with no clock times counts as zero minutes rather than guessing.
@@ -132,6 +143,7 @@ async def _load_my_shifts(
             col(Shift.start_time),
             col(Shift.end_time),
             col(Shift.location),
+            col(Shift.location_id),
             col(Shift.max_bookings),
             col(Task.id).label("task_id"),
             col(Task.name).label("task_name"),
@@ -145,7 +157,7 @@ async def _load_my_shifts(
         .where(
             col(Booking.user_id) == user_id,
             col(Booking.status) == "confirmed",
-            _future_shift_condition(today, now_time),
+            _unfinished_shift_condition(today, now_time),
         )
         .order_by(col(Shift.date), col(Shift.start_time), col(Shift.title))
         .limit(SCAN_LIMIT)
@@ -165,6 +177,7 @@ async def _load_my_shifts(
             start_time=r.start_time,
             end_time=r.end_time,
             location=r.location,
+            location_id=r.location_id,
             taken=r.taken or 0,
             capacity=r.max_bookings,
         )
@@ -215,6 +228,7 @@ async def _load_open_shifts(
             col(Shift.start_time),
             col(Shift.end_time),
             col(Shift.location),
+            col(Shift.location_id),
             col(Shift.max_bookings),
             col(Task.id).label("task_id"),
             col(Task.name).label("task_name"),
@@ -225,7 +239,7 @@ async def _load_open_shifts(
         .join(Task, col(Shift.task_id) == col(Task.id))
         .join(Event, col(Task.event_id) == col(Event.id), isouter=True)
         .where(
-            _future_shift_condition(today, now_time),
+            upcoming_condition(today, now_time),
             col(Task.status) == "published",
             col(Shift.max_bookings) > taken_sq,
             ~mine_sq,
@@ -258,6 +272,7 @@ async def _load_open_shifts(
             start_time=r.start_time,
             end_time=r.end_time,
             location=r.location,
+            location_id=r.location_id,
             taken=r.taken or 0,
             capacity=r.max_bookings,
             places_left=max(r.max_bookings - (r.taken or 0), 0),
@@ -499,20 +514,30 @@ def _duration_minutes(start: dt.time | None, end: dt.time | None) -> int:
     return minutes if minutes >= 0 else minutes + 24 * 60
 
 
-def _future_shift_condition(today: dt.date, now_time: dt.time | None = None):  # noqa: ANN202
-    """Shift is in the future: date > today, or date == today and start_time >= now."""
-    if now_time is not None:
-        return or_(
-            col(Shift.date) > today,
-            and_(
-                col(Shift.date) == today,
-                or_(
-                    col(Shift.start_time).is_(None),
-                    col(Shift.start_time) >= now_time,
-                ),
+def _unfinished_shift_condition(today: dt.date, now_time: dt.time):  # noqa: ANN202
+    """Shift has not ended yet, by ``work_hours.shift_ends_at``'s rule.
+
+    Without an end time a shift lasts until the end of its day; an end at or
+    before the start runs past midnight, so yesterday's 22:00-02:00 is still
+    on until two. A shift with an end but no start ends at that end.
+    """
+    overnight = col(Shift.end_time) <= col(Shift.start_time)
+    return or_(
+        col(Shift.date) > today,
+        and_(
+            col(Shift.date) == today,
+            or_(
+                col(Shift.end_time).is_(None),
+                col(Shift.end_time) > now_time,
+                overnight,
             ),
-        )
-    return col(Shift.date) >= today
+        ),
+        and_(
+            col(Shift.date) == today - dt.timedelta(days=1),
+            overnight,
+            col(Shift.end_time) > now_time,
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -526,7 +551,7 @@ async def dashboard_sidebar(
     current_user: CurrentUser,
 ) -> SidebarResponse:
     """Lightweight data for sidebar quick-links."""
-    now = dt.datetime.now()
+    now = clock.wall_clock_now()
     today = now.date()
     now_time = now.time()
     (
@@ -553,6 +578,9 @@ async def dashboard_sidebar(
         managed_group_ids,
         event_id=scoped_event_id,
         visible_event_ids=visible_event_ids,
+        managed_task_ids=await crud_task_manager.task_ids_for_user(
+            session, user_id=current_user.id
+        ),
     )
     # A task reserved for a team the viewer is not in shows a lock instead of
     # its open-shift count: those shifts are not theirs to take.
@@ -621,13 +649,22 @@ async def _sidebar_tasks(  # noqa: ANN001
     managed_group_ids: list[uuid.UUID] | None = None,
     event_id: uuid.UUID | None = None,
     visible_event_ids: list[uuid.UUID] | None = None,
+    managed_task_ids: list[uuid.UUID] | None = None,
 ) -> list[SidebarTask]:
     """Published tasks with open-shift count and next shift date, limit 10.
 
     Scoped to ``event_id`` when provided so the sidebar matches the user's
     selected event.
+
+    Tasks the user is in charge of (``managed_task_ids``) come first and
+    marked, whether or not a shift is still open, drafts included: a person in
+    charge has to find their task once it is fully booked. Still inside the
+    visible events, so a row left over in an event they have left gives
+    nothing. An organiser's other tasks are not added - this is quick links,
+    not the whole event.
     """
-    future_cond = _future_shift_condition(today, now_time)
+    future_cond = upcoming_condition(today, now_time)
+    managed = col(Task.id).in_(managed_task_ids) if managed_task_ids else sa.false()
 
     # Subquery: confirmed booking count per shift
     booking_count_sq = (
@@ -692,16 +729,17 @@ async def _sidebar_tasks(  # noqa: ANN001
             open_shifts_sq.label("open_shifts"),
             next_shift_date_sq.label("next_shift_date"),
             next_shift_time_sq.label("next_shift_start_time"),
+            managed.label("is_managed"),
         )
         .where(
             col(Task.end_date) >= today,
-            col(Task.id).in_(has_open_shift_sq),
+            or_(col(Task.id).in_(has_open_shift_sq), managed),
         )
-        .order_by(col(Task.start_date))
+        .order_by(case((managed, 0), else_=1), col(Task.start_date))
         .limit(10)
     )
     if status:
-        status_filter = col(Task.status) == status
+        status_filter = or_(col(Task.status) == status, managed)
         if managed_group_ids:
             status_filter = or_(
                 status_filter, col(Task.event_id).in_(managed_group_ids)
@@ -721,6 +759,7 @@ async def _sidebar_tasks(  # noqa: ANN001
             open_shifts=r.open_shifts or 0,
             next_shift_date=r.next_shift_date,
             next_shift_start_time=r.next_shift_start_time,
+            is_managed=bool(r.is_managed),
         )
         for r in result.all()
     ]
@@ -738,7 +777,7 @@ async def _sidebar_bookings(  # noqa: ANN001
     Scoped to ``event_id`` when provided so the sidebar matches the
     event-scoped /bookings/me view.
     """
-    future_cond = _future_shift_condition(today, now_time)
+    future_cond = upcoming_condition(today, now_time)
     query = (
         select(
             col(Booking.id),

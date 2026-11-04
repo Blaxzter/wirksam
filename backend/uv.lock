@@ -233,6 +233,7 @@ dependencies = [
     { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "sqlmodel" },
     { name = "tenacity" },
+    { name = "tzdata" },
 ]
 
 [package.dev-dependencies]
@@ -275,6 +276,7 @@ requires-dist = [
     { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.73.0,<3.0.0" },
     { name = "sqlmodel", specifier = ">=0.0.48,<1.0.0" },
     { name = "tenacity", specifier = ">=9.2.1,<10.0.0" },
+    { name = "tzdata", specifier = ">=2026.5" },
 ]
 
 [package.metadata.requires-dev]

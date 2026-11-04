@@ -161,6 +161,8 @@ services:
             - SANDBOX_ENABLED=${SANDBOX_ENABLED:-true}
             - SANDBOX_TTL_MINUTES=${SANDBOX_TTL_MINUTES:-60}
             - SANDBOX_MAX_ACTIVE=${SANDBOX_MAX_ACTIVE:-25}
+            # The zone shift times are read in (app/logic/clock.py).
+            - EVENT_TIMEZONE=${EVENT_TIMEZONE:-Europe/Berlin}
             # Uploaded files: "postgres" or "s3" (docs/STORAGE.md). An unset
             # S3_ENDPOINT_URL means the garage service above, which browsers
             # reach at files.${DOMAIN}; a store of your own (R2) is reached by

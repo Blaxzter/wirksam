@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
 import { useAvatarUrl } from '@/composables/useAvatarUrl'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -35,6 +36,10 @@ const displayName = computed(
 )
 const displayEmail = computed(() => user.value?.email || '')
 const avatarUrl = useAvatarUrl(() => authStore.profile)
+
+/** "Install app" may answer in a dialog (`InstallAppMenuItem`). */
+const menu = useMenuAction()
+
 const initials = computed(() => {
   if (user.value?.name) {
     return user.value.name
@@ -65,7 +70,13 @@ const initials = computed(() => {
         </Avatar>
       </button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent class="min-w-56 rounded-lg" side="bottom" align="end" :side-offset="4">
+    <DropdownMenuContent
+      class="min-w-56 rounded-lg"
+      side="bottom"
+      align="end"
+      :side-offset="4"
+      @close-auto-focus="menu.onCloseAutoFocus"
+    >
       <DropdownMenuLabel class="p-0 font-normal">
         <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
           <Avatar class="h-8 w-8 rounded-lg">

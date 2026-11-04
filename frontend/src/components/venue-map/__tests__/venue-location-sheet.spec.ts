@@ -2,7 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import VenueLocationSheet from '@/components/venue-map/VenueLocationSheet.vue'
 
@@ -11,7 +11,8 @@ import i18n from '@/locales/i18n'
 
 /**
  * The location sheet's shift list: it must never show one place's (or day's)
- * shifts, with live Book buttons, under another place's title.
+ * shifts, with live Book buttons, under another place's title, nor offer Book
+ * on a shift the server would refuse (over, or a voucher shift under way).
  */
 
 const get = vi.fn()
@@ -57,6 +58,14 @@ beforeEach(() => {
   setActivePinia(createPinia())
   i18n.global.locale.value = 'en'
   get.mockReset()
+  // The morning of the shifts' day: nothing has started yet. Only the clock
+  // is faked, so promises and timers still run.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 9, 12, 8, 0))
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('VenueLocationSheet', () => {
@@ -99,5 +108,38 @@ describe('VenueLocationSheet', () => {
     await wrapper.setProps({ open: false })
     await wrapper.setProps({ open: true })
     expect(wrapper.find('[data-testid="sheet-book-s-a"]').exists()).toBe(true)
+  })
+
+  it('offers no Book on a shift that is over', async () => {
+    vi.setSystemTime(new Date(2026, 9, 12, 12, 30))
+    get.mockResolvedValueOnce({ data: [shift('s-a')] })
+    const wrapper = mount(VenueLocationSheet, {
+      props: { location: place('a'), day: '2026-10-12', open: true },
+      global: { plugins: [i18n], stubs },
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="sheet-book-s-a"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="sheet-over-s-a"]').text()).toBe('Over')
+  })
+
+  it('offers no Book on a voucher shift under way, unless the viewer runs the task', async () => {
+    vi.setSystemTime(new Date(2026, 9, 12, 11, 0))
+    get.mockResolvedValueOnce({
+      data: [
+        { ...shift('s-voucher'), vouchers_per_shift: 2, can_manage: false },
+        { ...shift('s-mine'), vouchers_per_shift: 2, can_manage: true },
+        { ...shift('s-plain'), vouchers_per_shift: 0, can_manage: false },
+      ],
+    })
+    const wrapper = mount(VenueLocationSheet, {
+      props: { location: place('a'), day: '2026-10-12', open: true },
+      global: { plugins: [i18n], stubs },
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="sheet-book-s-voucher"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="sheet-started-s-voucher"]').exists()).toBe(true)
+    // Running the task, or a task without vouchers: helpers may still turn up.
+    expect(wrapper.find('[data-testid="sheet-book-s-mine"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sheet-book-s-plain"]').exists()).toBe(true)
   })
 })

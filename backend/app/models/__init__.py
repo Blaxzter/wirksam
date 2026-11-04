@@ -13,6 +13,7 @@ from .booking_reminder import BookingReminder
 from .calendar_feed import CalendarFeedToken
 from .event import Event
 from .event_invitation import EventInvitation
+from .event_invitation_task import EventInvitationTask
 from .event_join_request import EventJoinRequest
 from .event_membership import EventMembership
 from .event_team import (
@@ -34,12 +35,14 @@ from .shift import Shift
 from .shift_batch import ShiftBatch
 from .stored_object import StorageDeletion, StoredObject
 from .task import Task
+from .task_manager import TaskManager
 from .user import User
 from .user_availability import UserAvailability, UserAvailabilityDate
 from .user_avatar import UserAvatar
 from .user_token import UserToken
 from .venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from .venue_template import VenueTemplate, VenueTemplateImage
+from .voucher import VoucherEarning, VoucherEntry, VoucherPass
 from .work_log import WorkLog
 
 __all__ = [
@@ -53,8 +56,10 @@ __all__ = [
     "StorageDeletion",
     "StoredObject",
     "Task",
+    "TaskManager",
     "Event",
     "EventInvitation",
+    "EventInvitationTask",
     "EventJoinRequest",
     "EventMembership",
     "EventTeam",
@@ -80,5 +85,8 @@ __all__ = [
     "VenueShape",
     "VenueTemplate",
     "VenueTemplateImage",
+    "VoucherEarning",
+    "VoucherEntry",
+    "VoucherPass",
     "WorkLog",
 ]

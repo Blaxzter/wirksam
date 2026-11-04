@@ -2,13 +2,15 @@ import datetime as dt
 import uuid
 from typing import Any, Literal, cast
 
-from sqlalchemy import CursorResult, and_, exists, func, or_, select, update
+from sqlalchemy import ColumnElement, CursorResult, exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
+from app.crud.shift import upcoming_condition
 from app.models.booking import Booking
+from app.models.event import Event
 from app.models.shift import Shift
 from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -17,18 +19,39 @@ TaskSortField = Literal["name", "start_date", "end_date", "status", "created_at"
 
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
+    async def create(self, db: AsyncSession, *, obj_in: TaskCreate) -> Task:
+        """Insert a task, with ``is_sandbox`` copied from its event.
+
+        ``TaskCreate`` has no such field, so a task a demo guest adds through
+        the API would otherwise be a real task inside a sandbox: listed to the
+        superadmin and, once published, announced to every account. The seeder
+        and the event clone build their rows themselves and set it there.
+        """
+        task = await super().create(db, obj_in=obj_in)
+        if task.event_id is not None and await db.scalar(
+            select(col(Event.is_sandbox)).where(col(Event.id) == task.event_id)
+        ):
+            task.is_sandbox = True
+            db.add(task)
+            await db.flush()
+        return task
+
     def _apply_common_filters(
         self,
         query: Select[Any],
         *,
         search: str | None = None,
         status: str | None = None,
+        only_status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.date | dt.datetime | None = None,
+        has_future_shifts: dt.datetime | None = None,
+        open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
+        open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
@@ -85,7 +108,21 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                     status_filter,
                     col(Task.event_id).in_(also_include_group_ids),
                 )
+            if also_include_task_ids:
+                # The drafts of tasks the caller is in charge of. Still inside
+                # restrict_to_event_ids above, so a task in an event they have
+                # left never shows up.
+                status_filter = or_(
+                    status_filter,
+                    col(Task.id).in_(also_include_task_ids),
+                )
             query = query.where(status_filter)
+        if only_status:
+            # The caller's own filter, ANDed on top. ``status`` above is the
+            # visibility rule, which the also_include_* lists widen; letting a
+            # query parameter take its place would hand a plain member every
+            # draft in their events with ``?status=draft``.
+            query = query.where(col(Task.status) == only_status)
         if created_by_id:
             query = query.where(col(Task.created_by_id) == created_by_id)
         if booked_by_user_id:
@@ -103,8 +140,13 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query = query.where(col(Task.end_date) >= date_from)
         if date_to:
             query = query.where(col(Task.start_date) <= date_to)
-        if has_future_shifts:
-            # Only include tasks that have at least one bookable shift in the future
+        if has_future_shifts is not None:
+            # A shift still to come (event wall clock) with a free place. Plain
+            # members do not get a fully booked task in the default list; the
+            # ones who run it always do, or a person in charge could not find
+            # their own task once it filled up. Both exemptions stay inside
+            # restrict_to_event_ids above, so a task in an event the caller
+            # has left never comes back through them.
             booking_count_sq = (
                 select(func.count())
                 .select_from(Booking)
@@ -115,41 +157,20 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
                 .correlate(Shift)
                 .scalar_subquery()
             )
-            today = (
-                has_future_shifts.date()
-                if isinstance(has_future_shifts, dt.datetime)
-                else has_future_shifts
-            )
-            now_time = (
-                has_future_shifts.time()
-                if isinstance(has_future_shifts, dt.datetime)
-                else None
-            )
-
-            # Shift is in the future if:
-            #   date > today, OR
-            #   date == today AND (start_time is NULL OR start_time >= now)
-            future_condition = col(Shift.date) > today
-            if now_time is not None:
-                future_condition = or_(
-                    col(Shift.date) > today,
-                    and_(
-                        col(Shift.date) == today,
-                        or_(
-                            col(Shift.start_time).is_(None),
-                            col(Shift.start_time) >= now_time,
-                        ),
+            open_shift = col(Task.id).in_(
+                select(col(Shift.task_id)).where(
+                    upcoming_condition(
+                        has_future_shifts.date(), has_future_shifts.time()
                     ),
-                )
-
-            query = query.where(
-                col(Task.id).in_(
-                    select(col(Shift.task_id)).where(
-                        future_condition,
-                        col(Shift.max_bookings) > booking_count_sq,
-                    )
+                    col(Shift.max_bookings) > booking_count_sq,
                 )
             )
+            exempt: list[ColumnElement[bool]] = []
+            if open_shift_exempt_task_ids:
+                exempt.append(col(Task.id).in_(open_shift_exempt_task_ids))
+            if open_shift_exempt_event_ids:
+                exempt.append(col(Task.event_id).in_(open_shift_exempt_event_ids))
+            query = query.where(or_(open_shift, *exempt))
         return query
 
     async def get_multi_filtered(
@@ -160,14 +181,18 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         limit: int = 100,
         search: str | None = None,
         status: str | None = None,
+        only_status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.date | None = None,
+        has_future_shifts: dt.datetime | None = None,
+        open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
+        open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         sort_by: TaskSortField = "start_date",
         sort_dir: Literal["asc", "desc"] = "asc",
         also_include_group_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
@@ -179,12 +204,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query,
             search=search,
             status=status,
+            only_status=only_status,
             created_by_id=created_by_id,
             booked_by_user_id=booked_by_user_id,
             date_from=date_from,
             date_to=date_to,
             has_future_shifts=has_future_shifts,
+            open_shift_exempt_task_ids=open_shift_exempt_task_ids,
+            open_shift_exempt_event_ids=open_shift_exempt_event_ids,
             also_include_group_ids=also_include_group_ids,
+            also_include_task_ids=also_include_task_ids,
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
             location_id=location_id,
@@ -205,12 +234,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         *,
         search: str | None = None,
         status: str | None = None,
+        only_status: str | None = None,
         created_by_id: str | None = None,
         booked_by_user_id: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        has_future_shifts: dt.date | None = None,
+        has_future_shifts: dt.datetime | None = None,
+        open_shift_exempt_task_ids: list[uuid.UUID] | None = None,
+        open_shift_exempt_event_ids: list[uuid.UUID] | None = None,
         also_include_group_ids: list[uuid.UUID] | None = None,
+        also_include_task_ids: list[uuid.UUID] | None = None,
         event_id: uuid.UUID | None = None,
         restrict_to_event_ids: list[uuid.UUID] | None = None,
         location_id: uuid.UUID | None = None,
@@ -222,12 +255,16 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             query,
             search=search,
             status=status,
+            only_status=only_status,
             created_by_id=created_by_id,
             booked_by_user_id=booked_by_user_id,
             date_from=date_from,
             date_to=date_to,
             has_future_shifts=has_future_shifts,
+            open_shift_exempt_task_ids=open_shift_exempt_task_ids,
+            open_shift_exempt_event_ids=open_shift_exempt_event_ids,
             also_include_group_ids=also_include_group_ids,
+            also_include_task_ids=also_include_task_ids,
             event_id=event_id,
             restrict_to_event_ids=restrict_to_event_ids,
             location_id=location_id,
@@ -237,6 +274,41 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         result = await db.execute(query)
         return result.scalar_one()
 
+    async def voucher_counts_by_event(
+        self, db: AsyncSession, *, event_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, tuple[int, int]]:
+        """``{event_id: (tasks that earn vouchers, points that take them)}``.
+
+        A draft earns nobody anything yet, and the navigation should not offer
+        a voucher page for it. An archived task's shifts still count, so its
+        volunteers still hold balances and the organisers still need the
+        overview to correct them: it counts as earning. Only a published task
+        takes vouchers.
+        """
+        if not event_ids:
+            return {}
+        earning = func.count().filter(col(Task.vouchers_per_shift) > 0)
+        points = func.count().filter(
+            col(Task.is_voucher_point).is_(True), col(Task.status) == "published"
+        )
+        rows = await db.execute(
+            select(col(Task.event_id), earning, points)
+            .where(
+                col(Task.event_id).in_(event_ids),
+                col(Task.status).in_(("published", "archived")),
+                or_(
+                    col(Task.vouchers_per_shift) > 0,
+                    col(Task.is_voucher_point).is_(True),
+                ),
+            )
+            .group_by(col(Task.event_id))
+        )
+        return {
+            event_id: (int(earn), int(point))
+            for event_id, earn, point in rows.all()
+            if event_id is not None
+        }
+
     async def count_owned_by(self, db: AsyncSession, *, user_id: uuid.UUID) -> int:
         """Count tasks created by the given user."""
         result = await db.execute(
@@ -245,6 +317,15 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
             .where(col(Task.created_by_id) == user_id)
         )
         return result.scalar_one()
+
+    async def ids_created_by(
+        self, db: AsyncSession, *, user_id: uuid.UUID
+    ) -> list[uuid.UUID]:
+        """The ids of the tasks created by the given user."""
+        result = await db.execute(
+            select(col(Task.id)).where(col(Task.created_by_id) == user_id)
+        )
+        return list(result.scalars().all())
 
     async def reassign_owner(
         self,

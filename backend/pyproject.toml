@@ -43,6 +43,9 @@ dependencies = [
     "httptools>=0.9.0,<1.0.0",
     "pywebpush>=2.5.0,<3.0.0",
     "icalendar>=7.3.0,<8.0.0",
+    # The zone database behind EVENT_TIMEZONE (app/logic/clock.py). Windows
+    # ships none, and icalendar pulling it in today is not a promise.
+    "tzdata>=2026.5",
     "pillow>=13.0.0,<14.0.0",
 
     # Uploaded files in S3-compatible object storage (R2, Garage, MinIO) when

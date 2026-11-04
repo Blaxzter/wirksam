@@ -39,7 +39,7 @@
             "title": "Ein Klick, und du bist dabei"
         },
         "finish": {
-            "body": "Aufgaben werden in Schichten aufgeteilt, du übernimmst die, die dir passen, und deine Verfügbarkeit deckt den Rest ab. Über die Schaltflächen hier kommst du direkt zu den Aufgaben und zu deinen eigenen Schichten. Schau dich in Ruhe um, die Demo gehört dir, bis die Zeit abläuft.",
+            "body": "Aufgaben werden in Schichten aufgeteilt, du übernimmst die, die dir passen, und deine Verfügbarkeit deckt den Rest ab. Auf dieser Seite fängst du jedes Mal an: deine nächste Schicht, dein Plan und wo noch Leute fehlen. Schau dich in Ruhe um, die Demo gehört dir, bis die Zeit abläuft.",
             "title": "Das war die Tour"
         },
         "jobDays": {
@@ -55,7 +55,7 @@
             "title": "Aufgaben und ihre Schichten"
         },
         "myBookings": {
-            "body": "Jede Karte ist eine deiner Schichten, vergangen oder kommend, mit Zeit, Ort und den Leuten, die mit dir eingeteilt sind. Genau das brauchst du am Morgen selbst. Hier gibst du eine Schicht auch wieder ab, wenn etwas dazwischenkommt.",
+            "body": "Jede Karte ist eine deiner Schichten, vergangen oder kommend, mit Tag, Zeit und Ort. Genau das brauchst du am Morgen selbst. Öffne eine, um die Schicht wieder abzugeben, wenn etwas dazwischenkommt.",
             "title": "Alles, wozu du Ja gesagt hast"
         },
         "myHours": {
@@ -64,11 +64,11 @@
             "title": "Deine Stunden"
         },
         "myShifts": {
-            "body": "Alles andere, wofür du eingetragen bist, nach Datum sortiert, die heutigen Schichten hervorgehoben. Unter der Überschrift stehen deine Schichten und Stunden zusammengezählt, und der Link daneben öffnet die ganze Liste.",
-            "title": "Deine übrigen Schichten"
+            "body": "Alle Schichten, für die du eingetragen bist, Tag für Tag, die nächste ist markiert. Ein Klick zeigt dir die Einzelheiten, und der Link neben der Überschrift öffnet die ganze Liste.",
+            "title": "Dein Plan"
         },
         "nextShift": {
-            "body": "Du bist schon für ein paar Schichten eingetragen, und die nächste steht immer ganz oben: wann sie losgeht, wo du hinmusst und wer sonst noch dabei ist. Die meisten Helfenden schauen genau dafür hier vorbei.",
+            "body": "Du bist schon für ein paar Schichten eingetragen, und die nächste steht immer ganz oben: wie lange es noch dauert, wo du hinmusst und wer sonst noch dabei ist. Die meisten Helfenden schauen genau dafür hier vorbei.",
             "title": "Wofür du schon eingetragen bist"
         },
         "openChip": {
@@ -77,13 +77,13 @@
             "title": "Eine Schicht mit freiem Platz"
         },
         "openShifts": {
-            "body": "Schichten, denen noch Leute fehlen. Rechts steht, wie viele Plätze noch frei sind oder dass sich noch niemand eingetragen hat. Ein Klick zeigt dir mehr; woher die Schichten kommen, siehst du auf der nächsten Seite.",
+            "body": "Schichten, denen noch Leute fehlen. Oben rechts steht, wie viele Plätze noch frei sind oder dass sich noch niemand eingetragen hat, und der Balken zeigt, wie voll jede schon ist. Mit „Eintragen“ schaust du sie dir genauer an; woher die Schichten kommen, siehst du auf der nächsten Seite.",
             "next": "Zeig mir die Aufgaben",
             "title": "Wo noch Hilfe gebraucht wird"
         },
         "shiftHeader": {
-            "body": "Ganz oben: was für eine Schicht das ist, wann sie stattfindet und wie viele ihrer Plätze schon belegt sind. Oft reicht das schon, um zu wissen, ob sie in deinen Tag passt.",
-            "title": "Was, wann und wie voll"
+            "body": "Ganz oben: was für eine Schicht das ist, wann und wo sie stattfindet. Oft reicht das schon, um zu wissen, ob sie in deinen Tag passt.",
+            "title": "Was und wann"
         },
         "shiftMap": {
             "body": "Wenn es einen Plan vom Gelände gibt, zeigt diese kleine Karte die Stelle. Öffne die Karte, um das ganze Gelände mit allen Orten zu sehen, an denen Leute gebraucht werden.",
@@ -94,7 +94,7 @@
             "title": "Wo du hinmusst"
         },
         "shiftRoster": {
-            "body": "In der Liste stehen die, die schon zugesagt haben, und jede leere Zeile ist ein Platz, der noch frei ist. Wenn du siehst, mit wem du zusammenarbeiten würdest, fällt die Entscheidung oft leichter.",
+            "body": "Wie voll sie ist, wer schon zugesagt hat und wie viele Plätze noch frei sind. Wenn du siehst, mit wem du zusammenarbeiten würdest, fällt die Entscheidung oft leichter.",
             "title": "Wer schon dabei ist"
         }
     },

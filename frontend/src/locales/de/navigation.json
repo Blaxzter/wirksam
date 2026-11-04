@@ -10,13 +10,15 @@
     },
     "mobileBottomNav": {
         "bookings": "Buchungen",
-        "inbox": "Posteingang",
+        "home": "Start",
+        "inbox": "Postfach",
         "more": "Mehr",
         "moreDescription": "Alles Weitere in WirkSam",
         "tasks": "Aufgaben"
     },
     "sidebar": {
         "badges": {
+            "inCharge": "Du bist verantwortlich",
             "managersOnly": "Nur für Organisator:innen sichtbar",
             "openShifts": "{count} offene Schicht | {count} offene Schichten"
         },
@@ -47,6 +49,10 @@
             "venueMap": {
                 "description": "Wo was auf der Veranstaltung ist",
                 "label": "Lageplan"
+            },
+            "vouchers": {
+                "description": "Deine Marken und dein Code",
+                "label": "Marken"
             }
         },
         "platform": "Plattform",

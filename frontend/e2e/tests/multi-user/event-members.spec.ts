@@ -300,7 +300,12 @@ test.describe('Event members – join requests', () => {
   let event: EventRead
 
   test.beforeEach(async ({ adminPage }) => {
-    event = await createEvent(adminPage, uniqueName('E2E Join'))
+    // Today, because Discover lists the first 100 by start date and every
+    // worker's event starts tomorrow and stays in the database.
+    event = await createEvent(adminPage, uniqueName('E2E Join'), 'published', 'public', {
+      start: futureDate(0),
+      end: futureDate(4),
+    })
   })
 
   test.afterEach(async ({ adminPage }) => {

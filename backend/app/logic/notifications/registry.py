@@ -128,6 +128,32 @@ TASK_PUBLISHED = NotificationTypeDef(
     default_channels=["email"],
 )
 
+# People in charge of a task. "change", like event.role_changed: something the
+# recipient holds in this event has changed. Neither is sent when someone names
+# or removes themselves, nor on clone (event.cloned covers the new roster).
+
+TASK_MANAGER_ADDED = NotificationTypeDef(
+    code="task.manager_added",
+    name="Put in Charge of a Task",
+    description="Notification when an organiser puts you in charge of a task",
+    category="task",
+    classification="change",
+    default_channels=["email", "push"],
+)
+
+TASK_MANAGER_REMOVED = NotificationTypeDef(
+    code="task.manager_removed",
+    name="No Longer in Charge",
+    description=(
+        "Notification when an organiser takes you off a task you were in charge of"
+    ),
+    category="task",
+    classification="change",
+    # In-app and push only: the person learns it before the next edit fails,
+    # without a mail for something they can't act on. E-mail can be switched on.
+    default_channels=["push"],
+)
+
 # ── Task group notifications ─────────────────────────────────────
 
 EVENT_PUBLISHED = NotificationTypeDef(
@@ -340,6 +366,8 @@ ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
     USER_APPROVED,
     USER_REJECTED,
     EVENT_CLONED,
+    TASK_MANAGER_ADDED,
+    TASK_MANAGER_REMOVED,
 ]
 
 

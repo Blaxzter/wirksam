@@ -1,0 +1,267 @@
+"""Volunteer vouchers: balances, codes and redemptions (``/events/{id}/vouchers``)."""
+
+import datetime as dt
+import uuid
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.schemas.event_membership import EventRole
+from app.schemas.task_manager import TaskManagerBrief
+
+VoucherEntryKind = Literal["redemption", "adjustment"]
+VoucherRedeemMethod = Literal["code", "manual"]
+VoucherPassState = Literal["active", "checking", "used", "expired"]
+
+#: The most vouchers one redemption, or one task's shifts, may be worth.
+MAX_VOUCHERS_PER_ACTION = 50
+#: The largest correction, either way.
+MAX_ADJUSTMENT = 999
+
+
+class VoucherEntryRead(BaseModel):
+    """One redemption or correction in a balance."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    kind: VoucherEntryKind
+    #: Signed: redemptions are negative.
+    amount: int
+    method: VoucherRedeemMethod | None = None
+    note: str | None = None
+    task_id: uuid.UUID | None = None
+    task_name: str | None = None
+    actor_name: str | None = None
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+
+class VoucherShift(BaseModel):
+    """One confirmed booking on a task that earns vouchers.
+
+    Either derived from the booking's current shift and task, or, once
+    ``settled``, read from the snapshot taken when what it earned was frozen
+    (``app.logic.vouchers.settle_earnings``).
+    """
+
+    booking_id: uuid.UUID
+    #: None once a settled row's shift is gone.
+    shift_id: uuid.UUID | None = None
+    #: None once a settled row's task is gone.
+    task_id: uuid.UUID | None = None
+    task_name: str
+    title: str
+    date: dt.date
+    start_time: dt.time | None = None
+    end_time: dt.time | None = None
+    ends_at: dt.datetime = Field(
+        description=(
+            "When the shift ends, as naive UTC (the wall clock converted through "
+            "EVENT_TIMEZONE), the same convention as created_at, so shifts and "
+            "entries sort on one time line"
+        )
+    )
+    vouchers: int
+    #: The shift has ended, so ``vouchers`` count as earned.
+    completed: bool
+    #: Frozen: shown from its snapshot, and what a later change to the task or
+    #: shift does no longer touches it. Always ``completed``.
+    settled: bool = False
+
+
+class VoucherBalance(BaseModel):
+    """One person's vouchers in one event."""
+
+    user_id: uuid.UUID
+    name: str | None = None
+    email: str | None = None
+    avatar_etag: str | None = None
+    role: EventRole | None = Field(
+        default=None,
+        description="Current role in the event; None once they have left it",
+    )
+    #: From shifts that have ended.
+    earned: int
+    #: From booked shifts still to come.
+    upcoming: int
+    #: Redeemed so far, as a positive number.
+    redeemed: int
+    #: The signed sum of corrections.
+    adjusted: int
+    #: What can be redeemed now: ``earned - redeemed + adjusted``, which never
+    #: goes below zero (earned vouchers stay earned, corrections are capped);
+    #: ``max(..., 0)`` guards rows written before that rule.
+    available: int
+
+
+class VoucherAccount(BaseModel):
+    summary: VoucherBalance
+    shifts: list[VoucherShift]
+    entries: list[VoucherEntryRead]
+
+
+class VoucherPassRead(BaseModel):
+    """A freshly issued code."""
+
+    id: uuid.UUID
+    code: str
+    #: What the QR code holds: ``"WV1:" + code``.
+    qr_payload: str
+    expires_at: dt.datetime
+    #: Count down from this on receipt, never from ``expires_at`` against the
+    #: device clock.
+    ttl_seconds: int
+    #: Shown with the code, so a volunteer at two events sees which one it is.
+    event_name: str
+
+
+class VoucherPassStatus(BaseModel):
+    #: ``checking``: a redeemer has checked the code and holds it.
+    status: VoucherPassState
+    redeemed_amount: int | None = None
+    task_name: str | None = None
+    available: int
+
+
+class VoucherPointRead(BaseModel):
+    """A task that takes vouchers, as the caller sees it."""
+
+    task_id: uuid.UUID
+    name: str
+    location: str | None = None
+    #: The caller may redeem here right now.
+    can_redeem: bool
+    #: ...also without a code, by picking the person: always for event admins
+    #: and the point's people in charge, for whoever is on shift there only
+    #: when the event's ``voucher_manual_redeem`` is ``on_shift``.
+    can_redeem_manually: bool
+    #: For "No phone? Ask Anna or Ben".
+    managers: list[TaskManagerBrief]
+
+
+class VoucherCheckRequest(BaseModel):
+    """Who is in front of the redeemer: the code they show, or the person."""
+
+    task_id: uuid.UUID
+    code: str | None = Field(default=None, max_length=32)
+    user_id: uuid.UUID | None = None
+
+    @model_validator(mode="after")
+    def exactly_one_of_code_or_user(self) -> "VoucherCheckRequest":
+        if (self.code is None) == (self.user_id is None):
+            msg = "Give exactly one of code and user_id"
+            raise ValueError(msg)
+        return self
+
+
+class VoucherRedeemRequest(VoucherCheckRequest):
+    amount: int = Field(ge=1, le=MAX_VOUCHERS_PER_ACTION)
+    #: Generated by the client once per confirm; a retry reuses it.
+    request_id: uuid.UUID
+
+
+class VoucherCheckResult(BaseModel):
+    user_id: uuid.UUID
+    name: str | None = None
+    avatar_etag: str | None = None
+    available: int
+
+
+class VoucherRedeemResult(BaseModel):
+    entry: VoucherEntryRead
+    user_id: uuid.UUID
+    name: str | None = None
+    #: What is left after this redemption.
+    available: int
+    #: True when ``request_id`` matched an earlier redemption, which is
+    #: returned instead of debiting again.
+    replayed: bool = False
+
+
+def _non_zero(v: int | None) -> int | None:
+    if v == 0:
+        msg = "amount must not be 0"
+        raise ValueError(msg)
+    return v
+
+
+def _stripped_note(v: str | None) -> str | None:
+    if v is None:
+        return None
+    v = v.strip()
+    if not v:
+        msg = "note must not be blank"
+        raise ValueError(msg)
+    return v
+
+
+class VoucherAdjustmentCreate(BaseModel):
+    """A correction by an event admin: positive adds, negative takes away."""
+
+    user_id: uuid.UUID
+    amount: int = Field(ge=-MAX_ADJUSTMENT, le=MAX_ADJUSTMENT)
+    #: The reason, required.
+    note: str = Field(min_length=1, max_length=500)
+
+    @field_validator("amount")
+    @classmethod
+    def amount_not_zero(cls, v: int) -> int:
+        _non_zero(v)
+        return v
+
+    @field_validator("note")
+    @classmethod
+    def note_not_blank(cls, v: str) -> str:
+        stripped = _stripped_note(v)
+        assert stripped is not None
+        return stripped
+
+
+class VoucherAdjustmentUpdate(BaseModel):
+    amount: int | None = Field(default=None, ge=-MAX_ADJUSTMENT, le=MAX_ADJUSTMENT)
+    note: str | None = Field(default=None, min_length=1, max_length=500)
+
+    @field_validator("amount")
+    @classmethod
+    def amount_not_zero(cls, v: int | None) -> int | None:
+        return _non_zero(v)
+
+    @field_validator("note")
+    @classmethod
+    def note_not_blank(cls, v: str | None) -> str | None:
+        return _stripped_note(v)
+
+
+class PointRedemptionRead(VoucherEntryRead):
+    """A redemption made at one point, with whose vouchers it took."""
+
+    user_id: uuid.UUID
+    user_name: str | None = None
+
+
+class PointRedemptionList(BaseModel):
+    #: The newest redemptions, up to the request's ``limit``.
+    items: list[PointRedemptionRead]
+    #: Redemptions made here today (event wall-clock day), over all of them
+    #: rather than only ``items``; an on-shift redeemer's own.
+    today_count: int
+    #: Vouchers those took, as a positive number.
+    today_amount: int
+    #: Redemptions made here on every day so far, counted the same way (an
+    #: on-shift redeemer's own); includes today's.
+    total_count: int
+    #: Vouchers those took, as a positive number.
+    total_amount: int
+
+
+class PointPersonVouchers(BaseModel):
+    """What one member of the event can redeem now, for the redeem picker.
+
+    Nothing else about them: the picker takes names and faces from the
+    event's member list.
+    """
+
+    user_id: uuid.UUID
+    #: What they can redeem right now; 0 when nothing is left.
+    available: int

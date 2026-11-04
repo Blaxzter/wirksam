@@ -2,8 +2,10 @@ import json
 import warnings
 from pathlib import Path
 from typing import Annotated, Any, Literal, cast
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import (
+    AfterValidator,
     AnyUrl,
     BeforeValidator,
     EmailStr,
@@ -44,6 +46,19 @@ def parse_domains(v: Any) -> list[str]:
         raise ValueError(v)
     cleaned = (str(item).strip().lstrip("@").lower() for item in items)
     return [domain for domain in cleaned if domain]
+
+
+def parse_timezone(v: str) -> str:
+    """Refuse to boot on a zone name the zone database does not know.
+
+    Caught here rather than at the first comparison, where it would surface as
+    a 500 on whichever request first asked whether a shift had ended.
+    """
+    try:
+        ZoneInfo(v)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise ValueError(f"EVENT_TIMEZONE {v!r} is not a known time zone") from exc
+    return v
 
 
 class Settings(BaseSettings):
@@ -261,6 +276,13 @@ class Settings(BaseSettings):
     SANDBOX_ENABLED: bool = True
     SANDBOX_TTL_MINUTES: int = 60
     SANDBOX_MAX_ACTIVE: int = 25
+
+    # The zone the events' wall clock runs in (an IANA name). Shift dates and
+    # times are stored without a zone; app/logic/clock.py::wall_clock_now reads
+    # "now" in this zone so that "has this shift started / ended" agrees with
+    # the clock on the wall at the venue. Stored timestamps stay naive UTC. One
+    # zone for the whole installation; a zone per event is not supported.
+    EVENT_TIMEZONE: Annotated[str, AfterValidator(parse_timezone)] = "Europe/Berlin"
 
     # Where uploaded files (avatars, venue plan pictures, team documents) live.
     #

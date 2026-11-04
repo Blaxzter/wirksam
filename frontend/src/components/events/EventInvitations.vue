@@ -15,7 +15,9 @@ import { NativeSelect } from '@/components/ui/native-select'
 import Separator from '@/components/ui/separator/Separator.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-import type { EventInvitationRead } from '@/client/types.gen'
+import { joinNames } from '@/components/events/teams/teamHelpers'
+
+import type { EventInvitationBulkResult, EventInvitationRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { type AssignableEventRole, roleLabelKey } from '@/lib/event-roles'
 
@@ -26,7 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ updated: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { post, delete: del } = useAuthenticatedClient()
 
 const emails = ref('')
@@ -51,21 +53,28 @@ function inviteUrl(token: string): string {
   return `${window.location.origin}/invite/${token}`
 }
 
+/** "Bar and Grill": the tasks an invitation asks the person to be in charge of. */
+function taskNames(invitation: EventInvitationRead): string {
+  return joinNames(
+    (invitation.tasks ?? []).map((task) => task.name),
+    locale.value,
+  )
+}
+
 async function sendInvites() {
   if (parsedEmails.value.length === 0) return
   sending.value = true
   try {
-    const res = await post<{
-      data: {
-        created: EventInvitationRead[]
-        skipped_existing_members: string[]
-        skipped_already_invited: string[]
-      }
-    }>({
+    const res = await post<{ data: EventInvitationBulkResult }>({
       url: `/events/${props.eventId}/invitations/bulk`,
       body: { emails: parsedEmails.value, role: role.value },
     })
-    const { created, skipped_existing_members, skipped_already_invited } = res.data
+    const {
+      created,
+      skipped_existing_members = [],
+      skipped_already_invited = [],
+      skipped_rate_limited = [],
+    } = res.data
 
     if (created.length > 0) {
       toast.success(t('duties.events.invitations.sent', { count: created.length }, created.length))
@@ -75,6 +84,14 @@ async function sendInvites() {
     const skipped = [...skipped_existing_members, ...skipped_already_invited]
     if (skipped.length > 0) {
       toast.info(t('duties.events.invitations.skipped', { emails: skipped.join(', ') }))
+    }
+    // Refused by the daily limits: not sent, so worth trying again later.
+    if (skipped_rate_limited.length > 0) {
+      toast.warning(
+        t('duties.events.invitations.skippedRateLimited', {
+          emails: skipped_rate_limited.join(', '),
+        }),
+      )
     }
 
     emails.value = ''
@@ -251,7 +268,16 @@ async function revoke(invitation: EventInvitationRead) {
             class="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
             data-testid="pending-invite-row"
           >
-            <span class="truncate text-sm">{{ invitation.email }}</span>
+            <div class="min-w-0">
+              <p class="truncate text-sm">{{ invitation.email }}</p>
+              <p
+                v-if="invitation.tasks?.length"
+                class="text-xs text-muted-foreground"
+                data-testid="pending-invite-tasks"
+              >
+                {{ t('duties.events.invitations.forTasks', { tasks: taskNames(invitation) }) }}
+              </p>
+            </div>
             <div class="flex shrink-0 items-center gap-2">
               <Badge variant="outline">{{ t(roleLabelKey(invitation.role)) }}</Badge>
               <Button

@@ -39,7 +39,7 @@
             "title": "Taking it is one press"
         },
         "finish": {
-            "body": "Jobs are split into shifts, you take the ones that suit you, and your availability covers the rest. The buttons here take you straight to the jobs and to your own shifts. Feel free to look around; the demo is yours until the timer runs out.",
+            "body": "Jobs are split into shifts, you take the ones that suit you, and your availability covers the rest. This page is where you start each time: your next shift, your plan and what still needs people. Feel free to look around; the demo is yours until the timer runs out.",
             "title": "That's the tour"
         },
         "jobDays": {
@@ -55,7 +55,7 @@
             "title": "Jobs, and the shifts in them"
         },
         "myBookings": {
-            "body": "Each card is one of your shifts, past or upcoming, with the time, the place and the people working alongside you. That's what you need on the morning itself. This is also where you hand a shift back if plans change.",
+            "body": "Each card is one of your shifts, past or upcoming, with the day, the time and the place. That's what you need on the morning itself. Open one to hand the shift back if plans change.",
             "title": "Everything you said yes to"
         },
         "myHours": {
@@ -64,11 +64,11 @@
             "title": "Your hours"
         },
         "myShifts": {
-            "body": "Everything else you've signed up for, in date order, with today's shifts highlighted. The line under the heading counts your shifts and hours, and the link beside it opens the full list.",
-            "title": "The rest of your shifts"
+            "body": "Every shift you've signed up for, day by day, with the next one marked. Press one to see the details, or use the link beside the heading for the full list.",
+            "title": "Your plan"
         },
         "nextShift": {
-            "body": "You're already signed up for a few shifts, and the next one is always at the top: when it starts, where to go, and who else will be there. Most helpers come to this page just to check that.",
+            "body": "You're already signed up for a few shifts, and the next one is always at the top: how long until it starts, where to go, and who else will be there. Most helpers come to this page just to check that.",
             "title": "What you are already down for"
         },
         "openChip": {
@@ -77,13 +77,13 @@
             "title": "A shift with room in it"
         },
         "openShifts": {
-            "body": "Shifts that are still short of people. The label on the right says how many places are left, or that nobody has signed up yet. Press one to take a closer look; where they come from is on the next screen.",
+            "body": "Shifts that are still short of people. The label in the corner says how many places are left, or that nobody has signed up yet, and the bar shows how full each one is. Press Sign up to take a closer look; where they come from is on the next screen.",
             "next": "Show me the jobs",
             "title": "Where help is still needed"
         },
         "shiftHeader": {
-            "body": "At the top: what the shift is, when it is, and how many of its places are already taken. That's often enough to tell whether it fits your day.",
-            "title": "What, when and how full"
+            "body": "At the top: what the shift is, when it is and where. That's often enough to tell whether it fits your day.",
+            "title": "What and when"
         },
         "shiftMap": {
             "body": "Where the venue has a plan, this small map marks the spot. Open the map to see the whole site, with every place that needs people.",
@@ -94,7 +94,7 @@
             "title": "Where to go"
         },
         "shiftRoster": {
-            "body": "The list shows who has already said yes, and each empty line is a place that is still free. Seeing who you'd work with often makes the decision easier.",
+            "body": "How full it is, who has already said yes and how many places are still free. Seeing who you'd work with often makes the decision easier.",
             "title": "Who is already on it"
         }
     },
