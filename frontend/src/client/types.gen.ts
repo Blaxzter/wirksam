@@ -606,6 +606,10 @@ export type DashboardOpenShift = {
    */
   event_name?: string | null
   /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
+  /**
    * Title
    */
   title: string
@@ -673,6 +677,10 @@ export type DashboardShift = {
    * Event Name
    */
   event_name?: string | null
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
   /**
    * Title
    */
@@ -2280,6 +2288,10 @@ export type LocationShiftRead = {
    */
   event_id?: string | null
   /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
+  /**
    * Team Id
    */
   team_id?: string | null
@@ -3510,6 +3522,10 @@ export type ShiftRead = {
    */
   event_id?: string | null
   /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
+  /**
    * Team Id
    */
   team_id?: string | null
@@ -3600,6 +3616,10 @@ export type ShiftSummary = {
    * Task Name
    */
   task_name?: string | null
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
 }
 
 /**
