@@ -42,7 +42,9 @@ at 23:45 the day before, so `redeem_window_dates` widens the date range the
 candidates are loaded from.
 
 The routes check in a fixed order: the task is in this event (`404
-task.not_found`), then the gate, then the flag (`422 voucher.not_a_point`). The
+task.not_found`), then the gate, then the flag (`422 voucher.not_a_point`), then
+that the point isn't archived (`409 voucher.point_archived`): an archived point
+has left the list, so it stops taking vouchers, and `can_redeem` says false. The
 gate itself says nothing about whether the task is a point. Every voucher route
 starts with `require_event_visible`, because `require_event_role` alone would
 let the superadmin into someone's demo (see

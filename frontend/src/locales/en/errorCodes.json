@@ -160,6 +160,7 @@
         "not_a_point": "Vouchers can't be redeemed at this task.",
         "not_allowed": "You can only take vouchers here while you are on shift here, or if you are in charge.",
         "pass_not_found": "That code is no longer there. Show a new one.",
+        "point_archived": "This task is archived, so it no longer takes vouchers.",
         "rate_limited": "Too many tries. Wait a moment and try again.",
         "request_conflict": "Something went wrong with this redemption. Close it and scan again."
     },

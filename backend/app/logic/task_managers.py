@@ -37,12 +37,14 @@ from app.models.event import Event
 from app.models.user import User
 from app.schemas.event_membership import EventRole
 from app.schemas.event_team import TeamMemberStatus
+from app.schemas.task import TaskStatus
 from app.schemas.task_manager import TaskManagerBrief
 
 
 class _TaskAccessEntry(Protocol):
     id: uuid.UUID
     event_id: uuid.UUID | None
+    status: TaskStatus
     can_manage: bool
     can_manage_shifts: bool
     managers: list[TaskManagerBrief]
@@ -88,7 +90,9 @@ async def mark_task_access(
             else None
         )
         read.can_manage = access[read.id] is not None
-        read.can_redeem = read.is_voucher_point and read.can_manage
+        read.can_redeem = (
+            read.is_voucher_point and read.can_manage and read.status != "archived"
+        )
 
     # The events' voucher-shift setting decides only for a person in charge
     # of a task that earns vouchers; one query for all of them.
@@ -115,7 +119,10 @@ async def mark_task_access(
     on_shift_candidates = [
         r.id
         for r in reads
-        if r.is_voucher_point and not r.can_manage and roles[r.event_id] is not None
+        if r.is_voucher_point
+        and r.status != "archived"
+        and not r.can_manage
+        and roles[r.event_id] is not None
     ]
     if on_shift_candidates:
         # Each point on its own event's clock: one query per zone in play.

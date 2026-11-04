@@ -160,6 +160,7 @@
         "not_a_point": "Bei dieser Aufgabe können keine Marken eingelöst werden.",
         "not_allowed": "Marken annehmen kannst du hier nur während deiner Schicht hier oder wenn du verantwortlich bist.",
         "pass_not_found": "Diesen Code gibt es nicht mehr. Zeig einen neuen.",
+        "point_archived": "Diese Aufgabe ist archiviert und nimmt keine Marken mehr an.",
         "rate_limited": "Zu viele Versuche. Warte kurz und versuch es noch einmal.",
         "request_conflict": "Bei dieser Einlösung ist etwas schiefgelaufen. Schließ sie und scanne noch einmal."
     },

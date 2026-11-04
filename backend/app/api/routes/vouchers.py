@@ -80,11 +80,19 @@ async def _point_in_event(
 
 
 def _require_point(task: Task) -> None:
+    """The task takes vouchers. An archived one has left the list of points, so
+    it has stopped taking them too."""
     if not task.is_voucher_point:
         raise_problem(
             422,
             code="voucher.not_a_point",
             detail="Vouchers cannot be redeemed at this task",
+        )
+    if task.status == "archived":
+        raise_problem(
+            409,
+            code="voucher.point_archived",
+            detail="This task is archived, so it no longer takes vouchers",
         )
 
 
