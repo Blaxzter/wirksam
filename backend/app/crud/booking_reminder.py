@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
+from app.logic import clock
 from app.models.booking_reminder import BookingReminder
 from app.schemas.booking_reminder import (
     AllowedChannel,
@@ -29,8 +30,15 @@ class CRUDBookingReminder(
         slot_start: dt.datetime,
         channels: Sequence[AllowedChannel] | None = None,
     ) -> BookingReminder:
-        """Create a single reminder for a booking."""
-        remind_at = slot_start - dt.timedelta(minutes=offset_minutes)
+        """Create a single reminder for a booking.
+
+        ``slot_start`` is on the wall clock, like the shift it comes from, and
+        ``remind_at`` is stored in UTC, because that's what the poller compares
+        it with. Compared directly, a reminder fires late by the zone's offset.
+        """
+        remind_at = clock.wall_clock_to_utc(slot_start) - dt.timedelta(
+            minutes=offset_minutes
+        )
         now = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)
 
         # Don't create reminders that are already in the past
