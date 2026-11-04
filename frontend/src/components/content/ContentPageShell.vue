@@ -34,6 +34,10 @@ defineProps<{
   breadcrumb: string
   /** Heading of the closing call to action; the landing page's when omitted. */
   ctaTitle?: string
+  /** The page one level up, between the landing page and this one. */
+  parent?: { routeName: string; label: string }
+  /** Leaves the two buttons out of the header, for a page someone reads to get a job done. */
+  hideActions?: boolean
 }>()
 
 const authStore = useAuthStore()
@@ -67,13 +71,27 @@ function openDemo() {
             </RouterLink>
           </li>
           <li aria-hidden="true"><ChevronRightIcon class="size-3.5" /></li>
+          <template v-if="parent">
+            <li>
+              <RouterLink
+                :to="{ name: parent.routeName }"
+                class="transition-colors hover:text-foreground"
+              >
+                {{ parent.label }}
+              </RouterLink>
+            </li>
+            <li aria-hidden="true"><ChevronRightIcon class="size-3.5" /></li>
+          </template>
           <li aria-current="page" class="font-medium text-foreground">{{ breadcrumb }}</li>
         </ol>
       </nav>
 
       <SectionHeading level="h1" :eyebrow="eyebrow" :title="title" :lede="lede" class="mt-6" />
 
-      <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <div
+        v-if="!hideActions"
+        class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+      >
         <Button
           data-testid="content-cta-primary"
           size="lg"
@@ -99,7 +117,10 @@ function openDemo() {
           {{ t('preauth.landing.hero.ctaDemo') }}
         </Button>
       </div>
-      <p v-if="sandboxStore.enabled" class="mt-3 text-center text-sm text-muted-foreground">
+      <p
+        v-if="sandboxStore.enabled && !hideActions"
+        class="mt-3 text-center text-sm text-muted-foreground"
+      >
         {{ t('sandbox.cta.note') }}
       </p>
     </LandingSection>

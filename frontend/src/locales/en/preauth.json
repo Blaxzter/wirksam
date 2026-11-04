@@ -134,6 +134,14 @@
                     "description": "Stands, set-up and teardown, invitations and reminders: a festival weekend planned step by step.",
                     "title": "Volunteer shifts for a club festival"
                 },
+                "features": {
+                    "description": "Shift planning, teams, vouchers, reminders and the rest, each explained in full.",
+                    "title": "All features"
+                },
+                "guides": {
+                    "description": "Short guides for one job each, from your first event to taking vouchers at a stand.",
+                    "title": "Step-by-step guides"
+                },
                 "landing": {
                     "description": "How it works for organisers and helpers, all features, and the questions people ask before they start.",
                     "title": "Everything WirkSam does"
@@ -146,6 +154,99 @@
         "dismiss": "OK",
         "learnMore": "More on privacy",
         "message": "This site uses only essential cookies for authentication and session management. No tracking or analytics cookies are used."
+    },
+    "docs": {
+        "ctaTitle": "See it for yourself",
+        "faqTitle": "Frequently asked questions",
+        "groups": {
+            "feature": {
+                "people": "Who does what",
+                "plan": "Plan",
+                "run": "Run it yourself",
+                "thanks": "Say thanks and keep count",
+                "volunteers": "For volunteers"
+            },
+            "guide": {
+                "again": "Next time",
+                "share": "Share the work",
+                "start": "Getting started",
+                "thanks": "Vouchers"
+            }
+        },
+        "hubs": {
+            "feature": {
+                "all": "All features",
+                "breadcrumb": "Features",
+                "eyebrow": "Features",
+                "lede": "WirkSam plans volunteer shifts for events: you lay out the tasks and shifts, people book themselves in and get reminded. Each page below explains one part in full, including what organisers can set and what volunteers see.",
+                "title": "What WirkSam can do"
+            },
+            "guide": {
+                "all": "All guides",
+                "breadcrumb": "Guides",
+                "eyebrow": "Guides",
+                "lede": "Short guides for one job each, from your first event to taking vouchers at a stand. Send them on to whoever is doing that job.",
+                "title": "Step by step"
+            }
+        },
+        "onThisPage": "On this page",
+        "pages": {
+            "featureBooking": {
+                "name": "Booking shifts"
+            },
+            "featureHoursAndReports": {
+                "name": "Hours and reports"
+            },
+            "featureMembers": {
+                "name": "Invitations and roles"
+            },
+            "featureNotifications": {
+                "name": "Reminders and notifications"
+            },
+            "featurePeopleInCharge": {
+                "name": "People in charge"
+            },
+            "featureSelfHosting": {
+                "name": "Run it yourself"
+            },
+            "featureShiftPlanning": {
+                "name": "Shift planning"
+            },
+            "featureTeams": {
+                "name": "Teams"
+            },
+            "featureVenueMap": {
+                "name": "Venue map"
+            },
+            "featureVouchers": {
+                "name": "Vouchers"
+            },
+            "guideFirstEvent": {
+                "name": "Your first event in 10 minutes"
+            },
+            "guideNextYear": {
+                "name": "Copy an event for next year"
+            },
+            "guidePeopleInCharge": {
+                "name": "Name people in charge"
+            },
+            "guideRedeemVouchers": {
+                "name": "Redeem vouchers at a stand"
+            },
+            "guideTeams": {
+                "name": "Set up a team"
+            },
+            "guideVenueMap": {
+                "name": "Create a venue map"
+            },
+            "guideVolunteerStart": {
+                "name": "Getting started as a volunteer"
+            },
+            "guideVouchers": {
+                "name": "Set up vouchers"
+            }
+        },
+        "readOn": "Read on"
     },
     "impressum": {
         "backToHome": "Back to Home",
@@ -287,6 +388,8 @@
             "title": "Frequently asked questions"
         },
         "features": {
+            "allFeatures": "All features in detail",
+            "allGuides": "Step-by-step guides",
             "eyebrow": "Features",
             "lede": "Generate the shifts, share one plan, keep track of who is coming, and remind them in time.",
             "more": {
@@ -311,9 +414,21 @@
                         "description": "Each event has an owner, organisers, and members. You can promote someone, hand the event over, or step back, and the event is never left without someone in charge.",
                         "title": "Roles that match reality"
                     },
+                    "peopleInCharge": {
+                        "description": "Hand one task to someone who looks after its details and shifts, without giving them the whole event.",
+                        "title": "People in charge"
+                    },
                     "reports": {
                         "description": "See how the work is spread across your team, and print a clean roster per task or for the whole event.",
                         "title": "Reports and printing"
+                    },
+                    "teams": {
+                        "description": "Reserve tasks for a team and tick off checks such as a police certificate before someone joins, without keeping a copy.",
+                        "title": "Teams and checks"
+                    },
+                    "vouchers": {
+                        "description": "Thank people with vouchers for food and drinks. WirkSam works out who earned how many from their shifts, and stands redeem them with a QR code.",
+                        "title": "Vouchers instead of paper"
                     }
                 },
                 "title": "And the rest of it"
@@ -502,7 +617,9 @@
             "alternatives": "Compare alternatives",
             "clubFestival": "Club festivals",
             "copyright": "© 2026 WirkSam. Effective together.",
+            "features": "Features",
             "github": "Source on GitHub",
+            "guides": "Guides",
             "impressum": "Legal Notice",
             "privacy": "Privacy Policy",
             "terms": "Terms of Service",
@@ -513,6 +630,7 @@
             "appearance": "Appearance",
             "features": "Features",
             "goToDashboard": "Go to Dashboard",
+            "guides": "Guides",
             "howItWorks": "How It Works",
             "signIn": "Sign In",
             "whoItsFor": "Who it's for"
@@ -596,6 +714,86 @@
         "clubFestival": {
             "description": "Plan the volunteer shifts for a club festival, summer fête or sports day: set up each stand as a task, generate the shifts, invite helpers by link and let them sign up themselves, with a reminder before every shift. Free.",
             "title": "Plan your club festival's volunteer roster online · WirkSam"
+        },
+        "featureBooking": {
+            "description": "Volunteers pick their own shifts on a phone or computer, never double-book, say when they can help and get their shifts in their own calendar.",
+            "title": "How volunteers book shifts · WirkSam"
+        },
+        "featureHoursAndReports": {
+            "description": "Count the hours each volunteer worked, add work no shift describes, export the list as CSV, and see fill rates and busy times in the reports.",
+            "title": "Volunteer hours and reports · WirkSam"
+        },
+        "featureMembers": {
+            "description": "Invite people by email or with a shared link, keep an event private or let people ask to join, and share the work with owner, organiser and member roles.",
+            "title": "Invite volunteers by email or link · WirkSam"
+        },
+        "featureNotifications": {
+            "description": "WirkSam reminds volunteers before each shift. Everyone chooses email, browser push or Telegram for each kind of message, and everything also lands in an inbox in the app.",
+            "title": "Shift reminders by email, push and Telegram · WirkSam"
+        },
+        "featurePeopleInCharge": {
+            "description": "Name people in charge of a single task. They edit its details, look after its shifts and see who booked, without running the whole event.",
+            "title": "People in charge of a task · WirkSam"
+        },
+        "featureSelfHosting": {
+            "description": "WirkSam is open source under the MIT licence. Run it on your own server with Docker Compose and decide who may sign up, where files live and which pages are public.",
+            "title": "Self-host WirkSam with Docker Compose · WirkSam"
+        },
+        "featureShiftPlanning": {
+            "description": "Lay out an event as tasks and let WirkSam build the shifts from days, times, shift length and headcount, with exceptions, a preview, drafts and one plan for everyone.",
+            "title": "Shift planning for volunteers · WirkSam"
+        },
+        "featureTeams": {
+            "description": "Reserve tasks for a team, decide who joins, and tick off checks such as a police certificate or first-aid course before approving, without keeping a copy.",
+            "title": "Teams and required checks for volunteers · WirkSam"
+        },
+        "featureVenueMap": {
+            "description": "Upload a floor plan or draw the venue in the app, pin each place people work, and see by colour where help is missing on the chosen day.",
+            "title": "A venue map for your volunteer plan · WirkSam"
+        },
+        "featureVouchers": {
+            "description": "Thank volunteers with vouchers for food and drinks: WirkSam works out who earned how many from the shifts they worked, and stands redeem them with a QR code instead of paper.",
+            "title": "Digital vouchers for volunteers · WirkSam"
+        },
+        "features": {
+            "description": "Shift planning, venue maps, invitations, people in charge, teams, bookings, reminders, vouchers, hours and reports: everything WirkSam does, explained in full.",
+            "title": "All features of the volunteer planner · WirkSam"
+        },
+        "guideFirstEvent": {
+            "description": "From an empty account to a plan people can book: create the event, add a task, build the shifts, publish and invite. Step by step, with screenshots.",
+            "title": "Create a volunteer rota in 10 minutes · WirkSam"
+        },
+        "guideNextYear": {
+            "description": "Copy last year's event to new dates, choose which tasks come back and bring the same people across. Last year's sign-ups stay behind.",
+            "title": "How to copy an event for next year · WirkSam"
+        },
+        "guidePeopleInCharge": {
+            "description": "Give someone one task to look after, by name or by email address, and know what they can and can't change.",
+            "title": "How to name people in charge of a task · WirkSam"
+        },
+        "guideRedeemVouchers": {
+            "description": "For everyone working a stand: scan or type a volunteer's code, pick the amount, and what to do when a phone won't cooperate.",
+            "title": "Redeeming vouchers at a stand · WirkSam"
+        },
+        "guideTeams": {
+            "description": "Create a team, decide how people join, list the checks they need, reserve tasks for it and review requests.",
+            "title": "How to set up a team with required checks · WirkSam"
+        },
+        "guideVenueMap": {
+            "description": "Upload a plan or draw your venue, add a pin for each place people work and save the drawing as a template for next time.",
+            "title": "How to create a venue map · WirkSam"
+        },
+        "guideVolunteerStart": {
+            "description": "What to do with an invitation: accept it, say when you can help, book shifts, put them in your calendar and choose how you get reminded.",
+            "title": "Getting started as a volunteer · WirkSam"
+        },
+        "guideVouchers": {
+            "description": "Decide how many vouchers a shift earns, where they can be redeemed and who may redeem without a code. Set up in a few minutes.",
+            "title": "How to set up vouchers for your volunteers · WirkSam"
+        },
+        "guides": {
+            "description": "Step-by-step guides: your first event, getting started as a volunteer, people in charge, vouchers, teams, venue maps and copying an event for next year.",
+            "title": "Guides for organisers and volunteers · WirkSam"
         },
         "impressum": {
             "description": "Who runs WirkSam and how to get in touch.",

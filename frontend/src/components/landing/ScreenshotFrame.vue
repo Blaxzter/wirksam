@@ -16,6 +16,8 @@ const props = defineProps<{
   /** File basename, without the `-light`/`-dark` suffix or extension. */
   name: string
   alt: string
+  /** Captured on a phone: 390x844 at twice the density rather than 1440x900. */
+  phone?: boolean
 }>()
 
 const emit = defineEmits<{ zoom: [] }>()
@@ -39,12 +41,12 @@ const { src, onError, failed } = useScreenshotSource(() => props.name)
       <span class="size-2.5 rounded-full bg-muted-foreground/25" />
     </span>
 
-    <!-- Every screenshot is 1440x900; the size reserves the space before it loads. -->
+    <!-- The size reserves the space before it loads. -->
     <img
       :src="src"
       :alt="alt"
-      width="1440"
-      height="900"
+      :width="phone ? 780 : 1440"
+      :height="phone ? 1688 : 900"
       loading="lazy"
       decoding="async"
       class="h-auto w-full"

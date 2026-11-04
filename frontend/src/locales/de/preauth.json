@@ -134,6 +134,14 @@
                     "description": "Stände, Aufbau und Abbau, Einladungen und Erinnerungen: ein Festwochenende Schritt für Schritt geplant.",
                     "title": "Helferplan fürs Vereinsfest"
                 },
+                "features": {
+                    "description": "Schichtplanung, Teams, Marken, Erinnerungen und der Rest, jeweils ausführlich erklärt.",
+                    "title": "Alle Funktionen"
+                },
+                "guides": {
+                    "description": "Kurze Anleitungen für jeweils eine Sache, von der ersten Veranstaltung bis zum Einlösen von Marken am Stand.",
+                    "title": "Schritt-für-Schritt-Anleitungen"
+                },
                 "landing": {
                     "description": "Wie es für Organisierende und Helfende funktioniert, alle Funktionen und die Fragen, die vor dem Start meistens kommen.",
                     "title": "Alles über WirkSam"
@@ -146,6 +154,99 @@
         "dismiss": "OK",
         "learnMore": "Mehr zum Datenschutz",
         "message": "Diese Seite verwendet ausschließlich technisch notwendige Cookies für Authentifizierung und Sitzungsverwaltung. Es werden keine Tracking- oder Analyse-Cookies verwendet."
+    },
+    "docs": {
+        "ctaTitle": "Probier es selbst aus",
+        "faqTitle": "Häufige Fragen",
+        "groups": {
+            "feature": {
+                "people": "Wer was macht",
+                "plan": "Planen",
+                "run": "Selbst betreiben",
+                "thanks": "Danken und zählen",
+                "volunteers": "Für Helfende"
+            },
+            "guide": {
+                "again": "Beim nächsten Mal",
+                "share": "Arbeit verteilen",
+                "start": "Loslegen",
+                "thanks": "Marken"
+            }
+        },
+        "hubs": {
+            "feature": {
+                "all": "Alle Funktionen",
+                "breadcrumb": "Funktionen",
+                "eyebrow": "Funktionen",
+                "lede": "WirkSam plant Schichten für Helfende: Du legst Aufgaben und Schichten an, die Leute tragen sich selbst ein und werden erinnert. Jede Seite unten erklärt einen Teil ausführlich, auch was Organisator:innen einstellen und was Helfende sehen.",
+                "title": "Was WirkSam kann"
+            },
+            "guide": {
+                "all": "Alle Anleitungen",
+                "breadcrumb": "Anleitungen",
+                "eyebrow": "Anleitungen",
+                "lede": "Kurze Anleitungen für jeweils eine Sache, von der ersten Veranstaltung bis zum Einlösen von Marken am Stand. Schick sie einfach an die Person weiter, die das übernimmt.",
+                "title": "Schritt für Schritt"
+            }
+        },
+        "onThisPage": "Auf dieser Seite",
+        "pages": {
+            "featureBooking": {
+                "name": "Schichten buchen"
+            },
+            "featureHoursAndReports": {
+                "name": "Stunden und Auswertungen"
+            },
+            "featureMembers": {
+                "name": "Einladungen und Rollen"
+            },
+            "featureNotifications": {
+                "name": "Erinnerungen und Benachrichtigungen"
+            },
+            "featurePeopleInCharge": {
+                "name": "Verantwortliche"
+            },
+            "featureSelfHosting": {
+                "name": "Selbst betreiben"
+            },
+            "featureShiftPlanning": {
+                "name": "Schichtplanung"
+            },
+            "featureTeams": {
+                "name": "Teams"
+            },
+            "featureVenueMap": {
+                "name": "Lageplan"
+            },
+            "featureVouchers": {
+                "name": "Marken"
+            },
+            "guideFirstEvent": {
+                "name": "Deine erste Veranstaltung in 10 Minuten"
+            },
+            "guideNextYear": {
+                "name": "Veranstaltung fürs nächste Jahr kopieren"
+            },
+            "guidePeopleInCharge": {
+                "name": "Verantwortliche benennen"
+            },
+            "guideRedeemVouchers": {
+                "name": "Marken am Stand einlösen"
+            },
+            "guideTeams": {
+                "name": "Team einrichten"
+            },
+            "guideVenueMap": {
+                "name": "Lageplan anlegen"
+            },
+            "guideVolunteerStart": {
+                "name": "Loslegen als Helfer:in"
+            },
+            "guideVouchers": {
+                "name": "Marken einrichten"
+            }
+        },
+        "readOn": "Weiterlesen"
     },
     "impressum": {
         "backToHome": "Zurück zur Startseite",
@@ -287,6 +388,8 @@
             "title": "Häufige Fragen"
         },
         "features": {
+            "allFeatures": "Alle Funktionen im Detail",
+            "allGuides": "Schritt-für-Schritt-Anleitungen",
             "eyebrow": "Funktionen",
             "lede": "Schichten erzeugen, einen gemeinsamen Plan teilen, den Überblick behalten und rechtzeitig erinnern.",
             "more": {
@@ -311,9 +414,21 @@
                         "description": "Jede Veranstaltung hat eine:n Eigentümer:in, Organisator:innen und Mitglieder. Du kannst jemanden befördern, die Veranstaltung weitergeben oder kürzertreten. Ohne Verantwortliche bleibt sie dabei nie.",
                         "title": "Rollen, die zur Wirklichkeit passen"
                     },
+                    "peopleInCharge": {
+                        "description": "Gib eine Aufgabe an jemanden ab, der sich um Angaben und Schichten kümmert, ohne die ganze Veranstaltung zu übernehmen.",
+                        "title": "Verantwortliche"
+                    },
                     "reports": {
                         "description": "Sieh, wie sich die Arbeit auf dein Team verteilt, und drucke einen sauberen Dienstplan pro Aufgabe oder für die ganze Veranstaltung.",
                         "title": "Auswertungen und Druck"
+                    },
+                    "teams": {
+                        "description": "Reserviere Aufgaben für ein Team und hake Nachweise wie ein Führungszeugnis ab, bevor jemand dazukommt, ohne eine Kopie aufzubewahren.",
+                        "title": "Teams und Nachweise"
+                    },
+                    "vouchers": {
+                        "description": "Danke den Leuten mit Marken für Essen und Getränke. WirkSam rechnet aus den Schichten aus, wer wie viele hat, und der Stand löst sie per QR-Code ein.",
+                        "title": "Marken statt Papier"
                     }
                 },
                 "title": "Und der Rest"
@@ -502,7 +617,9 @@
             "alternatives": "Alternativen im Vergleich",
             "clubFestival": "Für Vereinsfeste",
             "copyright": "© 2026 WirkSam. Gemeinsam Wirken.",
+            "features": "Funktionen",
             "github": "Quellcode auf GitHub",
+            "guides": "Anleitungen",
             "impressum": "Impressum",
             "privacy": "Datenschutz",
             "terms": "Nutzungsbedingungen",
@@ -513,6 +630,7 @@
             "appearance": "Erscheinungsbild",
             "features": "Funktionen",
             "goToDashboard": "Zum Dashboard",
+            "guides": "Anleitungen",
             "howItWorks": "Der Ablauf",
             "signIn": "Anmelden",
             "whoItsFor": "Für wen"
@@ -596,6 +714,86 @@
         "clubFestival": {
             "description": "So plant ihr die Helfenden für Vereinsfest, Sommerfest oder Sportfest: Stände als Aufgaben anlegen, Schichten erzeugen lassen, per Link einladen, und alle tragen sich selbst ein, mit Erinnerung vor jeder Schicht. Kostenlos.",
             "title": "Helferplan fürs Vereinsfest online erstellen · WirkSam"
+        },
+        "featureBooking": {
+            "description": "Helfende wählen ihre Schichten selbst, am Handy oder Rechner, buchen nichts doppelt, geben an, wann sie können, und haben ihre Schichten im eigenen Kalender.",
+            "title": "So buchen Helfende ihre Schichten · WirkSam"
+        },
+        "featureHoursAndReports": {
+            "description": "Zähle die Stunden jeder Person, trage Arbeit nach, die in keiner Schicht steht, exportiere die Liste als CSV und sieh in den Auswertungen Belegung und Stoßzeiten.",
+            "title": "Helferstunden zählen und auswerten · WirkSam"
+        },
+        "featureMembers": {
+            "description": "Lade Leute per E-Mail oder Link ein, halte eine Veranstaltung privat oder lass Anfragen zu, und verteile die Arbeit mit den Rollen Eigentümer:in, Organisator:in und Mitglied.",
+            "title": "Helfende per E-Mail oder Link einladen · WirkSam"
+        },
+        "featureNotifications": {
+            "description": "WirkSam erinnert vor jeder Schicht. Alle wählen für jede Art von Nachricht E-Mail, Push oder Telegram, und alles landet zusätzlich im Postfach in der App.",
+            "title": "Schicht-Erinnerungen per E-Mail, Push und Telegram · WirkSam"
+        },
+        "featurePeopleInCharge": {
+            "description": "Benenne Verantwortliche für eine einzelne Aufgabe. Sie ändern die Angaben, kümmern sich um die Schichten und sehen, wer gebucht hat, ohne die ganze Veranstaltung zu verwalten.",
+            "title": "Verantwortliche für einzelne Aufgaben benennen · WirkSam"
+        },
+        "featureSelfHosting": {
+            "description": "WirkSam ist Open Source unter MIT-Lizenz. Betreibe es mit Docker Compose auf deinem eigenen Server und bestimme, wer sich registrieren darf, wo Dateien liegen und welche Seiten öffentlich sind.",
+            "title": "WirkSam selbst hosten mit Docker Compose · WirkSam"
+        },
+        "featureShiftPlanning": {
+            "description": "Leg eine Veranstaltung als Aufgaben an und lass die Schichten aus Tagen, Zeiten, Schichtlänge und Personenzahl entstehen, mit Ausnahmen, Vorschau, Entwürfen und einem Plan für alle.",
+            "title": "Schichtplan für Ehrenamtliche erstellen · WirkSam"
+        },
+        "featureTeams": {
+            "description": "Reserviere Aufgaben für ein Team, entscheide, wer dazukommt, und hake Nachweise wie Führungszeugnis oder Erste-Hilfe-Kurs ab, ohne eine Kopie aufzubewahren.",
+            "title": "Teams und Nachweise für Helfende · WirkSam"
+        },
+        "featureVenueMap": {
+            "description": "Lade einen Plan hoch oder zeichne den Ort in der App, setze für jeden Einsatzort einen Pin und sieh an der Farbe, wo am gewählten Tag noch Hilfe fehlt.",
+            "title": "Lageplan für den Helfereinsatz · WirkSam"
+        },
+        "featureVouchers": {
+            "description": "Danke deinen Helfenden mit Marken für Essen und Getränke: WirkSam rechnet aus den gearbeiteten Schichten aus, wer wie viele hat, und der Stand löst sie per QR-Code ein statt auf Papier.",
+            "title": "Essens- und Getränkemarken digital statt auf Papier · WirkSam"
+        },
+        "features": {
+            "description": "Schichtplanung, Lageplan, Einladungen, Verantwortliche, Teams, Buchungen, Erinnerungen, Marken, Stunden und Auswertungen: alles, was WirkSam kann, ausführlich erklärt.",
+            "title": "Alle Funktionen des Helferplaners · WirkSam"
+        },
+        "guideFirstEvent": {
+            "description": "Vom leeren Konto zum Plan, den alle buchen können: Veranstaltung anlegen, Aufgabe ergänzen, Schichten erzeugen, veröffentlichen und einladen. Schritt für Schritt mit Screenshots.",
+            "title": "Helferplan in 10 Minuten erstellen · WirkSam"
+        },
+        "guideNextYear": {
+            "description": "Kopiere die Veranstaltung vom letzten Jahr auf neue Termine, wähle die Aufgaben aus und nimm die Leute mit. Die Eintragungen vom letzten Mal bleiben zurück.",
+            "title": "Veranstaltung fürs nächste Jahr kopieren · WirkSam"
+        },
+        "guidePeopleInCharge": {
+            "description": "Gib jemandem eine Aufgabe zum Betreuen, per Name oder E-Mail-Adresse, und wisse, was die Person ändern kann und was nicht.",
+            "title": "Verantwortliche für eine Aufgabe benennen · WirkSam"
+        },
+        "guideRedeemVouchers": {
+            "description": "Für alle am Stand: Code scannen oder eintippen, Anzahl wählen, und was zu tun ist, wenn ein Handy nicht mitspielt.",
+            "title": "Marken am Stand einlösen · WirkSam"
+        },
+        "guideTeams": {
+            "description": "Team anlegen, festlegen wie man beitritt, nötige Nachweise eintragen, Aufgaben reservieren und Anfragen prüfen.",
+            "title": "Team mit Nachweisen einrichten · WirkSam"
+        },
+        "guideVenueMap": {
+            "description": "Plan hochladen oder den Ort zeichnen, für jeden Einsatzort einen Pin setzen und die Zeichnung als Vorlage fürs nächste Mal speichern.",
+            "title": "Lageplan für die Veranstaltung anlegen · WirkSam"
+        },
+        "guideVolunteerStart": {
+            "description": "Was du mit einer Einladung machst: annehmen, angeben wann du kannst, Schichten buchen, in den Kalender holen und wählen, wie du erinnert wirst.",
+            "title": "Loslegen als Helfer:in · WirkSam"
+        },
+        "guideVouchers": {
+            "description": "Leg fest, wie viele Marken eine Schicht bringt, wo man sie einlösen kann und wer ohne Code einlösen darf. In wenigen Minuten eingerichtet.",
+            "title": "Marken für Helfende einrichten · WirkSam"
+        },
+        "guides": {
+            "description": "Schritt-für-Schritt-Anleitungen: die erste Veranstaltung, Loslegen als Helfer:in, Verantwortliche, Marken, Teams, Lageplan und das Kopieren fürs nächste Jahr.",
+            "title": "Anleitungen für Organisator:innen und Helfende · WirkSam"
         },
         "impressum": {
             "description": "Wer WirkSam betreibt und wie du Kontakt aufnimmst.",
