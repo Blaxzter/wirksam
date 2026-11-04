@@ -133,26 +133,16 @@ class RateLimiter:
 
 
 def client_ip(request: Request) -> str:
-    """Best-effort identifier for the caller, for use as a rate-limit key.
+    """The caller's address, for use as a rate-limit key.
 
-    In production the API sits behind Traefik, so ``request.client.host`` is the
-    proxy's container address for *every* caller — keying on it would put the
-    entire internet in one bucket and lock all users out the moment anyone
-    fails ten logins. ``X-Forwarded-For`` is therefore preferred, leftmost entry
-    (the original client as recorded by the first proxy).
-
-    That header is client-supplied and so is spoofable: someone who rotates it
-    per request evades the limit entirely. Both options are wrong in some way
-    and this is the one that degrades gracefully — the failure mode is "a
-    determined attacker is not slowed down", not "a self-inflicted outage for
-    everyone". Do not build anything but rate-limit keys on this value; it is
-    not an authentication signal.
+    Behind Traefik the socket's peer is the proxy for *every* caller; keying on
+    it would put the whole internet in one bucket. ``ProxyHeadersMiddleware``
+    (``app/main.py``) has already replaced it with the rightmost
+    ``X-Forwarded-For`` entry that is not a trusted proxy
+    (``FORWARDED_ALLOW_IPS``). A trusted proxy wrote that entry, so a caller
+    cannot pick its own key by sending the header, which the leftmost entry
+    would have let it do.
     """
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        first = forwarded.split(",")[0].strip()
-        if first:
-            return first
     if request.client is not None and request.client.host:
         return request.client.host
     return "unknown"

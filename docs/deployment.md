@@ -129,7 +129,8 @@ You can set several variables, like:
 
 - `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
 - `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `fastapi-project-example-com` and `staging-fastapi-project-example-com`.
-- `TRAEFIK_CERT_RESOLVER`: The Traefik certificate resolver the routers ask for their certificate, `letsencrypt` by default (the HTTP challenge from `docker-compose.traefik.yml`). A domain behind the Cloudflare proxy cannot pass that challenge reliably; define a DNS-challenge resolver in Traefik and name it here.
+- `TRAEFIK_CERT_RESOLVER`: The Traefik certificate resolver the routers ask for their certificate, `letsencrypt` by default (the HTTP challenge from `docker-compose.traefik.yml`). The HTTP challenge passes through the Cloudflare proxy as long as Cloudflare does not answer port 80 itself ("Always Use HTTPS"); if it does, define a DNS-challenge resolver in Traefik and name it here.
+- `FORWARDED_ALLOW_IPS`: The proxies whose `X-Forwarded-For` the backend believes when it works out a caller's address (rate limits, the sign-in list). The default, loopback and the private ranges, covers Traefik in the stack; behind Cloudflare see [below](#behind-cloudflare).
 - `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
 - `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
 - `SMTP_USER`: The SMTP server user to send emails.
@@ -298,6 +299,32 @@ There are GitHub Action workflows in the `.github/workflows` directory already c
 - `production`: after publishing a release.
 
 If you need to add extra environments you could use those as a starting point.
+
+## Behind Cloudflare
+
+With the Cloudflare proxy on, every request reaches Traefik from a Cloudflare
+server. Cloudflare passes the visitor's address on in `X-Forwarded-For`, but
+Traefik drops that header from senders it does not trust and writes the
+Cloudflare server's address instead, so the backend would key every rate limit
+on a handful of Cloudflare addresses and lock strangers out together. Trust
+Cloudflare's ranges ([IPv4](https://www.cloudflare.com/ips-v4),
+[IPv6](https://www.cloudflare.com/ips-v6)) in two places:
+
+1. Traefik, on both entrypoints (`docker-compose.traefik.yml` has the lines,
+   commented out):
+
+   ```
+   --entrypoints.web.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,...
+   --entrypoints.websecure.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,...
+   ```
+
+2. The backend, in `.env`, after the default private ranges:
+
+   ```
+   FORWARDED_ALLOW_IPS=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,173.245.48.0/20,103.21.244.0/22,...
+   ```
+
+Cloudflare changes the list rarely; when it does, update both.
 
 ## URLs
 

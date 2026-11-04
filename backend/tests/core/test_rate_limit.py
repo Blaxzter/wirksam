@@ -246,25 +246,15 @@ class TestReset:
 
 
 class TestClientIp:
-    def test_that_the_forwarded_header_wins(self) -> None:
-        """Test that the real client is preferred over Traefik's address."""
-        request = _request({"x-forwarded-for": "203.0.113.7"})
-        assert client_ip(request) == "203.0.113.7"
-
-    def test_that_the_leftmost_forwarded_entry_is_used(self) -> None:
-        """Test that the original client, not an intermediate proxy, is keyed."""
-        request = _request({"x-forwarded-for": "203.0.113.7, 10.0.0.1, 10.0.0.2"})
-        assert client_ip(request) == "203.0.113.7"
-
-    def test_that_the_peer_address_is_the_fallback(self) -> None:
-        """Test that a direct connection is keyed by its socket address."""
+    def test_that_the_peer_address_is_the_key(self) -> None:
+        """Test that the client the proxy middleware settled on is keyed."""
         request = _request(client=("198.51.100.4", 51234))
         assert client_ip(request) == "198.51.100.4"
 
-    def test_that_an_empty_forwarded_entry_falls_through(self) -> None:
-        """Test that a malformed header does not become the key."""
+    def test_that_the_header_alone_counts_for_nothing(self) -> None:
+        """Test that X-Forwarded-For is left to the middleware, not read here."""
         request = _request(
-            {"x-forwarded-for": " , 10.0.0.1"}, client=("198.51.100.4", 1)
+            {"x-forwarded-for": "203.0.113.7"}, client=("198.51.100.4", 1)
         )
         assert client_ip(request) == "198.51.100.4"
 
