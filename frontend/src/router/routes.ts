@@ -186,7 +186,10 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           name: 'event-print',
           component: () => import('@/views/events/PrintView.vue'),
           meta: {
-            breadcrumbs: [{ title: 'Print', titleKey: 'duties.events.detail.nav.print' }],
+            breadcrumbs: [
+              { title: 'Tasks', titleKey: 'duties.tasks.title', to: { name: 'tasks' } },
+              { title: 'Print', titleKey: 'duties.events.detail.nav.print' },
+            ],
           },
         },
         {
@@ -222,6 +225,13 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
               { title: 'Create Event', titleKey: 'duties.events.createView.title' },
             ],
           },
+        },
+        {
+          // The QR code on a printed event sheet. The static segments above
+          // and below outrank it.
+          path: 'events/:eventId',
+          name: 'event-open',
+          component: () => import('@/views/events/EventOpenView.vue'),
         },
         {
           // Cloning last year's event is the point of this screen, and last

@@ -7,6 +7,7 @@
     },
     "overview": "Print overview",
     "printButton": "Print",
+    "printEvent": "Print this event",
     "printTask": "Print task",
     "scanToSignUp": "Scan to sign up online",
     "toolbar": {

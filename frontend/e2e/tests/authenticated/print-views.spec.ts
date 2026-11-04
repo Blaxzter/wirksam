@@ -6,13 +6,16 @@ import {
   type EventRead,
   type MappedEvent,
   type TaskWithShifts,
+  api,
   batchShapes,
+  bookShift,
   createEvent,
   createLocation,
   createTaskWithShifts,
   createVenuePlan,
   deleteEvent,
   deleteTask,
+  listShifts,
   seedMappedEvent,
   uniqueName,
 } from '../../helpers/api.js'
@@ -77,6 +80,79 @@ test.describe('Print Task Event – smoke', () => {
     await page.goto(`/print/events/${event.id}`)
     // Dynamic event name from fixture
     await expect(page.getByText(event.name)).toBeVisible()
+  })
+})
+
+test.describe('Print – booked names', () => {
+  test.beforeEach(async ({ adminPage: page }) => {
+    const shifts = await listShifts(page, created.task.id)
+    await bookShift(page, shifts[0].id)
+  })
+
+  test('unticking "Show booked names" on a task blanks the lines again', async ({
+    adminPage: page,
+    adminUser,
+  }) => {
+    await page.goto(`/print/tasks/${created.task.id}`)
+    const content = page.getByTestId('print-content')
+    const toggle = page.getByRole('checkbox', { name: /booked names|gebuchte namen/i })
+    await expect(content).toBeVisible()
+
+    await toggle.click()
+    await expect(content.getByText(adminUser.name)).toBeVisible()
+
+    await toggle.click()
+    await expect(content.getByText(adminUser.name)).toHaveCount(0)
+  })
+
+  test('unticking "Show booked names" on the whole event blanks the lines again', async ({
+    adminPage: page,
+    adminUser,
+  }) => {
+    await page.goto(`/print/events/${event.id}?mode=all`)
+    const content = page.getByTestId('print-content')
+    const toggle = page.getByRole('checkbox', { name: /booked names|gebuchte namen/i })
+    await expect(content).toBeVisible()
+
+    await toggle.click()
+    await expect(content.getByText(adminUser.name)).toBeVisible()
+
+    await toggle.click()
+    await expect(content.getByText(adminUser.name)).toHaveCount(0)
+  })
+})
+
+test.describe('Print – the whole event', () => {
+  test('the task list leads an organiser to the print options', async ({ adminPage: page }) => {
+    await page.goto('/app/tasks')
+    await page.getByTestId('btn-print-event').click()
+    await expect(page).toHaveURL(/\/app\/print$/)
+    await expect(page.getByTestId('section-print')).toBeVisible()
+  })
+
+  test('the QR code on a sheet opens the tasks of that event for someone in it', async ({
+    disposablePage: page,
+  }) => {
+    const mine = await createEvent(page, uniqueName('E2E QR Event'))
+    try {
+      await page.goto(`/app/events/${mine.id}`)
+      await expect(page).toHaveURL(/\/app\/tasks/)
+      const me = await api<{ selected_event_id: string }>(page, 'GET', '/users/me')
+      expect(me.selected_event_id).toBe(mine.id)
+    } finally {
+      await deleteEvent(page, mine.id).catch(() => {})
+    }
+  })
+
+  test('the same QR code offers Discover to someone who is not in the event', async ({
+    memberPage: member,
+  }) => {
+    await member.goto(`/app/events/${event.id}`)
+    await expect(member).toHaveURL(/\/app\/select-event.*tab=discover/)
+    await expect(member.getByTestId('tab-discover')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
   })
 })
 

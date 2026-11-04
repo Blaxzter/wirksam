@@ -264,7 +264,8 @@ watch(
  *
  * "My events" is empty for a brand-new account, and an empty list is a dead
  * end. Discover is where the curated selection lives, so that is the useful
- * first screen. Only applied on the initial load — once someone picks a tab
+ * first screen. `?tab=discover` asks for the same, from the QR code of an event
+ * they aren't in. Only applied on the initial load — once someone picks a tab
  * themselves, their choice stands.
  */
 onMounted(async () => {
@@ -277,7 +278,7 @@ onMounted(async () => {
     const query = { ...route.query }
     delete query.created
     void router.replace({ query })
-  } else if (events.value.length === 0) {
+  } else if (events.value.length === 0 || route.query.tab === 'discover') {
     tab.value = 'discover'
   }
 })

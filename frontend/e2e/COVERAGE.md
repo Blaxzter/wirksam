@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 238     |
-| `member`     | 3          | 26      |
+| `chromium`   | 29         | 243     |
+| `member`     | 3          | 28      |
 | `mobile`     | 6          | 21      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **467** |
+| **Total**    | **64**     | **474** |
 
 ## Inventory
 
@@ -164,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 238 tests
+### Project `chromium` — 29 files, 243 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -418,7 +418,7 @@ Not yet covered, and not currently tracked by an issue:
   - shows default reminders section
   - can toggle a global channel switch
 
-#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 10 tests
+#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 15 tests
 
 - **Print Task – smoke** (4)
   - print task page loads
@@ -429,6 +429,13 @@ Not yet covered, and not currently tracked by an issue:
   - print event page loads
   - shows print toolbar for event
   - shows event name in print content
+- **Print – booked names** (2)
+  - unticking "Show booked names" on a task blanks the lines again
+  - unticking "Show booked names" on the whole event blanks the lines again
+- **Print – the whole event** (3)
+  - the task list leads an organiser to the print options
+  - the QR code on a sheet opens the tasks of that event for someone in it
+  - the same QR code offers Discover to someone who is not in the event
 - **Print Task – venue mini-map** (3)
   - a task whose location has a pin prints the mini-map
   - a place drawn on a blank plan prints its drawing
@@ -575,14 +582,16 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue plan templates** (1)
   - save a plan as a template, start a new plan from it, rename and delete it
 
-### Project `member` — 3 files, 26 tests
+### Project `member` — 3 files, 28 tests
 
-#### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
+#### `frontend/e2e/tests/member/events-member.spec.ts` — 14 tests
 
-- **Member – RBAC** (6)
+- **Member – RBAC** (8)
   - member does not see the My Events sidebar link
   - member is redirected home from /app/events
   - member can open event settings but sees no management controls
+  - the details tab shows a member the event, not a form they cannot save
+  - member does not get the link to print the whole event
   - member cannot change anyone's role
   - member CAN create their own event from the picker
   - member does not see the member availabilities admin section

@@ -103,6 +103,8 @@ On a task's page, "Print" opens a printable view: organisers find it in the "⋯
 
 Next to it you choose what goes on paper: "Show title column", "Show location column", "Repeat header on each page", "Show booked names" and "Filter dates". "Show location map" appears when all the shifts share one place with a pin.
 
+For the whole event, organisers find a printer icon at the top of the task list. "Print overview" puts every task on one sheet with its days, place and category. "Print all tasks" prints each task's sheet, one after the other.
+
 Next year you don't have to build it all again. "Copy this event" puts the tasks on new dates, with last time's shifts or freshly planned ones. Sign-ups stay behind. The steps are in [Copy an event for next year](/guides/next-year).
 
 ## Frequently asked questions

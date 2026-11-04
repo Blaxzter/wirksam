@@ -309,7 +309,7 @@
                 "print": "Print",
                 "tasks": "Tasks"
             },
-            "printDescription": "Generate printable overview sheets or full task details for this group.",
+            "printDescription": "Print an overview of the event, or every task with its shifts.",
             "publicNotPublished": "Nobody outside the event can find it until you set the status to \"Published\".",
             "shiftApply": "Shift all dates",
             "shiftBackward": "backward",
@@ -319,8 +319,8 @@
             "shiftNewStart": "New start date",
             "shiftPreview": "{days} days {direction}",
             "shiftSuccess": "All dates moved.",
-            "tasks": "Tasks in this Group",
-            "tasksEmpty": "No tasks assigned to this group yet.",
+            "tasks": "Tasks in this event",
+            "tasksEmpty": "No tasks in this event yet.",
             "title": "Event Details",
             "updated": "Event updated."
         },

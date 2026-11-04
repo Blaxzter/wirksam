@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { Calendar, CalendarClock, CalendarSearch, Grid2x2, List, Plus, Search } from '@lucide/vue'
+import {
+  Calendar,
+  CalendarClock,
+  CalendarSearch,
+  Grid2x2,
+  List,
+  Plus,
+  Printer,
+  Search,
+} from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { useAuthStore } from '@/stores/auth'
@@ -24,6 +33,7 @@ import TaskFilterMenu from '@/components/tasks/TaskFilterMenu.vue'
 import TaskListView from '@/components/tasks/TaskListView.vue'
 import { TaskQuickView } from '@/components/tasks/quick-view'
 import type { DateRange } from '@/components/tasks/shift-calendar'
+import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import type { EventRead, FeedTaskItem, TaskFeedResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -306,6 +316,21 @@ onMounted(loadTasks)
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        <!-- The whole event's sheets. A task's own sheet is on the task's page. -->
+        <HintTooltip v-if="authStore.canManageEvent(authStore.selectedEventId)" :label="t('print.printEvent')">
+          <Button
+            as-child
+            variant="outline"
+            size="icon"
+            data-testid="btn-print-event"
+            :aria-label="t('print.printEvent')"
+          >
+            <RouterLink :to="{ name: 'event-print' }">
+              <Printer class="h-4 w-4" />
+            </RouterLink>
+          </Button>
+        </HintTooltip>
 
         <Button
           v-if="authStore.isManager"

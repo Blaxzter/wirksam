@@ -103,6 +103,8 @@ Auf der Seite einer Aufgabe öffnet „Drucken“ eine Druckansicht: bei Organis
 
 Daneben stellst du ein, was mit aufs Papier soll: „Titelspalte anzeigen“, „Ortsspalte anzeigen“, „Kopfzeile auf jeder Seite“, „Gebuchte Namen anzeigen“ und „Tage filtern“. „Lageplan zeigen“ gibt es, wenn alle Schichten denselben Ort mit einem Pin haben.
 
+Für die ganze Veranstaltung finden Organisator:innen oben in der Aufgabenliste ein Druckersymbol. „Übersicht drucken“ bringt alle Aufgaben mit Tagen, Ort und Kategorie auf ein Blatt. „Alle Aufgaben drucken“ druckt die Blätter der Aufgaben nacheinander.
+
 Für das nächste Jahr musst du nichts neu aufbauen: „Veranstaltung kopieren“ legt die Aufgaben auf neue Termine, mit den Schichten von damals oder neu eingeteilt. Eintragungen bleiben zurück. Wie das geht, steht in [Veranstaltung fürs nächste Jahr kopieren](/guides/next-year).
 
 ## Häufige Fragen

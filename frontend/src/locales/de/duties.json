@@ -309,7 +309,7 @@
                 "print": "Drucken",
                 "tasks": "Aufgaben"
             },
-            "printDescription": "Druckbare Übersichtsblätter oder vollständige Aufgabendetails für diese Gruppe erstellen.",
+            "printDescription": "Drucke eine Übersicht der Veranstaltung oder alle Aufgaben mit ihren Schichten.",
             "publicNotPublished": "Von außen findet sie erst jemand, wenn du den Status auf „Veröffentlicht“ setzt.",
             "shiftApply": "Alle Termine verschieben",
             "shiftBackward": "zurück",
@@ -319,8 +319,8 @@
             "shiftNewStart": "Neues Startdatum",
             "shiftPreview": "{days} Tage {direction}",
             "shiftSuccess": "Alle Termine verschoben.",
-            "tasks": "Aufgaben in dieser Gruppe",
-            "tasksEmpty": "Noch keine Aufgaben dieser Gruppe zugeordnet.",
+            "tasks": "Aufgaben in dieser Veranstaltung",
+            "tasksEmpty": "Diese Veranstaltung hat noch keine Aufgaben.",
             "title": "Veranstaltungsdetails",
             "updated": "Veranstaltung aktualisiert."
         },

@@ -6,7 +6,7 @@ related: feature/booking, feature/vouchers, feature/people-in-charge, guide/firs
 
 Die Stunden laufen von selbst mit, es gibt nichts einzuschalten. Helfende sehen ihre eigenen Stunden unter „Meine Buchungen“, Organisator:innen die Stunden aller in den Einstellungen der Veranstaltung.
 
-Dazu kommen die Seite „Berichte“ für den Überblick über alle eure Veranstaltungen und eine Druckansicht für jede Aufgabe.
+Dazu kommen die Seite „Berichte“ für den Überblick über alle eure Veranstaltungen und Druckansichten für jede Aufgabe und die ganze Veranstaltung.
 
 ## Was als geleistet zählt
 
@@ -80,6 +80,12 @@ Das Blatt hat für jeden Platz einer Schicht eine Zeile. Oben stehen die Aufgabe
 - „Kopfzeile auf jeder Seite“ ist standardmäßig aktiv.
 - „Lageplan zeigen“ erscheint, wenn die Aufgabe einen festen Ort mit Pin auf dem Lageplan hat.
 - „Tage filtern“ erscheint bei mehreren Tagen und druckt nur die gewählten.
+
+## Die ganze Veranstaltung ausdrucken
+
+Organisator:innen finden oben in der Aufgabenliste ein Druckersymbol. „Übersicht drucken“ bringt alle Aufgaben mit Tagen, Ort und Kategorie auf ein Blatt. „Alle Aufgaben drucken“ druckt die Blätter der Aufgaben nacheinander, mit denselben Anzeigeoptionen. Mit „Gebuchte Namen anzeigen“ wird das zum Dienstplan für die ganze Veranstaltung.
+
+Der QR-Code auf der Übersicht öffnet für alle in der Veranstaltung ihre Aufgaben. Alle anderen landen im Tab „Entdecken“, wo sie bei einer öffentlichen Veranstaltung anfragen können.
 
 ## Häufige Fragen
 

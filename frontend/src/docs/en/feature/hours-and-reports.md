@@ -6,7 +6,7 @@ related: feature/booking, feature/vouchers, feature/people-in-charge, guide/firs
 
 Hours are counted on their own, with nothing to turn on. Volunteers see their own hours on My Bookings, and organisers see everyone's in the event's settings.
 
-On top of that there's the Reports page, for an overview of all your events, and a print view for every task.
+On top of that there's the Reports page, for an overview of all your events, and print views for every task and for the whole event.
 
 ## What counts as worked
 
@@ -80,6 +80,12 @@ The sheet has one line for each place on a shift. At the top are the task, its d
 - "Repeat header on each page" is on by default.
 - "Show location map" appears when the task has one place with a pin on the venue map.
 - "Filter dates" appears when there are several days, and prints only the ones you choose.
+
+## Printing the whole event
+
+Organisers find a printer icon at the top of the task list. "Print overview" puts every task on one sheet, with its days, place and category. "Print all tasks" prints each task's sheet one after the other, with the same display options, so "Show booked names" gives you a roster for the whole event.
+
+The QR code on the overview opens the event's tasks for someone in the event. Anyone else lands on the Discover tab, where they can ask to join a public event.
 
 ## Frequently asked questions
 
