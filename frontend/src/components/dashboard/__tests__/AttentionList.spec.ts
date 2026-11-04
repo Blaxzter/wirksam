@@ -89,7 +89,11 @@ describe('AttentionList', () => {
         .props('to')
     expect(to('attention-empty')).toEqual({ name: 'tasks', query: { hide_full: 'true' } })
     expect(to('attention-short')).toEqual({ name: 'tasks', query: { hide_full: 'true' } })
-    expect(to('attention-requests')).toEqual({ name: 'my-events', query: { tab: 'requests' } })
+    expect(to('attention-requests')).toEqual({
+      name: 'event-settings',
+      params: { eventId: 'e7' },
+      query: { tab: 'people' },
+    })
     expect(to('attention-team-requests')).toEqual(teamsPageLocation('e7'))
     expect(to('attention-drafts')).toEqual({ name: 'tasks' })
   })
