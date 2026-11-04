@@ -137,6 +137,10 @@
     "title": "Einladung angenommen",
     "body": "{name} ist „{event_name}“ beigetreten."
   },
+  "event.invitation_accepted.member": {
+    "title": "Einladung angenommen",
+    "body": "{name} hat die Einladung zu „{event_name}“ angenommen und ist jetzt verantwortlich für {tasks}."
+  },
   "event.invitation_accepted.tasks": {
     "title": "Einladung angenommen",
     "body": "{name} ist „{event_name}“ beigetreten und jetzt verantwortlich für {tasks}."

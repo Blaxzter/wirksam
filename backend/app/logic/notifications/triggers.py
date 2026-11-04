@@ -786,11 +786,14 @@ async def dispatch_event_invitation_accepted(
     event_id: uuid.UUID,
     user_id: uuid.UUID,
     task_ids: list[uuid.UUID] | None = None,
+    joined: bool = True,
 ) -> None:
-    """Tell the event's admins that an invitee joined.
+    """Tell the event's admins that an invitee joined or took on tasks.
 
     ``task_ids`` are the tasks accepting put them in charge of; the notice
-    names them (``event.invitation_accepted.tasks``).
+    names them (``event.invitation_accepted.tasks``). ``joined`` is false for
+    someone who was a member already, who only took on those tasks
+    (``event.invitation_accepted.member``).
     """
     try:
         from sqlmodel import col, select
@@ -828,7 +831,9 @@ async def dispatch_event_invitation_accepted(
             def _factory(lang: str) -> tuple[str, str]:
                 if task_names:
                     return get_message(
-                        "event.invitation_accepted.tasks",
+                        "event.invitation_accepted.tasks"
+                        if joined
+                        else "event.invitation_accepted.member",
                         lang,
                         name=joiner_name,
                         event_name=name,

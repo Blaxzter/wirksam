@@ -201,7 +201,7 @@
                 "name": "Einladung zu einer Veranstaltung"
             },
             "invitation_accepted": {
-                "description": "Wenn jemand, den du eingeladen hast, deiner Veranstaltung beitritt",
+                "description": "Wenn jemand, den du eingeladen hast, deiner Veranstaltung beitritt oder eine Aufgabe übernimmt",
                 "name": "Einladung angenommen"
             },
             "join_approved": {

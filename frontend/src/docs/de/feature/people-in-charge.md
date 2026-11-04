@@ -84,7 +84,7 @@ Aus einer Demo-Veranstaltung lässt sich niemand einladen.
 - **Von jemand anderem eingetragen:** E-Mail und Push, dazu ein Eintrag im Postfach. Die E-Mail nennt, wer eingetragen hat, Ort und Zeitraum, die Zahl der Schichten, wer sonst noch verantwortlich ist und was die Person jetzt tun kann.
 - **Von jemand anderem ausgetragen:** Push und ein Eintrag im Postfach. Eine E-Mail gibt es nur, wenn die Person sie einschaltet.
 - **Sich selbst eintragen oder Verantwortung abgeben:** Dabei geht keine Nachricht raus. Organisator:innen erfahren also nicht von selbst, wenn jemand die Verantwortung abgibt.
-- **Einladung angenommen:** Kommt die Person damit neu in die Veranstaltung, bekommen die Organisator:innen Push und einen Eintrag im Postfach, in dem die Aufgabe steht.
+- **Einladung angenommen:** Die Organisator:innen bekommen Push und einen Eintrag im Postfach, in dem die Aufgabe steht, auch wenn die Person schon in der Veranstaltung war.
 
 Jede Person kann das bei den [Benachrichtigungen](/features/notifications) ändern, unter „Als verantwortlich eingetragen“ und „Nicht mehr verantwortlich“.
 

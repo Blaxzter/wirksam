@@ -199,6 +199,9 @@ async def accept_invitation(
     asks for, and of those of any other open invitation to their address in
     this event; all of them are marked accepted, even when the person was a
     member already. A share link only counts up, and only for a newcomer.
+
+    The organisers are told about a newcomer, and about a member once accepting
+    put them in charge of something.
     """
     invitation = await crud_invitation.get_by_token(session, token=token)
     if not invitation:
@@ -285,7 +288,7 @@ async def accept_invitation(
                 session, invitation=each, user_id=current_user.id
             )
 
-    if not already_member:
+    if not already_member or applied:
         from app.logic.notifications.triggers import dispatch_event_invitation_accepted
 
         background_tasks.add_task(
@@ -293,6 +296,7 @@ async def accept_invitation(
             event_id=db_event.id,
             user_id=current_user.id,
             task_ids=applied,
+            joined=not already_member,
         )
 
     # An accepted invitation supersedes any request the user had pending.

@@ -1071,6 +1071,7 @@ class TestAccept:
             assert invitation.accepted_by_id == invitee.id
         [call] = accepted
         assert call["user_id"] == invitee.id
+        assert call["joined"] is True
         assert set(call["task_ids"]) == {cast.task.id, cast.other_task.id}
         # Put in charge by the organiser who asked, not by the invitee.
         rows = await db_session.execute(
@@ -1123,6 +1124,60 @@ class TestAccept:
         assert cast.member.id in await _managers(db_session, cast.task)
         await db_session.refresh(invitation)
         assert invitation.accepted_at is not None
+
+    async def test_a_member_taking_on_tasks_is_announced_to_the_organisers(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Otherwise the people who asked never hear that it was accepted."""
+        accepted: list[dict[str, Any]] = []
+
+        async def _accepted(**kwargs: Any) -> None:
+            accepted.append(kwargs)
+
+        monkeypatch.setattr(triggers, "dispatch_event_invitation_accepted", _accepted)
+        invitation = await _pending(
+            db_session, cast.event, cast.admin, cast.member.email or "", [cast.task]
+        )
+
+        with act_as(app, cast.member):
+            r = await async_client.post(f"{API}/invitations/{invitation.token}/accept")
+
+        assert r.status_code == 200, r.text
+        [call] = accepted
+        assert call["user_id"] == cast.member.id
+        assert call["task_ids"] == [cast.task.id]
+        assert call["joined"] is False
+
+    async def test_a_member_taking_on_nothing_new_announces_nothing(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        cast: Cast,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        accepted: list[dict[str, Any]] = []
+
+        async def _accepted(**kwargs: Any) -> None:
+            accepted.append(kwargs)
+
+        monkeypatch.setattr(triggers, "dispatch_event_invitation_accepted", _accepted)
+        db_session.add(TaskManager(task_id=cast.task.id, user_id=cast.member.id))
+        await db_session.flush()
+        invitation = await _pending(
+            db_session, cast.event, cast.admin, cast.member.email or "", [cast.task]
+        )
+
+        with act_as(app, cast.member):
+            r = await async_client.post(f"{API}/invitations/{invitation.token}/accept")
+
+        assert r.status_code == 200, r.text
+        assert accepted == []
 
     async def test_being_in_charge_already_is_no_error(
         self,

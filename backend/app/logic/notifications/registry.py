@@ -201,7 +201,9 @@ EVENT_INVITATION = NotificationTypeDef(
 EVENT_INVITATION_ACCEPTED = NotificationTypeDef(
     code="event.invitation_accepted",
     name="Invitation Accepted",
-    description="Notification when someone you invited joins your event",
+    description=(
+        "Notification when someone you invited joins your event or takes on a task"
+    ),
     category="event",
     classification="announcement",
     default_channels=["push"],

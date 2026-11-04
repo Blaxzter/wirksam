@@ -201,7 +201,7 @@
                 "name": "Event Invitation"
             },
             "invitation_accepted": {
-                "description": "When someone you invited joins your event",
+                "description": "When someone you invited joins your event or takes on a task",
                 "name": "Invitation Accepted"
             },
             "join_approved": {

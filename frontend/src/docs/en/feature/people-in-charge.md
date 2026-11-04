@@ -84,7 +84,7 @@ A demo event can't invite anyone.
 - **Named by someone else:** an email and a push message, plus an entry in the inbox. The email says who named them, the place and dates, how many shifts there are, who else is in charge and what they can now do.
 - **Taken off by someone else:** a push message and an inbox entry. They only get an email if they turn it on.
 - **Naming yourself or stepping down:** no message goes out. Organisers won't hear about it by themselves when someone steps down.
-- **Invitation accepted:** if the person is new to the event, the organisers get a push message and an inbox entry naming the task.
+- **Invitation accepted:** the organisers get a push message and an inbox entry naming the task, whether or not the person was already in the event.
 
 Everyone can change this under [notifications](/features/notifications), with "Put in charge of a task" and "No longer in charge".
 

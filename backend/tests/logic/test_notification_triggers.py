@@ -2209,6 +2209,61 @@ class TestDispatchEventInvitationAccepted:
             f"“{test_task.name}”."
         )
 
+    async def test_a_member_taking_on_tasks_is_not_said_to_have_joined(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_task: Task,
+        test_event_admin_user: User,
+    ) -> None:
+        member = await _make_user(db_session, tag="already-member")
+        await _join_event(db_session, user_id=member.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_invitation_accepted(
+                event_id=test_event.id,
+                user_id=member.id,
+                task_ids=[test_task.id],
+                joined=False,
+            )
+
+        notif = await _single(
+            db_session, "event.invitation_accepted", test_event_admin_user.id
+        )
+        assert notif.body == (
+            f"{member.name} accepted the invitation to “{test_event.name}” and is now "
+            f"in charge of “{test_task.name}”."
+        )
+
+    async def test_a_member_taking_on_tasks_in_german(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+        test_task: Task,
+    ) -> None:
+        organiser = await _make_user(db_session, tag="organiser-de", language="de")
+        db_session.add(
+            EventMembership(user_id=organiser.id, event_id=test_event.id, role="admin")
+        )
+        await db_session.flush()
+        member = await _make_user(db_session, tag="already-member-de")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_event_invitation_accepted(
+                event_id=test_event.id,
+                user_id=member.id,
+                task_ids=[test_task.id],
+                joined=False,
+            )
+
+        notif = await _single(db_session, "event.invitation_accepted", organiser.id)
+        assert notif.body == (
+            f"{member.name} hat die Einladung zu „{test_event.name}“ angenommen und "
+            f"ist jetzt verantwortlich für „{test_task.name}“."
+        )
+
     async def test_without_tasks_it_reads_as_before(
         self,
         db_session: AsyncSession,
