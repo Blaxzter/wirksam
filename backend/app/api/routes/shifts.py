@@ -265,6 +265,7 @@ async def update_shift(
                 slot_id=updated.id,
                 slot_title=updated.title,
                 task_id=updated.task_id,
+                event_id=db_task.event_id,
                 booked_user_ids=booked_user_ids,
             )
 

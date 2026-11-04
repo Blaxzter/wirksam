@@ -243,6 +243,7 @@ async def create_booking(
             slot_id=shift.id,
             slot_title=shift.title,
             task_id=shift.task_id,
+            event_id=task.event_id,
             new_user_name=current_user.name,
             existing_user_ids=existing_user_ids,
         )
@@ -334,6 +335,7 @@ async def cancel_booking(
     if db_booking.shift_id:
         shift = await crud_shift.get(session, str(db_booking.shift_id))
         if shift:
+            task = await crud_task.get(session, str(shift.task_id))
             background_tasks.add_task(
                 dispatch_booking_cancelled_by_user,
                 booking_id=result.id,
@@ -341,6 +343,7 @@ async def cancel_booking(
                 slot_title=shift.title,
                 slot_id=shift.id,
                 task_id=shift.task_id,
+                event_id=task.event_id if task else None,
             )
 
     return result
