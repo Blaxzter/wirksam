@@ -177,7 +177,7 @@ async def create_booking(
         )
 
     conflict = await find_conflicting_booking(
-        session, user_id=current_user.id, shift=shift
+        session, user_id=current_user.id, shift=shift, zone=zone
     )
     if conflict is not None:
         conflict_task = await crud_task.get(session, str(conflict.shift.task_id))

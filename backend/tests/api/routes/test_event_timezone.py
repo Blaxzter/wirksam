@@ -27,6 +27,7 @@ from sqlmodel import col
 from app.core.config import settings
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.logic import work_hours
+from app.logic.booking_conflicts import find_conflicting_booking, mark_collisions
 from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.event import Event
@@ -1187,6 +1188,194 @@ class TestViewsAcrossEvents:
             assert (await async_client.get(url)).status_code == 200
 
         assert len(many) == len(few)
+
+
+# ── Clashes across zones ──────────────────────────────────────────
+
+JULY_11 = dt.date(2026, 7, 11)
+
+
+@pytest.mark.asyncio
+class TestClashesAcrossZones:
+    """On 10 July: Tokyo is UTC+9, Berlin UTC+2, Lisbon UTC+1, Honolulu UTC-10."""
+
+    async def _shift_in(
+        self,
+        db: AsyncSession,
+        zone: str,
+        owner: User,
+        member: User,
+        date: dt.date,
+        start: int,
+        end: int,
+    ) -> Shift:
+        event = await _event(db, owner, member, zone=zone, name=f"{zone} {start}")
+        task = await _task(db, event, owner)
+        return await _shift(db, task, date, dt.time(start), dt.time(end))
+
+    async def _try_to_book(self, client: AsyncClient, shift: Shift) -> int:
+        r = await client.post("/api/v1/bookings/", json={"shift_id": str(shift.id)})
+        if r.status_code == 409:
+            assert r.json()["code"] == "booking.time_conflict"
+        return r.status_code
+
+    @pytest.mark.parametrize(
+        ("booked", "wanted", "status"),
+        [
+            # The same hours on the rota, seven hours apart in fact.
+            ((TOKYO, LATER, 10, 12), (BERLIN, LATER, 10, 12), 201),
+            # Different hours on the rota, the same moment in fact.
+            ((LISBON, LATER, 9, 11), (BERLIN, LATER, 10, 12), 409),
+            ((BERLIN, LATER, 10, 12), (LISBON, LATER, 9, 11), 409),
+            # Back to back in fact, which is no clash on any clock.
+            ((LISBON, LATER, 9, 10), (BERLIN, LATER, 11, 12), 201),
+            # The same moment, dated a day apart: the booked shift is outside the
+            # window one zone would have looked at.
+            ((TOKYO, JULY_11, 6, 8), (HONOLULU, LATER, 11, 13), 409),
+            ((HONOLULU, LATER, 22, 23), (TOKYO, JULY_11, 17, 18), 409),
+            # Two events in one zone compare as written, with others around.
+            ((TOKYO, LATER, 10, 12), (TOKYO, LATER, 11, 13), 409),
+            ((TOKYO, LATER, 10, 12), (TOKYO, LATER, 12, 13), 201),
+        ],
+    )
+    async def test_booking(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        booked: tuple[str, dt.date, int, int],
+        wanted: tuple[str, dt.date, int, int],
+        status: int,
+    ) -> None:
+        held = await self._shift_in(
+            db_session, booked[0], test_admin_user, test_user, *booked[1:]
+        )
+        await _book(db_session, held, test_user)
+        other = await self._shift_in(
+            db_session, wanted[0], test_admin_user, test_user, *wanted[1:]
+        )
+
+        assert await self._try_to_book(async_client, other) == status
+
+    @pytest.mark.parametrize(
+        ("booked", "wanted", "collides"),
+        [
+            ((TOKYO, LATER, 10, 12), (BERLIN, LATER, 10, 12), False),
+            ((LISBON, LATER, 9, 11), (BERLIN, LATER, 10, 12), True),
+            ((TOKYO, JULY_11, 6, 8), (HONOLULU, LATER, 11, 13), True),
+        ],
+    )
+    async def test_the_flag_on_a_list_of_shifts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        booked: tuple[str, dt.date, int, int],
+        wanted: tuple[str, dt.date, int, int],
+        collides: bool,
+    ) -> None:
+        held = await self._shift_in(
+            db_session, booked[0], test_admin_user, test_user, *booked[1:]
+        )
+        await _book(db_session, held, test_user)
+        other = await self._shift_in(
+            db_session, wanted[0], test_admin_user, test_user, *wanted[1:]
+        )
+
+        r = await async_client.get(
+            "/api/v1/shifts/", params={"task_id": str(other.task_id)}
+        )
+
+        assert r.status_code == 200, r.text
+        assert [s["collides_with_my_booking"] for s in r.json()["items"]] == [collides]
+
+    async def test_the_flag_in_the_feed(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+    ) -> None:
+        held = await self._shift_in(
+            db_session, LISBON, test_admin_user, test_user, LATER, 9, 11
+        )
+        await _book(db_session, held, test_user)
+        other = await self._shift_in(
+            db_session, BERLIN, test_admin_user, test_user, LATER, 10, 12
+        )
+
+        r = await async_client.get(
+            "/api/v1/tasks/feed",
+            params={
+                "view": "list",
+                "focus_mode": "first_available",
+                "all_events": True,
+            },
+        )
+
+        assert r.status_code == 200, r.text
+        [item] = [i for i in r.json()["items"] if i["id"] == str(other.task_id)]
+        assert [s["collides_with_my_booking"] for s in item["shifts"]] == [True]
+
+
+@pytest.mark.asyncio
+class TestClashesWithOneZoneInUse:
+    """The usual installation: nothing about zones reaches the queries."""
+
+    async def test_booking_reads_no_zones(
+        self,
+        db_session: AsyncSession,
+        test_user: User,
+        test_event: Event,
+        test_task: Task,
+        count_queries: CountQueries,
+    ) -> None:
+        assert test_event.timezone == BERLIN
+        held = await _shift(db_session, test_task, LATER, dt.time(10), dt.time(12))
+        await _book(db_session, held, test_user)
+        other = await _shift(db_session, test_task, LATER, dt.time(11), dt.time(13))
+
+        with count_queries() as statements:
+            found = await find_conflicting_booking(
+                db_session, user_id=test_user.id, shift=other, zone=BERLIN
+            )
+
+        assert found is not None
+        assert found.shift.id == held.id
+        assert not any("zone_event" in statement for statement in statements)
+
+    async def test_marking_a_page_reads_no_zones(
+        self,
+        db_session: AsyncSession,
+        test_user: User,
+        test_event: Event,
+        test_task: Task,
+        count_queries: CountQueries,
+    ) -> None:
+        assert test_event.timezone == BERLIN
+        held = await _shift(db_session, test_task, LATER, dt.time(10), dt.time(12))
+        await _book(db_session, held, test_user)
+        other = await _shift(db_session, test_task, LATER, dt.time(11), dt.time(13))
+        entry = SimpleNamespace(
+            id=other.id,
+            date=other.date,
+            start_time=other.start_time,
+            end_time=other.end_time,
+            is_booked_by_me=False,
+            collides_with_my_booking=False,
+        )
+
+        with count_queries() as statements:
+            await mark_collisions(
+                db_session,
+                user_id=test_user.id,
+                entries=[entry],  # pyright: ignore[reportArgumentType]
+            )
+
+        assert entry.collides_with_my_booking is True
+        assert not any("zone_event" in statement for statement in statements)
 
 
 # ── Today, where the event is ─────────────────────────────────────
