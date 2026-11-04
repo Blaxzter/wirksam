@@ -39,7 +39,7 @@ Once the map has a picture or a drawing, everyone in the event finds it under "M
 
 A pin's colour comes from the shifts at that place. When you create a task, choose the place from the list under "Location", and all its shifts take it on. The same goes for each new batch under "Add Shifts". A typed-in location doesn't count.
 
-Existing shifts keep their place. If a task has several batches, change it for the batch with "Edit".
+If you change a task's place later, its shifts follow, unless a shift has a place of its own. A batch with its own place is changed with "Edit" on that batch.
 
 ![A shift's details with its place, the people in charge and who's on it](shot:shift-dialog)
 

@@ -22,6 +22,7 @@ from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import (
     apply_location,
+    follow_task_place,
     resolve_location,
     unlink_task_children,
 )
@@ -272,6 +273,13 @@ async def update_task(
     update_data.update(
         await location_patch(session, db_task, update_data, event_id=target_event_id)
     )
+    old_place = (db_task.location, db_task.location_id)
+    new_place = (
+        update_data.get("location", db_task.location),
+        update_data.get("location_id", db_task.location_id),
+    )
+    if new_place != old_place:
+        await follow_task_place(session, db_task.id, old=old_place, new=new_place)
     new_name = update_data.get("name")
     if new_name and new_name != db_task.name:
         await _retitle_shifts(

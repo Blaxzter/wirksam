@@ -65,7 +65,7 @@ If the whole event moves, enter a new start date under "Shift Dates" in its sett
 
 The "Category" is free text, such as "Kitchen" or "Set-up". There's no fixed list. It shows with the task in the list, on its page and on the printout.
 
-For "Location", "No location" is selected to begin with. Below it are the event's places, "New location…" creates one on the spot, and "Other (type it in)…" takes free text. The shifts take on what you choose when you create them. If you change a task's place later without touching days or times, its shifts keep the one they had.
+For "Location", "No location" is selected to begin with. Below it are the event's places, "New location…" creates one on the spot, and "Other (type it in)…" takes free text. The shifts take on what you choose when you create them. If you change a task's place later, the shifts that still have its old place follow, and a shift with a place of its own keeps it.
 
 You look after places in the event's settings on the "Locations" tab, with a description, address, map link and contact. Volunteers see all that when they open a shift. Only these places appear on the [venue map](/features/venue-map) and in the "Location" filter of the task list. Typed-in text stays plain text.
 

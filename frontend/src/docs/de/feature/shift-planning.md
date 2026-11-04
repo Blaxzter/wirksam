@@ -65,7 +65,7 @@ Verschiebt sich die ganze Veranstaltung, trägst du in ihren Einstellungen unter
 
 Die „Kategorie“ ist ein freier Text, zum Beispiel „Küche“ oder „Aufbau“. Eine feste Liste gibt es nicht. Sie steht bei der Aufgabe in der Liste, auf ihrer Seite und auf dem Ausdruck.
 
-Beim „Ort“ ist „Kein Ort“ vorgewählt. Darunter stehen die Orte der Veranstaltung, „Neuer Ort…“ legt direkt einen an, und „Anderer (selbst eingeben)…“ nimmt freien Text. Die Schichten übernehmen, was du beim Anlegen wählst. Änderst du den Ort einer Aufgabe später, ohne Tage oder Zeiten anzufassen, behalten ihre Schichten den bisherigen.
+Beim „Ort“ ist „Kein Ort“ vorgewählt. Darunter stehen die Orte der Veranstaltung, „Neuer Ort…“ legt direkt einen an, und „Anderer (selbst eingeben)…“ nimmt freien Text. Die Schichten übernehmen, was du beim Anlegen wählst. Änderst du den Ort einer Aufgabe später, ziehen die Schichten mit, die noch ihren bisherigen Ort haben, und eine Schicht mit eigenem Ort behält ihn.
 
 Angelegte Orte pflegst du in den Einstellungen der Veranstaltung im Tab „Orte“, mit Beschreibung, Adresse, Kartenlink und Ansprechperson. Helfende sehen das, wenn sie eine Schicht öffnen. Nur solche Orte kommen auf den [Lageplan](/features/venue-map) und in den Filter „Ort“ der Aufgabenliste, frei eingegebener Text bleibt reiner Text.
 

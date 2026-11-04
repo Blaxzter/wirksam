@@ -39,7 +39,7 @@ Sobald der Plan ein Bild oder eine Zeichnung hat, finden ihn alle in der Veranst
 
 Die Farbe eines Pins kommt von den Schichten an diesem Ort. Wähle beim Anlegen einer Aufgabe unter „Ort“ den passenden Ort aus der Liste, dann übernehmen ihn alle ihre Schichten. Dasselbe gilt für jede neue Serie unter „Schichten hinzufügen“. Ein selbst eingetippter Ort zählt nicht.
 
-Bestehende Schichten behalten ihren Ort. Hat eine Aufgabe mehrere Serien, änderst du ihn bei der Serie über „Bearbeiten“.
+Änderst du den Ort einer Aufgabe später, ziehen ihre Schichten mit, außer eine Schicht hat einen eigenen Ort. Den Ort einer Serie mit eigenem Ort änderst du bei der Serie über „Bearbeiten“.
 
 ![Die Details einer Schicht mit ihrem Ort, den Verantwortlichen und wer dabei ist](shot:shift-dialog)
 
