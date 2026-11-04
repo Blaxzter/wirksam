@@ -45,7 +45,7 @@ For organisers and team leads:
 
 - Invitation Accepted: push
 - Join Request and Team Request: email and push
-- Shift Starting Soon (Unfilled), about half an hour before a shift that still has open places: email and push
+- Shift Starting Soon (Unfilled), about half an hour before a shift that still has open places: push
 
 There are also messages about your own account, for example if it's suspended.
 

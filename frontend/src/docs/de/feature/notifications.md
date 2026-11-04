@@ -45,7 +45,7 @@ Für Organisator:innen und Team-Leitungen:
 
 - Einladung angenommen: Push
 - Beitrittsanfrage und Teamanfrage: E-Mail und Push
-- Schicht beginnt bald (unbesetzt), etwa eine halbe Stunde vor einer Schicht mit freien Plätzen: E-Mail und Push
+- Schicht beginnt bald (unbesetzt), etwa eine halbe Stunde vor einer Schicht mit freien Plätzen: Push
 
 Dazu kommen Nachrichten zum eigenen Konto, zum Beispiel wenn es gesperrt wird.
 

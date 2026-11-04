@@ -87,6 +87,10 @@ class TestRegistry:
         have to be able to find it in their preferences."""
         assert SHIFT_STARTING_SOON_UNFILLED.is_admin_only is False
 
+    def test_unfilled_shift_alert_sends_no_mail_by_default(self):
+        """One per unfilled shift: nobody has asked for that much post."""
+        assert SHIFT_STARTING_SOON_UNFILLED.default_channels == ["push"]
+
     def test_registry_has_expected_categories(self):
         """Verify the registry covers expected categories."""
         categories = {t.category for t in ALL_NOTIFICATION_TYPES}

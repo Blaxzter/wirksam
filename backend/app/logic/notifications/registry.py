@@ -109,7 +109,9 @@ SHIFT_STARTING_SOON_UNFILLED = NotificationTypeDef(
     ),
     category="shift",
     classification="reminder",
-    default_channels=["email", "push"],
+    # Push only: one mail per unfilled shift would be a lot of post just before
+    # an event. E-mail can be switched on, and the inbox always gets it.
+    default_channels=["push"],
 )
 
 SHIFT_TIME_CHANGED = NotificationTypeDef(
