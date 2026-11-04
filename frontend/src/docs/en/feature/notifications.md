@@ -69,6 +69,8 @@ Reminders go by the event's time zone. If an organiser moves a shift or changes 
 
 You change that under "Default Booking Reminders". "Add reminder" offers times from 15 minutes to 2 days before the start, and for each one you choose the channels, with at least one staying on. Telegram is on offer once it's connected. This list is copied to every new booking. It doesn't change shifts you've already booked.
 
+A channel you've switched off under "Delivery Channels" stays off for reminders too. They still land in your inbox.
+
 For a single shift, open the booking. Its page has a "Reminders" card where you can set, change or remove up to five active reminders. Ones already sent stay there, greyed out. If you cancel the shift, its scheduled reminders are dropped.
 
 ## Which language
@@ -80,7 +82,7 @@ An invitation to an address without an account comes in the language of the pers
 ## What you can turn off
 
 - **One kind of message:** the switches in its row under "Per-notification Preferences".
-- **One channel for all kinds:** the switch on its card under "Delivery Channels". Your reminders before a shift don't depend on it, because they have channels of their own.
+- **One channel for all kinds:** the switch on its card under "Delivery Channels". This also stops your reminders before a shift on that channel.
 - **Reminders:** under "Default Booking Reminders" for future bookings, and on the booking's page for shifts you've already booked.
 - **Push and Telegram altogether:** "Disable" on the push card and "Disconnect" on the Telegram card.
 
@@ -94,7 +96,7 @@ Usually the browser hasn't been given permission. Tap "Enable push notifications
 
 ### How do I turn reminders off completely?
 
-Remove all of them under "Default Booking Reminders", and new bookings won't get any. For shifts you've already booked, remove them on the booking's page. The switches under "Delivery Channels" aren't enough for this.
+Remove all of them under "Default Booking Reminders", and new bookings won't get any. For shifts you've already booked, remove them on the booking's page. The switches under "Delivery Channels" only stop them arriving on that channel, and they still land in your inbox.
 
 ### Do I get an email for every booking?
 

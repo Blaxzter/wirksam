@@ -100,7 +100,7 @@ async def _process_reminder(reminder: BookingReminder) -> None:
                     "task_id": str(shift.task_id),
                 },
                 scope_chain=scope_chain,  # type: ignore[arg-type]
-                force_channels=reminder.channels,
+                only_channels=reminder.channels,
             )
 
             # Mark as sent

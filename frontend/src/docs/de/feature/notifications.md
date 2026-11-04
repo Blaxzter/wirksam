@@ -69,6 +69,8 @@ Erinnerungen richten sich nach der Zeitzone der Veranstaltung. Verschieben Organ
 
 Unter „Standard-Buchungserinnerungen“ änderst du das. „Erinnerung hinzufügen“ bietet Zeitpunkte von 15 Minuten bis 2 Tage vor Beginn, und bei jeder wählst du die Wege, wobei mindestens einer an bleibt. Telegram steht zur Wahl, sobald es verbunden ist. Diese Liste wird bei jeder neuen Buchung übernommen. Schichten, die du schon gebucht hast, ändert sie nicht.
 
+Einen Weg, den du unter „Zustellkanäle“ ausgeschaltet hast, nutzen auch Erinnerungen nicht. Im Postfach landen sie trotzdem.
+
 Für eine einzelne Schicht öffnest du die Buchung. Auf ihrer Seite gibt es die Karte „Erinnerungen“, wo du bis zu fünf aktive Erinnerungen setzt, änderst oder entfernst. Schon gesendete bleiben ausgegraut stehen. Sagst du die Schicht ab, fallen die geplanten Erinnerungen weg.
 
 ## In welcher Sprache
@@ -80,7 +82,7 @@ Eine Einladung an eine Adresse ohne Konto kommt in der Sprache der einladenden P
 ## Was du abschalten kannst
 
 - **Eine Art von Nachricht:** die Schalter in ihrer Zeile unter „Einstellungen pro Benachrichtigung“.
-- **Einen Weg für alle Arten:** den Schalter auf seiner Karte unter „Zustellkanäle“. Deine Erinnerungen vor einer Schicht hängen nicht daran, denn sie haben ihre eigenen Wege.
+- **Einen Weg für alle Arten:** den Schalter auf seiner Karte unter „Zustellkanäle“. Damit kommen auch deine Erinnerungen vor einer Schicht nicht mehr über diesen Weg.
 - **Erinnerungen:** unter „Standard-Buchungserinnerungen“ für künftige Buchungen und auf der Buchungsseite für Schichten, die du schon gebucht hast.
 - **Push und Telegram ganz:** „Deaktivieren“ auf der Push-Karte und „Trennen“ auf der Telegram-Karte.
 
@@ -94,7 +96,7 @@ Meist fehlt die Zustimmung im Browser. Tippe auf „Push-Benachrichtigungen akti
 
 ### Wie schalte ich die Erinnerungen ganz ab?
 
-Entferne alle unter „Standard-Buchungserinnerungen“, dann bekommen neue Buchungen keine mehr. Bei schon gebuchten Schichten entfernst du sie auf der Buchungsseite. Die Schalter unter „Zustellkanäle“ reichen dafür nicht.
+Entferne alle unter „Standard-Buchungserinnerungen“, dann bekommen neue Buchungen keine mehr. Bei schon gebuchten Schichten entfernst du sie auf der Buchungsseite. Die Schalter unter „Zustellkanäle“ halten sie nur auf dem jeweiligen Weg an, im Postfach landen sie weiter.
 
 ### Bekomme ich zu jeder Buchung eine E-Mail?
 

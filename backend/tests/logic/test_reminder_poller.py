@@ -508,7 +508,7 @@ class TestProcessReminder:
         kwargs = call.kwargs
         assert kwargs["recipient_ids"] == [test_user.id]
         assert kwargs["type_code"] == "booking.reminder"
-        assert kwargs["force_channels"] == ["push", "email"]
+        assert kwargs["only_channels"] == ["push", "email"]
         assert kwargs["data"] == {
             "booking_id": str(test_booking.id),
             "slot_id": str(test_shift.id),
