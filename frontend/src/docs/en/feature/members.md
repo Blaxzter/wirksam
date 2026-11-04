@@ -68,11 +68,11 @@ Under "Requests to join" you decide with "Let in" or "Decline". Someone you let 
 
 ## Handing over an event
 
-Only the owner sees "Hand over this event" on the People tab. Choose someone who is already taking part, in any role, and tap "Hand over". They take over at once and you stay on as an organiser. WirkSam doesn't ask again, and only the new owner can hand it back.
+Only the owner sees "Hand over this event" on the People tab. Choose someone who is already taking part, in any role, and tap "Hand over". WirkSam asks you to confirm. They then take over at once and you stay on as an organiser, and only the new owner can hand it back.
 
 ## Leaving and removing
 
-Next to your own name is "Leave". Organisers have an icon for removing someone next to other names. Both apply at once and without asking, and both do the same thing:
+Next to your own name is "Leave". Organisers have an icon for removing someone next to other names. WirkSam asks you to confirm and says what will happen. Both do the same thing:
 
 - Bookings for shifts that aren't over yet are cancelled. Shifts that are already over stay, because that work is done.
 - Places in teams and being in charge of tasks go too. Someone who comes back later doesn't get these back automatically.

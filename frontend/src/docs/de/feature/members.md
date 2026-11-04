@@ -68,11 +68,11 @@ Unter „Anfragen zum Mitmachen“ entscheidet ihr mit „Aufnehmen“ oder „A
 
 ## Eine Veranstaltung übergeben
 
-Nur die Eigentümerin oder der Eigentümer sieht im Tab „Personen“ den Bereich „Veranstaltung übergeben“. Wähle dort eine Person, die schon dabei ist, in welcher Rolle auch immer, und tippe auf „Übergeben“. Sie übernimmt sofort, und du bleibst Organisator:in. WirkSam fragt nicht noch einmal nach, und zurückgeben kann es dann nur die neue Person.
+Nur die Eigentümerin oder der Eigentümer sieht im Tab „Personen“ den Bereich „Veranstaltung übergeben“. Wähle dort eine Person, die schon dabei ist, in welcher Rolle auch immer, und tippe auf „Übergeben“. WirkSam fragt noch einmal nach. Danach übernimmt sie sofort, du bleibst Organisator:in, und zurückgeben kann es nur die neue Person.
 
 ## Verlassen und entfernen
 
-Neben dem eigenen Namen steht „Verlassen“. Organisator:innen haben neben anderen Namen ein Symbol zum Entfernen. Beides gilt sofort und ohne Rückfrage, und in beiden Fällen passiert dasselbe:
+Neben dem eigenen Namen steht „Verlassen“. Organisator:innen haben neben anderen Namen ein Symbol zum Entfernen. WirkSam fragt vorher nach und sagt, was passiert. In beiden Fällen passiert dasselbe:
 
 - Buchungen für Schichten, die noch nicht vorbei sind, werden storniert. Schichten, die schon vorbei sind, bleiben stehen, denn die Arbeit ist getan.
 - Plätze in Teams und die Verantwortung für Aufgaben fallen weg. Wer später wiederkommt, bekommt das alles nicht automatisch zurück.
