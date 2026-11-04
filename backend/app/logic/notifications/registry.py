@@ -185,17 +185,6 @@ EVENT_CLONED = NotificationTypeDef(
     default_channels=["email"],
 )
 
-# ── Availability notifications ────────────────────────────────────
-
-AVAILABILITY_REMINDER = NotificationTypeDef(
-    code="availability.reminder",
-    name="Availability Reminder",
-    description="Reminder to submit your availability for a published event",
-    category="availability",
-    classification="reminder",
-    default_channels=["email", "push"],
-)
-
 # ── Event membership notifications ────────────────────────────────
 
 EVENT_INVITATION = NotificationTypeDef(
@@ -354,7 +343,6 @@ ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
     SHIFT_TIME_CHANGED,
     TASK_PUBLISHED,
     EVENT_PUBLISHED,
-    AVAILABILITY_REMINDER,
     EVENT_INVITATION,
     EVENT_INVITATION_ACCEPTED,
     EVENT_JOIN_REQUESTED,
