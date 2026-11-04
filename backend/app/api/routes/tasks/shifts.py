@@ -638,6 +638,7 @@ async def regenerate_task_shifts(
             task_id=db_task.id,
             task_name=db_task.name,
             task_is_open=db_task.status == "published",
+            now=now,
             event_id=db_task.event_id,
             is_sandbox=db_task.is_sandbox,
         )

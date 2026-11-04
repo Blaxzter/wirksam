@@ -247,12 +247,14 @@ def _all_invocations(
                         user_id=user_id,
                         shift_title="Shift",
                         shift_date=dt.date(2026, 6, 11),
+                        shift_ends_at=dt.datetime(2026, 6, 11, 12, 0),
                     )
                 ],
                 actor_id=actor_id,
                 task_id=task_id,
                 task_name="Task",
                 task_is_open=True,
+                now=dt.datetime(2026, 6, 11, 8, 0),
             ),
         ),
         (
@@ -770,9 +772,14 @@ def _cancelled(
     user_id: uuid.UUID,
     title: str = "Morning Shift",
     on: dt.date = dt.date(2026, 6, 11),
+    ends_at: dt.datetime = dt.datetime(2026, 6, 11, 12, 0),
 ) -> CancelledBooking:
     return CancelledBooking(
-        booking_id=uuid.uuid4(), user_id=user_id, shift_title=title, shift_date=on
+        booking_id=uuid.uuid4(),
+        user_id=user_id,
+        shift_title=title,
+        shift_date=on,
+        shift_ends_at=ends_at,
     )
 
 
@@ -785,6 +792,7 @@ def _admin_cancel(
         "task_id": uuid.uuid4(),
         "task_name": "Kitchen Duty",
         "task_is_open": True,
+        "now": dt.datetime(2026, 6, 11, 8, 0),
     }
     return triggers.dispatch_booking_cancelled_by_admin(**(kwargs | overrides))
 
@@ -832,6 +840,43 @@ class TestDispatchBookingCancelledByAdmin:
         recipients = await _recipients(db_session, "booking.cancelled_by_admin")
         assert recipients == {test_user.id, affected.id}
         assert bystander.id not in recipients
+
+    async def test_a_shift_already_over_tells_nobody(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        """Tidying up last year's task must not write to everyone who worked it."""
+        with _dispatch_env(db_session) as factory:
+            await _admin_cancel(
+                [_cancelled(test_user.id, ends_at=dt.datetime(2026, 6, 11, 12, 0))],
+                now=dt.datetime(2026, 6, 11, 12, 0),
+            )
+
+        assert factory.call_count == 0
+
+    async def test_of_several_shifts_only_those_not_over_count(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await _admin_cancel(
+                [
+                    _cancelled(
+                        test_user.id, "Over", ends_at=dt.datetime(2026, 6, 11, 7, 0)
+                    ),
+                    _cancelled(
+                        test_user.id, "Running", ends_at=dt.datetime(2026, 6, 11, 9, 0)
+                    ),
+                ]
+            )
+
+        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
+        assert '"Running"' in notif.body
+        assert "Over" not in notif.body
 
     async def test_the_person_who_removed_it_is_not_told(
         self,

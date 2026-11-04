@@ -51,7 +51,7 @@ from app.schemas.task import (
 router = APIRouter()
 
 #: What only event admins may change on a task, even when a person in charge
-#: sends the edit: publishing fans a notification out to every account,
+#: sends the edit: publishing fans a notification out to the event's members,
 #: ``team_id`` decides who may book, moving needs admin in both events, and
 #: vouchers are currency, so the rate and the places that take them are the
 #: organisers' decision.
@@ -371,12 +371,9 @@ async def delete_task(
     result = await session.execute(stmt)
     slot_ids = list(result.scalars().all())
 
+    now = clock.wall_clock_now(await crud_event.zone_of(session, db_task.event_id))
     # What the worked shifts earned stays earned, under the task's name.
-    await vouchers.settle_earnings(
-        session,
-        now=clock.wall_clock_now(await crud_event.zone_of(session, db_task.event_id)),
-        task_ids=[db_task.id],
-    )
+    await vouchers.settle_earnings(session, now=now, task_ids=[db_task.id])
     # An invitation that existed only to run this task is withdrawn, so its
     # link says so; the links themselves would go by cascade.
     await crud_invitation_task.detach_task(session, task_id=db_task.id)
@@ -394,6 +391,7 @@ async def delete_task(
         task_id=db_task.id,
         task_name=db_task.name,
         task_is_open=False,
+        now=now,
         event_id=db_task.event_id,
         reason=cancellation_reason,
         is_sandbox=db_task.is_sandbox,

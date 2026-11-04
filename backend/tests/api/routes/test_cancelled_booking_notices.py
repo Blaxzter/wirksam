@@ -25,6 +25,7 @@ from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
 from app.models.user import User
+from tests.fixtures.clock import BEFORE_FIXTURE_SHIFTS
 
 pytestmark = pytest.mark.usefixtures("clock_before_fixture_shifts")
 
@@ -98,6 +99,9 @@ def _assert_told_about(call: dict[str, Any], booking: Booking, shift: Shift) -> 
     assert cancelled.user_id == booking.user_id
     assert cancelled.shift_title == shift.title
     assert cancelled.shift_date == shift.date
+    assert cancelled.shift_ends_at == dt.datetime(2026, 6, 11, 12, 0)
+    # The clock the module runs on: every shift here is still to come.
+    assert call["now"] == BEFORE_FIXTURE_SHIFTS
 
 
 @pytest.mark.asyncio

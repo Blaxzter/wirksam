@@ -55,6 +55,7 @@ Das steht dort:
 - „Buchungen gesamt“, aufgeteilt in bestätigte und stornierte
 - „Auslastung“: gebuchte Plätze im Verhältnis zu allen Plätzen
 - „Aufgaben“, mit der Zahl der Schichten und wie viele davon mindestens eine Buchung haben
+- „Aktive Freiwillige“: die Personen mit einer bestätigten Buchung im Zeitraum. „Freiwillige gesamt“ daneben zählt auch alle anderen aus diesen Veranstaltungen
 - „Buchungen im Zeitverlauf“, nach Tag oder Monat
 - „Buchungen nach Tageszeit“: bestätigte Buchungen nach der Startzeit ihrer Schicht, so siehst du die Stoßzeiten
 - „Aktivste Freiwillige“: die zehn Personen mit den meisten bestätigten Buchungen

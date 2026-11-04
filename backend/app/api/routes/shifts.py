@@ -314,6 +314,7 @@ async def delete_shift(
         task_id=db_task.id,
         task_name=db_task.name,
         task_is_open=db_task.status == "published",
+        now=clock.wall_clock_now(zone),
         event_id=db_task.event_id,
         reason=cancellation_reason,
         is_sandbox=db_task.is_sandbox,

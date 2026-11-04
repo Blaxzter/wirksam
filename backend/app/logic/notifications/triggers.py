@@ -173,6 +173,7 @@ async def dispatch_booking_cancelled_by_admin(
     task_id: uuid.UUID,
     task_name: str,
     task_is_open: bool,
+    now: dt.datetime,
     event_id: uuid.UUID | None = None,
     reason: str | None = None,
     is_sandbox: bool = False,
@@ -182,7 +183,9 @@ async def dispatch_booking_cancelled_by_admin(
     Queued wherever an organiser or a person in charge removes shifts: deleting
     a shift, a batch or a task, and regenerating. Each person hears once per
     action however many of their shifts went, and the person who did it not at
-    all. A demo tells nobody.
+    all. A demo tells nobody, and neither does a shift that is already over
+    (``now`` is the event's wall clock): tidying up last year's task must not
+    write to everyone who worked it.
 
     The notice opens the task when ``task_is_open``, meaning it still exists and
     the person can read it. Otherwise it opens My Bookings, where the cancelled
@@ -192,7 +195,7 @@ async def dispatch_booking_cancelled_by_admin(
         return
     by_person: dict[uuid.UUID, list[CancelledBooking]] = {}
     for booking in cancelled:
-        if booking.user_id != actor_id:
+        if booking.user_id != actor_id and booking.shift_ends_at > now:
             by_person.setdefault(booking.user_id, []).append(booking)
     if not by_person:
         return

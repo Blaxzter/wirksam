@@ -25,6 +25,8 @@ class CancelledBooking:
     user_id: uuid.UUID
     shift_title: str
     shift_date: dt.date
+    #: When the shift was over, on its event's wall clock.
+    shift_ends_at: dt.datetime
 
 
 class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
@@ -234,6 +236,9 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
                     user_id=b.user_id,
                     shift_title=shift.title,
                     shift_date=shift.date,
+                    shift_ends_at=shift_ends_at(
+                        shift.date, shift.start_time, shift.end_time
+                    ),
                 )
             )
 

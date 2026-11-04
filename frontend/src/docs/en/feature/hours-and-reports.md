@@ -55,6 +55,7 @@ It shows:
 - "Total Bookings", split into confirmed and cancelled
 - "Fill Rate": booked places against all places
 - "Tasks", with the number of shifts and how many of them have at least one booking
+- "Active Volunteers": the people with a confirmed booking in the date range. "Total Volunteers" beside it also counts everyone else in those events
 - "Bookings Over Time", by day or month
 - "Bookings by Time of Day": confirmed bookings by the start time of their shift, which shows your busy times
 - "Most Active Volunteers": the ten people with the most confirmed bookings
