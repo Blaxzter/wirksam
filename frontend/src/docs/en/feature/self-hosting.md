@@ -93,7 +93,7 @@ You can move from `postgres` to `s3` later. Change the settings and move the old
 
 ## Time zone, demo and public pages
 
-- `EVENT_TIMEZONE` (default `Europe/Berlin`) is an IANA name and applies to the whole install. Shift times carry no zone. This setting decides when a shift has started or ended, and so when hours and vouchers count. With an unknown name, the backend won't start.
+- `EVENT_TIMEZONE` (default `Europe/Berlin`) is an IANA name and the time zone a new event starts with. After that, each event has its own, which organisers set on the event. Shift times carry no zone, so the event's zone decides when a shift has started or ended, and so when hours and vouchers count. Changing the setting later doesn't move existing events. With an unknown name, the backend won't start.
 - `SANDBOX_ENABLED` (default `true`) controls the "Try a demo event" button. It creates a throwaway account with an example event, without signing up. With `false`, the button goes away and the backend refuses new demos. `SANDBOX_TTL_MINUTES` (60) and `SANDBOX_MAX_ACTIVE` (25) limit how long they last and how many run at once.
 - `LANDING_ENABLED` (default `true`): with `false`, `/` leads to sign-in or, if you're signed in, into the app. The content pages like this one go too. Privacy, terms, impressum and the changelog stay.
 - `SEARCH_INDEXING` (default `true`): with `false`, `robots.txt` tells every crawler to stay away, and `sitemap.xml` and `llms.txt` are removed.

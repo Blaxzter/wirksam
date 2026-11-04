@@ -44,6 +44,7 @@ Für Organisator:innen und Team-Leitungen:
 
 - Einladung angenommen: Push
 - Beitrittsanfrage und Teamanfrage: E-Mail und Push
+- Schicht beginnt bald (unbesetzt), etwa eine halbe Stunde vor einer Schicht mit freien Plätzen: E-Mail und Push
 
 Dazu kommen Nachrichten zum eigenen Konto, zum Beispiel wenn es gesperrt wird.
 
@@ -62,6 +63,8 @@ Weiter unten steht unter „Einstellungen pro Benachrichtigung“ jede Art mit e
 ## Erinnerungen vor einer Schicht
 
 Neue Konten starten mit zwei Standard-Erinnerungen: einen Tag vorher per E-Mail und 15 Minuten vorher per Push. Die Nachricht nennt Schicht, Datum, Uhrzeit und Ort.
+
+Erinnerungen richten sich nach der Zeitzone der Veranstaltung. Verschieben Organisator:innen eine Schicht oder ändern die Zone, ziehen die geplanten Erinnerungen mit, und schon gesendete bleiben, wie sie sind. Liegt die Veranstaltung nicht in der üblichen Zeitzone deiner WirkSam-Seite, nennt die Nachricht ihre Zone hinter der Uhrzeit.
 
 Unter „Standard-Buchungserinnerungen“ änderst du das. „Erinnerung hinzufügen“ bietet Zeitpunkte von 15 Minuten bis 2 Tage vor Beginn, und bei jeder wählst du die Wege, wobei mindestens einer an bleibt. Telegram steht zur Wahl, sobald es verbunden ist. Diese Liste wird bei jeder neuen Buchung übernommen. Schichten, die du schon gebucht hast, ändert sie nicht.
 

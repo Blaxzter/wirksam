@@ -93,7 +93,7 @@ Von `postgres` nach `s3` wechseln kannst du später. Stell die Einstellungen um 
 
 ## Zeitzone, Demo und öffentliche Seiten
 
-- `EVENT_TIMEZONE` (Standard `Europe/Berlin`) ist ein IANA-Name und gilt für die ganze Installation. Schichtzeiten haben keine Zeitzone. Diese Einstellung entscheidet, wann eine Schicht begonnen hat oder vorbei ist, also auch, wann Stunden und Marken zählen. Mit einem unbekannten Namen startet das Backend nicht.
+- `EVENT_TIMEZONE` (Standard `Europe/Berlin`) ist ein IANA-Name und die Zeitzone, mit der eine neue Veranstaltung startet. Danach hat jede Veranstaltung ihre eigene, die Organisator:innen an der Veranstaltung einstellen. Schichtzeiten haben keine Zeitzone, also entscheidet die der Veranstaltung, wann eine Schicht begonnen hat oder vorbei ist, und damit auch, wann Stunden und Marken zählen. Änderst du die Einstellung später, bleiben bestehende Veranstaltungen, wie sie sind. Mit einem unbekannten Namen startet das Backend nicht.
 - `SANDBOX_ENABLED` (Standard `true`) steuert den Knopf „Demo-Veranstaltung ansehen“. Er legt ohne Anmeldung ein Wegwerf-Konto mit einer Beispielveranstaltung an. Mit `false` verschwindet der Knopf, und das Backend lehnt neue Demos ab. `SANDBOX_TTL_MINUTES` (60) und `SANDBOX_MAX_ACTIVE` (25) begrenzen Dauer und Anzahl.
 - `LANDING_ENABLED` (Standard `true`): Mit `false` führt `/` zur Anmeldung oder, wenn du angemeldet bist, in die App. Die Inhaltsseiten wie diese hier entfallen mit. Datenschutz, Nutzungsbedingungen, Impressum und Changelog bleiben.
 - `SEARCH_INDEXING` (Standard `true`): Mit `false` verbietet `robots.txt` allen Crawlern den Zugriff, und `sitemap.xml` und `llms.txt` entfallen.

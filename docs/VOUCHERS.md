@@ -102,7 +102,7 @@ rules](#booking-rules-that-exist-because-of-earnings) are what keep that honest.
 An ended booking's vouchers are derived the way worked hours are:
 `tasks.vouchers_per_shift` for every booking that
 `work_hours.counts_as_worked()`, on a shift whose `shift_ends_at` has passed
-`clock.wall_clock_now()`. Nothing is written when a shift ends.
+`clock.wall_clock_now(event.timezone)`. Nothing is written when a shift ends.
 
 Before anything would change that figure for a shift already over, the route
 calls `vouchers.settle_earnings`. It freezes what the ended bookings earned in
@@ -132,6 +132,7 @@ been handed out against them.
 | `DELETE /tasks/{id}/batches/{batch_id}` | the batch's shifts | |
 | `POST /tasks/{id}/regenerate-shifts`, real run | the shifts about to go | kept shifts match on date and times, so their timing does not change |
 | `POST /events/{id}/shift-dates` | the event's tasks | |
+| `PATCH /events/{id}` changing `timezone` | the event's tasks | at the old zone's `now`: on the new clock a shift that ended may not have yet |
 | `DELETE /users/me`, `DELETE /users/{id}` | tasks the account created | `tasks.created_by_id` cascades. A no-op on the admin route today, which refuses or hands the tasks over first |
 
 **Anything new that changes what an ended booking earns must settle first**, in
@@ -300,17 +301,17 @@ event settings' Vouchers tab (`?tab=vouchers`,
 `components/events/EventVoucherSettings.vue`). A new event starts with the
 defaults, and an explicit `null` in a `PATCH` leaves the value. The task fields
 are in `ADMIN_ONLY_TASK_FIELDS`. Cloning an event copies all four, and never
-entries, earnings or codes. `EVENT_TIMEZONE` is the zone every shift comparison
-runs in.
+entries, earnings or codes. `events.timezone` is the zone every shift comparison
+in the event runs in.
 
 ## Gotchas
 
 - **`logic/vouchers.py` does no gating.** It must not import
   `logic/permissions.py`, which imports it. The routes run the gate.
-- **Two clocks.** Shift comparisons use `clock.wall_clock_now()`, stored
+- **Two clocks.** Shift comparisons use `clock.wall_clock_now(event.timezone)`, stored
   timestamps `clock.utc_now()`, and `redeem` and `check` take both. Comparing a
   shift with UTC would make a shift that ends at 18:00 end at 20:00 in a German
-  summer. `VoucherShift.ends_at` is converted (`to_utc`), so shifts and entries
+  summer. `VoucherShift.ends_at` is converted (`clock.wall_clock_to_utc`), so shifts and entries
   sort on one time line. Tests patch `app.logic.clock.wall_clock_now`.
 - **No foreign key to a task, shift, booking, actor or pass** in
   `voucher_entries` or `voucher_earnings`. A CASCADE would refund a debit along

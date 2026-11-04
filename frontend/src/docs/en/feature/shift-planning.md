@@ -18,6 +18,8 @@ A plan has three levels:
 
 Tasks can only be scheduled inside the event's dates.
 
+Every event has a time zone, and shift times count in it: 10:00 means 10:00 at the venue, wherever someone opens the plan. If their device is set to another zone, the task and their booking say so in a short note. If you change the zone later, a shift at 10:00 stays at 10:00, and reminders and calendars follow.
+
 WirkSam shows you one event at a time. Tasks, shifts and bookings all stay in that event, so you don't have to hunt for the right list. If you're part of several, switch at the top of the sidebar, or on a phone under "More" with "Change event". Once an event is over, WirkSam asks you to pick the next one.
 
 ## Shifts from a pattern

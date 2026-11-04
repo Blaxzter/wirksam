@@ -44,6 +44,7 @@ For organisers and team leads:
 
 - Invitation Accepted: push
 - Join Request and Team Request: email and push
+- Shift Starting Soon (Unfilled), about half an hour before a shift that still has open places: email and push
 
 There are also messages about your own account, for example if it's suspended.
 
@@ -62,6 +63,8 @@ Further down, "Per-notification Preferences" lists each kind with a switch per c
 ## Reminders before a shift
 
 New accounts start with two default reminders: one day before by email and 15 minutes before by push. The message names the shift, date, time and place.
+
+Reminders go by the event's time zone. If an organiser moves a shift or changes the zone, the scheduled reminders move with it, and ones already sent stay as they are. If the event isn't in the usual time zone of the WirkSam site you use, messages name its zone after the time.
 
 You change that under "Default Booking Reminders". "Add reminder" offers times from 15 minutes to 2 days before the start, and for each one you choose the channels, with at least one staying on. Telegram is on offer once it's connected. This list is copied to every new booking. It doesn't change shifts you've already booked.
 

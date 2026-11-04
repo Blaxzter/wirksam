@@ -8,7 +8,7 @@ related: feature/shift-planning, guide/volunteer-start, guide/people-in-charge, 
 
 Nach der Registrierung landest du bei „Veranstaltung auswählen“. Auf dem Handy tippst du zuerst auf „Veranstaltung wählen“. Öffne den Tab „Meine Veranstaltungen“ und wähle „Neue Veranstaltung erstellen“.
 
-Trag einen Namen, das Startdatum und das Enddatum ein. Unter „Wer die Veranstaltung sehen kann“ ist „Privat“ vorgewählt, dann finden sie nur eingeladene Personen. Mit „Veranstaltung erstellen“ bist du zurück in der Auswahl, deine Veranstaltung ist schon markiert.
+Trag einen Namen, das Startdatum und das Enddatum ein. Bei „Zeitzone“ steht schon die Zone deines Geräts. Ändere sie, wenn die Veranstaltung woanders stattfindet, denn Schichtzeiten gelten in dieser Zone. Unter „Wer die Veranstaltung sehen kann“ ist „Privat“ vorgewählt, dann finden sie nur eingeladene Personen. Mit „Veranstaltung erstellen“ bist du zurück in der Auswahl, deine Veranstaltung ist schon markiert.
 
 Wähle „Weiter“, stell ein, wie du benachrichtigt werden möchtest, und schließe mit „Einrichtung abschließen“ ab.
 

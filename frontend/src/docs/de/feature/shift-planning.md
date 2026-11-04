@@ -18,6 +18,8 @@ Ein Plan hat drei Ebenen:
 
 Aufgaben lassen sich nur innerhalb des Zeitraums der Veranstaltung planen.
 
+Jede Veranstaltung hat eine Zeitzone, und Schichtzeiten gelten in ihr: 10:00 Uhr heißt 10:00 Uhr vor Ort, egal wo jemand den Plan öffnet. Ist das Gerät auf eine andere Zone eingestellt, steht das als kurzer Hinweis bei der Aufgabe und bei der eigenen Buchung. Änderst du die Zone später, bleibt eine Schicht um 10:00 Uhr um 10:00 Uhr, und Erinnerungen und Kalender richten sich danach.
+
 WirkSam zeigt dir immer eine Veranstaltung auf einmal. Aufgaben, Schichten und Buchungen gehören dann zu dieser einen, du musst also nicht nach der richtigen Liste suchen. Wer bei mehreren mitmacht, wechselt oben in der Seitenleiste oder auf dem Handy unter „Mehr“ mit „Veranstaltung wechseln“. Ist eine Veranstaltung vorbei, fragt WirkSam nach der nächsten.
 
 ## Schichten aus einem Muster

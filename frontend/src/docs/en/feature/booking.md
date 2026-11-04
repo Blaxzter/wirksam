@@ -70,7 +70,7 @@ Organisers see under "Team availability" who can help at which hour. If they've 
 
 In your profile menu, open "Account" and then "Calendar", and choose "Enable calendar sync". After that there are buttons for "Google Calendar", "Apple Calendar" and "Outlook", and "Add manually with URL" for anything else.
 
-The calendar shows all your booked shifts from all your events. New ones appear and cancelled ones disappear the next time your calendar app checks. How often that is depends on the app. The entries carry your default reminders as alarms, or one hour before if you have none, and here too it's up to the app whether it shows them.
+The calendar shows all your booked shifts from all your events, at the right moment even if you're somewhere else, because each entry carries its event's time zone. New ones appear and cancelled ones disappear the next time your calendar app checks. How often that is depends on the app. The entries carry your default reminders as alarms, or one hour before if you have none, and here too it's up to the app whether it shows them.
 
 The link is personal: anyone who has it can see your shifts. "Regenerate URL" makes the old one stop working, and the switch pauses it all.
 

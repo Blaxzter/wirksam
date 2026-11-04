@@ -8,7 +8,7 @@ related: feature/shift-planning, guide/volunteer-start, guide/people-in-charge, 
 
 After registering you land on "Select an event". On a phone, tap "Pick your event" first. Open the "My events" tab and choose "Create new event".
 
-Enter a name, a start date and an end date. Under "Who can see this event", "Private" is selected, so only people you invite can find it. "Create event" takes you back to the list with your event already marked.
+Enter a name, a start date and an end date. "Time zone" is filled in with your device's zone. Change it if the event takes place somewhere else, because shift times count in that zone. Under "Who can see this event", "Private" is selected, so only people you invite can find it. "Create event" takes you back to the list with your event already marked.
 
 Choose "Continue", set how you'd like to be notified, and finish with "Finish setup".
 

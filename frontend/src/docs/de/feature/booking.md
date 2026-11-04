@@ -70,7 +70,7 @@ Organisator:innen sehen unter „Verfügbarkeiten der Mitglieder“, wer zu welc
 
 Öffne im Profilmenü „Konto“ und dann „Kalender“, und wähle „Kalender-Synchronisation aktivieren“. Danach gibt es Knöpfe für „Google Kalender“, „Apple Kalender“ und „Outlook“, für alles andere „Manuell mit URL hinzufügen“.
 
-Im Kalender stehen alle gebuchten Schichten aus allen deinen Veranstaltungen. Neue kommen dazu und abgesagte verschwinden, sobald deine Kalender-App wieder nachschaut. Wie oft das ist, entscheidet die App. Die Termine tragen deine Standard-Erinnerungen als Alarm, ohne solche eine Stunde vorher, und auch hier entscheidet die App, ob sie ihn zeigt.
+Im Kalender stehen alle gebuchten Schichten aus allen deinen Veranstaltungen, auch von woanders aus zur richtigen Zeit, weil jeder Termin die Zeitzone seiner Veranstaltung mitbringt. Neue kommen dazu und abgesagte verschwinden, sobald deine Kalender-App wieder nachschaut. Wie oft das ist, entscheidet die App. Die Termine tragen deine Standard-Erinnerungen als Alarm, ohne solche eine Stunde vorher, und auch hier entscheidet die App, ob sie ihn zeigt.
 
 Der Link ist persönlich: Wer ihn kennt, sieht deine Schichten. „URL erneuern“ macht den alten ungültig, und der Schalter pausiert das Ganze.
 

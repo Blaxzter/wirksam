@@ -252,10 +252,16 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
   `SANDBOX_MAX_ACTIVE` (25) tune the "check out a test event" demo. The first is
   also served to the browser as runtime config, so the landing page never shows
   a button the backend would refuse — see [`docs/SANDBOX.md`](docs/SANDBOX.md)
-- `EVENT_TIMEZONE` (IANA name, default `Europe/Berlin`) is the zone shift times are read in.
+- `EVENT_TIMEZONE` (IANA name, default `Europe/Berlin`) is the zone a new event starts with,
+  and what a task without an event is read in. Each event has its own (`events.timezone`).
   Shift dates and times carry no zone; "has this shift started / ended" compares them with
-  `app/logic/clock.py::wall_clock_now()`. Stored timestamps stay naive UTC (`clock.utc_now()`).
-  An unknown name refuses to boot. Tests patch `app.logic.clock.wall_clock_now`
+  `app/logic/clock.py::wall_clock_now(zone)`, passing the zone of the event the shift belongs
+  to. A view across events judges each shift on its own clock, in one query
+  (`crud/shift.py`: `wall_clocks`, `on_own_clock`). Moving a shift or changing an event's zone
+  must call `crud_reminder.reschedule`, and changing the zone settles earnings first. Stored
+  timestamps stay naive UTC (`clock.utc_now()`). An unknown name refuses to boot, or is a 422 on
+  an event. Tests patch `app.logic.clock.wall_clock_now` with something taking the zone
+  (`tests/fixtures/clock.py`)
 - `STORAGE_BACKEND` decides where uploaded files live: `.env.example` sets `s3` with the bundled
   Garage container (`COMPOSE_PROFILES=s3`; `just dev local` starts it), the code default is
   `postgres`. Rows hold a `storage_key`; read and write through `app/core/storage.py`, never a

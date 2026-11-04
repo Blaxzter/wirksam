@@ -5,8 +5,9 @@
  * rule of the shift history check, so the buttons the server would refuse
  * (booking or cancelling a shift that is over, booking a voucher shift that has
  * started) are hidden instead of offered. The server stays the authority: it
- * compares in the event's time zone, and the browser's clock is close enough
- * to decide what to show.
+ * compares in the event's time zone. For someone in that zone the browser's
+ * clock says the same; someone far away can be offered a button the server
+ * refuses, or not be offered one it would allow.
  *
  * Dates arrive as `YYYY-MM-DD`, times as `HH:MM` or `HH:MM:SS`, with no zone.
  */
