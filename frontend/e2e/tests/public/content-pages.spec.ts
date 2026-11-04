@@ -81,10 +81,103 @@ test.describe('club festival page', () => {
   })
 })
 
+test.describe('feature pages and guides', () => {
+  test('the overview groups the feature pages and leads to one', async ({ page }) => {
+    await page.goto('/features')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('What WirkSam can do')
+    await expect(page).toHaveTitle(/All features/)
+    await expect(page.locator('[data-testid^="docs-group-"]')).toHaveCount(5)
+    await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(10)
+
+    await page.getByTestId('doc-card-featureVouchers').click()
+    await expect(page).toHaveURL(/\/features\/vouchers$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Vouchers instead of paper')
+  })
+
+  test('a feature page explains in sections, with the FAQ and links to read on', async ({
+    page,
+  }) => {
+    await page.goto('/features/vouchers')
+    await expect(page).toHaveTitle(/vouchers/i)
+    await expect(page.getByTestId('content-cta-primary')).toBeVisible()
+    await expect(page.locator('[data-testid="doc-body"] h2').first()).toBeVisible()
+
+    const item = page.locator('#faq details').first()
+    await item.locator('summary').scrollIntoViewIfNeeded()
+    await expect(item.locator('p')).toBeHidden()
+    await item.locator('summary').click()
+    await expect(item.locator('p')).toBeVisible()
+
+    await page.getByTestId('doc-related-guideVouchers').click()
+    await expect(page).toHaveURL(/\/guides\/vouchers$/)
+  })
+
+  test('a guide numbers its steps and gets straight to them', async ({ page }) => {
+    await page.goto('/guides/vouchers')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Set up vouchers')
+    await expect(page.getByTestId('doc-body').locator('ol').first().locator('> li')).toHaveCount(5)
+    await expect(page.getByTestId('content-cta-primary')).toBeHidden()
+
+    await page.getByTestId('doc-hub-link').click()
+    await expect(page).toHaveURL(/\/guides$/)
+    await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(8)
+  })
+
+  test('a link in the text stays in the app and in German', async ({ page }) => {
+    await page.goto('/de/features/vouchers')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Marken statt Papier')
+    await page.evaluate(() => ((window as unknown as { sameApp: boolean }).sameApp = true))
+
+    await page.getByTestId('doc-body').getByRole('link', { name: 'Team', exact: true }).click()
+    await expect(page).toHaveURL(/\/de\/features\/teams$/)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Team')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+    // Still the same document: the link was followed by the router, not a reload.
+    expect(await page.evaluate(() => (window as unknown as { sameApp?: boolean }).sameApp)).toBe(
+      true,
+    )
+  })
+
+  test('a screenshot opens large, and a phone capture keeps its shape', async ({ page }) => {
+    await page.goto('/features/vouchers')
+    const phone = page.getByTestId('doc-body').locator('img[src*="vouchers-my"]')
+    await phone.scrollIntoViewIfNeeded()
+    await expect(phone).toHaveAttribute('width', '780')
+    await phone.click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByRole('dialog').locator('img')).toHaveAttribute('src', /vouchers-my/)
+  })
+
+  test('fits a phone without sideways scrolling', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 })
+    for (const path of ['/features', '/features/vouchers', '/guides/vouchers']) {
+      await page.goto(path)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      expect(overflow, path).toBeLessThanOrEqual(0)
+    }
+  })
+
+  test('the landing page and the header lead there', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('landing-all-features').click()
+    await expect(page).toHaveURL(/\/features$/)
+    await page.getByTestId('nav-guides').click()
+    await expect(page).toHaveURL(/\/guides$/)
+  })
+})
+
 test.describe('links into the content pages', () => {
-  test('the footer of every public page links to both', async ({ page }) => {
+  test('the footer of every public page links to them', async ({ page }) => {
     await page.goto('/terms')
     const footer = page.getByRole('contentinfo')
+    await footer.getByRole('link', { name: 'Features' }).click()
+    await expect(page).toHaveURL(/\/features$/)
+    await footer.getByRole('link', { name: 'Guides' }).click()
+    await expect(page).toHaveURL(/\/guides$/)
     await footer.getByRole('link', { name: 'Compare alternatives' }).click()
     await expect(page).toHaveURL(/\/alternatives$/)
     await footer.getByRole('link', { name: 'Club festivals' }).click()
