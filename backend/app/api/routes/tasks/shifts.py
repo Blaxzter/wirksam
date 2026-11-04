@@ -61,7 +61,6 @@ router = APIRouter()
 async def _task_read(session: AsyncSession, user: User, task: Task) -> TaskRead:
     """The task inside a write response, with its viewer-relative fields."""
     read = TaskRead.model_validate(task)
-    read.event_timezone = await crud_event.zone_of(session, task.event_id)
     await decorate_task_reads(session, user, [read])
     return read
 

@@ -1378,6 +1378,147 @@ class TestClashesWithOneZoneInUse:
         assert not any("zone_event" in statement for statement in statements)
 
 
+# ── The reads name the zone ───────────────────────────────────────
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("as_organiser")
+class TestTheReadsNameTheZone:
+    """So a client can work out what the server would refuse, in the event's time
+    rather than the browser's. Every read here spans events, so each row has to
+    carry its own."""
+
+    @pytest_asyncio.fixture
+    async def shifts(
+        self,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        tokyo: Event,
+        honolulu: Event,
+    ) -> dict[str, Shift]:
+        out: dict[str, Shift] = {}
+        for event in (tokyo, honolulu):
+            task = await _task(db_session, event, test_admin_user)
+            # Both booked and open shifts: the dashboard lists them apart.
+            booked = await _shift(db_session, task, LATER, dt.time(10), dt.time(11))
+            await _book(db_session, booked, test_user)
+            await _shift(db_session, task, LATER, dt.time(12), dt.time(13))
+            out[event.timezone] = booked
+        return out
+
+    async def test_a_shift(
+        self, async_client: AsyncClient, shifts: dict[str, Shift]
+    ) -> None:
+        for zone, shift in shifts.items():
+            r = await async_client.get(f"/api/v1/shifts/{shift.id}")
+            assert r.json()["event_timezone"] == zone
+
+    async def test_a_tasks_shifts(
+        self, async_client: AsyncClient, shifts: dict[str, Shift]
+    ) -> None:
+        for zone, shift in shifts.items():
+            r = await async_client.get(
+                "/api/v1/shifts/", params={"task_id": str(shift.task_id)}
+            )
+            assert {s["event_timezone"] for s in r.json()["items"]} == {zone}
+
+    async def test_the_task_list(
+        self, async_client: AsyncClient, shifts: dict[str, Shift]
+    ) -> None:
+        r = await async_client.get("/api/v1/tasks/", params={"all_events": True})
+
+        zones = {t["id"]: t["event_timezone"] for t in r.json()["items"]}
+        for zone, shift in shifts.items():
+            assert zones[str(shift.task_id)] == zone
+
+    @pytest.mark.parametrize("view", ["list", "cards"])
+    async def test_the_task_feed(
+        self, async_client: AsyncClient, shifts: dict[str, Shift], view: str
+    ) -> None:
+        r = await async_client.get(
+            "/api/v1/tasks/feed", params={"view": view, "all_events": True}
+        )
+
+        zones = {t["id"]: t["event_timezone"] for t in r.json()["items"]}
+        for zone, shift in shifts.items():
+            assert zones[str(shift.task_id)] == zone
+
+    async def test_my_bookings(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        test_user: User,
+        shifts: dict[str, Shift],
+    ) -> None:
+        with act_as(app, test_user):
+            r = await async_client.get(
+                "/api/v1/bookings/me", params={"all_events": True}
+            )
+
+        zones = {
+            b["shift"]["id"]: b["shift"]["event_timezone"] for b in r.json()["items"]
+        }
+        for zone, shift in shifts.items():
+            assert zones[str(shift.id)] == zone
+
+    async def test_the_dashboard(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        test_user: User,
+        tokyo: Event,
+        shifts: dict[str, Shift],
+    ) -> None:
+        test_user.selected_event_id = tokyo.id
+        db_session.add(test_user)
+        await db_session.flush()
+
+        with act_as(app, test_user):
+            r = await async_client.get("/api/v1/dashboard/feed")
+
+        mine = {s["shift_id"]: s["event_timezone"] for s in r.json()["my_shifts"]}
+        for zone, shift in shifts.items():
+            assert mine[str(shift.id)] == zone
+        assert {s["event_timezone"] for s in r.json()["open_shifts"]} == {TOKYO}
+
+    async def test_a_locations_shifts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        tokyo: Event,
+        shifts: dict[str, Shift],
+    ) -> None:
+        location = Location(event_id=tokyo.id, name="Bar")
+        db_session.add(location)
+        await db_session.flush()
+        shift = shifts[TOKYO]
+        shift.location_id = location.id
+        db_session.add(shift)
+        await db_session.flush()
+
+        r = await async_client.get(
+            f"/api/v1/locations/{location.id}/shifts", params={"on": LATER.isoformat()}
+        )
+
+        assert [s["event_timezone"] for s in r.json()] == [TOKYO]
+
+    async def test_a_task_without_an_event_says_none(
+        self,
+        async_client: AsyncClient,
+        as_admin: None,
+        db_session: AsyncSession,
+        test_admin_user: User,
+    ) -> None:
+        task = await _task(db_session, None, test_admin_user)
+
+        r = await async_client.get(f"/api/v1/tasks/{task.id}")
+
+        assert r.status_code == 200, r.text
+        assert r.json()["event_timezone"] is None
+
+
 # ── Today, where the event is ─────────────────────────────────────
 
 

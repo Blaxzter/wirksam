@@ -168,7 +168,6 @@ async def get_task(
 async def _decorated(session: AsyncSession, user: User, task: Task) -> TaskRead:
     """A task read with its viewer-relative fields (team lock, access) filled."""
     read = TaskRead.model_validate(task)
-    read.event_timezone = await crud_event.zone_of(session, task.event_id)
     await decorate_task_reads(session, user, [read])
     return read
 

@@ -91,7 +91,12 @@ async def list_my_bookings(
         bws = BookingReadWithShift.model_validate(b)
         if b.shift is not None:
             slot_summary = ShiftSummary.model_validate(b.shift)
-            slot_summary.task_name = b.shift.task.name if b.shift.task else None
+            task = b.shift.task
+            slot_summary.task_name = task.name if task else None
+            # Loaded with the shift (``with_shift``), so no query per booking.
+            slot_summary.event_timezone = (
+                task.event.timezone if task and task.event else None
+            )
             bws.shift = slot_summary
         enriched.append(bws)
 

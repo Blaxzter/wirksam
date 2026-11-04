@@ -54,6 +54,7 @@ class _TaskAccessEntry(Protocol):
 
 
 class _TaskReadEntry(_TaskAccessEntry, Protocol):
+    event_timezone: str | None
     team_name: str | None
     team_requires_approval: bool | None
     my_team_status: TeamMemberStatus | None

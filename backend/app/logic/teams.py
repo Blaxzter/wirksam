@@ -13,6 +13,7 @@ from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
 from app.logic.permissions import get_event_role, role_at_least
 from app.logic.team_requirements import add_years
+from app.models.event import Event
 from app.models.event_team import EventTeam, EventTeamCheck, EventTeamRequirement
 from app.models.task import Task
 from app.models.user import User
@@ -50,6 +51,8 @@ class TeamLock:
     """What a task's team means for one viewer."""
 
     event_id: uuid.UUID | None
+    #: The zone of the task's event, which its shift times are in.
+    event_timezone: str | None = None
     team_id: uuid.UUID | None = None
     team_name: str | None = None
     requires_approval: bool | None = None
@@ -77,37 +80,47 @@ async def team_locks(
             select(
                 col(Task.id),
                 col(Task.event_id),
+                col(Event.timezone),
                 col(EventTeam.id),
                 col(EventTeam.name),
                 col(EventTeam.requires_approval),
             )
+            .outerjoin(Event, col(Event.id) == col(Task.event_id))
             .outerjoin(EventTeam, col(EventTeam.id) == col(Task.team_id))
             .where(col(Task.id).in_(ids))
         )
     ).all()
-    # An outer join: the team columns are NULL for a task without a team,
-    # whatever the column types say.
+    # Outer joins: the team columns are NULL for a task without a team, and the
+    # zone for one without an event, whatever the column types say.
     typed = [
-        (task_id, event_id, cast(uuid.UUID | None, team_id), name, approval)
-        for task_id, event_id, team_id, name, approval in rows
+        (
+            task_id,
+            event_id,
+            cast(str | None, zone),
+            cast(uuid.UUID | None, team_id),
+            name,
+            approval,
+        )
+        for task_id, event_id, zone, team_id, name, approval in rows
     ]
-    gated = [r for r in typed if r[2] is not None]
+    gated = [r for r in typed if r[3] is not None]
     admin_events = {
         event_id
         for event_id in {r[1] for r in gated}
         if role_at_least(await get_event_role(user, session, event_id), "admin")
     }
     mine = await crud_team.rows_for_user(
-        session, user_id=user.id, team_ids=[r[2] for r in gated if r[2] is not None]
+        session, user_id=user.id, team_ids=[r[3] for r in gated if r[3] is not None]
     )
     out: dict[uuid.UUID, TeamLock] = {}
-    for task_id, event_id, team_id, team_name, requires_approval in typed:
+    for task_id, event_id, zone, team_id, team_name, requires_approval in typed:
         if team_id is None:
-            out[task_id] = TeamLock(event_id=event_id)
+            out[task_id] = TeamLock(event_id=event_id, event_timezone=zone)
             continue
         row = mine.get(team_id)
         out[task_id] = TeamLock(
             event_id=event_id,
+            event_timezone=zone,
             team_id=team_id,
             team_name=team_name,
             requires_approval=requires_approval,
@@ -123,6 +136,7 @@ async def team_locks(
 class _ShiftEntry(Protocol):
     task_id: uuid.UUID
     event_id: uuid.UUID | None
+    event_timezone: str | None
     team_id: uuid.UUID | None
     team_name: str | None
     team_requires_approval: bool | None
@@ -134,6 +148,7 @@ def apply_lock(entry: _ShiftEntry, lock: TeamLock | None) -> None:
     if lock is None:
         return
     entry.event_id = lock.event_id
+    entry.event_timezone = lock.event_timezone
     entry.team_id = lock.team_id
     entry.team_name = lock.team_name
     entry.team_requires_approval = lock.requires_approval
@@ -144,7 +159,8 @@ def apply_lock(entry: _ShiftEntry, lock: TeamLock | None) -> None:
 async def mark_team_locks(
     session: AsyncSession, user: User, entries: Sequence[_ShiftEntry]
 ) -> None:
-    """Fill the team fields and ``event_id`` on shifts, like mark_collisions."""
+    """Fill the team fields, ``event_id`` and ``event_timezone`` on shifts, like
+    mark_collisions."""
     locks = await team_locks(session, user, (e.task_id for e in entries))
     for entry in entries:
         apply_lock(entry, locks.get(entry.task_id))
@@ -152,6 +168,7 @@ async def mark_team_locks(
 
 class _TaskEntry(Protocol):
     id: uuid.UUID
+    event_timezone: str | None
     team_name: str | None
     team_requires_approval: bool | None
     my_team_status: TeamMemberStatus | None
@@ -161,11 +178,15 @@ class _TaskEntry(Protocol):
 async def mark_task_locks(
     session: AsyncSession, user: User, tasks: Sequence[_TaskEntry]
 ) -> dict[uuid.UUID, TeamLock]:
-    """Fill the team fields on task reads; returns the locks for reuse."""
+    """Fill the team fields and ``event_timezone`` on task reads; returns the
+    locks for reuse."""
     locks = await team_locks(session, user, (t.id for t in tasks))
     for task in tasks:
         lock = locks.get(task.id)
-        if lock is None or lock.team_id is None:
+        if lock is None:
+            continue
+        task.event_timezone = lock.event_timezone
+        if lock.team_id is None:
             continue
         task.team_name = lock.team_name
         task.team_requires_approval = lock.requires_approval

@@ -152,6 +152,7 @@ async def _load_my_shifts(
             col(Task.name).label("task_name"),
             col(Event.id).label("event_id"),
             col(Event.name).label("event_name"),
+            col(Event.timezone).label("event_timezone"),
             _confirmed_count_sq().label("taken"),
         )
         .join(Shift, col(Booking.shift_id) == col(Shift.id))
@@ -175,6 +176,7 @@ async def _load_my_shifts(
             task_name=r.task_name,
             event_id=r.event_id,
             event_name=r.event_name,
+            event_timezone=r.event_timezone,
             title=r.title,
             date=r.date,
             start_time=r.start_time,
@@ -236,6 +238,7 @@ async def _load_open_shifts(
             col(Task.name).label("task_name"),
             col(Event.id).label("event_id"),
             col(Event.name).label("event_name"),
+            col(Event.timezone).label("event_timezone"),
             taken_sq.label("taken"),
         )
         .join(Task, col(Shift.task_id) == col(Task.id))
@@ -269,6 +272,7 @@ async def _load_open_shifts(
             task_name=r.task_name,
             event_id=r.event_id,
             event_name=r.event_name,
+            event_timezone=r.event_timezone,
             title=r.title,
             date=r.date,
             start_time=r.start_time,
