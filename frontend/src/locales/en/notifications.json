@@ -227,7 +227,7 @@
         },
         "shift": {
             "starting_soon_unfilled": {
-                "description": "When a shift starts soon but still has open spots",
+                "description": "When a shift in an event you run starts soon but still has open places",
                 "name": "Shift Starting Soon (Unfilled)"
             },
             "time_changed": {

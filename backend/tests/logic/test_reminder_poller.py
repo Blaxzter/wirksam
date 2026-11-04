@@ -863,6 +863,25 @@ class TestRunReminderPoller:
         unlock_sql = str(db.execute.await_args_list[1].args[0])
         assert "pg_advisory_unlock" in unlock_sql
 
+    async def test_looks_for_unfilled_shifts_on_its_own_turn(self) -> None:
+        """Every few cycles the same worker checks for shifts about to start
+        with places open, so nothing else has to schedule that."""
+        db = _advisory_lock_session(acquired=True)
+        mock_check = AsyncMock(return_value=0)
+        # Three cycles, and the check's turn comes on the second.
+        sleep = AsyncMock(side_effect=[None, None, asyncio.CancelledError])
+
+        with (
+            _patched_session(db),
+            patch(f"{MODULE}.asyncio", _fake_asyncio(sleep)),
+            patch(f"{MODULE}._poll_cycle", AsyncMock(return_value=0)),
+            patch(f"{MODULE}.check_upcoming_shifts", mock_check),
+            patch(f"{MODULE}._UNFILLED_EVERY_N_CYCLES", 2),
+        ):
+            await run_reminder_poller()
+
+        mock_check.assert_awaited_once()
+
     async def test_swallows_unexpected_cycle_errors(self) -> None:
         """A crashing cycle is logged and the loop carries on to the next sleep."""
         db = _advisory_lock_session(acquired=True)

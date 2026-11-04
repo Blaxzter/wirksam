@@ -19,6 +19,10 @@
     "title": "Booking Cancelled by Admin",
     "body": "Your booking for \"{slot_title}\"{task_label} was cancelled by an administrator.{detail}"
   },
+  "shift.starting_soon_unfilled": {
+    "title": "Shift starting soon with open places",
+    "body": "\"{slot_title}\" starts in about {minutes} minutes. {confirmed} of {max_bookings} places are taken."
+  },
   "shift.time_changed": {
     "title": "Shift Time Changed",
     "body": "The time for shift \"{slot_title}\" has been updated. Please check the new schedule."

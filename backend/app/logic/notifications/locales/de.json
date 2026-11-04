@@ -19,6 +19,10 @@
     "title": "Buchung durch Admin storniert",
     "body": "Deine Buchung für „{slot_title}“{task_label} wurde von einem Administrator storniert.{detail}"
   },
+  "shift.starting_soon_unfilled": {
+    "title": "Schicht beginnt bald mit freien Plätzen",
+    "body": "„{slot_title}“ beginnt in etwa {minutes} Minuten. {confirmed} von {max_bookings} Plätzen sind besetzt."
+  },
   "shift.time_changed": {
     "title": "Schichtzeit geändert",
     "body": "Die Schicht „{slot_title}“ hat eine neue Zeit. Bitte prüfe den neuen Zeitplan."

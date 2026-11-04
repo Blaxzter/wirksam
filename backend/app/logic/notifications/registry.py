@@ -101,10 +101,12 @@ BOOKING_REMINDER = NotificationTypeDef(
 SHIFT_STARTING_SOON_UNFILLED = NotificationTypeDef(
     code="shift.starting_soon_unfilled",
     name="Shift Starting Soon (Unfilled)",
-    description="Alert when a shift starts in 30 minutes but still has open spots",
+    description=(
+        "Alert the event's organisers when a shift starts in 30 minutes "
+        "but still has open spots"
+    ),
     category="shift",
     classification="reminder",
-    is_admin_only=True,
     default_channels=["email", "push"],
 )
 

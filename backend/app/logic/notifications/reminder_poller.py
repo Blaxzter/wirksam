@@ -1,5 +1,8 @@
 """Background poller that dispatches due booking reminders.
 
+It also runs the check for shifts about to start with places open
+(``unfilled_shifts``), for the same one worker.
+
 Runs as an asyncio task started during the FastAPI lifespan.
 Uses a PostgreSQL advisory lock so only one worker in a multi-process
 deployment runs the poller.
@@ -19,6 +22,7 @@ from app.logic.notifications.messages import (
     shift_times,
 )
 from app.logic.notifications.service import NotificationService
+from app.logic.notifications.unfilled_shifts import check_upcoming_shifts
 from app.models.booking_reminder import BookingReminder
 from app.models.shift import Shift
 
@@ -32,6 +36,9 @@ _POLL_INTERVAL = 30
 
 # Run cleanup every N poll cycles (~50 min at 30s interval)
 _CLEANUP_EVERY_N_CYCLES = 100
+
+# Look for shifts about to start with places open every N poll cycles (~5 min)
+_UNFILLED_EVERY_N_CYCLES = 10
 
 
 async def _process_reminder(reminder: BookingReminder) -> None:
@@ -157,6 +164,14 @@ async def _cleanup_cycle() -> None:
             await db.rollback()
 
 
+async def _unfilled_cycle() -> None:
+    """Alert organisers about unfilled shifts; a failure waits for the next turn."""
+    try:
+        await check_upcoming_shifts()
+    except Exception:
+        logger.exception("Failed to check for unfilled shifts")
+
+
 async def run_reminder_poller() -> None:
     """Main poller loop. Acquires advisory lock, then polls forever."""
     # Try to acquire advisory lock (non-blocking)
@@ -182,6 +197,8 @@ async def run_reminder_poller() -> None:
                     logger.debug(f"Processed {processed} reminders")
 
                 cycle_count += 1
+                if cycle_count % _UNFILLED_EVERY_N_CYCLES == 0:
+                    await _unfilled_cycle()
                 if cycle_count >= _CLEANUP_EVERY_N_CYCLES:
                     await _cleanup_cycle()
                     cycle_count = 0

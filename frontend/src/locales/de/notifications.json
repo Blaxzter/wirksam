@@ -227,7 +227,7 @@
         },
         "shift": {
             "starting_soon_unfilled": {
-                "description": "Wenn eine Schicht bald beginnt, aber noch freie Plätze hat",
+                "description": "Wenn eine Schicht in deiner Veranstaltung bald beginnt und noch Plätze frei sind",
                 "name": "Schicht beginnt bald (unbesetzt)"
             },
             "time_changed": {
