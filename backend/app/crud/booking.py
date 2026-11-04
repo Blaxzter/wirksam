@@ -90,7 +90,9 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             )
         if with_shift:
             query = query.options(
-                selectinload(Booking.shift).selectinload(Shift.task)  # type: ignore[arg-type]
+                selectinload(Booking.shift)  # type: ignore[arg-type]
+                .selectinload(Shift.task)  # type: ignore[arg-type]
+                .selectinload(Task.event)  # type: ignore[arg-type]
             )
         query = query.order_by(col(Booking.created_at).desc()).offset(skip).limit(limit)
         result = await db.execute(query)

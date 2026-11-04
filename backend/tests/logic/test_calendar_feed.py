@@ -2,7 +2,11 @@
 
 import datetime as dt
 from types import SimpleNamespace
+from typing import Any
 
+import pytest
+
+from app.core.config import settings
 from app.logic.calendar_feed import build_calendar
 
 
@@ -142,3 +146,71 @@ class TestBuildCalendar:
 
         text = ical_bytes.decode("utf-8")
         assert text.count("BEGIN:VEVENT") == 2
+
+
+def _in_zone(zone: str, **kwargs: Any) -> SimpleNamespace:
+    booking = _make_booking(**kwargs)
+    booking.shift.task.event = SimpleNamespace(timezone=zone)
+    return booking
+
+
+class TestTimeZones:
+    def test_times_carry_the_events_zone(self) -> None:
+        ics = build_calendar([_in_zone("Asia/Tokyo")]).decode()  # type: ignore[list-item]
+        assert "DTSTART;TZID=Asia/Tokyo:20260601T090000" in ics
+        assert "DTEND;TZID=Asia/Tokyo:20260601T120000" in ics
+
+    def test_the_zone_is_described_ahead_of_the_events(self) -> None:
+        ics = build_calendar([_in_zone("Europe/Lisbon")]).decode()  # type: ignore[list-item]
+        assert ics.index("BEGIN:VTIMEZONE") < ics.index("BEGIN:VEVENT")
+        assert "TZID:Europe/Lisbon" in ics
+
+    def test_only_the_stretch_it_needs(self) -> None:
+        """The library's default runs from 1970 to 2038, on every refresh."""
+        ics = build_calendar([_in_zone("Europe/Berlin")]).decode()  # type: ignore[list-item]
+        assert ics.count("BEGIN:DAYLIGHT") + ics.count("BEGIN:STANDARD") <= 2
+
+    def test_a_task_without_an_event_uses_the_setting(self) -> None:
+        ics = build_calendar([_make_booking()]).decode()  # type: ignore[list-item]
+        assert f"DTSTART;TZID={settings.EVENT_TIMEZONE}:20260601T090000" in ics
+
+    def test_several_zones_each_get_a_description(self) -> None:
+        ics = build_calendar(
+            [_in_zone("Asia/Tokyo"), _in_zone("Pacific/Honolulu")]  # type: ignore[list-item]
+        ).decode()
+        assert ics.count("BEGIN:VTIMEZONE") == 2
+
+    def test_an_all_day_shift_has_no_zone(self) -> None:
+        ics = build_calendar(
+            [_in_zone("Asia/Tokyo", start_time=None, end_time=None)]  # type: ignore[list-item]
+        ).decode()
+        assert "TZID" not in ics
+        assert "DTSTART;VALUE=DATE:20260601" in ics
+
+    @pytest.mark.parametrize(
+        "zone",
+        [
+            "UTC",
+            "Etc/GMT+12",
+            "Asia/Kathmandu",
+            "Pacific/Apia",
+            "Africa/Casablanca",
+            "Australia/Lord_Howe",
+            "America/St_Johns",
+        ],
+    )
+    def test_an_unusual_zone_does_not_break_the_feed(self, zone: str) -> None:
+        assert b"BEGIN:VEVENT" in build_calendar([_in_zone(zone)])  # type: ignore[list-item]
+
+
+class TestOvernightShifts:
+    def test_an_end_before_the_start_is_the_next_morning(self) -> None:
+        ics = build_calendar(
+            [_in_zone("Asia/Tokyo", start_time=dt.time(22), end_time=dt.time(2))]  # type: ignore[list-item]
+        ).decode()
+        assert "DTSTART;TZID=Asia/Tokyo:20260601T220000" in ics
+        assert "DTEND;TZID=Asia/Tokyo:20260602T020000" in ics
+
+    def test_a_shift_within_its_day_ends_on_it(self) -> None:
+        ics = build_calendar([_in_zone("Asia/Tokyo")]).decode()  # type: ignore[list-item]
+        assert "DTEND;TZID=Asia/Tokyo:20260601T120000" in ics
