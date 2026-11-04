@@ -218,34 +218,38 @@ async def dispatch_task_published(
     event_id: uuid.UUID | None = None,
     is_sandbox: bool = False,
 ) -> None:
-    """Notify all active users that a task was published.
+    """Notify the active members of the task's event that it was published.
 
-    ``is_sandbox`` is a hard stop rather than a filter on the recipient list.
-    This fans out to *every active account on the installation*, and a demo
-    guest flipping a seeded task from draft to published - which the manager
-    tour walks them through - would otherwise put the name of their throwaway
-    task in front of the entire user base.
+    Deliberately not everyone on the platform, for the same reason as
+    ``dispatch_event_published``: with open signup and private events, it would
+    put task names in front of strangers. A task without an event has nobody to
+    tell.
+
+    ``is_sandbox`` is a hard stop: a demo guest publishing a seeded task, which
+    the manager tour walks them through, has no need for an e-mail about it.
     """
-    if is_sandbox:
+    if is_sandbox or event_id is None:
         return
     try:
         from sqlalchemy import select
         from sqlmodel import col
 
+        from app.models.event_membership import EventMembership
         from app.models.user import User
 
         async with async_session() as db:
             result = await db.execute(
-                select(User).where(col(User.is_active) == True)  # noqa: E712
+                select(col(EventMembership.user_id))
+                .join(User, col(User.id) == col(EventMembership.user_id))
+                .where(
+                    col(EventMembership.event_id) == event_id,
+                    col(User.is_active) == True,  # noqa: E712
+                )
             )
-            users = result.scalars().all()
-            user_ids = [u.id for u in users]
+            user_ids = list(result.scalars().all())
 
             if user_ids:
                 svc = NotificationService(db)
-                scope_chain: list[tuple[str, uuid.UUID]] = [("task", task_id)]
-                if event_id:
-                    scope_chain.append(("event", event_id))
                 await svc.notify(
                     recipient_ids=user_ids,
                     type_code="task.published",
@@ -253,7 +257,7 @@ async def dispatch_task_published(
                         "task.published", lang, task_name=task_name
                     ),
                     data={"task_id": str(task_id)},
-                    scope_chain=scope_chain,
+                    scope_chain=[("task", task_id), ("event", event_id)],
                 )
                 await db.commit()
     except Exception:
