@@ -31,6 +31,13 @@ from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.event_team import (
+    EventTeam,
+    EventTeamCheck,
+    EventTeamMember,
+    EventTeamRequirement,
+)
+from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.task_manager import TaskManager
@@ -1180,6 +1187,216 @@ class TestViewsAcrossEvents:
             assert (await async_client.get(url)).status_code == 200
 
         assert len(many) == len(few)
+
+
+# ── Today, where the event is ─────────────────────────────────────
+
+
+async def _ending(db: AsyncSession, event: Event, end: dt.date) -> Event:
+    event.end_date = end
+    db.add(event)
+    await db.flush()
+    return event
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("as_organiser")
+class TestAnEventsLastDay:
+    """30 June is today in Honolulu and was yesterday in Tokyo."""
+
+    async def test_the_read_says_expired_on_its_own_clock(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        honolulu: Event,
+        tokyo: Event,
+    ) -> None:
+        await _ending(db_session, honolulu, JUNE_30)
+        await _ending(db_session, tokyo, JUNE_30)
+
+        behind = await async_client.get(f"/api/v1/events/{honolulu.id}")
+        ahead = await async_client.get(f"/api/v1/events/{tokyo.id}")
+
+        assert behind.json()["is_expired"] is False
+        assert ahead.json()["is_expired"] is True
+
+    async def test_the_model_says_the_same(
+        self, db_session: AsyncSession, honolulu: Event, tokyo: Event
+    ) -> None:
+        assert (await _ending(db_session, honolulu, JUNE_30)).is_expired is False
+        assert (await _ending(db_session, tokyo, JUNE_30)).is_expired is True
+
+    @pytest.mark.parametrize("expired", [True, False])
+    async def test_the_list_filter_says_the_same(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        honolulu: Event,
+        tokyo: Event,
+        expired: bool,
+    ) -> None:
+        await _ending(db_session, honolulu, JUNE_30)
+        await _ending(db_session, tokyo, JUNE_30)
+
+        r = await async_client.get(
+            "/api/v1/events/", params={"scope": "mine", "is_expired": expired}
+        )
+
+        assert r.status_code == 200, r.text
+        ids = {e["id"] for e in r.json()["items"]}
+        assert (str(tokyo.id) in ids) is expired
+        assert (str(honolulu.id) in ids) is not expired
+        assert r.json()["total"] == len(ids)
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("as_organiser")
+class TestTheMapsDefaultDay:
+    """Without ``on``, the map shows today where the event is."""
+
+    async def _at_location(
+        self, db: AsyncSession, event: Event, owner: User, day: dt.date
+    ) -> Location:
+        location = Location(event_id=event.id, name="Bar")
+        db.add(location)
+        await db.flush()
+        task = await _task(db, event, owner)
+        shift = await _shift(db, task, day, dt.time(10), dt.time(11))
+        shift.location_id = location.id
+        db.add(shift)
+        await db.flush()
+        return location
+
+    @pytest.mark.parametrize(("zone", "listed"), [(HONOLULU, JUNE_30), (TOKYO, JULY_1)])
+    async def test_a_locations_shifts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        zone: str,
+        listed: dt.date,
+    ) -> None:
+        event = await _event(db_session, test_admin_user, test_user, zone=zone)
+        location = await self._at_location(db_session, event, test_admin_user, listed)
+
+        r = await async_client.get(f"/api/v1/locations/{location.id}/shifts")
+
+        assert r.status_code == 200, r.text
+        assert [s["date"] for s in r.json()] == [listed.isoformat()]
+
+    @pytest.mark.parametrize(("zone", "listed"), [(HONOLULU, JUNE_30), (TOKYO, JULY_1)])
+    async def test_the_maps_counts(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        zone: str,
+        listed: dt.date,
+    ) -> None:
+        event = await _event(db_session, test_admin_user, test_user, zone=zone)
+        location = await self._at_location(db_session, event, test_admin_user, listed)
+
+        r = await async_client.get(f"/api/v1/events/{event.id}/venue-map")
+
+        assert r.status_code == 200, r.text
+        assert r.json()["on"] == listed.isoformat()
+        stats = {s["location_id"]: s for s in r.json()["location_stats"]}
+        assert stats[str(location.id)]["shift_count"] == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("as_organiser")
+class TestATeamChecksDates:
+    """A check runs out on a date where the event is, and a document can be
+    issued as late as today there."""
+
+    async def _team(self, db: AsyncSession, event: Event) -> EventTeam:
+        team = EventTeam(event_id=event.id, name="Kasse", requires_approval=True)
+        db.add(team)
+        await db.flush()
+        return team
+
+    async def _requirement(
+        self, db: AsyncSession, team: EventTeam
+    ) -> EventTeamRequirement:
+        requirement = EventTeamRequirement(
+            team_id=team.id,
+            label="Führungszeugnis",
+            ask_issue_date=True,
+            valid_for_years=1,
+        )
+        db.add(requirement)
+        await db.flush()
+        return requirement
+
+    @pytest.mark.parametrize(("zone", "expired"), [(HONOLULU, False), (TOKYO, True)])
+    async def test_a_check_expires_on_its_events_day(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        zone: str,
+        expired: bool,
+    ) -> None:
+        event = await _event(db_session, test_admin_user, test_user, zone=zone)
+        team = await self._team(db_session, event)
+        requirement = await self._requirement(db_session, team)
+        member = EventTeamMember(
+            team_id=team.id, user_id=test_user.id, status="approved"
+        )
+        db_session.add(member)
+        await db_session.flush()
+        db_session.add(
+            EventTeamCheck(
+                member_id=member.id,
+                requirement_id=requirement.id,
+                checked_by_name="Someone",
+                checked_at=INSTANT,
+                expires_on=JUNE_30,
+            )
+        )
+        await db_session.flush()
+
+        r = await async_client.get(f"/api/v1/events/{event.id}/teams/{team.id}/members")
+
+        assert r.status_code == 200, r.text
+        [read] = r.json()
+        assert read["checks"][0]["expired"] is expired
+        assert read["needs_recheck"] is expired
+
+    @pytest.mark.parametrize(("zone", "allowed"), [(TOKYO, True), (HONOLULU, False)])
+    async def test_a_document_issued_today_there_is_not_in_the_future(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_admin_user: User,
+        test_user: User,
+        zone: str,
+        allowed: bool,
+    ) -> None:
+        """1 July has begun in Tokyo and is still to come in Honolulu."""
+        event = await _event(db_session, test_admin_user, test_user, zone=zone)
+        team = await self._team(db_session, event)
+        requirement = await self._requirement(db_session, team)
+
+        r = await async_client.post(
+            f"/api/v1/events/{event.id}/teams/{team.id}/members",
+            json={
+                "user_id": str(test_user.id),
+                "checks": [
+                    {
+                        "requirement_id": str(requirement.id),
+                        "issued_on": JULY_1.isoformat(),
+                    }
+                ],
+            },
+        )
+
+        assert r.status_code == (201 if allowed else 422), r.text
+        assert allowed or r.json()["code"] == "team.check_issued_in_future"
 
 
 @pytest.fixture

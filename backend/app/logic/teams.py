@@ -218,7 +218,7 @@ def validate_checks(
     checks: Sequence[TeamCheckIn],
     *,
     require_all: bool,
-    today: dt.date | None = None,
+    today: dt.date,
 ) -> list[ValidCheck]:
     """Turn the decider's ticks into checks to store, or raise a 422.
 
@@ -226,8 +226,8 @@ def validate_checks(
     requirement, with an issue date where the requirement asks for one —
     ``team.checks_missing`` names the rest. A future issue date, or one so old
     the check would already have expired, is refused rather than stored.
+    ``today`` is the date where the event is.
     """
-    today = today or dt.date.today()
     by_id = {r.id: r for r in requirements}
     unknown = [str(c.requirement_id) for c in checks if c.requirement_id not in by_id]
     if unknown:

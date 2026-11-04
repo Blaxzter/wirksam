@@ -9,6 +9,7 @@ from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
+from app.crud.shift import WallClocks, on_own_clock, wall_clocks
 from app.models.event import Event
 from app.models.event_membership import EventMembership
 from app.schemas.event import EventCreate, EventUpdate
@@ -107,7 +108,7 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
         visibility: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        is_expired: bool | None = None,
+        expired_on: tuple[bool, WallClocks] | None = None,
         also_include_ids: list[uuid.UUID] | None = None,
     ) -> Select[Any]:
         if search:
@@ -126,12 +127,15 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             query = query.where(col(Event.end_date) >= date_from)
         if date_to:
             query = query.where(col(Event.start_date) <= date_to)
-        if is_expired is not None:
-            today = dt.date.today()
-            if is_expired:
-                query = query.where(col(Event.end_date) < today)
-            else:
-                query = query.where(col(Event.end_date) >= today)
+        if expired_on is not None:
+            # Each event's last day is over on its own clock.
+            expired, clocks = expired_on
+            over = on_own_clock(
+                clocks,
+                col(Event.timezone),
+                lambda now: col(Event.end_date) < now.date(),
+            )
+            query = query.where(over if expired else ~over)
         return query
 
     async def get_multi_filtered(
@@ -164,7 +168,9 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             visibility=visibility,
             date_from=date_from,
             date_to=date_to,
-            is_expired=is_expired,
+            expired_on=None
+            if is_expired is None
+            else (is_expired, await wall_clocks(db)),
             also_include_ids=also_include_ids,
         )
         order_col = getattr(Event, sort_by)
@@ -201,7 +207,9 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             visibility=visibility,
             date_from=date_from,
             date_to=date_to,
-            is_expired=is_expired,
+            expired_on=None
+            if is_expired is None
+            else (is_expired, await wall_clocks(db)),
             also_include_ids=also_include_ids,
         )
         result = await db.execute(query)

@@ -6,6 +6,7 @@ import sqlalchemy as sa
 from sqlmodel import Field, Relationship
 
 from app.core.config import settings
+from app.logic import clock
 from app.models.base import Base
 
 if TYPE_CHECKING:
@@ -122,7 +123,5 @@ class Event(Base, table=True):
 
     @property
     def is_expired(self) -> bool:
-        """Whether the event's end date is in the past."""
-        from datetime import date as _date
-
-        return self.end_date < _date.today()
+        """Whether the event's last day is over, on the event's own clock."""
+        return self.end_date < clock.wall_clock_now(self.timezone).date()

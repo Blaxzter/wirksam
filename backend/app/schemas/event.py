@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from app.core.config import parse_timezone, settings
+from app.logic import clock
 from app.schemas.event_membership import EventRole
 
 EventStatus = Literal["draft", "published", "archived"]
@@ -137,7 +138,7 @@ class EventRead(EventBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def is_expired(self) -> bool:
-        return self.end_date < dt.date.today()
+        return self.end_date < clock.wall_clock_now(self.timezone).date()
 
 
 class EventListResponse(BaseModel):
