@@ -5,14 +5,17 @@
  */
 import { expect, test } from '../../fixtures.js'
 import {
+  type ShiftRead,
   type TaskWithShifts,
   createTaskWithShifts,
   deleteTask,
+  listShifts,
   uniqueName,
 } from '../../helpers/api.js'
 
 test.describe('Cross-user – task booking flow', () => {
   let created: TaskWithShifts
+  let shift: ShiftRead
 
   test.beforeEach(async ({ adminPage }) => {
     await adminPage.goto('/app/tasks')
@@ -24,6 +27,7 @@ test.describe('Cross-user – task booking flow', () => {
       slotDuration: 60,
       peoplePerShift: 3,
     })
+    ;[shift] = await listShifts(adminPage, created.task.id)
   })
 
   test.afterEach(async ({ adminPage }) => {
@@ -42,18 +46,18 @@ test.describe('Cross-user – task booking flow', () => {
     // The tile names who is on it by first name, for everyone who sees the task.
     const firstName = memberUser.name.split(' ')[0]
 
-    // Member navigates to the task and books the first shift; a volunteer's
-    // tap on a shift books it, after a confirmation.
+    // Member navigates to the task and books the shift; a volunteer's tap on a
+    // shift books it, after a confirmation.
     await memberPage.goto(`/app/tasks/${created.task.id}`)
-    const memberCard = memberPage.locator('[data-testid^="shift-card-"]').first()
+    const memberCard = memberPage.getByTestId(`shift-card-${shift.id}`)
     await expect(memberCard).toContainText('0 of 3 · still free')
     await memberCard.click()
     await memberPage.getByTestId('btn-dialog-confirm').click()
     await expect(memberCard).toContainText(`1 of 3 · ${firstName}`)
 
-    // Admin sees the updated booking count, and who it is, on the same (first) shift
+    // Admin sees the updated booking count, and who it is, on the same shift
     await adminPage.goto(`/app/tasks/${created.task.id}`)
-    const adminCard = adminPage.locator('[data-testid^="shift-card-"]').first()
+    const adminCard = adminPage.getByTestId(`shift-card-${shift.id}`)
     await expect(adminCard).toContainText(`1 of 3 · ${firstName}`)
   })
 

@@ -1,6 +1,8 @@
 /**
  * E2E tests for Task Detail page — viewing, booking, status, admin actions.
  */
+import type { Page } from '@playwright/test'
+
 import { expect, test } from '../../fixtures.js'
 import {
   type ShiftRead,
@@ -14,6 +16,10 @@ import {
 
 let created: TaskWithShifts
 let shifts: ShiftRead[]
+
+// One shift's card. A bare getByText(/0\/3/) also matches the task's date
+// range in the header whenever it reads 10/30 or 10/31.
+const shiftCard = (page: Page, shift: ShiftRead) => page.getByTestId(`shift-card-${shift.id}`)
 
 test.beforeEach(async ({ adminPage: page }) => {
   await page.goto('/app/tasks')
@@ -67,8 +73,8 @@ test.describe('Task Detail – page structure', () => {
   test('shows shift time cards', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
     // Shifts should show time and availability count
-    await expect(page.getByText('0 of 3', { exact: true }).first()).toBeVisible()
-    await expect(page.getByTestId(`shift-card-${shifts[0].id}`)).toContainText('Nobody yet')
+    await expect(shiftCard(page, shifts[0])).toContainText('0 of 3')
+    await expect(shiftCard(page, shifts[0])).toContainText('Nobody yet')
   })
 
   test('back button navigates to tasks list', async ({ adminPage: page }) => {
@@ -84,7 +90,7 @@ test.describe('Task Detail – booking', () => {
   test('an organiser opens a shift and books it from there', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
     // Whoever runs the task opens a shift with a tap, to see who is on it.
-    const card = page.getByTestId(`shift-card-${shifts[0].id}`)
+    const card = shiftCard(page, shifts[0])
     await expect(card).toContainText('0 of 3')
     await card.click()
 
@@ -121,7 +127,7 @@ test.describe('Task Detail – booking', () => {
     }
 
     await page.goto(`/app/tasks/${created.task.id}`)
-    const card = page.getByTestId(`shift-card-${shifts[0].id}`)
+    const card = shiftCard(page, shifts[0])
     // Wait for booked state to load
     await expect(card).toContainText('1 of 3')
 
