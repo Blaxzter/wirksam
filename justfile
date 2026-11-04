@@ -12,7 +12,7 @@ default:
 # ── Development ───────────────────────────────────────────────
 
 # Start the whole dev environment in one terminal (mode defaults to dev_mode).
-# local: DB + Adminer in Docker, migrations, demo seed, then backend and frontend side by side.
+# local: DB in Docker, migrations, demo seed, then backend and frontend side by side.
 dev mode=dev_mode:
     if [ "{{mode}}" = "docker" ]; then docker compose watch; elif [ "{{mode}}" = "local" ]; then node scripts/dev.mjs; else echo "Unknown mode '{{mode}}'. Use 'docker' or 'local'." && exit 1; fi
 
