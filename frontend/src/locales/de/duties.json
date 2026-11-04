@@ -804,7 +804,7 @@
             "affectedBookings": {
                 "cancel": "Abbrechen",
                 "confirm": "Trotzdem fortfahren",
-                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, du musst ihnen selbst Bescheid geben.",
+                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. WirkSam sagt den Betroffenen Bescheid.",
                 "descriptionLocked": "Beim Neuerstellen würden die Schichten wegfallen, die diese Leute gebucht haben. Einige davon haben schon begonnen, und die kann nur ein:e Organisator:in entfernen.",
                 "locked": "Diese Schicht kann nur ein:e Organisator:in entfernen, weil sie begonnen hat und Leute gebucht sind.",
                 "lockedHint": "Ändere die Tage oder Zeiten so, dass die begonnenen Schichten bleiben, wie sie sind, oder bitte eine:n Organisator:in, die Änderung vorzunehmen.",

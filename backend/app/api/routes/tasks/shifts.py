@@ -21,6 +21,7 @@ from app.logic import clock, vouchers
 from app.logic.invitations import invite_to_task, lock_invitation_quota
 from app.logic.locations import resolve_location
 from app.logic.notifications.triggers import (
+    dispatch_booking_cancelled_by_admin,
     dispatch_event_invitation,
     dispatch_task_manager_added,
 )
@@ -394,6 +395,7 @@ async def regenerate_task_shifts(
     payload: TaskUpdateWithShifts,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     dry_run: bool = Query(default=False),
     batch_id: str | None = Query(default=None),
 ) -> ShiftRegenerationResult:
@@ -403,8 +405,8 @@ async def regenerate_task_shifts(
     When batch_id is provided, only regenerates shifts belonging to that batch.
     Shifts are matched by (date, start_time, end_time) — matched shifts keep their bookings.
 
-    Bookings on removed shifts are cancelled with a snapshot, as on every other
-    delete path. A person in charge may not remove a booked shift that has
+    Bookings on removed shifts are cancelled with a snapshot and the people told,
+    as on every other delete path. A person in charge may not remove a booked shift that has
     started (``check_shift_history``): the dry run marks such rows ``locked``,
     the real run refuses with 403 ``task.shift_history_admin_only``.
 
@@ -613,10 +615,20 @@ async def regenerate_task_shifts(
         #     with a snapshot first, like every other delete path: the FK is
         #     SET NULL, so they would otherwise stay "confirmed" with no shift
         #     and drop out of everyone's hours without a word.
-        await crud_booking.cancel_bookings_for_shifts(
+        cancelled = await crud_booking.cancel_bookings_for_shifts(
             session,
             slot_ids=[s.id for s in shifts_to_delete],
             task_name=db_task.name,
+        )
+        background_tasks.add_task(
+            dispatch_booking_cancelled_by_admin,
+            cancelled=cancelled,
+            actor_id=current_user.id,
+            task_id=db_task.id,
+            task_name=db_task.name,
+            task_is_open=db_task.status == "published",
+            event_id=db_task.event_id,
+            is_sandbox=db_task.is_sandbox,
         )
         for shift in shifts_to_delete:
             await session.delete(shift)

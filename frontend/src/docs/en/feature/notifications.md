@@ -26,6 +26,7 @@ About your shifts:
 
 - Booking Confirmed: email and push
 - Booking Cancelled, when you cancel yourself: email
+- Booking Cancelled by Organisers, when a shift you booked is removed: email and push
 - Shift Co-booked, when someone else books your shift: push
 - Shift Time Changed: email and push
 

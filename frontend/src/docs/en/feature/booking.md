@@ -42,7 +42,7 @@ After that the booking is in "My Bookings", you get the message "Booking Confirm
 
 Tap your booked tile on the task's page, or open the booking and choose "Cancel Booking". After a confirmation the place is free again and its reminders are dropped. You can cancel until the shift ends, on tasks with vouchers too. As long as the rules above allow it, you can book the shift again later.
 
-If the organisers delete a shift, your booking ends with it. It then appears in "My Bookings" under "Cancelled", with the reason if one was given. Leaving an event cancels your bookings for shifts that aren't over yet.
+If the organisers delete a shift, your booking ends with it and WirkSam tells you. It then appears in "My Bookings" under "Cancelled", with the reason if one was given. Leaving an event cancels your bookings for shifts that aren't over yet.
 
 ## My Bookings
 

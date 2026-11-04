@@ -57,7 +57,7 @@ Auf der Seite der Aufgabe bietet „Schichten hinzufügen“ zwei Wege:
 
 Hat eine Aufgabe mehrere Serien, stehen sie dort getrennt, jede mit eigenem „Bearbeiten“ und Löschen.
 
-Änderst du über „Bearbeiten“ Tage oder Zeiten, heißt der Knopf zum Speichern „Schichten neu generieren“. Schichten mit demselben Tag und denselben Zeiten bleiben erhalten, neue kommen dazu, wegfallende werden gelöscht. Trifft das gebuchte Schichten, listet „Betroffene Buchungen“ vorher auf, wen es betrifft. Diese Personen werden nicht automatisch benachrichtigt, du sagst ihnen selbst Bescheid.
+Änderst du über „Bearbeiten“ Tage oder Zeiten, heißt der Knopf zum Speichern „Schichten neu generieren“. Schichten mit demselben Tag und denselben Zeiten bleiben erhalten, neue kommen dazu, wegfallende werden gelöscht. Trifft das gebuchte Schichten, listet „Betroffene Buchungen“ vorher auf, wen es betrifft. WirkSam sagt diesen Personen Bescheid, sobald du speicherst.
 
 Verschiebt sich die ganze Veranstaltung, trägst du in ihren Einstellungen unter „Termine verschieben“ ein neues Startdatum ein. Alle Aufgaben, Schichten und Verfügbarkeiten rücken um gleich viele Tage mit.
 

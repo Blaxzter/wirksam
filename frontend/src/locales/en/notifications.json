@@ -171,8 +171,8 @@
         },
         "booking": {
             "cancelled_by_admin": {
-                "description": "When an admin cancels your booking",
-                "name": "Booking Cancelled by Admin"
+                "description": "When organisers or people in charge remove a shift you booked",
+                "name": "Booking Cancelled by Organisers"
             },
             "cancelled_by_user": {
                 "description": "When you cancel a booking",

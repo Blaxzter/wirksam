@@ -16,8 +16,12 @@
     "body": "Deine Buchung „{slot_title}“ beginnt {time_until}.\n\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}"
   },
   "booking.cancelled_by_admin": {
-    "title": "Buchung durch Admin storniert",
-    "body": "Deine Buchung für „{slot_title}“{task_label} wurde von einem Administrator storniert.{detail}"
+    "title": "Buchung von der Organisation storniert",
+    "body": "Deine Buchung für „{slot_title}“ am {date}{task_label} wurde storniert, weil die Schicht entfernt wurde.{detail}"
+  },
+  "booking.cancelled_by_admin.many": {
+    "title": "Buchung von der Organisation storniert",
+    "body": "{count} deiner Buchungen{task_label} wurden storniert, weil ihre Schichten entfernt wurden. Du findest sie unter „Meine Buchungen“ bei „Storniert“.{detail}"
   },
   "shift.starting_soon_unfilled": {
     "title": "Schicht beginnt bald mit freien Plätzen",

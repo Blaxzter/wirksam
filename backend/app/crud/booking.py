@@ -1,5 +1,6 @@
 import datetime as dt
 import uuid
+from dataclasses import dataclass
 
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,16 @@ from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.booking import BookingCreate, BookingUpdate
+
+
+@dataclass(frozen=True)
+class CancelledBooking:
+    """A booking that ended with its shift, for telling the person about it."""
+
+    booking_id: uuid.UUID
+    user_id: uuid.UUID
+    shift_title: str
+    shift_date: dt.date
 
 
 class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
@@ -182,15 +193,15 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         slot_ids: list[uuid.UUID],
         task_name: str | None = None,
         cancellation_reason: str | None = None,
-    ) -> int:
+    ) -> list[CancelledBooking]:
         """Cancel all confirmed bookings for the given shift IDs.
 
         Stores snapshot info from the shift so cancelled bookings remain
         meaningful after the shift is deleted (shift_id becomes NULL).
-        Returns the number of bookings cancelled.
+        Returns what was cancelled, for ``dispatch_booking_cancelled_by_admin``.
         """
         if not slot_ids:
-            return 0
+            return []
 
         # Load confirmed bookings with their shift info
         query = (
@@ -204,6 +215,7 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         result = await db.execute(query)
         bookings = list(result.scalars().all())
 
+        cancelled: list[CancelledBooking] = []
         for b in bookings:
             shift: Shift | None = b.shift
             if shift is None:
@@ -216,11 +228,19 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             b.cancelled_shift_end_time = shift.end_time
             b.cancelled_task_name = task_name
             db.add(b)
+            cancelled.append(
+                CancelledBooking(
+                    booking_id=b.id,
+                    user_id=b.user_id,
+                    shift_title=shift.title,
+                    shift_date=shift.date,
+                )
+            )
 
         if bookings:
             await db.flush()
 
-        return len(bookings)
+        return cancelled
 
     async def cancel_unfinished_bookings_in_event(
         self,

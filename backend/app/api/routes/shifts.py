@@ -18,6 +18,7 @@ from app.logic.booking_conflicts import mark_collisions
 from app.logic.event_scope import get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import apply_location, resolve_location
+from app.logic.notifications.triggers import dispatch_booking_cancelled_by_admin
 from app.logic.permissions import (
     SHIFT_EARNING_FIELDS,
     check_shift_history,
@@ -275,6 +276,7 @@ async def delete_shift(
     slot_id: str,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     cancellation_reason: str | None = Query(default=None),
 ) -> None:
     shift = await crud_shift.get(session, slot_id, raise_404_error=True)
@@ -298,11 +300,22 @@ async def delete_shift(
     await vouchers.settle_earnings(
         session, now=clock.wall_clock_now(zone), shift_ids=[shift.id]
     )
-    await crud_booking.cancel_bookings_for_shifts(
+    cancelled = await crud_booking.cancel_bookings_for_shifts(
         session,
         slot_ids=[shift.id],
         task_name=db_task.name,
         cancellation_reason=cancellation_reason,
+    )
+    background_tasks.add_task(
+        dispatch_booking_cancelled_by_admin,
+        cancelled=cancelled,
+        actor_id=current_user.id,
+        task_id=db_task.id,
+        task_name=db_task.name,
+        task_is_open=db_task.status == "published",
+        event_id=db_task.event_id,
+        reason=cancellation_reason,
+        is_sandbox=db_task.is_sandbox,
     )
 
     await session.delete(shift)

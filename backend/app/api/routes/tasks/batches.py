@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import select
 from sqlmodel import col
 
@@ -9,6 +9,7 @@ from app.crud.event import event as crud_event
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.logic import clock, vouchers
+from app.logic.notifications.triggers import dispatch_booking_cancelled_by_admin
 from app.logic.permissions import (
     check_shift_history,
     require_shift_editor,
@@ -40,6 +41,7 @@ async def delete_batch(
     batch_id: str,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     cancellation_reason: str | None = Query(default=None),
 ) -> None:
     """Delete a shift batch and all its duty shifts (cascade).
@@ -97,11 +99,22 @@ async def delete_batch(
     await vouchers.settle_earnings(
         session, now=clock.wall_clock_now(zone), shift_ids=slot_ids
     )
-    await crud_booking.cancel_bookings_for_shifts(
+    cancelled = await crud_booking.cancel_bookings_for_shifts(
         session,
         slot_ids=slot_ids,
         task_name=db_task.name,
         cancellation_reason=cancellation_reason,
+    )
+    background_tasks.add_task(
+        dispatch_booking_cancelled_by_admin,
+        cancelled=cancelled,
+        actor_id=current_user.id,
+        task_id=db_task.id,
+        task_name=db_task.name,
+        task_is_open=db_task.status == "published",
+        event_id=db_task.event_id,
+        reason=cancellation_reason,
+        is_sandbox=db_task.is_sandbox,
     )
 
     await session.delete(db_batch)

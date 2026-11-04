@@ -16,8 +16,12 @@
     "body": "Your booking \"{slot_title}\" starts {time_until}.\n\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}"
   },
   "booking.cancelled_by_admin": {
-    "title": "Booking Cancelled by Admin",
-    "body": "Your booking for \"{slot_title}\"{task_label} was cancelled by an administrator.{detail}"
+    "title": "Booking Cancelled by Organisers",
+    "body": "Your booking for \"{slot_title}\" on {date}{task_label} was cancelled because the shift was removed.{detail}"
+  },
+  "booking.cancelled_by_admin.many": {
+    "title": "Booking Cancelled by Organisers",
+    "body": "{count} of your bookings{task_label} were cancelled because their shifts were removed. You can find them in My Bookings under \"Cancelled\".{detail}"
   },
   "shift.starting_soon_unfilled": {
     "title": "Shift starting soon with open places",

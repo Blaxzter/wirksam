@@ -36,6 +36,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.core.config import settings
+from app.crud.booking import CancelledBooking
 from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.notification_type import notification_type as crud_notification_type
 from app.logic.notifications import triggers
@@ -240,9 +241,18 @@ def _all_invocations(
         (
             "dispatch_booking_cancelled_by_admin",
             lambda: triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[user_id],
-                slot_title="Shift",
+                cancelled=[
+                    CancelledBooking(
+                        booking_id=uuid.uuid4(),
+                        user_id=user_id,
+                        shift_title="Shift",
+                        shift_date=dt.date(2026, 6, 11),
+                    )
+                ],
+                actor_id=actor_id,
                 task_id=task_id,
+                task_name="Task",
+                task_is_open=True,
             ),
         ),
         (
@@ -756,23 +766,52 @@ class TestDispatchBookingCancelledByUser:
 # ── booking.cancelled_by_admin ────────────────────────────────────
 
 
+def _cancelled(
+    user_id: uuid.UUID,
+    title: str = "Morning Shift",
+    on: dt.date = dt.date(2026, 6, 11),
+) -> CancelledBooking:
+    return CancelledBooking(
+        booking_id=uuid.uuid4(), user_id=user_id, shift_title=title, shift_date=on
+    )
+
+
+def _admin_cancel(
+    cancelled: list[CancelledBooking], **overrides: Any
+) -> Coroutine[Any, Any, None]:
+    kwargs: dict[str, Any] = {
+        "cancelled": cancelled,
+        "actor_id": uuid.uuid4(),
+        "task_id": uuid.uuid4(),
+        "task_name": "Kitchen Duty",
+        "task_is_open": True,
+    }
+    return triggers.dispatch_booking_cancelled_by_admin(**(kwargs | overrides))
+
+
 @pytest.mark.asyncio
 class TestDispatchBookingCancelledByAdmin:
     """Test suite for dispatch_booking_cancelled_by_admin."""
 
-    async def test_empty_user_list_returns_before_opening_a_session(
+    async def test_nobody_cancelled_returns_before_opening_a_session(
         self,
         db_session: AsyncSession,
         seeded_types: None,
     ) -> None:
-        """Test the early-return guard for an empty user_ids list."""
         with _dispatch_env(db_session) as factory:
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[],
-                slot_title="Morning Shift",
-                task_name="Kitchen Duty",
-                reason="Shift removed",
-            )
+            await _admin_cancel([])
+
+        assert factory.call_count == 0
+        assert await _rows(db_session) == []
+
+    async def test_a_demo_tells_nobody(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session) as factory:
+            await _admin_cancel([_cancelled(test_user.id)], is_sandbox=True)
 
         assert factory.call_count == 0
         assert await _rows(db_session) == []
@@ -786,106 +825,161 @@ class TestDispatchBookingCancelledByAdmin:
         """Test that a user outside the cancelled set is not notified."""
         affected = await _make_user(db_session, tag="admincancel-affected")
         bystander = await _make_user(db_session, tag="admincancel-bystander")
-        task_id = uuid.uuid4()
-        event_id = uuid.uuid4()
 
         with _dispatch_env(db_session):
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[test_user.id, affected.id],
-                slot_title="Morning Shift",
-                task_name="Kitchen Duty",
-                task_id=task_id,
-                event_id=event_id,
-                reason="Shift removed",
-            )
+            await _admin_cancel([_cancelled(test_user.id), _cancelled(affected.id)])
 
         recipients = await _recipients(db_session, "booking.cancelled_by_admin")
         assert recipients == {test_user.id, affected.id}
         assert bystander.id not in recipients
 
-        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
-        assert notif.data == {"task_id": str(task_id), "event_id": str(event_id)}
-
-    async def test_english_body_with_task_and_reason(
+    async def test_the_person_who_removed_it_is_not_told(
         self,
         db_session: AsyncSession,
         seeded_types: None,
         test_user: User,
     ) -> None:
-        """Test the English task_label and detail fragments."""
+        other = await _make_user(db_session, tag="admincancel-other-booker")
+
         with _dispatch_env(db_session):
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[test_user.id],
-                slot_title="Morning Shift",
-                task_name="Kitchen Duty",
-                reason="Shift removed",
+            await _admin_cancel(
+                [_cancelled(test_user.id), _cancelled(other.id)],
+                actor_id=test_user.id,
             )
 
-        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
-        assert notif.body == (
-            'Your booking for "Morning Shift" for task "Kitchen Duty" '
-            "was cancelled by an administrator. (Reason: Shift removed)"
-        )
+        assert await _recipients(db_session, "booking.cancelled_by_admin") == {other.id}
 
-    async def test_english_body_without_task_or_reason(
+    async def test_only_the_actor_booked_returns_before_opening_a_session(
         self,
         db_session: AsyncSession,
         seeded_types: None,
         test_user: User,
     ) -> None:
-        """Test that both English conditional fragments collapse to empty."""
+        with _dispatch_env(db_session) as factory:
+            await _admin_cancel([_cancelled(test_user.id)], actor_id=test_user.id)
+
+        assert factory.call_count == 0
+
+    async def test_several_shifts_make_one_notice(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        """Deleting a batch must not send someone a message per shift."""
         with _dispatch_env(db_session):
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[test_user.id],
-                slot_title="Morning Shift",
+            await _admin_cancel(
+                [
+                    _cancelled(test_user.id, "Bar 10:00-12:00"),
+                    _cancelled(test_user.id, "Bar 12:00-14:00"),
+                    _cancelled(test_user.id, "Bar 14:00-16:00"),
+                ],
+                task_name="Bar",
             )
 
         notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
         assert notif.body == (
-            'Your booking for "Morning Shift" was cancelled by an administrator.'
+            "3 of your bookings in the task “Bar” were cancelled because their "
+            'shifts were removed. You can find them in My Bookings under "Cancelled".'
         )
-        assert notif.data == {"task_id": None, "event_id": None}
 
-    async def test_german_body_with_task_and_reason(
+    async def test_german_for_several_shifts(
         self,
         db_session: AsyncSession,
         seeded_types: None,
     ) -> None:
-        """Test the German task_label and detail fragments."""
+        german = await _make_user(db_session, tag="de-admincancel-many", language="de")
+
+        with _dispatch_env(db_session):
+            await _admin_cancel(
+                [_cancelled(german.id, "A"), _cancelled(german.id, "B")],
+                task_name="Bar",
+                reason="Regen",
+            )
+
+        notif = await _single(db_session, "booking.cancelled_by_admin", german.id)
+        assert notif.body == (
+            "2 deiner Buchungen in der Aufgabe „Bar“ wurden storniert, weil ihre "
+            "Schichten entfernt wurden. Du findest sie unter „Meine Buchungen“ bei "
+            "„Storniert“. Grund: Regen"
+        )
+
+    async def test_english_body_names_shift_day_task_and_reason(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await _admin_cancel([_cancelled(test_user.id)], reason="Shift removed")
+
+        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
+        assert notif.body == (
+            'Your booking for "Morning Shift" on 11.06.2026 in the task “Kitchen Duty” '
+            "was cancelled because the shift was removed. Reason: Shift removed"
+        )
+
+    async def test_english_body_without_a_reason(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await _admin_cancel([_cancelled(test_user.id)])
+
+        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
+        assert "Reason" not in notif.body
+
+    async def test_german_body_with_a_reason(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+    ) -> None:
         german = await _make_user(db_session, tag="de-admincancel", language="de")
 
         with _dispatch_env(db_session):
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[german.id],
-                slot_title="Morning Shift",
-                task_name="Kitchen Duty",
-                reason="Zu wenig Anmeldungen",
-            )
+            await _admin_cancel([_cancelled(german.id)], reason="Zu wenig Anmeldungen")
 
         notif = await _single(db_session, "booking.cancelled_by_admin", german.id)
-        assert "das Task" in notif.body
-        assert "Kitchen Duty" in notif.body
-        assert "(Grund: Zu wenig Anmeldungen)" in notif.body
-        assert "Administrator storniert." in notif.body
+        assert notif.body == (
+            "Deine Buchung für „Morning Shift“ am 11.06.2026 in der Aufgabe "
+            "„Kitchen Duty“ wurde storniert, weil die Schicht entfernt wurde. "
+            "Grund: Zu wenig Anmeldungen"
+        )
 
-    async def test_german_body_without_task_or_reason(
+    async def test_an_open_task_is_linked(
         self,
         db_session: AsyncSession,
         seeded_types: None,
+        test_user: User,
     ) -> None:
-        """Test that both German conditional fragments collapse to empty."""
-        german = await _make_user(db_session, tag="de-admincancel-bare", language="de")
+        cancelled = _cancelled(test_user.id)
+        task_id = uuid.uuid4()
 
         with _dispatch_env(db_session):
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[german.id],
-                slot_title="Morning Shift",
-            )
+            await _admin_cancel([cancelled], task_id=task_id)
 
-        notif = await _single(db_session, "booking.cancelled_by_admin", german.id)
-        assert "das Task" not in notif.body
-        assert "Grund:" not in notif.body
-        assert "Administrator storniert." in notif.body
+        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
+        assert notif.data == {
+            "booking_id": str(cancelled.booking_id),
+            "task_id": str(task_id),
+        }
+
+    async def test_a_task_that_is_gone_is_not_linked(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        """With only a booking id, the notice opens My Bookings."""
+        cancelled = _cancelled(test_user.id)
+
+        with _dispatch_env(db_session):
+            await _admin_cancel([cancelled], task_is_open=False)
+
+        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
+        assert notif.data == {"booking_id": str(cancelled.booking_id)}
 
     async def test_opted_out_user_receives_nothing(
         self,
@@ -900,12 +994,29 @@ class TestDispatchBookingCancelledByAdmin:
         )
 
         with _dispatch_env(db_session):
-            await triggers.dispatch_booking_cancelled_by_admin(
-                user_ids=[test_user.id, other.id],
-                slot_title="Morning Shift",
-            )
+            await _admin_cancel([_cancelled(test_user.id), _cancelled(other.id)])
 
         assert await _recipients(db_session, "booking.cancelled_by_admin") == {other.id}
+
+    async def test_muting_the_event_applies(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        event_id = uuid.uuid4()
+        await _mute(
+            db_session,
+            user_id=test_user.id,
+            type_code="booking.cancelled_by_admin",
+            scope_type="event",
+            scope_id=event_id,
+        )
+
+        with _dispatch_env(db_session):
+            await _admin_cancel([_cancelled(test_user.id)], event_id=event_id)
+
+        assert await _recipients(db_session, "booking.cancelled_by_admin") == set()
 
 
 # ── shift.time_changed ────────────────────────────────────────────

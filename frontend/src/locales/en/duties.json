@@ -804,7 +804,7 @@
             "affectedBookings": {
                 "cancel": "Cancel",
                 "confirm": "Proceed anyway",
-                "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. The people affected are not notified automatically, so you need to tell them yourself.",
+                "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. WirkSam tells the people affected.",
                 "descriptionLocked": "Recreating the shifts would remove the shifts these people booked. Some of those shifts have started, and only an organiser can remove them.",
                 "locked": "Only an organiser can remove this shift, because it has started and people are booked.",
                 "lockedHint": "Change the dates or times so that the shifts that have started stay as they are, or ask an organiser to make this change.",

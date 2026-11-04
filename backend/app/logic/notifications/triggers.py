@@ -6,11 +6,13 @@ the request session is closed.
 
 import datetime as dt
 import uuid
+from functools import partial
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session
 from app.core.logger import get_logger
+from app.crud.booking import CancelledBooking
 from app.logic.notifications.messages import get_message, shift_times
 from app.logic.notifications.service import EmailBodyFactory, NotificationService
 from app.schemas.notification import NotificationData
@@ -132,46 +134,87 @@ async def dispatch_booking_cancelled_by_user(
         logger.exception("Failed to dispatch booking.cancelled_by_user notification")
 
 
+def _cancelled_by_admin_message(
+    lang: str,
+    *,
+    bookings: list[CancelledBooking],
+    task_name: str,
+    reason: str | None,
+) -> tuple[str, str]:
+    """One person's notice: the shift and its day, or how many when several."""
+    if lang == "de":
+        task_label = f" in der Aufgabe „{task_name}“"
+        detail = f" Grund: {reason}" if reason else ""
+    else:
+        task_label = f" in the task “{task_name}”"
+        detail = f" Reason: {reason}" if reason else ""
+    if len(bookings) > 1:
+        return get_message(
+            "booking.cancelled_by_admin.many",
+            lang,
+            count=str(len(bookings)),
+            task_label=task_label,
+            detail=detail,
+        )
+    return get_message(
+        "booking.cancelled_by_admin",
+        lang,
+        slot_title=bookings[0].shift_title,
+        date=bookings[0].shift_date.strftime("%d.%m.%Y"),
+        task_label=task_label,
+        detail=detail,
+    )
+
+
 async def dispatch_booking_cancelled_by_admin(
     *,
-    user_ids: list[uuid.UUID],
-    slot_title: str,
-    task_name: str | None = None,
-    task_id: uuid.UUID | None = None,
+    cancelled: list[CancelledBooking],
+    actor_id: uuid.UUID,
+    task_id: uuid.UUID,
+    task_name: str,
+    task_is_open: bool,
     event_id: uuid.UUID | None = None,
     reason: str | None = None,
+    is_sandbox: bool = False,
 ) -> None:
-    """Notify users that their bookings were cancelled by admin action."""
-    if not user_ids:
+    """Tell people their bookings ended because someone removed the shifts.
+
+    Queued wherever an organiser or a person in charge removes shifts: deleting
+    a shift, a batch or a task, and regenerating. Each person hears once per
+    action however many of their shifts went, and the person who did it not at
+    all. A demo tells nobody.
+
+    The notice opens the task when ``task_is_open``, meaning it still exists and
+    the person can read it. Otherwise it opens My Bookings, where the cancelled
+    booking is listed with its reason.
+    """
+    if is_sandbox:
+        return
+    by_person: dict[uuid.UUID, list[CancelledBooking]] = {}
+    for booking in cancelled:
+        if booking.user_id != actor_id:
+            by_person.setdefault(booking.user_id, []).append(booking)
+    if not by_person:
         return
     try:
         async with async_session() as db:
             svc = NotificationService(db)
-
-            def _factory(lang: str) -> tuple[str, str]:
-                if lang == "de":
-                    task_label = f' für das Task „{task_name}"' if task_name else ""
-                    detail = f" (Grund: {reason})" if reason else ""
-                else:
-                    task_label = f' for task "{task_name}"' if task_name else ""
-                    detail = f" (Reason: {reason})" if reason else ""
-                return get_message(
-                    "booking.cancelled_by_admin",
-                    lang,
-                    slot_title=slot_title,
-                    task_label=task_label,
-                    detail=detail,
+            for user_id, bookings in by_person.items():
+                data: NotificationData = {"booking_id": str(bookings[0].booking_id)}
+                if task_is_open:
+                    data["task_id"] = str(task_id)
+                await svc.notify(
+                    recipient_ids=[user_id],
+                    type_code="booking.cancelled_by_admin",
+                    message_factory=partial(
+                        _cancelled_by_admin_message,
+                        bookings=bookings,
+                        task_name=task_name,
+                        reason=reason,
+                    ),
+                    data=data,
+                    scope_chain=_build_scope_chain(None, task_id, event_id),
                 )
-
-            await svc.notify(
-                recipient_ids=user_ids,
-                type_code="booking.cancelled_by_admin",
-                message_factory=_factory,
-                data={
-                    "task_id": str(task_id) if task_id else None,
-                    "event_id": str(event_id) if event_id else None,
-                },
-            )
             await db.commit()
     except Exception:
         logger.exception("Failed to dispatch booking.cancelled_by_admin notification")

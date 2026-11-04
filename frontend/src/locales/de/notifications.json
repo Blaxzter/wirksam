@@ -171,8 +171,8 @@
         },
         "booking": {
             "cancelled_by_admin": {
-                "description": "Wenn ein Admin deine Buchung storniert",
-                "name": "Buchung durch Admin storniert"
+                "description": "Wenn Organisator:innen oder Verantwortliche eine Schicht entfernen, die du gebucht hast",
+                "name": "Buchung von der Organisation storniert"
             },
             "cancelled_by_user": {
                 "description": "Wenn du eine Buchung stornierst",

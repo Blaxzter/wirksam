@@ -25,6 +25,7 @@ from app.logic.locations import (
     resolve_location,
     unlink_task_children,
 )
+from app.logic.notifications.triggers import dispatch_booking_cancelled_by_admin
 from app.logic.permissions import (
     require_event_role,
     require_task_manager,
@@ -352,6 +353,7 @@ async def delete_task(
     task_id: str,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     cancellation_reason: str | None = Query(default=None),
 ) -> None:
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
@@ -372,11 +374,22 @@ async def delete_task(
     # link says so; the links themselves would go by cascade.
     await crud_invitation_task.detach_task(session, task_id=db_task.id)
     # Cancel confirmed bookings with snapshot before deleting
-    await crud_booking.cancel_bookings_for_shifts(
+    cancelled = await crud_booking.cancel_bookings_for_shifts(
         session,
         slot_ids=slot_ids,
         task_name=db_task.name,
         cancellation_reason=cancellation_reason,
+    )
+    background_tasks.add_task(
+        dispatch_booking_cancelled_by_admin,
+        cancelled=cancelled,
+        actor_id=current_user.id,
+        task_id=db_task.id,
+        task_name=db_task.name,
+        task_is_open=False,
+        event_id=db_task.event_id,
+        reason=cancellation_reason,
+        is_sandbox=db_task.is_sandbox,
     )
 
     await session.delete(db_task)

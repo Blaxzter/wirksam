@@ -42,7 +42,7 @@ Danach steht die Buchung in „Meine Buchungen“, du bekommst die Nachricht „
 
 Tippe auf der Aufgabenseite deine gebuchte Kachel an, oder öffne die Buchung und wähle „Buchung stornieren“. Nach einer Rückfrage ist der Platz wieder frei, und die Erinnerungen dazu fallen weg. Absagen geht bis zum Ende der Schicht, auch bei Aufgaben mit Marken. Solange die Regeln oben passen, kannst du die Schicht später wieder buchen.
 
-Löscht die Organisation eine Schicht, endet deine Buchung damit. Sie steht dann in „Meine Buchungen“ unter „Storniert“, mit dem Grund, falls einer angegeben wurde. Wer eine Veranstaltung verlässt, verliert seine Buchungen für Schichten, die noch nicht vorbei sind.
+Löscht die Organisation eine Schicht, endet deine Buchung damit, und WirkSam sagt dir Bescheid. Sie steht dann in „Meine Buchungen“ unter „Storniert“, mit dem Grund, falls einer angegeben wurde. Wer eine Veranstaltung verlässt, verliert seine Buchungen für Schichten, die noch nicht vorbei sind.
 
 ## Meine Buchungen
 

@@ -70,8 +70,10 @@ BOOKING_CANCELLED_BY_USER = NotificationTypeDef(
 
 BOOKING_CANCELLED_BY_ADMIN = NotificationTypeDef(
     code="booking.cancelled_by_admin",
-    name="Booking Cancelled by Admin",
-    description="Notification when an admin cancels your booking (shift deleted or regenerated)",
+    name="Booking Cancelled by Organisers",
+    description=(
+        "Notification when organisers or people in charge remove a shift you booked"
+    ),
     category="booking",
     classification="change",
     default_channels=["email", "push"],

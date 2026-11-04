@@ -57,7 +57,7 @@ On a task's page, "Add Shifts" offers two routes:
 
 If a task has several batches, they're listed separately there, each with its own "Edit" and delete.
 
-When you change days or times under "Edit", the save button becomes "Regenerate Shifts". Shifts with the same day and times stay, new ones are added and any that no longer fit are deleted. If that touches booked shifts, "Affected Bookings" lists who first. Those people aren't told automatically, so you let them know yourself.
+When you change days or times under "Edit", the save button becomes "Regenerate Shifts". Shifts with the same day and times stay, new ones are added and any that no longer fit are deleted. If that touches booked shifts, "Affected Bookings" lists who first. WirkSam tells those people once you save.
 
 If the whole event moves, enter a new start date under "Shift Dates" in its settings. Every task, shift and availability entry moves by the same number of days.
 

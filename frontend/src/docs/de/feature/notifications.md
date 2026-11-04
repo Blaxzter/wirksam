@@ -26,6 +26,7 @@ Rund um deine Schichten:
 
 - Buchung bestätigt: E-Mail und Push
 - Buchung storniert, wenn du selbst absagst: E-Mail
+- Buchung von der Organisation storniert, wenn eine Schicht entfernt wird, die du gebucht hast: E-Mail und Push
 - Schicht mitgebucht, wenn jemand anderes deine Schicht bucht: Push
 - Schichtzeit geändert: E-Mail und Push
 
