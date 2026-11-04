@@ -28,8 +28,10 @@ from app.api.routes import events as events_routes
 from app.api.routes.events import (
     create_event_invitation,
     create_event_invitations_bulk,
+    remove_member,
 )
 from app.api.routes.invitations import accept_invitation
+from app.api.routes.tasks.managers import withdraw_task_manager_invitation
 from app.core.config import settings
 from app.crud.event_invitation import event_invitation as crud_invitation
 from app.logic import invitations
@@ -454,3 +456,153 @@ async def test_a_task_added_just_before_accepting_is_applied(
     assert invited.invitation is not None
     assert invited.invitation.id == invitation.id
     assert await _in_charge(committed) == {t.id for t in committed.tasks}
+
+
+# ── Withdrawing while the invitee accepts ─────────────────────────
+
+
+def _withdraw(task: Task, invitation: EventInvitation) -> Call[None]:
+    async def call(session: AsyncSession, user: User) -> None:
+        await withdraw_task_manager_invitation(
+            task_id=task.id,
+            invitation_id=invitation.id,
+            session=session,
+            current_user=user,
+        )
+
+    return call
+
+
+async def _reloaded(c: Committed, invitation: EventInvitation) -> EventInvitation:
+    async with c.sessions() as session:
+        loaded = await session.get(EventInvitation, invitation.id)
+        assert loaded is not None
+        return loaded
+
+
+@pytest.mark.asyncio
+async def test_withdrawing_after_the_invitee_accepted_is_refused(
+    committed: Committed,
+) -> None:
+    """The invitee accepts first and the organiser withdraws a moment later. The
+    withdrawal waits and finds the invitation accepted. It must not say it took
+    the task back while the person is in charge, nor mark an accepted invitation
+    as revoked."""
+    invitation = await _open_invitation(committed)
+    anna = committed.organisers[0]
+
+    accepted, refused = await asyncio.gather(
+        _request(committed, committed.invitee, _accept(invitation.token), pause=0.3),
+        _request(committed, anna, _withdraw(committed.tasks[0], invitation), delay=0.1),
+        return_exceptions=True,
+    )
+
+    assert not isinstance(accepted, BaseException), accepted
+    assert _code(refused) == "task.manager_invitation_not_found"
+    assert await _in_charge(committed) == {committed.tasks[0].id}
+    stored = await _reloaded(committed, invitation)
+    assert stored.accepted_at is not None
+    assert stored.revoked_at is None
+
+
+@pytest.mark.asyncio
+async def test_accepting_after_the_organiser_withdrew_is_refused(
+    committed: Committed,
+) -> None:
+    """The organiser withdraws first and the invitee accepts a moment later. The
+    accept waits and finds the invitation withdrawn."""
+    invitation = await _open_invitation(committed)
+    anna = committed.organisers[0]
+
+    withdrawn, refused = await asyncio.gather(
+        _request(committed, anna, _withdraw(committed.tasks[0], invitation), pause=0.3),
+        _request(committed, committed.invitee, _accept(invitation.token), delay=0.1),
+        return_exceptions=True,
+    )
+
+    assert not isinstance(withdrawn, BaseException), withdrawn
+    assert _code(refused) == "invitation.revoked"
+    assert await _in_charge(committed) == set()
+    stored = await _reloaded(committed, invitation)
+    assert stored.accepted_at is None
+    assert stored.revoked_at is not None
+
+
+# ── Leaving while a member accepts ────────────────────────────────
+
+
+def _leave(event: Event) -> Call[None]:
+    async def call(session: AsyncSession, user: User) -> None:
+        await remove_member(
+            event_id=event.id, user_id=user.id, session=session, current_user=user
+        )
+
+    return call
+
+
+async def _is_member(c: Committed) -> bool:
+    async with c.sessions() as session:
+        rows = await session.execute(
+            select(col(EventMembership.id)).where(
+                col(EventMembership.user_id) == c.invitee.id,
+                col(EventMembership.event_id) == c.events[0].id,
+            )
+        )
+        return rows.first() is not None
+
+
+@pytest.mark.asyncio
+async def test_a_leave_waits_for_a_member_accepting_and_removes_what_it_granted(
+    committed: Committed,
+) -> None:
+    """Someone already in the event accepts in one tab and leaves in another. The
+    leave's clean-up has to see what accepting granted. If it ran past it, the
+    person would be in charge again the day they re-joined."""
+    async with committed.sessions() as session, session.begin():
+        session.add(
+            EventMembership(
+                user_id=committed.invitee.id,
+                event_id=committed.events[0].id,
+                role="member",
+            )
+        )
+    invitation = await _open_invitation(committed)
+
+    accepted, left = await asyncio.gather(
+        _request(committed, committed.invitee, _accept(invitation.token), pause=0.3),
+        _request(committed, committed.invitee, _leave(committed.events[0]), delay=0.1),
+        return_exceptions=True,
+    )
+
+    assert not isinstance(accepted, BaseException), accepted
+    assert not isinstance(left, BaseException), left
+    assert not await _is_member(committed)
+    assert await _in_charge(committed) == set()
+
+
+@pytest.mark.asyncio
+async def test_accepting_after_a_leave_joins_again_as_a_newcomer(
+    committed: Committed,
+) -> None:
+    """The leave comes first and the accept waits for it, so the accept has to
+    treat the person as new instead of relying on a row that's gone."""
+    async with committed.sessions() as session, session.begin():
+        session.add(
+            EventMembership(
+                user_id=committed.invitee.id,
+                event_id=committed.events[0].id,
+                role="member",
+            )
+        )
+    invitation = await _open_invitation(committed)
+
+    left, accepted = await asyncio.gather(
+        _request(committed, committed.invitee, _leave(committed.events[0]), pause=0.3),
+        _request(committed, committed.invitee, _accept(invitation.token), delay=0.1),
+        return_exceptions=True,
+    )
+
+    assert not isinstance(left, BaseException), left
+    assert not isinstance(accepted, BaseException), accepted
+    assert await _is_member(committed)
+    assert await _in_charge(committed) == {committed.tasks[0].id}

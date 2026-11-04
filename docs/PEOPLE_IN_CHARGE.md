@@ -248,15 +248,16 @@ caller inviting several addresses (bulk, create-with-shifts) takes them all up
 front. Taken one by one in the order typed, two requests could deadlock.
 
 **Linking versus accepting.** Inviting into an open invitation, putting a member
-in charge directly and accepting all lock the address's open invitations first
-(`open_for_address(..., for_update=True)`). A task linked while someone accepts
-is then either applied or lands on a new invitation, never on a closed one
-nobody will apply. A request that waited re-checks "open" against what the other
-committed.
+in charge directly, withdrawing and accepting all lock the address's open
+invitations first (`open_for_address(..., for_update=True)`). A task linked while
+someone accepts is then either applied or lands on a new invitation, never on a
+closed one nobody will apply. A request that waited re-checks "open" against what
+the other committed, so a withdrawal that lost to an accept answers `404
+task.manager_invitation_not_found` and leaves the invitation accepted.
 
 **Granting versus leaving.** The routes where an organiser puts someone in
-charge read that person's membership `FOR KEY SHARE` (`lock_member_ids`). A
-leave's `DELETE` then waits for the grant and its clean-up removes it. Without
+charge, and accepting an invitation, read that person's membership `FOR KEY
+SHARE` (`lock_member_ids`). A leave's `DELETE` then waits for the grant and its clean-up removes it. Without
 that, a leave committing between the check and the insert would miss the row,
 and the right would come back when the person re-joined. Role changes do not
 touch the key and are not held up. Booking takes the same lock.
@@ -268,7 +269,9 @@ transaction usable.
 ## Stepping down, leaving, moving
 
 - **Stepping down** (`DELETE /tasks/{id}/managers/{own id}`) needs no role and
-  tells nobody. Removing someone else needs an event admin.
+  tells nobody. It never looks the task up, so someone who isn't in charge gets
+  the same `404 task.manager_not_found` whether the task exists or not. Removing
+  someone else needs an event admin.
 - **Leaving or being removed** (`DELETE /events/{id}/members/{user_id}`) deletes
   the membership first, then the team rows, the task rows
   (`remove_user_from_event_tasks`) and the unfinished bookings, so re-joining

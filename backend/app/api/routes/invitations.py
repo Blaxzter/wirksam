@@ -233,10 +233,14 @@ async def accept_invitation(
         if invitation.email is not None
         else []
     )
-    existing = await crud_membership.get(
-        session, user_id=current_user.id, event_id=db_event.id
+    # Locked as every other grant locks it: a leave running alongside waits for
+    # this and removes the tasks applied below, rather than missing them and
+    # leaving them to come back when the person re-joins. A newcomer's row is
+    # this transaction's own, so nobody can delete it before the commit.
+    already_member = current_user.id in await crud_membership.lock_member_ids(
+        session, event_id=db_event.id, user_ids=[current_user.id]
     )
-    if existing is None:
+    if not already_member:
         # The strongest role among them: an organiser invitation must not be
         # used up as a plain one because a task invitation was opened first.
         role: AssignableEventRole = invitation.role  # type: ignore[assignment]
@@ -281,7 +285,7 @@ async def accept_invitation(
                 session, invitation=each, user_id=current_user.id
             )
 
-    if existing is None:
+    if not already_member:
         from app.logic.notifications.triggers import dispatch_event_invitation_accepted
 
         background_tasks.add_task(
