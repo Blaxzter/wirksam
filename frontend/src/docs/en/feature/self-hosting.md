@@ -36,7 +36,6 @@ In `.env`, set at least:
 - `PROJECT_NAME` and `STACK_NAME`. The project name is the sender name on emails.
 - `SECRET_KEY` with at least 32 bytes. With `changethis` or anything shorter, the backend won't start outside `ENVIRONMENT=local`.
 - `POSTGRES_PASSWORD`. `.env.example` has `admin`, and nothing stops the stack from starting with it. Adminer is public, so use a strong password.
-- `SENTRY_DSN` empty unless you use Sentry. With the placeholder from `.env.example`, the backend won't start outside `ENVIRONMENT=local`.
 
 Start Traefik first. It creates the `traefik-net` network the stack needs. It expects `DOMAIN` and `EMAIL` in the shell for the certificates, and `USERNAME` and `HASHED_PASSWORD` for its dashboard:
 

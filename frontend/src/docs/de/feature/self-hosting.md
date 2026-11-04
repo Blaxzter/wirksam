@@ -36,7 +36,6 @@ In `.env` setzt du mindestens:
 - `PROJECT_NAME` und `STACK_NAME`. Der Projektname erscheint als Absender in E-Mails.
 - `SECRET_KEY` mit mindestens 32 Bytes. Mit `changethis` oder einem kürzeren Wert startet das Backend außerhalb von `ENVIRONMENT=local` nicht.
 - `POSTGRES_PASSWORD`. In `.env.example` steht `admin`, und nichts hindert den Stack daran, damit zu starten. Adminer ist öffentlich erreichbar, also nimm ein starkes Passwort.
-- `SENTRY_DSN` leer lassen, wenn du Sentry nicht nutzt. Mit dem Platzhalter aus `.env.example` startet das Backend außerhalb von `ENVIRONMENT=local` nicht.
 
 Starte zuerst Traefik. Es legt das Netzwerk `traefik-net` an, das der Stack braucht. In der Shell erwartet es `DOMAIN` und `EMAIL` für die Zertifikate sowie `USERNAME` und `HASHED_PASSWORD` für sein Dashboard:
 
