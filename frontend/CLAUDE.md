@@ -43,7 +43,7 @@ pnpm exec eslint .                             # not `pnpm lint` — that auto-f
 node ../scripts/pre-commit/check_locale_parity.js
 pnpm generate-e2e-coverage && git diff --exit-code e2e/COVERAGE.md
 pnpm generate-changelog
-pnpm type-check
+pnpm type-check                                # app, then e2e/ (tsc -p e2e/tsconfig.json)
 pnpm type-check:unit                           # separate config; specs are type-checked too
 pnpm test:unit:coverage
 pnpm build-only
@@ -51,3 +51,32 @@ pnpm build-only
 
 ESLint reports 4 pre-existing warnings (`playwright/no-conditional-in-test`).
 CI does not pass `--max-warnings`, so warnings are tolerated; errors are not.
+
+## Not a gate: where focus goes when a dialog closes
+
+A dialog hands focus back to whatever had it when it opened. If that element is
+gone, focus drops to `<body>` and a keyboard user starts over at the top of the
+page.
+
+**A `DropdownMenuItem` that opens a dialog** goes through `useMenuAction()`
+(`src/composables/useMenuAction.ts`). An item that is a component of its own uses
+`useMenuItemAction()`.
+
+```vue
+const menu = useMenuAction()
+
+<DropdownMenuContent @close-auto-focus="menu.onCloseAutoFocus">
+  <DropdownMenuItem @select="menu.after(() => (open = true))">
+```
+
+Opened straight from `@select`, or after `await nextTick()`, the dialog remembers
+the vanished item: the menu plays its exit animation first and focuses its button
+only after that.
+
+**A row in a bottom sheet that opens a dialog** closes the sheet, does `await
+nextTick()`, focuses the sheet's opener and only then opens the dialog
+(`TaskActionSheet.vue`), or the dialog remembers the row. `DrawerContent.vue` gives
+focus back when any sheet closes (`useFocusReturn`), because reka's Drawer only
+does that for a `DrawerTrigger`. It leaves focus alone if focus has moved into
+another dialog or the sheet's `@close-auto-focus` called `preventDefault()`. That
+file is not stock shadcn, so re-adding it through the CLI loses this.
