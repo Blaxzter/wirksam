@@ -32,6 +32,11 @@ export default defineConfig({
     // Node by default; the few DOM-bound suites opt in per file with
     // `// @vitest-environment jsdom`.
     environment: 'node',
+    // Node 25+ ships its own `localStorage`, which stays undefined without
+    // `--localstorage-file` and shadows the one jsdom provides. Turn it off so
+    // the jsdom suites get theirs back. The `experimental` spelling is the one
+    // Node 24 also accepts; 26 keeps it as an alias of `--no-webstorage`.
+    execArgv: ['--no-experimental-webstorage'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

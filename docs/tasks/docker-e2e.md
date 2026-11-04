@@ -126,11 +126,18 @@ just e2e-down
 The `docker-compose.e2e.yml` file is **standalone** — it does not layer on top of `docker-compose.yml` or `docker-compose.override.yml`. It uses `env_file: .env` to pull in Auth0 credentials and Postgres config, then overrides networking-specific values:
 
 - `POSTGRES_SERVER=db` (Docker hostname, not localhost)
-- `SMTP_HOST=mailcatcher` (Docker hostname)
+- `SMTP_HOST=mailcatcher` (Docker hostname), with `SMTP_USER` / `SMTP_PASSWORD`
+  blanked: mailcatcher offers no login, so a real mail account in `.env` would
+  make every mail fail with "Failed to send"
 - `TESTING=true` (enables `/testing/*` endpoints and `X-Test-User-Email` bypass)
 - `VITE_E2E_AUTH_BYPASS=true` (frontend skips real Auth0)
 
 The database uses `tmpfs` instead of a named volume — data lives in RAM and is discarded on container stop. This makes tests faster and guarantees a clean slate every run.
+
+Only the ports Playwright and you need are published on the host: 5555 (frontend),
+8787 (backend) and 1080 (mailcatcher's inbox). Mailcatcher's SMTP port 1025 stays
+inside the compose network, where the backend reaches it, so another project's
+mail server on host port 1025 does not stop the stack from starting.
 
 ## Troubleshooting
 
@@ -138,6 +145,7 @@ The database uses `tmpfs` instead of a named volume — data lives in RAM and is
 |---|---|
 | `.env file not found` | Copy `.env.example` to `.env` and fill in Auth0 values |
 | Port 8787/5555 already in use | Stop your local dev servers or the dev Docker stack first |
+| Port 1080 already in use | Another mailcatcher (the dev stack's, or another project's) holds the inbox port; stop it first |
 | Backend never becomes healthy | Check `just e2e-logs backend` and `just e2e-logs prestart` for migration errors |
 | Tests pass locally but fail in Docker | Check if tests depend on local filesystem state or non-deterministic ordering |
 | Stale images after code changes | Run `just e2e` (builds by default) or `just e2e-down` then `just e2e` |

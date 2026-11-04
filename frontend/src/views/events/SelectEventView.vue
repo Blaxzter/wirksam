@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { AlertTriangle, FlaskConicalIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import { useAuthStore } from '@/stores/auth'
@@ -46,6 +46,13 @@ const selectMode = computed<SelectEventMode>(() => {
 })
 
 const onboarding = computed(() => selectMode.value === 'onboarding')
+
+/** The expired event, when it gave out vouchers: "did I get mine?" still has an answer. */
+const expiredVoucherEventId = computed(() => {
+  const event = authStore.selectedEvent
+  if (selectMode.value !== 'expired' || !event?.is_expired) return null
+  return (event.voucher_task_count ?? 0) > 0 ? event.id : null
+})
 
 const step = ref<1 | 2>(1)
 const phase = ref<'intro' | 'main'>('intro')
@@ -318,6 +325,14 @@ onMounted(async () => {
                 <div>
                   <p class="font-semibold">{{ t('duties.selectEvent.expired.title') }}</p>
                   <p>{{ t('duties.selectEvent.expired.body') }}</p>
+                  <RouterLink
+                    v-if="expiredVoucherEventId"
+                    :to="{ name: 'my-vouchers', params: { eventId: expiredVoucherEventId } }"
+                    class="mt-1 inline-block font-medium underline underline-offset-4"
+                    data-testid="link-expired-vouchers"
+                  >
+                    {{ t('vouchers.afterEventLink') }}
+                  </RouterLink>
                 </div>
               </div>
             </div>

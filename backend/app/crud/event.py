@@ -201,12 +201,16 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
         *,
         from_user_id: uuid.UUID,
         to_user_id: uuid.UUID,
-    ) -> int:
+    ) -> tuple[int, list[uuid.UUID]]:
         """Hand every event owned by one user to another.
 
         Both the denormalised ``created_by_id`` and the ``owner`` membership
         rows move, and any membership the target already held in those events
         is replaced so they are not left with a weaker role than owner.
+
+        Returns the number of memberships moved and the ids of those events.
+        The source user is no longer a member of any of them afterwards, so a
+        caller that keeps the account clears what hangs off that membership.
         """
         owned_result = await db.execute(
             select(col(EventMembership.event_id)).where(
@@ -223,7 +227,7 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
         )
 
         if not owned_event_ids:
-            return 0
+            return 0, []
 
         # Clear any weaker membership the target already has in these events,
         # so the unique (user, event) constraint does not reject the handover.
@@ -246,7 +250,7 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
                 .values(user_id=to_user_id)
             ),
         )
-        return result.rowcount if result.rowcount > 0 else 0
+        return (result.rowcount if result.rowcount > 0 else 0), owned_event_ids
 
 
 event = CRUDEvent(Event)

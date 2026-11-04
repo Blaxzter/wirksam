@@ -108,7 +108,8 @@ function mountOpenDialog() {
         </DialogRoot>
       `,
     }),
-    { attachTo: document.body },
+    // The dialog's close button reads its label from the app's translations.
+    { attachTo: document.body, global: { plugins: [i18n] } },
   )
 }
 

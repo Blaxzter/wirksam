@@ -5,6 +5,8 @@ import { reactiveOmit } from '@vueuse/core'
 import type { DrawerContentEmits, DrawerContentProps } from 'reka-ui'
 import { DrawerContent, DrawerHandle, DrawerPortal, useForwardPropsEmits } from 'reka-ui'
 
+import { useFocusReturn } from '@/composables/useFocusReturn'
+
 import { cn } from '@/lib/utils'
 
 import DrawerOverlay from './DrawerOverlay.vue'
@@ -32,6 +34,24 @@ const emits = defineEmits<DrawerContentEmits>()
 const delegatedProps = reactiveOmit(props, 'class', 'priority')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+
+/*
+ * Not stock shadcn: reka's Drawer hands focus back only to a DrawerTrigger,
+ * and our sheets open through v-model, so closing one dropped focus to
+ * <body>. The opener is noted before a parent's handler can move focus into
+ * the sheet, and restored after the parent's own close handler had its say.
+ */
+const focusReturn = useFocusReturn()
+
+function onOpenAutoFocus(event: Event) {
+  focusReturn.remember()
+  emits('openAutoFocus', event)
+}
+
+function onCloseAutoFocus(event: Event) {
+  emits('closeAutoFocus', event)
+  focusReturn.restore(event)
+}
 </script>
 
 <template>
@@ -39,7 +59,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     <DrawerOverlay :class="priority ? '!z-60' : undefined" />
     <DrawerContent
       data-slot="drawer-content"
-      v-bind="{ ...$attrs, ...forwarded }"
+      v-bind="{ ...$attrs, ...forwarded, onOpenAutoFocus, onCloseAutoFocus }"
       :class="
         cn(
           'group/drawer-content bg-background fixed z-50 flex h-auto flex-col',

@@ -3,6 +3,7 @@
  */
 import { expect, test } from '../../fixtures.js'
 import {
+  type ShiftRead,
   type TaskWithShifts,
   createTaskWithShifts,
   deleteTask,
@@ -11,6 +12,7 @@ import {
 } from '../../helpers/api.js'
 
 let created: TaskWithShifts
+let shift: ShiftRead
 const eventName = uniqueName('E2E Member Task')
 
 test.beforeEach(async ({ adminPage }) => {
@@ -23,7 +25,7 @@ test.beforeEach(async ({ adminPage }) => {
     slotDuration: 60,
     peoplePerShift: 5,
   })
-  await listShifts(adminPage, created.task.id)
+  ;[shift] = await listShifts(adminPage, created.task.id)
 })
 
 test.afterEach(async ({ adminPage }) => {
@@ -38,9 +40,7 @@ test.describe('Member – tasks RBAC', () => {
     await expect(member.getByTestId('btn-create-task')).toBeHidden()
   })
 
-  test('member does not see edit/delete buttons on task detail', async ({
-    memberPage: member,
-  }) => {
+  test('member does not see edit/delete buttons on task detail', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
     await expect(member.getByRole('heading', { name: created.task.name })).toBeVisible()
     await expect(member.getByTestId('btn-edit-task')).toBeHidden()
@@ -67,15 +67,16 @@ test.describe('Member – tasks viewing', () => {
   test('member can view task detail', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
     await expect(member.getByRole('heading', { name: created.task.name })).toBeVisible()
-    // Shifts should be visible (dynamic data)
-    await expect(member.getByText(/0\/5/).first()).toBeVisible()
+    await expect(member.getByTestId(`shift-card-${shift.id}`)).toContainText('0 of 5')
   })
 
   test('member can book a shift', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
-    await expect(member.getByText(/0\/5/).first()).toBeVisible()
-    await member.getByText(/0\/5/).first().click()
+    // A volunteer's tap on a shift books it, after a confirmation.
+    const card = member.getByTestId(`shift-card-${shift.id}`)
+    await expect(card).toContainText('0 of 5')
+    await card.click()
     await member.getByTestId('btn-dialog-confirm').click()
-    await expect(member.getByText(/1\/5/).first()).toBeVisible()
+    await expect(card).toContainText('1 of 5')
   })
 })

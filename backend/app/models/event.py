@@ -14,6 +14,12 @@ if TYPE_CHECKING:
 
 class Event(Base, table=True):
     __tablename__ = "events"  # type: ignore[assignment]
+    __table_args__ = (
+        sa.CheckConstraint(
+            "voucher_manual_redeem IN ('on_shift', 'in_charge')",
+            name="ck_events_voucher_manual_redeem",
+        ),
+    )
 
     name: str = Field(sa_column=sa.Column(sa.String, nullable=False, index=True))
     description: str | None = Field(
@@ -64,6 +70,28 @@ class Event(Base, table=True):
         description=(
             "Naive UTC deadline after which the sweep purges this event and its "
             "guest. NULL on every real event — the column is meaningless there."
+        ),
+    )
+    # Voucher rules for every task in the event (app/logic/permissions.py:
+    # may_redeem_manually and voucher_shifts_locked).
+    voucher_manual_redeem: str = Field(
+        default="on_shift",
+        sa_column=sa.Column(sa.String(16), nullable=False, server_default="on_shift"),
+        description=(
+            "Who may redeem vouchers without a code, by picking the person: "
+            "'on_shift' - also whoever is on a running shift at that point; "
+            "'in_charge' - only the event admins and the point's people in charge."
+        ),
+    )
+    managers_edit_voucher_shifts: bool = Field(
+        default=False,
+        sa_column=sa.Column(
+            sa.Boolean, nullable=False, server_default=sa.text("false")
+        ),
+        description=(
+            "People in charge of a task that earns vouchers may add, move, "
+            "resize and delete its shifts. Off: only the event admins may, "
+            "since every extra shift earns vouchers."
         ),
     )
     created_by_id: uuid.UUID | None = Field(

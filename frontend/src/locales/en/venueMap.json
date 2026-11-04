@@ -91,7 +91,9 @@
         "full": "Fully booked",
         "loadError": "The shifts could not be loaded.",
         "noShifts": "No shifts here on this day",
-        "shiftsOn": "Shifts on {day}"
+        "over": "Over",
+        "shiftsOn": "Shifts on {day}",
+        "started": "Already started"
     },
     "staffing": {
         "full": "Fully staffed",

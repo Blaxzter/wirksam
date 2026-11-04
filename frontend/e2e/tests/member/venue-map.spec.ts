@@ -13,6 +13,7 @@ import {
   addMember,
   apiStatus,
   batchShapes,
+  bookShift,
   createEvent,
   createLocation,
   createVenuePlan,
@@ -108,6 +109,23 @@ test.describe('Venue map – helper view', () => {
     const { event, location, plan } = seeded
     await page.goto(`/app/map/${event.id}?plan=${plan.id}&location=${location.id}`)
     await expect(page.getByTestId('location-sheet-title')).toHaveText(location.name)
+  })
+
+  test('the next-shift card points at the shift’s place on the map', async ({
+    disposablePage: page,
+  }) => {
+    const { event, location, shift } = seeded
+    // The booking goes with the task in `afterEach`.
+    await bookShift(page, shift.id)
+
+    await page.goto('/app/home')
+    await page.getByTestId('dashboard-next-shift').getByTestId('btn-next-shift-map').click()
+
+    // Two checks rather than one string: the map may add `plan=` to the query
+    // once it has opened the place.
+    await expect(page).toHaveURL(new RegExp(`/app/map/${event.id}\\?`))
+    await expect(page).toHaveURL(new RegExp(`[?&]location=${location.id}`))
+    await expect(page.getByTestId(`map-marker-${location.id}`)).toBeVisible()
   })
 })
 

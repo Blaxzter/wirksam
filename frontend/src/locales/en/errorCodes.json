@@ -15,21 +15,40 @@
         "token_expired": "This link has expired. Please request a new one.",
         "weak_password": "That password is too short. Please choose a longer one."
     },
+    "batch": {
+        "wrong_task": "Those shifts belong to a different task. Reload the page and try again."
+    },
     "booking": {
         "already_exists": "You already have a booking for this shift",
         "forbidden": "You can only manage your own bookings",
         "rebook_required": "This booking was cancelled. Book the shift again to take it back.",
+        "shift_over": "This shift is already over, so it can't be booked or cancelled any more.",
+        "shift_started": "This shift has already started. Shifts that earn vouchers can only be booked before they start; ask the people in charge if you're helping anyway.",
         "slot_full": "This duty shift is fully booked",
         "team_required": "Only members of the team for this task can book its shifts. Ask to join the team on the Teams page.",
         "time_conflict": "This shift overlaps one of your booked shifts",
         "time_conflict_with": "This shift overlaps your shift “{name}” ({when})"
     },
     "event": {
+        "already_invited": "That address already has an open invitation.",
+        "already_member": "That person is already taking part in this event.",
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
         "forbidden": "You do not have permission to do this in this event.",
+        "invitation_not_found": "That invitation could not be found.",
         "member_not_found": "That person is not a member of this event.",
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."
+    },
+    "invitation": {
+        "address_limited": "This address has already received several invitations today. Try again tomorrow.",
+        "already_used": "This invitation has already been used.",
+        "email_mismatch": "This invitation was sent to a different e-mail address.",
+        "event_gone": "The event of this invitation no longer exists.",
+        "expired": "This invitation has expired. Send a new one.",
+        "not_found": "This invitation link doesn't work.",
+        "rate_limited": "You have sent a lot of invitations today. Try again tomorrow.",
+        "resend_too_soon": "An e-mail went out a few minutes ago. Wait a little before sending it again.",
+        "revoked": "This invitation was withdrawn."
     },
     "location": {
         "name_taken": "There is already a location with this name in this event.",
@@ -53,8 +72,18 @@
         "not_found": "That shift could not be found."
     },
     "task": {
+        "admin_only_field": "Only organisers can publish a task, change who can book it or its vouchers, or move it to another event.",
+        "forbidden": "Only the people in charge of this task and the organisers can do this.",
+        "manager_already": "That person is already in charge of this task.",
+        "manager_already_invited": "That address is already invited to be in charge of this task.",
+        "manager_invitation_not_found": "That invitation could not be found. It may have been accepted or withdrawn.",
+        "manager_not_event_member": "Only people in this event can be put in charge of its tasks.",
+        "manager_not_found": "That person is not in charge of this task.",
         "not_found": "That task could not be found.",
-        "team_not_in_event": "The team has to belong to the same event as the task."
+        "not_published": "This task isn't published, so only the organisers and its people in charge can open or book it.",
+        "shift_history_admin_only": "This shift has started and people are booked on it, or the change would move it into the past. Only an organiser can do that.",
+        "team_not_in_event": "The team has to belong to the same event as the task.",
+        "voucher_shifts_admin_only": "This task earns vouchers, so only organisers can add, move or delete its shifts. Ask an organiser, or ask them to allow it in the event settings."
     },
     "team": {
         "already_member": "That person is already in this team.",
@@ -115,6 +144,24 @@
         "image_not_found": "This template has no picture.",
         "limit_reached": "You can keep up to 20 templates. Delete one you no longer need first: under “+ Add map”, choose “Start from a template” and open the template’s menu (⋮).",
         "not_found": "That template could not be found. It may have been deleted in the meantime."
+    },
+    "voucher": {
+        "code_expired": "This code has expired. Ask for a new one.",
+        "code_invalid": "This code isn't valid. Ask them to show their code again.",
+        "code_other_event": "This code is for a different event. Ask them to switch to this event in the app and show a new code.",
+        "code_used": "This code has already been used. Ask for a new one.",
+        "correction_exceeds_available": "That would take away more than they can still redeem.",
+        "correction_exceeds_available_with": "That would take away more than they can still redeem: {n} at most.",
+        "entry_not_editable": "A redemption can't be changed. Add a correction instead.",
+        "entry_not_found": "That entry could not be found. It may have been deleted.",
+        "insufficient": "Not enough vouchers.",
+        "insufficient_with": "Not enough vouchers: only {n} left.",
+        "manual_not_allowed": "Only organisers and the people in charge can redeem without a code here.",
+        "not_a_point": "Vouchers can't be redeemed at this task.",
+        "not_allowed": "You can only take vouchers here while you are on shift here, or if you are in charge.",
+        "pass_not_found": "That code is no longer there. Show a new one.",
+        "rate_limited": "Too many tries. Wait a moment and try again.",
+        "request_conflict": "Something went wrong with this redemption. Close it and scan again."
     },
     "work_log": {
         "not_found": "That entry could not be found. It may have been deleted already."

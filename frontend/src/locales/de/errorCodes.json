@@ -15,21 +15,40 @@
         "token_expired": "Dieser Link ist abgelaufen. Bitte einen neuen anfordern.",
         "weak_password": "Dieses Passwort ist zu kurz. Bitte ein längeres wählen."
     },
+    "batch": {
+        "wrong_task": "Diese Schichten gehören zu einer anderen Aufgabe. Lade die Seite neu und versuch es noch einmal."
+    },
     "booking": {
         "already_exists": "Du hast bereits eine Buchung für diese Schicht",
         "forbidden": "Du kannst nur deine eigenen Buchungen verwalten",
         "rebook_required": "Diese Buchung wurde storniert. Buche die Schicht noch einmal, um sie zurückzuholen.",
+        "shift_over": "Diese Schicht ist schon vorbei und kann nicht mehr gebucht oder abgesagt werden.",
+        "shift_started": "Diese Schicht hat schon begonnen. Schichten mit Marken lassen sich nur vor Beginn buchen. Wenn du trotzdem hilfst, sag den Verantwortlichen Bescheid.",
         "slot_full": "Diese Dienstschicht ist ausgebucht",
         "team_required": "Nur Mitglieder des Teams dieser Aufgabe können ihre Schichten buchen. Frag auf der Seite „Teams“ den Beitritt zum Team an.",
-        "time_conflict": "Diese Schicht überschneidet sich mit einer Ihrer gebuchten Schichten",
-        "time_conflict_with": "Diese Schicht überschneidet sich mit Ihrer Schicht „{name}“ ({when})"
+        "time_conflict": "Diese Schicht überschneidet sich mit einer deiner gebuchten Schichten",
+        "time_conflict_with": "Diese Schicht überschneidet sich mit deiner Schicht „{name}“ ({when})"
     },
     "event": {
+        "already_invited": "An diese Adresse ging schon eine Einladung, die noch offen ist.",
+        "already_member": "Diese Person ist schon bei dieser Veranstaltung dabei.",
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
         "forbidden": "Dafür hast du in dieser Veranstaltung keine Berechtigung.",
+        "invitation_not_found": "Diese Einladung wurde nicht gefunden.",
         "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
+    },
+    "invitation": {
+        "address_limited": "An diese Adresse gingen heute schon mehrere Einladungen. Versuch es morgen noch einmal.",
+        "already_used": "Diese Einladung wurde schon benutzt.",
+        "email_mismatch": "Diese Einladung ging an eine andere E-Mail-Adresse.",
+        "event_gone": "Die Veranstaltung dieser Einladung gibt es nicht mehr.",
+        "expired": "Diese Einladung ist abgelaufen. Schick eine neue.",
+        "not_found": "Dieser Einladungslink funktioniert nicht.",
+        "rate_limited": "Du hast heute schon sehr viele Einladungen verschickt. Versuch es morgen noch einmal.",
+        "resend_too_soon": "Vor ein paar Minuten ging schon eine E-Mail raus. Warte etwas, bevor du sie noch einmal sendest.",
+        "revoked": "Diese Einladung wurde zurückgezogen."
     },
     "location": {
         "name_taken": "In dieser Veranstaltung gibt es schon einen Ort mit diesem Namen.",
@@ -53,8 +72,18 @@
         "not_found": "Diese Schicht wurde nicht gefunden."
     },
     "task": {
+        "admin_only_field": "Nur Organisator:innen können eine Aufgabe veröffentlichen, ändern, wer sie buchen kann oder wie viele Marken es gibt, oder sie in eine andere Veranstaltung verschieben.",
+        "forbidden": "Das können nur die Verantwortlichen dieser Aufgabe und die Organisator:innen.",
+        "manager_already": "Diese Person ist für diese Aufgabe schon verantwortlich.",
+        "manager_already_invited": "Diese Adresse ist schon eingeladen, für diese Aufgabe verantwortlich zu sein.",
+        "manager_invitation_not_found": "Diese Einladung wurde nicht gefunden. Vielleicht wurde sie schon angenommen oder zurückgezogen.",
+        "manager_not_event_member": "Nur Leute aus dieser Veranstaltung können für ihre Aufgaben verantwortlich sein.",
+        "manager_not_found": "Diese Person ist für diese Aufgabe nicht verantwortlich.",
         "not_found": "Diese Aufgabe wurde nicht gefunden.",
-        "team_not_in_event": "Das Team muss zur selben Veranstaltung gehören wie die Aufgabe."
+        "not_published": "Diese Aufgabe ist nicht veröffentlicht. Nur die Organisator:innen und ihre Verantwortlichen können sie öffnen oder buchen.",
+        "shift_history_admin_only": "Diese Schicht hat schon begonnen und es sind Leute gebucht, oder die Änderung würde sie in die Vergangenheit verlegen. Das kann nur ein:e Organisator:in.",
+        "team_not_in_event": "Das Team muss zur selben Veranstaltung gehören wie die Aufgabe.",
+        "voucher_shifts_admin_only": "Für diese Aufgabe gibt es Marken. Deshalb können nur Organisator:innen Schichten hinzufügen, verschieben oder löschen. Frag eine:n Organisator:in oder bitte darum, es in den Einstellungen der Veranstaltung zu erlauben."
     },
     "team": {
         "already_member": "Diese Person ist bereits in diesem Team.",
@@ -115,6 +144,24 @@
         "image_not_found": "Diese Vorlage hat kein Bild.",
         "limit_reached": "Du kannst bis zu 20 Vorlagen behalten. Lösche zuerst eine, die du nicht mehr brauchst: Unter „+ Plan hinzufügen“ wählst du „Vorlage verwenden“ und öffnest das Menü (⋮) der Vorlage.",
         "not_found": "Diese Vorlage wurde nicht gefunden. Vielleicht wurde sie inzwischen gelöscht."
+    },
+    "voucher": {
+        "code_expired": "Dieser Code ist abgelaufen. Bitte um einen neuen.",
+        "code_invalid": "Dieser Code ist ungültig. Bitte darum, den Code noch einmal zu zeigen.",
+        "code_other_event": "Dieser Code gehört zu einer anderen Veranstaltung. Bitte darum, in der App zu dieser Veranstaltung zu wechseln und einen neuen Code zu zeigen.",
+        "code_used": "Dieser Code wurde schon benutzt. Bitte um einen neuen.",
+        "correction_exceeds_available": "Das wäre mehr, als noch eingelöst werden kann.",
+        "correction_exceeds_available_with": "Das wäre mehr, als noch eingelöst werden kann: höchstens {n}.",
+        "entry_not_editable": "Eine Einlösung lässt sich nicht ändern. Füg stattdessen eine Korrektur hinzu.",
+        "entry_not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er gelöscht.",
+        "insufficient": "Nicht genug Marken.",
+        "insufficient_with": "Nicht genug Marken: nur noch {n} übrig.",
+        "manual_not_allowed": "Ohne Code einlösen können hier nur Organisator:innen und Verantwortliche.",
+        "not_a_point": "Bei dieser Aufgabe können keine Marken eingelöst werden.",
+        "not_allowed": "Marken annehmen kannst du hier nur während deiner Schicht hier oder wenn du verantwortlich bist.",
+        "pass_not_found": "Diesen Code gibt es nicht mehr. Zeig einen neuen.",
+        "rate_limited": "Zu viele Versuche. Warte kurz und versuch es noch einmal.",
+        "request_conflict": "Bei dieser Einlösung ist etwas schiefgelaufen. Schließ sie und scanne noch einmal."
     },
     "work_log": {
         "not_found": "Dieser Eintrag wurde nicht gefunden. Vielleicht wurde er bereits gelöscht."

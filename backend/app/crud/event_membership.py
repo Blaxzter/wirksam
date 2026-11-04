@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Iterable
 from typing import cast
 
 from sqlalchemy import delete, func, select
@@ -25,6 +26,35 @@ class CRUDEventMembership:
             )
         )
         return result.scalar_one_or_none()
+
+    async def lock_member_ids(
+        self,
+        session: AsyncSession,
+        *,
+        event_id: uuid.UUID,
+        user_ids: Iterable[uuid.UUID],
+    ) -> set[uuid.UUID]:
+        """Which of ``user_ids`` are members, with their rows locked until commit.
+
+        For a write that is only allowed while someone is a member, such as
+        putting them in charge of a task. ``FOR KEY SHARE`` makes a concurrent
+        leave (a DELETE of the row) wait for this transaction, so the leave's
+        own clean-up then sees, and removes, what was written here. Without
+        it, a leave committing between the check and the insert would miss
+        the new row. Role changes do not touch the key and are not held up.
+        """
+        ids = set(user_ids)
+        if not ids:
+            return set()
+        result = await session.execute(
+            select(col(EventMembership.user_id))
+            .where(
+                col(EventMembership.event_id) == event_id,
+                col(EventMembership.user_id).in_(ids),
+            )
+            .with_for_update(read=True, key_share=True)
+        )
+        return set(result.scalars().all())
 
     async def get_role(
         self,

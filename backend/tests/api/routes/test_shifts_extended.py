@@ -228,6 +228,68 @@ class TestRegenerateShiftsCoverage:
         assert data["shifts_removed"] >= 1
         assert data["shifts_added"] >= 1
 
+    async def test_regenerate_dry_run_leaves_kept_shifts_alone(
+        self,
+        async_client: AsyncClient,
+        as_admin: None,
+        db_session: AsyncSession,
+    ):
+        """A kept shift's title, places, location and category stay as they were.
+
+        The real run copies those onto every matched shift. The preview used to
+        do the same before checking ``dry_run``, and the request's commit kept
+        it, so looking at the preview and cancelling changed the rota.
+        """
+        task = Task(
+            name="Preview Task",
+            start_date=date(2026, 9, 5),
+            end_date=date(2026, 9, 5),
+            status="draft",
+        )
+        db_session.add(task)
+        await db_session.flush()
+        kept = Shift(
+            task_id=task.id,
+            title="Old title",
+            date=date(2026, 9, 5),
+            start_time=time(10, 0),
+            end_time=time(14, 0),
+            max_bookings=3,
+            location="Old place",
+            category="Old category",
+        )
+        db_session.add(kept)
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/tasks/{task.id}/regenerate-shifts",
+            params={"dry_run": True},
+            json={
+                "name": "New name",
+                "location": "New place",
+                "category": "New category",
+                "schedule": {
+                    "default_start_time": "10:00:00",
+                    "default_end_time": "14:00:00",
+                    "shift_duration_minutes": 240,
+                    "people_per_shift": 1,
+                    "overrides": [],
+                },
+            },
+        )
+
+        assert r.status_code == 200, r.text
+        assert r.json()["shifts_kept"] == 1
+        await db_session.refresh(kept)
+        assert (kept.title, kept.max_bookings, kept.location, kept.category) == (
+            "Old title",
+            3,
+            "Old place",
+            "Old category",
+        )
+        await db_session.refresh(task)
+        assert task.name == "Preview Task"
+
     async def test_regenerate_with_affected_bookings(
         self,
         async_client: AsyncClient,

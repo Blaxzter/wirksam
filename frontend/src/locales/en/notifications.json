@@ -32,11 +32,6 @@
     "deleteAllFailed": "Could not delete notifications",
     "deleteAllTitle": "Delete all notifications?",
     "deletedAll": "All notifications deleted",
-    "detail": {
-        "close": "Close",
-        "open": "Open detail",
-        "title": "Notification"
-    },
     "dismiss": "Dismiss",
     "email": {
         "description": "Receive notifications via email.",
@@ -53,9 +48,23 @@
         "telegramLabel": "Telegram notifications",
         "title": "Global Channel Settings"
     },
+    "groups": {
+        "earlier": "Earlier",
+        "today": "Today",
+        "yesterday": "Yesterday"
+    },
+    "inboxTitle": "Inbox",
     "managePreferences": "Manage notification preferences",
-    "markAllRead": "Mark all as read",
+    "markAllRead": "Mark all read",
     "markRead": "Mark as read",
+    "moreActions": "More actions",
+    "open": {
+        "bookings": "Open bookings",
+        "event": "Open event",
+        "invitation": "Open invitation",
+        "task": "Open task",
+        "team": "Open team"
+    },
     "openNotifications": "Open notifications",
     "preferences": {
         "autoSaved": "Saved",
@@ -144,8 +153,10 @@
         "unbound": "Telegram disconnected",
         "waitingForVerification": "Click the button above, then press Start in Telegram. This page will update automatically."
     },
+    "time": {
+        "yesterday": "Yesterday, {time}"
+    },
     "timeAgo": {
-        "days": "{n}d ago",
         "hours": "{n}h ago",
         "justNow": "Just now",
         "minutes": "{n} min ago"
@@ -225,6 +236,14 @@
             }
         },
         "task": {
+            "manager_added": {
+                "description": "When an organiser puts you in charge of a task",
+                "name": "Put in charge of a task"
+            },
+            "manager_removed": {
+                "description": "When an organiser takes you off a task you were in charge of",
+                "name": "No longer in charge"
+            },
             "published": {
                 "description": "When a new task is published",
                 "name": "Task Published"
@@ -267,5 +286,6 @@
             }
         }
     },
+    "unread": "Unread",
     "viewAll": "View all"
 }

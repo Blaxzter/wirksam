@@ -10,6 +10,8 @@ import Button from '@/components/ui/button/Button.vue'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
+import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
+
 export interface DayShiftEntry {
   slotId: string
   startTime?: string | null
@@ -42,6 +44,11 @@ const props = defineProps<{
   loadingPrevious?: boolean
   /** The team a locked chip is reserved for, named in its tooltip. */
   teamName?: string | null
+  /**
+   * The task earns vouchers and the viewer does not run it, so its shifts can
+   * only be booked before they start (`booking.shift_started`).
+   */
+  bookBeforeStart?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -124,8 +131,9 @@ function slotClasses(shift: DayShiftEntry): string {
 /**
  * Whether the guided tour may open this chip.
  *
- * Three ways a chip is a dead end for the tour: it is full, the visitor is
- * already on it, or it is behind them. The seeder used to hand the tour the
+ * Ways a chip is a dead end for the tour: it is full, the visitor is already
+ * on it, it is behind them, or (every seeded demo task earns vouchers) it has
+ * begun, which the server refuses to book on a voucher task. The seeder used to hand the tour the
  * first chip on the board, which is exactly the one it had booked the guest
  * into — so the "Book shift" button the step highlights did not render at all.
  *
@@ -136,6 +144,9 @@ function tourBookable(day: DayColumn, shift: DayShiftEntry): 'true' | 'false' {
   if (shift.isBookedByMe) return 'false'
   if (shift.lockedByTeam) return 'false'
   if (!slotHasCapacity(shift)) return 'false'
+  // The server refuses a shift that is over, and on a voucher task one that has begun.
+  if (shiftHasEnded(day.dateStr, shift.startTime, shift.endTime)) return 'false'
+  if (props.bookBeforeStart && shiftHasStarted(day.dateStr, shift.startTime)) return 'false'
   return day.dateStr >= today.value ? 'true' : 'false' // ISO dates compare lexicographically
 }
 

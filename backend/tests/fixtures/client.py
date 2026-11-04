@@ -1,6 +1,7 @@
 """FastAPI app and client fixtures for testing."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
+from contextlib import contextmanager
 from typing import Any, get_args
 
 import pytest_asyncio
@@ -226,6 +227,20 @@ def _restore(app: FastAPI, originals: dict[Any, Any]) -> None:
             app.dependency_overrides[dep] = original
         else:
             app.dependency_overrides.pop(dep, None)
+
+
+@contextmanager
+def act_as(app: FastAPI, user: User) -> Generator[None]:
+    """Switch identity for part of a test, then switch back.
+
+    For tests that need several people in turn (a member, a lead, an admin).
+    ``CurrentSuperuser`` keeps denying, as for any non-superadmin.
+    """
+    originals = _swap_identity(app, user, superuser=False)
+    try:
+        yield
+    finally:
+        _restore(app, originals)
 
 
 @pytest_asyncio.fixture

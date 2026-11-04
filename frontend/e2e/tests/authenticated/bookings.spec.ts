@@ -81,26 +81,20 @@ test.describe('My Bookings – with data', () => {
     await expect(page.getByRole('heading', { name: created.task.name })).toBeVisible()
   })
 
-  test('can cancel a booking from bookings page', async ({ adminPage: page }) => {
+  test('a booking opens its details, where it can be handed back', async ({ adminPage: page }) => {
     // eslint-disable-next-line playwright/no-conditional-in-test
     if (shifts.length === 0) return
 
     await bookShift(page, shifts[0].id)
     await page.goto('/app/bookings')
 
-    // Wait for the booking card to appear (dynamic task name)
-    await expect(page.getByRole('heading', { name: created.task.name })).toBeVisible()
+    // The whole card is the way in; the task's name is its link.
+    const card = page.getByTestId('booking-card').filter({ hasText: created.task.name })
+    await expect(card).toContainText('Confirmed')
+    await card.getByRole('link', { name: created.task.name }).click()
 
-    // Click the cancel/trash button (accept the confirm dialog)
-    page.on('dialog', (d) => d.accept())
-    const card = page.locator('[class*="Card"]').filter({ hasText: created.task.name }).first()
-    const cancelBtn = card.locator(
-      'button[class*="destructive"], button:has(svg.text-destructive), button:has(svg[class*="text-destructive"])',
-    )
-    // eslint-disable-next-line playwright/no-conditional-in-test
-    if (await cancelBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await cancelBtn.click()
-    }
+    await expect(page).toHaveURL(/\/app\/bookings\/[0-9a-f-]{36}$/)
+    await expect(page.getByTestId('btn-cancel-booking')).toBeVisible()
   })
 })
 
@@ -118,15 +112,28 @@ test.describe('My Bookings – filters', () => {
 // ── grouping ─────────────────────────────────────────────────────────────────
 
 test.describe('My Bookings – grouping', () => {
-  test('grouping buttons are visible', async ({ adminPage: page }) => {
+  test('the list is arranged by date, task or place, one at a time', async ({
+    adminPage: page,
+  }) => {
     // eslint-disable-next-line playwright/no-conditional-in-test
     if (shifts.length === 0) return
 
     await bookShift(page, shifts[0].id)
     await page.goto('/app/bookings')
 
-    await expect(page.getByTestId('btn-event-date')).toBeVisible()
-    await expect(page.getByTestId('btn-event-task')).toBeVisible()
+    const byDate = page.getByTestId('btn-event-date')
+    const byTask = page.getByTestId('btn-event-task')
+    await expect(byDate).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByTestId('btn-event-location')).toBeVisible()
+
+    await byTask.click()
+    await expect(byTask).toHaveAttribute('aria-pressed', 'true')
+    await expect(byDate).toHaveAttribute('aria-pressed', 'false')
+    // Grouped by task: the task's name heads its group.
+    await expect(page.getByRole('heading', { level: 2, name: created.task.name })).toBeVisible()
+
+    // Back to the plain list, so the next test starts from the default.
+    await byDate.click()
+    await expect(byDate).toHaveAttribute('aria-pressed', 'true')
   })
 })

@@ -87,6 +87,18 @@ const eventShowLocationColumn = (eventId: string) => {
   return showLocation.value && eventHasLocationData(eventId)
 }
 
+/**
+ * Phone numbers come only for organisers and the task's people in charge.
+ * Anyone else printing the names would get a column of blank lines that looks
+ * like it wants filling in, so it goes; a blank sign-up sheet keeps it.
+ */
+const eventShowContactColumn = (task: TaskRead) =>
+  !includeNames.value ||
+  !!task.can_manage ||
+  (eventShifts.value.get(task.id) ?? []).some((s) =>
+    getBookingsForShift(s.id).some((b) => b.user_phone_number),
+  )
+
 interface BatchGroup {
   batch: ShiftBatchRead | null
   shifts: ShiftRead[]
@@ -500,7 +512,10 @@ onMounted(async () => {
                             <th class="py-1 px-1 font-medium w-[35%]">
                               {{ t('print.nameColumn') }}
                             </th>
-                            <th class="py-1 px-1 font-medium w-[25%]">
+                            <th
+                              v-if="eventShowContactColumn(ev)"
+                              class="py-1 px-1 font-medium w-[25%]"
+                            >
                               {{ t('print.contactColumn') }}
                             </th>
                           </tr>
@@ -550,7 +565,7 @@ onMounted(async () => {
                                   ></div>
                                 </template>
                               </td>
-                              <td class="py-1 px-1">
+                              <td v-if="eventShowContactColumn(ev)" class="py-1 px-1">
                                 <template v-if="line.contact">
                                   <span>{{ line.contact }}</span>
                                 </template>

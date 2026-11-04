@@ -85,6 +85,17 @@ const hasAnyLocation = computed(() => {
 // Final visibility: user toggle controls the column
 const showTitleColumn = computed(() => showTitle.value)
 const showLocationColumn = computed(() => showLocation.value && hasAnyLocation.value)
+/**
+ * Phone numbers come only for organisers and the task's people in charge.
+ * Anyone else printing the names would get a column of blank lines that looks
+ * like it wants filling in, so it goes; a blank sign-up sheet keeps it.
+ */
+const showContactColumn = computed(
+  () =>
+    !includeNames.value ||
+    !!task.value?.can_manage ||
+    [...slotBookings.value.values()].some((list) => list.some((b) => b.user_phone_number)),
+)
 
 const groupByDate = (shifts: ShiftRead[]) => {
   const events: Record<string, ShiftRead[]> = {}
@@ -428,7 +439,7 @@ onMounted(async () => {
                             {{ t('duties.shifts.fields.location') }}
                           </th>
                           <th class="py-1 px-1 font-medium w-[35%]">{{ t('print.nameColumn') }}</th>
-                          <th class="py-1 px-1 font-medium w-[25%]">
+                          <th v-if="showContactColumn" class="py-1 px-1 font-medium w-[25%]">
                             {{ t('print.contactColumn') }}
                           </th>
                         </tr>
@@ -476,7 +487,7 @@ onMounted(async () => {
                                 <div class="border-b border-dotted border-foreground/30 h-5"></div>
                               </template>
                             </td>
-                            <td class="py-1 px-1">
+                            <td v-if="showContactColumn" class="py-1 px-1">
                               <template v-if="line.contact">
                                 <span>{{ line.contact }}</span>
                               </template>

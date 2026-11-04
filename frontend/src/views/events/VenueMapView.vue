@@ -34,6 +34,7 @@ import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useFormatters } from '@/composables/useFormatters'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -110,6 +111,10 @@ type SearchResult = {
 }
 
 const { t } = useI18n()
+
+/** The ⋯ menu's place list opens in a sheet. */
+const menu = useMenuAction()
+
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -890,8 +895,16 @@ const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
               </Button>
             </DropdownMenuTrigger>
           </HintTooltip>
-          <DropdownMenuContent align="end" class="w-56" :reference="moreButton?.$el">
-            <DropdownMenuItem data-testid="map-menu-places" @select="overviewOpen = true">
+          <DropdownMenuContent
+            align="end"
+            class="w-56"
+            :reference="moreButton?.$el"
+            @close-auto-focus="menu.onCloseAutoFocus"
+          >
+            <DropdownMenuItem
+              data-testid="map-menu-places"
+              @select="menu.after(() => (overviewOpen = true))"
+            >
               <List />
               {{ t('venueMap.panel.overviewTitle') }}
             </DropdownMenuItem>
@@ -1162,7 +1175,9 @@ const moreButton = useTemplateRef<ComponentPublicInstance>('moreButton')
             {{ t('venueMap.panel.overviewOn', { day: dataDayLabel }) }}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
-        <ResponsiveDialogBody class="pb-4">
+        <!-- The header is only read out, so in the wide dialog the list would
+             start at its very top edge, level with the close button. -->
+        <ResponsiveDialogBody class="pb-4 md:pt-6">
           <VenuePlaceOverview :items="placeItems" :day-label="dataDayLabel" @select="selectPlace" />
         </ResponsiveDialogBody>
       </ResponsiveDialogContent>

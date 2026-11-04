@@ -12,6 +12,8 @@ import {
   House,
   Lock,
   Map as MapIcon,
+  ShieldCheck,
+  Ticket,
   Users,
   UsersRound,
 } from '@lucide/vue'
@@ -128,6 +130,39 @@ function eventBadge(
 }
 
 /**
+ * A task the viewer is in charge of: a shield, plus its open-shift count when
+ * there is one. The sidebar lists these whether or not anything is still
+ * open, so a fully booked one would otherwise have no badge at all. A draft
+ * keeps its status text, with the shield in front. A screen reader hears what
+ * the shield means too (`label`), not just "3" or "Entwurf".
+ */
+function inChargeBadge(openShifts: number, status?: string | null): NavSubItem['badge'] {
+  const inCharge = t('navigation.sidebar.badges.inCharge')
+  if (status && status !== 'published') {
+    // "Only visible to organisers" would be wrong here: the viewer sees it.
+    const text = t(`duties.tasks.statuses.${status}`)
+    return {
+      text,
+      icon: ShieldCheck,
+      tooltip: inCharge,
+      label: `${text} · ${inCharge}`,
+      variant: 'secondary',
+    }
+  }
+  const tooltip =
+    openShifts > 0
+      ? `${inCharge} · ${t('navigation.sidebar.badges.openShifts', { count: openShifts }, openShifts)}`
+      : inCharge
+  return {
+    text: openShifts > 0 ? `${openShifts}` : '',
+    icon: ShieldCheck,
+    tooltip,
+    label: tooltip,
+    variant: 'outline',
+  }
+}
+
+/**
  * A task reserved for a team the viewer is not in: a lock where the count
  * would be. Its open shifts are not theirs to take, so neither the number nor
  * a red "starting soon" would help.
@@ -158,13 +193,20 @@ const showTeams = computed(() => {
 /** Team requests this user may decide in the selected event. */
 const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
 
+/** Once a task earns vouchers (published or archived) or takes them; until then nothing to show. */
+const showVouchers = computed(() => {
+  const event = authStore.selectedEvent
+  return (event?.voucher_task_count ?? 0) > 0 || (event?.voucher_point_count ?? 0) > 0
+})
+
 const navMain = computed(() => {
   const eventItems: NavSubItem[] = sidebarStore.tasks.map((e) => ({
     title: e.name,
     routeName: 'task-detail',
     routeParams: { eventId: e.id },
-    badge:
-      e.status && e.status !== 'published'
+    badge: e.is_managed
+      ? inChargeBadge(e.open_shifts, e.status)
+      : e.status && e.status !== 'published'
         ? statusBadge(e.status)
         : e.locked_by_team
           ? lockBadge(e.team_name)
@@ -198,6 +240,16 @@ const navMain = computed(() => {
       isActive: bookingItems.length > 0,
       items: bookingItems,
     },
+    ...(showVouchers.value
+      ? [
+          {
+            title: 'Vouchers',
+            titleKey: 'navigation.sidebar.items.vouchers.label',
+            icon: Ticket,
+            routeName: 'my-vouchers',
+          },
+        ]
+      : []),
     {
       title: 'Availability',
       titleKey: 'navigation.sidebar.items.availability.label',
@@ -348,13 +400,13 @@ const navAdmin = computed(() => {
         </SidebarMenuItem>
         <SidebarMenuItem>
           <SidebarMenuButton
-            :tooltip="t('notifications.title')"
+            :tooltip="t('notifications.inboxTitle')"
             :is-active="route.name === 'notifications'"
             as-child
           >
             <RouterLink :to="{ name: 'notifications' }" data-testid="sidebar-link-notifications">
               <Bell />
-              <span>{{ t('notifications.title') }}</span>
+              <span>{{ t('notifications.inboxTitle') }}</span>
               <span
                 v-if="notificationStore.hasUnread"
                 class="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white"
@@ -375,14 +427,14 @@ const navAdmin = computed(() => {
       v-if="navManager.length > 0"
       :items="navManager"
       :open="props.open"
-      event-label-key="navigation.sidebar.items.management.label"
+      group-label-key="navigation.sidebar.items.management.label"
       class="shrink-0 px-2 pb-2"
     />
     <NavMain
       v-if="navAdmin.length > 0"
       :items="navAdmin"
       :open="props.open"
-      event-label-key="admin.sidebar.section"
+      group-label-key="admin.sidebar.section"
       class="shrink-0 px-2 pb-2"
     />
     <SidebarFooter class="flex flex-col gap-1 p-2 pb-1">
@@ -390,7 +442,7 @@ const navAdmin = computed(() => {
       <RouterLink
         :to="{ name: 'changelog' }"
         data-testid="sidebar-version-link"
-        class="inline-flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors pb-1 event-data-[collapsible=icon]:hidden"
+        class="inline-flex items-center justify-center gap-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors pb-1 group-data-[collapsible=icon]:hidden"
       >
         <span>WirkSam {{ appVersion }}</span>
         <span v-if="hasNewVersions" class="size-1.5 rounded-full bg-primary" />

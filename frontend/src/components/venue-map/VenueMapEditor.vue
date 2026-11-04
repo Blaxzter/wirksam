@@ -38,6 +38,7 @@ import { useAuthedImage } from '@/composables/useAuthedImage'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { useLocations } from '@/composables/useLocations'
+import { useMenuAction } from '@/composables/useMenuAction'
 import { usePanZoom } from '@/composables/usePanZoom'
 import { invalidatePlanShapes } from '@/composables/usePlanShapes'
 import { type PressTarget, useShapeEditor } from '@/composables/useShapeEditor'
@@ -162,6 +163,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { get, post, put, patch, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
+
+/** The plan menu's rename, save as template and delete open a dialog. */
+const menu = useMenuAction()
+
 const authStore = useAuthStore()
 
 const { locations } = useLocations(() => props.eventId)
@@ -1140,15 +1145,19 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
                 </Button>
               </DropdownMenuTrigger>
             </HintTooltip>
-            <DropdownMenuContent align="end" :reference="planActionsButton?.$el">
-              <DropdownMenuItem data-testid="plan-rename" @select="openRename">
+            <DropdownMenuContent
+              align="end"
+              :reference="planActionsButton?.$el"
+              @close-auto-focus="menu.onCloseAutoFocus"
+            >
+              <DropdownMenuItem data-testid="plan-rename" @select="menu.after(openRename)">
                 <Pencil />
                 {{ t('mapEditor.plans.rename') }}
               </DropdownMenuItem>
               <DropdownMenuItem
                 :disabled="!hasImage && history.shapes.value.length === 0"
                 data-testid="plan-save-template"
-                @select="openSaveTemplate"
+                @select="menu.after(openSaveTemplate)"
               >
                 <LayoutTemplate />
                 {{ t('mapEditor.templates.save') }}
@@ -1175,7 +1184,7 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
               <DropdownMenuItem
                 variant="destructive"
                 data-testid="plan-delete"
-                @select="deletePlan"
+                @select="menu.after(deletePlan)"
               >
                 <Trash2 />
                 {{ t('mapEditor.plans.delete') }}

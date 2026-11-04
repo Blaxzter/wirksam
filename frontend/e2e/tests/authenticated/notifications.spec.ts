@@ -65,13 +65,12 @@ test.describe('Notifications – preferences page', () => {
     if (count > 0) {
       const firstSwitch = switches.first()
       const wasChecked = await firstSwitch.getAttribute('data-state')
-      await firstSwitch.click()
-      // State should have changed
-      // eslint-disable-next-line playwright/no-wait-for-timeout
-      await page.waitForTimeout(500)
-      const nowChecked = firstSwitch
       // eslint-disable-next-line playwright/no-conditional-expect
-      await expect(nowChecked).not.toHaveAttribute('data-state', wasChecked)
+      expect(wasChecked).toMatch(/^(checked|unchecked)$/)
+      await firstSwitch.click()
+      // State should have changed (the assertion waits for it)
+      // eslint-disable-next-line playwright/no-conditional-expect
+      await expect(firstSwitch).not.toHaveAttribute('data-state', wasChecked ?? '')
       // Toggle back to restore original state
       await firstSwitch.click()
     }

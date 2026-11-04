@@ -2,12 +2,23 @@ import datetime as dt
 import uuid
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.schemas.event import EventCreate, EventRead
 from app.schemas.event_team import TeamMemberStatus
+from app.schemas.task_manager import TaskManagerBrief, TaskManagerInviteResult
 
 TaskStatus = Literal["draft", "published", "archived"]
+
+#: The most vouchers one shift of a task may earn.
+MAX_VOUCHERS_PER_SHIFT = 50
 
 
 class TaskBase(BaseModel):
@@ -23,6 +34,13 @@ class TaskBase(BaseModel):
     category: str | None = None
     #: Only approved members of this team may book the task's shifts.
     team_id: uuid.UUID | None = None
+    #: Vouchers a volunteer earns for each confirmed shift once it is over.
+    #: 0 means none. A change only affects shifts that are not over yet: what
+    #: ended shifts earned is settled first and stays.
+    vouchers_per_shift: int = Field(default=0, ge=0, le=MAX_VOUCHERS_PER_SHIFT)
+    #: Vouchers can be redeemed here, in the app. Who may also redeem without
+    #: a code is the event's ``voucher_manual_redeem``.
+    is_voucher_point: bool = False
 
     @field_validator("end_date")
     @classmethod
@@ -49,6 +67,10 @@ class TaskUpdate(BaseModel):
     location_id: uuid.UUID | None = None
     category: str | None = None
     team_id: uuid.UUID | None = None
+    vouchers_per_shift: int | None = Field(
+        default=None, ge=0, le=MAX_VOUCHERS_PER_SHIFT
+    )
+    is_voucher_point: bool | None = None
 
 
 class TaskRead(TaskBase):
@@ -68,6 +90,20 @@ class TaskRead(TaskBase):
     team_requires_approval: bool | None = None
     my_team_status: TeamMemberStatus | None = None
     locked_by_team: bool = False
+    #: Viewer-relative, filled in by ``app.logic.task_managers``: True for event
+    #: admins, the superadmin and the task's people in charge.
+    can_manage: bool = False
+    #: Viewer-relative: the caller may add, move, resize and delete this
+    #: task's shifts. True for event admins; for people in charge unless the
+    #: task earns vouchers and the event keeps those shifts with its admins
+    #: (``permissions.voucher_shifts_locked``).
+    can_manage_shifts: bool = False
+    #: The task's people in charge, by name.
+    managers: list[TaskManagerBrief] = []
+    #: Viewer-relative: the task takes vouchers and the caller may redeem
+    #: them here right now (an event admin, a person in charge, or on a
+    #: running shift of it).
+    can_redeem: bool = False
 
 
 class TaskListResponse(BaseModel):
@@ -154,9 +190,18 @@ class TaskCreateWithShifts(BaseModel):
     location_id: uuid.UUID | None = None
     category: str | None = None
     team_id: uuid.UUID | None = None
+    vouchers_per_shift: int = Field(default=0, ge=0, le=MAX_VOUCHERS_PER_SHIFT)
+    is_voucher_point: bool = False
     event_id: uuid.UUID | None = None
     new_event: EventCreate | None = None
     schedule: ShiftGenerationConfig
+    #: Members of ``event_id`` to put in charge of the new task. Not on
+    #: ``TaskCreate``: ``TaskBase`` is also the base of ``TaskRead``.
+    manager_ids: list[uuid.UUID] = []
+    #: Addresses to put in charge: a member's is added like ``manager_ids``,
+    #: anyone else is invited (``POST /tasks/{id}/managers/invite``). Each
+    #: outcome comes back in ``manager_invites``.
+    manager_emails: list[EmailStr] = Field(default=[], max_length=20)
 
     @field_validator("end_date")
     @classmethod
@@ -174,11 +219,29 @@ class TaskCreateWithShifts(BaseModel):
             raise ValueError(msg)
         return self
 
+    @model_validator(mode="after")
+    def dedupe_manager_emails(self) -> "TaskCreateWithShifts":
+        """One entry per address, whatever its case; the first spelling wins."""
+        seen: set[str] = set()
+        unique: list[EmailStr] = []
+        for address in self.manager_emails:
+            key = str(address).lower()
+            if key not in seen:
+                seen.add(key)
+                unique.append(address)
+        self.manager_emails = unique
+        return self
+
 
 class TaskCreateWithShiftsResponse(BaseModel):
     task: TaskRead
     shifts_created: int
     event: EventRead | None = None
+    #: One result per address in ``manager_emails``: ``added``, ``invited``,
+    #: or ``skipped`` (a daily limit, or a demo event) instead of failing the
+    #: task the organiser just built. The address of someone already named in
+    #: ``manager_ids`` is left out.
+    manager_invites: list[TaskManagerInviteResult] = []
 
 
 # --- Shift regeneration schemas ---
@@ -221,10 +284,16 @@ class AddShiftsResponse(BaseModel):
 class AffectedBookingInfo(BaseModel):
     booking_id: uuid.UUID
     user_id: uuid.UUID
+    #: The booker's name, so whoever confirms the regenerate can tell them.
+    user_name: str | None = None
     slot_title: str
     slot_date: dt.date
     slot_start_time: dt.time | None = None
     slot_end_time: dt.time | None = None
+    #: Only an event admin may remove this shift: it has started and people
+    #: are booked on it (``permissions.check_shift_history``). Always False
+    #: for event admins.
+    locked: bool = False
 
 
 class ShiftRegenerationResult(BaseModel):

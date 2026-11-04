@@ -168,3 +168,10 @@ class LocationShiftRead(BaseModel):
     team_requires_approval: bool | None = None
     my_team_status: TeamMemberStatus | None = None
     locked_by_team: bool = False
+    #: The task's vouchers per shift, and whether the caller runs the task (an
+    #: event admin or one of its people in charge). A shift of a task that
+    #: earns vouchers cannot be booked once it has started, unless the caller
+    #: runs the task (``409 booking.shift_started``); the map hides its Book
+    #: button by these two.
+    vouchers_per_shift: int = 0
+    can_manage: bool = False

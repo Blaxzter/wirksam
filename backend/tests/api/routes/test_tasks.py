@@ -269,7 +269,7 @@ class TestTasksEventAdminRole:
         test_task: Task,
         as_event_admin: None,
     ):
-        """Test that a task_manager can update any task."""
+        """Test that an event admin can update any task in their event."""
         r = await async_client.patch(
             f"/api/v1/tasks/{test_task.id}",
             json={"name": "Updated by Manager"},
@@ -297,7 +297,7 @@ class TestTasksEventAdminRole:
         test_task: Task,
         as_event_admin: None,
     ):
-        """Test that a task_manager can delete any task."""
+        """Test that an event admin can delete any task in their event."""
         r = await async_client.delete(f"/api/v1/tasks/{test_task.id}")
 
         assert r.status_code == 204

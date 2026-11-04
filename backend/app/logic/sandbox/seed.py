@@ -23,7 +23,15 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
   sandbox cannot upload an image (``sandbox.upload_disabled``) and the map
   would otherwise be an empty state the visitor can do nothing about; and
   today's shifts at those places are deliberately full, half full and short,
-  because the map colours every pin by the day's staffing.
+  because the map colours every pin by the day's staffing; and
+* the first teammate is in charge of two tasks (``in_charge``), so the task
+  pages show "In charge: ..." rather than an empty line; and
+* every task earns two vouchers per shift, the welcome desk and the café
+  counter take them, and the visitor already used one yesterday, so "My
+  vouchers" has a balance and a history on arrival. The event keeps the
+  default voucher rules: whoever is on shift at either point may also redeem
+  without a code there, and the teammate in charge of the café counter cannot
+  change its shifts, because it earns vouchers.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -91,8 +99,10 @@ from app.models.notification import Notification
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
+from app.models.voucher import VoucherEntry
 from app.schemas.sandbox import SandboxRole
 from app.schemas.user_availability import (
     UserAvailabilityCreate,
@@ -167,6 +177,13 @@ class _TaskSpec:
     today_fill: float | None = None
     #: The key of the seeded team (``_TEAMS``) that alone may book this task.
     team: str | None = None
+    #: The first teammate is in charge of this task (``task_managers``).
+    in_charge: bool = False
+    #: Vouchers per shift (``tasks.vouchers_per_shift``). Every task earns
+    #: two, so the visitor's past shift shows a balance.
+    vouchers_per_shift: int = 2
+    #: Vouchers can be redeemed here (``tasks.is_voucher_point``).
+    voucher_point: bool = False
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -221,6 +238,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=120,
         people_per_shift=2,
         today_fill=1.0,
+        voucher_point=True,
     ),
     _TaskSpec(
         name_en="Café counter",
@@ -252,6 +270,8 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=90,
         people_per_shift=2,
         today_fill=0.5,
+        in_charge=True,
+        voucher_point=True,
     ),
     _TaskSpec(
         name_en="Stage crew",
@@ -338,6 +358,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         duration_minutes=120,
         people_per_shift=3,
         today_fill=1.0,
+        in_charge=True,
     ),
     _TaskSpec(
         name_en="Wristband check",
@@ -645,6 +666,10 @@ async def _seed_event(
         now=now,
         sandbox=sandbox,
     )
+    _seed_task_managers(db, owner=owner, teammates=teammates, tasks=tasks)
+    _seed_vouchers(
+        db, event=event, owner=owner, teammates=teammates, tasks=tasks, now=now
+    )
 
     _seed_notifications(
         db,
@@ -659,6 +684,75 @@ async def _seed_event(
 
     await db.flush()
     return event
+
+
+def _seed_task_managers(
+    db: AsyncSession, *, owner: User, teammates: list[User], tasks: list[Task]
+) -> None:
+    """Put the first teammate in charge of the ``in_charge`` tasks.
+
+    The teammates and tasks are flushed already, which this relies on:
+    ``task_managers`` has no ORM relationship the unit of work could order
+    the inserts by.
+    """
+    if not teammates:
+        return
+    for spec, task in zip(_TASK_SPECS, tasks, strict=True):
+        if spec.in_charge:
+            db.add(
+                TaskManager(
+                    task_id=task.id,
+                    user_id=teammates[0].id,
+                    added_by_id=owner.id,
+                    added_by_name=owner.name,
+                )
+            )
+
+
+def _seed_vouchers(
+    db: AsyncSession,
+    *,
+    event: Event,
+    owner: User,
+    teammates: list[User],
+    tasks: list[Task],
+    now: dt.datetime,
+) -> None:
+    """One voucher the visitor already used yesterday, at the café counter.
+
+    With the two they earned on their past shift (``_seed_bookings`` gives
+    them one behind them), "My vouchers" shows a history and something left
+    to redeem. Redeemed by the teammate in charge of the counter, as a stand
+    would. Nothing else is stored: earnings are derived from the bookings.
+    """
+    if not teammates:
+        return
+    point = next(
+        (
+            task
+            for spec, task in zip(_TASK_SPECS, tasks, strict=True)
+            if spec.voucher_point and spec.in_charge
+        ),
+        None,
+    )
+    if point is None:
+        return
+    when = now - dt.timedelta(hours=20)
+    db.add(
+        VoucherEntry(
+            event_id=event.id,
+            user_id=owner.id,
+            kind="redemption",
+            amount=-1,
+            method="code",
+            task_id=point.id,
+            task_name=point.name,
+            actor_id=teammates[0].id,
+            actor_name=teammates[0].name,
+            created_at=when,
+            updated_at=when,
+        )
+    )
 
 
 async def _seed_tasks_and_shifts(
@@ -708,6 +802,8 @@ async def _seed_tasks_and_shifts(
             default_end_time=dt.time(hour=spec.end_hour),
             people_per_shift=spec.people_per_shift,
             schedule_overrides=None,
+            vouchers_per_shift=spec.vouchers_per_shift,
+            is_voucher_point=spec.voucher_point,
         )
         db.add(task)
         tasks.append(task)
