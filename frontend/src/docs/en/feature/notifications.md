@@ -38,7 +38,7 @@ About tasks and events:
 - Role Changed: email and push
 - Put in charge of a task: email and push
 - No longer in charge: push
-- Join Request Approved and Team Request Approved: email and push
+- Join Request Approved and Team Request Approved, which also covers being added to a team directly: email and push
 - Join Request Declined and Team Request Declined: email
 
 For organisers and team leads:

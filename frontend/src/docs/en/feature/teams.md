@@ -38,7 +38,7 @@ The person hears the result: by email and push if they're in, by email if they'r
 
 Organisers make a member a lead with "Make team lead" in the menu on their row. A team lead decides requests, adds people, records checks and removes members, all from their team under "Your teams". Editing or deleting the team, reserving tasks, appointing leads and removing other leads stay with the organisers.
 
-"Add someone from the event" puts a person straight into the team, with no request. They have to be in the event already. If the team has checks, the same ticks are needed as for a request. Someone who hadn't asked gets no message, so tell them yourself.
+"Add someone from the event" puts a person straight into the team, with no request. They have to be in the event already. If the team has checks, the same ticks are needed as for a request. WirkSam tells them they're in, unless you added yourself.
 
 ## Checks and reviewing
 

@@ -2814,6 +2814,82 @@ class TestDispatchTeamJoinDecided:
         assert "wurde abgelehnt" in notif.body
         assert await _rows(db_session, "team.join_approved") == []
 
+    async def test_someone_added_directly_is_told_without_mention_of_a_request(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event, name="Sanitäter")
+        person = await _make_user(db_session, tag="team-added")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_member_added(
+                team_id=team.id, user_id=person.id
+            )
+
+        notif = await _single(db_session, "team.join_approved", person.id)
+        assert notif.body == (
+            f"You were added to the team “Sanitäter” in “{test_event.name}”."
+        )
+        assert notif.data == {"event_id": str(test_event.id), "team_id": str(team.id)}
+
+    async def test_someone_added_directly_in_german(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event, name="Sanitäter")
+        person = await _make_user(db_session, tag="team-added-de", language="de")
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_member_added(
+                team_id=team.id, user_id=person.id
+            )
+
+        notif = await _single(db_session, "team.join_approved", person.id)
+        assert notif.title == "Du bist im Team"
+        assert notif.body == (
+            f"Du wurdest in das Team „Sanitäter“ in „{test_event.name}“ aufgenommen."
+        )
+
+    async def test_muting_the_event_quiets_being_added_too(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        team = await _make_team(db_session, event=test_event)
+        person = await _make_user(db_session, tag="team-added-mute")
+        await _mute(
+            db_session,
+            user_id=person.id,
+            type_code="team.join_approved",
+            scope_type="event",
+            scope_id=test_event.id,
+        )
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_member_added(
+                team_id=team.id, user_id=person.id
+            )
+
+        assert await _rows(db_session, "team.join_approved") == []
+
+    async def test_being_added_to_a_deleted_team_sends_nothing(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        with _dispatch_env(db_session):
+            await triggers.dispatch_team_member_added(
+                team_id=uuid.uuid4(), user_id=test_user.id
+            )
+
+        assert await _rows(db_session) == []
+
     async def test_deleted_team_sends_nothing(
         self,
         db_session: AsyncSession,

@@ -1032,6 +1032,44 @@ async def dispatch_team_join_decided(
         logger.exception("Failed to dispatch %s notification", type_code)
 
 
+async def dispatch_team_member_added(
+    *,
+    team_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> None:
+    """Tell someone they were put straight into a team, without having asked.
+
+    Sent as ``team.join_approved``, the same news for the person (they are in
+    the team), so one setting decides both. Its wording is its own, because
+    there was no request to approve.
+    """
+    try:
+        from app.models.event_team import EventTeam
+
+        async with async_session() as db:
+            team = await db.get(EventTeam, team_id)
+            if team is None:
+                return
+            team_name = team.name
+            event_name = await _event_name(db, team.event_id)
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=[user_id],
+                type_code="team.join_approved",
+                message_factory=lambda lang: get_message(
+                    "team.join_approved.added",
+                    lang,
+                    team_name=team_name,
+                    event_name=event_name,
+                ),
+                data={"event_id": str(team.event_id), "team_id": str(team_id)},
+                scope_chain=[("event", team.event_id)],
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch team.join_approved notification")
+
+
 async def dispatch_event_role_changed(
     *,
     event_id: uuid.UUID,

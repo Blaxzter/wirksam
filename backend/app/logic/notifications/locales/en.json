@@ -177,6 +177,10 @@
     "title": "You're in the Team",
     "body": "Your request to join the team “{team_name}” in “{event_name}” was approved."
   },
+  "team.join_approved.added": {
+    "title": "You're in the Team",
+    "body": "You were added to the team “{team_name}” in “{event_name}”."
+  },
   "team.join_declined": {
     "title": "Team Request Declined",
     "body": "Your request to join the team “{team_name}” in “{event_name}” was declined."

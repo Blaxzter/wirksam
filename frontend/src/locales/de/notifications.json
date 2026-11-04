@@ -251,7 +251,7 @@
         },
         "team": {
             "join_approved": {
-                "description": "Wenn deine Anfrage, einem Team beizutreten, angenommen wurde",
+                "description": "Wenn deine Anfrage, einem Team beizutreten, angenommen wurde oder dich jemand in ein Team aufnimmt",
                 "name": "Teamanfrage angenommen"
             },
             "join_declined": {

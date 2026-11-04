@@ -177,6 +177,10 @@
     "title": "Du bist im Team",
     "body": "Deine Anfrage für das Team „{team_name}“ in „{event_name}“ wurde angenommen."
   },
+  "team.join_approved.added": {
+    "title": "Du bist im Team",
+    "body": "Du wurdest in das Team „{team_name}“ in „{event_name}“ aufgenommen."
+  },
   "team.join_declined": {
     "title": "Teamanfrage abgelehnt",
     "body": "Deine Anfrage für das Team „{team_name}“ in „{event_name}“ wurde abgelehnt."

@@ -38,7 +38,7 @@ Rund um Aufgaben und Veranstaltungen:
 - Rolle geändert: E-Mail und Push
 - Als verantwortlich eingetragen: E-Mail und Push
 - Nicht mehr verantwortlich: Push
-- Beitrittsanfrage und Teamanfrage angenommen: E-Mail und Push
+- Beitrittsanfrage und Teamanfrage angenommen, was auch gilt, wenn dich jemand direkt in ein Team aufnimmt: E-Mail und Push
 - Beitrittsanfrage und Teamanfrage abgelehnt: E-Mail
 
 Für Organisator:innen und Team-Leitungen:

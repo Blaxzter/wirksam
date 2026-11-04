@@ -261,7 +261,10 @@ TEAM_JOIN_REQUESTED = NotificationTypeDef(
 TEAM_JOIN_APPROVED = NotificationTypeDef(
     code="team.join_approved",
     name="Team Request Approved",
-    description="Notification when your request to join a team is approved",
+    description=(
+        "Notification when your request to join a team is approved, "
+        "or someone adds you to a team"
+    ),
     category="event",
     classification="change",
     default_channels=["email", "push"],

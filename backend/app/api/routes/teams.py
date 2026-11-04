@@ -37,6 +37,7 @@ from app.crud.user import user as crud_user
 from app.logic.notifications.triggers import (
     dispatch_team_join_decided,
     dispatch_team_join_requested,
+    dispatch_team_member_added,
 )
 from app.logic.permissions import (
     can_manage_team,
@@ -846,6 +847,8 @@ async def add_team_member(
     …/members/{user_id}``, which is for event admins, so a lead cannot demote
     a co-lead through here. A team with requirements needs the same checks as
     approving a request.
+
+    The person is told, unless they added themselves.
     """
     team = await _team_or_404(session, event_id=event_id, team_id=team_id)
     await require_team_manager(current_user, session, team)
@@ -891,14 +894,19 @@ async def add_team_member(
     await store_checks(
         session, member_id=member.id, checks=checks, checked_by=current_user
     )
-    if was_waiting:
-        # Placing someone who had asked is approving their request.
-        background_tasks.add_task(
-            dispatch_team_join_decided,
-            team_id=team.id,
-            user_id=body.user_id,
-            approved=True,
-        )
+    if body.user_id != current_user.id:
+        if was_waiting:
+            # Placing someone who had asked is approving their request.
+            background_tasks.add_task(
+                dispatch_team_join_decided,
+                team_id=team.id,
+                user_id=body.user_id,
+                approved=True,
+            )
+        else:
+            background_tasks.add_task(
+                dispatch_team_member_added, team_id=team.id, user_id=body.user_id
+            )
     return await _one_member_read(session, team, member)
 
 

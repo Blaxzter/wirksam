@@ -38,7 +38,7 @@ Die Person erfährt das Ergebnis: per E-Mail und Push, wenn sie dabei ist, per E
 
 Organisator:innen machen ein Mitglied im Menü seiner Zeile mit „Zur Teamleitung machen“ zur Teamleitung. Eine Teamleitung entscheidet über Anfragen, fügt Leute hinzu, erfasst Nachweise und entfernt Mitglieder, und zwar bei ihrem Team unter „Deine Teams“. Das Team bearbeiten oder löschen, Aufgaben reservieren, Teamleitungen ernennen und andere Teamleitungen entfernen bleibt bei den Organisator:innen.
 
-Mit „Jemanden aus der Veranstaltung hinzufügen“ kommt eine Person direkt ins Team, ohne Anfrage. Sie muss schon in der Veranstaltung sein. Hat das Team Nachweise, sind dieselben Häkchen nötig wie bei einer Anfrage. Wer nicht angefragt hatte, bekommt keine Nachricht, sagt also selbst Bescheid.
+Mit „Jemanden aus der Veranstaltung hinzufügen“ kommt eine Person direkt ins Team, ohne Anfrage. Sie muss schon in der Veranstaltung sein. Hat das Team Nachweise, sind dieselben Häkchen nötig wie bei einer Anfrage. WirkSam sagt der Person Bescheid, außer du hast dich selbst hinzugefügt.
 
 ## Nachweise und Prüfung
 

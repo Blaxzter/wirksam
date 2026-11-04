@@ -251,7 +251,7 @@
         },
         "team": {
             "join_approved": {
-                "description": "When your request to join a team is approved",
+                "description": "When your request to join a team is approved, or someone adds you to a team",
                 "name": "Team Request Approved"
             },
             "join_declined": {
