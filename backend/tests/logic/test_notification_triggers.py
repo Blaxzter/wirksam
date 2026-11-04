@@ -254,7 +254,9 @@ def _all_invocations(
         ),
         (
             "dispatch_task_published",
-            lambda: triggers.dispatch_task_published(task_id=task_id, task_name="Task"),
+            lambda: triggers.dispatch_task_published(
+                task_id=task_id, task_name="Task", event_id=event_id
+            ),
         ),
         (
             "dispatch_task_manager_added",
@@ -949,74 +951,105 @@ class TestDispatchShiftTimeChanged:
 class TestDispatchTaskPublished:
     """Test suite for dispatch_task_published."""
 
-    async def test_notifies_active_users_and_skips_inactive_and_muted(
+    async def test_tells_the_events_active_members_and_nobody_else(
         self,
         db_session: AsyncSession,
         seeded_types: None,
-        test_user: User,
+        test_event: Event,
         test_inactive_user: User,
     ) -> None:
-        """Test that inactive and opted-out users are both excluded."""
-        active = await _make_user(db_session, tag="taskpub-active")
+        """A stranger must not learn a task's name, on an event they aren't in."""
+        member = await _make_user(db_session, tag="taskpub-member")
+        await _join_event(db_session, user_id=member.id, event_id=test_event.id)
         muted = await _make_user(db_session, tag="taskpub-muted")
+        await _join_event(db_session, user_id=muted.id, event_id=test_event.id)
         await _mute(db_session, user_id=muted.id, type_code="task.published")
+        await _join_event(
+            db_session, user_id=test_inactive_user.id, event_id=test_event.id
+        )
+        stranger = await _make_user(db_session, tag="taskpub-stranger")
         task_id = uuid.uuid4()
 
         with _dispatch_env(db_session):
             await triggers.dispatch_task_published(
-                task_id=task_id, task_name="Kitchen Duty"
+                task_id=task_id, task_name="Kitchen Duty", event_id=test_event.id
             )
 
         recipients = await _recipients(db_session, "task.published")
-        assert recipients == {test_user.id, active.id}
-        assert test_inactive_user.id not in recipients
+        assert member.id in recipients
+        assert stranger.id not in recipients
         assert muted.id not in recipients
+        assert test_inactive_user.id not in recipients
 
-        notif = await _single(db_session, "task.published", test_user.id)
+        notif = await _single(db_session, "task.published", member.id)
         assert (
             notif.body == 'A new task "Kitchen Duty" has been published. Check it out!'
         )
         assert notif.data == {"task_id": str(task_id)}
 
-    async def test_event_id_extends_the_scope_chain(
+    async def test_a_mute_on_the_event_applies(
         self,
         db_session: AsyncSession,
         seeded_types: None,
-        test_user: User,
+        test_event: Event,
     ) -> None:
-        """Test that an event-scoped mute applies once event_id is passed."""
-        event_id = uuid.uuid4()
+        """An event-scoped mute silences it for that person only."""
+        muted = await _make_user(db_session, tag="taskpub-scoped-muted")
         other = await _make_user(db_session, tag="taskpub-scoped-other")
+        await _join_event(db_session, user_id=muted.id, event_id=test_event.id)
+        await _join_event(db_session, user_id=other.id, event_id=test_event.id)
         await _mute(
             db_session,
-            user_id=test_user.id,
+            user_id=muted.id,
             type_code="task.published",
             scope_type="event",
-            scope_id=event_id,
+            scope_id=test_event.id,
         )
 
         with _dispatch_env(db_session):
             await triggers.dispatch_task_published(
                 task_id=uuid.uuid4(),
                 task_name="Kitchen Duty",
-                event_id=event_id,
+                event_id=test_event.id,
             )
 
-        assert await _recipients(db_session, "task.published") == {other.id}
+        recipients = await _recipients(db_session, "task.published")
+        assert other.id in recipients
+        assert muted.id not in recipients
 
-    async def test_no_active_users_creates_nothing(
+    async def test_a_task_without_an_event_tells_nobody(
         self,
         db_session: AsyncSession,
         seeded_types: None,
-        test_inactive_user: User,
+        test_user: User,
     ) -> None:
-        """Test that the trigger short-circuits when no user is active."""
+        """No event means no members, not everyone."""
         with _dispatch_env(db_session):
             await triggers.dispatch_task_published(
                 task_id=uuid.uuid4(), task_name="Kitchen Duty"
             )
 
-        assert test_inactive_user.is_active is False
+        assert test_user.is_active is True
+        assert await _rows(db_session) == []
+
+    async def test_a_demo_task_tells_nobody(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_event: Event,
+    ) -> None:
+        """The hard stop holds even for the demo event's own members."""
+        member = await _make_user(db_session, tag="taskpub-demo")
+        await _join_event(db_session, user_id=member.id, event_id=test_event.id)
+
+        with _dispatch_env(db_session):
+            await triggers.dispatch_task_published(
+                task_id=uuid.uuid4(),
+                task_name="Kitchen Duty",
+                event_id=test_event.id,
+                is_sandbox=True,
+            )
+
         assert await _rows(db_session) == []
 
 
