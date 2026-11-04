@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useColorMode } from '@vueuse/core'
 import { BadgeCheck, Bell, ChevronsUpDown, Globe, LogOut, Moon, Sun } from '@lucide/vue'
+import { useColorMode } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-
-import { useAvatarUrl } from '@/composables/useAvatarUrl'
 
 import { useAuthStore } from '@/stores/auth'
 
-import InstallAppMenuItem from '@/components/navigation/InstallAppMenuItem.vue'
-import LegalMenuLinks from '@/components/navigation/LegalMenuLinks.vue'
+import { useAvatarUrl } from '@/composables/useAvatarUrl'
+import { useMenuAction } from '@/composables/useMenuAction'
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -27,6 +26,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
+
+import InstallAppMenuItem from '@/components/navigation/InstallAppMenuItem.vue'
+import LegalMenuLinks from '@/components/navigation/LegalMenuLinks.vue'
 
 const { isMobile } = useSidebar()
 const authStore = useAuthStore()
@@ -47,6 +49,9 @@ const displayEmail = computed(() => user.value?.email || '')
 
 // Avatar lives on our profile (UserProfile) rather than on the identity object.
 const avatarUrl = useAvatarUrl(() => authStore.profile)
+
+/** "Install app" may answer in a dialog (`InstallAppMenuItem`). */
+const menu = useMenuAction()
 
 // Create initials for fallback
 const initials = computed(() => {
@@ -93,6 +98,7 @@ const initials = computed(() => {
           :side="isMobile ? 'bottom' : 'right'"
           align="end"
           :side-offset="4"
+          @close-auto-focus="menu.onCloseAutoFocus"
         >
           <DropdownMenuLabel class="p-0 font-normal">
             <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">

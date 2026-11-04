@@ -27,6 +27,14 @@
     "title": "New Task Published",
     "body": "A new task \"{task_name}\" has been published. Check it out!"
   },
+  "task.manager_added": {
+    "title": "You're now in charge of {task_name} · {event_name}",
+    "body": "{actor} put you in charge. You can edit the task and see who has booked."
+  },
+  "task.manager_removed": {
+    "title": "No longer in charge of {task_name} · {event_name}",
+    "body": "{actor} took you off this task. You can no longer edit it."
+  },
   "event.published": {
     "title": "New Event Published",
     "body": "Event \"{event_name}\" has been published."
@@ -47,6 +55,27 @@
     "title": "Reset your password",
     "body": "Someone asked to set a new password for your {project_name} account.\n\nThe link expires in {expires_in}. If that wasn't you, ignore this email. Your current password stays valid."
   },
+  "dates": {
+    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "day": "{weekday} {day}",
+    "day_month": "{weekday} {day} {month}",
+    "day_month_year": "{weekday} {day} {month} {year}",
+    "span": "{first} – {last}"
+  },
   "email": {
     "view_details": "View Details",
     "footer_text": "You received this because of your notification settings.",
@@ -58,15 +87,63 @@
     "verify_cta": "Confirm email",
     "reset_cta": "Set a new password",
     "action_url_fallback": "If the button does not work, copy this link into your browser:",
-    "transactional_footer": "You received this email because it was requested for this address. If that wasn't you, no action is needed."
+    "transactional_footer": "You received this email because it was requested for this address. If that wasn't you, no action is needed.",
+    "open_task": "Open task",
+    "detail_task": "Task",
+    "detail_location": "Where",
+    "detail_when": "When",
+    "detail_also_in_charge": "Also in charge",
+    "shift_count_one": "1 shift",
+    "shift_count_other": "{n} shifts",
+    "in_charge_intro": "{actor} put you in charge of “{task_name}” at “{event_name}”.",
+    "in_charge_can_heading": "What you can do now",
+    "in_charge_can_edit": "Change the task's description and details",
+    "in_charge_can_see": "See who is on shift and get in touch with them",
+    "in_charge_can_redeem": "Redeem vouchers at “{task_name}”",
+    "in_charge_step_down": "Doesn't suit you? You can step down on the task's page.",
+    "invite_cta": "Create account and accept",
+    "invite_footer": "You received this e-mail because {inviter} entered your address on {project_name}. If you don't know them, you can ignore it.",
+    "invite_from": "{inviter} via {project_name}",
+    "invite_organiser": "Organising {event_name}",
+    "invite_heading": "Will you join “{event_name}”?",
+    "invite_heading_tasks": "Will you take on {tasks}?",
+    "invite_in_charge_means": "Being in charge means you can change the description and see who is on shift.",
+    "invite_in_charge_means_redeem": "Being in charge means you can change the description, see who is on shift and redeem vouchers at {points}.",
+    "invite_also_in_charge_one": "{names} is in charge too.",
+    "invite_also_in_charge_other": "{names} are in charge too.",
+    "invite_sign_in": "Already have an account? {link} with this address and the invitation will be waiting for you.",
+    "invite_sign_in_link": "Sign in",
+    "invite_decline": "Not for you? Then there's nothing to do. Without your yes you won't be put down for anything.",
+    "detail_tasks": "Tasks",
+    "detail_event": "Event"
   },
   "event.invitation": {
     "title": "Event Invitation",
     "body": "You have been invited to join “{event_name}”."
   },
+  "event.invitation.tasks": {
+    "title": "Invitation to be in charge",
+    "body": "{inviter} invited you to “{event_name}” and would like you to be in charge of {tasks}."
+  },
   "event.invitation_accepted": {
     "title": "Invitation Accepted",
     "body": "{name} joined “{event_name}”."
+  },
+  "event.invitation_accepted.tasks": {
+    "title": "Invitation Accepted",
+    "body": "{name} joined “{event_name}” and is now in charge of {tasks}."
+  },
+  "invite.email": {
+    "title": "{inviter} invites you to “{event_name}”",
+    "body": "{inviter} invites you to take part in “{event_name}”. Create an account with this e-mail address and accept, and you're in."
+  },
+  "invite.email.tasks": {
+    "title": "{inviter} asks you to take on {tasks}",
+    "body": "{inviter} asked you to be in charge of {tasks} at “{event_name}”. Create an account with this e-mail address and accept, and you're in and in charge."
+  },
+  "invite.email.expiry": {
+    "title": "",
+    "body": "The invitation is valid until {date}."
   },
   "event.join_requested": {
     "title": "Join Request",
@@ -106,6 +183,10 @@
   },
   "role.member": {
     "title": "a member",
+    "body": ""
+  },
+  "someone": {
+    "title": "Someone",
     "body": ""
   },
   "user.reinstated": {

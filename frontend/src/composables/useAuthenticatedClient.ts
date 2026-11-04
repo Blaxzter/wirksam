@@ -9,6 +9,10 @@ type HttpVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 // Mutations on these resource paths change what the sidebar shows
 // (tasks, my bookings, open-shift counts, event list).
 const SIDEBAR_AFFECTING_PATH = /\/(bookings|tasks|shifts|events)(\/|$|\?)/
+// ...except vouchers, which live under /events/ but change nothing the sidebar
+// shows. Without this, every new code (one every two minutes while it is on
+// screen) and every redemption at a stand would refetch it.
+const SIDEBAR_IGNORED_PATH = /\/vouchers(\/|$|\?)/
 
 /**
  * Composable for making authenticated API calls
@@ -68,7 +72,7 @@ export function useAuthenticatedClient() {
 
     if (method !== 'get') {
       const url = typeof options === 'string' ? options : (options as { url?: string }).url
-      if (url && SIDEBAR_AFFECTING_PATH.test(url)) {
+      if (url && SIDEBAR_AFFECTING_PATH.test(url) && !SIDEBAR_IGNORED_PATH.test(url)) {
         useSidebarStore().refresh()
       }
     }

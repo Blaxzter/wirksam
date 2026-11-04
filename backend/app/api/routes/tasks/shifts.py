@@ -1,22 +1,43 @@
-from typing import Any
+import uuid
+from typing import Any, NoReturn
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
+from app.crud.booking import booking as crud_booking
 from app.crud.event import event as crud_event
+from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
+from app.crud.task_manager import task_manager as crud_task_manager
+from app.crud.user import user as crud_user
+from app.logic import clock, vouchers
+from app.logic.invitations import invite_to_task, lock_invitation_quota
 from app.logic.locations import resolve_location
-from app.logic.permissions import require_event_role
+from app.logic.notifications.triggers import (
+    dispatch_event_invitation,
+    dispatch_task_manager_added,
+)
+from app.logic.permissions import (
+    check_shift_history,
+    require_event_role,
+    require_shift_editor,
+    shift_history_refuses,
+)
 from app.logic.shift_generator import generate_shifts
+from app.logic.task_managers import decorate_task_reads
 from app.logic.teams import ensure_team_in_event
+from app.models.booking import Booking
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
+from app.models.task import Task
+from app.models.user import User
 from app.schemas.event import EventRead
 from app.schemas.shift import ShiftCreate
 from app.schemas.shift_batch import ShiftBatchCreate
@@ -31,8 +52,86 @@ from app.schemas.task import (
     TaskRead,
     TaskUpdateWithShifts,
 )
+from app.schemas.task_manager import TaskManagerInviteResult
 
 router = APIRouter()
+
+
+async def _task_read(session: AsyncSession, user: User, task: Task) -> TaskRead:
+    """The task inside a write response, with its viewer-relative fields."""
+    read = TaskRead.model_validate(task)
+    await decorate_task_reads(session, user, [read])
+    return read
+
+
+async def _validate_manager_ids(
+    session: AsyncSession, payload: TaskCreateWithShifts
+) -> list[uuid.UUID]:
+    """The deduplicated ``manager_ids``, each a member of ``payload.event_id``.
+
+    Checked before anything is written, with the membership rows locked as in
+    ``POST /tasks/{id}/managers``. A task in a brand-new event (or in no
+    event) has nobody to put in charge yet.
+    """
+    ids = list(dict.fromkeys(payload.manager_ids))
+    if not ids:
+        return []
+    member_ids: set[uuid.UUID] = (
+        await crud_membership.lock_member_ids(
+            session, event_id=payload.event_id, user_ids=ids
+        )
+        if payload.event_id is not None and payload.new_event is None
+        else set()
+    )
+    if any(i not in member_ids for i in ids):
+        _not_event_member()
+    return ids
+
+
+def _not_event_member() -> NoReturn:
+    raise_problem(
+        422,
+        code="task.manager_not_event_member",
+        detail="Only members of this event can be put in charge of its tasks",
+    )
+
+
+async def _invite_by_email(
+    session: AsyncSession,
+    *,
+    task: Task,
+    inviter: User,
+    emails: list[str],
+    manager_ids: list[uuid.UUID],
+) -> list[TaskManagerInviteResult]:
+    """Put the people behind ``emails`` in charge of a task just created.
+
+    Each address goes through ``invite_to_task`` as in ``POST
+    /tasks/{id}/managers/invite``, except that a daily limit or a demo event
+    comes back as ``skipped`` instead of an error: raising would roll back the
+    task the organiser just built. The address of someone already named in
+    ``manager_ids`` is left out.
+    """
+    results: list[TaskManagerInviteResult] = []
+    now = clock.utc_now()
+    # Every address's limit lock up front, in sorted order, as bulk does:
+    # taken one by one in the order typed, two requests could deadlock.
+    await lock_invitation_quota(session, inviter=inviter, emails=emails)
+    for email in emails:
+        account = await crud_user.get_by_email(session, email=email)
+        if account is not None and account.id in manager_ids:
+            continue
+        results.append(
+            await invite_to_task(
+                session,
+                task=task,
+                inviter=inviter,
+                email=email,
+                now=now,
+                skip_refusals=True,
+            )
+        )
+    return results
 
 
 @router.post(
@@ -42,10 +141,23 @@ async def create_task_with_shifts(
     payload: TaskCreateWithShifts,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ) -> TaskCreateWithShiftsResponse:
-    """Create a task with auto-generated duty shifts in a single transaction."""
+    """Create a task with auto-generated duty shifts in a single transaction.
+
+    The people named in ``manager_ids`` are told they are in charge, in one
+    queued call, except the creator if they named themselves. Each address in
+    ``manager_emails`` is put in charge if it is a member's, or invited, and
+    reported in ``manager_invites``.
+    """
     # Check access for the target event (if any)
     await require_event_role(current_user, session, payload.event_id)
+    manager_ids = await _validate_manager_ids(session, payload)
+    manager_emails = [str(e) for e in payload.manager_emails]
+    if manager_emails and (payload.event_id is None or payload.new_event is not None):
+        # A brand-new event (or none) has nobody to put in charge yet, and
+        # an invitation needs an event to invite into.
+        _not_event_member()
     # A location belongs to an existing event. Resolved before anything is
     # written, against ``payload.event_id`` only: an event created by this
     # very request has no locations yet, so any id is foreign to it.
@@ -80,6 +192,8 @@ async def create_task_with_shifts(
         location_id=location_id,
         category=payload.category,
         team_id=payload.team_id,
+        vouchers_per_shift=payload.vouchers_per_shift,
+        is_voucher_point=payload.is_voucher_point,
         event_id=event_id,
         created_by_id=current_user.id,
     )
@@ -139,13 +253,46 @@ async def create_task_with_shifts(
         slot_in.batch_id = db_batch.id
         await crud_shift.create(session, obj_in=slot_in)
 
+    # 5. The people in charge, validated above, then the addresses.
+    for user_id in manager_ids:
+        await crud_task_manager.add(
+            session, task_id=db_task.id, user_id=user_id, added_by=current_user
+        )
+    manager_invites = await _invite_by_email(
+        session,
+        task=db_task,
+        inviter=current_user,
+        emails=manager_emails,
+        manager_ids=manager_ids,
+    )
+    # One notice per person: members added by address join the ones named by
+    # id in the same queued call.
+    told = [user_id for user_id in manager_ids if user_id != current_user.id] + [
+        r.manager.user_id
+        for r in manager_invites
+        if r.status == "added" and r.manager and r.manager.user_id != current_user.id
+    ]
+    if told:
+        background_tasks.add_task(
+            dispatch_task_manager_added,
+            task_id=db_task.id,
+            user_ids=told,
+            actor_id=current_user.id,
+        )
+    for r in manager_invites:
+        if r.status == "invited" and r.emailed and r.invitation is not None:
+            background_tasks.add_task(
+                dispatch_event_invitation, invitation_id=r.invitation.id
+            )
+
     await session.flush()
     await session.refresh(db_task)
 
     return TaskCreateWithShiftsResponse(
-        task=TaskRead.model_validate(db_task),
+        task=await _task_read(session, current_user, db_task),
         shifts_created=len(slot_creates),
         event=event_read,
+        manager_invites=manager_invites,
     )
 
 
@@ -156,9 +303,13 @@ async def add_shifts_to_task(
     session: DBDep,
     current_user: CurrentUser,
 ) -> AddShiftsResponse:
-    """Add a new batch of duty shifts to an existing task without touching existing shifts."""
+    """Add a new batch of duty shifts to an existing task without touching existing shifts.
+
+    Event admins, and its people in charge unless the task earns vouchers and
+    the event keeps those shifts with its admins (``require_shift_editor``).
+    """
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    await require_shift_editor(current_user, session, db_task)
 
     # Validate dates against event constraints
     if db_task.event_id:
@@ -228,7 +379,7 @@ async def add_shifts_to_task(
     await session.refresh(db_task)
 
     return AddShiftsResponse(
-        task=TaskRead.model_validate(db_task),
+        task=await _task_read(session, current_user, db_task),
         shifts_added=len(slot_creates),
     )
 
@@ -250,9 +401,19 @@ async def regenerate_task_shifts(
     When dry_run=True, returns a preview without making changes.
     When batch_id is provided, only regenerates shifts belonging to that batch.
     Shifts are matched by (date, start_time, end_time) — matched shifts keep their bookings.
+
+    Bookings on removed shifts are cancelled with a snapshot, as on every other
+    delete path. A person in charge may not remove a booked shift that has
+    started (``check_shift_history``): the dry run marks such rows ``locked``,
+    the real run refuses with 403 ``task.shift_history_admin_only``.
+
+    On a task that earns vouchers, a person in charge gets 403
+    ``task.voucher_shifts_admin_only`` unless the event allows it
+    (``require_shift_editor``), the dry run included, so the editor learns it
+    before anything is confirmed.
     """
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
-    await require_event_role(current_user, session, db_task.event_id)
+    access = await require_shift_editor(current_user, session, db_task)
 
     # If batch_id provided, load the batch for defaults
     db_batch: ShiftBatch | None = None
@@ -317,7 +478,9 @@ async def regenerate_task_shifts(
     stmt = (
         select(Shift)
         .where(col(Shift.task_id) == db_task.id)
-        .options(selectinload(Shift.bookings))  # type: ignore[arg-type]
+        .options(
+            selectinload(Shift.bookings).selectinload(Booking.user)  # type: ignore[arg-type]
+        )
     )
     if batch_id:
         stmt = stmt.where(col(Shift.batch_id) == batch_id)
@@ -330,45 +493,80 @@ async def regenerate_task_shifts(
         key = (shift.date, shift.start_time, shift.end_time)
         existing_lookup[key] = shift
 
-    # 4. Match new shifts to existing
+    # 4. Match new shifts to existing. The kept shifts take the new title,
+    #    places, location and category, but only in 6e below: the request
+    #    commits whatever is on the session, so touching them here would make
+    #    the dry run's preview a real edit.
     matched_keys: set[tuple[Any, ...]] = set()
+    matched_updates: list[tuple[Shift, ShiftCreate]] = []
     shifts_to_create: list[ShiftCreate] = []
     for new_shift in new_shift_defs:
         key = (new_shift.date, new_shift.start_time, new_shift.end_time)
         if key in existing_lookup:
             matched_keys.add(key)
-            # Update title and max_bookings on matched shifts
-            existing = existing_lookup[key]
-            existing.title = new_shift.title
-            existing.max_bookings = new_shift.max_bookings
-            existing.location = new_shift.location
-            existing.location_id = new_shift.location_id
-            existing.category = new_shift.category
+            matched_updates.append((existing_lookup[key], new_shift))
         else:
             shifts_to_create.append(new_shift)
 
     # 5. Find unmatched existing shifts (to be deleted) and their confirmed bookings
+    now = clock.wall_clock_now()
     affected_bookings: list[AffectedBookingInfo] = []
     shifts_to_delete: list[Shift] = []
+    any_locked = False
     for key, shift in existing_lookup.items():
         if key not in matched_keys:
             shifts_to_delete.append(shift)
-            for booking in shift.bookings:
-                if booking.status == "confirmed":
-                    affected_bookings.append(
-                        AffectedBookingInfo(
-                            booking_id=booking.id,
-                            user_id=booking.user_id,
-                            slot_title=shift.title,
-                            slot_date=shift.date,
-                            slot_start_time=shift.start_time,
-                            slot_end_time=shift.end_time,
-                        )
+            confirmed = [b for b in shift.bookings if b.status == "confirmed"]
+            locked = shift_history_refuses(
+                access,
+                before=shift,
+                has_bookings=bool(confirmed),
+                deleting=True,
+                now=now,
+            )
+            any_locked = any_locked or locked
+            for booking in confirmed:
+                affected_bookings.append(
+                    AffectedBookingInfo(
+                        booking_id=booking.id,
+                        user_id=booking.user_id,
+                        user_name=booking.user.name if booking.user else None,
+                        slot_title=shift.title,
+                        slot_date=shift.date,
+                        slot_start_time=shift.start_time,
+                        slot_end_time=shift.end_time,
+                        locked=locked,
                     )
+                )
+
+    if not dry_run and any_locked:
+        # Raises: the same rule the dry run reported as ``locked``.
+        for shift in shifts_to_delete:
+            check_shift_history(
+                access,
+                before=shift,
+                has_bookings=any(b.status == "confirmed" for b in shift.bookings),
+                deleting=True,
+                now=now,
+            )
 
     if not dry_run:
+        # 6. First, before anything is renamed or removed: what the shifts
+        #    about to go have earned stays earned, under today's names.
+        await vouchers.settle_earnings(
+            session, now=now, shift_ids=[s.id for s in shifts_to_delete]
+        )
+
         # 6a. Update task fields (only when not scoped to a batch)
         if not batch_id:
+            if payload.name and payload.name != db_task.name:
+                # The task page heads a series with its batch's label.
+                await crud_shift_batch.follow_task_rename(
+                    session,
+                    task_id=db_task.id,
+                    old_name=db_task.name,
+                    new_name=payload.name,
+                )
             if payload.name is not None:
                 db_task.name = payload.name
             if payload.description is not None:
@@ -410,7 +608,15 @@ async def regenerate_task_shifts(
             ]
             session.add(db_batch)
 
-        # 6c. Delete unmatched shifts (cascade deletes bookings)
+        # 6c. Delete unmatched shifts. Their confirmed bookings are cancelled
+        #     with a snapshot first, like every other delete path: the FK is
+        #     SET NULL, so they would otherwise stay "confirmed" with no shift
+        #     and drop out of everyone's hours without a word.
+        await crud_booking.cancel_bookings_for_shifts(
+            session,
+            slot_ids=[s.id for s in shifts_to_delete],
+            task_name=db_task.name,
+        )
         for shift in shifts_to_delete:
             await session.delete(shift)
 
@@ -420,11 +626,20 @@ async def regenerate_task_shifts(
                 slot_in.batch_id = db_batch.id
             await crud_shift.create(session, obj_in=slot_in)
 
+        # 6e. Update the kept shifts.
+        for existing, new_shift in matched_updates:
+            existing.title = new_shift.title
+            existing.max_bookings = new_shift.max_bookings
+            existing.location = new_shift.location
+            existing.location_id = new_shift.location_id
+            existing.category = new_shift.category
+            session.add(existing)
+
         await session.flush()
         await session.refresh(db_task)
 
     return ShiftRegenerationResult(
-        task=TaskRead.model_validate(db_task),
+        task=await _task_read(session, current_user, db_task),
         shifts_added=len(shifts_to_create),
         shifts_removed=len(shifts_to_delete),
         shifts_kept=len(matched_keys),

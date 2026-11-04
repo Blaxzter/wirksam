@@ -1,7 +1,4 @@
 {
-    "attention": {
-        "teamRequests": "{count} person wants to join a team | {count} people want to join a team"
-    },
     "badge": {
         "locked": "Only members of {name} can book these shifts",
         "only": "{name} only",

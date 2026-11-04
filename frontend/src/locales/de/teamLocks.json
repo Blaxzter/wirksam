@@ -1,7 +1,4 @@
 {
-    "attention": {
-        "teamRequests": "{count} Person möchte in ein Team | {count} Personen möchten in ein Team"
-    },
     "badge": {
         "locked": "Nur Mitglieder von {name} können diese Schichten buchen",
         "only": "Nur {name}",

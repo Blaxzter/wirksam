@@ -21,6 +21,8 @@ class SidebarTask(BaseModel):
     team_name: str | None = None
     #: Reserved for a team the viewer is not in (and not an event admin).
     locked_by_team: bool = False
+    #: The viewer is in charge of it. Listed first, full or not, drafts too.
+    is_managed: bool = False
 
 
 class SidebarBooking(BaseModel):

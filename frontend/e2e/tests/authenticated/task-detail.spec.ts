@@ -73,7 +73,8 @@ test.describe('Task Detail – page structure', () => {
   test('shows shift time cards', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
     // Shifts should show time and availability count
-    await expect(shiftCard(page, shifts[0])).toContainText('0/3')
+    await expect(shiftCard(page, shifts[0])).toContainText('0 of 3')
+    await expect(shiftCard(page, shifts[0])).toContainText('Nobody yet')
   })
 
   test('back button navigates to tasks list', async ({ adminPage: page }) => {
@@ -86,15 +87,19 @@ test.describe('Task Detail – page structure', () => {
 // ── booking ──────────────────────────────────────────────────────────────────
 
 test.describe('Task Detail – booking', () => {
-  test('clicking a shift books it', async ({ adminPage: page }) => {
+  test('an organiser opens a shift and books it from there', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
+    // Whoever runs the task opens a shift with a tap, to see who is on it.
     const card = shiftCard(page, shifts[0])
-    await expect(card).toContainText('0/3')
-
+    await expect(card).toContainText('0 of 3')
     await card.click()
-    await page.getByTestId('btn-dialog-confirm').click()
 
-    await expect(card).toContainText('1/3')
+    const dialog = page.getByTestId('dialog-shift-detail')
+    await expect(dialog).toBeVisible()
+    await dialog.getByTestId('btn-book-shift').click()
+    await expect(dialog).toBeHidden()
+
+    await expect(card).toContainText('1 of 3')
   })
 
   test('booked shift shows in My Bookings summary', async ({ adminPage: page }) => {
@@ -114,7 +119,7 @@ test.describe('Task Detail – booking', () => {
     ).toBeVisible()
   })
 
-  test('clicking a booked shift cancels it', async ({ adminPage: page }) => {
+  test('an organiser opens a booked shift and cancels it', async ({ adminPage: page }) => {
     // Pre-book via API
     // eslint-disable-next-line playwright/no-conditional-in-test
     if (shifts.length > 0) {
@@ -123,13 +128,16 @@ test.describe('Task Detail – booking', () => {
 
     await page.goto(`/app/tasks/${created.task.id}`)
     const card = shiftCard(page, shifts[0])
-    await expect(card).toContainText('1/3')
+    // Wait for booked state to load
+    await expect(card).toContainText('1 of 3')
 
-    // Clicking your own booking asks before cancelling it
+    // Open it and cancel from the dialog, then confirm
     await card.click()
+    await page.getByTestId('dialog-shift-detail').getByTestId('btn-cancel-shift-booking').click()
     await page.getByTestId('btn-dialog-confirm').click()
 
-    await expect(card).toContainText('0/3')
+    // Should revert to 0 bookings
+    await expect(card).toContainText('0 of 3')
   })
 })
 
@@ -151,8 +159,9 @@ test.describe('Task Detail – admin actions', () => {
     await expect(page.getByTestId('btn-edit-task')).toBeVisible()
   })
 
-  test('admin sees delete button', async ({ adminPage: page }) => {
+  test('admin finds delete in the more-actions menu', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
+    await page.getByTestId('btn-task-more').click()
     await expect(page.getByTestId('btn-delete-task')).toBeVisible()
   })
 
@@ -162,9 +171,13 @@ test.describe('Task Detail – admin actions', () => {
   })
 
   test('admin can delete task', async ({ adminPage: page }) => {
-    const toDelete = await createTaskWithShifts(page, { name: uniqueName('E2E Delete Me'), status: 'published' })
+    const toDelete = await createTaskWithShifts(page, {
+      name: uniqueName('E2E Delete Me'),
+      status: 'published',
+    })
 
     await page.goto(`/app/tasks/${toDelete.task.id}`)
+    await page.getByTestId('btn-task-more').click()
     await page.getByTestId('btn-delete-task').click()
 
     // Confirm in the dialog

@@ -32,11 +32,6 @@
     "deleteAllFailed": "Benachrichtigungen konnten nicht gelöscht werden",
     "deleteAllTitle": "Alle Benachrichtigungen löschen?",
     "deletedAll": "Alle Benachrichtigungen gelöscht",
-    "detail": {
-        "close": "Schließen",
-        "open": "Details öffnen",
-        "title": "Benachrichtigung"
-    },
     "dismiss": "Verwerfen",
     "email": {
         "description": "Benachrichtigungen per E-Mail erhalten.",
@@ -53,9 +48,23 @@
         "telegramLabel": "Telegram-Benachrichtigungen",
         "title": "Globale Kanaleinstellungen"
     },
+    "groups": {
+        "earlier": "Früher",
+        "today": "Heute",
+        "yesterday": "Gestern"
+    },
+    "inboxTitle": "Postfach",
     "managePreferences": "Benachrichtigungseinstellungen verwalten",
-    "markAllRead": "Alle als gelesen markieren",
+    "markAllRead": "Alle gelesen",
     "markRead": "Als gelesen markieren",
+    "moreActions": "Weitere Aktionen",
+    "open": {
+        "bookings": "Buchungen öffnen",
+        "event": "Veranstaltung öffnen",
+        "invitation": "Einladung öffnen",
+        "task": "Aufgabe öffnen",
+        "team": "Team öffnen"
+    },
     "openNotifications": "Benachrichtigungen öffnen",
     "preferences": {
         "autoSaved": "Gespeichert",
@@ -144,11 +153,13 @@
         "unbound": "Telegram getrennt",
         "waitingForVerification": "Klicke oben auf den Button und tippe dann in Telegram auf Start. Diese Seite aktualisiert sich automatisch."
     },
+    "time": {
+        "yesterday": "Gestern, {time}"
+    },
     "timeAgo": {
-        "days": "Vor {n} T.",
-        "hours": "Vor {n} Std.",
+        "hours": "vor {n} Std.",
         "justNow": "Gerade eben",
-        "minutes": "Vor {n} Min."
+        "minutes": "vor {n} Min."
     },
     "title": "Benachrichtigungen",
     "types": {
@@ -225,6 +236,14 @@
             }
         },
         "task": {
+            "manager_added": {
+                "description": "Wenn dich jemand für eine Aufgabe als verantwortlich einträgt",
+                "name": "Als verantwortlich eingetragen"
+            },
+            "manager_removed": {
+                "description": "Wenn dich jemand bei einer Aufgabe als verantwortlich austrägt",
+                "name": "Nicht mehr verantwortlich"
+            },
             "published": {
                 "description": "Wenn eine neue Aufgabe veröffentlicht wird",
                 "name": "Aufgabe veröffentlicht"
@@ -267,5 +286,6 @@
             }
         }
     },
+    "unread": "Ungelesen",
     "viewAll": "Alle anzeigen"
 }

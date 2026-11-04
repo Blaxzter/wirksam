@@ -26,6 +26,8 @@ from app.logic.notifications import triggers
 from app.logic.notifications.registry import ALL_NOTIFICATION_TYPES
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
+from app.models.event_invitation_task import EventInvitationTask
+from app.models.task import Task
 from app.models.user import User
 
 Calls = list[tuple[str, Any]]
@@ -283,6 +285,36 @@ class TestInviteMode:
         )
 
         response = await _register(unauthenticated_client, email="mailed@example.com")
+
+        assert response.status_code == 201, response.text
+
+    async def test_an_invitation_to_run_a_task_counts_too(
+        self,
+        unauthenticated_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_task: Task,
+        test_admin_user: User,
+        registration: Configure,
+    ) -> None:
+        """An organiser who typed an address into a task's people in charge
+        let that address in, like any targeted invitation."""
+        registration(mode="invite")
+        invitation = await crud_invitation.create(
+            db_session,
+            event_id=test_event.id,
+            email="runner@example.com",
+            role="member",
+            invited_by_id=test_admin_user.id,
+            expires_in_days=14,
+            for_tasks_only=True,
+        )
+        db_session.add(
+            EventInvitationTask(invitation_id=invitation.id, task_id=test_task.id)
+        )
+        await db_session.commit()
+
+        response = await _register(unauthenticated_client, email="runner@example.com")
 
         assert response.status_code == 201, response.text
 

@@ -9,6 +9,7 @@ Fixtures are organized by domain for better maintainability:
 - sandbox.py: Seeded "try a test event" demos
 - locations.py: Locations, venue plans and markers
 - storage.py: The storage backend (Postgres, or moto S3)
+- clock.py: Pinning the event wall clock
 """
 
 # Import all fixtures so they are available to tests
@@ -22,6 +23,7 @@ from tests.fixtures.auth import (
 )
 from tests.fixtures.bookings import test_booking
 from tests.fixtures.client import (
+    act_as,
     app,
     as_admin,
     as_event_admin,
@@ -30,6 +32,7 @@ from tests.fixtures.client import (
     unauthenticated_app,
     unauthenticated_client,
 )
+from tests.fixtures.clock import clock_before_fixture_shifts, wall_clock
 from tests.fixtures.database import db_session, test_db_setup, test_engine
 from tests.fixtures.events import (
     test_draft_event,

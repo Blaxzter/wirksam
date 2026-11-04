@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
 import {
   ArrowLeft,
   CalendarCheck,
+  CalendarDays,
   CalendarPlus,
-  CalendarX2,
-  Check,
   ChevronDown,
-  EllipsisVertical,
-  Expand,
-  Info,
+  Ellipsis,
+  EyeOff,
   Lock,
   MapPin,
   Pencil,
   Plus,
   Printer,
   Tag,
+  Ticket,
   Trash2,
+  UsersRound,
 } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 import { I18nT, useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -30,11 +31,11 @@ import { useBreadcrumbStore } from '@/stores/breadcrumb'
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { useFormatters } from '@/composables/useFormatters'
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { Card, CardContent } from '@/components/ui/card'
 import { DatePicker } from '@/components/ui/date-picker'
 import {
   DropdownMenu,
@@ -46,6 +47,7 @@ import {
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import {
+  RESPONSIVE_DIALOG_MOBILE_QUERY,
   ResponsiveDialog,
   ResponsiveDialogBody,
   ResponsiveDialogContent,
@@ -57,12 +59,21 @@ import {
 import Separator from '@/components/ui/separator/Separator.vue'
 import { TimePicker } from '@/components/ui/time-picker'
 
+import { joinNames } from '@/components/events/teams/teamHelpers'
 import LocationFormDialog from '@/components/locations/LocationFormDialog.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
 import TeamJoinButton from '@/components/tasks/TeamJoinButton.vue'
+import TaskActionSheet, {
+  type TaskSheetAction,
+} from '@/components/tasks/detail/TaskActionSheet.vue'
+import TaskInChargeCard from '@/components/tasks/detail/TaskInChargeCard.vue'
+import TaskShiftTile from '@/components/tasks/detail/TaskShiftTile.vue'
+import TaskVouchersCard from '@/components/tasks/detail/TaskVouchersCard.vue'
+import TaskManagersDialog from '@/components/tasks/managers/TaskManagersDialog.vue'
+import TaskVoucherSettingsDialog from '@/components/tasks/vouchers/TaskVoucherSettingsDialog.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
 
@@ -78,10 +89,11 @@ import type {
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { formatDate } from '@/lib/format'
+import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
 import { sharedLocationId as sharedLocationIdOf } from '@/lib/venue-map'
 
-const { t } = useI18n()
-const { formatTime, formatDateLabel } = useFormatters()
+const { t, locale } = useI18n()
+const { formatTime, formatDateLabel, formatDaySpan } = useFormatters()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
@@ -91,7 +103,185 @@ const { confirm, confirmDestructive } = useDialog()
 
 const eventId = computed(() => route.params.eventId as string)
 
-const canManage = computed(() => authStore.canManageEvent(task.value?.event_id))
+/** Edit the task and its shifts: organisers and the task's people in charge. */
+const canManageTask = computed(() => task.value?.can_manage ?? false)
+/**
+ * Add, move and delete its shifts: organisers, and its people in charge unless
+ * the task earns vouchers and the event keeps those shifts with the organisers.
+ */
+const canManageShifts = computed(() => task.value?.can_manage_shifts ?? false)
+/** Publish, delete, name people in charge, edit the event's location: organisers only. */
+const canAdminEvent = computed(() => authStore.canManageEvent(task.value?.event_id))
+
+/** The viewer is in charge of this task without being an organiser. */
+const isManagerOnly = computed(
+  () =>
+    !canAdminEvent.value &&
+    !!authStore.profile?.id &&
+    (task.value?.managers ?? []).some((m) => m.user_id === authStore.profile?.id),
+)
+
+const showManagersDialog = ref(false)
+const showVoucherSettings = ref(false)
+
+/**
+ * The phone layout, on the same line as the bottom navigation and the
+ * dialogs that turn into sheets. Decided once here rather than with CSS, so
+ * the page never renders the phone and the desktop header side by side (and
+ * every `data-testid` in them twice).
+ */
+const isPhone = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
+
+const myId = computed(() => authStore.profile?.id ?? null)
+
+/** The person in charge may change the details but not the shifts. */
+const shiftsLocked = computed(() => canManageTask.value && !canManageShifts.value)
+
+/** Who runs the task: always for organisers (to name someone), else once someone does. */
+const showInChargeCard = computed(
+  () => canAdminEvent.value || (task.value?.managers?.length ?? 0) > 0,
+)
+/** How vouchers work here, once the task earns or takes any. */
+const showVouchersCard = computed(
+  () => (task.value?.vouchers_per_shift ?? 0) > 0 || !!task.value?.is_voucher_point,
+)
+
+const inChargeCard = ref<InstanceType<typeof TaskInChargeCard> | null>(null)
+
+// Withdrawing or sending an invitation in the dialog changes no `managers`,
+// so the card's list of open invitations is fetched again once it closes.
+watch(showManagersDialog, (open) => {
+  if (!open) void inChargeCard.value?.reloadInvitations()
+})
+
+const printRoute = computed(() => ({ name: 'print-task', params: { eventId: task.value?.id } }))
+
+/** The days the task runs, as the header line shows them. */
+const daySpan = computed(() => formatDaySpan(task.value?.start_date, task.value?.end_date))
+
+/** Who may book: the team the task is reserved for, or everyone in the event. */
+const audience = computed(() => task.value?.team_name || t('duties.tasks.detail.audienceAll'))
+
+/** "Friday, 17 July" over a day's shifts; shorter on a phone. */
+const dayLabel = (date: string) =>
+  formatDateLabel(date, {
+    weekday: isPhone.value ? 'short' : 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+
+// --- Phone sheets: the organiser's ⋯ menu and "Add shifts" ---
+const moreSheetOpen = ref(false)
+const addShiftsSheetOpen = ref(false)
+
+const moreActions = computed<TaskSheetAction[]>(() => [
+  {
+    key: 'managers',
+    label: t('duties.tasks.managers.manage'),
+    icon: UsersRound,
+    testid: 'btn-task-managers-mobile',
+  },
+  {
+    key: 'vouchers',
+    label: t('vouchers.settings.open'),
+    icon: Ticket,
+    testid: 'btn-task-vouchers-mobile',
+  },
+  {
+    key: 'print',
+    label: t('duties.tasks.detail.print'),
+    icon: Printer,
+    testid: 'btn-print-mobile',
+  },
+  {
+    key: 'delete',
+    label: t('duties.tasks.delete'),
+    icon: Trash2,
+    destructive: true,
+    testid: 'btn-delete-task-mobile',
+  },
+])
+
+const addShiftActions = computed<TaskSheetAction[]>(() => [
+  {
+    key: 'batch',
+    label: t('duties.tasks.detail.addShiftBatch'),
+    icon: CalendarPlus,
+    testid: 'btn-add-shift-batch-mobile',
+  },
+  {
+    key: 'single',
+    label: t('duties.tasks.detail.addSingleShift'),
+    icon: Plus,
+    testid: 'btn-add-single-shift-mobile',
+  },
+])
+
+/**
+ * The desktop menus run their items through `menu.after`, so a dialog an item
+ * opens finds the menu's button focused and hands focus back to it on close.
+ */
+const menu = useMenuAction()
+
+/**
+ * A ⋯ item, from the desktop menu or the phone sheet. The sheet reports a row
+ * as it starts to close, so a dialog waits a tick for it to get out of the way.
+ */
+const onMoreAction = async (key: string) => {
+  if (key === 'print') {
+    router.push(printRoute.value)
+    return
+  }
+  await nextTick()
+  if (key === 'managers') showManagersDialog.value = true
+  else if (key === 'vouchers') showVoucherSettings.value = true
+  else if (key === 'delete') handleDeleteTask()
+}
+
+const onAddShiftAction = async (key: string) => {
+  if (key === 'batch') {
+    router.push({ name: 'task-add-shifts', params: { eventId: task.value?.id } })
+    return
+  }
+  await nextTick()
+  showCreateShiftDialog.value = true
+}
+
+/** A place that takes vouchers, and the viewer may take them there right now. */
+const canRedeemHere = computed(() => !!task.value?.is_voucher_point && !!task.value?.can_redeem)
+/** Always the task's own event, which need not be the selected one. */
+const redeemRoute = computed(() => ({
+  name: 'voucher-redeem',
+  params: { eventId: task.value?.event_id ?? undefined },
+  query: { task: task.value?.id },
+}))
+
+/**
+ * A voucher shift that has begun can no longer be booked by someone who does
+ * not run the task (`booking.shift_started`): vouchers are a flat amount per
+ * shift, so a late booking would be paid in full.
+ */
+const startedForVouchers = (shift: ShiftRead) =>
+  (task.value?.vouchers_per_shift ?? 0) > 0 &&
+  !canManageTask.value &&
+  shiftHasStarted(shift.date, shift.start_time)
+
+/**
+ * Why a shift that still has places cannot be booked any more, or `null`.
+ * Such a tile looks muted like a full one, so "click on a shift to book it"
+ * never points at a shift the server would refuse; a click still opens it.
+ */
+const notBookableNote = (shift: ShiftRead): string | null => {
+  if (shiftHasEnded(shift.date, shift.start_time, shift.end_time)) {
+    return t('duties.shifts.detail.over')
+  }
+  if (startedForVouchers(shift)) return t('vouchers.task.startedNote')
+  return null
+}
+
+const onVoucherSettingsSaved = (saved: TaskRead) => {
+  task.value = saved
+}
 
 /**
  * The team this task is reserved for, from the task itself: whether the
@@ -143,6 +333,11 @@ const slotForm = ref({
 const slotDate = ref<DateValue>()
 
 // --- Batch grouping ---
+/**
+ * Several batches each get a header with their own Edit, which changes that
+ * batch's shifts. "Edit task" stays for the task's own details either way; on
+ * such a task its edit page leaves the shifts to the batches.
+ */
 const hasBatches = computed(() => batches.value.length > 1)
 
 interface BatchGroup {
@@ -374,6 +569,15 @@ const handleShiftClick = async (shift: ShiftRead) => {
   busyShiftId.value = shift.id
 
   try {
+    // Over, or a voucher shift already under way: nothing to book or cancel
+    // here, so show the shift instead of offering what the server refuses.
+    if (
+      shiftHasEnded(shift.date, shift.start_time, shift.end_time) ||
+      (!myBookedShiftIds.value.has(shift.id) && startedForVouchers(shift))
+    ) {
+      openShiftDetail(shift)
+      return
+    }
     if (myBookedShiftIds.value.has(shift.id)) {
       const booking = getBookingForShift(shift.id)
       if (!booking) return
@@ -388,6 +592,9 @@ const handleShiftClick = async (shift: ShiftRead) => {
           (shifts.value[idx].current_bookings ?? 1) - 1,
         )
         shifts.value[idx].is_booked_by_me = false
+        shifts.value[idx].bookers = shifts.value[idx].bookers?.filter(
+          (b) => b.user_id !== booking.user_id,
+        )
       }
       myBookings.value = myBookings.value.filter((b) => b.id !== booking.id)
       toast.success(t('duties.bookings.cancelSuccess'))
@@ -415,6 +622,13 @@ const handleShiftClick = async (shift: ShiftRead) => {
       if (idx !== -1) {
         shifts.value[idx].current_bookings = (shifts.value[idx].current_bookings ?? 0) + 1
         shifts.value[idx].is_booked_by_me = true
+        const bookers = shifts.value[idx].bookers
+        if (bookers) {
+          shifts.value[idx].bookers = [
+            ...bookers,
+            { user_id: res.data.user_id, name: authStore.profile?.name ?? null },
+          ]
+        }
       }
       myBookings.value.push({
         ...res.data,
@@ -433,11 +647,40 @@ const handleShiftClick = async (shift: ShiftRead) => {
   }
 }
 
+/**
+ * A tap on a shift tile. Whoever runs the task opens it, to see who is on it
+ * (and book themselves from there); everyone else books or cancels.
+ */
+const onShiftSelect = (shift: ShiftRead) => {
+  if (canManageTask.value) openShiftDetail(shift)
+  else void handleShiftClick(shift)
+}
+
+/** Where or what, on each tile, while the task's shifts differ in that. */
+const shiftMeta = (shift: ShiftRead): string | null => {
+  if (hasBatches.value) return null
+  const parts = [
+    hasMultipleCategories.value ? shift.category : null,
+    hasMultipleLocations.value ? shift.location : null,
+  ].filter(Boolean)
+  return parts.length ? parts.join(' · ') : null
+}
+
+/** The line next to "Shifts": what a tap on a tile does, or how to get in. */
+const shiftsHint = computed<string | null>(() => {
+  if (shifts.value.length === 0) return null
+  if (teamPickHint.value) return teamPickHint.value
+  if (canManageTask.value) return isPhone.value ? null : t('duties.tasks.detail.tapToSeeWho')
+  if (myBookedShiftsForTask.value.length === 0) return t('duties.tasks.detail.noBookingsYet')
+  return null
+})
+
 const batchLabel = (batch: ShiftBatchRead) => {
   return batch.label || `${formatDate(batch.start_date)} – ${formatDate(batch.end_date)}`
 }
 
-const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}) => {
+/** Whether the task loaded; on a refusal it has toasted and left for the task list. */
+const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}): Promise<boolean> => {
   // A quiet reload keeps the page on screen instead of the loading state.
   if (!quiet) loading.value = true
   try {
@@ -457,9 +700,11 @@ const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}) => {
         title: response.data.name,
       },
     ])
+    return true
   } catch (error) {
     toastApiError(error)
     router.push({ name: 'tasks' })
+    return false
   } finally {
     loading.value = false
   }
@@ -467,9 +712,11 @@ const loadTask = async ({ quiet = false }: { quiet?: boolean } = {}) => {
 
 const loadShifts = async () => {
   try {
+    // With who booked each shift, for the tiles' "2 of 3 · Tomas, Adaeze":
+    // one request for the task, not a roster read per tile.
     const response = await get<{ data: ShiftListResponse }>({
       url: '/shifts/',
-      query: { task_id: eventId.value, limit: 200 },
+      query: { task_id: eventId.value, limit: 200, with_bookers: true },
     })
     shifts.value = response.data.items
   } catch (error) {
@@ -509,9 +756,57 @@ const handleStatusChange = async (status: 'draft' | 'published' | 'archived') =>
     })
     task.value = response.data
     toast.success(t(`duties.tasks.statuses.${status}`))
+    // The event's voucher counts follow published tasks only.
+    const tk = response.data
+    if (tk.event_id && ((tk.vouchers_per_shift ?? 0) > 0 || tk.is_voucher_point)) {
+      void authStore.refreshSelectedEvent(tk.event_id)
+    }
   } catch (error) {
     toastApiError(error)
   }
+}
+
+/** Naming or removing someone changes `managers` and maybe `can_manage`. */
+const onManagersChanged = () =>
+  Promise.all([loadTask({ quiet: true }), inChargeCard.value?.reloadInvitations()])
+
+/** A person in charge gives the task back to the organisers. */
+const handleStepDown = async () => {
+  const tk = task.value
+  const me = authStore.profile?.id
+  if (!tk || !me) return
+  const others = (tk.managers ?? []).filter((m) => m.user_id !== me).map((m) => m.name || '?')
+  const text = [
+    t('duties.tasks.managers.stepDownText', { task: tk.name }),
+    others.length
+      ? t(
+          'duties.tasks.managers.stepDownOthers',
+          { names: joinNames(others, locale.value) },
+          others.length,
+        )
+      : t('duties.tasks.managers.stepDownNobody'),
+    // Unpublished, the task drops out of sight as well; say so before it does.
+    tk.status === 'published'
+      ? t('duties.tasks.managers.stepDownBookings')
+      : t('duties.tasks.managers.stepDownHidden'),
+  ].join(' ')
+  const ok = await confirmDestructive({
+    title: t('duties.tasks.managers.stepDownTitle'),
+    text,
+    confirmText: t('duties.tasks.managers.stepDownYes'),
+  })
+  if (!ok) return
+  try {
+    await del({ url: `/tasks/${tk.id}/managers/${me}` })
+    toast.success(t('duties.tasks.managers.steppedDown'))
+  } catch (error) {
+    toastApiError(error)
+    return
+  }
+  // An unpublished task is out of reach now: reloading it would answer
+  // `task.not_published` and toast an error on the way out.
+  if (tk.status === 'published') await loadTask({ quiet: true })
+  else router.push({ name: 'tasks' })
 }
 
 const handleDeleteTask = () => {
@@ -575,7 +870,7 @@ const handleCreateShift = async () => {
       max_bookings: 5,
     }
     slotDate.value = undefined
-    toast.success(t('duties.shifts.create'))
+    toast.success(t('duties.shifts.created'))
     await loadShifts()
   } catch (error) {
     toastApiError(error)
@@ -589,7 +884,7 @@ const handleDeleteShift = (shift: ShiftRead) => {
       const query: Record<string, string> = {}
       if (deleteReason.value.trim()) query.cancellation_reason = deleteReason.value.trim()
       await del({ url: `/shifts/${shift.id}`, query })
-      toast.success(t('duties.shifts.delete'))
+      toast.success(t('duties.shifts.deleted'))
       await loadShifts()
     } catch (error) {
       toastApiError(error)
@@ -600,246 +895,421 @@ const handleDeleteShift = (shift: ShiftRead) => {
 const reloadShiftsAndBookings = () => Promise.all([loadShifts(), loadMyBookings()])
 
 onMounted(async () => {
-  await loadTask()
+  // A refused task has already been reported; its shifts would only be
+  // refused again, with a second identical toast.
+  if (!(await loadTask())) return
   await Promise.all([loadShifts(), loadMyBookings(), loadBatches()])
 })
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-6">
+  <div class="mx-auto max-w-[70rem]">
     <!-- Loading -->
     <div v-if="loading" class="text-center py-12 text-muted-foreground">
       {{ t('common.states.loading') }}
     </div>
 
-    <template v-else-if="task">
-      <!-- Back button + Header -->
-      <div class="space-y-4">
-        <Button
-          data-testid="btn-back"
-          variant="ghost"
-          size="sm"
-          class="max-xl:hidden"
-          @click="router.push({ name: 'tasks' })"
-        >
-          <ArrowLeft class="mr-2 h-4 w-4" />
-          {{ t('common.actions.back') }}
-        </Button>
+    <div v-else-if="task" class="flex flex-col gap-5 md:gap-7">
+      <RouterLink
+        data-testid="btn-back"
+        :to="{ name: 'tasks' }"
+        class="-mb-2 flex min-h-8 items-center gap-1.5 self-start rounded-md text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 max-xl:hidden"
+      >
+        <ArrowLeft class="size-4" aria-hidden="true" />
+        {{ t('duties.tasks.title') }}
+      </RouterLink>
 
-        <!-- Draft banner -->
-        <Alert
-          v-if="task.status === 'draft'"
-          variant="default"
-          class="border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-500/30"
-        >
-          <Info class="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          <AlertDescription>
-            {{ t('duties.tasks.draftBanner') }}
-          </AlertDescription>
-        </Alert>
-
-        <!-- Reserved for one team: who can book, and joining in place -->
-        <Alert
-          v-if="teamGate"
-          data-testid="task-team-gate"
-          :class="teamGate.locked ? 'bg-muted/40' : ''"
-        >
-          <Lock class="h-4 w-4" />
-          <AlertDescription
-            class="flex flex-col gap-3 text-foreground sm:flex-row sm:items-center sm:justify-between"
-          >
-            <I18nT
-              :keypath="
-                !teamGate.locked
-                  ? teamGate.myStatus === 'approved'
-                    ? 'teamLocks.gate.member'
-                    : 'teamLocks.gate.manager'
-                  : teamGate.myStatus === 'pending'
-                    ? 'teamLocks.gate.pending'
-                    : 'teamLocks.gate.locked'
-              "
-              tag="span"
-              scope="global"
-            >
-              <template #name>
-                <strong class="font-semibold">{{ teamGate.name }}</strong>
-              </template>
-            </I18nT>
-            <TeamJoinButton
-              v-if="teamGate.locked"
-              :event-id="task.event_id"
-              :team-id="teamGate.id"
-              :team-name="teamGate.name"
-              :requires-approval="teamGate.requiresApproval"
-              :my-status="teamGate.myStatus"
-              class="shrink-0 max-sm:w-full"
-              @joined="onTeamJoined"
-            />
-          </AlertDescription>
-        </Alert>
-
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0 flex-1 space-y-2">
-            <div class="flex items-center gap-3 flex-wrap">
+      <!-- Header: name and status, what and where, the actions -->
+      <header class="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
+        <div class="flex min-w-0 flex-1 basis-[32rem] flex-col gap-2.5 md:gap-2">
+          <div class="flex items-start gap-2">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1.5 md:gap-x-3">
               <h1
                 data-testid="page-heading"
-                class="text-2xl sm:text-3xl font-bold line-clamp-2 break-words"
+                class="text-[26px] leading-tight font-bold tracking-[-0.01em] break-words md:text-[32px] md:leading-[1.15] md:tracking-[-0.015em]"
               >
                 {{ task.name }}
               </h1>
               <StatusDropdown
                 data-testid="task-status"
+                pill
                 :status="task.status"
                 i18n-prefix="duties.tasks.statuses"
-                :editable="canManage"
+                :editable="canAdminEvent"
                 @change="handleStatusChange"
               />
             </div>
-            <p v-if="task.description" class="text-muted-foreground line-clamp-3 break-words">
-              {{ task.description }}
-            </p>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span>{{ formatDate(task.start_date) }} - {{ formatDate(task.end_date) }}</span>
-              <span v-if="sharedLocation" class="flex items-center gap-1 max-w-xs truncate">
-                <MapPin class="h-3.5 w-3.5 shrink-0" />
-                <span class="truncate">{{ sharedLocation }}</span>
-              </span>
-              <span v-if="sharedCategory" class="flex items-center gap-1 max-w-xs truncate">
-                <Tag class="h-3.5 w-3.5 shrink-0" />
-                <span class="truncate">{{ sharedCategory }}</span>
-              </span>
-            </div>
+            <template v-if="isPhone">
+              <Button
+                v-if="canAdminEvent"
+                data-testid="btn-task-more"
+                variant="outline"
+                size="icon"
+                class="size-11 shrink-0 rounded-xl shadow-none"
+                :aria-label="t('common.actions.moreActions')"
+                @click="moreSheetOpen = true"
+              >
+                <Ellipsis class="size-[18px]" />
+              </Button>
+              <Button
+                v-else
+                data-testid="btn-print"
+                variant="outline"
+                size="icon"
+                class="size-11 shrink-0 rounded-xl shadow-none"
+                :aria-label="t('print.printTask')"
+                @click="router.push(printRoute)"
+              >
+                <Printer class="size-[18px]" />
+              </Button>
+            </template>
           </div>
 
-          <!-- Desktop actions -->
-          <div class="hidden sm:flex gap-2 shrink-0">
+          <p
+            v-if="task.description"
+            class="line-clamp-3 max-w-[40rem] text-[15px] break-words text-foreground/80 md:text-base"
+          >
+            {{ task.description }}
+          </p>
+
+          <div
+            class="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-sm text-muted-foreground md:gap-x-[18px] md:gap-y-1.5"
+          >
+            <span v-if="daySpan" class="flex items-center gap-1.5">
+              <CalendarDays class="size-[15px] shrink-0 md:size-4" aria-hidden="true" />
+              {{ daySpan }}
+            </span>
+            <span v-if="sharedLocation" class="flex max-w-xs min-w-0 items-center gap-1.5">
+              <MapPin class="size-[15px] shrink-0 md:size-4" aria-hidden="true" />
+              <span class="truncate">{{ sharedLocation }}</span>
+            </span>
+            <span v-if="sharedCategory" class="flex max-w-xs min-w-0 items-center gap-1.5">
+              <Tag class="size-[15px] shrink-0 md:size-4" aria-hidden="true" />
+              <span class="truncate">{{ sharedCategory }}</span>
+            </span>
+            <span
+              v-if="!isPhone"
+              class="flex max-w-xs min-w-0 items-center gap-1.5"
+              data-testid="task-audience"
+            >
+              <UsersRound class="size-4 shrink-0" aria-hidden="true" />
+              <span class="truncate">{{ audience }}</span>
+            </span>
+          </div>
+
+          <!-- A draft, said calmly: who can't see it yet and who can change that -->
+          <p
+            v-if="task.status === 'draft'"
+            class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground"
+            data-testid="task-draft-banner"
+          >
+            <EyeOff
+              class="size-4 shrink-0 self-start max-md:mt-0.5 md:self-center"
+              aria-hidden="true"
+            />
+            <span class="min-w-0 flex-1 md:flex-none">
+              {{
+                canAdminEvent
+                  ? t('duties.tasks.detail.draftLine')
+                  : t('duties.tasks.detail.draftLineManager')
+              }}
+            </span>
+            <button
+              v-if="canAdminEvent && !isPhone"
+              type="button"
+              class="min-h-8 rounded-md px-1 font-bold text-primary underline underline-offset-[3px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              data-testid="btn-publish-now"
+              @click="handleStatusChange('published')"
+            >
+              {{ t('duties.tasks.detail.publishNow') }}
+            </button>
+          </p>
+
+          <!-- Phone actions, under the details and within reach -->
+          <div v-if="isPhone && canManageTask" class="mt-1 flex gap-2">
+            <template v-if="canManageShifts">
+              <Button
+                data-testid="btn-add-shifts"
+                class="h-12 min-w-0 flex-1 rounded-xl text-[15px] font-bold"
+                @click="addShiftsSheetOpen = true"
+              >
+                <CalendarPlus class="size-[18px]" />
+                {{ t('duties.tasks.detail.addShifts') }}
+              </Button>
+              <Button
+                data-testid="btn-edit-task"
+                variant="outline"
+                class="h-12 shrink-0 rounded-xl px-4 text-[15px] font-semibold shadow-none"
+                @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
+              >
+                <Pencil />
+                {{ t('common.actions.edit') }}
+              </Button>
+            </template>
+            <Button
+              v-else
+              data-testid="btn-edit-task"
+              variant="outline"
+              class="h-12 w-full rounded-xl text-[15px] font-semibold shadow-none"
+              @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
+            >
+              <Pencil />
+              {{ t('duties.tasks.edit') }}
+            </Button>
+          </div>
+        </div>
+
+        <!-- Desktop actions -->
+        <div v-if="!isPhone" class="flex shrink-0 items-center gap-2">
+          <template v-if="canAdminEvent">
+            <Button
+              data-testid="btn-edit-task"
+              variant="outline"
+              class="h-11 rounded-xl px-4 font-semibold shadow-none"
+              @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
+            >
+              <Pencil />
+              {{ t('common.actions.edit') }}
+            </Button>
+            <DropdownMenu v-if="canManageShifts">
+              <DropdownMenuTrigger as-child>
+                <Button data-testid="btn-add-shifts" class="h-11 rounded-xl pr-3 pl-4 font-bold">
+                  <CalendarPlus />
+                  {{ t('duties.tasks.detail.addShifts') }}
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                class="rounded-[14px] p-1.5"
+                @close-auto-focus="menu.onCloseAutoFocus"
+              >
+                <DropdownMenuItem
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="onAddShiftAction('batch')"
+                >
+                  <CalendarPlus />
+                  {{ t('duties.tasks.detail.addShiftBatch') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="btn-add-single-shift"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="menu.after(() => onAddShiftAction('single'))"
+                >
+                  <Plus />
+                  {{ t('duties.tasks.detail.addSingleShift') }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button
+                  data-testid="btn-task-more"
+                  variant="outline"
+                  size="icon"
+                  class="size-11 rounded-xl shadow-none data-[state=open]:bg-muted"
+                  :aria-label="t('common.actions.moreActions')"
+                >
+                  <Ellipsis class="size-[18px]" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                class="w-[272px] rounded-[14px] p-1.5"
+                @close-auto-focus="menu.onCloseAutoFocus"
+              >
+                <DropdownMenuItem
+                  data-testid="btn-task-managers"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="menu.after(() => onMoreAction('managers'))"
+                >
+                  <UsersRound />
+                  {{ t('duties.tasks.managers.manage') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="btn-task-vouchers"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="menu.after(() => onMoreAction('vouchers'))"
+                >
+                  <Ticket />
+                  {{ t('vouchers.settings.open') }}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  data-testid="btn-print"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="onMoreAction('print')"
+                >
+                  <Printer />
+                  {{ t('duties.tasks.detail.print') }}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator class="mx-1 my-1.5" />
+                <DropdownMenuItem
+                  data-testid="btn-delete-task"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5 text-destructive focus:text-destructive"
+                  @select="menu.after(() => onMoreAction('delete'))"
+                >
+                  <Trash2 class="text-destructive" />
+                  {{ t('duties.tasks.delete') }}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </template>
+
+          <template v-else>
             <HintTooltip :label="t('print.printTask')">
               <Button
                 data-testid="btn-print"
                 variant="outline"
                 size="icon"
+                class="size-11 rounded-xl shadow-none"
                 :aria-label="t('print.printTask')"
-                @click="router.push({ name: 'print-task', params: { eventId: task!.id } })"
+                @click="router.push(printRoute)"
               >
-                <Printer class="h-4 w-4" />
+                <Printer class="size-[18px]" />
               </Button>
             </HintTooltip>
-            <Button
-              v-if="canManage && !hasBatches"
-              data-testid="btn-edit-task"
-              variant="outline"
-              @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
-            >
-              <Pencil class="mr-2 h-4 w-4" />
-              {{ t('duties.tasks.edit') }}
-            </Button>
-            <template v-if="canManage">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button data-testid="btn-add-shifts">
-                    <CalendarPlus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addShifts') }}
-                    <ChevronDown class="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    @click="router.push({ name: 'task-add-shifts', params: { eventId: task.id } })"
-                  >
-                    <CalendarPlus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addShiftBatch') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="showCreateShiftDialog = true">
-                    <Plus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addSingleShift') }}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <HintTooltip :label="t('duties.tasks.delete')">
-                <Button
-                  data-testid="btn-delete-task"
-                  variant="destructive"
-                  size="icon"
-                  :aria-label="t('duties.tasks.delete')"
-                  @click="handleDeleteTask"
-                >
-                  <Trash2 class="h-4 w-4" />
-                </Button>
-              </HintTooltip>
-            </template>
-          </div>
-
-          <!-- Mobile actions menu -->
-          <div class="sm:hidden shrink-0">
-            <DropdownMenu>
+            <DropdownMenu v-if="canManageShifts">
               <DropdownMenuTrigger as-child>
-                <Button variant="outline" size="icon" :aria-label="t('common.actions.moreActions')">
-                  <EllipsisVertical class="h-4 w-4" />
+                <Button
+                  data-testid="btn-add-shifts"
+                  variant="outline"
+                  class="h-11 rounded-xl pr-3 pl-4 font-semibold shadow-none"
+                >
+                  <CalendarPlus />
+                  {{ t('duties.tasks.detail.addShifts') }}
+                  <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent
+                align="end"
+                class="rounded-[14px] p-1.5"
+                @close-auto-focus="menu.onCloseAutoFocus"
+              >
                 <DropdownMenuItem
-                  @click="router.push({ name: 'print-task', params: { eventId: task!.id } })"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="onAddShiftAction('batch')"
                 >
-                  <Printer class="mr-2 h-4 w-4" />
-                  {{ t('print.printTask') }}
+                  <CalendarPlus />
+                  {{ t('duties.tasks.detail.addShiftBatch') }}
                 </DropdownMenuItem>
-                <template v-if="canManage">
-                  <DropdownMenuItem
-                    v-if="!hasBatches"
-                    @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
-                  >
-                    <Pencil class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.edit') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    @click="router.push({ name: 'task-add-shifts', params: { eventId: task.id } })"
-                  >
-                    <CalendarPlus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addShiftBatch') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="showCreateShiftDialog = true">
-                    <Plus class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.detail.addSingleShift') }}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem class="text-destructive" @click="handleDeleteTask">
-                    <Trash2 class="mr-2 h-4 w-4" />
-                    {{ t('duties.tasks.delete') }}
-                  </DropdownMenuItem>
-                </template>
+                <DropdownMenuItem
+                  data-testid="btn-add-single-shift"
+                  class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
+                  @select="menu.after(() => onAddShiftAction('single'))"
+                >
+                  <Plus />
+                  {{ t('duties.tasks.detail.addSingleShift') }}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+            <Button
+              v-if="canManageTask"
+              data-testid="btn-edit-task"
+              class="h-11 rounded-xl px-[18px] font-bold"
+              @click="router.push({ name: 'task-edit', params: { eventId: task.id } })"
+            >
+              <Pencil />
+              {{ t('duties.tasks.edit') }}
+            </Button>
+          </template>
         </div>
+      </header>
 
-        <!-- Where it happens: mini map of the shared location -->
-        <div
-          v-if="sharedLocationDetail && (miniMapPin || canManage)"
-          class="space-y-1.5 sm:max-w-md"
-          data-testid="task-mini-map"
+      <!-- Reserved for one team: who can book, and joining in place -->
+      <Alert
+        v-if="teamGate"
+        data-testid="task-team-gate"
+        class="rounded-2xl"
+        :class="teamGate.locked ? 'bg-muted/40' : ''"
+      >
+        <Lock class="h-4 w-4" />
+        <AlertDescription
+          class="flex flex-col gap-3 text-foreground sm:flex-row sm:items-center sm:justify-between"
         >
-          <VenueMiniMap
-            v-if="miniMapPin"
-            :event-id="sharedLocationDetail.event_id"
-            :pin="miniMapPin"
-            :location-id="sharedLocationDetail.id"
-          />
-          <Button
-            v-if="canManage"
-            variant="link"
-            size="sm"
-            class="h-auto px-0"
-            data-testid="btn-task-location-details"
-            @click="locationFormOpen = true"
+          <I18nT
+            :keypath="
+              !teamGate.locked
+                ? teamGate.myStatus === 'approved'
+                  ? 'teamLocks.gate.member'
+                  : 'teamLocks.gate.manager'
+                : teamGate.myStatus === 'pending'
+                  ? 'teamLocks.gate.pending'
+                  : 'teamLocks.gate.locked'
+            "
+            tag="span"
+            scope="global"
           >
-            <MapPin class="mr-1 h-3.5 w-3.5" />
-            {{ t('locations.details.openForm') }}
-          </Button>
-        </div>
+            <template #name>
+              <strong class="font-semibold">{{ teamGate.name }}</strong>
+            </template>
+          </I18nT>
+          <TeamJoinButton
+            v-if="teamGate.locked"
+            :event-id="task.event_id"
+            :team-id="teamGate.id"
+            :team-name="teamGate.name"
+            :requires-approval="teamGate.requiresApproval"
+            :my-status="teamGate.myStatus"
+            class="shrink-0 max-sm:w-full"
+            @joined="onTeamJoined"
+          />
+        </AlertDescription>
+      </Alert>
+
+      <!-- Who runs it, and how vouchers work here -->
+      <div
+        v-if="showInChargeCard || showVouchersCard"
+        class="grid items-stretch gap-3.5 md:grid-cols-2 md:gap-5"
+      >
+        <TaskInChargeCard
+          v-if="showInChargeCard"
+          ref="inChargeCard"
+          :task="task"
+          :can-admin="canAdminEvent"
+          :my-id="myId"
+          :in-charge="isManagerOnly"
+          :shifts-locked="shiftsLocked"
+          :compact="isPhone"
+          @manage="showManagersDialog = true"
+          @step-down="handleStepDown"
+        />
+        <TaskVouchersCard
+          v-if="showVouchersCard"
+          class="max-md:order-first"
+          :task="task"
+          :can-admin="canAdminEvent"
+          :can-manage="canManageTask"
+          :can-redeem="canRedeemHere"
+          :redeem-to="redeemRoute"
+          :compact="isPhone"
+          @settings="showVoucherSettings = true"
+        />
       </div>
 
-      <Separator />
+      <!-- Where it happens: mini map of the shared location -->
+      <div
+        v-if="sharedLocationDetail && (miniMapPin || canAdminEvent)"
+        class="space-y-1.5 sm:max-w-md"
+        data-testid="task-mini-map"
+      >
+        <VenueMiniMap
+          v-if="miniMapPin"
+          :event-id="sharedLocationDetail.event_id"
+          :pin="miniMapPin"
+          :location-id="sharedLocationDetail.id"
+        />
+        <Button
+          v-if="canAdminEvent"
+          variant="link"
+          size="sm"
+          class="h-auto px-0"
+          data-testid="btn-task-location-details"
+          @click="locationFormOpen = true"
+        >
+          <MapPin class="mr-1 h-3.5 w-3.5" />
+          {{ t('locations.details.openForm') }}
+        </Button>
+      </div>
 
       <!-- My Bookings Summary -->
       <Transition
@@ -854,19 +1324,19 @@ onMounted(async () => {
           <div class="overflow-hidden space-y-3">
             <div class="flex items-center gap-2">
               <CalendarCheck class="h-5 w-5 text-primary" />
-              <h2 class="text-lg font-semibold">{{ t('duties.tasks.detail.myBookings') }}</h2>
-              <Badge variant="default">
+              <h2 class="text-lg font-bold">{{ t('duties.tasks.detail.myBookings') }}</h2>
+              <Badge variant="default" class="rounded-full">
                 {{
                   t('duties.tasks.detail.myBookingsCount', { count: myBookedShiftsForTask.length })
                 }}
               </Badge>
             </div>
             <div class="flex flex-wrap gap-2">
-              <Badge
+              <button
                 v-for="shift in myBookedShiftsForTask"
                 :key="shift.id"
-                variant="secondary"
-                class="cursor-pointer px-3 py-1.5 text-sm hover:bg-secondary/80 hover:ring-1 hover:ring-primary/30 transition-colors"
+                type="button"
+                class="min-h-9 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground transition-colors outline-none hover:bg-secondary/80 hover:ring-1 hover:ring-primary/30 focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 @click="openBookedShift(shift)"
               >
                 {{ formatDateLabel(shift.date) }}
@@ -880,16 +1350,30 @@ onMounted(async () => {
                 <template v-if="hasMultipleCategories && shift.category">
                   &middot; {{ shift.category }}</template
                 >
-              </Badge>
+              </button>
             </div>
-            <Separator />
           </div>
         </div>
       </Transition>
 
-      <!-- Duty Shifts -->
-      <div data-testid="section-shifts" class="space-y-4">
-        <h2 class="text-xl font-semibold">{{ t('duties.tasks.detail.shifts') }}</h2>
+      <!-- Shifts -->
+      <section
+        data-testid="section-shifts"
+        aria-labelledby="task-shifts-title"
+        class="flex flex-col gap-2.5 max-md:mt-1.5 md:gap-3.5"
+      >
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="task-shifts-title" class="text-lg font-bold md:text-xl">
+            {{ t('duties.tasks.detail.shifts') }}
+          </h2>
+          <p
+            v-if="shiftsHint"
+            class="text-sm text-muted-foreground"
+            :data-testid="teamPickHint ? 'task-team-pick-hint' : 'task-shifts-hint'"
+          >
+            {{ shiftsHint }}
+          </p>
+        </div>
 
         <!-- Filters (only shown when multiple distinct values exist) -->
         <div v-if="hasFilters" class="flex flex-wrap gap-3">
@@ -897,11 +1381,11 @@ onMounted(async () => {
           <div v-if="hasMultipleLocations" class="flex flex-wrap items-center gap-1.5">
             <MapPin class="h-4 w-4 text-muted-foreground" />
             <button
-              class="rounded-full border px-3 py-1 text-sm transition-colors"
+              class="min-h-8 rounded-full border px-3 py-1 text-sm transition-colors"
               :class="
                 filterLocation === null
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'hover:bg-muted'
+                  : 'bg-card hover:bg-muted'
               "
               @click="filterLocation = null"
             >
@@ -910,11 +1394,11 @@ onMounted(async () => {
             <button
               v-for="loc in uniqueLocations"
               :key="loc"
-              class="rounded-full border px-3 py-1 text-sm transition-colors"
+              class="min-h-8 rounded-full border px-3 py-1 text-sm transition-colors"
               :class="
                 filterLocation === loc
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'hover:bg-muted'
+                  : 'bg-card hover:bg-muted'
               "
               @click="filterLocation = loc"
             >
@@ -926,11 +1410,11 @@ onMounted(async () => {
           <div v-if="hasMultipleCategories" class="flex flex-wrap items-center gap-1.5">
             <Tag class="h-4 w-4 text-muted-foreground" />
             <button
-              class="rounded-full border px-3 py-1 text-sm transition-colors"
+              class="min-h-8 rounded-full border px-3 py-1 text-sm transition-colors"
               :class="
                 filterCategory === null
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'hover:bg-muted'
+                  : 'bg-card hover:bg-muted'
               "
               @click="filterCategory = null"
             >
@@ -939,11 +1423,11 @@ onMounted(async () => {
             <button
               v-for="cat in uniqueCategories"
               :key="cat"
-              class="rounded-full border px-3 py-1 text-sm transition-colors"
+              class="min-h-8 rounded-full border px-3 py-1 text-sm transition-colors"
               :class="
                 filterCategory === cat
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'hover:bg-muted'
+                  : 'bg-card hover:bg-muted'
               "
               @click="filterCategory = cat"
             >
@@ -952,49 +1436,38 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Hint for users with no bookings; a locked task says how to get in -->
-        <p
-          v-if="teamPickHint && shifts.length > 0"
-          class="text-sm text-muted-foreground"
-          data-testid="task-team-pick-hint"
-        >
-          {{ teamPickHint }}
-        </p>
-        <p
-          v-else-if="myBookedShiftsForTask.length === 0 && shifts.length > 0"
-          class="text-sm text-muted-foreground"
-        >
-          {{ t('duties.tasks.detail.noBookingsYet') }}
-        </p>
-
         <div v-if="shifts.length === 0" class="text-center py-8 text-muted-foreground">
           {{ t('duties.shifts.empty') }}
         </div>
 
         <!-- Batch-grouped shifts -->
-        <div v-else class="space-y-6">
+        <div v-else class="flex flex-col gap-6">
           <template
             v-for="(event, eventIdx) in visibleBatchGroups"
             :key="event.batch?.id ?? 'unbatched'"
           >
-            <div class="space-y-3">
+            <div class="flex flex-col gap-3">
               <!-- Batch header (only when there are multiple batches) -->
-              <div v-if="hasBatches" class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <h3 class="font-semibold text-lg">
+              <div v-if="hasBatches" class="flex items-center justify-between gap-2">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                  <h3 class="text-base font-bold md:text-lg">
                     {{
                       event.batch
                         ? batchLabel(event.batch)
                         : t('duties.tasks.detail.unbatchedShifts')
                     }}
                   </h3>
-                  <Badge variant="outline">
+                  <span
+                    class="rounded-full bg-secondary px-2 py-px text-xs font-semibold text-secondary-foreground"
+                  >
                     {{
-                      t('duties.tasks.detail.shiftsCount', {
-                        count: filterShifts(event.shifts).length,
-                      })
+                      t(
+                        'duties.tasks.detail.shiftsCount',
+                        { count: filterShifts(event.shifts).length },
+                        filterShifts(event.shifts).length,
+                      )
                     }}
-                  </Badge>
+                  </span>
                   <template v-if="event.batch">
                     <Badge v-if="event.batch.location" variant="secondary" class="text-xs">
                       <MapPin class="mr-1 h-3 w-3" />
@@ -1006,10 +1479,13 @@ onMounted(async () => {
                     </Badge>
                   </template>
                 </div>
-                <div v-if="canManage && event.batch" class="flex gap-1">
+                <div v-if="canManageShifts && event.batch" class="flex shrink-0 gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
+                    class="max-md:h-11"
+                    :aria-label="t('duties.tasks.editView.editBatch')"
+                    data-testid="btn-edit-batch"
                     @click="
                       router.push({
                         name: 'task-edit',
@@ -1019,13 +1495,14 @@ onMounted(async () => {
                     "
                   >
                     <Pencil class="mr-1.5 h-3.5 w-3.5" />
-                    {{ t('duties.tasks.edit') }}
+                    {{ t('common.actions.edit') }}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    class="text-destructive hover:text-destructive"
+                    class="text-destructive hover:text-destructive max-md:size-11"
                     :aria-label="t('duties.tasks.detail.deleteBatch')"
+                    data-testid="btn-delete-batch"
                     @click="handleDeleteBatch(event.batch!)"
                   >
                     <Trash2 class="h-3.5 w-3.5" />
@@ -1035,142 +1512,42 @@ onMounted(async () => {
 
               <!-- Shifts grouped by date within this batch -->
               <div
-                v-for="[date, shifts] in groupByDate(filterShifts(event.shifts))"
+                v-for="[date, dayShifts] in groupByDate(filterShifts(event.shifts))"
                 :key="date"
-                class="space-y-2"
+                class="flex flex-col gap-2 md:gap-2.5"
               >
-                <div class="flex items-center gap-2">
-                  <h3 class="font-medium">{{ formatDateLabel(date) }}</h3>
-                  <Badge variant="outline">
-                    {{ t('duties.tasks.detail.shiftsCount', { count: shifts.length }) }}
-                  </Badge>
-                </div>
-                <div class="grid grid-cols-3 gap-1.5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                  <Card
-                    v-for="shift in shifts"
-                    :key="shift.id"
-                    :data-testid="'shift-card-' + shift.id"
-                    class="event relative cursor-pointer select-none transition-all"
-                    :class="[
-                      myBookedShiftIds.has(shift.id)
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : isShiftFull(shift)
-                          ? 'opacity-40 cursor-not-allowed'
-                          : shift.locked_by_team
-                            ? 'border-dashed bg-muted/30 text-muted-foreground shadow-none hover:ring-1 hover:ring-border'
-                            : shift.collides_with_my_booking
-                              ? 'opacity-50 cursor-not-allowed border-dashed border-destructive/50'
-                              : 'hover:ring-1 hover:ring-primary/40',
-                      busyShiftId === shift.id ? 'opacity-60 pointer-events-none' : '',
-                    ]"
-                    :title="
-                      shift.locked_by_team && !myBookedShiftIds.has(shift.id)
-                        ? t('teamLocks.gate.lockedShift', { name: shift.team_name })
-                        : shift.collides_with_my_booking
-                          ? t('duties.shifts.detail.clashesWithMine')
-                          : undefined
-                    "
-                    @click="handleShiftClick(shift)"
+                <h3 class="mt-1.5 flex items-center gap-2 text-sm font-bold">
+                  {{ dayLabel(date) }}
+                  <span
+                    class="rounded-full bg-secondary px-2 py-px text-xs font-semibold text-secondary-foreground"
                   >
-                    <CardContent class="px-3 py-2">
-                      <!-- Booked checkmark -->
-                      <div v-if="myBookedShiftIds.has(shift.id)" class="absolute top-1.5 right-1.5">
-                        <Check class="h-4 w-4 text-primary" />
-                      </div>
-                      <!-- Overlaps a shift the user already holds -->
-                      <div
-                        v-else-if="shift.collides_with_my_booking"
-                        class="absolute top-1.5 right-1.5"
-                        :data-testid="'shift-clash-' + shift.id"
-                      >
-                        <CalendarX2
-                          class="h-4 w-4 text-destructive"
-                          :aria-label="t('duties.shifts.detail.clashesWithMine')"
-                        />
-                      </div>
-                      <!-- Reserved for a team the user is not in -->
-                      <div
-                        v-else-if="shift.locked_by_team"
-                        class="absolute top-1.5 right-1.5"
-                        :data-testid="'shift-team-locked-' + shift.id"
-                      >
-                        <Lock
-                          class="h-3.5 w-3.5 text-muted-foreground"
-                          role="img"
-                          :aria-label="t('teamLocks.gate.lockedShift', { name: shift.team_name })"
-                        />
-                      </div>
-
-                      <!-- Expand button (visible on hover) -->
-                      <HintTooltip :label="t('duties.shifts.detail.openDetails')">
-                        <button
-                          class="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-sm opacity-0 transition-opacity event-hover:opacity-100 hover:bg-muted"
-                          :aria-label="t('duties.shifts.detail.openDetails')"
-                          @click.stop="openShiftDetail(shift)"
-                        >
-                          <Expand class="h-3 w-3 text-muted-foreground" />
-                        </button>
-                      </HintTooltip>
-
-                      <!-- Time -->
-                      <p class="text-center text-lg font-mono font-semibold">
-                        <template v-if="shift.start_time || shift.end_time">
-                          {{ formatTime(shift.start_time)
-                          }}{{ shift.start_time && shift.end_time ? ' - ' : ''
-                          }}{{ formatTime(shift.end_time) }}
-                        </template>
-                        <template v-else>
-                          {{ shift.title }}
-                        </template>
-                      </p>
-
-                      <!-- Category / Location badges (only when not in batch header and multiple values exist) -->
-                      <div
-                        v-if="
-                          !hasBatches &&
-                          ((hasMultipleLocations && shift.location) ||
-                            (hasMultipleCategories && shift.category))
-                        "
-                        class="mt-1 flex flex-wrap justify-center gap-1"
-                      >
-                        <Badge
-                          v-if="hasMultipleCategories && shift.category"
-                          variant="outline"
-                          class="text-sm px-2 py-0"
-                        >
-                          {{ shift.category }}
-                        </Badge>
-                        <Badge
-                          v-if="hasMultipleLocations && shift.location"
-                          variant="secondary"
-                          class="text-sm px-2 py-0"
-                        >
-                          {{ shift.location }}
-                        </Badge>
-                      </div>
-
-                      <!-- Availability -->
-                      <p
-                        class="mt-1 text-center text-sm text-muted-foreground"
-                        :class="isShiftFull(shift) ? 'text-destructive' : ''"
-                      >
-                        {{ shift.current_bookings ?? 0 }}/{{ shift.max_bookings ?? 1 }}
-                      </p>
-
-                      <!-- Admin delete (stop propagation so it doesn't trigger booking) -->
-                      <HintTooltip v-if="canManage" :label="t('duties.shifts.delete')">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="absolute bottom-0.5 right-0.5 h-5 w-5"
-                          :aria-label="t('duties.shifts.delete')"
-                          @click.stop="handleDeleteShift(shift)"
-                        >
-                          <Trash2 class="h-3 w-3 text-destructive" />
-                        </Button>
-                      </HintTooltip>
-                    </CardContent>
-                  </Card>
+                    {{
+                      t(
+                        'duties.tasks.detail.shiftsCount',
+                        { count: dayShifts.length },
+                        dayShifts.length,
+                      )
+                    }}
+                  </span>
+                </h3>
+                <div
+                  class="grid grid-cols-2 gap-2 md:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] md:gap-3"
+                >
+                  <TaskShiftTile
+                    v-for="shift in dayShifts"
+                    :key="shift.id"
+                    :shift="shift"
+                    :mine="myBookedShiftIds.has(shift.id)"
+                    :busy="busyShiftId === shift.id"
+                    :manage="canManageTask"
+                    :note="notBookableNote(shift)"
+                    :can-delete="canManageShifts"
+                    :meta="shiftMeta(shift)"
+                    :compact="isPhone"
+                    @select="onShiftSelect(shift)"
+                    @details="openShiftDetail(shift)"
+                    @delete="handleDeleteShift(shift)"
+                  />
                 </div>
               </div>
 
@@ -1184,8 +1561,27 @@ onMounted(async () => {
             {{ t('duties.tasks.detail.hiddenShifts', { count: hiddenShiftsCount }) }}
           </p>
         </div>
-      </div>
-    </template>
+      </section>
+    </div>
+
+    <!-- Phone sheets -->
+    <TaskActionSheet
+      v-if="task && isPhone && canAdminEvent"
+      v-model:open="moreSheetOpen"
+      :title="task.name"
+      :description="t('common.actions.moreActions')"
+      :actions="moreActions"
+      testid="task-more-sheet"
+      @select="onMoreAction"
+    />
+    <TaskActionSheet
+      v-if="task && isPhone && canManageShifts"
+      v-model:open="addShiftsSheetOpen"
+      :title="t('duties.tasks.detail.addShifts')"
+      :actions="addShiftActions"
+      testid="task-add-shifts-sheet"
+      @select="onAddShiftAction"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <DeleteConfirmationDialog
@@ -1198,7 +1594,7 @@ onMounted(async () => {
 
     <!-- Create Shift Dialog -->
     <ResponsiveDialog v-model:open="showCreateShiftDialog">
-      <ResponsiveDialogContent>
+      <ResponsiveDialogContent data-testid="dialog-create-shift">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>{{ t('duties.shifts.create') }}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>{{
@@ -1209,7 +1605,7 @@ onMounted(async () => {
           <ResponsiveDialogBody class="space-y-4 pb-2">
             <div class="space-y-2">
               <Label>{{ t('duties.shifts.fields.title') }}</Label>
-              <Input v-model="slotForm.title" required />
+              <Input v-model="slotForm.title" data-testid="input-shift-title" required />
             </div>
             <div class="space-y-2">
               <Label>{{ t('duties.shifts.fields.description') }}</Label>
@@ -1254,18 +1650,34 @@ onMounted(async () => {
             <Button type="button" variant="outline" @click="showCreateShiftDialog = false">
               {{ t('common.actions.cancel') }}
             </Button>
-            <Button type="submit">{{ t('common.actions.create') }}</Button>
+            <Button type="submit" data-testid="btn-create-shift">{{
+              t('common.actions.create')
+            }}</Button>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
 
     <LocationFormDialog
-      v-if="sharedLocationDetail && task?.event_id"
+      v-if="sharedLocationDetail && task?.event_id && canAdminEvent"
       v-model:open="locationFormOpen"
       :event-id="task.event_id"
       :location="sharedLocationDetail"
       @saved="onLocationSaved"
+    />
+
+    <TaskManagersDialog
+      v-if="task && canAdminEvent"
+      v-model:open="showManagersDialog"
+      :task="task"
+      :reload="onManagersChanged"
+    />
+
+    <TaskVoucherSettingsDialog
+      v-if="task && canAdminEvent"
+      v-model:open="showVoucherSettings"
+      :task="task"
+      @saved="onVoucherSettingsSaved"
     />
 
     <!-- Shift Detail Dialog -->
@@ -1274,6 +1686,9 @@ onMounted(async () => {
       :shift="selectedShift"
       :task-name="task?.name"
       :show-task-link="false"
+      :vouchers-per-shift="task?.vouchers_per_shift ?? 0"
+      :can-manage-task="canManageTask"
+      :managers="task?.managers ?? []"
       :my-booking="selectedShift ? (getBookingForShift(selectedShift.id) ?? null) : null"
       @booking-updated="reloadShiftsAndBookings"
       @team-joined="onTeamJoined"

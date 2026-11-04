@@ -25,7 +25,8 @@ import { useTaskFiltersStore } from '@/stores/eventFilters'
  *
  * `hideFullShifts` and the date range are reset one rung down from that: they
  * change which chips exist at all, and the copy talks about a board with gaps
- * in it.
+ * in it. (`hideFullShifts` is no longer persisted, but a `?hide_full=true`
+ * link, the dashboard's "find a shift", still turns it on.)
  *
  * `focusMode` is `'first-available'` rather than the store's own `'today'`
  * default. Both are valid, but `'today'` can land on a column whose chips are

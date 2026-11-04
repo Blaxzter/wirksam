@@ -71,8 +71,8 @@ test.describe('Shift details – from the task list', () => {
     // Both of these come off the shift itself, so neither can be satisfied by a
     // dialog that opened over nothing — which is the whole point of this test.
     await expect(dialog).toContainText('Side Entrance')
-    await expect(dialog).toContainText('0 / 2 booked')
-    await expect(dialog.getByTestId('shift-roster-free')).toContainText('2 spots still free')
+    await expect(dialog.getByTestId('shift-roster-count')).toHaveText('0 of 2, 2 places free')
+    await expect(dialog.getByTestId('shift-roster-free')).toContainText('2 places free')
   })
 
   test('the dialog offers the shift for booking', async ({ adminPage: page }) => {

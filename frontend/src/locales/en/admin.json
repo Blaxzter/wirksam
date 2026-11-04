@@ -108,10 +108,8 @@
             "suspended": "Suspended"
         },
         "grantedAdmin": "Granted admin role to {name}.",
-        "grantedTaskManager": "Granted task manager role to {name}.",
         "inactive": "Inactive",
         "makeAdmin": "Make Admin",
-        "makeTaskManager": "Make Task Manager",
         "ownedEvents": "Events: {count}",
         "ownedTasks": "Tasks: {count}",
         "pending": "Pending",
@@ -122,9 +120,7 @@
         "rejected": "Rejected",
         "rejectedToast": "Rejected account for {name}.",
         "removeAdmin": "Remove Admin",
-        "removeTaskManager": "Remove Task Manager",
         "removedAdmin": "Removed admin role from {name}.",
-        "removedTaskManager": "Removed task manager role from {name}.",
         "searchPlaceholder": "Search by name or email...",
         "sections": {
             "active": "Active Members",

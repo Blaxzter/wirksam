@@ -1444,6 +1444,9 @@ async function handleSubmit() {
                     )
                   }}
                 </p>
+                <p class="mt-1 text-xs text-muted-foreground" data-testid="clone-managers-note">
+                  {{ t('duties.tasks.managers.cloneNote') }}
+                </p>
               </div>
               <Switch
                 data-testid="switch-copy-members"

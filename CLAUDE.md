@@ -153,6 +153,42 @@ reused only within one event, and an expired one flags the member without
 revoking access. Design note:
 [`docs/plans/2026-10-26-event-teams.md`](docs/plans/2026-10-26-event-teams.md).
 
+**People in charge** of a task (`task_managers`, `app/api/routes/tasks/managers.py`;
+"Verantwortliche" in the German UI) add three more, also in `permissions.py`:
+`require_task_manager` (edit one task's details and its shifts; returns
+`"admin"` or `"manager"`, and a person in charge changing `status`, `team_id` or
+`event_id` gets `403 task.admin_only_field`), `require_task_visible` (reading
+one task: drafts and archived tasks only for event admins and the task's people
+in charge, `403 task.not_published` otherwise; a booker can always reopen their
+own shift) and `check_shift_history` (a booked shift that has started, or
+moving a booked shift's start or end into the past, is the event admins' —
+`403 task.shift_history_admin_only`).
+Only event admins name people in charge, delete or publish a task; a person in
+charge may step down. Being in charge counts only while the person is an event
+member, and leaving the event deletes the rows. Design note:
+[`docs/plans/2026-10-30-task-managers-and-vouchers.md`](docs/plans/2026-10-30-task-managers-and-vouchers.md).
+
+**Vouchers** ("Marken"; `app/api/routes/vouchers.py`, `app/logic/vouchers.py`)
+add one gate, `require_voucher_redeemer`: at a task flagged `is_voucher_point`,
+event admins, its people in charge and whoever has a confirmed booking on a
+shift of it running now (30 minutes either side) may redeem; without a code
+(picking the person) only admins, people in charge and staff on shift at a
+point also flagged `is_voucher_desk` who are approved members of its team
+(a desk without `team_id` gives its staff no such right, or anyone could book
+themselves onto it). **Earned vouchers are derived, never
+stored**, like worked hours: `tasks.vouchers_per_shift` for every booking that
+`work_hours.counts_as_worked()` on a shift that has ended. `voucher_entries`
+holds only redemptions and admin corrections, so a balance can go negative
+(shown as 0 available). A redemption takes a transaction-scoped advisory lock
+per (event, volunteer) (`crud_voucher.lock_ledger`) and a client `request_id`
+makes a retry return the first result. Codes (`voucher_passes`) are six
+characters, single use, two minutes, unique across the installation. Because
+earnings follow bookings, booking needs event membership, a published task
+(unless you manage it) and a shift that has not ended (`409
+booking.shift_over`, also for cancelling); on a task that earns vouchers, one
+that has not started (`409 booking.shift_started`, unless you manage the
+task). Leaving an event cancels the person's unfinished bookings.
+
 For queries, `backend/app/logic/event_scope.py` returns the id list to filter
 by. `None` means unrestricted (superadmin only); an **empty list means "nothing"
 and must never be collapsed to `None`** — that would hand a new account the
@@ -239,6 +275,10 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
   `SANDBOX_MAX_ACTIVE` (25) tune the "check out a test event" demo. The first is
   also served to the browser as runtime config, so the landing page never shows
   a button the backend would refuse — see [`docs/SANDBOX.md`](docs/SANDBOX.md)
+- `EVENT_TIMEZONE` (IANA name, default `Europe/Berlin`) is the zone shift times are read in.
+  Shift dates and times carry no zone; "has this shift started / ended" compares them with
+  `app/logic/clock.py::wall_clock_now()`. Stored timestamps stay naive UTC (`clock.utc_now()`).
+  An unknown name refuses to boot. Tests patch `app.logic.clock.wall_clock_now`
 - `STORAGE_BACKEND` decides where uploaded files live: `.env.example` sets `s3` with the bundled
   Garage container (`COMPOSE_PROFILES=s3`; `just dev local` starts it), the code default is
   `postgres`. Rows hold a `storage_key`; read and write through `app/core/storage.py`, never a

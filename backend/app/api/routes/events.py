@@ -11,17 +11,29 @@ from sqlmodel import col
 
 from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
 from app.core.errors import raise_problem
+from app.crud.booking import booking as crud_booking
 from app.crud.event import EventScope
 from app.crud.event import event as crud_event
 from app.crud.event_invitation import event_invitation as crud_invitation
-from app.crud.event_invitation import invitation_invalid_reason
+from app.crud.event_invitation_task import (
+    event_invitation_task as crud_invitation_task,
+)
 from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
+from app.crud.task import task as crud_task
+from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.crud.user_availability import user_availability as crud_availability
 from app.crud.venue_map import venue_map as crud_venue_map
+from app.logic import clock, vouchers
+from app.logic.invitations import (
+    check_new_invitation_quota,
+    lock_invitation_quota,
+    quota_refusal,
+)
 from app.logic.permissions import require_event_role, require_event_visible
+from app.logic.sandbox.guards import refuse_if_sandbox
 from app.logic.shift_generator import generate_shifts
 from app.models.event import Event
 from app.models.event_membership import EventMembership
@@ -30,6 +42,7 @@ from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User as UserModel
 from app.models.user_availability import UserAvailabilityDate
 from app.schemas.event import (
@@ -50,6 +63,7 @@ from app.schemas.event_invitation import (
     EventInvitationBulkResult,
     EventInvitationCreate,
     EventInvitationRead,
+    InvitationTaskBrief,
 )
 from app.schemas.event_join_request import (
     EventJoinRequestCreate,
@@ -83,9 +97,9 @@ async def decorate_events(
     """Attach viewer-relative context to a page of events.
 
     Member counts, the caller's own role, any pending join request, the
-    number of venue plans with an image, the number of teams and the team
-    requests the caller may decide are all fetched in one query each rather
-    than per row, so a long Discover list costs a constant number of round
+    number of venue plans with an image, the number of teams, the team
+    requests the caller may decide and the voucher task counts are all
+    fetched in one query each rather than per row, so a long Discover list costs a constant number of round
     trips.
     """
     event_ids = [e.id for e in events]
@@ -114,6 +128,9 @@ async def decorate_events(
         session, event_ids=member_of
     )
     team_counts = await crud_team.team_count_by_event(session, event_ids=member_of)
+    voucher_counts = await crud_task.voucher_counts_by_event(
+        session, event_ids=member_of
+    )
     team_requests = await crud_team.decidable_pending_by_event(
         session,
         user_id=user.id,
@@ -131,6 +148,9 @@ async def decorate_events(
         read.venue_plan_count = plan_counts.get(e.id, 0)
         read.team_count = team_counts.get(e.id, 0)
         read.pending_team_request_count = team_requests.get(e.id, 0)
+        read.voucher_task_count, read.voucher_point_count = voucher_counts.get(
+            e.id, (0, 0)
+        )
         out.append(read)
     return out
 
@@ -229,6 +249,11 @@ async def create_event(
     return await decorate_event(session, current_user, db_event)
 
 
+#: The event's voucher rules, NOT NULL columns, where an explicit ``null`` in a
+#: PATCH can only mean "leave it".
+_NOT_NULL_VOUCHER_RULES = ("voucher_manual_redeem", "managers_edit_voucher_shifts")
+
+
 @router.patch("/{event_id}", response_model=EventRead)
 async def update_event(
     event_id: uuid.UUID,
@@ -303,7 +328,12 @@ async def update_event(
             )
 
     old_status = db_event.status
-    updated = await crud_event.update(session, db_obj=db_event, obj_in=event_in)
+    update_data = event_in.model_dump(exclude_unset=True)
+    for f in _NOT_NULL_VOUCHER_RULES:
+        if f in update_data and update_data[f] is None:
+            # NOT NULL columns: an explicit null can only mean "leave it".
+            del update_data[f]
+    updated = await crud_event.update(session, db_obj=db_event, obj_in=update_data)
 
     # An event pulled back out of public listings should not keep its featured
     # slot on the home screen.
@@ -323,34 +353,6 @@ async def update_event(
         )
 
     return await decorate_event(session, current_user, updated)
-
-
-async def _refuse_if_sandbox(
-    session: DBDep,
-    event_id: uuid.UUID,
-    *,
-    code: str = "sandbox.invitations_disabled",
-    detail: str = "Invitations cannot be sent from a demo event",
-) -> None:
-    """Block anything a demo event must not do.
-
-    A guest is seeded as ``owner`` of their sandbox so the manager tour can
-    show them the screens an organiser uses. That role passes
-    ``require_event_role(minimum="admin")``, which means the invitation
-    endpoints would happily post an email to any address an anonymous visitor
-    typed in. The existing ``demo|`` guard does not help here: it tests the
-    *recipient*, and the recipient of an invitation is whoever was named.
-
-    The tour visits these screens deliberately and explains that sending is
-    switched off in the demo, so this is the enforcement behind that sentence.
-
-    ``code``/``detail`` default to the invitation wording every existing caller
-    wants; cloning passes its own so a refused clone does not talk about
-    invitations.
-    """
-    event = await crud_event.get(session, event_id, raise_404_error=True)
-    if event.is_sandbox:
-        raise_problem(403, code=code, detail=detail)
 
 
 class FeaturedUpdate(BaseModel):
@@ -443,6 +445,12 @@ async def shift_event_dates(
     task_ids = list(task_ids_result.scalars().all())
 
     if task_ids:
+        # What the shifts already over have earned stays earned: moving them
+        # into the future must not turn it back into "still to come".
+        await vouchers.settle_earnings(
+            session, now=clock.wall_clock_now(), task_ids=task_ids
+        )
+
         # 2. Shift tasks
         await session.execute(
             sa_update(Task)
@@ -796,6 +804,8 @@ async def clone_event(
     step with each other. Bookings are never copied — a cloned shift starts
     empty — and neither are ``is_featured``, ``is_sandbox`` or
     ``sandbox_expires_at``, all of which mean something about the *source*.
+    The voucher rules (``voucher_manual_redeem``,
+    ``managers_edit_voucher_shifts``) are copied.
 
     The clone always starts as a draft: publishing is a separate, deliberate
     act, and it is what fans a notification out to the roster.
@@ -804,7 +814,7 @@ async def clone_event(
     await require_event_role(current_user, session, source.id, minimum="admin")
     # A demo is seeded with its guest as owner, so the role check above passes
     # for an anonymous visitor. A sandbox must never produce a real event.
-    await _refuse_if_sandbox(
+    await refuse_if_sandbox(
         session,
         source.id,
         code="sandbox.clone_disabled",
@@ -849,6 +859,10 @@ async def clone_event(
     new_event.is_featured = False
     new_event.is_sandbox = False
     new_event.sandbox_expires_at = None
+    # The voucher rules are part of "the same event again", like the tasks'
+    # own voucher settings.
+    new_event.voucher_manual_redeem = source.voucher_manual_redeem
+    new_event.managers_edit_voucher_shifts = source.managers_edit_voucher_shifts
     session.add(new_event)
 
     # The owner grant is the membership row, not created_by_id — and it has to
@@ -891,23 +905,27 @@ async def clone_event(
         session, source_event_id=source.id, new_event_id=new_event.id
     )
 
+    # Who comes along into the new event: the copied roster plus the cloner,
+    # or nobody. Team rows and people in charge follow the same set.
+    carry_members: set[uuid.UUID] = (
+        {r.user_id for r in copied_rows} | {current_user.id}
+        if body.copy_members
+        else set()
+    )
+
     # Also before the tasks, for ``team_id``. A cloned task pointing at the
     # source's team would be gated on a roster the new event cannot manage.
     team_map = await _clone_teams(
         session,
         source_event_id=source.id,
         new_event_id=new_event.id,
-        carry_members=(
-            {r.user_id for r in copied_rows} | {current_user.id}
-            if body.copy_members
-            else set()
-        ),
+        carry_members=carry_members,
     )
 
     new_shifts: list[Shift] = []
-    tasks_created = 0
+    task_map: dict[uuid.UUID, uuid.UUID] = {}
     for entry in body.tasks:
-        task_shifts = await _clone_task(
+        new_task, task_shifts = await _clone_task(
             session,
             entry=entry,
             source_event_id=source.id,
@@ -917,12 +935,32 @@ async def clone_event(
             location_map=location_map,
             team_map=team_map,
         )
-        tasks_created += 1
+        task_map[entry.source_task_id] = new_task.id
         new_shifts.extend(task_shifts)
+    tasks_created = len(task_map)
 
     if new_shifts:
         session.add_all(new_shifts)
     await session.flush()
+
+    # People in charge who come along keep the role. Added after the flush,
+    # so the new tasks exist whatever order the unit of work picks
+    # (task_managers has no ORM relationship to sort it by).
+    manager_rows = await crud_task_manager.rows_for_clone(
+        session, task_ids=task_map.keys(), user_ids=carry_members
+    )
+    for src_task_id, rows in manager_rows.items():
+        for row in rows:
+            session.add(
+                TaskManager(
+                    task_id=task_map[src_task_id],
+                    user_id=row.user_id,
+                    added_by_id=row.added_by_id,
+                    added_by_name=row.added_by_name,
+                )
+            )
+    if manager_rows:
+        await session.flush()
     await session.refresh(new_event)
 
     # The announcement tells *other people* the event exists, so the cloner is
@@ -1022,7 +1060,7 @@ async def _clone_task(
     current_user_id: uuid.UUID,
     location_map: dict[uuid.UUID, uuid.UUID],
     team_map: dict[uuid.UUID, uuid.UUID],
-) -> list[Shift]:
+) -> tuple[Task, list[Shift]]:
     """Reproduce one source task, its batches and its shifts in ``new_event``.
 
     ``delta`` is the event-level offset, which is only the *default*: a caller
@@ -1031,9 +1069,10 @@ async def _clone_task(
     the Task row alone would leave its batches and shifts sitting in the
     source's window — a task pointing at shifts it does not contain.
 
-    The task and its batches are added to the session here; the shift rows are
-    returned so the caller can insert every task's shifts in one ``add_all``
-    rather than a flush per row.
+    The task and its batches are added to the session here; the new task and
+    its shift rows are returned so the caller can insert every task's shifts in
+    one ``add_all`` rather than a flush per row, and map the source task to the
+    new one.
     """
     # Scoped to the source event on purpose: without this filter the request
     # body could name any task id on the installation and have it copied into
@@ -1098,6 +1137,10 @@ async def _clone_task(
         location_id=task_location_id,
         category=_pick(entry.category, src.category),
         team_id=team_map.get(src.team_id) if src.team_id else None,
+        # The voucher settings are part of "the same event again"; balances,
+        # redemptions and codes are not, just as bookings are not.
+        vouchers_per_shift=src.vouchers_per_shift,
+        is_voucher_point=src.is_voucher_point,
         shift_duration_minutes=_pick(
             entry.shift_duration_minutes, src.shift_duration_minutes
         ),
@@ -1172,7 +1215,7 @@ async def _clone_task(
             batches=new_batches,
             shifts=shifts,
         )
-        return shifts
+        return new_task, shifts
 
     shift_result = await session.execute(
         sa_select(Shift)
@@ -1204,7 +1247,7 @@ async def _clone_task(
         batches=new_batches,
         shifts=copied,
     )
-    return copied
+    return new_task, copied
 
 
 @router.delete("/{event_id}", status_code=204)
@@ -1455,6 +1498,16 @@ async def remove_member(
     await crud_team.remove_user_from_event_teams(
         session, user_id=user_id, event_id=event_id
     )
+    # Being in charge of a task goes too, so re-joining does not restore it.
+    await crud_task_manager.remove_user_from_event_tasks(
+        session, user_id=user_id, event_id=event_id
+    )
+    # And their place on shifts still to come: a former member neither keeps a
+    # spot on future rotas nor goes on earning hours and vouchers. Bookings on
+    # shifts already over stay, because that work happened.
+    await crud_booking.cancel_unfinished_bookings_in_event(
+        session, user_id=user_id, event_id=event_id, now=clock.wall_clock_now()
+    )
 
     # Clear the selection so the removed user is not stranded on an event
     # they can no longer open.
@@ -1522,10 +1575,24 @@ async def list_event_invitations(
     session: DBDep,
     current_user: CurrentUser,
 ) -> list[EventInvitationRead]:
+    """The event's open invitations, with the tasks each asks someone to run."""
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
     invitations = await crud_invitation.list_open_for_event(session, event_id=event_id)
-    return [EventInvitationRead.model_validate(i) for i in invitations]
+    tasks = await crud_invitation_task.tasks_for_invitations(
+        session, invitation_ids=[i.id for i in invitations]
+    )
+    reads: list[EventInvitationRead] = []
+    for invitation in invitations:
+        read = EventInvitationRead.model_validate(invitation)
+        read.tasks = [
+            InvitationTaskBrief(
+                task_id=t.id, name=t.name, start_date=t.start_date, end_date=t.end_date
+            )
+            for t in tasks.get(invitation.id, [])
+        ]
+        reads.append(read)
+    return reads
 
 
 @router.post(
@@ -1540,12 +1607,25 @@ async def create_event_invitation(
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
 ) -> EventInvitationRead:
-    """Invite one person by email, or mint a shareable link (omit ``email``)."""
+    """Invite one person by email, or mint a shareable link (omit ``email``).
+
+    A targeted invitation is mailed (``dispatch_event_invitation``: a
+    notification to an account, the invitation mail to an address without
+    one) and counts against the daily limits (``429 invitation.*``). It
+    expires after ``expires_in_days``, as asked: only sending a task
+    invitation again pushes an expiry out.
+    """
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    await _refuse_if_sandbox(session, event_id)
+    await refuse_if_sandbox(session, event_id)
+    now = clock.utc_now()
 
     if body.email:
+        # Before the "already invited" check too, so that check and the
+        # daily limits both see whatever a parallel request committed.
+        await lock_invitation_quota(
+            session, inviter=current_user, emails=[str(body.email)]
+        )
         existing_user = await crud_user.get_by_email(session, email=str(body.email))
         if existing_user:
             already = await crud_membership.get(
@@ -1557,15 +1637,17 @@ async def create_event_invitation(
                     code="event.already_member",
                     detail="That person is already a member of this event",
                 )
-        open_invite = await crud_invitation.find_pending_for_email(
+        if await crud_invitation_task.open_for_address(
             session, event_id=event_id, email=str(body.email)
-        )
-        if open_invite and invitation_invalid_reason(open_invite) is None:
+        ):
             raise_problem(
                 409,
                 code="event.already_invited",
                 detail="That address already has an open invitation",
             )
+        await check_new_invitation_quota(
+            session, inviter=current_user, email=str(body.email), now=now
+        )
 
     invitation = await crud_invitation.create(
         session,
@@ -1579,6 +1661,9 @@ async def create_event_invitation(
     if invitation.email:
         from app.logic.notifications.triggers import dispatch_event_invitation
 
+        invitation.last_sent_at = now
+        session.add(invitation)
+        await session.flush()
         background_tasks.add_task(
             dispatch_event_invitation,
             invitation_id=invitation.id,
@@ -1603,15 +1688,23 @@ async def create_event_invitations_bulk(
 
     Addresses that are already members or already invited are reported back
     rather than failing the whole batch — pasting a team list twice should be
-    harmless.
+    harmless. So are addresses a daily limit refuses
+    (``skipped_rate_limited``).
     """
     await crud_event.get(session, event_id, raise_404_error=True)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    await _refuse_if_sandbox(session, event_id)
+    await refuse_if_sandbox(session, event_id)
+    now = clock.utc_now()
+    # Every address's limit lock up front, in sorted order, so two batches
+    # sharing addresses cannot each hold one the other waits for.
+    await lock_invitation_quota(
+        session, inviter=current_user, emails=[str(a) for a in body.emails]
+    )
 
     created: list[EventInvitationRead] = []
     skipped_members: list[str] = []
     skipped_invited: list[str] = []
+    skipped_rate_limited: list[str] = []
 
     for address in body.emails:
         email = str(address)
@@ -1621,11 +1714,13 @@ async def create_event_invitations_bulk(
         ):
             skipped_members.append(email)
             continue
-        open_invite = await crud_invitation.find_pending_for_email(
+        if await crud_invitation_task.open_for_address(
             session, event_id=event_id, email=email
-        )
-        if open_invite and invitation_invalid_reason(open_invite) is None:
+        ):
             skipped_invited.append(email)
+            continue
+        if await quota_refusal(session, inviter=current_user, email=email, now=now):
+            skipped_rate_limited.append(email)
             continue
 
         invitation = await crud_invitation.create(
@@ -1636,6 +1731,9 @@ async def create_event_invitations_bulk(
             invited_by_id=current_user.id,
             expires_in_days=body.expires_in_days,
         )
+        invitation.last_sent_at = now
+        session.add(invitation)
+        await session.flush()
         created.append(EventInvitationRead.model_validate(invitation))
 
         from app.logic.notifications.triggers import dispatch_event_invitation
@@ -1648,6 +1746,7 @@ async def create_event_invitations_bulk(
         created=created,
         skipped_existing_members=skipped_members,
         skipped_already_invited=skipped_invited,
+        skipped_rate_limited=skipped_rate_limited,
     )
 
 

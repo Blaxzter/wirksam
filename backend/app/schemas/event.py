@@ -8,6 +8,10 @@ from app.schemas.event_membership import EventRole
 
 EventStatus = Literal["draft", "published", "archived"]
 EventVisibility = Literal["public", "private"]
+#: Who may redeem vouchers without a code, by picking the person: ``on_shift``
+#: also whoever is on a running shift at that point, ``in_charge`` only the
+#: event admins and the point's people in charge.
+VoucherManualRedeem = Literal["on_shift", "in_charge"]
 
 
 class EventBase(BaseModel):
@@ -58,6 +62,10 @@ class EventUpdate(BaseModel):
     default_end_time: dt.time | None = None
     status: EventStatus | None = None
     visibility: EventVisibility | None = None
+    #: The event's voucher rules. Not on ``EventCreate``: a new event starts
+    #: with the defaults. An explicit ``null`` leaves the value (NOT NULL).
+    voucher_manual_redeem: VoucherManualRedeem | None = None
+    managers_edit_voucher_shifts: bool | None = None
 
 
 class EventRead(EventBase):
@@ -69,6 +77,10 @@ class EventRead(EventBase):
     sandbox_expires_at: dt.datetime | None = None
     created_at: dt.datetime
     updated_at: dt.datetime
+    #: Who may redeem vouchers without a code at this event's points.
+    voucher_manual_redeem: VoucherManualRedeem = "on_shift"
+    #: People in charge of a task that earns vouchers may change its shifts.
+    managers_edit_voucher_shifts: bool = False
 
     # Viewer-relative context. Populated by the route from the caller's
     # membership, not stored on the row — the same event reads differently
@@ -89,6 +101,11 @@ class EventRead(EventBase):
     #: Pending team requests the caller may decide: every one in an event
     #: they run, those of the teams they lead otherwise.
     pending_team_request_count: int = 0
+    #: Published tasks that earn vouchers, and published tasks that take them
+    #: (redemption points); members only, like ``team_count``. The navigation
+    #: offers the voucher pages only where either is above zero.
+    voucher_task_count: int = 0
+    voucher_point_count: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
     @property

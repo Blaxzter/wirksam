@@ -1,18 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import {
   Ban,
   EllipsisVertical,
   MessageSquareWarning,
   Shield,
-  ShieldCheck,
   ShieldOff,
   Trash2,
   UserCheck,
   UserX,
 } from '@lucide/vue'
-import { computed } from 'vue'
-
 import { useI18n } from 'vue-i18n'
+
+import { useMenuAction } from '@/composables/useMenuAction'
 
 import Button from '@/components/ui/button/Button.vue'
 import {
@@ -37,11 +38,13 @@ const emit = defineEmits<{
   toggleActive: [user: UserRead]
   suspendReason: [user: UserRead]
   toggleAdmin: [user: UserRead]
-  toggleTaskManager: [user: UserRead]
   delete: [user: UserRead]
 }>()
 
 const { t } = useI18n()
+
+/** Reject, the reason and delete open a dialog in the parent. */
+const menu = useMenuAction()
 
 /** Name the row's action menu after its user, so the menus aren't 20 identical "button"s. */
 const displayName = computed(() => props.user.name || props.user.email || '')
@@ -62,7 +65,7 @@ const status = computed(() => userStatus(props.user))
         <EllipsisVertical class="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
+    <DropdownMenuContent align="end" @close-auto-focus="menu.onCloseAutoFocus">
       <!-- The registration queue: decide, or change your mind about a rejection. -->
       <template v-if="status === 'pending' || status === 'rejected'">
         <DropdownMenuItem data-testid="action-approve" @click="emit('approve', props.user)">
@@ -72,7 +75,7 @@ const status = computed(() => userStatus(props.user))
         <DropdownMenuItem
           v-if="status === 'pending'"
           data-testid="action-reject"
-          @click="emit('reject', props.user)"
+          @select="menu.after(() => emit('reject', props.user))"
         >
           <Ban class="mr-2 h-4 w-4 text-destructive" />
           {{ t('admin.users.reject') }}
@@ -88,7 +91,7 @@ const status = computed(() => userStatus(props.user))
         <DropdownMenuItem
           v-if="!props.user.is_active"
           data-testid="action-suspend-reason"
-          @click="emit('suspendReason', props.user)"
+          @select="menu.after(() => emit('suspendReason', props.user))"
         >
           <MessageSquareWarning class="mr-2 h-4 w-4 text-destructive" />
           {{ t('admin.users.suspendReason') }}
@@ -107,22 +110,10 @@ const status = computed(() => userStatus(props.user))
             : t('admin.users.makeAdmin')
         }}
       </DropdownMenuItem>
-      <DropdownMenuItem @click="emit('toggleTaskManager', props.user)">
-        <ShieldOff
-          v-if="props.user.roles.includes('task_manager')"
-          class="mr-2 h-4 w-4 text-amber-500"
-        />
-        <ShieldCheck v-else class="mr-2 h-4 w-4 text-amber-500" />
-        {{
-          props.user.roles.includes('task_manager')
-            ? t('admin.users.removeTaskManager')
-            : t('admin.users.makeTaskManager')
-        }}
-      </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem
         class="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/30"
-        @click="emit('delete', props.user)"
+        @select="menu.after(() => emit('delete', props.user))"
       >
         <Trash2 class="mr-2 h-4 w-4 text-destructive" />
         {{ t('admin.users.delete') }}

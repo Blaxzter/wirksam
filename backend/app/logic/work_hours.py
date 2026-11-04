@@ -9,20 +9,29 @@ Hours have two sources and only one of them is stored:
   describes (``app.models.work_log``).
 
 A shift counts as *worked* once it has ended and as *upcoming* before that.
-Shift times are wall-clock times with no zone attached, compared against naive
-UTC "now" — the same convention reminders use (``routes/booking_reminders.py``).
+Shift times are wall-clock times with no zone attached ("Saturday,
+18:00-22:00"), so "now" is the venue's wall clock too:
+``clock.wall_clock_now()``, read in ``settings.EVENT_TIMEZONE``. Vouchers
+(``app.logic.vouchers``) use the same clock, the same :func:`shift_ends_at` and
+the same :func:`counts_as_worked`, so a shift earns its hours and its vouchers
+at the same moment. Unlike hours, earned vouchers are frozen before a change
+that would take them back (``vouchers.settle_earnings``): deleting a worked
+shift removes its hours but not its vouchers.
+
+This module must not import ``app.logic.permissions``, which imports it.
 """
 
 import datetime as dt
 import uuid
 from dataclasses import dataclass, field
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.work_log import work_log as crud_work_log
+from app.logic import clock
 from app.models.booking import Booking
 from app.models.shift import Shift
 from app.models.task import Task
@@ -37,8 +46,20 @@ from app.schemas.work_hours import (
 )
 
 
-def utc_now() -> dt.datetime:
-    return dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)
+def counts_as_worked() -> ColumnElement[bool]:
+    """Whether a booking earns hours and vouchers once its shift has ended.
+
+    The one predicate both derive from. Attendance (#177) changes this line:
+    a no-show then stops counting for both at once.
+
+    Vouchers an ended booking earned are final, though
+    (``app.logic.vouchers.settle_earnings``). Anything that changes what this
+    returns for a booking whose shift has ended, marking a no-show after the
+    fact included, must settle that booking first, or the vouchers it earned
+    would go. Taking them back is an explicit correction, which can't go
+    below zero.
+    """
+    return col(Booking.status) == "confirmed"
 
 
 def shift_minutes(start: dt.time | None, end: dt.time | None) -> int:
@@ -130,7 +151,7 @@ async def _booked_shifts(
         .join(Task, col(Task.id) == col(Shift.task_id))
         .where(
             col(Task.event_id) == event_id,
-            col(Booking.status) == "confirmed",
+            counts_as_worked(),
         )
         .order_by(col(Shift.date), col(Shift.start_time))
     )
@@ -177,7 +198,7 @@ async def _tally(
 ) -> tuple[dict[uuid.UUID, _Tally], list[WorkLog]]:
     tallies: dict[uuid.UUID, _Tally] = {}
     for booker_id, shift in await _booked_shifts(
-        session, event_id, user_id=user_id, now=now or utc_now()
+        session, event_id, user_id=user_id, now=now or clock.wall_clock_now()
     ):
         tallies.setdefault(booker_id, _Tally()).add_shift(shift)
 

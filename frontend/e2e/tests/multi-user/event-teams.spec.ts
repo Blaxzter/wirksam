@@ -230,6 +230,11 @@ test.describe('Event teams – asking, reviewing and booking', () => {
     disposablePage,
     disposableUser,
   }) => {
+    // Two people through three page loads, an upload and the review dialog:
+    // 6 s on its own, but with a full set of local workers 25-30 s, out of
+    // time at a different step each run.
+    test.slow()
+
     // ── The volunteer asks to join and attaches their certificate ──
     await disposablePage.goto(teamsUrl(event.id))
     await disposablePage.getByTestId(`btn-join-team-${team.id}`).click()
@@ -306,7 +311,7 @@ test.describe('Event teams – asking, reviewing and booking', () => {
     await expect(disposablePage.getByTestId(`shift-team-locked-${shift.id}`)).toHaveCount(0)
     await disposablePage.getByTestId(`shift-card-${shift.id}`).click()
     await disposablePage.getByTestId('btn-dialog-confirm').click()
-    await expect(disposablePage.getByTestId(`shift-card-${shift.id}`)).toContainText('1/2')
+    await expect(disposablePage.getByTestId(`shift-card-${shift.id}`)).toContainText('1 of 2')
   })
 
   test('declining keeps the task locked and deletes the file', async ({

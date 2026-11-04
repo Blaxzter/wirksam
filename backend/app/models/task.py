@@ -19,6 +19,12 @@ if __name__ != "__main__":
 
 class Task(Base, table=True):
     __tablename__ = "tasks"  # type: ignore[assignment]
+    __table_args__ = (
+        sa.CheckConstraint(
+            "vouchers_per_shift >= 0",
+            name="ck_tasks_vouchers_per_shift_non_negative",
+        ),
+    )
 
     name: str = Field(sa_column=sa.Column(sa.String, nullable=False, index=True))
     description: str | None = Field(
@@ -132,6 +138,26 @@ class Task(Base, table=True):
     )
     schedule_overrides: list[dict[str, Any]] | None = Field(
         default=None, sa_column=sa.Column(sa.JSON, nullable=True)
+    )
+
+    # Volunteer vouchers (app/logic/vouchers.py). Earnings are derived from
+    # this value for shifts not settled yet. Changing it settles every ended
+    # booking first (vouchers.settle_earnings), so it only affects shifts that
+    # are not over: earned is earned.
+    vouchers_per_shift: int = Field(
+        default=0,
+        sa_column=sa.Column(sa.Integer, nullable=False, server_default="0"),
+        description="Vouchers a volunteer earns per confirmed shift once it ends.",
+    )
+    is_voucher_point: bool = Field(
+        default=False,
+        sa_column=sa.Column(
+            sa.Boolean, nullable=False, server_default=sa.text("false")
+        ),
+        description=(
+            "Vouchers can be redeemed here, in the app. Who may redeem without "
+            "a code is the event's rule (events.voucher_manual_redeem)."
+        ),
     )
 
     shifts: list["Shift"] = Relationship(

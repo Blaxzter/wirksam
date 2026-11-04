@@ -1,11 +1,35 @@
 """Generate duty shifts from a schedule configuration."""
 
+import re
 import uuid
 from datetime import date, datetime, time, timedelta
 from typing import Any
 
 from app.schemas.shift import ShiftCreate
 from app.schemas.task import ExcludedShift, ScheduleOverride
+
+_TIME_RANGE = re.compile(r" \d{2}:\d{2}-\d{2}:\d{2}")
+
+
+def shift_title(task_name: str, start: time, end: time) -> str:
+    """A generated shift's title: the task's name and the shift's times."""
+    return f"{task_name} {start.strftime('%H:%M')}-{end.strftime('%H:%M')}"
+
+
+def renamed_shift_title(title: str, *, old_name: str, new_name: str) -> str | None:
+    """The title a shift takes when its task is renamed, or ``None`` to keep it.
+
+    Only a title ``shift_title`` wrote follows the task: the old name and a time
+    range. Any other title was typed by someone ("Late shift") and stays. The
+    times are not compared with the shift's own, so a generated shift that was
+    moved later still follows.
+    """
+    if not old_name or not title.startswith(old_name):
+        return None
+    rest = title[len(old_name) :]
+    if not _TIME_RANGE.fullmatch(rest):
+        return None
+    return new_name + rest
 
 
 def generate_shifts(
@@ -125,7 +149,7 @@ def _generate_shifts_for_day(
         slot_start_time = current.time()
         slot_end_time = slot_end.time()
 
-        title = f"{task_name} {slot_start_time.strftime('%H:%M')}-{slot_end_time.strftime('%H:%M')}"
+        title = shift_title(task_name, slot_start_time, slot_end_time)
 
         shifts.append(
             ShiftCreate(
@@ -144,7 +168,7 @@ def _generate_shifts_for_day(
             # Create a shorter final shift for the remaining time
             slot_start_time = current.time()
             slot_end_time = end_dt.time()
-            title = f"{task_name} {slot_start_time.strftime('%H:%M')}-{slot_end_time.strftime('%H:%M')}"
+            title = shift_title(task_name, slot_start_time, slot_end_time)
             shifts.append(
                 ShiftCreate(
                     title=title,
@@ -159,7 +183,7 @@ def _generate_shifts_for_day(
             last = shifts[-1]
             last.end_time = end_dt.time()
             if last.start_time and last.end_time:
-                last.title = f"{task_name} {last.start_time.strftime('%H:%M')}-{last.end_time.strftime('%H:%M')}"
+                last.title = shift_title(task_name, last.start_time, last.end_time)
         # remainder_mode == "drop": do nothing (default)
 
     return shifts

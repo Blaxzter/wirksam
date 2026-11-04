@@ -1,17 +1,25 @@
 """Route tests for Dashboard endpoints."""
 
 import datetime as dt
+from collections.abc import Callable
+from typing import Any
 
 import pytest
+import pytest_asyncio
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
 from app.models.event import Event
+from app.models.event_membership import EventMembership
 from app.models.event_team import EventTeam, EventTeamMember
+from app.models.location import Location
 from app.models.shift import Shift
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
+from tests.fixtures.client import act_as
 
 TOMORROW = dt.date.today() + dt.timedelta(days=1)
 YESTERDAY = dt.date.today() - dt.timedelta(days=1)
@@ -26,6 +34,7 @@ async def _add_shift(
     start: dt.time | None = dt.time(9, 0),
     end: dt.time | None = dt.time(12, 30),
     capacity: int = 2,
+    location: Location | None = None,
 ) -> Shift:
     shift = Shift(
         task_id=task.id,
@@ -33,7 +42,8 @@ async def _add_shift(
         date=date,
         start_time=start,
         end_time=end,
-        location="Haupteingang",
+        location=location.name if location else "Haupteingang",
+        location_id=location.id if location else None,
         max_bookings=capacity,
     )
     db_session.add(shift)
@@ -99,6 +109,44 @@ class TestDashboardFeed:
         # 09:00–12:30
         assert data["my_minutes"] == 210
 
+    async def test_shifts_carry_their_venue_location(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event: Event,
+        test_user: User,
+    ):
+        """The id lets a row point at its spot on the venue map.
+
+        A shift whose place is only free text has nothing to point at, so it
+        sends ``null`` rather than leaving the field out.
+        """
+        stage = Location(event_id=test_event.id, name="Bühne")
+        db_session.add(stage)
+        await db_session.flush()
+        on_stage = await _add_shift(
+            db_session, test_task, title="Meine Bühne", location=stage
+        )
+        await _book(db_session, on_stage, test_user)
+        anywhere = await _add_shift(db_session, test_task, title="Mein Irgendwo")
+        await _book(db_session, anywhere, test_user)
+        await _add_shift(db_session, test_task, title="Offen Bühne", location=stage)
+        await _add_shift(db_session, test_task, title="Offen Irgendwo")
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert r.status_code == 200
+        data = r.json()
+        booked = {s["title"]: s for s in data["my_shifts"]}
+        assert booked["Meine Bühne"]["location_id"] == str(stage.id)
+        assert booked["Meine Bühne"]["location"] == "Bühne"
+        assert booked["Mein Irgendwo"]["location_id"] is None
+        offered = {s["title"]: s for s in data["open_shifts"]}
+        assert offered["Offen Bühne"]["location_id"] == str(stage.id)
+        assert offered["Offen Irgendwo"]["location_id"] is None
+        assert offered["Offen Irgendwo"]["location"] == "Haupteingang"
+
     async def test_past_shifts_are_not_upcoming(
         self,
         async_client: AsyncClient,
@@ -112,6 +160,90 @@ class TestDashboardFeed:
         r = await async_client.get("/api/v1/dashboard/feed")
 
         assert r.json()["my_shift_count"] == 0
+
+    async def test_a_shift_that_has_started_stays_until_it_ends(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_user: User,
+        wall_clock: Callable[[dt.datetime], None],
+    ):
+        """Somebody who opens the dashboard while on duty still sees that duty.
+
+        The feed used to drop a shift the moment it started, so the card said
+        "nothing booked yet" to a volunteer standing at their post.
+        """
+        wall_clock(dt.datetime.combine(TOMORROW, dt.time(12, 0)))
+        running = await _add_shift(
+            db_session,
+            test_task,
+            title="Läuft",
+            start=dt.time(11, 50),
+            end=dt.time(14, 0),
+        )
+        await _book(db_session, running, test_user)
+        untimed = await _add_shift(
+            db_session, test_task, title="Ganzer Tag", start=None, end=None
+        )
+        await _book(db_session, untimed, test_user)
+        over = await _add_shift(
+            db_session,
+            test_task,
+            title="Vorbei",
+            start=dt.time(9, 0),
+            end=dt.time(11, 30),
+        )
+        await _book(db_session, over, test_user)
+        begun = await _add_shift(
+            db_session,
+            test_task,
+            title="Angefangen",
+            start=dt.time(11, 50),
+            end=dt.time(14, 0),
+        )
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        data = r.json()
+        assert sorted(s["title"] for s in data["my_shifts"]) == ["Ganzer Tag", "Läuft"]
+        assert data["my_shift_count"] == 2
+        # Offering a shift that is already under way is another matter: the
+        # open list keeps to shifts that have not started.
+        assert str(begun.id) not in {s["shift_id"] for s in data["open_shifts"]}
+
+    async def test_last_nights_shift_is_on_until_it_ends(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_user: User,
+        wall_clock: Callable[[dt.datetime], None],
+    ):
+        """22:00-02:00 runs past midnight, so at one in the morning it is on."""
+        wall_clock(dt.datetime.combine(TOMORROW, dt.time(1, 0)))
+        night = await _add_shift(
+            db_session,
+            test_task,
+            title="Nachtwache",
+            date=TOMORROW - dt.timedelta(days=1),
+            start=dt.time(22, 0),
+            end=dt.time(2, 0),
+        )
+        await _book(db_session, night, test_user)
+        late = await _add_shift(
+            db_session,
+            test_task,
+            title="Spätdienst",
+            date=TOMORROW - dt.timedelta(days=1),
+            start=dt.time(20, 0),
+            end=dt.time(0, 30),
+        )
+        await _book(db_session, late, test_user)
+
+        r = await async_client.get("/api/v1/dashboard/feed")
+
+        assert [s["title"] for s in r.json()["my_shifts"]] == ["Nachtwache"]
 
     async def test_open_shifts_offer_what_still_has_room(
         self,
@@ -341,6 +473,121 @@ class TestDashboardSidebar:
         assert "events" in data
         assert "tasks" in data
         assert "bookings" in data
+
+
+#: The event wall clock for the sidebar tests: before ``test_event`` (10-14 June).
+SIDEBAR_NOW = dt.datetime(2026, 6, 1, 10, 0)
+
+
+async def _sidebar_task(
+    db_session: AsyncSession,
+    event: Event,
+    creator: User,
+    name: str,
+    *,
+    start: dt.date,
+    status: str = "published",
+) -> Task:
+    task = Task(
+        name=name,
+        start_date=start,
+        end_date=dt.date(2026, 6, 14),
+        status=status,
+        created_by_id=creator.id,
+        event_id=event.id,
+    )
+    db_session.add(task)
+    await db_session.flush()
+    return task
+
+
+@pytest.mark.asyncio
+class TestSidebarTasksInCharge:
+    """A person in charge finds their task in the sidebar, full or not."""
+
+    @pytest_asyncio.fixture
+    async def in_charge(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_draft_event: Event,
+        test_user: User,
+        wall_clock: Callable[[dt.datetime], None],
+    ) -> User:
+        """The cast: ``in_charge`` runs a full task and a draft here, and holds
+        a stale row in ``test_draft_event``, which they are not a member of.
+        ``test_user`` is a plain member of both events."""
+        wall_clock(SIDEBAR_NOW)
+        manager = await _applicant(db_session, "sidebar-in-charge")
+        db_session.add(
+            EventMembership(user_id=manager.id, event_id=test_event.id, role="member")
+        )
+        open_task = await _sidebar_task(
+            db_session, test_event, test_user, "Offen", start=dt.date(2026, 6, 1)
+        )
+        await _add_shift(db_session, open_task, date=dt.date(2026, 6, 2))
+        full = await _sidebar_task(
+            db_session, test_event, test_user, "Voll", start=dt.date(2026, 6, 3)
+        )
+        taken = await _add_shift(db_session, full, date=dt.date(2026, 6, 3), capacity=1)
+        await _book(db_session, taken, test_user)
+        draft = await _sidebar_task(
+            db_session,
+            test_event,
+            test_user,
+            "Entwurf",
+            start=dt.date(2026, 6, 4),
+            status="draft",
+        )
+        stale = await _sidebar_task(
+            db_session, test_draft_event, test_user, "Fremd", start=dt.date(2026, 6, 1)
+        )
+        await _add_shift(db_session, stale, date=dt.date(2026, 6, 2))
+        for task in (full, draft, stale):
+            db_session.add(TaskManager(task_id=task.id, user_id=manager.id))
+        await db_session.flush()
+        return manager
+
+    async def _tasks(
+        self, client: AsyncClient, app: FastAPI, user: User
+    ) -> list[dict[str, Any]]:
+        with act_as(app, user):
+            r = await client.get("/api/v1/dashboard/sidebar")
+        assert r.status_code == 200, r.text
+        return r.json()["tasks"]
+
+    async def test_their_tasks_come_first_and_marked(
+        self, async_client: AsyncClient, app: FastAPI, in_charge: User
+    ) -> None:
+        tasks = await self._tasks(async_client, app, in_charge)
+
+        assert [t["name"] for t in tasks] == ["Voll", "Entwurf", "Offen"]
+        assert [t["is_managed"] for t in tasks] == [True, True, False]
+        voll = tasks[0]
+        assert voll["open_shifts"] == 0
+        assert voll["next_shift_date"] is None
+        assert tasks[1]["status"] == "draft"
+
+    async def test_a_row_in_an_event_they_left_gives_nothing(
+        self, async_client: AsyncClient, app: FastAPI, in_charge: User
+    ) -> None:
+        tasks = await self._tasks(async_client, app, in_charge)
+        assert "Fremd" not in [t["name"] for t in tasks]
+
+    async def test_a_plain_member_gets_only_what_is_open(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        in_charge: User,
+        test_user: User,
+    ) -> None:
+        tasks = await self._tasks(async_client, app, test_user)
+
+        names = [t["name"] for t in tasks]
+        assert "Voll" not in names
+        assert "Entwurf" not in names
+        assert {"Offen", "Fremd"} <= set(names)
+        assert not any(t["is_managed"] for t in tasks)
 
 
 # ---------------------------------------------------------------------------

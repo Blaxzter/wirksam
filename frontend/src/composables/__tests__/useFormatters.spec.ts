@@ -268,6 +268,48 @@ describe('useFormatters', () => {
     })
   })
 
+  describe('formatDaySpan', () => {
+    // The year shows only outside the current one, so "now" is pinned.
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 2, 15, 12, 0, 0))
+      return () => vi.useRealTimers()
+    })
+
+    const dashless = (s: string) => s.replace(/[   ]/g, ' ')
+
+    it('gives the days of one month once, with the month at the end (de)', () => {
+      expect(setup({ locale: 'de' }).formatDaySpan('2026-07-17', '2026-07-19')).toBe('17.–19. Juli')
+    })
+
+    it('names both months when the span crosses one (en)', () => {
+      expect(dashless(setup({ locale: 'en' }).formatDaySpan('2026-07-17', '2026-08-02'))).toBe(
+        'July 17 – August 2',
+      )
+    })
+
+    it('adds the year when either end is not in this year', () => {
+      expect(dashless(setup({ locale: 'de' }).formatDaySpan('2026-12-30', '2027-01-02'))).toBe(
+        '30. Dezember 2026 – 2. Januar 2027',
+      )
+    })
+
+    it('gives one day for a one-day span, a missing end or an end before the start', () => {
+      const { formatDaySpan } = setup({ locale: 'de' })
+      expect(formatDaySpan('2026-07-17', '2026-07-17')).toBe('17. Juli')
+      expect(formatDaySpan('2026-07-17')).toBe('17. Juli')
+      expect(formatDaySpan('2026-07-17', null)).toBe('17. Juli')
+      expect(formatDaySpan('2026-07-17', '2026-07-10')).toBe('17. Juli')
+    })
+
+    it('renders nothing without a start or for unparseable input', () => {
+      const { formatDaySpan } = setup({ locale: 'en' })
+      expect(formatDaySpan(null)).toBe('')
+      expect(formatDaySpan(undefined, '2026-07-19')).toBe('')
+      expect(formatDaySpan('not-a-date', '2026-07-19')).toBe('')
+    })
+  })
+
   describe('formatRelativeDay', () => {
     /**
      * Every assertion here is relative to "now", so the clock is pinned. Local

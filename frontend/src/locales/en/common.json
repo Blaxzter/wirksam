@@ -26,13 +26,16 @@
     "actions": {
         "back": "Back",
         "cancel": "Cancel",
+        "changeStatus": "Status: {status}. Change",
         "close": "Close",
         "confirm": "Confirm",
         "create": "Create",
+        "decrease": "Decrease",
         "delete": "Delete",
         "edit": "Edit",
         "hide": "Hide",
         "hidePassword": "Hide password",
+        "increase": "Increase",
         "moreActions": "More actions",
         "next": "Next",
         "previous": "Previous",
@@ -102,8 +105,11 @@
         "switch": "Switch language"
     },
     "memberPicker": {
+        "allMembers": "All members",
+        "enterKey": "Enter",
         "enterToPick": "Enter to pick",
-        "noMatch": "Nobody matches."
+        "noMatch": "Nobody matches.",
+        "similar": "Similar in this event"
     },
     "states": {
         "error": "Error",

@@ -1,0 +1,344 @@
+/**
+ * E2E test for volunteer vouchers.
+ *
+ * A volunteer earns vouchers for a shift that is over, shows their code, and
+ * an organiser redeems it at a place that takes vouchers by typing the code.
+ * The camera is never used: the redeem page is told there is none, which is
+ * also how it behaves on a phone that refuses camera access.
+ *
+ * Nobody can book a shift that is over, so the volunteer books a future one
+ * first and the organiser then moves it to yesterday (organisers may change
+ * the past). The rate is set while the shift is still ahead: earned is
+ * earned, so a rate raised after a shift is over pays nothing for it.
+ *
+ * Each test gets its own event, and the volunteer is a disposable user, so
+ * nothing leaks into the shared worker fixtures.
+ */
+import { expect, joinEvent, serverApi, test } from '../../fixtures.js'
+import {
+  type EventRead,
+  type TaskRead,
+  addMember,
+  api,
+  bookShift,
+  createEvent,
+  createTaskWithShifts,
+  deleteEvent,
+  deleteTask,
+  futureDate,
+  listShifts,
+  setSelectedEvent,
+  uniqueName,
+} from '../../helpers/api.js'
+
+let event: EventRead
+let shiftTask: TaskRead
+let pointTask: TaskRead
+
+test.beforeEach(async ({ adminPage, disposablePage, disposableUser }) => {
+  event = await createEvent(adminPage, uniqueName('E2E Vouchers'), 'published', 'private', {
+    start: futureDate(-1),
+    end: futureDate(4),
+  })
+  const common = {
+    eventId: event.id,
+    status: 'published' as const,
+    startDate: futureDate(2),
+    endDate: futureDate(2),
+    startTime: '10:00',
+    endTime: '12:00',
+    slotDuration: 120,
+    peoplePerShift: 2,
+  }
+  shiftTask = (await createTaskWithShifts(adminPage, { ...common, name: uniqueName('E2E Bar') }))
+    .task
+  pointTask = (
+    await createTaskWithShifts(adminPage, { ...common, name: uniqueName('E2E Food stand') })
+  ).task
+  await addMember(adminPage, disposablePage, event.id, disposableUser.email)
+})
+
+test.afterEach(async ({ adminPage }) => {
+  // Tasks outlive their event, so they go first.
+  await deleteTask(adminPage, shiftTask.id).catch(() => {})
+  await deleteTask(adminPage, pointTask.id).catch(() => {})
+  await deleteEvent(adminPage, event.id).catch(() => {})
+})
+
+test('a volunteer shows their code and an organiser redeems it at a stand', async ({
+  adminPage,
+  disposablePage,
+  disposableUser,
+}) => {
+  // Two people through six screens, and a wait for the volunteer's
+  // screen to follow the redemption: with a full set of local workers this
+  // runs past the default 30 seconds.
+  test.slow()
+
+  // The volunteer books a shift while it is still ahead.
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await bookShift(disposablePage, shift.id)
+
+  // The organiser sets two vouchers per shift from the task page...
+  await adminPage.goto(`/app/tasks/${shiftTask.id}`)
+  await adminPage.getByTestId('btn-task-more').click()
+  await adminPage.getByTestId('btn-task-vouchers').click()
+  const settings = adminPage.getByTestId('task-voucher-settings-dialog')
+  await expect(settings).toBeVisible()
+  await settings.getByTestId('btn-voucher-per-shift-increase').click()
+  await settings.getByTestId('btn-voucher-per-shift-increase').click()
+  await settings.getByTestId('btn-save-task-vouchers').click()
+  await expect(settings).toBeHidden()
+  await expect(adminPage.getByTestId('task-vouchers-per-shift')).toContainText('2 per shift')
+  // ...moves the booked shift to yesterday, so it is over and has earned them
+  // without anyone booking a past shift...
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+
+  // ...and makes the other task a place that takes them.
+  await adminPage.goto(`/app/tasks/${pointTask.id}`)
+  await adminPage.getByTestId('btn-task-more').click()
+  await adminPage.getByTestId('btn-task-vouchers').click()
+  await expect(settings).toBeVisible()
+  await settings.getByTestId('voucher-is-point').click()
+  await settings.getByTestId('btn-save-task-vouchers').click()
+  await expect(settings).toBeHidden()
+  await expect(adminPage.getByTestId('task-voucher-point')).toBeVisible()
+
+  // Only now does the volunteer's session start in this event, so it reads
+  // the event with vouchers switched on. From there on, in-app navigation.
+  await setSelectedEvent(disposablePage, event.id)
+  await disposablePage.goto('/app/home')
+  const card = disposablePage.getByTestId('my-vouchers-card')
+  await expect(card).toBeVisible()
+  await card.getByTestId('btn-my-vouchers-details').click()
+  await expect(disposablePage).toHaveURL(new RegExp(`/app/vouchers/${event.id}`))
+  const balance = disposablePage.getByTestId('my-vouchers-balance')
+  await expect(balance.getByTestId('voucher-available')).toHaveText('2')
+
+  await balance.getByTestId('btn-show-voucher-code').click()
+  const codeDialog = disposablePage.getByTestId('voucher-code-dialog')
+  const codeText = codeDialog.getByTestId('voucher-code-text')
+  await expect(codeText).toHaveText(/^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/)
+  const code = (await codeText.textContent())!.trim()
+
+  // The organiser opens the redeem page from the stand. No camera here, so
+  // the page says so and opens the typing field by itself.
+  await adminPage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('No camera', 'NotFoundError')),
+      },
+    })
+  })
+  await adminPage.goto(`/app/tasks/${pointTask.id}`)
+  await adminPage.getByTestId('btn-redeem-vouchers').click()
+  await expect(adminPage).toHaveURL(/\/app\/vouchers\/redeem\//)
+  await expect(adminPage.getByTestId('voucher-scanner-error')).toBeVisible()
+
+  await adminPage.getByTestId('voucher-code-input').fill(code)
+  await adminPage.getByTestId('btn-voucher-check').click()
+  const confirm = adminPage.getByTestId('voucher-redeem-confirm')
+  await expect(confirm.getByTestId('voucher-redeem-person')).toContainText(disposableUser.name)
+  await expect(confirm.getByTestId('voucher-redeem-available')).toHaveText('2 available')
+  await confirm.getByTestId('btn-voucher-redeem').click()
+  const success = confirm.getByTestId('voucher-redeem-success')
+  await expect(success).toContainText('1 voucher redeemed')
+  await expect(success).toContainText(`for ${disposableUser.name}`)
+  await expect(confirm.getByTestId('voucher-redeem-left')).toHaveText('1 left')
+
+  // The volunteer's screen follows within a couple of seconds, with what is left.
+  const used = codeDialog.getByTestId('voucher-code-used')
+  await expect(used).toContainText(`1 voucher used at ${pointTask.name}`, { timeout: 10_000 })
+  await expect(used.getByTestId('voucher-code-left')).toHaveText('1 voucher available')
+  await expect(codeDialog.getByTestId('btn-voucher-code-new')).toBeVisible()
+
+  // "Next person" closes it and leaves the cursor in the empty code field.
+  // Showing the same code again at the stand says where it went, and stays.
+  await confirm.getByTestId('btn-voucher-next').click()
+  await expect(confirm).toBeHidden()
+  await expect(adminPage.getByTestId('voucher-code-input')).toBeFocused()
+  // The list under the scanner reads as vouchers, with today's total on top.
+  const recentCard = adminPage.getByTestId('voucher-recent')
+  await expect(recentCard.getByTestId('voucher-recent-today')).toHaveText('Today: 1 voucher')
+  await expect(recentCard.getByTestId('voucher-recent-row')).toHaveCount(1)
+  await expect(recentCard.getByTestId('voucher-recent-row')).toContainText('1 voucher')
+  await adminPage.getByTestId('voucher-code-input').fill(code)
+  await adminPage.getByTestId('btn-voucher-check').click()
+  await expect(adminPage.getByTestId('voucher-check-problem')).toContainText(
+    `Already redeemed: 1 voucher at ${pointTask.name}`,
+  )
+})
+
+test('without a phone, an organiser picks the person by what they have, then the next one', async ({
+  adminPage,
+  disposablePage,
+  disposableUser,
+}) => {
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await bookShift(disposablePage, shift.id)
+  await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+  await api(adminPage, 'PATCH', `/tasks/${pointTask.id}`, { is_voucher_point: true })
+
+  await adminPage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('No camera', 'NotFoundError')),
+      },
+    })
+  })
+  await adminPage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
+  await adminPage.getByTestId('btn-voucher-pick-person').click()
+  const dialog = adminPage.getByTestId('voucher-pick-dialog')
+  await dialog.getByTestId('voucher-pick-person').click()
+
+  // Beside each name what they can redeem; the organiser has nothing and
+  // cannot be picked.
+  const list = adminPage.getByTestId('voucher-pick-person-list')
+  const volunteer = list.getByTestId(`voucher-pick-person-option-${disposableUser.id}`)
+  await expect(volunteer.getByTestId(`voucher-pick-count-${disposableUser.id}`)).toContainText('2')
+  await expect(list.getByRole('option', { name: /No vouchers left/ })).toHaveAttribute(
+    'data-disabled',
+    '',
+  )
+
+  await volunteer.click()
+  const confirm = adminPage.getByTestId('voucher-redeem-confirm')
+  await expect(confirm.getByTestId('voucher-redeem-person')).toContainText(disposableUser.name)
+  await confirm.getByTestId('btn-voucher-redeem').click()
+  await expect(confirm.getByTestId('voucher-redeem-left')).toHaveText('1 left')
+
+  // Picked by hand, so "Next person" goes straight back to the list.
+  await confirm.getByTestId('btn-voucher-next').click()
+  await expect(confirm).toBeHidden()
+  await expect(dialog).toBeVisible()
+
+  // The stand's task page counts what was redeemed there so far.
+  await adminPage.goto(`/app/tasks/${pointTask.id}`)
+  await expect(adminPage.getByTestId('task-voucher-point')).toHaveText('1 redeemed here so far')
+})
+
+test('someone in charge of the stand picks the person by what they have, as an organiser does', async ({
+  adminPage,
+  adminUser,
+  disposablePage,
+  disposableUser,
+  seedDisposableUser,
+}) => {
+  // The disposable user runs the stand; a second one earned the vouchers.
+  const volunteer = await seedDisposableUser({ joinWorkerEvent: false })
+  await joinEvent(event.id, adminUser.email, volunteer.email)
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await serverApi('POST', '/bookings/', volunteer.email, { shift_id: shift.id })
+  await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+  await api(adminPage, 'PATCH', `/tasks/${pointTask.id}`, { is_voucher_point: true })
+  await api(adminPage, 'POST', `/tasks/${pointTask.id}/managers`, {
+    user_id: disposableUser.id,
+  })
+
+  await disposablePage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('No camera', 'NotFoundError')),
+      },
+    })
+  })
+  await disposablePage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
+  await disposablePage.getByTestId('btn-voucher-pick-person').click()
+  const dialog = disposablePage.getByTestId('voucher-pick-dialog')
+  await dialog.getByTestId('voucher-pick-person').click()
+
+  // The same numbers the organisers see: the volunteer has 2, the person in
+  // charge themselves none, so they cannot be picked.
+  const list = disposablePage.getByTestId('voucher-pick-person-list')
+  const option = list.getByTestId(`voucher-pick-person-option-${volunteer.id}`)
+  await expect(option.getByTestId(`voucher-pick-count-${volunteer.id}`)).toContainText('2')
+  await expect(list.getByTestId(`voucher-pick-person-option-${disposableUser.id}`)).toHaveAttribute(
+    'data-disabled',
+    '',
+  )
+
+  await option.click()
+  const confirm = disposablePage.getByTestId('voucher-redeem-confirm')
+  await expect(confirm.getByTestId('voucher-redeem-person')).toContainText(volunteer.name)
+  await confirm.getByTestId('btn-voucher-redeem').click()
+  await expect(confirm.getByTestId('voucher-redeem-left')).toHaveText('1 left')
+
+  // Back in the list, read again: one left.
+  await confirm.getByTestId('btn-voucher-next').click()
+  await expect(dialog).toBeVisible()
+  await dialog.getByTestId('voucher-pick-person').click()
+  await expect(
+    list
+      .getByTestId(`voucher-pick-person-option-${volunteer.id}`)
+      .getByTestId(`voucher-pick-count-${volunteer.id}`),
+  ).toContainText('1')
+})
+
+test('the dashboard shows a code at the stand, without going to the vouchers page', async ({
+  adminPage,
+  disposablePage,
+}) => {
+  // The same earned vouchers as above, set up through the API: this test is
+  // about the dashboard's own "Show my code", which opens its own dialog.
+  const [shift] = await listShifts(adminPage, shiftTask.id)
+  await bookShift(disposablePage, shift.id)
+  await api(adminPage, 'PATCH', `/tasks/${shiftTask.id}`, { vouchers_per_shift: 2 })
+  await api(adminPage, 'PATCH', `/shifts/${shift.id}`, { date: futureDate(-1) })
+
+  await setSelectedEvent(disposablePage, event.id)
+  await disposablePage.goto('/app/home')
+  const card = disposablePage.getByTestId('my-vouchers-card')
+  // At this width the card shows the numbers block of "My vouchers"; the
+  // phone tile's own number is hidden.
+  await expect(card.getByTestId('voucher-available')).toBeVisible()
+  await expect(card.getByTestId('voucher-available')).toHaveText('2')
+  await expect(card.getByTestId('voucher-adjusted')).toBeVisible()
+
+  await card.getByTestId('btn-show-voucher-code').click()
+  const codeDialog = disposablePage.getByTestId('voucher-code-dialog')
+  await expect(codeDialog.getByTestId('voucher-code-text')).toHaveText(
+    /^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/,
+  )
+  await disposablePage.keyboard.press('Escape')
+  await expect(codeDialog).toBeHidden()
+  await expect(disposablePage).toHaveURL(/\/app\/home$/)
+})
+
+test('a refused camera says so, and a bad code is explained next to the field', async ({
+  adminPage,
+}) => {
+  await api(adminPage, 'PATCH', `/tasks/${pointTask.id}`, { is_voucher_point: true })
+
+  // The browser refuses the camera. qr-scanner reports that as "Camera not
+  // found.", so the page asks the permission what happened.
+  await adminPage.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: () => Promise.reject(new DOMException('Refused', 'NotAllowedError')),
+      },
+    })
+    Object.defineProperty(navigator, 'permissions', {
+      configurable: true,
+      value: { query: () => Promise.resolve({ state: 'denied' }) },
+    })
+  })
+  await adminPage.goto(`/app/vouchers/redeem/${event.id}?task=${pointTask.id}`)
+  await expect(adminPage.getByTestId('voucher-scanner-error')).toContainText(
+    'Camera access was refused',
+  )
+
+  // The typing field opened by itself; a code nobody issued is explained in
+  // place rather than in a toast, until the next keystroke.
+  const problem = adminPage.getByTestId('voucher-check-problem')
+  await adminPage.getByTestId('voucher-code-input').fill('K7M4QX')
+  await adminPage.getByTestId('btn-voucher-check').click()
+  await expect(problem).toContainText("This code isn't valid")
+  await adminPage.getByTestId('voucher-code-input').fill('K7M4Q')
+  await expect(problem).toBeHidden()
+})

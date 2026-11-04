@@ -12,18 +12,24 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.event_membership import event_membership as crud_membership
+from app.logic.permissions import task_access
+from app.logic.vouchers import generate_code
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
+from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_join_request import EventJoinRequest
 from app.models.location import Location
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
+from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 
 
 @pytest.mark.asyncio
@@ -829,6 +835,48 @@ class TestUserDeletionCascades:
         )
         assert remaining.scalar_one() == 0
 
+    async def test_deleting_an_owner_who_invited_someone_to_run_a_task(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_task: Task,
+        test_admin_user: User,
+    ) -> None:
+        """The task link goes with the invitation, and trips over nothing.
+
+        The owner's delete cascades to the event (and so to the invitation)
+        and through ``invited_by_id`` to the same invitation; the link hangs
+        off it by CASCADE and has no SET NULL that could re-check a parent
+        already gone.
+        """
+        invitation = await crud_invitation.create(
+            db_session,
+            event_id=test_event.id,
+            email="runner@example.com",
+            role="member",
+            invited_by_id=test_admin_user.id,
+            expires_in_days=14,
+            for_tasks_only=True,
+        )
+        db_session.add(
+            EventInvitationTask(
+                invitation_id=invitation.id,
+                task_id=test_task.id,
+                added_by_id=test_admin_user.id,
+            )
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        for model in (EventInvitation, EventInvitationTask):
+            remaining = await db_session.execute(
+                select(func.count()).select_from(model)
+            )
+            assert remaining.scalar_one() == 0, model
+
     async def test_deleting_a_decider_of_a_join_request(
         self,
         db_session: AsyncSession,
@@ -935,3 +983,190 @@ class TestUserDeletionCascades:
             *((VenueShape, shape.id) for shape in test_venue_shapes),
         ):
             assert await db_session.get(model, row_id, populate_existing=True) is None
+
+    async def test_deleting_a_person_in_charge_removes_their_row(
+        self,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event_admin_user: User,
+    ) -> None:
+        db_session.add(
+            TaskManager(task_id=test_task.id, user_id=test_event_admin_user.id)
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_event_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        remaining = await db_session.execute(
+            select(func.count()).select_from(TaskManager)
+        )
+        assert remaining.scalar_one() == 0
+
+    async def test_deleting_the_owner_leaves_an_inert_person_in_charge(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_admin_user: User,
+        test_user: User,
+        test_task: Task,
+    ) -> None:
+        """The event goes, the task survives with no event, and so does the row.
+
+        ``task_access`` refuses it: a task without an event is the superadmin's
+        only, so the former person in charge controls nothing.
+        """
+        row = TaskManager(task_id=test_task.id, user_id=test_user.id)
+        db_session.add(row)
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert (
+            await db_session.get(Event, test_event.id, populate_existing=True) is None
+        )
+        survivor = await db_session.get(Task, test_task.id, populate_existing=True)
+        assert survivor is not None
+        assert survivor.event_id is None
+        assert await db_session.get(TaskManager, row.id, populate_existing=True)
+        assert await task_access(test_user, db_session, survivor) is None
+
+    async def test_deleting_a_volunteer_removes_their_entries_and_passes(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """Their entries, codes and frozen earnings all go with the account."""
+        _voucher_rows(db_session, test_event, volunteer=test_user, actor=None)
+        await db_session.flush()
+
+        await db_session.delete(test_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert await _count(db_session, VoucherEntry) == 0
+        assert await _count(db_session, VoucherPass) == 0
+        assert await _count(db_session, VoucherEarning) == 0
+
+    async def test_deleting_a_redeemer_keeps_their_redemptions(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_user: User,
+        test_event_admin_user: User,
+    ) -> None:
+        """``actor_id`` has no foreign key: the debit stays, and so does the
+        name of who took it. The volunteer's earnings are not touched."""
+        _voucher_rows(
+            db_session, test_event, volunteer=test_user, actor=test_event_admin_user
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_event_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        entry = (
+            await db_session.execute(
+                select(VoucherEntry).where(col(VoucherEntry.kind) == "redemption")
+            )
+        ).scalar_one()
+        assert entry.actor_name == "Manager User"
+        assert entry.amount == -2
+        assert await _count(db_session, VoucherEarning) == 1
+
+    async def test_deleting_the_owner_takes_the_events_vouchers(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_admin_user: User,
+        test_user: User,
+        test_task: Task,
+    ) -> None:
+        """The event cascades, and with it its ledger, codes and earnings. A
+        redemption point's ``task_id`` and an earning's ``task_id`` have no
+        foreign key, so the task surviving with no event (and the SET NULL
+        that does to it) does not touch them mid-statement."""
+        test_task.is_voucher_point = True
+        db_session.add(test_task)
+        _voucher_rows(
+            db_session,
+            test_event,
+            volunteer=test_user,
+            actor=test_admin_user,
+            task=test_task,
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        assert await _count(db_session, VoucherEntry) == 0
+        assert await _count(db_session, VoucherPass) == 0
+        assert await _count(db_session, VoucherEarning) == 0
+
+
+def _voucher_rows(
+    db: AsyncSession,
+    event: Event,
+    *,
+    volunteer: User,
+    actor: User | None,
+    task: Task | None = None,
+) -> None:
+    """One redemption, one correction, one code and one frozen earning for
+    ``volunteer``."""
+    db.add_all(
+        [
+            VoucherEntry(
+                event_id=event.id,
+                user_id=volunteer.id,
+                kind="redemption",
+                amount=-2,
+                method="manual",
+                task_id=task.id if task else None,
+                task_name=task.name if task else "Theke",
+                actor_id=actor.id if actor else None,
+                actor_name=actor.name if actor else None,
+            ),
+            VoucherEntry(
+                event_id=event.id,
+                user_id=volunteer.id,
+                kind="adjustment",
+                amount=1,
+                note="Vergessen",
+            ),
+            VoucherPass(
+                event_id=event.id,
+                user_id=volunteer.id,
+                code=generate_code(),
+                expires_at=datetime.datetime(2026, 6, 11, 12, 0),
+            ),
+            VoucherEarning(
+                event_id=event.id,
+                user_id=volunteer.id,
+                booking_id=uuid.uuid4(),
+                amount=2,
+                task_id=task.id if task else None,
+                task_name=task.name if task else "Aufbau",
+                shift_id=uuid.uuid4(),
+                shift_title="Aufbau 8-12",
+                shift_date=datetime.date(2026, 6, 11),
+                shift_start_time=datetime.time(8, 0),
+                shift_end_time=datetime.time(12, 0),
+            ),
+        ]
+    )
+
+
+async def _count(
+    db: AsyncSession,
+    model: type[VoucherEntry] | type[VoucherPass] | type[VoucherEarning],
+) -> int:
+    return (await db.execute(select(func.count()).select_from(model))).scalar_one()

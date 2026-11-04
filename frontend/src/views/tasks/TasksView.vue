@@ -55,7 +55,10 @@ function readUrlIntoStore() {
     filters.focusMode = q.focus as (typeof FOCUS_MODES)[number]
   if (q.search !== undefined) filters.searchQuery = String(q.search)
   if (q.my_bookings !== undefined) filters.myBookingsOnly = q.my_bookings === 'true'
-  if (q.hide_full !== undefined) filters.hideFullShifts = q.hide_full === 'true'
+  // The URL is the only place this one lives: the store outlasts the page, so
+  // without it "Tasks" in the navigation kept the dashboard's "find a shift"
+  // filter on, while the address bar said plain /tasks.
+  filters.hideFullShifts = q.hide_full === 'true'
   if (q.bookable !== undefined) filters.bookableOnly = q.bookable === 'true'
   if (q.date_from && /^\d{4}-\d{2}-\d{2}$/.test(String(q.date_from)))
     filters.dateFrom = String(q.date_from)
@@ -74,6 +77,16 @@ watch(
   (id) => filters.setLocationEvent(id),
   { immediate: true },
 )
+
+/**
+ * A new task starts in the event this list shows, so the form can offer that
+ * event's teams and people in charge from its first step.
+ */
+const openCreateTask = () =>
+  router.push({
+    name: 'task-create',
+    query: authStore.selectedEventId ? { eventId: authStore.selectedEventId } : {},
+  })
 
 // Mirror store → URL (replace, not push, to avoid polluting history)
 const urlQuery = computed(() => {
@@ -110,6 +123,8 @@ const calendarRange = ref<DateRange | null>(null)
 const showShiftDialog = ref(false)
 const selectedShiftId = ref<string | null>(null)
 const selectedShiftTaskName = ref<string | null>(null)
+/** The clicked shift's task, for the rules on booking a voucher shift once it has begun. */
+const selectedShiftTask = ref<FeedTaskItem | null>(null)
 
 // Delete dialog state
 const showDeleteDialog = ref(false)
@@ -200,6 +215,7 @@ const confirmDeleteTask = async () => {
 const handleClickShift = (slotId: string, task: FeedTaskItem) => {
   selectedShiftId.value = slotId
   selectedShiftTaskName.value = task.name
+  selectedShiftTask.value = task
   showShiftDialog.value = true
 }
 
@@ -295,7 +311,7 @@ onMounted(loadTasks)
           v-if="authStore.isManager"
           data-testid="btn-create-task"
           class="max-xl:hidden"
-          @click="router.push({ name: 'task-create' })"
+          @click="openCreateTask"
         >
           <Plus class="mr-2 h-4 w-4" />
           {{ t('duties.tasks.create') }}
@@ -362,6 +378,9 @@ onMounted(loadTasks)
     <ShiftDetailDialog
       :shift-id="selectedShiftId"
       :task-name="selectedShiftTaskName"
+      :vouchers-per-shift="selectedShiftTask?.vouchers_per_shift ?? 0"
+      :can-manage-task="selectedShiftTask?.can_manage ?? false"
+      :managers="selectedShiftTask?.managers"
       :open="showShiftDialog"
       @update:open="showShiftDialog = $event"
       @booking-updated="loadTasks"
@@ -383,7 +402,7 @@ onMounted(loadTasks)
       class="xl:hidden fixed bottom-24 md:bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg"
       data-testid="fab-create-task"
       :aria-label="t('duties.tasks.create')"
-      @click="router.push({ name: 'task-create' })"
+      @click="openCreateTask"
     >
       <Plus class="size-7" :stroke-width="2.5" />
     </Button>

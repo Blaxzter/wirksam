@@ -11,7 +11,7 @@
  * that says so and offers the one thing that helps, a fresh link. Leaving the
  * form up would only collect a password that cannot be saved.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { EyeIcon, EyeOffIcon, LoaderIcon, LockKeyholeIcon, TriangleAlertIcon } from '@lucide/vue'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -33,6 +33,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import FormError from '@/components/utils/FormError.vue'
 
 import { client } from '@/client/client.gen'
 import { zResetPasswordRequest } from '@/client/zod.gen'
@@ -58,6 +59,8 @@ const token = typeof route.query.token === 'string' ? route.query.token : ''
 const busy = ref(false)
 const showPassword = ref(false)
 const formRef = ref<HTMLFormElement | null>(null)
+/** The server's refusal of the last attempt, shown above the submit button. */
+const submitError = ref<string | null>(null)
 /** True once the link is known to be unusable — either on arrival or on submit. */
 const linkIsDead = ref(token === '')
 
@@ -88,6 +91,9 @@ const { errors, values, handleSubmit } = useForm({
   initialValues: { token, password: '', confirm_password: '' },
 })
 
+/** Cleared once either password changes — see `LoginView.vue`. */
+watch(values, () => (submitError.value = null), { deep: true })
+
 const passwordLongEnough = computed(
   () => String(values.password ?? '').length >= PASSWORD_MIN_LENGTH,
 )
@@ -115,6 +121,7 @@ function focusFirstInvalid(form: HTMLFormElement | null, invalid: Record<string,
 const onSubmit = handleSubmit(
   async (formValues) => {
     busy.value = true
+    submitError.value = null
     try {
       // Public endpoint, and `confirm_password` is a UI-only field — send
       // exactly what the schema on the other side expects.
@@ -131,7 +138,7 @@ const onSubmit = handleSubmit(
         linkIsDead.value = true
         return
       }
-      toastApiError(error)
+      submitError.value = toastApiError(error).message
     } finally {
       busy.value = false
     }
@@ -237,6 +244,8 @@ const onSubmit = handleSubmit(
             <FormMessage />
           </FormItem>
         </FormField>
+
+        <FormError :message="submitError" />
 
         <Button
           class="w-full"

@@ -11,6 +11,10 @@ from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 
+# The fixture shifts are dated in the past; booking refuses an ended shift
+# (booking.shift_over), so this module runs before them.
+pytestmark = pytest.mark.usefixtures("clock_before_fixture_shifts")
+
 
 @pytest.mark.asyncio
 class TestBookingsExtendedRoutes:

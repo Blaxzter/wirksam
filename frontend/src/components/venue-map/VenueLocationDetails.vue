@@ -17,6 +17,7 @@ import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 
 import type { LocationRead, LocationShiftRead, VenueLocationStat } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
 import { STAFFING_CLASSES, staffingLabelKey, staffingStatus } from '@/lib/venue-map'
 
 /**
@@ -118,8 +119,28 @@ watch(
 
 const isFull = (shift: LocationShiftRead) => (shift.current_bookings ?? 0) >= shift.max_bookings
 
+/** Over: the server refuses booking it (`booking.shift_over`). */
+const isOver = (shift: LocationShiftRead) =>
+  shiftHasEnded(shift.date, shift.start_time, shift.end_time)
+
+/**
+ * A voucher shift under way, for someone who does not run its task
+ * (`booking.shift_started`): a late booking would be paid in full.
+ */
+const startedForVouchers = (shift: LocationShiftRead) =>
+  (shift.vouchers_per_shift ?? 0) > 0 &&
+  !shift.can_manage &&
+  shiftHasStarted(shift.date, shift.start_time)
+
 const canBook = (shift: LocationShiftRead) =>
-  !shift.is_booked_by_me && !isFull(shift) && !shift.locked_by_team
+  !shift.is_booked_by_me &&
+  !isFull(shift) &&
+  !shift.locked_by_team &&
+  !isOver(shift) &&
+  !startedForVouchers(shift)
+
+/** The shift the dialog shows, for the booking rules it applies too. */
+const detailShift = computed(() => shifts.value.find((s) => s.id === detailShiftId.value) ?? null)
 
 function shiftChipClass(shift: LocationShiftRead) {
   const s = staffingStatus({ booked: shift.current_bookings ?? 0, capacity: shift.max_bookings })
@@ -284,8 +305,22 @@ function onBookingUpdated() {
             <Check />
             {{ t('venueMap.sheet.booked') }}
           </Badge>
+          <span
+            v-else-if="isOver(shift)"
+            class="text-foreground/75 shrink-0 text-[13px]"
+            :data-testid="`sheet-over-${shift.id}`"
+          >
+            {{ t('venueMap.sheet.over') }}
+          </span>
           <span v-else-if="isFull(shift)" class="text-foreground/75 shrink-0 text-[13px]">
             {{ t('venueMap.sheet.full') }}
+          </span>
+          <span
+            v-else-if="startedForVouchers(shift)"
+            class="text-foreground/75 shrink-0 text-[13px]"
+            :data-testid="`sheet-started-${shift.id}`"
+          >
+            {{ t('venueMap.sheet.started') }}
           </span>
           <!--
             Locked for a team the user is not in: the team's name stays
@@ -326,6 +361,8 @@ function onBookingUpdated() {
     <ShiftDetailDialog
       v-model:open="detailOpen"
       :shift-id="detailShiftId"
+      :vouchers-per-shift="detailShift?.vouchers_per_shift ?? null"
+      :can-manage-task="detailShift?.can_manage ?? false"
       priority
       @booking-updated="onBookingUpdated"
       @team-joined="loadShifts"

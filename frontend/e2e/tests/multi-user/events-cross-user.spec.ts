@@ -34,19 +34,31 @@ test.describe('Cross-user – task booking flow', () => {
     await deleteTask(adminPage, created.task.id).catch(() => {})
   })
 
-  test('member books shift, admin sees updated count', async ({ adminPage, memberPage }) => {
-    // By the card's test id: a bare getByText(/0\/3/) also matches the task's
-    // date range in the header whenever it reads 10/30 or 10/31.
+  test('member books shift, admin sees updated count', async ({
+    adminPage,
+    memberPage,
+    memberUser,
+  }) => {
+    // Two people, a page load each after their own sign-in: 5 s on its own, but
+    // with a full set of local workers 20-30 s, out of time at the last step.
+    test.slow()
+
+    // The tile names who is on it by first name, for everyone who sees the task.
+    const firstName = memberUser.name.split(' ')[0]
+
+    // Member navigates to the task and books the shift; a volunteer's tap on a
+    // shift books it, after a confirmation.
     await memberPage.goto(`/app/tasks/${created.task.id}`)
     const memberCard = memberPage.getByTestId(`shift-card-${shift.id}`)
-    await expect(memberCard).toContainText('0/3')
+    await expect(memberCard).toContainText('0 of 3 · still free')
     await memberCard.click()
     await memberPage.getByTestId('btn-dialog-confirm').click()
-    await expect(memberCard).toContainText('1/3')
+    await expect(memberCard).toContainText(`1 of 3 · ${firstName}`)
 
-    // Admin sees the updated booking count
+    // Admin sees the updated booking count, and who it is, on the same shift
     await adminPage.goto(`/app/tasks/${created.task.id}`)
-    await expect(adminPage.getByTestId(`shift-card-${shift.id}`)).toContainText('1/3')
+    const adminCard = adminPage.getByTestId(`shift-card-${shift.id}`)
+    await expect(adminCard).toContainText(`1 of 3 · ${firstName}`)
   })
 
   test('admin-created task visible to member in tasks list', async ({ memberPage }) => {

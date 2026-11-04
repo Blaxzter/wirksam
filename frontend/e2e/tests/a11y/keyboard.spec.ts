@@ -134,9 +134,11 @@ test.describe('a11y – confirm-delete dialog focus management', () => {
   test('traps focus and closes on Escape', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
 
-    const trigger = page.getByTestId('btn-delete-task')
-    await expect(trigger).toBeVisible()
-    await trigger.click()
+    // Delete sits in the task's more-actions menu.
+    await page.getByTestId('btn-task-more').click()
+    const item = page.getByTestId('btn-delete-task')
+    await expect(item).toBeVisible()
+    await item.click()
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
@@ -165,9 +167,12 @@ test.describe('a11y – confirm-delete dialog focus management', () => {
   test('returns focus to the trigger after closing', async ({ adminPage: page }) => {
     await page.goto(`/app/tasks/${created.task.id}`)
 
-    const trigger = page.getByTestId('btn-delete-task')
+    // Opened from a menu item, the dialog hands focus back to the menu's
+    // button: the item itself is gone by then.
+    const trigger = page.getByTestId('btn-task-more')
     await expect(trigger).toBeVisible()
     await trigger.click()
+    await page.getByTestId('btn-delete-task').click()
 
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()

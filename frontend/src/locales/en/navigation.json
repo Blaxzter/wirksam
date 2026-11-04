@@ -10,6 +10,7 @@
     },
     "mobileBottomNav": {
         "bookings": "Bookings",
+        "home": "Home",
         "inbox": "Inbox",
         "more": "More",
         "moreDescription": "Everything else in WirkSam",
@@ -17,6 +18,7 @@
     },
     "sidebar": {
         "badges": {
+            "inCharge": "You're in charge",
             "managersOnly": "Only visible to organisers",
             "openShifts": "{count} open shift | {count} open shifts"
         },
@@ -47,6 +49,10 @@
             "venueMap": {
                 "description": "Where things are at the event",
                 "label": "Map"
+            },
+            "vouchers": {
+                "description": "Your vouchers and your code",
+                "label": "Vouchers"
             }
         },
         "platform": "Platform",

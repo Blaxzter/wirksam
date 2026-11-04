@@ -17,6 +17,11 @@ const props = defineProps<{
   dailyFrom: number
   dailyTo: number
   dailyExcluded: Set<number>
+  /**
+   * While the saved availability is still loading. Whatever is picked before
+   * it arrives would be overwritten by it, so nothing can be picked yet.
+   */
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -89,8 +94,9 @@ const daysWord = computed(() => t('duties.availability.days'))
             v-for="m in modes"
             :key="m.key"
             type="button"
+            :disabled="disabled"
             :data-testid="`availability-type-${m.key}`"
-            class="flex flex-1 items-center gap-3 rounded-lg border p-3 text-left transition-colors"
+            class="flex flex-1 items-center gap-3 rounded-lg border p-3 text-left transition-colors disabled:cursor-wait"
             :class="
               mode === m.key
                 ? 'border-primary bg-primary/10'
@@ -152,8 +158,9 @@ const daysWord = computed(() => t('duties.availability.days'))
           v-for="m in shortModes"
           :key="m.key"
           type="button"
+          :disabled="disabled"
           :data-testid="`availability-type-${m.key}`"
-          class="flex-1 rounded-md border px-2 py-2 text-center text-[12px] font-semibold transition-colors"
+          class="flex-1 rounded-md border px-2 py-2 text-center text-[12px] font-semibold transition-colors disabled:cursor-wait"
           :class="
             mode === m.key
               ? 'border-primary bg-primary text-primary-foreground'
@@ -178,7 +185,11 @@ const daysWord = computed(() => t('duties.availability.days'))
     </div>
 
     <!-- Mode-specific content -->
-    <div v-if="mode === 'fully_available'" data-testid="availability-editor">
+    <div
+      v-if="mode === 'fully_available'"
+      data-testid="availability-editor"
+      :class="{ 'pointer-events-none': disabled }"
+    >
       <div
         class="bg-primary/10 border-primary rounded-lg border-[1.5px] border-dashed p-6 text-center"
       >
@@ -191,7 +202,11 @@ const daysWord = computed(() => t('duties.availability.days'))
       </div>
     </div>
 
-    <div v-else-if="mode === 'time_range'" data-testid="availability-editor">
+    <div
+      v-else-if="mode === 'time_range'"
+      data-testid="availability-editor"
+      :class="{ 'pointer-events-none': disabled }"
+    >
       <DailyWindowPicker
         :days="days"
         :from="dailyFrom"
@@ -203,7 +218,7 @@ const daysWord = computed(() => t('duties.availability.days'))
       />
     </div>
 
-    <div v-else data-testid="availability-editor">
+    <div v-else data-testid="availability-editor" :class="{ 'pointer-events-none': disabled }">
       <AvailabilityPaintGrid
         :days="days"
         :hours="hours"

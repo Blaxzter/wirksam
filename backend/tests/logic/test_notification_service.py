@@ -6,9 +6,12 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.logic.notifications.channels.email import EmailBody
 from app.logic.notifications.service import NotificationService
 from app.models.notification import NotificationType
 from app.models.user import User
+
+SERVICE = "app.logic.notifications.service"
 
 
 @pytest.mark.asyncio
@@ -240,3 +243,103 @@ class TestNotificationService:
         # All notifications should be for admin users
         admin_ids = [n.recipient_id for n in notifications]
         assert test_admin_user.id in admin_ids
+
+
+@pytest.mark.asyncio
+class TestOwnEmail:
+    """``email_body``: each recipient gets their own mail instead of the BCC one."""
+
+    async def _setup_type(self, db_session: AsyncSession, code: str) -> None:
+        db_session.add(
+            NotificationType(
+                code=code,
+                name="Own Mail Type",
+                description="Desc",
+                category="test",
+                default_channels=["email"],
+                is_active=True,
+            )
+        )
+        await db_session.flush()
+
+    async def test_sends_one_mail_per_recipient_with_its_own_body(
+        self, db_session: AsyncSession, test_user: User, test_admin_user: User
+    ) -> None:
+        await self._setup_type(db_session, "test.own_mail")
+        written: list[User] = []
+
+        def _body(recipient: User) -> EmailBody:
+            written.append(recipient)
+            return EmailBody(text=f"Hi {recipient.name}", html="<p>hi</p>")
+
+        with (
+            patch(f"{SERVICE}.EmailChannel.send", new_callable=AsyncMock) as send,
+            patch(
+                f"{SERVICE}.EmailChannel.send_batch", new_callable=AsyncMock
+            ) as batch,
+        ):
+            send.return_value = True
+            notifications = await NotificationService(db_session).notify(
+                recipient_ids=[test_user.id, test_admin_user.id],
+                type_code="test.own_mail",
+                title="Title",
+                body="Body",
+                email_body=_body,
+            )
+
+        batch.assert_not_awaited()
+        assert [user.id for user in written] == [test_user.id, test_admin_user.id]
+        sent = {
+            call.kwargs["recipient"].id: call.kwargs for call in send.await_args_list
+        }
+        assert sent[test_user.id]["content"] == EmailBody(
+            text=f"Hi {test_user.name}", html="<p>hi</p>"
+        )
+        assert sent[test_user.id]["title"] == "Title"
+        assert all(n.channels_sent == ["email"] for n in notifications)
+
+    async def test_a_failed_send_is_recorded(
+        self, db_session: AsyncSession, test_user: User
+    ) -> None:
+        await self._setup_type(db_session, "test.own_mail_fails")
+
+        with patch(
+            f"{SERVICE}.EmailChannel.send", new_callable=AsyncMock, return_value=False
+        ):
+            [notif] = await NotificationService(db_session).notify(
+                recipient_ids=[test_user.id],
+                type_code="test.own_mail_fails",
+                title="Title",
+                body="Body",
+                email_body=lambda _: EmailBody(text="t", html="h"),
+            )
+
+        assert notif.channels_failed == ["email"]
+        assert notif.channels_sent == []
+
+    async def test_a_body_that_fails_to_render_falls_back_to_the_plain_mail(
+        self, db_session: AsyncSession, test_user: User
+    ) -> None:
+        """A bug in a renderer costs the details, not the notice."""
+        await self._setup_type(db_session, "test.own_mail_broken")
+
+        def _broken(_: User) -> EmailBody:
+            raise KeyError("missing string")
+
+        with patch(
+            f"{SERVICE}.EmailChannel.send", new_callable=AsyncMock, return_value=True
+        ) as send:
+            [notif] = await NotificationService(db_session).notify(
+                recipient_ids=[test_user.id],
+                type_code="test.own_mail_broken",
+                title="Title",
+                body="Body",
+                email_body=_broken,
+            )
+
+        send.assert_awaited_once()
+        call = send.await_args
+        assert call is not None
+        assert call.kwargs["content"] is None
+        assert call.kwargs["body"] == "Body"
+        assert notif.channels_sent == ["email"]

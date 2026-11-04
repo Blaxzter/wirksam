@@ -9,6 +9,44 @@ import { AUTH_TEST_PASSWORD, deleteAccount } from '../../helpers/auth.js'
 
 const API = process.env.VITE_API_URL ?? 'http://localhost:8787/api/v1'
 
+/**
+ * Answer the page's user list with these queue counts, the rest as the server
+ * sent it.
+ *
+ * The cards for the approval queue stay while anyone is pending or rejected,
+ * whatever the signup mode, and other workers put people there while this file
+ * runs: the approval tests below, and the auth project's registration-modes
+ * spec. Pinning the counts is what lets a test look at one case of that rule.
+ */
+async function withQueueCounts(
+  page: Page,
+  email: string,
+  counts: { pending: number; rejected: number },
+): Promise<void> {
+  await page.route(
+    (url) => url.pathname.endsWith('/api/v1/users/'),
+    async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback()
+      // As the signed-in admin: the fixture's handler that adds this header
+      // only sees the requests a newer handler falls back on.
+      const response = await route.fetch({
+        headers: { ...route.request().headers(), 'x-test-user-email': email },
+      })
+      const body = await response.json()
+      await route.fulfill({ response, json: { ...body, counts: { ...body.counts, ...counts } } })
+    },
+  )
+}
+
+/**
+ * Wait until the list has arrived. Rows and counts land in the same update, so
+ * after this an absent card is absent for the counts, not for want of them.
+ */
+async function waitForUserList(page: Page): Promise<void> {
+  const rows = page.getByTestId('users-table').locator('tbody tr').filter({ hasText: '@' })
+  await expect(rows.first()).toBeVisible()
+}
+
 test.describe('Admin Users – navigation', () => {
   test('sidebar shows User Management link for admin', async ({ adminPage: page }) => {
     await page.goto('/app/home')
@@ -45,13 +83,30 @@ test.describe('Admin Users – page structure', () => {
     await expect(page.getByTestId('stat-suspended')).toBeVisible()
   })
 
-  test('hides the approval queue when signup is open', async ({ adminPage: page }) => {
-    // The E2E stack runs REGISTRATION_MODE=open, so nobody can be waiting and
-    // the pending/rejected cards would only ever read zero.
+  test('hides the approval queue when signup is open', async ({
+    adminPage: page,
+    adminUser,
+  }) => {
+    // The E2E stack runs REGISTRATION_MODE=open. With nobody waiting, the
+    // pending/rejected cards would only ever read zero.
+    await withQueueCounts(page, adminUser.email, { pending: 0, rejected: 0 })
     await page.goto('/app/admin/users')
+    await waitForUserList(page)
     await expect(page.getByTestId('stat-total')).toBeVisible()
     await expect(page.getByTestId('stat-pending')).toHaveCount(0)
     await expect(page.getByTestId('stat-rejected')).toHaveCount(0)
+  })
+
+  test('keeps the approval queue while someone is still waiting', async ({
+    adminPage: page,
+    adminUser,
+  }) => {
+    // Left over from a time the mode was "approval": they must stay reachable.
+    await withQueueCounts(page, adminUser.email, { pending: 1, rejected: 0 })
+    await page.goto('/app/admin/users')
+    await waitForUserList(page)
+    await expect(page.getByTestId('stat-pending')).toBeVisible()
+    await expect(page.getByTestId('stat-rejected')).toBeVisible()
   })
 
   test('shows user table', async ({ adminPage: page }) => {
@@ -61,7 +116,11 @@ test.describe('Admin Users – page structure', () => {
 
   test('current admin user appears in the list', async ({ adminPage: page, adminUser }) => {
     await page.goto('/app/admin/users')
-    await expect(page.getByTestId('users-table').getByText(new RegExp(adminUser.name, 'i'))).toBeVisible()
+    // Every worker seeds its own people, so the list runs to several pages and
+    // the admin need not be on the first: look them up the way an admin would.
+    await page.getByTestId('users-search').fill(adminUser.email)
+    const row = page.getByTestId('users-table').getByRole('row').filter({ hasText: adminUser.email })
+    await expect(row).toContainText(adminUser.name)
   })
 
   test('no longer offers an approval password', async ({ adminPage: page }) => {

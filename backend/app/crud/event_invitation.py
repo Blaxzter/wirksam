@@ -56,33 +56,16 @@ class CRUDEventInvitation:
         )
         return list(result.scalars().all())
 
-    async def find_pending_for_email(
-        self,
-        session: AsyncSession,
-        *,
-        event_id: uuid.UUID,
-        email: str,
-    ) -> EventInvitation | None:
-        result = await session.execute(
-            select(EventInvitation).where(
-                col(EventInvitation.event_id) == event_id,
-                func.lower(col(EventInvitation.email)) == email.lower(),
-                col(EventInvitation.revoked_at).is_(None),
-                col(EventInvitation.accepted_at).is_(None),
-            )
-        )
-        return result.scalars().first()
-
     async def list_pending_for_email(
         self,
         session: AsyncSession,
         *,
         email: str,
     ) -> list[EventInvitation]:
-        """Open targeted invites addressed to this email, across all events.
+        """Open, valid targeted invites addressed to this email, in any event.
 
-        Used at first sign-in to surface invitations that were sent before the
-        person had an account.
+        The registration gate counts these (``has_valid_invitation``): an
+        address an event admin invited may sign up even without the link.
         """
         now = _now()
         result = await session.execute(
@@ -107,6 +90,7 @@ class CRUDEventInvitation:
         role: AssignableEventRole,
         invited_by_id: uuid.UUID | None,
         expires_in_days: int | None,
+        for_tasks_only: bool = False,
     ) -> EventInvitation:
         expires_at = (
             _now() + timedelta(days=expires_in_days)
@@ -120,6 +104,7 @@ class CRUDEventInvitation:
             token=secrets.token_urlsafe(32),
             invited_by_id=invited_by_id,
             expires_at=expires_at,
+            for_tasks_only=for_tasks_only,
         )
         session.add(obj)
         await session.flush()

@@ -26,13 +26,16 @@
     "actions": {
         "back": "Zurück",
         "cancel": "Abbrechen",
+        "changeStatus": "Status: {status}. Ändern",
         "close": "Schließen",
         "confirm": "Bestätigen",
         "create": "Erstellen",
+        "decrease": "Verringern",
         "delete": "Löschen",
         "edit": "Bearbeiten",
         "hide": "Verbergen",
         "hidePassword": "Passwort verbergen",
+        "increase": "Erhöhen",
         "moreActions": "Weitere Aktionen",
         "next": "Weiter",
         "previous": "Vorherige",
@@ -102,8 +105,11 @@
         "switch": "Sprache wechseln"
     },
     "memberPicker": {
+        "allMembers": "Alle Mitglieder",
+        "enterKey": "Enter",
         "enterToPick": "Enter zum Auswählen",
-        "noMatch": "Niemand passt."
+        "noMatch": "Niemand passt.",
+        "similar": "Ähnlich in der Veranstaltung"
     },
     "states": {
         "error": "Fehler",

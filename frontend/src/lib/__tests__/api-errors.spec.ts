@@ -224,6 +224,70 @@ describe('normalizeApiError', () => {
       expect(result.message).toBe('This shift overlaps one of your booked shifts')
     })
 
+    it('says how many vouchers are left on voucher.insufficient', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 409,
+          data: {
+            type: 'urn:problem:voucher.insufficient',
+            code: 'voucher.insufficient',
+            title: 'Conflict',
+            status: 409,
+            available: 3,
+          },
+        }),
+      )
+
+      expect(result.code).toBe('voucher.insufficient')
+      expect(result.message).toBe('Not enough vouchers: only 3 left.')
+    })
+
+    it('says how many can still be taken on voucher.correction_exceeds_available', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 409,
+          data: {
+            type: 'urn:problem:voucher.correction_exceeds_available',
+            code: 'voucher.correction_exceeds_available',
+            title: 'Conflict',
+            status: 409,
+            available: 2,
+          },
+        }),
+      )
+
+      expect(result.code).toBe('voucher.correction_exceeds_available')
+      expect(result.message).toBe(
+        'That would take away more than they can still redeem: 2 at most.',
+      )
+    })
+
+    it('falls back to the plain correction message without a count', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 409,
+          data: {
+            type: 'urn:problem:voucher.correction_exceeds_available',
+            title: 'Conflict',
+            status: 409,
+          },
+        }),
+      )
+
+      expect(result.message).toBe('That would take away more than they can still redeem.')
+    })
+
+    it('falls back to the plain insufficient message without a count', () => {
+      const result = normalizeApiError(
+        axiosError({
+          status: 409,
+          data: { type: 'urn:problem:voucher.insufficient', title: 'Conflict', status: 409 },
+        }),
+      )
+
+      expect(result.message).toBe('Not enough vouchers.')
+    })
+
     it('ignores a type that does not use the urn:problem: prefix', () => {
       const result = normalizeApiError(
         axiosError({

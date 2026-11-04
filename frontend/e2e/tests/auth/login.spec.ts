@@ -61,8 +61,15 @@ test.describe('Auth – sign in', () => {
     await expect(page.locator('[data-sonner-toast]')).toContainText(
       'That email address and password do not match.',
     )
+    // The toast fades; the same sentence stays on the form, in red, until the
+    // visitor changes what they typed.
+    const formError = page.getByTestId('form-error')
+    await expect(formError).toContainText('That email address and password do not match.')
     await expect(page).toHaveURL(/\/login/)
     await expect(page.getByTestId('login-form')).toBeVisible()
+
+    await page.getByTestId('input-password').fill(AUTH_TEST_PASSWORD)
+    await expect(formError).toBeHidden()
   })
 
   test('an address with no account is refused the same way', async ({ page }, testInfo) => {
@@ -74,6 +81,9 @@ test.describe('Auth – sign in', () => {
     await page.getByTestId('btn-login').click()
 
     await expect(page.locator('[data-sonner-toast]')).toContainText(
+      'That email address and password do not match.',
+    )
+    await expect(page.getByTestId('form-error')).toContainText(
       'That email address and password do not match.',
     )
     await expect(page).toHaveURL(/\/login/)

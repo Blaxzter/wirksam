@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { formatDate, formatHours, initials } from '@/lib/format'
+import {
+  firstName,
+  firstNamesPreview,
+  formatDate,
+  formatHours,
+  initials,
+  telHref,
+} from '@/lib/format'
 import i18n from '@/locales/i18n'
 
 /**
@@ -105,6 +112,31 @@ describe('formatHours', () => {
   })
 })
 
+describe('telHref', () => {
+  it('keeps only the digits and a leading plus', () => {
+    expect(telHref('+49 170 5551234')).toBe('tel:+491705551234')
+    expect(telHref('0171 / 123 45 67')).toBe('tel:01711234567')
+    expect(telHref('0171-123.45.67')).toBe('tel:01711234567')
+  })
+
+  it('drops the "(0)" after a country code, which would dial the wrong number', () => {
+    expect(telHref('+49 (0)171 1234567')).toBe('tel:+491711234567')
+    expect(telHref('0049 (0) 171 1234567')).toBe('tel:00491711234567')
+  })
+
+  it('keeps the zero of an area code in brackets when there is no country code', () => {
+    expect(telHref('(0171) 1234567')).toBe('tel:01711234567')
+    expect(telHref('(0) 171 1234567')).toBe('tel:01711234567')
+  })
+
+  it('returns null when nothing is left to dial', () => {
+    expect(telHref('ask at the desk')).toBeNull()
+    expect(telHref('  ')).toBeNull()
+    expect(telHref(null)).toBeNull()
+    expect(telHref(undefined)).toBeNull()
+  })
+})
+
 describe('initials', () => {
   it('takes the first letters of the first two words', () => {
     expect(initials('Carla Meier')).toBe('CM')
@@ -119,5 +151,56 @@ describe('initials', () => {
     expect(initials('Marco')).toBe('MA')
     expect(initials('')).toBe('?')
     expect(initials(null)).toBe('?')
+  })
+})
+
+describe('firstName', () => {
+  it('takes the first word, skipping a "[DEMO]" style prefix', () => {
+    expect(firstName('[DEMO] Carla Meier')).toBe('Carla')
+    expect(firstName('Sven')).toBe('Sven')
+  })
+
+  it('ignores extra spaces around and between the words', () => {
+    expect(firstName('  Carla   Meier ')).toBe('Carla')
+    expect(firstName('  [DEMO]   Carla Meier')).toBe('Carla')
+  })
+
+  it('falls back to the whole name when nothing is left after the prefix', () => {
+    expect(firstName('[DEMO]')).toBe('[DEMO]')
+    expect(firstName('')).toBe('')
+  })
+})
+
+describe('firstNamesPreview', () => {
+  it('gives the first names of the first few and counts the rest', () => {
+    expect(firstNamesPreview(['Tomas Neruda', 'Adaeze Okafor'], 3)).toEqual({
+      shown: ['Tomas', 'Adaeze'],
+      more: 0,
+    })
+    expect(firstNamesPreview(['Vroni A', 'Yuki B', 'Ben C', 'Sina D'], 2)).toEqual({
+      shown: ['Vroni', 'Yuki'],
+      more: 2,
+    })
+  })
+
+  it('counts someone without a name without writing them out', () => {
+    expect(firstNamesPreview([null, 'Tomas Neruda', '  ', undefined], 3)).toEqual({
+      shown: ['Tomas'],
+      more: 3,
+    })
+  })
+
+  it('skips a "[DEMO]" prefix and keeps an address to the part before the @', () => {
+    expect(firstNamesPreview(['[DEMO] Carla Meier', 'jonas.weber@example.org'], 3)).toEqual({
+      shown: ['Carla', 'jonas.weber'],
+      more: 0,
+    })
+    expect(firstNamesPreview(['@example.org'], 3).shown).toEqual(['@example.org'])
+  })
+
+  it('is empty for nobody, and for a limit of zero or less', () => {
+    expect(firstNamesPreview([], 3)).toEqual({ shown: [], more: 0 })
+    expect(firstNamesPreview(['Tomas'], 0)).toEqual({ shown: [], more: 1 })
+    expect(firstNamesPreview(['Tomas'], -1)).toEqual({ shown: [], more: 1 })
   })
 })

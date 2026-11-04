@@ -40,9 +40,7 @@ test.describe('Member – tasks RBAC', () => {
     await expect(member.getByTestId('btn-create-task')).toBeHidden()
   })
 
-  test('member does not see edit/delete buttons on task detail', async ({
-    memberPage: member,
-  }) => {
+  test('member does not see edit/delete buttons on task detail', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
     await expect(member.getByRole('heading', { name: created.task.name })).toBeVisible()
     await expect(member.getByTestId('btn-edit-task')).toBeHidden()
@@ -69,17 +67,16 @@ test.describe('Member – tasks viewing', () => {
   test('member can view task detail', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
     await expect(member.getByRole('heading', { name: created.task.name })).toBeVisible()
-    // By the card's test id: a bare getByText(/0\/5/) also matches a date
-    // such as 10/5 in the header.
-    await expect(member.getByTestId(`shift-card-${shift.id}`)).toContainText('0/5')
+    await expect(member.getByTestId(`shift-card-${shift.id}`)).toContainText('0 of 5')
   })
 
   test('member can book a shift', async ({ memberPage: member }) => {
     await member.goto(`/app/tasks/${created.task.id}`)
+    // A volunteer's tap on a shift books it, after a confirmation.
     const card = member.getByTestId(`shift-card-${shift.id}`)
-    await expect(card).toContainText('0/5')
+    await expect(card).toContainText('0 of 5')
     await card.click()
     await member.getByTestId('btn-dialog-confirm').click()
-    await expect(card).toContainText('1/5')
+    await expect(card).toContainText('1 of 5')
   })
 })

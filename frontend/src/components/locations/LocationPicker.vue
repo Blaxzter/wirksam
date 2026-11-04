@@ -90,6 +90,20 @@ const orphan = computed<Pick<LocationRead, 'id' | 'name'> | null>(() => {
   return { id, name: text.value.trim() || '…' }
 })
 
+/**
+ * What the trigger shows, worked out here rather than left to `SelectValue`.
+ * reka-ui reads the label from the items it has registered, and when the
+ * stand-in `orphan` item gives way to the real one once the list arrives, its
+ * unmount deregisters the real item too (both share the value), so the
+ * trigger fell back to "No location" until the list was opened.
+ */
+const selectionLabel = computed(() => {
+  const v = selection.value
+  if (v === NONE) return t('locations.picker.none')
+  if (v === CUSTOM) return t('locations.picker.custom')
+  return locations.value.find((l) => l.id === v)?.name ?? orphan.value?.name ?? ''
+})
+
 const formOpen = ref(false)
 
 function onSelect(value: unknown) {
@@ -125,7 +139,7 @@ function onCreated(location: LocationRead) {
   <div class="space-y-2">
     <Select :model-value="selection" @update:model-value="onSelect">
       <SelectTrigger :id="inputId" class="w-full" data-testid="location-picker">
-        <SelectValue :placeholder="t('locations.picker.none')" />
+        <SelectValue :placeholder="t('locations.picker.none')">{{ selectionLabel }}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem :value="NONE" data-testid="location-option-none">

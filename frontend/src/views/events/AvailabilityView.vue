@@ -44,7 +44,8 @@ const dailyTo = ref(17)
 const dailyExcluded = ref<Set<number>>(new Set())
 const avail = ref<Set<string>>(new Set())
 const tab = ref<'me' | 'team'>('me')
-const loading = ref(false)
+/** The saved availability is loading (from the first render on, when there is an event). */
+const loading = ref(eventId.value !== null)
 const showFullDay = ref(false)
 
 const myAvailability = ref<UserAvailabilityRead | null>(null)
@@ -210,6 +211,8 @@ const isDirty = computed(() => snapshotKey() !== baselineKey.value)
 
 async function loadData() {
   if (!eventId.value) return
+  // Until the saved availability is in, the editor takes no input: hydrating
+  // would overwrite a mode picked in the meantime and leave nothing to save.
   loading.value = true
   try {
     try {
@@ -222,6 +225,7 @@ async function loadData() {
     }
     hydrateFromServer(myAvailability.value)
     baselineKey.value = snapshotKey()
+    loading.value = false
 
     if (canManage.value) {
       try {
@@ -454,6 +458,7 @@ const teamMembers = computed<UserAvailabilityWithUser[]>(() => {
       data-testid="section-my-availability"
       class="overflow-hidden"
       :class="canManage && tab === 'team' ? 'hidden md:block' : ''"
+      :aria-busy="loading || undefined"
     >
       <CardContent class="p-4 sm:p-5">
         <div
@@ -487,6 +492,7 @@ const teamMembers = computed<UserAvailabilityWithUser[]>(() => {
           v-model:dailyExcluded="dailyExcluded"
           :days="days"
           :hours="hours"
+          :disabled="loading"
         />
       </CardContent>
     </Card>

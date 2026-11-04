@@ -45,6 +45,8 @@ services:
       - SMTP_PORT=1025
       - SMTP_TLS=False
       - SMTP_SSL=False
+      - SMTP_USER=
+      - SMTP_PASSWORD=
 
   backend:
     build:
@@ -67,6 +69,11 @@ services:
       - SMTP_PORT=1025
       - SMTP_TLS=False
       - SMTP_SSL=False
+      # Blanked like the Turnstile secret below: a real mail account in .env
+      # would otherwise log in to mailcatcher, which offers no AUTH, so every
+      # mail failed with "Failed to send" in the backend log.
+      - SMTP_USER=
+      - SMTP_PASSWORD=
       - FRONTEND_HOST=http://localhost:5555
       # Blanked on purpose. `env_file: .env` above pulls in whatever the
       # developer running this has configured, and a real Turnstile secret
@@ -105,6 +112,8 @@ services:
   mailcatcher:
     image: schickling/mailcatcher
     restart: "no"
+    # Only the inbox is published. The backend reaches SMTP (1025) over the
+    # compose network, and publishing it would make the stack fail to start
+    # whenever another project's mail container already holds host port 1025.
     ports:
       - "1080:1080"
-      - "1025:1025"

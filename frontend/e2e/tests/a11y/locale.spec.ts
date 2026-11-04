@@ -27,6 +27,7 @@ test.describe('a11y – locales', () => {
   test('dashboard in English', async ({ adminPage: page }) => {
     await page.goto('/app/home')
     await expect(page.getByTestId('sidebar-link-my-bookings')).toContainText('My Bookings')
+    await expect(page.getByTestId('dashboard-next-shift')).toBeVisible()
     await expectNoA11yViolations(page, { label: 'admin dashboard, locale=en' })
   })
 
@@ -37,6 +38,7 @@ test.describe('a11y – locales', () => {
 
     // Prove the page really switched — otherwise this is a duplicate English scan.
     await expect(page.getByTestId('sidebar-link-my-bookings')).toContainText('Meine Buchungen')
+    await expect(page.getByTestId('dashboard-next-shift')).toBeVisible()
     await expectNoA11yViolations(page, { label: 'admin dashboard, locale=de' })
   })
 })

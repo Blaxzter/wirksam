@@ -1,0 +1,135 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+
+import { Info, Ticket } from '@lucide/vue'
+import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
+
+import { useAuthStore } from '@/stores/auth'
+
+import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+
+import Button from '@/components/ui/button/Button.vue'
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog'
+
+import type { TaskRead } from '@/client/types.gen'
+import { toastApiError } from '@/lib/api-errors'
+
+import TaskVoucherSettingsFields from './TaskVoucherSettingsFields.vue'
+
+/**
+ * "Vouchers…" on the task page, for organisers: the rate is currency and the
+ * places that take vouchers are theirs to choose, so people in charge never
+ * see this.
+ */
+const props = defineProps<{ task: TaskRead }>()
+
+const open = defineModel<boolean>('open', { required: true })
+
+const emit = defineEmits<{ saved: [task: TaskRead] }>()
+
+const { t } = useI18n()
+const { patch } = useAuthenticatedClient()
+const authStore = useAuthStore()
+
+const perShift = ref(0)
+const isPoint = ref(false)
+const saving = ref(false)
+
+/**
+ * A rate above 0 takes the shifts away from the task's people in charge when
+ * the event keeps the shifts of voucher tasks with the organisers, so the
+ * dialog says so before the organiser saves. Only the selected event is
+ * loaded; on a task of another event it says nothing rather than guess.
+ */
+const locksManagers = computed(() => {
+  const event = authStore.selectedEvent
+  return (
+    perShift.value > 0 &&
+    (props.task.managers?.length ?? 0) > 0 &&
+    !!event &&
+    event.id === props.task.event_id &&
+    event.managers_edit_voucher_shifts === false
+  )
+})
+
+watch(open, (isOpen) => {
+  if (!isOpen) return
+  perShift.value = props.task.vouchers_per_shift ?? 0
+  isPoint.value = props.task.is_voucher_point ?? false
+})
+
+async function save() {
+  saving.value = true
+  try {
+    const res = await patch<{ data: TaskRead }>({
+      url: `/tasks/${props.task.id}`,
+      body: {
+        // An emptied field means none (the fields already turn it into 0).
+        vouchers_per_shift: Number.isFinite(perShift.value) ? perShift.value : 0,
+        is_voucher_point: isPoint.value,
+      },
+    })
+    toast.success(t('vouchers.settings.saved'))
+    open.value = false
+    emit('saved', res.data)
+    // The navigation entry and the dashboard card read the event's counts.
+    if (props.task.event_id) void authStore.refreshSelectedEvent(props.task.event_id)
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<template>
+  <ResponsiveDialog v-model:open="open">
+    <ResponsiveDialogContent
+      dialog-class="sm:max-w-md"
+      keep-keyboard-closed
+      data-testid="task-voucher-settings-dialog"
+    >
+      <ResponsiveDialogHeader>
+        <ResponsiveDialogTitle class="flex items-center gap-2">
+          <Ticket class="size-5" />
+          {{ t('vouchers.settings.dialogTitle', { task: task.name }) }}
+        </ResponsiveDialogTitle>
+        <ResponsiveDialogDescription class="sr-only">
+          {{ t('vouchers.admin.afterEventHint') }}
+        </ResponsiveDialogDescription>
+      </ResponsiveDialogHeader>
+      <ResponsiveDialogBody class="pb-2">
+        <TaskVoucherSettingsFields
+          v-model:vouchers-per-shift="perShift"
+          v-model:is-point="isPoint"
+          id-prefix="task-vouchers"
+        />
+        <p
+          v-if="locksManagers"
+          class="mt-4 flex gap-2 text-xs text-muted-foreground"
+          data-testid="task-vouchers-managers-locked"
+        >
+          <Info class="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          {{ t('vouchers.settings.managersLockedHint') }}
+        </p>
+      </ResponsiveDialogBody>
+      <ResponsiveDialogFooter>
+        <Button variant="outline" :disabled="saving" @click="open = false">
+          {{ t('common.actions.cancel') }}
+        </Button>
+        <Button :disabled="saving" data-testid="btn-save-task-vouchers" @click="save">
+          {{ t('common.actions.save') }}
+        </Button>
+      </ResponsiveDialogFooter>
+    </ResponsiveDialogContent>
+  </ResponsiveDialog>
+</template>

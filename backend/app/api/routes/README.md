@@ -67,7 +67,33 @@ Per-event authorisation is **not** done here. It goes through
 - `require_event_visible(user, session, event)` for reads — **404**, so a private
   event cannot be probed by id
 
-Grepping those two names must keep finding every check, so do not inline an
+Inside an event, a few gates in the same file narrow or widen those two:
+
+- **Teams** (`teams.py`) add `require_team_manager` (deciding requests,
+  editing a roster) and `require_team_for_booking`.
+- **People in charge** (`tasks/managers.py`) add `require_task_manager` (edit a
+  task's details and shifts; admin-only fields refused with `403
+  task.admin_only_field`; booked shifts that have started are the organisers'
+  through `check_shift_history`), `require_shift_editor` (adding, deleting and
+  regenerating shifts and batches: on a task that earns vouchers a person in
+  charge gets `403 task.voucher_shifts_admin_only` unless the event's
+  `managers_edit_voucher_shifts` is on; `PATCH /shifts/{id}` asks
+  `check_voucher_shifts` only when it changes `SHIFT_EARNING_FIELDS`) and
+  `require_task_visible` (reading one task; drafts for admins and the task's
+  people in charge). Naming people in charge, and inviting them by address
+  (`POST /tasks/{id}/managers/invite` and `.../managers/invitations`), is
+  `require_event_role` (event admins only); inviting refuses demo events
+  through `logic/sandbox/guards.py::refuse_if_sandbox`, the same guard the
+  event invitations use.
+- **Vouchers** (`vouchers.py`) add `require_voucher_redeemer` (taking vouchers
+  at a task flagged `is_voucher_point`: event admins, its people in charge,
+  and whoever is on a running shift there; without a code, admins and people
+  in charge always, the staff on shift only while the event's
+  `voucher_manual_redeem` is `on_shift`, the default:
+  `may_redeem_manually`). Every voucher route starts with
+  `require_event_visible`, as `work_hours.py` does.
+
+Grepping those names must keep finding every check, so do not inline an
 equivalent condition.
 
 Authentication itself — register, login, refresh, logout, password reset, email

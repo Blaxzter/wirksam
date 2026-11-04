@@ -173,7 +173,7 @@ const setStatus = (value: StatusFilter) => {
   statusFilter.value = value
 }
 
-const patchUserRoles = async (user: UserRead, role: 'admin' | 'task_manager') => {
+const patchUserRoles = async (user: UserRead, role: 'admin') => {
   updatingId.value = user.id
   const hasRole = user.roles.includes(role)
   const newRoles = hasRole ? user.roles.filter((r) => r !== role) : [...user.roles, role]
@@ -184,13 +184,7 @@ const patchUserRoles = async (user: UserRead, role: 'admin' | 'task_manager') =>
     })
     replaceUser(response.data)
     const name = user.name ?? user.email
-    const messages = {
-      admin: hasRole ? 'admin.users.removedAdmin' : 'admin.users.grantedAdmin',
-      task_manager: hasRole
-        ? 'admin.users.removedTaskManager'
-        : 'admin.users.grantedTaskManager',
-    } as const
-    toast.success(t(messages[role], { name }))
+    toast.success(t(hasRole ? 'admin.users.removedAdmin' : 'admin.users.grantedAdmin', { name }))
   } catch (error) {
     toastApiError(error)
   } finally {
@@ -199,7 +193,6 @@ const patchUserRoles = async (user: UserRead, role: 'admin' | 'task_manager') =>
 }
 
 const toggleAdmin = (user: UserRead) => patchUserRoles(user, 'admin')
-const toggleTaskManager = (user: UserRead) => patchUserRoles(user, 'task_manager')
 
 const toggleActive = async (user: UserRead) => {
   updatingId.value = user.id
@@ -387,7 +380,6 @@ onMounted(loadUsers)
         @toggle-active="toggleActive"
         @suspend-reason="openSuspendReasonDialog"
         @toggle-admin="toggleAdmin"
-        @toggle-task-manager="toggleTaskManager"
         @delete="openDeleteDialog"
       />
       <UsersGroupedList
@@ -399,7 +391,6 @@ onMounted(loadUsers)
         @toggle-active="toggleActive"
         @suspend-reason="openSuspendReasonDialog"
         @toggle-admin="toggleAdmin"
-        @toggle-task-manager="toggleTaskManager"
         @delete="openDeleteDialog"
       />
     </template>

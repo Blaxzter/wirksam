@@ -36,6 +36,14 @@ class ShiftUpdate(BaseModel):
     max_bookings: int | None = None
 
 
+class ShiftBooker(BaseModel):
+    """Someone with a confirmed booking on a shift, as its tile names them."""
+
+    user_id: uuid.UUID
+    #: Their display name; None for an account without one.
+    name: str | None = None
+
+
 class ShiftRead(ShiftBase):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
@@ -58,6 +66,12 @@ class ShiftRead(ShiftBase):
     my_team_status: TeamMemberStatus | None = None
     #: The caller is not an approved member of that team, so booking would fail.
     locked_by_team: bool = False
+    #: Who has booked it, earliest booking first. Only on ``GET /shifts/``
+    #: with ``task_id`` and ``with_bookers``, which has already passed the
+    #: task's read gate: everyone who may see a task sees who booked its
+    #: shifts, the same names ``GET /shifts/{id}/bookings`` gives them.
+    #: None when not asked for.
+    bookers: list[ShiftBooker] | None = None
 
 
 class ShiftListResponse(BaseModel):

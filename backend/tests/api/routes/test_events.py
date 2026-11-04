@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -538,6 +539,111 @@ async def _location_graph(
     db.add(shift)
     await db.flush()
     return task, batch, shift
+
+
+@pytest.mark.asyncio
+class TestEventVoucherRules:
+    """The event-wide voucher rules: who may redeem without a code, and whether
+    people in charge may change the shifts of tasks that earn vouchers."""
+
+    async def test_a_new_event_starts_with_the_defaults(
+        self, async_client: AsyncClient
+    ):
+        r = await async_client.post(
+            "/api/v1/events/",
+            json={
+                "name": "Sommerfest",
+                "start_date": "2026-09-01",
+                "end_date": "2026-09-07",
+                # Not on create: a new event starts with the defaults.
+                "voucher_manual_redeem": "in_charge",
+                "managers_edit_voucher_shifts": True,
+            },
+        )
+        assert r.status_code == 201
+        assert r.json()["voucher_manual_redeem"] == "on_shift"
+        assert r.json()["managers_edit_voucher_shifts"] is False
+
+    async def test_an_admin_changes_them(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        as_event_admin: None,
+    ):
+        r = await async_client.patch(
+            f"/api/v1/events/{test_event.id}",
+            json={
+                "voucher_manual_redeem": "in_charge",
+                "managers_edit_voucher_shifts": True,
+            },
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["voucher_manual_redeem"] == "in_charge"
+        assert r.json()["managers_edit_voucher_shifts"] is True
+        await db_session.refresh(test_event)
+        assert test_event.voucher_manual_redeem == "in_charge"
+        assert test_event.managers_edit_voucher_shifts is True
+
+        r = await async_client.get(f"/api/v1/events/{test_event.id}")
+        assert r.json()["voucher_manual_redeem"] == "in_charge"
+        assert r.json()["managers_edit_voucher_shifts"] is True
+
+    async def test_a_member_cannot(self, async_client: AsyncClient, test_event: Event):
+        r = await async_client.patch(
+            f"/api/v1/events/{test_event.id}",
+            json={"voucher_manual_redeem": "in_charge"},
+        )
+        assert r.status_code == 403
+        assert r.json()["code"] == "event.forbidden"
+
+    async def test_an_unknown_rule_is_refused(
+        self, async_client: AsyncClient, test_event: Event, as_event_admin: None
+    ):
+        r = await async_client.patch(
+            f"/api/v1/events/{test_event.id}",
+            json={"voucher_manual_redeem": "desk"},
+        )
+        assert r.status_code == 422
+
+    async def test_an_explicit_null_leaves_the_value(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        as_event_admin: None,
+    ):
+        test_event.voucher_manual_redeem = "in_charge"
+        test_event.managers_edit_voucher_shifts = True
+        db_session.add(test_event)
+        await db_session.flush()
+
+        r = await async_client.patch(
+            f"/api/v1/events/{test_event.id}",
+            json={
+                "name": "Umbenannt",
+                "voucher_manual_redeem": None,
+                "managers_edit_voucher_shifts": None,
+            },
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["name"] == "Umbenannt"
+        assert r.json()["voucher_manual_redeem"] == "in_charge"
+        assert r.json()["managers_edit_voucher_shifts"] is True
+
+    async def test_the_database_holds_the_rule_to_its_two_values(
+        self, db_session: AsyncSession, test_event: Event
+    ):
+        """The CHECK backs the schema up for writes that bypass it."""
+        with pytest.raises(IntegrityError):
+            async with db_session.begin_nested():
+                await db_session.execute(
+                    text(
+                        "UPDATE events SET voucher_manual_redeem = 'desk' "
+                        "WHERE id = :id"
+                    ),
+                    {"id": test_event.id},
+                )
 
 
 @pytest.mark.asyncio

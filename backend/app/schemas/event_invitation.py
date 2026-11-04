@@ -36,6 +36,15 @@ class EventInvitationBulkCreate(BaseModel):
         return self
 
 
+class InvitationTaskBrief(BaseModel):
+    """A task an invitation asks its invitee to be in charge of."""
+
+    task_id: uuid.UUID
+    name: str
+    start_date: dt.date
+    end_date: dt.date
+
+
 class EventInvitationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -49,6 +58,12 @@ class EventInvitationRead(BaseModel):
     revoked_at: dt.datetime | None = None
     accepted_at: dt.datetime | None = None
     use_count: int = 0
+    #: The tasks this invitation asks the person to be in charge of.
+    tasks: list[InvitationTaskBrief] = Field(default_factory=list)
+    #: Created by inviting someone to be in charge; revoked when its last task
+    #: link goes.
+    for_tasks_only: bool = False
+    last_sent_at: dt.datetime | None = None
 
 
 class EventInvitationPreview(BaseModel):
@@ -71,9 +86,14 @@ class EventInvitationPreview(BaseModel):
         description="One of: expired, revoked, already_used, email_mismatch",
     )
     already_member: bool = False
+    #: The tasks the invitee is asked to be in charge of. Only for the
+    #: addressee: empty on ``email_mismatch``.
+    tasks: list[InvitationTaskBrief] = Field(default_factory=list)
 
 
 class EventInvitationBulkResult(BaseModel):
     created: list[EventInvitationRead]
     skipped_existing_members: list[str] = Field(default_factory=list)
     skipped_already_invited: list[str] = Field(default_factory=list)
+    #: Not sent because of the daily limits (per organiser, per address).
+    skipped_rate_limited: list[str] = Field(default_factory=list)
