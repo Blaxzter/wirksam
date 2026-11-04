@@ -292,6 +292,8 @@
         "delete": "Veranstaltung löschen",
         "deleteConfirm": "Möchtest du diese Veranstaltung wirklich löschen? Alle zugehörigen Verfügbarkeiten gehen verloren.",
         "detail": {
+            "aboutHint": "Ändern können das nur die Organisator:innen der Veranstaltung.",
+            "aboutTitle": "Über diese Veranstaltung",
             "dateConstraintHint": "Vorhandene Aufgaben schränken den Zeitraum ein. Um alles auf einmal zu verschieben, nutze unten „Termine verschieben“.",
             "earliestTask": "Früheste Aufgabe: {date}",
             "editDescription": "Name, Beschreibung und Zeitraum dieser Veranstaltung bearbeiten.",

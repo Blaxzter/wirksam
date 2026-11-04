@@ -292,6 +292,8 @@
         "delete": "Delete Event",
         "deleteConfirm": "Are you sure you want to delete this event? All related availability data will be lost.",
         "detail": {
+            "aboutHint": "Only the event's organisers can change these details.",
+            "aboutTitle": "About this event",
             "dateConstraintHint": "Existing tasks limit the date range. To move everything at once, use \"Shift Dates\" below.",
             "earliestTask": "Earliest task: {date}",
             "editDescription": "Update the name, description, and date range for this event.",
