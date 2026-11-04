@@ -25,6 +25,23 @@ def test_wall_clock_now_honours_event_timezone(monkeypatch: pytest.MonkeyPatch) 
     assert abs((east - west) - dt.timedelta(hours=24)) < dt.timedelta(seconds=5)
 
 
+@pytest.mark.parametrize(
+    ("wall_clock", "utc"),
+    [
+        # Berlin in winter is one hour ahead of UTC, in summer two.
+        (dt.datetime(2026, 1, 15, 10, 0), dt.datetime(2026, 1, 15, 9, 0)),
+        (dt.datetime(2026, 7, 15, 10, 0), dt.datetime(2026, 7, 15, 8, 0)),
+        # Just after midnight is still the day before in UTC.
+        (dt.datetime(2026, 1, 15, 0, 30), dt.datetime(2026, 1, 14, 23, 30)),
+    ],
+)
+def test_wall_clock_to_utc(
+    monkeypatch: pytest.MonkeyPatch, wall_clock: dt.datetime, utc: dt.datetime
+) -> None:
+    monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Europe/Berlin")
+    assert clock.wall_clock_to_utc(wall_clock) == utc
+
+
 def test_the_default_zone_is_berlin() -> None:
     assert settings.EVENT_TIMEZONE == "Europe/Berlin"
 

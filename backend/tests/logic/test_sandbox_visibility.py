@@ -542,7 +542,7 @@ class TestTasksTheGuestCreates:
         test_sandbox: SandboxSetup,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """The publish fan-out reaches every account; its hard stop reads the flag."""
+        """Publishing a demo task e-mails nobody; the trigger's hard stop reads the flag."""
         calls: list[dict[str, Any]] = []
 
         async def _record(**kwargs: Any) -> None:

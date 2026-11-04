@@ -285,10 +285,6 @@ async def update_task(
             task_id=updated.id,
             task_name=updated.name,
             event_id=updated.event_id,
-            # This fan-out reaches every active account on the installation.
-            # A demo guest publishing a seeded task - which the manager tour
-            # walks them through - must not put their throwaway task name in
-            # front of the whole user base.
             is_sandbox=updated.is_sandbox,
         )
 

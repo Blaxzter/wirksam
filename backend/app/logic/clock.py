@@ -8,6 +8,9 @@
   start at 20:00. So "now" is read in ``settings.EVENT_TIMEZONE`` and the zone
   dropped, which puts both sides on the venue's wall clock.
 
+:func:`wall_clock_to_utc` crosses from one to the other, for a moment the rota
+names that something has to fire at, such as a reminder.
+
 Callers go through the module attribute (``clock.wall_clock_now()``), never a
 ``from ... import``, so a test patches one target:
 ``monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: ...)``.
@@ -27,3 +30,12 @@ def utc_now() -> dt.datetime:
 def wall_clock_now() -> dt.datetime:
     """The events' wall-clock time, naive, for comparing with shift times."""
     return dt.datetime.now(ZoneInfo(settings.EVENT_TIMEZONE)).replace(tzinfo=None)
+
+
+def wall_clock_to_utc(wall_clock: dt.datetime) -> dt.datetime:
+    """A time on the events' wall clock as naive UTC, to store and compare as such."""
+    return (
+        wall_clock.replace(tzinfo=ZoneInfo(settings.EVENT_TIMEZONE))
+        .astimezone(dt.UTC)
+        .replace(tzinfo=None)
+    )

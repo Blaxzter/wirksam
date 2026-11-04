@@ -446,7 +446,7 @@ async def _refuse_if_booked_shift_over(session: AsyncSession, booking: Booking) 
 def _shift_start_datetime(
     slot_date: dt.date, slot_start_time: dt.time | None
 ) -> dt.datetime:
-    """Combine shift date + time into a naive UTC datetime."""
+    """Combine shift date + time into a naive wall-clock datetime."""
     if slot_start_time:
         return dt.datetime.combine(slot_date, slot_start_time)
     return dt.datetime.combine(slot_date, dt.time(0, 0))
