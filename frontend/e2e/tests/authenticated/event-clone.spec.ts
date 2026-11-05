@@ -50,7 +50,7 @@ test.describe('Event clone – as an ordinary organiser', () => {
     // Not the worker admin: a platform admin passes every check, so a profile
     // that doesn't know the new event would go unnoticed.
     const source = await createEvent(page, uniqueName('E2E Clone Mine'))
-    let copyId: string | undefined
+    const made = [source.id]
     try {
       await page.goto(`/app/events/clone/${source.id}`)
       await expect(page.getByTestId('input-clone-name')).toBeVisible()
@@ -65,15 +65,15 @@ test.describe('Event clone – as an ordinary organiser', () => {
         ),
         page.getByTestId('btn-submit').click(),
       ])
-      copyId = ((await response.json()) as { event: EventRead }).event.id
+      const copyId = ((await response.json()) as { event: EventRead }).event.id
+      made.push(copyId)
 
       await expect(page).toHaveURL(new RegExp(`/app/event-settings/${copyId}`))
       await expect(page.getByTestId('tab-people')).toBeVisible()
       await expect(page.getByTestId('tab-locations')).toBeVisible()
       await expect(page.getByTestId('btn-event-status-published')).toBeVisible()
     } finally {
-      if (copyId) await deleteEvent(page, copyId).catch(() => {})
-      await deleteEvent(page, source.id).catch(() => {})
+      for (const id of made) await deleteEvent(page, id).catch(() => {})
     }
   })
 })

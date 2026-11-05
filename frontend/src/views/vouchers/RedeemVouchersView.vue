@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import {
   ChevronDown,
@@ -51,7 +51,7 @@ import type {
   VoucherCheckResult,
   VoucherPointRead,
 } from '@/client/types.gen'
-import { getApiErrorMessage, toastApiError } from '@/lib/api-errors'
+import { getApiErrorMessage, normalizeApiError, toastApiError } from '@/lib/api-errors'
 import { parseServerDate } from '@/lib/server-time'
 import {
   codeUsedDetails,
@@ -241,7 +241,7 @@ async function check(body: { code: string } | { user_id: string }) {
     confirmOpen.value = true
   } catch (error) {
     const used = codeUsedDetails(error)
-    checkProblem.value = used
+    const problem: { kind: 'used' | 'error'; text: string } = used
       ? {
           kind: 'used',
           text: t(
@@ -251,6 +251,13 @@ async function check(body: { code: string } | { user_id: string }) {
           ),
         }
       : { kind: 'error', text: getApiErrorMessage(error) }
+    // Archived while this page was open: the place has left the list, and goes
+    // from the picker too. Choosing another one clears the message, so it comes after.
+    if (normalizeApiError(error).code === 'voucher.point_archived') {
+      await loadPoints()
+      await nextTick()
+    }
+    checkProblem.value = problem
     busy.value = false
   }
 }
@@ -441,7 +448,15 @@ watch(eventId, () => {
       <CardHeader>
         <CardTitle class="text-lg">{{ t('vouchers.redeem.noPlacesTitle') }}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent class="space-y-2">
+        <p
+          v-if="checkProblem"
+          role="alert"
+          class="text-sm text-destructive"
+          data-testid="voucher-check-problem"
+        >
+          {{ checkProblem.text }}
+        </p>
         <p class="text-sm text-muted-foreground">{{ t('vouchers.redeem.noPlaces') }}</p>
       </CardContent>
     </Card>

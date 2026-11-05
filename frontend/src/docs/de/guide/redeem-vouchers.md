@@ -45,6 +45,7 @@ Steht dort stattdessen „Kein Handy? Frag …“, hat eure Veranstaltung das Ei
 ## Auf Meldungen reagieren
 
 - **„Schon eingelöst: 2 Marken bei Küche, 14:03“:** Dieser Code wurde schon benutzt. Die Marken sind damals abgezogen worden, jetzt wird nichts mehr abgezogen. Für weitere Marken zeigt die Person über „Neuen Code zeigen“ einen neuen.
+- **„Diese Aufgabe ist archiviert und nimmt keine Marken mehr an“:** Die Organisator:innen haben die Stelle archiviert, während deine Seite offen war. WirkSam nimmt sie aus der Liste, wähle also eine andere.
 - **„Dieser Code ist abgelaufen“:** Ein Code gilt zwei Minuten. Bitte um den aktuellen, auf dem Handy der Person erscheint er von selbst.
 - **„Dieser Code ist ungültig“ oder „Das ist kein Marken-Code“:** Vertippt oder ein anderer QR-Code. Lass dir den Code noch einmal zeigen.
 - **„Dieser Code gehört zu einer anderen Veranstaltung“:** Die Person wechselt in der App zu dieser Veranstaltung und zeigt einen neuen Code.

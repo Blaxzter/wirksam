@@ -109,6 +109,13 @@ describe('TaskVouchersCard', () => {
     expect(find(w, 'task-voucher-point').text()).toBe('Takes vouchers')
   })
 
+  it('says an archived task no longer takes vouchers, in place of "Takes vouchers"', async () => {
+    const w = await mountCard({ task: task({ is_voucher_point: true, status: 'archived' }) })
+    expect(w.find('[data-testid="task-voucher-point"]').exists()).toBe(false)
+    expect(w.get('[data-testid="task-voucher-point-archived"]').text()).toContain('no longer')
+    expect(w.find('[data-testid="btn-redeem-vouchers"]').exists()).toBe(false)
+  })
+
   it("says when vouchers aren't taken here", async () => {
     const desktop = await mountCard({ task: task({ is_voucher_point: false }), canManage: true })
     expect(find(desktop, 'task-voucher-point').exists()).toBe(false)

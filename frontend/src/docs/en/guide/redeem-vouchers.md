@@ -45,6 +45,7 @@ If it says "No phone? Ask …" instead, your event keeps redeeming without a cod
 ## Respond to messages
 
 - **"Already redeemed: 2 vouchers at Kitchen, 14:03":** This code has been used. Those vouchers were taken then, and nothing more is taken now. For more vouchers, the person shows a new code with "Show a new code".
+- **"This task is archived, so it no longer takes vouchers":** An organiser has archived this place while your page was open. WirkSam takes it off the list, so choose another one.
 - **"This code has expired":** A code lasts two minutes. Ask for the current one, which appears on the person's phone by itself.
 - **"This code isn't valid" or "That is not a voucher code":** A typo, or a different QR code. Ask to see the code again.
 - **"This code is for a different event":** The person switches to this event in the app and shows a new code.

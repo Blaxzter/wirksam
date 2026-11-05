@@ -349,7 +349,7 @@ watch(
               }}
             </Badge>
             <Badge
-              v-if="task.is_voucher_point"
+              v-if="task.is_voucher_point && task.status !== 'archived'"
               variant="outline"
               class="text-[11px]"
               :data-testid="`task-voucher-point-badge-${task.id}`"
