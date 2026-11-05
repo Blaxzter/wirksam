@@ -3,7 +3,6 @@
     "allLoaded": "You're all caught up",
     "categories": {
         "admin": "Admin",
-        "availability": "Availability",
         "booking": "Bookings",
         "event": "Events",
         "shift": "Duty Shifts",
@@ -94,7 +93,7 @@
     },
     "reminders": {
         "addReminder": "Add reminder",
-        "channelActiveHint": "You'll be notified via {channel} {offset}",
+        "channelActiveHint": "Reminder {offset} by {channel} while that channel is on. It always lands in your inbox.",
         "description": "These reminders are added automatically whenever you book a shift. You can still change them for each booking.",
         "lastChannelHint": "At least one channel must stay enabled",
         "noDefaults": "No default reminders yet. Add one below.",
@@ -163,12 +162,6 @@
     },
     "title": "Notifications",
     "types": {
-        "availability": {
-            "reminder": {
-                "description": "Reminder to submit your availability for a published event",
-                "name": "Availability Reminder"
-            }
-        },
         "booking": {
             "cancelled_by_admin": {
                 "description": "When organisers or people in charge remove a shift you booked",

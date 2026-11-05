@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { normalizeApiError } from '@/lib/api-errors'
 import deDuties from '@/locales/de/duties.json'
 import deErrors from '@/locales/de/errorCodes.json'
+import deNotifications from '@/locales/de/notifications.json'
 import deTeams from '@/locales/de/teams.json'
 import enDuties from '@/locales/en/duties.json'
 import enErrors from '@/locales/en/errorCodes.json'
+import enNotifications from '@/locales/en/notifications.json'
 import enTeams from '@/locales/en/teams.json'
 
 /**
@@ -13,11 +16,21 @@ import enTeams from '@/locales/en/teams.json'
  */
 
 const LOCALES = [
-  { lang: 'en', duties: enDuties, teams: enTeams, errors: enErrors },
-  { lang: 'de', duties: deDuties, teams: deTeams, errors: deErrors },
+  { lang: 'en', duties: enDuties, teams: enTeams, errors: enErrors, notices: enNotifications },
+  { lang: 'de', duties: deDuties, teams: deTeams, errors: deErrors, notices: deNotifications },
 ]
 
-describe.each(LOCALES)('wording ($lang)', ({ lang, duties, teams, errors }) => {
+describe('the error for an archived place', () => {
+  it('says what happened instead of something generic', () => {
+    const { message } = normalizeApiError({
+      isAxiosError: true,
+      response: { status: 409, data: { status: 409, code: 'voucher.point_archived' } },
+    })
+    expect(message).toBe(enErrors.voucher.point_archived)
+  })
+})
+
+describe.each(LOCALES)('wording ($lang)', ({ lang, duties, teams, errors, notices }) => {
   const organisers = lang === 'en' ? /organiser/i : /Organisator:in/
 
   it('calls the people who run an event organisers in the team texts', () => {
@@ -52,6 +65,17 @@ describe.each(LOCALES)('wording ($lang)', ({ lang, duties, teams, errors }) => {
     const hint = duties.events.fields.defaultTimesHint
     expect(hint).not.toMatch(lang === 'en' ? /on each task/i : /bei den einzelnen Aufgaben/)
     expect(hint).toContain(duties.tasks.detail.addSingleShift)
+  })
+
+  it('does not promise a reminder on a channel that may be off, and names the inbox', () => {
+    const hint = notices.reminders.channelActiveHint
+    expect(hint).toMatch(lang === 'en' ? /inbox/i : /Postfach/)
+    expect(hint).not.toMatch(lang === 'en' ? /You'll be notified/ : /Du wirst/)
+  })
+
+  it('has nothing left about the availability reminder, which is gone', () => {
+    expect(notices.categories).not.toHaveProperty('availability')
+    expect(notices.types).not.toHaveProperty('availability')
   })
 
   it('does not say someone else can put you on a shift', () => {

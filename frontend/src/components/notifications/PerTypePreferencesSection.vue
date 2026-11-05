@@ -25,7 +25,6 @@ const categoryLabels: Record<string, string> = {
   shift: 'notifications.categories.shift',
   task: 'notifications.categories.task',
   event: 'notifications.categories.event',
-  availability: 'notifications.categories.availability',
   admin: 'notifications.categories.admin',
   user: 'notifications.categories.user',
 }
