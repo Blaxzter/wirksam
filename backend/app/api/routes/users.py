@@ -414,10 +414,11 @@ async def _settle_created_tasks(session: AsyncSession, user_id: uuid.UUID) -> No
     which would take the vouchers earned there back. Earned is earned
     (``app.logic.vouchers.settle_earnings``).
     """
-    task_ids = await crud_task.ids_created_by(session, user_id=user_id)
-    await vouchers.settle_earnings(
-        session, now=clock.wall_clock_now(), task_ids=task_ids
-    )
+    by_zone = await crud_task.ids_created_by_zone(session, user_id=user_id)
+    for zone, task_ids in by_zone.items():
+        await vouchers.settle_earnings(
+            session, now=clock.wall_clock_now(zone), task_ids=task_ids
+        )
 
 
 async def _get_valid_transfer_target(
@@ -494,7 +495,7 @@ async def transfer_user_ownership(
     # bookings on shifts still to come (which would otherwise go on earning
     # hours and vouchers). Otherwise re-inviting the person would quietly
     # restore the first two.
-    now = clock.wall_clock_now()
+    zones = await crud_event.zones_by_id(session, owned_event_ids)
     for event_id in owned_event_ids:
         await crud_team.remove_user_from_event_teams(
             session, user_id=user_id, event_id=event_id
@@ -503,7 +504,10 @@ async def transfer_user_ownership(
             session, user_id=user_id, event_id=event_id
         )
         await crud_booking.cancel_unfinished_bookings_in_event(
-            session, user_id=user_id, event_id=event_id, now=now
+            session,
+            user_id=user_id,
+            event_id=event_id,
+            now=clock.wall_clock_now(zones.get(event_id)),
         )
     tasks_transferred = await crud_task.reassign_owner(
         session, from_user_id=user_id, to_user_id=body.target_user_id

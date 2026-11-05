@@ -49,15 +49,17 @@ def parse_domains(v: Any) -> list[str]:
 
 
 def parse_timezone(v: str) -> str:
-    """Refuse to boot on a zone name the zone database does not know.
+    """Refuse a zone name the zone database does not know.
 
-    Caught here rather than at the first comparison, where it would surface as
-    a 500 on whichever request first asked whether a shift had ended.
+    For ``EVENT_TIMEZONE`` that stops the boot and for ``events.timezone`` it is a
+    422, rather than a 500 on whichever request first asked whether a shift had
+    ended. ``OSError``: a name that is a directory in the database ("Europe") or
+    too long for a file name raises that instead of ``ZoneInfoNotFoundError``.
     """
     try:
         ZoneInfo(v)
-    except (ZoneInfoNotFoundError, ValueError) as exc:
-        raise ValueError(f"EVENT_TIMEZONE {v!r} is not a known time zone") from exc
+    except (ZoneInfoNotFoundError, ValueError, OSError) as exc:
+        raise ValueError(f"{v!r} is not a known time zone") from exc
     return v
 
 

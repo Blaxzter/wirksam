@@ -1,9 +1,11 @@
 """Unit tests for notification message translations."""
 
 import datetime as dt
+from unittest.mock import patch
 
 import pytest
 
+from app.core.config import settings
 from app.logic.notifications import messages
 from app.logic.notifications.messages import (
     DEFAULT_LANGUAGE,
@@ -13,7 +15,9 @@ from app.logic.notifications.messages import (
     get_email_strings,
     get_message,
     quoted_list,
+    shift_times,
 )
+from tests.fixtures.clock import fixed_clock, instant_clock
 
 
 class TestResolveLanguage:
@@ -209,7 +213,8 @@ class TestDaySpan:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            "app.logic.clock.wall_clock_now", lambda: dt.datetime(2027, 1, 2, 9)
+            "app.logic.clock.wall_clock_now",
+            fixed_clock(dt.datetime(2027, 1, 2, 9)),
         )
         assert day_span(dt.date(2027, 3, 5), dt.date(2027, 3, 5), "en") == (
             "Fri 5 March"
@@ -233,3 +238,44 @@ class TestDaySpan:
             day_span(dt.date(2026, 7, 17), dt.date(2026, 7, 17), "de", today=self.TODAY)
             == "Fr, 17. July"
         )
+
+
+class TestShiftTimes:
+    """What a message says about a shift's time, and whose clock that is."""
+
+    def test_the_usual_zone_is_not_mentioned(self) -> None:
+        assert shift_times(dt.time(10), dt.time(12), settings.EVENT_TIMEZONE) == {
+            "start_time": "10:00",
+            "end_time": "12:00",
+        }
+
+    def test_a_task_without_an_event_is_not_either(self) -> None:
+        assert shift_times(dt.time(10), dt.time(12), None)["end_time"] == "12:00"
+
+    def test_another_zone_follows_the_time(self) -> None:
+        assert shift_times(dt.time(10), dt.time(12), "Asia/Tokyo") == {
+            "start_time": "10:00",
+            "end_time": "12:00 (Asia/Tokyo)",
+        }
+
+    def test_a_shift_with_only_a_start_still_says_it(self) -> None:
+        assert shift_times(dt.time(10), None, "Asia/Tokyo") == {
+            "start_time": "10:00",
+            "end_time": " (Asia/Tokyo)",
+        }
+
+    def test_a_shift_without_times_says_nothing(self) -> None:
+        assert shift_times(None, None, "Asia/Tokyo") == {
+            "start_time": "",
+            "end_time": "",
+        }
+
+
+class TestDaySpanOnTheEventsClock:
+    def test_this_year_is_the_events(self) -> None:
+        """At the turn of the year, 2027 has begun in Tokyo and not in Berlin."""
+        instant = instant_clock(dt.datetime(2026, 12, 31, 20, 0))
+        day = dt.date(2027, 3, 5)
+        with patch("app.logic.clock.wall_clock_now", instant):
+            assert "2027" not in day_span(day, day, "en", zone="Asia/Tokyo")
+            assert "2027" in day_span(day, day, "en", zone="Europe/Berlin")

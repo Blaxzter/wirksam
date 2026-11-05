@@ -21,6 +21,11 @@ Filter noisy Vite output with `| grep -vE "^\[WebServer\]"`.
 an `e2e_bypass=1` cookie — the fixtures do. Without both, every spec that uses
 `adminPage` lands on `/login` instead of the app.
 
+`just e2e-up` publishes the same 5555 and 8787 from Docker. With `just dev-backend`
+or `just dev-frontend` still running, Windows splits `localhost` between them
+(uvicorn holds 127.0.0.1:8787, Vite ::1:5555, Docker the rest), so one run can reach
+both stacks at once. Stop one side first.
+
 ## `tests/auth/` is the exception, on purpose
 
 The `auth` project drives `/login`, `/register` and `/forgot-password` for real:
@@ -85,6 +90,30 @@ await expect(
 Never target `adminUser` / `memberUser` / `workerEvent` with a destructive
 action — they are shared by every test that worker runs. Use the `disposable*`
 fixtures, which are deleted in teardown.
+
+Wait for what the page is waiting for, not for a fixed window. A `toPass` loop that
+re-opens a page and gives each visit 2 s fails whenever the stack is busy, and each
+retry pays for another page load. The backend commits before it responds (`get_db`),
+so a write is visible to the next request: open the page once, `waitForResponse` on
+the request that carries the data, then assert with the default timeout.
+
+## On a full set of local workers
+
+With the default worker count (half your CPU threads, 12 when this was measured) on
+the Docker stack, everything goes through one Vite dev server and tests take about
+five times as long as they do alone. Before blaming a timeout, rerun it with
+`--workers=3`.
+
+`actionTimeout` (5 s) is also the default for `page.waitForResponse`, while `goto` has
+no limit of its own below the test's 30 s. A `waitForResponse` started before a `goto`
+has to cover the whole page load, so give it its own `timeout`.
+
+Discover lists the first 100 public events by start date, and every worker's
+`workerEvent` is public and starts tomorrow. They stay until the next run's
+`/testing/reset` (an event goes with its owner; `--no-deps` skips that reset). One run
+can start more than 100 workers, because workers restart after a failure and between
+projects and `--repeat-each=N` gives every repeat its own. A test that looks for its own
+event in Discover has to create it starting today.
 
 ## Asserting a refusal
 

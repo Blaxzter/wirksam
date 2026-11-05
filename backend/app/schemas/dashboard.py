@@ -24,6 +24,8 @@ class DashboardShift(BaseModel):
     task_name: str
     event_id: uuid.UUID | None = None
     event_name: str | None = None
+    # The event's zone, which ``date`` and the times are in.
+    event_timezone: str | None = None
     title: str
     date: dt.date
     start_time: dt.time | None = None
@@ -46,6 +48,8 @@ class DashboardOpenShift(BaseModel):
     task_name: str
     event_id: uuid.UUID | None = None
     event_name: str | None = None
+    # The event's zone, which ``date`` and the times are in.
+    event_timezone: str | None = None
     title: str
     date: dt.date
     start_time: dt.time | None = None

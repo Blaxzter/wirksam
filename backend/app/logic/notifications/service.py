@@ -51,7 +51,7 @@ class NotificationService:
         message_factory: MessageFactory | None = None,
         data: NotificationData | None = None,
         scope_chain: list[tuple[str, uuid.UUID]] | None = None,
-        force_channels: list[str] | None = None,
+        only_channels: list[str] | None = None,
         email_body: EmailBodyFactory | None = None,
     ) -> list[Notification]:
         """Send a notification to one or more recipients.
@@ -66,6 +66,10 @@ class NotificationService:
         With ``email_body`` each recipient gets their own mail, written by it
         (a greeting by name, details that differ per person), instead of the
         shared BCC one. Preferences and mutes decide as for any notice.
+
+        ``only_channels`` replaces the preferences for a notice that carries its
+        own channels, like a booking reminder. Nothing can mute it, so it always
+        reaches the inbox, but a channel the recipient has switched off stays off.
         """
         notifications: list[Notification] = []
 
@@ -98,9 +102,16 @@ class NotificationService:
             else:
                 resolved_title, resolved_body = title, body
 
-            # Resolve channels — use force_channels if provided, else subscription-based
-            if force_channels is not None:
-                channel_config = {ch: (ch in force_channels) for ch in self.channels}
+            # The notice's own channels if it has them, else the subscriptions.
+            if only_channels is not None:
+                switched_on = {
+                    "email": recipient.notify_email,
+                    "push": recipient.notify_push,
+                    "telegram": recipient.notify_telegram,
+                }
+                channel_config = {
+                    ch: ch in only_channels and switched_on[ch] for ch in self.channels
+                }
             else:
                 channel_config = await crud_subscription.resolve_channels(
                     self.db,

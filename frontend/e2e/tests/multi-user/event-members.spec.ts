@@ -121,6 +121,17 @@ test.describe('Event members – People tab', () => {
       .getByTestId('btn-remove-member')
       .click()
 
+    // It asks first, and saying no leaves them in.
+    await adminPage.getByTestId('btn-dialog-cancel').click()
+    await expect(adminPage.getByTestId('event-member-row')).toHaveCount(2)
+
+    await adminPage
+      .getByTestId('event-member-row')
+      .filter({ hasText: memberUser.email })
+      .getByTestId('btn-remove-member')
+      .click()
+    await adminPage.getByTestId('btn-dialog-confirm').click()
+
     await expect(adminPage.getByTestId('event-member-row')).toHaveCount(1)
   })
 

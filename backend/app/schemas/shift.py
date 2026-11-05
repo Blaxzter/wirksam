@@ -56,6 +56,9 @@ class ShiftRead(ShiftBase):
     #: The event the shift's task belongs to, so a client can link to that
     #: event's pages rather than whichever event happens to be selected.
     event_id: uuid.UUID | None = None
+    #: The zone of that event, which ``date`` and the times are in. On
+    #: ``GET /shifts/`` and ``GET /shifts/{id}``, not in write responses.
+    event_timezone: str | None = None
     #: The team the shift's task requires, if any.
     team_id: uuid.UUID | None = None
     team_name: str | None = None

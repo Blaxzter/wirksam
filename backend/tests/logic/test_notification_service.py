@@ -1,6 +1,7 @@
 """Unit tests for NotificationService."""
 
 import uuid
+from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -343,3 +344,114 @@ class TestOwnEmail:
         assert call.kwargs["content"] is None
         assert call.kwargs["body"] == "Body"
         assert notif.channels_sent == ["email"]
+
+
+@pytest.mark.asyncio
+class TestAReminderAndTheChannelSwitches:
+    """A notice with its own channels still obeys the switch on each channel."""
+
+    @pytest.fixture(autouse=True)
+    def channels(self) -> Generator[dict[str, AsyncMock]]:
+        with (
+            patch(f"{SERVICE}.EmailChannel.is_configured", return_value=True),
+            patch(f"{SERVICE}.PushChannel.is_configured", return_value=True),
+            patch(f"{SERVICE}.TelegramChannel.is_configured", return_value=True),
+            patch(
+                f"{SERVICE}.EmailChannel.send_batch",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as email,
+            patch(
+                f"{SERVICE}.PushChannel.send",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as push,
+            patch(
+                f"{SERVICE}.TelegramChannel.send",
+                new_callable=AsyncMock,
+                return_value=True,
+            ) as telegram,
+        ):
+            yield {"email": email, "push": push, "telegram": telegram}
+
+    async def _remind(self, db_session: AsyncSession, user: User, chosen: list[str]):
+        db_session.add(
+            NotificationType(
+                code="test.own_channels",
+                name="Own channels",
+                category="test",
+                default_channels=[],
+                is_user_configurable=False,
+            )
+        )
+        await db_session.flush()
+        return await NotificationService(db_session).notify(
+            recipient_ids=[user.id],
+            type_code="test.own_channels",
+            title="Soon",
+            body="Your shift starts soon",
+            only_channels=chosen,
+        )
+
+    async def test_it_uses_the_channels_it_was_given(
+        self,
+        db_session: AsyncSession,
+        test_user: User,
+        channels: dict[str, AsyncMock],
+    ) -> None:
+        [notice] = await self._remind(db_session, test_user, ["email", "push"])
+
+        channels["email"].assert_awaited_once()
+        channels["push"].assert_awaited_once()
+        channels["telegram"].assert_not_awaited()
+        assert set(notice.channels_sent) == {"email", "push"}
+
+    @pytest.mark.parametrize(
+        ("switch", "channel"),
+        [
+            ("notify_email", "email"),
+            ("notify_push", "push"),
+            ("notify_telegram", "telegram"),
+        ],
+    )
+    async def test_a_channel_switched_off_stays_off(
+        self,
+        db_session: AsyncSession,
+        test_user: User,
+        channels: dict[str, AsyncMock],
+        switch: str,
+        channel: str,
+    ) -> None:
+        setattr(test_user, switch, False)
+        db_session.add(test_user)
+        await db_session.flush()
+
+        [notice] = await self._remind(
+            db_session, test_user, ["email", "push", "telegram"]
+        )
+
+        channels[channel].assert_not_awaited()
+        assert channel not in notice.channels_sent
+        others = {"email", "push", "telegram"} - {channel}
+        for other in others:
+            channels[other].assert_awaited_once()
+
+    async def test_with_every_channel_off_it_still_lands_in_the_inbox(
+        self,
+        db_session: AsyncSession,
+        test_user: User,
+        channels: dict[str, AsyncMock],
+    ) -> None:
+        test_user.notify_email = False
+        test_user.notify_push = False
+        test_user.notify_telegram = False
+        db_session.add(test_user)
+        await db_session.flush()
+
+        [notice] = await self._remind(db_session, test_user, ["email", "push"])
+
+        assert notice.recipient_id == test_user.id
+        assert notice.body == "Your shift starts soon"
+        assert notice.channels_sent == []
+        for sent in channels.values():
+            sent.assert_not_awaited()

@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
+import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
+
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 
 /**
- * The legal pages as one small line at the foot of the user menu. Inside the
- * app they are needed rarely, so they live here instead of under every page.
+ * The guides and the legal pages as one small line at the foot of the user menu.
+ * Inside the app they are needed rarely, so they live here instead of under every
+ * page. The guides exist only alongside the landing page (`requires` in lib/seo.ts).
  */
 const links = [
+  ...(isSwitchOn(useAppConfig().LANDING_ENABLED)
+    ? [{ name: 'guides', label: 'preauth.layout.footer.guides' }]
+    : []),
   { name: 'privacy', label: 'preauth.layout.footer.privacy' },
   { name: 'terms', label: 'preauth.layout.footer.terms' },
   { name: 'impressum', label: 'preauth.layout.footer.impressum' },
-] as const
+]
 </script>
 
 <template>

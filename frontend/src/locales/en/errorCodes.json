@@ -95,7 +95,7 @@
         "document_not_found": "That file is no longer there. It is deleted once a request has been decided.",
         "document_too_large": "The file is larger than 5 MB. Please choose a smaller one.",
         "document_unsupported": "Only PDF files and photos (PNG, JPEG, WebP) can be attached.",
-        "forbidden": "Only this team's leads and the event admins can do this.",
+        "forbidden": "Only this team's leads and the organisers can do this.",
         "member_not_found": "That person is not in this team.",
         "name_taken": "This event already has a team with that name.",
         "not_event_member": "Only people in this event can be added to its teams.",
@@ -160,6 +160,7 @@
         "not_a_point": "Vouchers can't be redeemed at this task.",
         "not_allowed": "You can only take vouchers here while you are on shift here, or if you are in charge.",
         "pass_not_found": "That code is no longer there. Show a new one.",
+        "point_archived": "This task is archived, so it no longer takes vouchers.",
         "rate_limited": "Too many tries. Wait a moment and try again.",
         "request_conflict": "Something went wrong with this redemption. Close it and scan again."
     },

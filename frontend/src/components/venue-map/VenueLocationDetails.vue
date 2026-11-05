@@ -121,7 +121,7 @@ const isFull = (shift: LocationShiftRead) => (shift.current_bookings ?? 0) >= sh
 
 /** Over: the server refuses booking it (`booking.shift_over`). */
 const isOver = (shift: LocationShiftRead) =>
-  shiftHasEnded(shift.date, shift.start_time, shift.end_time)
+  shiftHasEnded(shift.date, shift.start_time, shift.end_time, shift.event_timezone)
 
 /**
  * A voucher shift under way, for someone who does not run its task
@@ -130,7 +130,7 @@ const isOver = (shift: LocationShiftRead) =>
 const startedForVouchers = (shift: LocationShiftRead) =>
   (shift.vouchers_per_shift ?? 0) > 0 &&
   !shift.can_manage &&
-  shiftHasStarted(shift.date, shift.start_time)
+  shiftHasStarted(shift.date, shift.start_time, shift.event_timezone)
 
 const canBook = (shift: LocationShiftRead) =>
   !shift.is_booked_by_me &&

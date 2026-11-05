@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Map as MapIcon, MapPin, Pencil, Ticket, Users, UsersRound } from '@lucide/vue'
+import { Info, Map as MapIcon, MapPin, Pencil, Ticket, Users, UsersRound } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -11,6 +11,7 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import Button from '@/components/ui/button/Button.vue'
 
+import EventDetailsSummary from '@/components/events/EventDetailsSummary.vue'
 import EventEditForm from '@/components/events/EventEditForm.vue'
 import EventHours from '@/components/events/EventHours.vue'
 import EventVoucherSettings from '@/components/events/EventVoucherSettings.vue'
@@ -267,7 +268,7 @@ onMounted(loadEvent)
         data-testid="tab-details"
         @click="setTab('details')"
       >
-        <Pencil class="mr-2 h-4 w-4" />
+        <component :is="canManage ? Pencil : Info" class="mr-2 h-4 w-4" />
         {{ t('duties.events.detail.nav.details') }}
       </Button>
       <Button
@@ -357,14 +358,17 @@ onMounted(loadEvent)
     </div>
 
     <template v-else-if="event && targetEventId">
-      <EventEditForm
-        v-if="shownTab === 'details'"
-        :event="event"
-        :event-id="targetEventId"
-        :tasks="tasks"
-        @updated="handleUpdated"
-        @cancel="router.back()"
-      />
+      <template v-if="shownTab === 'details'">
+        <EventEditForm
+          v-if="canManage"
+          :event="event"
+          :event-id="targetEventId"
+          :tasks="tasks"
+          @updated="handleUpdated"
+          @cancel="router.back()"
+        />
+        <EventDetailsSummary v-else :event="event" />
+      </template>
       <div v-else-if="shownTab === 'people'" class="space-y-6">
         <EventJoinRequests
           v-if="canManage"

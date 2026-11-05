@@ -11,7 +11,7 @@ Hours have two sources and only one of them is stored:
 A shift counts as *worked* once it has ended and as *upcoming* before that.
 Shift times are wall-clock times with no zone attached ("Saturday,
 18:00-22:00"), so "now" is the venue's wall clock too:
-``clock.wall_clock_now()``, read in ``settings.EVENT_TIMEZONE``. Vouchers
+``clock.wall_clock_now(zone)``, read in the event's zone. Vouchers
 (``app.logic.vouchers``) use the same clock, the same :func:`shift_ends_at` and
 the same :func:`counts_as_worked`, so a shift earns its hours and its vouchers
 at the same moment. Unlike hours, earned vouchers are frozen before a change
@@ -29,6 +29,7 @@ from sqlalchemy import ColumnElement, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.work_log import work_log as crud_work_log
 from app.logic import clock
@@ -197,8 +198,10 @@ async def _tally(
     now: dt.datetime | None = None,
 ) -> tuple[dict[uuid.UUID, _Tally], list[WorkLog]]:
     tallies: dict[uuid.UUID, _Tally] = {}
+    if now is None:
+        now = clock.wall_clock_now(await crud_event.zone_of(session, event_id))
     for booker_id, shift in await _booked_shifts(
-        session, event_id, user_id=user_id, now=now or clock.wall_clock_now()
+        session, event_id, user_id=user_id, now=now
     ):
         tallies.setdefault(booker_id, _Tally()).add_shift(shift)
 

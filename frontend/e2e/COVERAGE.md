@@ -41,27 +41,28 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 34      |
+| `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 28         | 234     |
-| `member`     | 3          | 26      |
-| `mobile`     | 5          | 20      |
+| `chromium`   | 29         | 245     |
+| `member`     | 3          | 29      |
+| `mobile`     | 6          | 22      |
 | `multi-user` | 7          | 74      |
-| `public`     | 8          | 42      |
+| `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **62**     | **451** |
+| **Total**    | **64**     | **478** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 34 tests
+### Project `a11y` — 5 files, 38 tests
 
-#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 13 tests
+#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 14 tests
 
-- **a11y – admin routes** (10)
+- **a11y – admin routes** (11)
   - dashboard
   - tasks list
   - task create wizard
   - events list
+  - time zone picker
   - event detail / settings
   - event picker
   - my bookings
@@ -105,13 +106,16 @@ Not yet covered, and not currently tracked by an issue:
 - **a11y – member task detail** (1)
   - task detail
 
-#### `frontend/e2e/tests/a11y/public-pages.spec.ts` — 6 tests
+#### `frontend/e2e/tests/a11y/public-pages.spec.ts` — 9 tests
 
-- **a11y – public pages** (6)
+- **a11y – public pages** (9)
   - landing page has no serious or critical violations
   - landing page volunteer journey has no serious or critical violations
   - privacy page has no serious or critical violations
   - comparison page has no serious or critical violations
+  - feature overview has no serious or critical violations
+  - feature page has no serious or critical violations
+  - guide has no serious or critical violations
   - club festival page has no serious or critical violations
   - the screenshot viewer has no serious or critical violations
 
@@ -160,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 28 files, 234 tests
+### Project `chromium` — 29 files, 245 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -315,8 +319,10 @@ Not yet covered, and not currently tracked by an issue:
 - **Destructive – grant and revoke admin** (1)
   - the admin role opens and closes the admin area for that user
 
-#### `frontend/e2e/tests/authenticated/event-clone.spec.ts` — 6 tests
+#### `frontend/e2e/tests/authenticated/event-clone.spec.ts` — 7 tests
 
+- **Event clone – as an ordinary organiser** (1)
+  - the new event opens with every tab, without a reload
 - **Event clone wizard** (4)
   - event admin reaches the wizard from the events overview
   - picking tasks and walking the steps creates the copy
@@ -326,13 +332,14 @@ Not yet covered, and not currently tracked by an issue:
   - a plain participant is bounced off the wizard
   - running some other event does not open the wizard for this one
 
-#### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 15 tests
+#### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 16 tests
 
-- **Event Settings – details tab** (5)
+- **Event Settings – details tab** (6)
   - details tab is the default view
   - edit form is pre-filled with the target event data
   - can update event name via edit form
   - can update event description
+  - a draft can be published and made public
   - falls back to selected event when no eventId query is provided
 - **Event Settings – date constraints** (4)
   - shows calendar legend when tasks exist
@@ -347,6 +354,16 @@ Not yet covered, and not currently tracked by an issue:
 - **Event Settings – member restrictions** (2)
   - a non-member cannot see the event settings content
   - member cannot shift dates via API
+
+#### `frontend/e2e/tests/authenticated/event-timezone.spec.ts` — 4 tests
+
+- **Event time zone** (2)
+  - an event created with a chosen zone shows it again in the settings
+  - changing the zone says what happens before it is saved
+- **Event time zone › on a device a whole day behind the event** (1)
+  - a shift over where the event is counts as over, not as still to come
+- **Event time zone › on a device in Lisbon** (1)
+  - the task page mentions the zone only when the event is elsewhere
 
 #### `frontend/e2e/tests/authenticated/locations.spec.ts` — 5 tests
 
@@ -405,7 +422,7 @@ Not yet covered, and not currently tracked by an issue:
   - shows default reminders section
   - can toggle a global channel switch
 
-#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 10 tests
+#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 15 tests
 
 - **Print Task – smoke** (4)
   - print task page loads
@@ -416,6 +433,13 @@ Not yet covered, and not currently tracked by an issue:
   - print event page loads
   - shows print toolbar for event
   - shows event name in print content
+- **Print – booked names** (2)
+  - unticking "Show booked names" on a task blanks the lines again
+  - unticking "Show booked names" on the whole event blanks the lines again
+- **Print – the whole event** (3)
+  - the task list leads an organiser to the print options
+  - the QR code on a sheet opens the tasks of that event for someone in it
+  - the same QR code offers Discover to someone who is not in the event
 - **Print Task – venue mini-map** (3)
   - a task whose location has a pin prints the mini-map
   - a place drawn on a blank plan prints its drawing
@@ -562,14 +586,17 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue plan templates** (1)
   - save a plan as a template, start a new plan from it, rename and delete it
 
-### Project `member` — 3 files, 26 tests
+### Project `member` — 3 files, 29 tests
 
-#### `frontend/e2e/tests/member/events-member.spec.ts` — 12 tests
+#### `frontend/e2e/tests/member/events-member.spec.ts` — 15 tests
 
-- **Member – RBAC** (6)
+- **Member – RBAC** (9)
   - member does not see the My Events sidebar link
   - member is redirected home from /app/events
   - member can open event settings but sees no management controls
+  - a member finds "Leave" through their settings
+  - the details tab shows a member the event, not a form they cannot save
+  - member does not get the link to print the whole event
   - member cannot change anyone's role
   - member CAN create their own event from the picker
   - member does not see the member availabilities admin section
@@ -607,7 +634,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 5 files, 20 tests
+### Project `mobile` — 6 files, 22 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -642,11 +669,16 @@ Not yet covered, and not currently tracked by an issue:
   - "Add shifts" opens a sheet with both ways to add them
   - the vouchers card comes first, and a tap on a shift opens it
 
-#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
+#### `frontend/e2e/tests/mobile/timezone-picker.spec.ts` — 1 test
 
-- **Venue map – on a phone** (4)
+- the time zone picker fills a phone screen and picks a zone
+
+#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 5 tests
+
+- **Venue map – on a phone** (5)
   - "More" leads to the map
   - a tapped place opens as a bottom sheet
+  - "Use a picture" brings the upload into view
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
@@ -765,9 +797,9 @@ Not yet covered, and not currently tracked by an issue:
 - the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 
-### Project `public` — 8 files, 42 tests
+### Project `public` — 8 files, 49 tests
 
-#### `frontend/e2e/tests/public/content-pages.spec.ts` — 10 tests
+#### `frontend/e2e/tests/public/content-pages.spec.ts` — 17 tests
 
 - **comparison page** (4)
   - shows the comparison table with its date and sources
@@ -778,8 +810,16 @@ Not yet covered, and not currently tracked by an issue:
   - answers first, then walks through the steps and the FAQ
   - stays in German when following a related link
   - offers the demo next to the sign-up
+- **feature pages and guides** (7)
+  - the overview groups the feature pages and leads to one
+  - a feature page explains in sections, with the FAQ and links to read on
+  - a guide numbers its steps and gets straight to them
+  - a link in the text stays in the app and in German
+  - a screenshot opens large, and a phone capture keeps its shape
+  - fits a phone without sideways scrolling
+  - the landing page and the header lead there
 - **links into the content pages** (1)
-  - the footer of every public page links to both
+  - the footer of every public page links to them
 - **content pages under runtime switches** (2)
   - without the demo there is no demo button
   - without the landing page they lead to sign-in and leave the footer

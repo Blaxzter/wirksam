@@ -2,15 +2,18 @@
 import { computed, onMounted, ref } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
-import { CalendarDays, ChevronDown, Clock, Globe, Lock } from '@lucide/vue'
+import { CalendarDays, ChevronDown, Clock } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
+import { useAuthStore } from '@/stores/auth'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
+import EventTimezonePicker from '@/components/events/EventTimezonePicker.vue'
+import EventVisibilityPicker from '@/components/events/EventVisibilityPicker.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -23,11 +26,13 @@ import { TimePicker } from '@/components/ui/time-picker'
 import type { EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import type { EventVisibility } from '@/lib/event-roles'
+import { browserTimeZone } from '@/lib/timezones'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { post } = useAuthenticatedClient()
+const authStore = useAuthStore()
 const breadcrumbStore = useBreadcrumbStore()
 
 /**
@@ -70,6 +75,8 @@ const name = ref('')
 const description = ref('')
 const startDate = ref<DateValue>()
 const endDate = ref<DateValue>()
+// Whoever creates an event is usually where it happens.
+const timezone = ref(browserTimeZone())
 // Private by default: an event should not be discoverable until its owner
 // decides it should be.
 const visibility = ref<EventVisibility>('private')
@@ -117,6 +124,7 @@ async function handleSubmit() {
         description: description.value.trim() || undefined,
         start_date: startDate.value!.toString(),
         end_date: endDate.value!.toString(),
+        timezone: timezone.value,
         visibility: visibility.value,
         default_start_time: startTime.value ? `${startTime.value}:00` : undefined,
         default_end_time: endTime.value ? `${endTime.value}:00` : undefined,
@@ -127,6 +135,9 @@ async function handleSubmit() {
       },
     })
     toast.success(t('duties.events.created'))
+    // The profile holds your role per event, and doesn't know the new one yet.
+    // Without it the event's settings show only the Details tab until a reload.
+    await authStore.loadProfile().catch(() => {})
     if (fromPicker.value) {
       // `created` tells the picker to stage the new event as the selection, so
       // the person lands back on it already highlighted.
@@ -220,6 +231,13 @@ async function handleSubmit() {
           <p v-if="dayCount" class="text-xs text-muted-foreground">
             {{ t('duties.events.createView.duration', { days: dayCount }, dayCount) }}
           </p>
+          <div class="space-y-2">
+            <Label for="event-timezone">{{ t('duties.events.timezone.label') }}</Label>
+            <EventTimezonePicker v-model="timezone" input-id="event-timezone" />
+            <p class="text-xs text-muted-foreground">
+              {{ t('duties.events.timezone.hint') }}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -232,30 +250,7 @@ async function handleSubmit() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div class="grid gap-2 sm:grid-cols-2">
-            <button
-              v-for="option in ['private', 'public'] as const"
-              :key="option"
-              type="button"
-              :data-testid="`btn-visibility-${option}`"
-              :aria-pressed="visibility === option"
-              :class="[
-                'rounded-lg border p-3 text-left transition-colors',
-                visibility === option
-                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                  : 'hover:border-primary/50',
-              ]"
-              @click="visibility = option"
-            >
-              <span class="flex items-center gap-2 text-sm font-medium">
-                <component :is="option === 'public' ? Globe : Lock" class="h-4 w-4" />
-                {{ t(`duties.events.visibility.${option}.label`) }}
-              </span>
-              <span class="mt-1 block text-xs text-muted-foreground">
-                {{ t(`duties.events.visibility.${option}.hint`) }}
-              </span>
-            </button>
-          </div>
+          <EventVisibilityPicker v-model="visibility" />
         </CardContent>
       </Card>
 

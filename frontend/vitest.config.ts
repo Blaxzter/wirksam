@@ -2,6 +2,8 @@ import vue from '@vitejs/plugin-vue'
 import { URL, fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+import { docsPlugin } from './scripts/docs-plugin.ts'
+
 /**
  * Standalone config — deliberately NOT `mergeConfig(viteConfig, …)`.
  *
@@ -12,7 +14,7 @@ import { defineConfig } from 'vitest/config'
  * restated here instead.
  */
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), docsPlugin()],
   define: {
     __APP_VERSION__: JSON.stringify('0.0.0-test'),
     __APP_VERSION_DATE__: JSON.stringify('2026-01-01'),

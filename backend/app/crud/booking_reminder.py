@@ -8,12 +8,32 @@ from sqlmodel import col
 
 from app.crud.base import CRUDBase
 from app.logic import clock
+from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
+from app.models.event import Event
+from app.models.shift import Shift
+from app.models.task import Task
 from app.schemas.booking_reminder import (
     AllowedChannel,
     BookingReminderCreate,
     ReminderOffsetEntry,
 )
+
+
+def _fires_at(
+    slot_start: dt.datetime, offset_minutes: int, zone: str | None
+) -> tuple[dt.datetime, str]:
+    """``(remind_at, status)``: when a reminder fires, and whether it still can.
+
+    ``slot_start`` is on the wall clock of the shift's event, and ``remind_at``
+    is in UTC, because that's what the poller compares it with. Compared
+    directly, a reminder fires late by the zone's offset. ``zone`` ``None`` is
+    the setting, for a task without an event.
+    """
+    remind_at = clock.wall_clock_to_utc(slot_start, zone) - dt.timedelta(
+        minutes=offset_minutes
+    )
+    return remind_at, "pending" if remind_at > clock.utc_now() else "expired"
 
 
 class CRUDBookingReminder(
@@ -28,25 +48,14 @@ class CRUDBookingReminder(
         shift_id: uuid.UUID,
         offset_minutes: int,
         slot_start: dt.datetime,
+        zone: str | None = None,
         channels: Sequence[AllowedChannel] | None = None,
     ) -> BookingReminder:
-        """Create a single reminder for a booking.
+        """Create a single reminder for a booking, in the shift's event's zone.
 
-        ``slot_start`` is on the wall clock, like the shift it comes from, and
-        ``remind_at`` is stored in UTC, because that's what the poller compares
-        it with. Compared directly, a reminder fires late by the zone's offset.
+        One already in the past is still created, but expired at once.
         """
-        remind_at = clock.wall_clock_to_utc(slot_start) - dt.timedelta(
-            minutes=offset_minutes
-        )
-        now = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)
-
-        # Don't create reminders that are already in the past
-        if remind_at <= now:
-            # Still create it but mark as expired immediately
-            status = "expired"
-        else:
-            status = "pending"
+        remind_at, status = _fires_at(slot_start, offset_minutes, zone)
 
         reminder = BookingReminder(
             booking_id=booking_id,
@@ -70,6 +79,7 @@ class CRUDBookingReminder(
         user_id: uuid.UUID,
         shift_id: uuid.UUID,
         slot_start: dt.datetime,
+        zone: str | None = None,
         defaults: Sequence[ReminderOffsetEntry],
     ) -> list[BookingReminder]:
         """Create reminders from structured defaults."""
@@ -84,10 +94,68 @@ class CRUDBookingReminder(
                 shift_id=shift_id,
                 offset_minutes=offset,
                 slot_start=slot_start,
+                zone=zone,
                 channels=channels,
             )
             reminders.append(reminder)
         return reminders
+
+    async def reschedule(
+        self,
+        db: AsyncSession,
+        *,
+        shift_ids: Sequence[uuid.UUID] | None = None,
+        task_id: uuid.UUID | None = None,
+        event_id: uuid.UUID | None = None,
+    ) -> int:
+        """Work out again when the reminders on these shifts fire. Returns how
+        many changed. Call it whenever the moment a shift starts has changed:
+        its date or start, or the zone of its event.
+
+        Reminders of confirmed bookings not sent yet. Sent ones stay as they
+        are. An expired one never reached anybody, so it comes back if its new
+        moment is still ahead (a shift moved by mistake and moved back keeps its
+        reminders); a pending one whose new moment has gone expires, as one
+        created in the past does. Cancelled ones stay cancelled.
+
+        Reads the shift's columns rather than the entity, so a bulk update
+        earlier in the transaction is seen whatever the identity map holds.
+        """
+        query = (
+            select(
+                BookingReminder,
+                col(Shift.date),
+                col(Shift.start_time),
+                col(Event.timezone),
+            )
+            .join(Shift, col(Shift.id) == col(BookingReminder.shift_id))
+            .join(Booking, col(Booking.id) == col(BookingReminder.booking_id))
+            .join(Task, col(Task.id) == col(Shift.task_id))
+            .outerjoin(Event, col(Event.id) == col(Task.event_id))
+            .where(
+                col(BookingReminder.status).in_(["pending", "expired"]),
+                col(Booking.status) == "confirmed",
+            )
+        )
+        if shift_ids is not None:
+            query = query.where(col(Shift.id).in_(list(shift_ids)))
+        if task_id is not None:
+            query = query.where(col(Task.id) == task_id)
+        if event_id is not None:
+            query = query.where(col(Task.event_id) == event_id)
+
+        changed = 0
+        for reminder, date, start, zone in (await db.execute(query)).all():
+            slot_start = dt.datetime.combine(date, start or dt.time())
+            remind_at, status = _fires_at(slot_start, reminder.offset_minutes, zone)
+            if remind_at != reminder.remind_at or status != reminder.status:
+                reminder.remind_at = remind_at
+                reminder.status = status
+                db.add(reminder)
+                changed += 1
+        if changed:
+            await db.flush()
+        return changed
 
     async def get_by_booking(
         self,

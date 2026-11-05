@@ -72,6 +72,20 @@ async function toggleSidebarSwitcher(value: boolean) {
         </Button>
       </div>
 
+      <!-- A plain member's dependable way to the People tab, where "Leave" is. -->
+      <RouterLink
+        v-if="authStore.selectedEvent"
+        :to="{
+          name: 'event-settings',
+          params: { eventId: authStore.selectedEvent.id },
+          query: { tab: 'people' },
+        }"
+        class="inline-block text-sm text-primary underline-offset-4 hover:underline"
+        data-testid="settings-active-event-people"
+      >
+        {{ t('user.settings.activeEvent.people') }}
+      </RouterLink>
+
       <div class="flex items-start justify-between gap-4 rounded-md border bg-muted/30 p-3">
         <div class="space-y-1">
           <p class="text-sm font-medium">

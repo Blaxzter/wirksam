@@ -8,7 +8,10 @@ import {
   GlobeIcon,
   LanguagesIcon,
   RssIcon,
+  ShieldCheckIcon,
+  TicketIcon,
   UsersIcon,
+  UsersRoundIcon,
 } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
@@ -36,6 +39,9 @@ const rows = [
 ] as const
 
 const extras = [
+  { key: 'vouchers', icon: TicketIcon },
+  { key: 'peopleInCharge', icon: ShieldCheckIcon },
+  { key: 'teams', icon: UsersRoundIcon },
   { key: 'people', icon: UsersIcon },
   { key: 'availability', icon: CalendarClockIcon },
   { key: 'calendarFeed', icon: RssIcon },
@@ -122,6 +128,23 @@ const zoomed = ref<number | null>(null)
           </div>
         </li>
       </ul>
+
+      <p class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
+        <RouterLink
+          :to="{ name: 'features' }"
+          data-testid="landing-all-features"
+          class="font-medium text-primary underline underline-offset-2"
+        >
+          {{ t('preauth.landing.features.allFeatures') }}
+        </RouterLink>
+        <RouterLink
+          :to="{ name: 'guides' }"
+          data-testid="landing-all-guides"
+          class="font-medium text-primary underline underline-offset-2"
+        >
+          {{ t('preauth.landing.features.allGuides') }}
+        </RouterLink>
+      </p>
     </div>
     <ScreenshotLightbox v-model:index="zoomed" :items="gallery" />
   </LandingSection>

@@ -18,6 +18,8 @@ const appVersionDate = __APP_VERSION_DATE__
  */
 const content = isSwitchOn(useAppConfig().LANDING_ENABLED)
   ? ([
+      { name: 'features', label: 'preauth.layout.footer.features' },
+      { name: 'guides', label: 'preauth.layout.footer.guides' },
       { name: 'alternatives', label: 'preauth.layout.footer.alternatives' },
       { name: 'use-case-club-festival', label: 'preauth.layout.footer.clubFestival' },
     ] as const)

@@ -70,8 +70,10 @@ BOOKING_CANCELLED_BY_USER = NotificationTypeDef(
 
 BOOKING_CANCELLED_BY_ADMIN = NotificationTypeDef(
     code="booking.cancelled_by_admin",
-    name="Booking Cancelled by Admin",
-    description="Notification when an admin cancels your booking (shift deleted or regenerated)",
+    name="Booking Cancelled by Organisers",
+    description=(
+        "Notification when organisers or people in charge remove a shift you booked"
+    ),
     category="booking",
     classification="change",
     default_channels=["email", "push"],
@@ -101,11 +103,15 @@ BOOKING_REMINDER = NotificationTypeDef(
 SHIFT_STARTING_SOON_UNFILLED = NotificationTypeDef(
     code="shift.starting_soon_unfilled",
     name="Shift Starting Soon (Unfilled)",
-    description="Alert when a shift starts in 30 minutes but still has open spots",
+    description=(
+        "Alert the event's organisers when a shift starts in 30 minutes "
+        "but still has open spots"
+    ),
     category="shift",
     classification="reminder",
-    is_admin_only=True,
-    default_channels=["email", "push"],
+    # Push only: one mail per unfilled shift would be a lot of post just before
+    # an event. E-mail can be switched on, and the inbox always gets it.
+    default_channels=["push"],
 )
 
 SHIFT_TIME_CHANGED = NotificationTypeDef(
@@ -181,17 +187,6 @@ EVENT_CLONED = NotificationTypeDef(
     default_channels=["email"],
 )
 
-# ── Availability notifications ────────────────────────────────────
-
-AVAILABILITY_REMINDER = NotificationTypeDef(
-    code="availability.reminder",
-    name="Availability Reminder",
-    description="Reminder to submit your availability for a published event",
-    category="availability",
-    classification="reminder",
-    default_channels=["email", "push"],
-)
-
 # ── Event membership notifications ────────────────────────────────
 
 EVENT_INVITATION = NotificationTypeDef(
@@ -206,7 +201,9 @@ EVENT_INVITATION = NotificationTypeDef(
 EVENT_INVITATION_ACCEPTED = NotificationTypeDef(
     code="event.invitation_accepted",
     name="Invitation Accepted",
-    description="Notification when someone you invited joins your event",
+    description=(
+        "Notification when someone you invited joins your event or takes on a task"
+    ),
     category="event",
     classification="announcement",
     default_channels=["push"],
@@ -266,7 +263,10 @@ TEAM_JOIN_REQUESTED = NotificationTypeDef(
 TEAM_JOIN_APPROVED = NotificationTypeDef(
     code="team.join_approved",
     name="Team Request Approved",
-    description="Notification when your request to join a team is approved",
+    description=(
+        "Notification when your request to join a team is approved, "
+        "or someone adds you to a team"
+    ),
     category="event",
     classification="change",
     default_channels=["email", "push"],
@@ -350,7 +350,6 @@ ALL_NOTIFICATION_TYPES: list[NotificationTypeDef] = [
     SHIFT_TIME_CHANGED,
     TASK_PUBLISHED,
     EVENT_PUBLISHED,
-    AVAILABILITY_REMINDER,
     EVENT_INVITATION,
     EVENT_INVITATION_ACCEPTED,
     EVENT_JOIN_REQUESTED,

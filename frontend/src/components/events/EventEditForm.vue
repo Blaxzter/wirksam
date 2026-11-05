@@ -3,12 +3,15 @@ import { computed, onMounted, ref } from 'vue'
 
 import type { DateValue } from '@internationalized/date'
 import { parseDate } from '@internationalized/date'
-import { CalendarClock, Check, MoveRight, X } from '@lucide/vue'
+import { Archive, CalendarClock, Check, FilePen, MoveRight, Send, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
+import EventOptionCards from '@/components/events/EventOptionCards.vue'
+import EventTimezonePicker from '@/components/events/EventTimezonePicker.vue'
+import EventVisibilityPicker from '@/components/events/EventVisibilityPicker.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { MarkerVariant } from '@/components/ui/calendar'
@@ -21,7 +24,9 @@ import { TimePicker } from '@/components/ui/time-picker'
 
 import type { EventRead, TaskRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import type { EventVisibility } from '@/lib/event-roles'
 import { formatDate } from '@/lib/format'
+import { timeZoneLabel } from '@/lib/timezones'
 
 const props = defineProps<{
   event: EventRead
@@ -44,7 +49,31 @@ const startDate = ref<DateValue>()
 const endDate = ref<DateValue>()
 const startTime = ref(props.event.default_start_time?.slice(0, 5) ?? '')
 const endTime = ref(props.event.default_end_time?.slice(0, 5) ?? '')
+const timezone = ref(props.event.timezone)
+const status = ref(props.event.status ?? 'draft')
+const visibility = ref<EventVisibility>(props.event.visibility ?? 'private')
 const saving = ref(false)
+
+const statusOptions = computed(() => [
+  {
+    value: 'draft' as const,
+    label: t('duties.events.statuses.draft'),
+    hint: t('duties.events.statusHints.draft'),
+    icon: FilePen,
+  },
+  {
+    value: 'published' as const,
+    label: t('duties.events.statuses.published'),
+    hint: t('duties.events.statusHints.published'),
+    icon: Send,
+  },
+  {
+    value: 'archived' as const,
+    label: t('duties.events.statuses.archived'),
+    hint: t('duties.events.statusHints.archived'),
+    icon: Archive,
+  },
+])
 
 // Default time window must satisfy end > start when both set (overnight wrap
 // is not supported — see issue #85).
@@ -122,6 +151,9 @@ async function handleSubmit() {
         description: description.value.trim() || null,
         start_date: startDate.value.toString(),
         end_date: endDate.value.toString(),
+        timezone: timezone.value,
+        status: status.value,
+        visibility: visibility.value,
         default_start_time: startTime.value ? `${startTime.value}:00` : null,
         default_end_time: endTime.value ? `${endTime.value}:00` : null,
       },
@@ -176,6 +208,25 @@ onMounted(() => {
           <Label for="event-description">{{ t('duties.events.fields.description') }}</Label>
           <Textarea id="event-description" v-model="description" rows="2" />
         </div>
+        <div class="space-y-2">
+          <Label>{{ t('duties.events.fields.status') }}</Label>
+          <EventOptionCards
+            v-model="status"
+            :options="statusOptions"
+            testid-prefix="btn-event-status-"
+          />
+        </div>
+        <div class="space-y-2">
+          <Label>{{ t('duties.events.fields.visibility') }}</Label>
+          <EventVisibilityPicker v-model="visibility" />
+          <p
+            v-if="visibility === 'public' && status !== 'published'"
+            class="text-xs font-medium text-amber-700 dark:text-amber-400"
+            data-testid="public-unpublished-note"
+          >
+            {{ t('duties.events.detail.publicNotPublished') }}
+          </p>
+        </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="space-y-1.5">
             <Label>{{ t('duties.events.fields.startDate') }}</Label>
@@ -223,6 +274,20 @@ onMounted(() => {
           </div>
           <p class="text-xs text-muted-foreground">
             {{ t('duties.events.detail.dateConstraintHint') }}
+          </p>
+        </div>
+        <div class="space-y-2">
+          <Label for="event-timezone">{{ t('duties.events.timezone.label') }}</Label>
+          <EventTimezonePicker v-model="timezone" input-id="event-timezone" />
+          <p
+            v-if="timezone !== event.timezone"
+            class="text-xs font-medium text-amber-700 dark:text-amber-400"
+            data-testid="timezone-change-note"
+          >
+            {{ t('duties.events.timezone.changeNote', { zone: timeZoneLabel(timezone) }) }}
+          </p>
+          <p v-else class="text-xs text-muted-foreground">
+            {{ t('duties.events.timezone.hint') }}
           </p>
         </div>
         <div class="space-y-2">

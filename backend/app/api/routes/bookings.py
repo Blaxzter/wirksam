@@ -10,6 +10,7 @@ from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
 from app.crud.booking_reminder import booking_reminder as crud_reminder
+from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
 from app.crud.task import task as crud_task
@@ -90,7 +91,12 @@ async def list_my_bookings(
         bws = BookingReadWithShift.model_validate(b)
         if b.shift is not None:
             slot_summary = ShiftSummary.model_validate(b.shift)
-            slot_summary.task_name = b.shift.task.name if b.shift.task else None
+            task = b.shift.task
+            slot_summary.task_name = task.name if task else None
+            # Loaded with the shift (``with_shift``), so no query per booking.
+            slot_summary.event_timezone = (
+                task.event.timezone if task and task.event else None
+            )
             bws.shift = slot_summary
         enriched.append(bws)
 
@@ -160,9 +166,10 @@ async def create_booking(
     if task.status != "published" and access is None:
         raise_problem(403, code="task.not_published", detail="Task is not published")
     await require_team_for_booking(current_user, session, task)
-    _refuse_if_shift_over(shift)
+    zone = await crud_event.zone_of(session, task.event_id)
+    _refuse_if_shift_over(shift, zone)
     if task.vouchers_per_shift > 0 and access is None:
-        _refuse_if_shift_started(shift)
+        _refuse_if_shift_started(shift, zone)
 
     existing = await crud_booking.get_by_shift_and_user(
         session, shift_id=shift.id, user_id=current_user.id
@@ -175,7 +182,7 @@ async def create_booking(
         )
 
     conflict = await find_conflicting_booking(
-        session, user_id=current_user.id, shift=shift
+        session, user_id=current_user.id, shift=shift, zone=zone
     )
     if conflict is not None:
         conflict_task = await crud_task.get(session, str(conflict.shift.task_id))
@@ -229,6 +236,7 @@ async def create_booking(
         slot_start_time=shift.start_time,
         slot_end_time=shift.end_time,
         slot_location=shift.location,
+        slot_zone=zone,
         task_name=task_name,
         slot_id=shift.id,
         task_id=shift.task_id,
@@ -240,6 +248,7 @@ async def create_booking(
             slot_id=shift.id,
             slot_title=shift.title,
             task_id=shift.task_id,
+            event_id=task.event_id,
             new_user_name=current_user.name,
             existing_user_ids=existing_user_ids,
         )
@@ -253,6 +262,7 @@ async def create_booking(
             user_id=current_user.id,
             shift_id=shift.id,
             slot_start=slot_start,
+            zone=zone,
             defaults=current_user.default_reminder_offsets,
         )
 
@@ -330,6 +340,7 @@ async def cancel_booking(
     if db_booking.shift_id:
         shift = await crud_shift.get(session, str(db_booking.shift_id))
         if shift:
+            task = await crud_task.get(session, str(shift.task_id))
             background_tasks.add_task(
                 dispatch_booking_cancelled_by_user,
                 booking_id=result.id,
@@ -337,6 +348,7 @@ async def cancel_booking(
                 slot_title=shift.title,
                 slot_id=shift.id,
                 task_id=shift.task_id,
+                event_id=task.event_id if task else None,
             )
 
     return result
@@ -366,7 +378,7 @@ async def dismiss_booking(
     await session.commit()
 
 
-def _refuse_if_shift_over(shift: Shift) -> None:
+def _refuse_if_shift_over(shift: Shift, zone: str | None) -> None:
     """409 ``booking.shift_over`` once the shift has ended (event wall clock).
 
     On every task, not only those with vouchers: hours are derived from booked
@@ -376,7 +388,7 @@ def _refuse_if_shift_over(shift: Shift) -> None:
     voucher corrections instead.
     """
     if shift_ends_at(shift.date, shift.start_time, shift.end_time) <= (
-        clock.wall_clock_now()
+        clock.wall_clock_now(zone)
     ):
         raise_problem(
             409,
@@ -385,7 +397,7 @@ def _refuse_if_shift_over(shift: Shift) -> None:
         )
 
 
-def _refuse_if_shift_started(shift: Shift) -> None:
+def _refuse_if_shift_started(shift: Shift, zone: str | None) -> None:
     """409 ``booking.shift_started`` once the shift has started (event wall clock).
 
     Only for tasks that earn vouchers, and only for callers who cannot manage
@@ -396,7 +408,7 @@ def _refuse_if_shift_started(shift: Shift) -> None:
     one another, so every one of them could be taken at once.
     """
     starts = dt.datetime.combine(shift.date, shift.start_time or dt.time())
-    if starts <= clock.wall_clock_now():
+    if starts <= clock.wall_clock_now(zone):
         raise_problem(
             409,
             code="booking.shift_started",
@@ -440,7 +452,9 @@ async def _refuse_if_booked_shift_over(session: AsyncSession, booking: Booking) 
         return
     shift = await crud_shift.get(session, str(booking.shift_id))
     if shift is not None:
-        _refuse_if_shift_over(shift)
+        task = await crud_task.get(session, str(shift.task_id))
+        zone = await crud_event.zone_of(session, task.event_id if task else None)
+        _refuse_if_shift_over(shift, zone)
 
 
 def _shift_start_datetime(

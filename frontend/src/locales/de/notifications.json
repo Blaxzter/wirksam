@@ -3,7 +3,6 @@
     "allLoaded": "Alles auf dem neuesten Stand",
     "categories": {
         "admin": "Admin",
-        "availability": "Verfügbarkeit",
         "booking": "Buchungen",
         "event": "Veranstaltungen",
         "shift": "Dienstschichten",
@@ -94,7 +93,7 @@
     },
     "reminders": {
         "addReminder": "Erinnerung hinzufügen",
-        "channelActiveHint": "Du wirst {offset} per {channel} benachrichtigt",
+        "channelActiveHint": "Erinnerung {offset} per {channel}, solange dieser Kanal an ist. Im Postfach landet sie immer.",
         "description": "Diese Erinnerungen werden automatisch hinzugefügt, wenn du eine Schicht buchst. Du kannst sie für jede Buchung einzeln anpassen.",
         "lastChannelHint": "Mindestens ein Kanal muss aktiviert bleiben",
         "noDefaults": "Noch keine Standard-Erinnerungen. Füge unten eine hinzu.",
@@ -163,16 +162,10 @@
     },
     "title": "Benachrichtigungen",
     "types": {
-        "availability": {
-            "reminder": {
-                "description": "Erinnerung, deine Verfügbarkeit für eine veröffentlichte Veranstaltung einzutragen",
-                "name": "Verfügbarkeitserinnerung"
-            }
-        },
         "booking": {
             "cancelled_by_admin": {
-                "description": "Wenn ein Admin deine Buchung storniert",
-                "name": "Buchung durch Admin storniert"
+                "description": "Wenn Organisator:innen oder Verantwortliche eine Schicht entfernen, die du gebucht hast",
+                "name": "Buchung von der Organisation storniert"
             },
             "cancelled_by_user": {
                 "description": "Wenn du eine Buchung stornierst",
@@ -201,7 +194,7 @@
                 "name": "Einladung zu einer Veranstaltung"
             },
             "invitation_accepted": {
-                "description": "Wenn jemand, den du eingeladen hast, deiner Veranstaltung beitritt",
+                "description": "Wenn jemand, den du eingeladen hast, deiner Veranstaltung beitritt oder eine Aufgabe übernimmt",
                 "name": "Einladung angenommen"
             },
             "join_approved": {
@@ -227,7 +220,7 @@
         },
         "shift": {
             "starting_soon_unfilled": {
-                "description": "Wenn eine Schicht bald beginnt, aber noch freie Plätze hat",
+                "description": "Wenn eine Schicht in deiner Veranstaltung bald beginnt und noch Plätze frei sind",
                 "name": "Schicht beginnt bald (unbesetzt)"
             },
             "time_changed": {
@@ -251,7 +244,7 @@
         },
         "team": {
             "join_approved": {
-                "description": "Wenn deine Anfrage, einem Team beizutreten, angenommen wurde",
+                "description": "Wenn deine Anfrage, einem Team beizutreten, angenommen wurde oder dich jemand in ein Team aufnimmt",
                 "name": "Teamanfrage angenommen"
             },
             "join_declined": {

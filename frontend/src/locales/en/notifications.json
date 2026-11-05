@@ -3,7 +3,6 @@
     "allLoaded": "You're all caught up",
     "categories": {
         "admin": "Admin",
-        "availability": "Availability",
         "booking": "Bookings",
         "event": "Events",
         "shift": "Duty Shifts",
@@ -94,7 +93,7 @@
     },
     "reminders": {
         "addReminder": "Add reminder",
-        "channelActiveHint": "You'll be notified via {channel} {offset}",
+        "channelActiveHint": "Reminder {offset} by {channel} while that channel is on. It always lands in your inbox.",
         "description": "These reminders are added automatically whenever you book a shift. You can still change them for each booking.",
         "lastChannelHint": "At least one channel must stay enabled",
         "noDefaults": "No default reminders yet. Add one below.",
@@ -163,16 +162,10 @@
     },
     "title": "Notifications",
     "types": {
-        "availability": {
-            "reminder": {
-                "description": "Reminder to submit your availability for a published event",
-                "name": "Availability Reminder"
-            }
-        },
         "booking": {
             "cancelled_by_admin": {
-                "description": "When an admin cancels your booking",
-                "name": "Booking Cancelled by Admin"
+                "description": "When organisers or people in charge remove a shift you booked",
+                "name": "Booking Cancelled by Organisers"
             },
             "cancelled_by_user": {
                 "description": "When you cancel a booking",
@@ -201,7 +194,7 @@
                 "name": "Event Invitation"
             },
             "invitation_accepted": {
-                "description": "When someone you invited joins your event",
+                "description": "When someone you invited joins your event or takes on a task",
                 "name": "Invitation Accepted"
             },
             "join_approved": {
@@ -227,7 +220,7 @@
         },
         "shift": {
             "starting_soon_unfilled": {
-                "description": "When a shift starts soon but still has open spots",
+                "description": "When a shift in an event you run starts soon but still has open places",
                 "name": "Shift Starting Soon (Unfilled)"
             },
             "time_changed": {
@@ -251,7 +244,7 @@
         },
         "team": {
             "join_approved": {
-                "description": "When your request to join a team is approved",
+                "description": "When your request to join a team is approved, or someone adds you to a team",
                 "name": "Team Request Approved"
             },
             "join_declined": {

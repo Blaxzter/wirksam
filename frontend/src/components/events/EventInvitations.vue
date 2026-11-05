@@ -20,6 +20,7 @@ import { joinNames } from '@/components/events/teams/teamHelpers'
 import type { EventInvitationBulkResult, EventInvitationRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { type AssignableEventRole, roleLabelKey } from '@/lib/event-roles'
+import { parseServerDate } from '@/lib/server-time'
 
 const props = defineProps<{
   eventId: string
@@ -48,6 +49,12 @@ const parsedEmails = computed(() =>
 
 const emailInvites = computed(() => props.invitations.filter((i) => i.email))
 const linkInvites = computed(() => props.invitations.filter((i) => !i.email))
+
+/** Past its date, so it no longer works; the server still lists it until it is withdrawn. */
+function isExpired(invitation: EventInvitationRead): boolean {
+  const expires = parseServerDate(invitation.expires_at)
+  return !!expires && expires <= new Date()
+}
 
 function inviteUrl(token: string): string {
   return `${window.location.origin}/invite/${token}`
@@ -218,11 +225,27 @@ async function revoke(invitation: EventInvitationRead) {
             class="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2"
             data-testid="share-link-row"
           >
-            <div class="flex min-w-0 items-center gap-2">
-              <Link2 class="h-4 w-4 shrink-0 text-muted-foreground" />
-              <code class="truncate text-xs">{{ inviteUrl(invitation.token) }}</code>
+            <div class="min-w-0">
+              <div class="flex min-w-0 items-center gap-2">
+                <Link2 class="h-4 w-4 shrink-0 text-muted-foreground" />
+                <code class="truncate text-xs">{{ inviteUrl(invitation.token) }}</code>
+              </div>
+              <p
+                v-if="isExpired(invitation)"
+                class="mt-1 text-xs text-muted-foreground"
+                data-testid="invitation-expired-hint"
+              >
+                {{ t('duties.events.invitations.expiredLinkHint') }}
+              </p>
             </div>
             <div class="flex shrink-0 items-center gap-2">
+              <Badge
+                v-if="isExpired(invitation)"
+                variant="destructive"
+                data-testid="invitation-expired"
+              >
+                {{ t('duties.events.expired') }}
+              </Badge>
               <Badge variant="outline">{{ t(roleLabelKey(invitation.role)) }}</Badge>
               <Badge variant="secondary">
                 {{
@@ -234,6 +257,7 @@ async function revoke(invitation: EventInvitationRead) {
                 }}
               </Badge>
               <Button
+                v-if="!isExpired(invitation)"
                 variant="ghost"
                 size="icon"
                 class="size-7"
@@ -277,8 +301,22 @@ async function revoke(invitation: EventInvitationRead) {
               >
                 {{ t('duties.events.invitations.forTasks', { tasks: taskNames(invitation) }) }}
               </p>
+              <p
+                v-if="isExpired(invitation)"
+                class="text-xs text-muted-foreground"
+                data-testid="invitation-expired-hint"
+              >
+                {{ t('duties.events.invitations.expiredEmailHint') }}
+              </p>
             </div>
             <div class="flex shrink-0 items-center gap-2">
+              <Badge
+                v-if="isExpired(invitation)"
+                variant="destructive"
+                data-testid="invitation-expired"
+              >
+                {{ t('duties.events.expired') }}
+              </Badge>
               <Badge variant="outline">{{ t(roleLabelKey(invitation.role)) }}</Badge>
               <Button
                 variant="ghost"

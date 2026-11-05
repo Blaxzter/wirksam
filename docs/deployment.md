@@ -12,7 +12,7 @@ But you have to configure a couple things first. 🤓
 
 - Have a remote server ready and available.
 - Configure the DNS records of your domain to point to the IP of the server you just created.
-- Configure a wildcard subdomain for your domain, so that you can have multiple subdomains for different services, e.g. `*.fastapi-project.example.com`. This will be useful for accessing different components, like `dashboard.fastapi-project.example.com`, `api.fastapi-project.example.com`, `traefik.fastapi-project.example.com`, `adminer.fastapi-project.example.com`, etc. And also for `staging`, like `dashboard.staging.fastapi-project.example.com`, `adminer.staging..fastapi-project.example.com`, etc.
+- Configure a wildcard subdomain for your domain, so that you can have multiple subdomains for different services, e.g. `*.fastapi-project.example.com`. This will be useful for accessing different components, like `api.fastapi-project.example.com`, `traefik.fastapi-project.example.com`, `adminer.fastapi-project.example.com`, etc. And also for `staging`, like `staging.fastapi-project.example.com`, `adminer.staging.fastapi-project.example.com`, etc.
 - Install and configure [Docker](https://docs.docker.com/engine/install/) on the remote server (Docker Engine, not Docker Desktop).
 
 ## Public Traefik
@@ -26,25 +26,25 @@ You need to do these next steps only once.
 - Create a remote directory to store your Traefik Docker Compose file:
 
 ```bash
-mkdir -p /root/code/traefik-public/
+mkdir -p /root/code/traefik-net/
 ```
 
 Copy the Traefik Docker Compose file to your server. You could do it by running the command `rsync` in your local terminal:
 
 ```bash
-rsync -a docker-compose.traefik.yml root@your-server.example.com:/root/code/traefik-public/
+rsync -a docker-compose.traefik.yml root@your-server.example.com:/root/code/traefik-net/
 ```
 
 ### Traefik Public Network
 
-This Traefik will expect a Docker "public network" named `traefik-public` to communicate with your stack(s).
+This Traefik will expect a Docker "public network" named `traefik-net` to communicate with your stack(s).
 
 This way, there will be a single public Traefik proxy that handles the communication (HTTP and HTTPS) with the outside world, and then behind that, you could have one or more stacks with different domains, even if they are on the same single server.
 
-To create a Docker "public network" named `traefik-public` run the following command in your remote server:
+To create a Docker "public network" named `traefik-net` run the following command in your remote server:
 
 ```bash
-docker network create traefik-public
+docker network create traefik-net
 ```
 
 ### Traefik Environment Variables
@@ -94,7 +94,7 @@ export EMAIL=admin@example.com
 Go to the directory where you copied the Traefik Docker Compose file in your remote server:
 
 ```bash
-cd /root/code/traefik-public/
+cd /root/code/traefik-net/
 ```
 
 Now with the environment variables set and the `docker-compose.traefik.yml` in place, you can start the Traefik Docker Compose running the following command:
@@ -306,29 +306,30 @@ With the Cloudflare proxy on, every request reaches Traefik from a Cloudflare
 server. Cloudflare passes the visitor's address on in `X-Forwarded-For`, but
 Traefik drops that header from senders it does not trust and writes the
 Cloudflare server's address instead, so the backend would key every rate limit
-on a handful of Cloudflare addresses and lock strangers out together. Trust
+on a handful of Cloudflare addresses and lock strangers out together.
 Cloudflare's ranges ([IPv4](https://www.cloudflare.com/ips-v4),
-[IPv6](https://www.cloudflare.com/ips-v6)) in two places:
+[IPv6](https://www.cloudflare.com/ips-v6)) have to be trusted in two places:
 
-1. Traefik, on both entrypoints (`docker-compose.traefik.yml` has the lines,
-   commented out):
-
-   ```
-   --entrypoints.web.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,...
-   --entrypoints.websecure.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,...
-   ```
+1. Traefik, on both entrypoints. `docker-compose.traefik.yml` already does this.
+   A deploy neither updates Traefik's copy of the file nor restarts it, so after a
+   change copy the file to the folder Traefik runs from and run
+   `docker compose -f docker-compose.traefik.yml up -d` there.
 
 2. The backend, in `.env`, after the default private ranges:
 
    ```
-   FORWARDED_ALLOW_IPS=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,173.245.48.0/20,103.21.244.0/22,...
+   FORWARDED_ALLOW_IPS=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
    ```
+
+Without Cloudflare, leave `FORWARDED_ALLOW_IPS` unset. The Traefik lines then don't
+change who the backend sees, because it only looks past Cloudflare's ranges if this
+variable lists them.
 
 Cloudflare changes the list rarely; when it does, update both.
 
 ## URLs
 
-Replace `fastapi-project.example.com` with your domain.
+Replace `fastapi-project.example.com` with your domain. The frontend answers on `DOMAIN` itself and the backend on `API_DOMAIN`, which is `api.` plus the domain below. Traefik, Adminer and uploaded files are on subdomains of `DOMAIN`.
 
 ### Main Traefik Dashboard
 
@@ -336,7 +337,7 @@ Traefik UI: `https://traefik.fastapi-project.example.com`
 
 ### Production
 
-Frontend: `https://dashboard.fastapi-project.example.com`
+Frontend: `https://fastapi-project.example.com`
 
 Backend API docs: `https://api.fastapi-project.example.com/docs`
 
@@ -348,10 +349,12 @@ Uploaded files (signed links into the Garage bucket): `https://files.fastapi-pro
 
 ### Staging
 
-Frontend: `https://dashboard.staging.fastapi-project.example.com`
+Frontend: `https://staging.fastapi-project.example.com`
 
 Backend API docs: `https://api.staging.fastapi-project.example.com/docs`
 
 Backend API base URL: `https://api.staging.fastapi-project.example.com`
 
 Adminer: `https://adminer.staging.fastapi-project.example.com`
+
+Uploaded files (signed links into the Garage bucket): `https://files.staging.fastapi-project.example.com`

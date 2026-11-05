@@ -2,14 +2,15 @@
 
 A row that points at a :class:`Location` also carries its name in the
 ``location`` text column. That text is the display value every read path uses,
-so the two have to be written together: :func:`apply_location` sets both, and
-:func:`propagate_rename` keeps the copies current when a location is renamed.
+so the two have to be written together: :func:`apply_location` sets both,
+:func:`propagate_rename` keeps the copies current when a location is renamed, and
+:func:`follow_task_place` takes a task's new place to what still has its old one.
 """
 
 import uuid
 from typing import Protocol
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -23,6 +24,10 @@ from app.models.task import Task
 class HasLocation(Protocol):
     location: str | None
     location_id: uuid.UUID | None
+
+
+#: A place as a row stores it: the text everybody sees and the link, if any.
+Place = tuple[str | None, uuid.UUID | None]
 
 
 async def resolve_location(
@@ -74,6 +79,41 @@ async def propagate_rename(
             .values(location=new_name)
             .execution_options(synchronize_session="fetch")
         )
+
+
+def has_place(obj: HasLocation, place: Place) -> bool:
+    """Whether ``obj`` still shows ``place`` rather than a place of its own.
+
+    The text decides, because that is what everybody sees. A link to a different
+    location is a place of its own even under the same name.
+    """
+    text, location_id = place
+    return (obj.location or None) == (text or None) and obj.location_id in (
+        None,
+        location_id,
+    )
+
+
+async def follow_task_place(
+    session: AsyncSession,
+    task_id: uuid.UUID,
+    *,
+    old: Place,
+    new: Place,
+    shifts: bool = True,
+) -> None:
+    """Take a task's new place to its batches and shifts still showing the old one.
+
+    Anything with a place of its own keeps it (:func:`has_place`). The batches
+    come along because a batch is what its later shifts are generated from.
+    """
+    models = (ShiftBatch, Shift) if shifts else (ShiftBatch,)
+    for model in models:
+        rows = await session.execute(select(model).where(col(model.task_id) == task_id))
+        for row in rows.scalars():
+            if has_place(row, old):
+                row.location, row.location_id = new
+                session.add(row)
 
 
 async def unlink_task_children(session: AsyncSession, task_id: uuid.UUID) -> None:

@@ -39,11 +39,29 @@ export interface TaskSeed {
   fillPattern: number[]
 }
 
+/** A team on the teams page; `requests` are the handles waiting for a decision. */
+export interface TeamSeed {
+  name: string
+  description: string
+  requiresApproval: boolean
+  requirements: { label: string; askIssueDate: boolean; validForYears: number | null }[]
+  joinMessage: string
+}
+
 export interface WorldSeed {
   organiser: CastMember
   volunteers: CastMember[]
   event: { name: string; description: string }
   tasks: TaskSeed[]
+  /**
+   * A job done before the festival. Its shifts end up in the past, which is what
+   * gives the captures of worked hours and vouchers something to show.
+   */
+  prep: TaskSeed
+  /** The reason on the one voucher correction. */
+  correctionNote: string
+  /** The first needs approval and has checks, the second is open to everyone. */
+  teams: [TeamSeed, TeamSeed]
 }
 
 /** Shared across locales so both captures show the same faces and occupancy. */
@@ -135,6 +153,39 @@ export const WORLD: Record<Locale, WorldSeed> = {
         fillPattern: [0.8, 0.4],
       },
     ],
+    prep: {
+      key: 'prep',
+      name: 'Preparation Evening',
+      description: 'Folding programmes and packing the welcome bags.',
+      location: 'Parish Hall',
+      category: 'Logistics',
+      days: [0, 1],
+      startTime: '06:00',
+      endTime: '08:00',
+      shiftMinutes: 120,
+      peoplePerShift: 5,
+      fillPattern: [0.8],
+    },
+    correctionNote: 'Helped set up on Thursday',
+    teams: [
+      {
+        name: 'Childcare',
+        description: 'Everyone looking after the children in the Kids’ Corner.',
+        requiresApproval: true,
+        requirements: [
+          { label: 'Extended police certificate', askIssueDate: true, validForYears: 5 },
+          { label: 'First-aid course', askIssueDate: true, validForYears: 2 },
+        ],
+        joinMessage: 'I look after our youth group, happy to help here too.',
+      },
+      {
+        name: 'Stage crew',
+        description: 'Cables, microphones and getting the stage ready on time.',
+        requiresApproval: false,
+        requirements: [],
+        joinMessage: '',
+      },
+    ],
   },
 
   de: {
@@ -208,6 +259,39 @@ export const WORLD: Record<Locale, WorldSeed> = {
         shiftMinutes: 90,
         peoplePerShift: 5,
         fillPattern: [0.8, 0.4],
+      },
+    ],
+    prep: {
+      key: 'prep',
+      name: 'Vorbereitungsabend',
+      description: 'Programme falten und die Begrüßungstaschen packen.',
+      location: 'Gemeindesaal',
+      category: 'Logistik',
+      days: [0, 1],
+      startTime: '06:00',
+      endTime: '08:00',
+      shiftMinutes: 120,
+      peoplePerShift: 5,
+      fillPattern: [0.8],
+    },
+    correctionNote: 'Hat am Donnerstag beim Aufbau geholfen',
+    teams: [
+      {
+        name: 'Kinderbetreuung',
+        description: 'Alle, die sich in der Kinderecke um die Kinder kümmern.',
+        requiresApproval: true,
+        requirements: [
+          { label: 'Erweitertes Führungszeugnis', askIssueDate: true, validForYears: 5 },
+          { label: 'Erste-Hilfe-Kurs', askIssueDate: true, validForYears: 2 },
+        ],
+        joinMessage: 'Ich betreue unsere Jugendgruppe und helfe hier gern mit.',
+      },
+      {
+        name: 'Bühnenteam',
+        description: 'Kabel, Mikrofone und eine Bühne, die rechtzeitig steht.',
+        requiresApproval: false,
+        requirements: [],
+        joinMessage: '',
       },
     ],
   },

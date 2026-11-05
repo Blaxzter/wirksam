@@ -41,6 +41,8 @@ const { get } = useAuthenticatedClient()
 
 const perShift = computed(() => props.task.vouchers_per_shift ?? 0)
 const isPoint = computed(() => !!props.task.is_voucher_point)
+/** A place that took vouchers, until it was archived: the server now refuses them. */
+const isArchivedPoint = computed(() => isPoint.value && props.task.status === 'archived')
 
 /** Vouchers redeemed here on every day so far, or null when not shown. */
 const redeemedHere = ref<number | null>(null)
@@ -136,7 +138,14 @@ const emptyTileClass = computed(() => [
       </div>
       <div v-else :class="emptyTileClass">{{ t('vouchers.task.noneEarned') }}</div>
 
-      <template v-if="isPoint">
+      <div
+        v-if="isArchivedPoint"
+        :class="emptyTileClass"
+        data-testid="task-voucher-point-archived"
+      >
+        {{ t('vouchers.task.pointArchived') }}
+      </div>
+      <template v-else-if="isPoint">
         <div
           v-if="redeemedHere !== null"
           :class="[tileClass, 'bg-muted/70']"

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
 
 from app.core.config import settings
+from app.crud.event import event as crud_event
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.notifications.channels.email import EmailBody, build_details_html
 from app.logic.notifications.messages import (
@@ -46,6 +47,8 @@ class InChargeMail:
     #: Everyone in charge now, by name: ``(user_id, name)``.
     managers: tuple[tuple[uuid.UUID, str], ...]
     is_voucher_point: bool
+    #: The event's zone, whose "this year" decides whether the year is written.
+    zone: str | None = None
 
     def render(self, recipient: User) -> EmailBody:
         """The mail for ``recipient``, in their language."""
@@ -68,7 +71,7 @@ class InChargeMail:
             actor=actor, task_name=self.task_name, event_name=self.event_name
         )
 
-        when = day_span(self.first_date, self.last_date, lang)
+        when = day_span(self.first_date, self.last_date, lang, zone=self.zone)
         if self.shift_count == 1:
             when = f"{when} · {strings['shift_count_one']}"
         elif self.shift_count > 1:
@@ -151,4 +154,5 @@ async def load_in_charge_mail(
         shift_count=int(count or 0),
         managers=managers,
         is_voucher_point=task.is_voucher_point,
+        zone=await crud_event.zone_of(db, task.event_id),
     )

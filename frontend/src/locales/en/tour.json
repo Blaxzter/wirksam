@@ -154,7 +154,7 @@
             "title": "Where a new job starts"
         },
         "people": {
-            "body": "Each row is someone in your event, and the role next to their name says what they can do: members take shifts, admins also plan, and the owner can hand the event over to someone else.",
+            "body": "Each row is someone in your event, and the role next to their name says what they can do: members take shifts, organisers also plan, and the owner can hand the event over to someone else.",
             "title": "The people in your event"
         },
         "peoplePerShift": {

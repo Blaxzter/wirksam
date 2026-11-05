@@ -33,6 +33,7 @@ from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import fixed_clock
 
 NOW = dt.datetime(2026, 6, 10, 9, 0)
 
@@ -60,7 +61,7 @@ async def cast(
     test_event_admin_user: User,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Cast:
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(NOW))
     manager = User(
         subject="local|voucher-shift-manager",
         email="manager.voucher-shifts@example.com",

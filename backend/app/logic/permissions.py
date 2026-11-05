@@ -451,7 +451,7 @@ def check_shift_history(
     ``new_*`` are the values after the edit, :data:`KEEP` for unchanged.
     "Started" is ``combine(date, start_time or 00:00) <= now``; "ends" is
     ``work_hours.shift_ends_at``. ``now`` is the event wall clock
-    (``clock.wall_clock_now()``). Pure, so the routes pass ``has_bookings``.
+    (``clock.wall_clock_now(zone)``). Pure, so the routes pass ``has_bookings``.
     Creating shifts never calls this: nobody can book a shift that has ended,
     and a shift created already running is visible on the task like any other
     (see "What this does not prevent" in the plan).
@@ -533,7 +533,8 @@ async def on_shift_task_ids(
 
     "Running" is ``logic.vouchers.redeem_window``: 30 minutes before the start
     to 30 minutes after the end, all day for a shift without times. ``now`` is
-    the event wall clock (``clock.wall_clock_now()``). One query, so the task
+    the event wall clock (``clock.wall_clock_now(zone)``), so ``task_ids`` are of
+    events in one zone. One query, so the task
     reads can ask it for a whole page.
     """
     date_from, date_to = redeem_window_dates(now)

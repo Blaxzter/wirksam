@@ -72,6 +72,38 @@ test.describe('Event Settings – details tab', () => {
     expect(updated.description).toBe('Updated via E2E test')
   })
 
+  test('a draft can be published and made public', async ({ adminPage: page }) => {
+    const draft = await createEvent(page, uniqueName('E2E Draft'), 'draft')
+    try {
+      await page.goto(`/app/event-settings/${draft.id}`)
+      await expect(page.getByTestId('btn-event-status-draft')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+
+      await page.getByTestId('btn-visibility-public').click()
+      await expect(page.getByTestId('public-unpublished-note')).toBeVisible()
+      await page.getByTestId('btn-event-status-published').click()
+      await expect(page.getByTestId('public-unpublished-note')).toBeHidden()
+
+      await Promise.all([
+        page.waitForResponse(
+          (resp) =>
+            resp.url().includes(`/events/${draft.id}`) &&
+            resp.request().method() === 'PATCH' &&
+            resp.ok(),
+        ),
+        page.getByRole('button', { name: /save|speichern/i }).click(),
+      ])
+
+      const updated = await api<EventRead>(page, 'GET', `/events/${draft.id}`)
+      expect(updated.status).toBe('published')
+      expect(updated.visibility).toBe('public')
+    } finally {
+      await deleteEvent(page, draft.id).catch(() => {})
+    }
+  })
+
   test('falls back to selected event when no eventId query is provided', async ({
     adminPage: page,
     workerEvent,

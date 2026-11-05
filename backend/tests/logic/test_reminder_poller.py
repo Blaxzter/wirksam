@@ -24,6 +24,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.logic.notifications.messages import format_time_until
 from app.logic.notifications.reminder_poller import (
@@ -439,6 +440,43 @@ class TestPollCycle:
 class TestProcessReminder:
     """Test suite for dispatching a single reminder."""
 
+    @pytest.mark.parametrize(
+        ("zone", "expected"),
+        [("Asia/Tokyo", " (Asia/Tokyo)"), ("Europe/Berlin", "")],
+    )
+    async def test_the_time_says_whose_clock_it_is_when_that_is_not_the_usual_one(
+        self,
+        db_session: AsyncSession,
+        test_booking: Booking,
+        test_user: User,
+        test_shift: Shift,
+        test_event: Event,
+        monkeypatch: pytest.MonkeyPatch,
+        zone: str,
+        expected: str,
+    ) -> None:
+        monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Europe/Berlin")
+        test_event.timezone = zone
+        db_session.add(test_event)
+        await db_session.flush()
+        reminder = await _create_reminder(
+            db_session,
+            booking=test_booking,
+            user=test_user,
+            shift_id=test_shift.id,
+            remind_at=dt.datetime(2026, 5, 24, 7, 0),
+            offset_minutes=60,
+        )
+
+        _, notify = await _dispatch_reminder(db_session, reminder)
+
+        call = notify.await_args
+        assert call is not None
+        _, body = call.kwargs["message_factory"]("en")
+        end = test_shift.end_time
+        assert end is not None
+        assert f"–{end.strftime('%H:%M')}{expected}\n" in body
+
     async def test_dispatches_and_marks_sent(
         self,
         db_session: AsyncSession,
@@ -470,7 +508,7 @@ class TestProcessReminder:
         kwargs = call.kwargs
         assert kwargs["recipient_ids"] == [test_user.id]
         assert kwargs["type_code"] == "booking.reminder"
-        assert kwargs["force_channels"] == ["push", "email"]
+        assert kwargs["only_channels"] == ["push", "email"]
         assert kwargs["data"] == {
             "booking_id": str(test_booking.id),
             "slot_id": str(test_shift.id),
@@ -824,6 +862,25 @@ class TestRunReminderPoller:
         assert db.execute.await_count == 2
         unlock_sql = str(db.execute.await_args_list[1].args[0])
         assert "pg_advisory_unlock" in unlock_sql
+
+    async def test_looks_for_unfilled_shifts_on_its_own_turn(self) -> None:
+        """Every few cycles the same worker checks for shifts about to start
+        with places open, so nothing else has to schedule that."""
+        db = _advisory_lock_session(acquired=True)
+        mock_check = AsyncMock(return_value=0)
+        # Three cycles, and the check's turn comes on the second.
+        sleep = AsyncMock(side_effect=[None, None, asyncio.CancelledError])
+
+        with (
+            _patched_session(db),
+            patch(f"{MODULE}.asyncio", _fake_asyncio(sleep)),
+            patch(f"{MODULE}._poll_cycle", AsyncMock(return_value=0)),
+            patch(f"{MODULE}.check_upcoming_shifts", mock_check),
+            patch(f"{MODULE}._UNFILLED_EVERY_N_CYCLES", 2),
+        ):
+            await run_reminder_poller()
+
+        mock_check.assert_awaited_once()
 
     async def test_swallows_unexpected_cycle_errors(self) -> None:
         """A crashing cycle is logged and the loop carries on to the next sleep."""

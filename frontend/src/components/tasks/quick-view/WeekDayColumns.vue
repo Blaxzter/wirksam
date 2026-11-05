@@ -10,7 +10,7 @@ import Button from '@/components/ui/button/Button.vue'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
-import { shiftHasEnded, shiftHasStarted } from '@/lib/shift-time'
+import { shiftHasEnded, shiftHasStarted, wallClockIn } from '@/lib/shift-time'
 
 export interface DayShiftEntry {
   slotId: string
@@ -49,6 +49,8 @@ const props = defineProps<{
    * only be booked before they start (`booking.shift_started`).
    */
   bookBeforeStart?: boolean
+  /** The zone of the task's event, which the shifts' times are in. */
+  eventTimezone?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -65,10 +67,7 @@ const COLLAPSED_LIMIT = 4
 
 const cols = computed(() => props.visibleDays ?? 5)
 
-const today = computed(() => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-})
+const today = computed(() => wallClockIn(props.eventTimezone).date)
 
 function filteredShifts(day: DayColumn): DayShiftEntry[] {
   if (!props.hideFullShifts) return day.shifts
@@ -145,8 +144,15 @@ function tourBookable(day: DayColumn, shift: DayShiftEntry): 'true' | 'false' {
   if (shift.lockedByTeam) return 'false'
   if (!slotHasCapacity(shift)) return 'false'
   // The server refuses a shift that is over, and on a voucher task one that has begun.
-  if (shiftHasEnded(day.dateStr, shift.startTime, shift.endTime)) return 'false'
-  if (props.bookBeforeStart && shiftHasStarted(day.dateStr, shift.startTime)) return 'false'
+  if (shiftHasEnded(day.dateStr, shift.startTime, shift.endTime, props.eventTimezone)) {
+    return 'false'
+  }
+  if (
+    props.bookBeforeStart &&
+    shiftHasStarted(day.dateStr, shift.startTime, props.eventTimezone)
+  ) {
+    return 'false'
+  }
   return day.dateStr >= today.value ? 'true' : 'false' // ISO dates compare lexicographically
 }
 

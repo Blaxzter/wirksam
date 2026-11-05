@@ -606,6 +606,10 @@ export type DashboardOpenShift = {
    */
   event_name?: string | null
   /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
+  /**
    * Title
    */
   title: string
@@ -673,6 +677,10 @@ export type DashboardShift = {
    * Event Name
    */
   event_name?: string | null
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
   /**
    * Title
    */
@@ -916,6 +924,10 @@ export type EventCreate = {
    * Created By Id
    */
   created_by_id?: string | null
+  /**
+   * Timezone
+   */
+  timezone?: string
 }
 
 /**
@@ -1314,6 +1326,10 @@ export type EventRead = {
    */
   updated_at: string
   /**
+   * Timezone
+   */
+  timezone: string
+  /**
    * Voucher Manual Redeem
    */
   voucher_manual_redeem?: 'on_shift' | 'in_charge'
@@ -1690,6 +1706,10 @@ export type EventUpdate = {
    */
   visibility?: 'public' | 'private' | null
   /**
+   * Timezone
+   */
+  timezone?: string | null
+  /**
    * Voucher Manual Redeem
    */
   voucher_manual_redeem?: 'on_shift' | 'in_charge' | null
@@ -1829,6 +1849,10 @@ export type FeedTaskItem = {
    * Is Voucher Point
    */
   is_voucher_point?: boolean
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
   /**
    * Id
    */
@@ -2263,6 +2287,10 @@ export type LocationShiftRead = {
    * Event Id
    */
   event_id?: string | null
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
   /**
    * Team Id
    */
@@ -3494,6 +3522,10 @@ export type ShiftRead = {
    */
   event_id?: string | null
   /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
+  /**
    * Team Id
    */
   team_id?: string | null
@@ -3584,6 +3616,10 @@ export type ShiftSummary = {
    * Task Name
    */
   task_name?: string | null
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
 }
 
 /**
@@ -4165,6 +4201,10 @@ export type TaskRead = {
    * Is Voucher Point
    */
   is_voucher_point?: boolean
+  /**
+   * Event Timezone
+   */
+  event_timezone?: string | null
   /**
    * Id
    */
@@ -6657,7 +6697,7 @@ export type VoucherShift = {
   /**
    * Ends At
    *
-   * When the shift ends, as naive UTC (the wall clock converted through EVENT_TIMEZONE), the same convention as created_at, so shifts and entries sort on one time line
+   * When the shift ends, as naive UTC (the wall clock converted through the event's zone), the same convention as created_at, so shifts and entries sort on one time line
    */
   ends_at: string
   /**
@@ -6931,6 +6971,10 @@ export type EventReadWritable = {
    * Updated At
    */
   updated_at: string
+  /**
+   * Timezone
+   */
+  timezone: string
   /**
    * Voucher Manual Redeem
    */

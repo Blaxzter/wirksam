@@ -48,7 +48,12 @@ const TONE_CLASS: Record<AttentionTone, string> = {
 function linkFor(key: AttentionKey): RouteLocationRaw {
   switch (key) {
     case 'requests':
-      return { name: 'my-events', query: { tab: 'requests' } }
+      // Join requests are decided on the event's People tab.
+      return {
+        name: 'event-settings',
+        params: { eventId: props.eventId ?? undefined },
+        query: { tab: 'people' },
+      }
     case 'team-requests':
       return teamsPageLocation(props.eventId)
     case 'drafts':

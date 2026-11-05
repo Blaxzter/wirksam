@@ -16,7 +16,7 @@ Backend, JSON based web API based on OpenAPI: http://localhost:8787
 
 Automatic interactive documentation with Swagger UI (from the OpenAPI backend): http://localhost:8787/docs
 
-Adminer, database web administration: http://localhost:8080
+Adminer, database web administration: http://localhost:8080 (off by default; start it with `docker compose --profile adminer up adminer -d`)
 
 Traefik UI, to see how the routes are being handled by the proxy: http://localhost:8090
 
@@ -186,7 +186,7 @@ Automatic Interactive Docs (Swagger UI): http://localhost:8787/docs
 
 Automatic Alternative Docs (ReDoc): http://localhost:8787/redoc
 
-Adminer: http://localhost:8080
+Adminer (opt-in, `--profile adminer`): http://localhost:8080
 
 Traefik UI: http://localhost:8090
 
@@ -204,7 +204,7 @@ Automatic Interactive Docs (Swagger UI): http://api.localhost.tiangolo.com/docs
 
 Automatic Alternative Docs (ReDoc): http://api.localhost.tiangolo.com/redoc
 
-Adminer: http://localhost.tiangolo.com:8080
+Adminer (opt-in, `--profile adminer`): http://localhost.tiangolo.com:8080
 
 Traefik UI: http://localhost.tiangolo.com:8090
 

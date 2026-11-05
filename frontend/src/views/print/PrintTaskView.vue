@@ -156,7 +156,8 @@ const getBookingsForShift = (slotId: string): TaskBookingEntry[] => {
 /** Build sign-up lines for a shift: one row per max_bookings, pre-filled where booked */
 const getShiftLines = (shift: ShiftRead) => {
   const max = shift.max_bookings ?? 1
-  const bookings = getBookingsForShift(shift.id)
+  // Blank again once "Show booked names" is unticked; the bookings stay loaded.
+  const bookings = includeNames.value ? getBookingsForShift(shift.id) : []
   const lines: { name: string; contact: string }[] = []
   for (let i = 0; i < max; i++) {
     const b = bookings[i]

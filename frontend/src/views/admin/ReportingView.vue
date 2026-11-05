@@ -26,13 +26,14 @@ import ReportingTopVolunteers from '@/components/admin/reporting/ReportingTopVol
 
 import type { ReportingResponse } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { localIsoDate } from '@/lib/dashboard'
 
 const { t } = useI18n()
 const { get } = useAuthenticatedClient()
 const route = useRoute()
 const router = useRouter()
 
-// ---------- Default range: first of current month → today ----------
+// ---------- Default range: first of this month → last of next month ----------
 function monthStartIso(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
@@ -40,8 +41,7 @@ function monthStartIso(): string {
 function nextMonthEndIso(): string {
   const d = new Date()
   // Last day of next month: day 0 of month+2
-  const last = new Date(d.getFullYear(), d.getMonth() + 2, 0)
-  return last.toISOString().slice(0, 10)
+  return localIsoDate(new Date(d.getFullYear(), d.getMonth() + 2, 0))
 }
 
 // ---------- State ----------

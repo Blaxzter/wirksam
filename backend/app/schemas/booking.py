@@ -53,6 +53,8 @@ class ShiftSummary(BaseModel):
     location: str | None = None
     category: str | None = None
     task_name: str | None = None
+    #: The zone of the task's event, which ``date`` and the times are in.
+    event_timezone: str | None = None
 
 
 class BookingReadWithShift(BookingRead):

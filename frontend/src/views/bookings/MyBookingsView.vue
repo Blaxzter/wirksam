@@ -294,7 +294,7 @@ const whenLine = (booking: BookingReadWithShift) => {
   if (
     booking.status === 'confirmed' &&
     date &&
-    shiftHasEnded(date, slotStartTime(booking), slotEndTime(booking))
+    shiftHasEnded(date, slotStartTime(booking), slotEndTime(booking), booking.shift?.event_timezone)
   ) {
     parts.push(t('duties.bookings.over'))
   }

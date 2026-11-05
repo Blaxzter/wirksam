@@ -7,6 +7,8 @@ import { URL, fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import type { Plugin } from 'vite'
 
+import { docsPlugin } from './scripts/docs-plugin.ts'
+
 function changelogPlugin(): Plugin {
   return {
     name: 'generate-changelog',
@@ -97,6 +99,7 @@ export default defineConfig(async ({ mode }) => {
     },
     plugins: [
       changelogPlugin(),
+      docsPlugin(),
       prerenderedPreviewPlugin(),
       apiPreconnectPlugin(process.env.VITE_API_URL ?? env.VITE_API_URL),
       vue(),

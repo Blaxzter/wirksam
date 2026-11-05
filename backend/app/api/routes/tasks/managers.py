@@ -148,12 +148,14 @@ async def remove_task_manager(
     """Remove someone from charge of this task.
 
     Event admins may remove anyone, and that person is told; a person in
-    charge may step down, which tells nobody.
+    charge may step down, which tells nobody. Stepping down checks no role, so
+    it never looks the task up: anyone can send it, and the answer must not say
+    whether a task exists.
     """
-    task = await _get_task(session, task_id)
     if user_id != current_user.id:
+        task = await _get_task(session, task_id)
         await require_event_role(current_user, session, task.event_id)
-    if not await crud_task_manager.remove(session, task_id=task.id, user_id=user_id):
+    if not await crud_task_manager.remove(session, task_id=task_id, user_id=user_id):
         raise_problem(
             404,
             code="task.manager_not_found",
@@ -162,7 +164,7 @@ async def remove_task_manager(
     if user_id != current_user.id:
         background_tasks.add_task(
             dispatch_task_manager_removed,
-            task_id=task.id,
+            task_id=task_id,
             user_id=user_id,
             actor_id=current_user.id,
         )
@@ -325,10 +327,22 @@ async def withdraw_task_manager_invitation(
     An invitation that existed only for its tasks is revoked once none is
     left, so its link answers "withdrawn"; one from the event settings stays
     valid and just no longer puts the person in charge of this task.
+
+    Locked as accepting locks it. If someone accepted while this waited, they
+    are in charge already, so it answers as for any invitation no longer open.
     """
     _, invitation = await _task_invitation(
         session, current_user, task_id, invitation_id
     )
+    still_open = await crud_links.open_for_address(
+        session,
+        event_id=invitation.event_id,
+        email=invitation.email or "",
+        include_expired=True,
+        for_update=True,
+    )
+    if all(i.id != invitation.id for i in still_open):
+        _invitation_not_found()
     await crud_links.remove(session, invitation=invitation, task_id=task_id)
 
 
@@ -356,12 +370,16 @@ async def _task_invitation(
             session, invitation_id=invitation.id, task_id=task.id
         )
     ):
-        raise_problem(
-            404,
-            code="task.manager_invitation_not_found",
-            detail="That invitation could not be found",
-        )
+        _invitation_not_found()
     return task.event_id, invitation
+
+
+def _invitation_not_found() -> NoReturn:
+    raise_problem(
+        404,
+        code="task.manager_invitation_not_found",
+        detail="That invitation could not be found",
+    )
 
 
 def _not_event_member() -> NoReturn:

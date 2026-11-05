@@ -23,7 +23,7 @@
             "type": "Verfügbarkeitstyp"
         },
         "fullyAvailableDays": "Voll verfügbar an allen {count} Tagen",
-        "fullyAvailableHint": "Du kannst für jede passende Schicht im Programm eingeplant werden.",
+        "fullyAvailableHint": "Die Organisator:innen sehen, dass du an all diesen Tagen Zeit hast. Deine Schichten buchst du trotzdem selbst.",
         "fullyAvailableShort": "Alle Programmtage",
         "heatLegendFull": "voll",
         "heatLegendLow": "wenig",
@@ -164,7 +164,7 @@
                 "showShifts": "Schichten anzeigen",
                 "status": {
                     "draft": {
-                        "hint": "Bleibt verborgen, bis du diese Aufgabe in der Aufgabenliste veröffentlichst. Vorher kann niemand eine Schicht buchen.",
+                        "hint": "Bleibt verborgen, bis du diese Aufgabe auf ihrer Seite veröffentlichst. Vorher kann niemand eine Schicht buchen.",
                         "label": "Entwurf",
                         "short": "Entwurf"
                     },
@@ -195,7 +195,7 @@
                 "sameWeekday": "Volle Wochen: Jede Aufgabe fällt wieder auf denselben Wochentag wie beim letzten Mal."
             },
             "review": {
-                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen kannst du sie in den Einstellungen der Veranstaltung.",
+                "draftNote": "Die neue Veranstaltung selbst startet als Entwurf, sie ist also von außen nicht zu finden. Veröffentlichen kannst du sie in den Einstellungen der Veranstaltung, im Tab „Details“.",
                 "people": "Übernommene Personen",
                 "perTask": "Aufgabe für Aufgabe",
                 "problemItem": "{task}: {problem}",
@@ -209,6 +209,7 @@
                 "taskStatusAllOpen": "Alle Aufgaben sind sofort buchbar, die übernommenen Personen können sich also eintragen, sobald die Kopie existiert.",
                 "taskStatusMixed": "{draft} von {total} Aufgaben werden als Entwurf übernommen. Wenn du die Veranstaltung veröffentlichst, bleiben diese trotzdem Entwürfe. Öffne deshalb jede davon in der neuen Veranstaltung und veröffentliche sie dort. Die übrigen sind sofort buchbar.",
                 "tasks": "Aufgaben",
+                "timezone": "Wie das Original liegt die Kopie in der Zeitzone {zone}.",
                 "untouched": "{name} bleibt genau so, wie es ist.",
                 "visibilityPrivate": "Wie das Original ist die Kopie privat: Nur übernommene oder eingeladene Personen sehen sie.",
                 "visibilityPublic": "Wie das Original ist die Kopie öffentlich: Sobald du sie veröffentlichst, kann jede Person sie finden und um Aufnahme bitten.",
@@ -279,7 +280,7 @@
                 "basicsHint": "Was andere sehen, wenn sie diese Veranstaltung suchen.",
                 "dates": "Zeitraum",
                 "datesHint": "Die Tage, an denen die Veranstaltung läuft. Aufgaben lassen sich nur innerhalb dieses Zeitraums planen.",
-                "visibilityHint": "Du kannst das später in den Einstellungen der Veranstaltung ändern."
+                "visibilityHint": "Du kannst das später in den Einstellungen der Veranstaltung ändern, im Tab „Details“."
             },
             "submit": "Veranstaltung erstellen",
             "subtitle": "Ein Name und ein Zeitraum genügen. Alles andere lässt sich später ändern.",
@@ -291,6 +292,8 @@
         "delete": "Veranstaltung löschen",
         "deleteConfirm": "Möchtest du diese Veranstaltung wirklich löschen? Alle zugehörigen Verfügbarkeiten gehen verloren.",
         "detail": {
+            "aboutHint": "Ändern können das nur die Organisator:innen der Veranstaltung.",
+            "aboutTitle": "Über diese Veranstaltung",
             "dateConstraintHint": "Vorhandene Aufgaben schränken den Zeitraum ein. Um alles auf einmal zu verschieben, nutze unten „Termine verschieben“.",
             "earliestTask": "Früheste Aufgabe: {date}",
             "editDescription": "Name, Beschreibung und Zeitraum dieser Veranstaltung bearbeiten.",
@@ -308,7 +311,8 @@
                 "print": "Drucken",
                 "tasks": "Aufgaben"
             },
-            "printDescription": "Druckbare Übersichtsblätter oder vollständige Aufgabendetails für diese Gruppe erstellen.",
+            "printDescription": "Drucke eine Übersicht der Veranstaltung oder alle Aufgaben mit ihren Schichten.",
+            "publicNotPublished": "Von außen findet sie erst jemand, wenn du den Status auf „Veröffentlicht“ setzt.",
             "shiftApply": "Alle Termine verschieben",
             "shiftBackward": "zurück",
             "shiftDates": "Termine verschieben",
@@ -317,12 +321,11 @@
             "shiftNewStart": "Neues Startdatum",
             "shiftPreview": "{days} Tage {direction}",
             "shiftSuccess": "Alle Termine verschoben.",
-            "tasks": "Aufgaben in dieser Gruppe",
-            "tasksEmpty": "Noch keine Aufgaben dieser Gruppe zugeordnet.",
+            "tasks": "Aufgaben in dieser Veranstaltung",
+            "tasksEmpty": "Diese Veranstaltung hat noch keine Aufgaben.",
             "title": "Veranstaltungsdetails",
             "updated": "Veranstaltung aktualisiert."
         },
-        "draftBanner": "Diese Veranstaltung ist ein Entwurf, Mitglieder sehen sie noch nicht. Setze den Status auf „Veröffentlicht“, damit sie sichtbar wird.",
         "edit": "Veranstaltung bearbeiten",
         "empty": "Keine Veranstaltungen gefunden.",
         "expired": "Abgelaufen",
@@ -336,7 +339,7 @@
         },
         "fields": {
             "defaultTimes": "Standard-Zeitfenster",
-            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lass beide Felder leer und lege die Zeiten bei den einzelnen Aufgaben fest.",
+            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lass beide Felder leer und lege Schichten über Mitternacht einzeln mit „Einzelne Schicht hinzufügen“ an.",
             "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lass für Veranstaltungen über Nacht beide Felder leer.",
             "description": "Beschreibung",
             "endDate": "Enddatum",
@@ -355,6 +358,8 @@
             "emailsLabel": "E-Mail-Adressen",
             "emailsPlaceholder": "anna{'@'}example.com, ben{'@'}example.com",
             "empty": "Keine offenen Einladungen.",
+            "expiredEmailHint": "Diese Einladung gilt nicht mehr. Lade die Adresse oben noch einmal ein und ziehe diese zurück, um sie aus der Liste zu nehmen.",
+            "expiredLinkHint": "Dieser Link gilt nicht mehr. Erstelle oben einen neuen und ziehe diesen zurück, um ihn aus der Liste zu nehmen.",
             "forTasks": "Verantwortlich für: {tasks}",
             "linkCopied": "Link kopiert",
             "linksTitle": "Geteilte Links",
@@ -396,7 +401,7 @@
             "signIn": "Ich habe schon ein Konto",
             "signedOutBody": "Melde dich an oder lege ein Konto an, um die Einladung zu sehen und anzunehmen.",
             "signedOutTitle": "Du wurdest eingeladen",
-            "tasksHint": "Als Verantwortliche:r kannst du die Aufgabe und ihre Schichten bearbeiten und sehen, wer gebucht hat.",
+            "tasksHint": "Als Verantwortliche:r kannst du die Angaben der Aufgabe ändern und sehen, wer gebucht hat. Meist kannst du auch ihre Schichten ändern. Bei Aufgaben mit Marken entscheiden das die Organisator:innen.",
             "tasksTitle": "Du sollst verantwortlich sein für"
         },
         "join": {
@@ -419,14 +424,22 @@
             "count": "keine Personen | 1 Person | {count} Personen",
             "empty": "Noch niemand dabei.",
             "leave": "Verlassen",
+            "leaveConfirmAction": "Veranstaltung verlassen",
+            "leaveConfirmText": "Deine Buchungen für Schichten, die noch nicht vorbei sind, werden storniert. Auch deine Plätze in Teams und die Verantwortung für Aufgaben fallen weg, und du bekommst sie nicht automatisch zurück, wenn du später wiederkommst.",
+            "leaveConfirmTitle": "Diese Veranstaltung verlassen?",
             "left": "Du machst bei dieser Veranstaltung nicht mehr mit",
             "ownershipTransferred": "Die Veranstaltung hat jetzt eine neue Eigentümerin bzw. einen neuen Eigentümer",
             "remove": "{name} entfernen",
+            "removeConfirmAction": "Entfernen",
+            "removeConfirmText": "Die Buchungen dieser Person für Schichten, die noch nicht vorbei sind, werden storniert. Auch ihre Plätze in Teams und die Verantwortung für Aufgaben fallen weg. WirkSam sagt ihr nicht Bescheid, also sag es ihr selbst.",
+            "removeConfirmTitle": "{name} aus dieser Veranstaltung entfernen?",
             "removed": "Aus der Veranstaltung entfernt",
             "roleChanged": "Rolle geändert",
             "subtitle": "Alle, die mitmachen, und was sie tun dürfen.",
             "title": "Personen",
             "transferAction": "Übergeben",
+            "transferConfirmText": "{name} übernimmt sofort, und du bleibst Organisator:in. Zurückgeben kann sie dann nur noch {name}.",
+            "transferConfirmTitle": "Diese Veranstaltung an {name} übergeben?",
             "transferHint": "Die neue Person übernimmt die Veranstaltung. Du bleibst Organisator:in.",
             "transferPlaceholder": "Person auswählen…",
             "transferTitle": "Veranstaltung übergeben",
@@ -441,12 +454,25 @@
         "status": {
             "draft": "Entwurf"
         },
+        "statusHints": {
+            "archived": "Abgeschlossen. Nur die Personen darin sehen sie noch.",
+            "draft": "Noch in Vorbereitung. Nur die Personen darin sehen sie.",
+            "published": "Fertig geplant. Alle darin bekommen beim Veröffentlichen eine Nachricht, und eine öffentliche Veranstaltung können auch andere finden."
+        },
         "statuses": {
             "archived": "Archiviert",
             "draft": "Entwurf",
             "published": "Veröffentlicht"
         },
         "subtitle": "Anstehende Programme durchsuchen",
+        "timezone": {
+            "changeNote": "Eine Schicht um 10:00 Uhr bleibt um 10:00 Uhr, dann in {zone}. Erinnerungen ziehen mit.",
+            "hint": "Schichtzeiten gelten in dieser Zeitzone. Erinnerungen und Kalender richten sich danach.",
+            "label": "Zeitzone",
+            "localTimes": "Zeiten in Ortszeit: {zone}",
+            "noMatch": "Keine Zeitzone gefunden",
+            "search": "Stadt oder Region suchen"
+        },
         "title": "Veranstaltungen",
         "visibility": {
             "private": {
@@ -795,7 +821,7 @@
             "affectedBookings": {
                 "cancel": "Abbrechen",
                 "confirm": "Trotzdem fortfahren",
-                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. Die Betroffenen werden nicht automatisch benachrichtigt, du musst ihnen selbst Bescheid geben.",
+                "description": "Diese bestätigten Buchungen werden storniert, weil ihre Schichten nach dem Neuerstellen nicht mehr existieren. WirkSam sagt den Betroffenen Bescheid.",
                 "descriptionLocked": "Beim Neuerstellen würden die Schichten wegfallen, die diese Leute gebucht haben. Einige davon haben schon begonnen, und die kann nur ein:e Organisator:in entfernen.",
                 "locked": "Diese Schicht kann nur ein:e Organisator:in entfernen, weil sie begonnen hat und Leute gebucht sind.",
                 "lockedHint": "Ändere die Tage oder Zeiten so, dass die begonnenen Schichten bleiben, wie sie sind, oder bitte eine:n Organisator:in, die Änderung vorzunehmen.",

@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import select
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.event import event as crud_event
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.logic import clock, vouchers
+from app.logic.notifications.triggers import dispatch_booking_cancelled_by_admin
 from app.logic.permissions import (
     check_shift_history,
     require_shift_editor,
@@ -39,6 +41,7 @@ async def delete_batch(
     batch_id: str,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     cancellation_reason: str | None = Query(default=None),
 ) -> None:
     """Delete a shift batch and all its duty shifts (cascade).
@@ -66,6 +69,7 @@ async def delete_batch(
         ).scalars()
     )
     slot_ids = [s.id for s in shifts]
+    zone = await crud_event.zone_of(session, db_task.event_id)
 
     if access == "manager" and slot_ids:
         booked = set(
@@ -80,7 +84,7 @@ async def delete_batch(
                 )
             ).scalars()
         )
-        now = clock.wall_clock_now()
+        now = clock.wall_clock_now(zone)
         for shift in shifts:
             check_shift_history(
                 access,
@@ -93,13 +97,25 @@ async def delete_batch(
     # What the batch's worked shifts earned stays earned; then cancel the
     # confirmed bookings with a snapshot.
     await vouchers.settle_earnings(
-        session, now=clock.wall_clock_now(), shift_ids=slot_ids
+        session, now=clock.wall_clock_now(zone), shift_ids=slot_ids
     )
-    await crud_booking.cancel_bookings_for_shifts(
+    cancelled = await crud_booking.cancel_bookings_for_shifts(
         session,
         slot_ids=slot_ids,
         task_name=db_task.name,
         cancellation_reason=cancellation_reason,
+    )
+    background_tasks.add_task(
+        dispatch_booking_cancelled_by_admin,
+        cancelled=cancelled,
+        actor_id=current_user.id,
+        task_id=db_task.id,
+        task_name=db_task.name,
+        task_is_open=db_task.status == "published",
+        now=clock.wall_clock_now(zone),
+        event_id=db_task.event_id,
+        reason=cancellation_reason,
+        is_sandbox=db_task.is_sandbox,
     )
 
     await session.delete(db_batch)

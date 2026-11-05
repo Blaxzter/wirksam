@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 import sqlalchemy as sa
 from sqlmodel import Field, Relationship
 
+from app.core.config import settings
+from app.logic import clock
 from app.models.base import Base
 
 if TYPE_CHECKING:
@@ -72,6 +74,15 @@ class Event(Base, table=True):
             "guest. NULL on every real event — the column is meaningless there."
         ),
     )
+    timezone: str = Field(
+        default_factory=lambda: settings.EVENT_TIMEZONE,
+        sa_column=sa.Column(sa.String(64), nullable=False),
+        description=(
+            "IANA name of the zone the event's shift times are read in. Shift "
+            "times carry no zone: changing this leaves a 10:00 shift at 10:00 "
+            "and moves the moment it happens (app/logic/clock.py)."
+        ),
+    )
     # Voucher rules for every task in the event (app/logic/permissions.py:
     # may_redeem_manually and voucher_shifts_locked).
     voucher_manual_redeem: str = Field(
@@ -112,7 +123,5 @@ class Event(Base, table=True):
 
     @property
     def is_expired(self) -> bool:
-        """Whether the event's end date is in the past."""
-        from datetime import date as _date
-
-        return self.end_date < _date.today()
+        """Whether the event's last day is over, on the event's own clock."""
+        return self.end_date < clock.wall_clock_now(self.timezone).date()

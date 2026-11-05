@@ -113,6 +113,8 @@ services:
         env_file:
             - .env
         environment:
+            # The migrations read existing events and reminders in this zone.
+            - EVENT_TIMEZONE=${EVENT_TIMEZONE:-Europe/Berlin}
             # Unset in .env means the garage service, reached by name.
             - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-http://garage:3900}
             - DOMAIN=${DOMAIN}

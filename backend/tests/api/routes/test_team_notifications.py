@@ -29,7 +29,7 @@ def queued(monkeypatch: pytest.MonkeyPatch) -> Calls:
     ``teams.py`` imports the dispatchers by name, so the recorders go onto that
     module rather than onto the trigger module.
     """
-    calls: Calls = {"requested": [], "decided": []}
+    calls: Calls = {"requested": [], "decided": [], "added": []}
 
     async def _requested(*, team_id: uuid.UUID, user_id: uuid.UUID) -> None:
         calls["requested"].append({"team_id": team_id, "user_id": user_id})
@@ -41,6 +41,10 @@ def queued(monkeypatch: pytest.MonkeyPatch) -> Calls:
             {"team_id": team_id, "user_id": user_id, "approved": approved}
         )
 
+    async def _added(*, team_id: uuid.UUID, user_id: uuid.UUID) -> None:
+        calls["added"].append({"team_id": team_id, "user_id": user_id})
+
+    monkeypatch.setattr(teams_routes, "dispatch_team_member_added", _added)
     monkeypatch.setattr(teams_routes, "dispatch_team_join_requested", _requested)
     monkeypatch.setattr(teams_routes, "dispatch_team_join_decided", _decided)
     return calls
@@ -99,7 +103,7 @@ class TestJoinNotifications:
 
         assert r.status_code == 201
         assert r.json()["status"] == "approved"
-        assert queued == {"requested": [], "decided": []}
+        assert queued == {"requested": [], "decided": [], "added": []}
 
     async def test_a_refused_request_tells_nobody(
         self,
@@ -177,7 +181,7 @@ class TestDecisionNotifications:
             {"team_id": team.id, "user_id": test_user.id, "approved": True}
         ]
 
-    async def test_adding_someone_who_never_asked_is_not_a_decision(
+    async def test_adding_someone_who_never_asked_tells_them_they_are_in(
         self,
         async_client: AsyncClient,
         team: EventTeam,
@@ -191,6 +195,61 @@ class TestDecisionNotifications:
 
         assert r.status_code == 201, r.text
         assert queued["decided"] == []
+        assert queued["added"] == [{"team_id": team.id, "user_id": test_user.id}]
+
+    async def test_adding_yourself_tells_nobody(
+        self,
+        async_client: AsyncClient,
+        team: EventTeam,
+        test_event_admin_user: User,
+        as_event_admin: None,
+        queued: Calls,
+    ):
+        r = await async_client.post(
+            f"{_url(team)}/members", json={"user_id": str(test_event_admin_user.id)}
+        )
+
+        assert r.status_code == 201, r.text
+        assert queued == {"requested": [], "decided": [], "added": []}
+
+    async def test_adding_yourself_with_a_request_waiting_tells_nobody(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        team: EventTeam,
+        test_event_admin_user: User,
+        as_event_admin: None,
+        queued: Calls,
+    ):
+        await _pending(db_session, team, test_event_admin_user)
+
+        r = await async_client.post(
+            f"{_url(team)}/members", json={"user_id": str(test_event_admin_user.id)}
+        )
+
+        assert r.status_code == 201, r.text
+        assert queued == {"requested": [], "decided": [], "added": []}
+
+    async def test_a_refused_add_tells_nobody(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        team: EventTeam,
+        test_user: User,
+        as_event_admin: None,
+        queued: Calls,
+    ):
+        db_session.add(
+            EventTeamMember(team_id=team.id, user_id=test_user.id, status="approved")
+        )
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"{_url(team)}/members", json={"user_id": str(test_user.id)}
+        )
+
+        assert r.status_code == 409
+        assert queued == {"requested": [], "decided": [], "added": []}
 
     async def test_opening_a_team_tells_everyone_who_was_waiting(
         self,

@@ -2,8 +2,11 @@
 
 import datetime as dt
 from collections.abc import Callable
+from zoneinfo import ZoneInfo
 
 import pytest
+
+from app.core.config import settings
 
 #: Before every fixture shift: ``tests/fixtures/shifts.py`` dates its shift
 #: 2026-05-24 and the fixture events lie in June 2026, all of which is in the
@@ -13,9 +16,39 @@ import pytest
 BEFORE_FIXTURE_SHIFTS = dt.datetime(2026, 5, 1, 8, 0)
 
 
+def fixed_clock(now: dt.datetime) -> Callable[[str | None], dt.datetime]:
+    """A stand-in for ``clock.wall_clock_now`` answering ``now`` in every zone."""
+
+    def wall_clock_now(_zone: str | None = None) -> dt.datetime:
+        return now
+
+    return wall_clock_now
+
+
+def instant_clock(utc: dt.datetime) -> Callable[[str | None], dt.datetime]:
+    """A stand-in for ``clock.wall_clock_now`` frozen at one instant, naive UTC.
+
+    Each zone reads it on its own clock, for a test about the zone itself.
+    """
+
+    def wall_clock_now(zone: str | None = None) -> dt.datetime:
+        aware = utc.replace(tzinfo=dt.UTC)
+        return aware.astimezone(ZoneInfo(zone or settings.EVENT_TIMEZONE)).replace(
+            tzinfo=None
+        )
+
+    return wall_clock_now
+
+
 def set_wall_clock(monkeypatch: pytest.MonkeyPatch, now: dt.datetime) -> None:
     """Make ``clock.wall_clock_now()`` answer ``now`` for the rest of the test."""
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: now)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(now))
+
+
+def set_instant(monkeypatch: pytest.MonkeyPatch, utc: dt.datetime) -> None:
+    """Freeze both clocks at one instant, each zone reading it on its own clock."""
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", instant_clock(utc))
+    monkeypatch.setattr("app.logic.clock.utc_now", lambda: utc)
 
 
 @pytest.fixture

@@ -2,7 +2,9 @@ import type { NavigationGuard, RouteRecordRaw } from 'vue-router'
 
 import type { BreadcrumbItem } from '@/stores/breadcrumb'
 
+import { DOC_PAGES, docId, docPath, docRouteName } from '@/lib/content-pages'
 import { DEFAULT_PUBLIC_LOCALE, PUBLIC_LOCALES } from '@/lib/seo'
+import i18n from '@/locales/i18n'
 
 const PREFIXED_LOCALES = PUBLIC_LOCALES.filter((locale) => locale !== DEFAULT_PUBLIC_LOCALE)
 
@@ -82,6 +84,34 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           props: { useCase: 'clubFestival' },
           meta: { fullBleed: true },
         },
+        // What everything does and how to set it up, written out in full.
+        // Markdown in `src/docs/`, listed in `lib/content-pages.ts`.
+        {
+          path: 'features',
+          name: 'features',
+          component: () => import('@/views/preauth/DocsHubView.vue'),
+          props: { kind: 'feature' },
+          meta: { fullBleed: true },
+        },
+        {
+          path: 'guides',
+          name: 'guides',
+          component: () => import('@/views/preauth/DocsHubView.vue'),
+          props: { kind: 'guide' },
+          meta: { fullBleed: true },
+        },
+        ...DOC_PAGES.map((page) => ({
+          path: docPath(page).slice(1),
+          name: docRouteName(page),
+          component: async () => {
+            // The text before the page, so the page never shows without it.
+            const { loadDoc } = await import('@/lib/docs-content')
+            await loadDoc(docId(page), i18n.global.locale.value)
+            return import('@/views/preauth/DocPageView.vue')
+          },
+          props: { id: docId(page) },
+          meta: { fullBleed: true },
+        })),
         {
           path: 'privacy',
           name: 'privacy',
@@ -156,7 +186,10 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           name: 'event-print',
           component: () => import('@/views/events/PrintView.vue'),
           meta: {
-            breadcrumbs: [{ title: 'Print', titleKey: 'duties.events.detail.nav.print' }],
+            breadcrumbs: [
+              { title: 'Tasks', titleKey: 'duties.tasks.title', to: { name: 'tasks' } },
+              { title: 'Print', titleKey: 'duties.events.detail.nav.print' },
+            ],
           },
         },
         {
@@ -192,6 +225,13 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
               { title: 'Create Event', titleKey: 'duties.events.createView.title' },
             ],
           },
+        },
+        {
+          // The QR code on a printed event sheet. The static segments above
+          // and below outrank it.
+          path: 'events/:eventId',
+          name: 'event-open',
+          component: () => import('@/views/events/EventOpenView.vue'),
         },
         {
           // Cloning last year's event is the point of this screen, and last
