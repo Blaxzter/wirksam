@@ -6,7 +6,7 @@ related: guide/teams, feature/people-in-charge, feature/booking, feature/voucher
 
 Normalerweise kann jede Person in einer Veranstaltung jede Schicht buchen. Das passt nicht für jede Aufgabe: An die Kasse soll jemand, den ihr kennt, und in die Kinderbetreuung nur, wer ein Führungszeugnis vorgezeigt hat.
 
-Teams sind aus, bis ihr sie nutzt. Ist keine Aufgabe reserviert, ändert sich am Buchen nichts, und Helfende sehen den Menüpunkt „Teams“ erst, wenn es ein Team gibt. Ein Team gehört zu einer Veranstaltung. Eine Aufgabe kann einem Team vorbehalten sein, ein Team kann viele Aufgaben haben.
+Ist keine Aufgabe reserviert, ändert sich am Buchen nichts, und Helfende sehen den Menüpunkt „Teams“ erst, wenn es ein Team gibt. Ein Team gehört zu einer Veranstaltung. Eine Aufgabe kann einem Team vorbehalten sein, ein Team kann viele Aufgaben haben.
 
 ## Aufgaben einem Team vorbehalten
 

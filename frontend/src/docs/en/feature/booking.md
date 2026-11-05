@@ -30,13 +30,13 @@ After that the booking is in "My Bookings", you get the message "Booking Confirm
 
 ## What applies when booking
 
-- **Members only:** you can book once you're part of the event. How to get there is under [Invitations and roles](/features/members).
-- **Published tasks only:** only organisers and the task's people in charge see and book drafts.
-- **Until the shift is over:** after that you can neither book nor cancel.
-- **On tasks with [vouchers](/features/vouchers), only until it starts:** people who run the task can still book after that.
-- **No overlaps:** you can't book a shift that overlaps one you've booked, even if the other one belongs to a different event. The tile shows this with a red icon. Back-to-back shifts are fine, and shifts without times never overlap.
-- **Tasks for a [team](/features/teams):** approved team members and organisers can book them. The tile has a padlock, and when you open it you can join or ask to join.
-- **Full shifts:** nothing happens when you tap a tile marked "Full".
+- You can book once you're part of the event. How to get there is under [Invitations and roles](/features/members).
+- Only organisers and the task's people in charge see and book drafts.
+- You can book and cancel until the shift is over.
+- On tasks with [vouchers](/features/vouchers), booking ends when the shift starts, except for people who run the task.
+- You can't book a shift that overlaps one you've booked, even if the other one belongs to a different event. The tile shows this with a red icon. Back-to-back shifts are fine, and shifts without times never overlap.
+- Approved team members and organisers can book tasks for a [team](/features/teams). The tile has a padlock, and when you open it you can join or ask to join.
+- Nothing happens when you tap a tile marked "Full".
 
 ## Cancelling
 

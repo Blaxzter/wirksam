@@ -6,7 +6,7 @@ related: guide/teams, feature/people-in-charge, feature/booking, feature/voucher
 
 Normally anyone in an event can book any shift. That doesn't suit every task: you want someone you know at the cash desk, and only people who have shown a police certificate looking after children.
 
-Teams stay off until you use them. If no task is reserved, booking works as before, and volunteers don't see the Teams menu item until there is a team. A team belongs to one event. A task can be reserved for one team, and a team can have many tasks.
+If no task is reserved, booking works as before, and volunteers don't see the Teams menu item until there is a team. A team belongs to one event. A task can be reserved for one team, and a team can have many tasks.
 
 ## Reserving a task for a team
 

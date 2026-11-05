@@ -53,7 +53,7 @@ Whoever opens an invitation sees the event, its dates, its description and the r
 
 You choose this when creating the event, under "Who can see this event". You can change it later in the event's settings on the Details tab.
 
-- **Private** (the default): only people you invite can find it or join it. For everyone else it doesn't exist.
+- **Private** (the default): only people you invite can find it or join it.
 - **Public:** anyone signed in can find it and ask to join.
 
 A public event only shows to others once its status, on the same tab, is "Published". A draft or an archived event stays hidden from everyone who isn't in it. Publishing sends everyone in the event a message.

@@ -6,7 +6,7 @@ related: guide/venue-map, feature/shift-planning, feature/booking, guide/next-ye
 
 Neue Helfende fragen meist dasselbe: Wo ist Stand 3, wo sind die Toiletten, wo soll ich hin. Der Lageplan beantwortet das, und dir zeigt er nebenbei, wo noch Leute fehlen.
 
-Solange ihr keinen Plan habt, ändert sich nichts. Der Eintrag „Lageplan“ erscheint in der Navigation erst, wenn ein Plan ein Bild oder eine Zeichnung hat.
+Der Eintrag „Lageplan“ erscheint in der Navigation erst, wenn ein Plan ein Bild oder eine Zeichnung hat.
 
 ## Bild hochladen oder selbst zeichnen
 

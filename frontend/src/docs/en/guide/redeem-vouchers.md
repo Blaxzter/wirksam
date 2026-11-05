@@ -36,7 +36,7 @@ The code stays valid for at least a minute after scanning, so there's no need to
 
 ## No code: pick the person
 
-Flat battery, no signal, no smartphone: tap "Pick a person". This is only for when the person's phone isn't working. Search the list by name or email. Each name shows how many vouchers the person has. People with none are greyed out and can't be chosen. After that it works the same as with a code.
+If the person's battery is flat, or they have no signal or no smartphone, tap "Pick a person". This is only meant for that case. Search the list by name or email. Each name shows how many vouchers the person has. People with none are greyed out and can't be chosen. After that it works the same as with a code.
 
 If it says "No phone? Ask …" instead, your event keeps redeeming without a code to people in charge and organisers. Send the person to whoever is named.
 

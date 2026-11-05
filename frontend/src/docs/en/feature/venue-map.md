@@ -6,7 +6,7 @@ related: guide/venue-map, feature/shift-planning, feature/booking, guide/next-ye
 
 New volunteers tend to ask the same things: where's stand 3, where are the toilets, where should I go. The map answers that, and it shows you where people are still missing while it's at it.
 
-Until you have a map, nothing changes. "Map" only appears in the navigation once a map has a picture or a drawing.
+"Map" only appears in the navigation once a map has a picture or a drawing.
 
 ## Upload a picture or draw it yourself
 

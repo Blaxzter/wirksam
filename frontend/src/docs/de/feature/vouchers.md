@@ -6,13 +6,13 @@ related: guide/vouchers, guide/redeem-vouchers, feature/people-in-charge, featur
 
 Papiermarken müssen gedruckt, abgezählt, verteilt und am Ende wieder eingesammelt werden. In WirkSam steht schon fest, wer welche Schicht gearbeitet hat, also ergibt sich das Guthaben von selbst.
 
-Marken sind aus, bis ihr sie nutzt. Erst wenn eine Aufgabe Marken vergibt oder annimmt, tauchen sie in der Veranstaltung auf. Ohne das sieht alles aus wie bisher.
+Marken tauchen in einer Veranstaltung erst auf, wenn eine Aufgabe sie vergibt oder annimmt. Bis dahin sieht alles aus wie bisher.
 
 ## Marken verdienen
 
 Bei jeder Aufgabe legt ihr fest, wie viele Marken eine Schicht bringt. Sobald eine gebuchte Schicht vorbei ist, sind sie da, ohne dass jemand etwas tun muss.
 
-Verdient ist verdient. Wird die Schicht später gelöscht oder verlegt, oder ändert ihr die Anzahl pro Schicht, bleibt, was schon verdient wurde. Eine neue Anzahl gilt nur für Schichten, die noch nicht vorbei sind.
+Was schon verdient wurde, bleibt, auch wenn die Schicht später gelöscht oder verlegt wird oder ihr die Anzahl pro Schicht ändert. Eine neue Anzahl gilt nur für Schichten, die noch nicht vorbei sind.
 
 ## Was Helfende sehen
 
@@ -38,11 +38,11 @@ In der App einlösen geht bis zum Enddatum der Veranstaltung. Ihren Stand sehen 
 ![Marken einlösen auf dem Handy, mit Kamera und dem Feld zum Eintippen](phone:vouchers-redeem)
 ![Die Personenliste beim Einlösen ohne Code, mit der Zahl der Marken neben jedem Namen](phone:vouchers-picker)
 
-## Wenn ein Handy nicht mitspielt
+## Einlösen ohne Code
 
-Akku leer, kein Netz, kein Smartphone: Dann lässt sich die Person aus einer Liste wählen, in der steht, wie viele Marken sie hat. Wer keine mehr hat, ist ausgegraut.
+Ist bei jemandem der Akku leer, oder hat die Person kein Netz oder kein Smartphone, lässt sie sich aus einer Liste wählen, in der steht, wie viele Marken sie hat. Wer keine mehr hat, ist ausgegraut.
 
-Das ist bewusst eine eigene Regel, weil hier niemand etwas vorzeigen muss. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Das ist praktisch an einer vollen Theke, gilt aber für alle, die dort eine Schicht buchen. Wem das zu offen ist, stellt auf „Nur Organisator:innen und Verantwortliche“ um oder lässt die Schichten am Stand nur von einem [Team](/features/teams) buchen.
+Das ist bewusst eine eigene Regel, weil hier niemand etwas vorzeigen muss. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Das ist praktisch an einer vollen Theke, gilt aber für alle, die dort eine Schicht buchen. Ist euch das zu offen, stellt auf „Nur Organisator:innen und Verantwortliche“ um oder lasst die Schichten am Stand nur von einem [Team](/features/teams) buchen.
 
 ## Was Organisator:innen einstellen
 

@@ -1,6 +1,6 @@
 ---
 title: Set up a team
-lede: Here's how to create a team, decide how people join, list the checks they need, reserve tasks for it and review requests. You do this as an organiser of the event. You need the event and, ideally, the tasks you want to reserve.
+lede: You create a team, decide how people join, list the checks they need, reserve tasks for it and review requests. You do this as an organiser of the event. You need the event and, ideally, the tasks you want to reserve.
 related: feature/teams, guide/people-in-charge, guide/vouchers, guide/first-event
 ---
 
@@ -26,7 +26,7 @@ Then choose "Save". With no checks, save straight away. A team with checks alway
 
 Open a task and choose "Edit". Under "Who can book", choose "Only one team", pick your team under "Team" and choose "Save". Others still see the task, locked. Do this for each task that belongs to the team.
 
-> **Good to know:** When you create a task, "Who can book" is in the "Event" step, once you've picked an existing event.
+> When you create a task, "Who can book" is in the "Event" step, once you've picked an existing event.
 
 ## Review requests
 
@@ -36,4 +36,4 @@ With checks, choose "Review request". Look at the document, tick "I've checked: 
 
 ![Reviewing a request to join, with a tick and the issue date for each check](shot:team-review)
 
-> **Good to know:** You don't have to do this alone. On the Teams page, choose your team and then "Make team lead" in a member's menu. Team leads then review requests themselves.
+> You don't have to do this alone. On the Teams page, choose your team and then "Make team lead" in a member's menu. Team leads then review requests themselves.

@@ -36,7 +36,7 @@ Der Code bleibt nach dem Scannen mindestens eine Minute gültig, du musst dich a
 
 ## Ohne Code: Person auswählen
 
-Akku leer, kein Netz, kein Smartphone: Tippe auf „Person auswählen“. Das ist nur für den Fall gedacht, dass das Handy der Person nicht geht. In der Liste suchst du nach Name oder E-Mail. Neben jedem Namen steht, wie viele Marken die Person hat. Wer keine hat, ist ausgegraut und lässt sich nicht wählen. Danach geht es weiter wie beim Code.
+Hat die Person einen leeren Akku, kein Netz oder kein Smartphone, tippe auf „Person auswählen“. Das ist nur für diesen Fall gedacht. In der Liste suchst du nach Name oder E-Mail. Neben jedem Namen steht, wie viele Marken die Person hat. Wer keine hat, ist ausgegraut und lässt sich nicht wählen. Danach geht es weiter wie beim Code.
 
 Steht dort stattdessen „Kein Handy? Frag …“, hat eure Veranstaltung das Einlösen ohne Code den Verantwortlichen und Organisator:innen vorbehalten. Schick die Person zu den Genannten.
 

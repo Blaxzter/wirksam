@@ -13,7 +13,7 @@ related: feature/booking, feature/notifications, feature/members
 
 Danach siehst du die Veranstaltung. Tippe auf „Annehmen und mitmachen“.
 
-> **Gut zu wissen:** Kam die Einladung per E-Mail, gilt sie nur für diese Adresse, also nimm dieselbe fürs Konto. Eine Einladung gilt 14 Tage. Ist sie abgelaufen, frag die Organisation nach einer neuen.
+> Kam die Einladung per E-Mail, gilt sie nur für diese Adresse, also nimm dieselbe fürs Konto. Eine Einladung gilt 14 Tage. Ist sie abgelaufen, frag die Organisation nach einer neuen.
 
 ## Sagen, wann du kannst
 

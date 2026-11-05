@@ -26,7 +26,7 @@ Dann wählst du „Speichern“. Ohne Nachweise speicherst du gleich. Teams mit 
 
 Öffne eine Aufgabe und wähle „Bearbeiten“. Unter „Wer kann buchen“ wählst du „Nur ein Team“, unter „Team“ dein Team und dann „Speichern“. Andere sehen die Aufgabe weiter, aber gesperrt. Das machst du für jede Aufgabe, die zum Team gehört.
 
-> **Gut zu wissen:** Beim Anlegen einer Aufgabe steht „Wer kann buchen“ im Schritt „Veranstaltung“, sobald du eine bestehende Veranstaltung gewählt hast.
+> Beim Anlegen einer Aufgabe steht „Wer kann buchen“ im Schritt „Veranstaltung“, sobald du eine bestehende Veranstaltung gewählt hast.
 
 ## Anfragen prüfen
 
@@ -36,4 +36,4 @@ Mit Nachweisen wählst du „Anfrage prüfen“. Sieh dir das Dokument an, hake 
 
 ![Eine Beitrittsanfrage prüfen, mit einem Häkchen und dem Ausstellungsdatum pro Nachweis](shot:team-review)
 
-> **Gut zu wissen:** Du musst das nicht allein machen. Wähl auf der Seite „Teams“ dein Team und im Menü bei einem Mitglied „Zur Teamleitung machen“. Teamleitungen prüfen Anfragen dann selbst.
+> Du musst das nicht allein machen. Wähl auf der Seite „Teams“ dein Team und im Menü bei einem Mitglied „Zur Teamleitung machen“. Teamleitungen prüfen Anfragen dann selbst.

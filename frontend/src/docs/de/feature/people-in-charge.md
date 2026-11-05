@@ -4,7 +4,7 @@ lede: Verantwortliche kümmern sich um eine einzelne Aufgabe: Sie ändern die An
 related: guide/people-in-charge, feature/vouchers, feature/teams, feature/members
 ---
 
-Wer seit Jahren die Küche macht, sollte nicht jedes Mal bei den Organisator:innen nachfragen müssen, um eine Schicht zu ergänzen oder zu sehen, wer am Samstag kommt. Die ganze Veranstaltung muss sie dafür aber nicht verwalten können. Dafür gibt es Verantwortliche.
+Wer seit Jahren die Küche macht, sollte nicht jedes Mal bei den Organisator:innen nachfragen müssen, um eine Schicht zu ergänzen oder zu sehen, wer am Samstag kommt. Als Verantwortliche geht das, ohne dass die Person die ganze Veranstaltung verwalten kann.
 
 Standardmäßig hat eine Aufgabe keine, dann kümmern sich die Organisator:innen um sie. Eine Aufgabe kann mehrere Verantwortliche haben, und eine Person kann für mehrere Aufgaben verantwortlich sein.
 

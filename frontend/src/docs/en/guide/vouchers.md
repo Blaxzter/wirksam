@@ -29,14 +29,14 @@ Once a task gives or takes vouchers, the event's settings have a Vouchers tab wi
 
 ## Tell the stand
 
-People at the stand only need to know one thing: open "Redeem vouchers", scan the code, choose the amount. The easiest way is to send them the guide [Redeem vouchers at a stand](/guides/redeem-vouchers).
+People at the stand open "Redeem vouchers", scan the code and choose the amount. It's easiest to send them the guide [Redeem vouchers at a stand](/guides/redeem-vouchers).
 
 Volunteers find their vouchers under "My vouchers" and show their code there. They also see what's still to come from booked shifts.
 
-> **Good to know:** On tasks with vouchers, booking already ends when the shift starts. People who run the task can still book.
+> On tasks with vouchers, booking already ends when the shift starts. People who run the task can still book.
 
 ## Keep an eye on it and correct things
 
 On the Vouchers tab, below the rules, is who has how many vouchers. With "Add correction" you add or take away vouchers, for example for help with the set-up that no shift covers. A correction always needs a reason.
 
-And earned is earned: if you later delete or move a shift that was already worked, its vouchers stay.
+If you later delete or move a shift that was already worked, its vouchers stay.

@@ -13,7 +13,7 @@ Open the invitation with the button in the email or with the link you were given
 
 You then see the event. Tap "Accept and join".
 
-> **Good to know:** If the invitation came by email, it only works for that address, so use the same one for your account. An invitation lasts 14 days. If it has expired, ask the organisers for a new one.
+> If the invitation came by email, it only works for that address, so use the same one for your account. An invitation lasts 14 days. If it has expired, ask the organisers for a new one.
 
 ## Say when you can help
 

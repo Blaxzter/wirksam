@@ -1,6 +1,6 @@
 ---
 title: Name people in charge
-lede: Here's how to give someone one task to look after, by name or by email address, and what they can and can't change. You do this as an organiser of the event. All you need is the task and, for someone not in the event yet, their email address.
+lede: You give someone one task to look after, by name or by email address, and see what they can and can't change. You do this as an organiser of the event. All you need is the task and, for someone not in the event yet, their email address.
 related: feature/people-in-charge, guide/first-event, guide/vouchers, feature/members
 ---
 
@@ -10,7 +10,7 @@ Open the task. Its page has an "In charge" card, where you choose "Manage". The 
 
 ![The task page with the cards for people in charge and vouchers](shot:task-detail)
 
-> **Good to know:** You can also do this while creating a task. Pick an existing event in the "Event" step, and the "People in charge" section appears with the same field.
+> You can also do this while creating a task. Pick an existing event in the "Event" step, and the "People in charge" section appears with the same field.
 
 ## Pick someone from the event
 
@@ -41,4 +41,4 @@ They can't publish or delete the task, decide who can book it, set up vouchers o
 
 If someone should no longer be in charge, open the menu on their row and choose "Remove". They can also choose "Step down" on the task page themselves, and you won't get a message about that.
 
-> **Good to know:** On tasks that bring vouchers, people in charge can by default only change the task's details. You can allow more for the whole event, see [Vouchers](/features/vouchers).
+> On tasks that bring vouchers, people in charge can by default only change the task's details. You can allow more for the whole event, see [Vouchers](/features/vouchers).

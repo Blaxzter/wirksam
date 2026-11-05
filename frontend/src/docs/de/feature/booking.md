@@ -30,13 +30,13 @@ Danach steht die Buchung in „Meine Buchungen“, du bekommst die Nachricht „
 
 ## Was beim Buchen gilt
 
-- **Nur als Mitglied:** Buchen kann, wer bei der Veranstaltung dabei ist. Wie man dazukommt, steht unter [Einladungen und Rollen](/features/members).
-- **Nur veröffentlichte Aufgaben:** Entwürfe sehen und buchen nur Organisator:innen und die Verantwortlichen der Aufgabe.
-- **Bis die Schicht vorbei ist:** Danach geht weder Buchen noch Absagen.
-- **Bei Aufgaben mit [Marken](/features/vouchers) nur bis zum Beginn:** Wer die Aufgabe betreut, darf auch danach noch buchen.
-- **Keine Überschneidungen:** Eine Schicht, die sich mit einer deiner gebuchten überschneidet, lässt sich nicht buchen, auch wenn die andere zu einer anderen Veranstaltung gehört. Die Kachel zeigt das mit einem roten Symbol. Schichten direkt hintereinander sind in Ordnung, und Schichten ohne Uhrzeit überschneiden sich nie.
-- **Aufgaben für ein [Team](/features/teams):** Buchen dürfen aufgenommene Team-Mitglieder und Organisator:innen. Die Kachel trägt ein Schloss, und wenn du sie öffnest, kannst du beitreten oder anfragen.
-- **Volle Schichten:** Bei „Voll“ passiert beim Antippen nichts mehr.
+- Buchen kann, wer bei der Veranstaltung dabei ist. Wie man dazukommt, steht unter [Einladungen und Rollen](/features/members).
+- Entwürfe sehen und buchen nur Organisator:innen und die Verantwortlichen der Aufgabe.
+- Buchen und absagen geht, bis die Schicht vorbei ist.
+- Bei Aufgaben mit [Marken](/features/vouchers) endet das Buchen mit dem Beginn der Schicht, außer für alle, die die Aufgabe betreuen.
+- Eine Schicht, die sich mit einer deiner gebuchten überschneidet, lässt sich nicht buchen, auch wenn die andere zu einer anderen Veranstaltung gehört. Die Kachel zeigt das mit einem roten Symbol. Schichten direkt hintereinander sind in Ordnung, und Schichten ohne Uhrzeit überschneiden sich nie.
+- Aufgaben für ein [Team](/features/teams) buchen aufgenommene Team-Mitglieder und Organisator:innen. Die Kachel trägt ein Schloss, und wenn du sie öffnest, kannst du beitreten oder anfragen.
+- Bei einer Kachel mit „Voll“ passiert beim Antippen nichts.
 
 ## Absagen
 

@@ -4,7 +4,7 @@ lede: People in charge look after one task: they edit its details, run its shift
 related: guide/people-in-charge, feature/vouchers, feature/teams, feature/members
 ---
 
-Whoever has run the kitchen for years shouldn't have to ask an organiser every time they want to add a shift or see who's coming on Saturday. They don't need the keys to the whole event for that either. That's what people in charge are for.
+Whoever has run the kitchen for years shouldn't have to ask an organiser every time they want to add a shift or see who's coming on Saturday. A person in charge can do that without being able to run the whole event.
 
 By default a task has none, and the organisers look after it. A task can have several people in charge, and one person can be in charge of several tasks.
 

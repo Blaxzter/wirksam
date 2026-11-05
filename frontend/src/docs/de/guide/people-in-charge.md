@@ -10,7 +10,7 @@ related: feature/people-in-charge, guide/first-event, guide/vouchers, feature/me
 
 ![Die Aufgabenseite mit den Karten für Verantwortliche und Marken](shot:task-detail)
 
-> **Gut zu wissen:** Beim Anlegen einer Aufgabe geht das gleich mit. Wähl im Schritt „Veranstaltung“ eine bestehende Veranstaltung, dann erscheint der Abschnitt „Verantwortliche“ mit demselben Feld.
+> Beim Anlegen einer Aufgabe geht das gleich mit. Wähl im Schritt „Veranstaltung“ eine bestehende Veranstaltung, dann erscheint der Abschnitt „Verantwortliche“ mit demselben Feld.
 
 ## Jemanden aus der Veranstaltung wählen
 
@@ -41,4 +41,4 @@ Sie können die Aufgabe nicht veröffentlichen oder löschen, nicht festlegen, w
 
 Soll jemand nicht mehr verantwortlich sein, öffnest du das Menü in der Zeile und wählst „Entfernen“. Die Person selbst kann auf der Aufgabenseite „Verantwortung abgeben“ wählen, darüber bekommst du keine Nachricht.
 
-> **Gut zu wissen:** Bei Aufgaben, die Marken bringen, ändern Verantwortliche standardmäßig nur die Angaben zur Aufgabe. Du kannst mehr für die ganze Veranstaltung freigeben, siehe [Marken](/features/vouchers).
+> Bei Aufgaben, die Marken bringen, ändern Verantwortliche standardmäßig nur die Angaben zur Aufgabe. Du kannst mehr für die ganze Veranstaltung freigeben, siehe [Marken](/features/vouchers).

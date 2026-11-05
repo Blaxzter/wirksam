@@ -53,7 +53,7 @@ Wer eine Einladung öffnet, sieht Veranstaltung, Termine, Beschreibung und Rolle
 
 Das wählt ihr beim Anlegen unter „Wer die Veranstaltung sehen kann“. Ändern könnt ihr es später in den Einstellungen der Veranstaltung im Tab „Details“.
 
-- **Privat** (voreingestellt): Nur eingeladene Personen finden die Veranstaltung und können mitmachen. Für alle anderen gibt es sie nicht.
+- **Privat** (voreingestellt): Nur eingeladene Personen finden die Veranstaltung und können mitmachen.
 - **Öffentlich:** Alle Angemeldeten finden sie und können anfragen.
 
 Andere sehen eine öffentliche Veranstaltung erst, wenn ihr Status im selben Tab „Veröffentlicht“ ist. Ein Entwurf oder eine archivierte Veranstaltung bleibt allen verborgen, die nicht dabei sind. Beim Veröffentlichen bekommen alle in der Veranstaltung eine Nachricht.

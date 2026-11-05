@@ -6,13 +6,13 @@ related: guide/vouchers, guide/redeem-vouchers, feature/people-in-charge, featur
 
 Paper vouchers have to be printed, counted out, handed round and collected again. WirkSam already knows who worked which shift, so the balance follows by itself.
 
-Vouchers stay out of the way until you use them. They only appear in an event once a task gives or takes them. Without that, everything looks the same as before.
+Vouchers only appear in an event once a task gives or takes them. Until then, everything looks the same as before.
 
 ## Earning vouchers
 
 For each task, you set how many vouchers a shift brings. As soon as a booked shift is over they are there, without anyone doing anything.
 
-Earned is earned. If the shift is later deleted or moved, or you change the number per shift, what was already earned stays. A new number only applies to shifts that aren't over yet.
+What's already earned stays, even if the shift is later deleted or moved or you change the number per shift. A new number only applies to shifts that aren't over yet.
 
 ## What volunteers see
 
@@ -38,9 +38,9 @@ Redeeming in the app works until the event's end date. Volunteers can still see 
 ![Redeeming vouchers on a phone, with the camera and the field to type a code](phone:vouchers-redeem)
 ![The list of people when redeeming without a code, with the number of vouchers next to each name](phone:vouchers-picker)
 
-## When a phone won't cooperate
+## Redeeming without a code
 
-Flat battery, no signal, no smartphone: you can then pick the person from a list that shows how many vouchers they have. People with none left are greyed out.
+If someone's battery is flat, or they have no signal or no smartphone, you can pick them from a list that shows how many vouchers they have. People with none left are greyed out.
 
 This has its own rule on purpose, because nobody has to show anything here. By default it also includes everyone on shift at a place that takes vouchers. That's handy at a busy counter, but it applies to anyone who books a shift there. If that's too open for you, switch to "Only organisers and the people in charge", or let only a [team](/features/teams) book the shifts at the stand.
 

@@ -48,7 +48,7 @@ In der Datei stehen Name, E-Mail, Rolle, geleistete Schichten, Schichtstunden, z
 
 ## Die Seite „Berichte“
 
-„Berichte“ steht in der Seitenleiste, auf dem Handy unter „Mehr“. Du siehst die Seite, sobald du mindestens eine Veranstaltung organisierst. Sie fasst alle Veranstaltungen zusammen, die du organisierst, ein Filter für eine einzelne gibt es nicht.
+„Berichte“ steht in der Seitenleiste, auf dem Handy unter „Mehr“. Du siehst die Seite, sobald du mindestens eine Veranstaltung organisierst. Sie fasst alle Veranstaltungen zusammen, die du organisierst. Einen Filter für eine einzelne gibt es nicht.
 
 Das steht dort:
 
