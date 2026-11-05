@@ -1143,6 +1143,9 @@ async function handleSubmit() {
       )
     }
     toast.success(parts.join(' '))
+    // The profile holds your role per event, and doesn't know the new one yet.
+    // Without it the settings show only the Details tab until a reload.
+    await authStore.loadProfile().catch(() => {})
     void router.push({ name: 'event-settings', params: { eventId: res.data.event.id } })
   } catch (error) {
     toastApiError(error)

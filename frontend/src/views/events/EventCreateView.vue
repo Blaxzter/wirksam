@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
+import { useAuthStore } from '@/stores/auth'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
@@ -31,6 +32,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { post } = useAuthenticatedClient()
+const authStore = useAuthStore()
 const breadcrumbStore = useBreadcrumbStore()
 
 /**
@@ -133,6 +135,9 @@ async function handleSubmit() {
       },
     })
     toast.success(t('duties.events.created'))
+    // The profile holds your role per event, and doesn't know the new one yet.
+    // Without it the event's settings show only the Details tab until a reload.
+    await authStore.loadProfile().catch(() => {})
     if (fromPicker.value) {
       // `created` tells the picker to stage the new event as the selection, so
       // the person lands back on it already highlighted.
