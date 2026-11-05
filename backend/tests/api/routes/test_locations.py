@@ -23,6 +23,7 @@ from app.models.task import Task
 from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
+from tests.fixtures.clock import set_instant
 
 DAY = dt.date(2026, 6, 11)
 
@@ -771,16 +772,21 @@ class TestLocationShifts:
 
         assert r.json()[0]["can_manage"] is True
 
-    async def test_defaults_to_today(
+    async def test_defaults_to_today_where_the_event_is(
         self,
         async_client: AsyncClient,
         db_session: AsyncSession,
         test_event: Event,
         test_location: Location,
+        monkeypatch: pytest.MonkeyPatch,
     ):
+        # 22:30 UTC on 1 July is already 2 July in Berlin.
+        set_instant(monkeypatch, dt.datetime(2026, 7, 1, 22, 30))
         task = await self._task(db_session, test_event)
-        today = await self._shift(db_session, task, test_location, day=dt.date.today())
-        await self._shift(db_session, task, test_location)
+        today = await self._shift(
+            db_session, task, test_location, day=dt.date(2026, 7, 2)
+        )
+        await self._shift(db_session, task, test_location, day=dt.date(2026, 7, 1))
 
         r = await async_client.get(f"/api/v1/locations/{test_location.id}/shifts")
 

@@ -28,6 +28,7 @@ from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
+from tests.fixtures.clock import set_instant
 from tests.fixtures.locations import PLAN_HEIGHT, PLAN_WIDTH, make_png
 from tests.fixtures.storage import drop_file
 
@@ -1016,12 +1017,19 @@ class TestVenueMapView:
         assert body["locations"][1]["description"] == test_location.description
         assert body["my_location_ids"] == []
 
-    async def test_defaults_to_today(
-        self, async_client: AsyncClient, test_event: Event
+    async def test_defaults_to_today_where_the_event_is(
+        self,
+        async_client: AsyncClient,
+        test_event: Event,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        # 22:30 UTC on 1 July is already 2 July in Berlin.
+        set_instant(monkeypatch, dt.datetime(2026, 7, 1, 22, 30))
+
         r = await async_client.get(f"{API}/events/{test_event.id}/venue-map")
+
         assert r.status_code == 200
-        assert r.json()["on"] == dt.date.today().isoformat()
+        assert r.json()["on"] == "2026-07-02"
         assert r.json()["plans"] == []
 
     async def test_my_location_ids_only_my_active_bookings_on_day(
