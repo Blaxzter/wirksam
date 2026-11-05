@@ -1,5 +1,6 @@
 import datetime as dt
 import uuid
+from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 from sqlalchemy import CursorResult, and_, false, func, or_, select, update
@@ -8,6 +9,7 @@ from sqlalchemy.sql import Select
 from sqlmodel import col
 
 from app.crud.base import CRUDBase
+from app.crud.shift import WallClocks, on_own_clock, wall_clocks
 from app.models.event import Event
 from app.models.event_membership import EventMembership
 from app.schemas.event import EventCreate, EventUpdate
@@ -25,6 +27,29 @@ EventScope = Literal["mine", "discover", "featured", "all"]
 
 
 class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
+    async def zone_of(self, db: AsyncSession, event_id: uuid.UUID | None) -> str | None:
+        """The event's zone for ``clock``. ``None`` for a task without an event,
+        which the clock reads as ``settings.EVENT_TIMEZONE``.
+
+        ``session.get``, so an event the request has loaded costs no query.
+        """
+        if event_id is None:
+            return None
+        event = await db.get(Event, event_id)
+        return event.timezone if event is not None else None
+
+    async def zones_by_id(
+        self, db: AsyncSession, event_ids: Iterable[uuid.UUID | None]
+    ) -> dict[uuid.UUID | None, str]:
+        """``{event_id: zone}`` for several events, in one query."""
+        ids = {event_id for event_id in event_ids if event_id is not None}
+        if not ids:
+            return {}
+        result = await db.execute(
+            select(col(Event.id), col(Event.timezone)).where(col(Event.id).in_(ids))
+        )
+        return {row[0]: row[1] for row in result.all()}
+
     def _apply_scope(
         self,
         query: Select[Any],
@@ -83,7 +108,7 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
         visibility: str | None = None,
         date_from: dt.date | None = None,
         date_to: dt.date | None = None,
-        is_expired: bool | None = None,
+        expired_on: tuple[bool, WallClocks] | None = None,
         also_include_ids: list[uuid.UUID] | None = None,
     ) -> Select[Any]:
         if search:
@@ -102,12 +127,15 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             query = query.where(col(Event.end_date) >= date_from)
         if date_to:
             query = query.where(col(Event.start_date) <= date_to)
-        if is_expired is not None:
-            today = dt.date.today()
-            if is_expired:
-                query = query.where(col(Event.end_date) < today)
-            else:
-                query = query.where(col(Event.end_date) >= today)
+        if expired_on is not None:
+            # Each event's last day is over on its own clock.
+            expired, clocks = expired_on
+            over = on_own_clock(
+                clocks,
+                col(Event.timezone),
+                lambda now: col(Event.end_date) < now.date(),
+            )
+            query = query.where(over if expired else ~over)
         return query
 
     async def get_multi_filtered(
@@ -140,7 +168,9 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             visibility=visibility,
             date_from=date_from,
             date_to=date_to,
-            is_expired=is_expired,
+            expired_on=None
+            if is_expired is None
+            else (is_expired, await wall_clocks(db)),
             also_include_ids=also_include_ids,
         )
         order_col = getattr(Event, sort_by)
@@ -177,7 +207,9 @@ class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
             visibility=visibility,
             date_from=date_from,
             date_to=date_to,
-            is_expired=is_expired,
+            expired_on=None
+            if is_expired is None
+            else (is_expired, await wall_clocks(db)),
             also_include_ids=also_include_ids,
         )
         result = await db.execute(query)

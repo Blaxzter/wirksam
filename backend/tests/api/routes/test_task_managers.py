@@ -43,6 +43,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.schemas.task_manager import TaskManagerAdd
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import fixed_clock
 
 #: The clock for the shift history tests: the morning of the fixture task's
 #: first day, so a 08:00-12:00 shift that day is running.
@@ -203,7 +204,7 @@ async def _manager_rows(db: AsyncSession, **where: Any) -> list[TaskManager]:
 
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> dt.datetime:
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(NOW))
     return NOW
 
 
@@ -1446,3 +1447,45 @@ class TestCreateWithManagers:
             r = await async_client.post("/api/v1/tasks/with-shifts", json=body)
         assert r.status_code == 422
         assert r.json()["code"] == "task.manager_not_event_member"
+
+
+@pytest.mark.asyncio
+class TestSteppingDownGivesNothingAway:
+    """Anyone can send it, so it must not tell them which task ids exist."""
+
+    async def test_same_answer_whether_or_not_the_task_exists(
+        self,
+        async_client: AsyncClient,
+        as_outsider: None,
+        test_outsider_user: User,
+        test_task: Task,
+    ) -> None:
+        existing = await async_client.delete(
+            f"/api/v1/tasks/{test_task.id}/managers/{test_outsider_user.id}"
+        )
+        missing = await async_client.delete(
+            f"/api/v1/tasks/{uuid.uuid4()}/managers/{test_outsider_user.id}"
+        )
+
+        assert existing.status_code == missing.status_code == 404
+        answers = [existing.json(), missing.json()]
+        assert answers[0]["code"] == answers[1]["code"] == "task.manager_not_found"
+        assert answers[0]["detail"] == answers[1]["detail"]
+        assert answers[0]["title"] == answers[1]["title"]
+
+    async def test_someone_in_charge_can_still_step_down(
+        self,
+        async_client: AsyncClient,
+        as_outsider: None,
+        db_session: AsyncSession,
+        test_outsider_user: User,
+        test_task: Task,
+    ) -> None:
+        db_session.add(TaskManager(task_id=test_task.id, user_id=test_outsider_user.id))
+        await db_session.flush()
+
+        r = await async_client.delete(
+            f"/api/v1/tasks/{test_task.id}/managers/{test_outsider_user.id}"
+        )
+
+        assert r.status_code == 204, r.text

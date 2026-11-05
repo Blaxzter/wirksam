@@ -11,9 +11,15 @@ from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.crud.event_team import event_team as crud_team
-from app.crud.shift import upcoming_condition
+from app.crud.shift import (
+    WallClocks,
+    on_own_clock,
+    shift_zone,
+    task_zone,
+    upcoming_condition,
+    wall_clocks,
+)
 from app.crud.task_manager import task_manager as crud_task_manager
-from app.logic import clock
 from app.logic.event_scope import (
     get_manageable_event_ids,
     get_user_event_scope,
@@ -67,25 +73,23 @@ async def dashboard_feed(
     switcher is pointing somewhere else. Everything else - the open shifts, the
     organiser's counts - is about the event in view.
 
-    "Now" is the events' wall clock (``EVENT_TIMEZONE``), the zone shift times
-    are written in. The server's own clock is UTC in a container, which kept
-    shifts that had started up to two hours ago on a German volunteer's feed.
+    "Now" is the wall clock of each shift's own event, the zone its times are
+    written in. The server's own clock is UTC in a container, which kept shifts
+    that had started up to two hours ago on a German volunteer's feed.
     """
-    now = clock.wall_clock_now()
-    today = now.date()
+    clocks = await wall_clocks(session)
 
     visible_event_ids = await get_visible_event_ids(session, current_user)
     manageable_event_ids = await get_manageable_event_ids(session, current_user)
     scope_event_id = _effective_scope(current_user, visible_event_ids)
 
     my_shifts, my_shift_count, my_minutes = await _load_my_shifts(
-        session, current_user.id, today, now.time()
+        session, current_user.id, clocks
     )
     open_shifts, open_shift_count, open_places = await _load_open_shifts(
         session,
         current_user.id,
-        today,
-        now.time(),
+        clocks,
         scope_event_id,
         visible_event_ids,
         await bookable_filter(session, current_user),
@@ -94,7 +98,7 @@ async def dashboard_feed(
         session, current_user.id, visible_event_ids, manageable_event_ids
     )
     attention = await _load_attention(
-        session, today, scope_event_id, manageable_event_ids, team_requests
+        session, clocks, scope_event_id, manageable_event_ids, team_requests
     )
 
     return DashboardFeedResponse(
@@ -122,8 +126,7 @@ async def dashboard_feed(
 async def _load_my_shifts(
     session: AsyncSession,
     user_id: uuid.UUID,
-    today: dt.date,
-    now_time: dt.time,
+    clocks: WallClocks,
 ) -> tuple[list[DashboardShift], int, int]:
     """The user's confirmed bookings that are not over yet, soonest first.
 
@@ -149,6 +152,7 @@ async def _load_my_shifts(
             col(Task.name).label("task_name"),
             col(Event.id).label("event_id"),
             col(Event.name).label("event_name"),
+            col(Event.timezone).label("event_timezone"),
             _confirmed_count_sq().label("taken"),
         )
         .join(Shift, col(Booking.shift_id) == col(Shift.id))
@@ -157,7 +161,7 @@ async def _load_my_shifts(
         .where(
             col(Booking.user_id) == user_id,
             col(Booking.status) == "confirmed",
-            _unfinished_shift_condition(today, now_time),
+            _unfinished_shift_condition(clocks),
         )
         .order_by(col(Shift.date), col(Shift.start_time), col(Shift.title))
         .limit(SCAN_LIMIT)
@@ -172,6 +176,7 @@ async def _load_my_shifts(
             task_name=r.task_name,
             event_id=r.event_id,
             event_name=r.event_name,
+            event_timezone=r.event_timezone,
             title=r.title,
             date=r.date,
             start_time=r.start_time,
@@ -190,8 +195,7 @@ async def _load_my_shifts(
 async def _load_open_shifts(
     session: AsyncSession,
     user_id: uuid.UUID,
-    today: dt.date,
-    now_time: dt.time,
+    clocks: WallClocks,
     scope_event_id: uuid.UUID | None,
     visible_event_ids: list[uuid.UUID] | None,
     gate: tuple[list[uuid.UUID], list[uuid.UUID]] | None,
@@ -234,12 +238,13 @@ async def _load_open_shifts(
             col(Task.name).label("task_name"),
             col(Event.id).label("event_id"),
             col(Event.name).label("event_name"),
+            col(Event.timezone).label("event_timezone"),
             taken_sq.label("taken"),
         )
         .join(Task, col(Shift.task_id) == col(Task.id))
         .join(Event, col(Task.event_id) == col(Event.id), isouter=True)
         .where(
-            upcoming_condition(today, now_time),
+            upcoming_condition(clocks),
             col(Task.status) == "published",
             col(Shift.max_bookings) > taken_sq,
             ~mine_sq,
@@ -267,6 +272,7 @@ async def _load_open_shifts(
             task_name=r.task_name,
             event_id=r.event_id,
             event_name=r.event_name,
+            event_timezone=r.event_timezone,
             title=r.title,
             date=r.date,
             start_time=r.start_time,
@@ -284,7 +290,7 @@ async def _load_open_shifts(
 
 async def _load_attention(
     session: AsyncSession,
-    today: dt.date,
+    clocks: WallClocks,
     scope_event_id: uuid.UUID | None,
     manageable_event_ids: list[uuid.UUID] | None,
     team_requests: dict[uuid.UUID, int],
@@ -307,14 +313,19 @@ async def _load_attention(
         return None
 
     scope = _visible_tasks_condition(scope_event_id, manageable_event_ids)
-    horizon = today + dt.timedelta(days=ATTENTION_HORIZON_DAYS)
     taken_sq = _confirmed_count_sq()
 
     draft_tasks = await _scalar(
         session,
         select(func.count())
         .select_from(Task)
-        .where(col(Task.status) == "draft", col(Task.end_date) >= today, scope),
+        .where(
+            col(Task.status) == "draft",
+            on_own_clock(
+                clocks, task_zone(), lambda now: col(Task.end_date) >= now.date()
+            ),
+            scope,
+        ),
     )
 
     async def count_shifts(extra) -> int:  # noqa: ANN001
@@ -324,8 +335,14 @@ async def _load_attention(
             .select_from(Shift)
             .join(Task, col(Shift.task_id) == col(Task.id))
             .where(
-                col(Shift.date) >= today,
-                col(Shift.date) <= horizon,
+                on_own_clock(
+                    clocks,
+                    shift_zone(),
+                    lambda now: col(Shift.date).between(
+                        now.date(),
+                        now.date() + dt.timedelta(days=ATTENTION_HORIZON_DAYS),
+                    ),
+                ),
                 col(Task.status) == "published",
                 scope,
                 extra,
@@ -514,30 +531,36 @@ def _duration_minutes(start: dt.time | None, end: dt.time | None) -> int:
     return minutes if minutes >= 0 else minutes + 24 * 60
 
 
-def _unfinished_shift_condition(today: dt.date, now_time: dt.time):  # noqa: ANN202
-    """Shift has not ended yet, by ``work_hours.shift_ends_at``'s rule.
+def _unfinished_shift_condition(clocks: WallClocks):  # noqa: ANN202
+    """Shift has not ended yet, by ``work_hours.shift_ends_at``'s rule, on its
+    event's wall clock.
 
     Without an end time a shift lasts until the end of its day; an end at or
     before the start runs past midnight, so yesterday's 22:00-02:00 is still
     on until two. A shift with an end but no start ends at that end.
     """
     overnight = col(Shift.end_time) <= col(Shift.start_time)
-    return or_(
-        col(Shift.date) > today,
-        and_(
-            col(Shift.date) == today,
-            or_(
-                col(Shift.end_time).is_(None),
-                col(Shift.end_time) > now_time,
-                overnight,
+
+    def not_ended(now: dt.datetime):  # noqa: ANN202
+        today, now_time = now.date(), now.time()
+        return or_(
+            col(Shift.date) > today,
+            and_(
+                col(Shift.date) == today,
+                or_(
+                    col(Shift.end_time).is_(None),
+                    col(Shift.end_time) > now_time,
+                    overnight,
+                ),
             ),
-        ),
-        and_(
-            col(Shift.date) == today - dt.timedelta(days=1),
-            overnight,
-            col(Shift.end_time) > now_time,
-        ),
-    )
+            and_(
+                col(Shift.date) == today - dt.timedelta(days=1),
+                overnight,
+                col(Shift.end_time) > now_time,
+            ),
+        )
+
+    return on_own_clock(clocks, shift_zone(), not_ended)
 
 
 # ---------------------------------------------------------------------------
@@ -551,9 +574,7 @@ async def dashboard_sidebar(
     current_user: CurrentUser,
 ) -> SidebarResponse:
     """Lightweight data for sidebar quick-links."""
-    now = clock.wall_clock_now()
-    today = now.date()
-    now_time = now.time()
+    clocks = await wall_clocks(session)
     (
         effective_status,
         managed_group_ids,
@@ -564,7 +585,7 @@ async def dashboard_sidebar(
 
     groups = await _sidebar_events(
         session,
-        today,
+        clocks,
         effective_status,
         managed_group_ids,
         visible_event_ids,
@@ -572,8 +593,7 @@ async def dashboard_sidebar(
     )
     tasks = await _sidebar_tasks(
         session,
-        today,
-        now_time,
+        clocks,
         effective_status,
         managed_group_ids,
         event_id=scoped_event_id,
@@ -593,8 +613,7 @@ async def dashboard_sidebar(
     bookings = await _sidebar_bookings(
         session,
         current_user.id,
-        today,
-        now_time,
+        clocks,
         event_id=scoped_event_id,
     )
 
@@ -607,16 +626,22 @@ async def dashboard_sidebar(
 
 async def _sidebar_events(  # noqa: ANN001
     session,
-    today: dt.date,
+    clocks: WallClocks,
     status: str | None,
     managed_group_ids: list[uuid.UUID] | None = None,
     visible_event_ids: list[uuid.UUID] | None = None,
     viewer_id: uuid.UUID | None = None,
 ) -> list[SidebarEvent]:
-    """The user's events whose end_date >= today, limit 5."""
+    """The user's events whose end_date >= today (their own), limit 5."""
     query = (
         select(col(Event.id), col(Event.name), col(Event.status))
-        .where(col(Event.end_date) >= today)
+        .where(
+            on_own_clock(
+                clocks,
+                col(Event.timezone),
+                lambda now: col(Event.end_date) >= now.date(),
+            )
+        )
         .where(
             # ``visible_event_ids`` is None for the superadmin, so it cannot be
             # what keeps demos out of their sidebar - this has to stand on its
@@ -643,8 +668,7 @@ async def _sidebar_events(  # noqa: ANN001
 
 async def _sidebar_tasks(  # noqa: ANN001
     session,
-    today: dt.date,
-    now_time: dt.time,
+    clocks: WallClocks,
     status: str | None,
     managed_group_ids: list[uuid.UUID] | None = None,
     event_id: uuid.UUID | None = None,
@@ -663,7 +687,7 @@ async def _sidebar_tasks(  # noqa: ANN001
     nothing. An organiser's other tasks are not added - this is quick links,
     not the whole event.
     """
-    future_cond = upcoming_condition(today, now_time)
+    future_cond = upcoming_condition(clocks)
     managed = col(Task.id).in_(managed_task_ids) if managed_task_ids else sa.false()
 
     # Subquery: confirmed booking count per shift
@@ -732,7 +756,9 @@ async def _sidebar_tasks(  # noqa: ANN001
             managed.label("is_managed"),
         )
         .where(
-            col(Task.end_date) >= today,
+            on_own_clock(
+                clocks, task_zone(), lambda now: col(Task.end_date) >= now.date()
+            ),
             or_(col(Task.id).in_(has_open_shift_sq), managed),
         )
         .order_by(case((managed, 0), else_=1), col(Task.start_date))
@@ -768,8 +794,7 @@ async def _sidebar_tasks(  # noqa: ANN001
 async def _sidebar_bookings(  # noqa: ANN001
     session,
     user_id,
-    today: dt.date,
-    now_time: dt.time,
+    clocks: WallClocks,
     event_id: uuid.UUID | None = None,
 ) -> list[SidebarBooking]:
     """User's upcoming confirmed bookings, limit 5.
@@ -777,7 +802,7 @@ async def _sidebar_bookings(  # noqa: ANN001
     Scoped to ``event_id`` when provided so the sidebar matches the
     event-scoped /bookings/me view.
     """
-    future_cond = upcoming_condition(today, now_time)
+    future_cond = upcoming_condition(clocks)
     query = (
         select(
             col(Booking.id),

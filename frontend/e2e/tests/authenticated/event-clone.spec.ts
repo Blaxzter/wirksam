@@ -43,6 +43,41 @@ async function listTasks(page: import('@playwright/test').Page, eventId: string)
   return res.items
 }
 
+test.describe('Event clone – as an ordinary organiser', () => {
+  test('the new event opens with every tab, without a reload', async ({
+    disposablePage: page,
+  }) => {
+    // Not the worker admin: a platform admin passes every check, so a profile
+    // that doesn't know the new event would go unnoticed.
+    const source = await createEvent(page, uniqueName('E2E Clone Mine'))
+    const made = [source.id]
+    try {
+      await page.goto(`/app/events/clone/${source.id}`)
+      await expect(page.getByTestId('input-clone-name')).toBeVisible()
+      await page.getByTestId('input-clone-name').fill(uniqueName('E2E Clone Mine Copy'))
+      for (const step of ['when', 'tasks', 'adjust', 'announce']) {
+        await expect(page.getByTestId(`step-${step}`)).toHaveAttribute('data-state', 'active')
+        await page.getByTestId('btn-step-next').click()
+      }
+      const [response] = await Promise.all([
+        page.waitForResponse(
+          (r) => r.url().includes(`/events/${source.id}/clone`) && r.request().method() === 'POST',
+        ),
+        page.getByTestId('btn-submit').click(),
+      ])
+      const copyId = ((await response.json()) as { event: EventRead }).event.id
+      made.push(copyId)
+
+      await expect(page).toHaveURL(new RegExp(`/app/event-settings/${copyId}`))
+      await expect(page.getByTestId('tab-people')).toBeVisible()
+      await expect(page.getByTestId('tab-locations')).toBeVisible()
+      await expect(page.getByTestId('btn-event-status-published')).toBeVisible()
+    } finally {
+      for (const id of made) await deleteEvent(page, id).catch(() => {})
+    }
+  })
+})
+
 test.describe('Event clone wizard', () => {
   let source: EventRead
   let taskKept: TaskWithShifts

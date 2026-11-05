@@ -359,7 +359,7 @@ const onTeamJoined = (status: 'approved' | 'pending') => {
 /** Over: nothing can be booked or cancelled any more (`booking.shift_over`). */
 const hasEnded = computed(() => {
   const s = resolvedShift.value
-  return !!s && shiftHasEnded(s.date, s.start_time, s.end_time)
+  return !!s && shiftHasEnded(s.date, s.start_time, s.end_time, s.event_timezone)
 })
 
 /** A voucher shift that has begun, for someone who does not run the task. */
@@ -369,7 +369,7 @@ const startedForVouchers = computed(() => {
     !!s &&
     (voucherCount.value ?? 0) > 0 &&
     !canManage.value &&
-    shiftHasStarted(s.date, s.start_time)
+    shiftHasStarted(s.date, s.start_time, s.event_timezone)
   )
 })
 

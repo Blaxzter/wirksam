@@ -5,6 +5,7 @@
             "currentLabel": "Current event",
             "description": "You see the tasks, shifts, and bookings of the event you have selected.",
             "none": "No event selected",
+            "people": "See who's in this event, or leave it",
             "sidebarToggle": {
                 "description": "Add a quick switcher to the sidebar so you can change events from anywhere.",
                 "label": "Show event switcher in sidebar"

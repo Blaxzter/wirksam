@@ -306,6 +306,26 @@ class TestCloneHappyPath:
         assert clone.is_sandbox is False
         assert clone.sandbox_expires_at is None
 
+    async def test_keeps_the_time_zone(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        source_event: SourceFixture,
+        as_event_admin: None,
+    ):
+        """The same event again, in the same place."""
+        source_event["event"].timezone = "Asia/Tokyo"
+        db_session.add(source_event["event"])
+        await db_session.flush()
+
+        r = await async_client.post(
+            f"/api/v1/events/{source_event['event'].id}/clone",
+            json=_body(source_event),
+        )
+
+        assert r.status_code == 201, r.text
+        assert r.json()["event"]["timezone"] == "Asia/Tokyo"
+
     async def test_explicit_end_date_and_description_win(
         self,
         async_client: AsyncClient,

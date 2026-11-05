@@ -46,6 +46,10 @@ function goToSection(hash: string) {
   router.push({ name: 'landing', hash: `#${hash}` })
 }
 
+function goToGuides() {
+  router.push({ name: 'guides' })
+}
+
 function navigateToLanding() {
   router.push({ name: 'landing' })
 }
@@ -95,6 +99,9 @@ function handleGetStarted() {
             @click="goToSection(section.hash)"
           >
             {{ $t(section.label) }}
+          </Button>
+          <Button variant="ghost" size="sm" data-testid="nav-guides" @click="goToGuides">
+            {{ $t('preauth.layout.navigation.guides') }}
           </Button>
         </div>
 

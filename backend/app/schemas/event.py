@@ -1,9 +1,18 @@
 import datetime as dt
 import uuid
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_validator,
+)
 
+from app.core.config import parse_timezone, settings
+from app.logic import clock
 from app.schemas.event_membership import EventRole
 
 EventStatus = Literal["draft", "published", "archived"]
@@ -12,6 +21,13 @@ EventVisibility = Literal["public", "private"]
 #: also whoever is on a running shift at that point, ``in_charge`` only the
 #: event admins and the point's people in charge.
 VoucherManualRedeem = Literal["on_shift", "in_charge"]
+#: An IANA zone name; an unknown one is a 422. ``max_length`` is the column's:
+#: no real name comes close.
+EventTimezone = Annotated[
+    str,
+    Field(max_length=64, examples=["Europe/Berlin"]),
+    AfterValidator(parse_timezone),
+]
 
 
 class EventBase(BaseModel):
@@ -51,6 +67,8 @@ class EventBase(BaseModel):
 
 class EventCreate(EventBase):
     created_by_id: uuid.UUID | None = None
+    #: The zone the event's shift times are read in.
+    timezone: EventTimezone = Field(default_factory=lambda: settings.EVENT_TIMEZONE)
 
 
 class EventUpdate(BaseModel):
@@ -62,6 +80,9 @@ class EventUpdate(BaseModel):
     default_end_time: dt.time | None = None
     status: EventStatus | None = None
     visibility: EventVisibility | None = None
+    #: A shift at 10:00 stays at 10:00 and its reminders move with the zone. An
+    #: explicit ``null`` leaves the value (NOT NULL).
+    timezone: EventTimezone | None = None
     #: The event's voucher rules. Not on ``EventCreate``: a new event starts
     #: with the defaults. An explicit ``null`` leaves the value (NOT NULL).
     voucher_manual_redeem: VoucherManualRedeem | None = None
@@ -77,6 +98,8 @@ class EventRead(EventBase):
     sandbox_expires_at: dt.datetime | None = None
     created_at: dt.datetime
     updated_at: dt.datetime
+    #: The IANA zone the event's shift times are read in.
+    timezone: str
     #: Who may redeem vouchers without a code at this event's points.
     voucher_manual_redeem: VoucherManualRedeem = "on_shift"
     #: People in charge of a task that earns vouchers may change its shifts.
@@ -115,7 +138,7 @@ class EventRead(EventBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def is_expired(self) -> bool:
-        return self.end_date < dt.date.today()
+        return self.end_date < clock.wall_clock_now(self.timezone).date()
 
 
 class EventListResponse(BaseModel):

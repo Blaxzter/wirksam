@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -17,6 +17,8 @@ from app.core.errors import raise_problem
 from app.logic.event_scope import get_manageable_event_ids
 from app.logic.work_hours import shift_minutes
 from app.models.booking import Booking
+from app.models.event import Event
+from app.models.event_membership import EventMembership
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -45,8 +47,11 @@ async def reporting_overview(
     The platform superadmin sees everything; everyone else sees the tasks in
     events where they hold owner or admin, plus tasks they created.
     """
-    task_ids_filter = await _get_managed_task_ids(current_user, session)
-    overview = await _overview_stats(session, date_from, date_to, task_ids_filter)
+    event_ids_filter = await _get_managed_event_ids(current_user, session)
+    task_ids_filter = await _tasks_of_events(session, event_ids_filter)
+    overview = await _overview_stats(
+        session, date_from, date_to, task_ids_filter, event_ids_filter
+    )
     bookings_trend = await _bookings_trend(session, date_from, date_to, task_ids_filter)
     top_volunteers = await _top_volunteers(session, date_from, date_to, task_ids_filter)
     category_breakdown = await _category_breakdown(
@@ -77,7 +82,9 @@ async def reporting_export(
     date_to: dt.date | None = Query(None),
 ) -> StreamingResponse:
     """Export booking data as CSV, scoped the same way as the overview."""
-    task_ids_filter = await _get_managed_task_ids(current_user, session)
+    task_ids_filter = await _tasks_of_events(
+        session, await _get_managed_event_ids(current_user, session)
+    )
     query = (
         select(
             col(Booking.id).label("booking_id"),
@@ -177,32 +184,40 @@ def _apply_shift_date_filters(query, date_from, date_to):  # noqa: ANN001, ANN20
     return query
 
 
-async def _get_managed_task_ids(
+async def _get_managed_event_ids(
     user: User, session: AsyncSession
 ) -> list[uuid.UUID] | None:
-    """Return list of task IDs the user may see in reporting.
+    """The events the report covers for this user.
 
     The platform superadmin gets None (= no filter, see everything). Everyone
-    else sees every task in an event where they hold owner or admin.
+    else sees the events where they hold owner or admin.
 
     Raises 403 when the caller runs no event at all: reporting is a tool for
     the people organising something, and there is nothing coherent to show
     someone who only participates.
     """
-    managed_group_ids = await get_manageable_event_ids(session, user)
-    if managed_group_ids is None:
+    managed_event_ids = await get_manageable_event_ids(session, user)
+    if managed_event_ids is None:
         return None
-    if not managed_group_ids:
+    if not managed_event_ids:
         raise_problem(
             403,
             code="reporting.no_managed_events",
             detail="Reporting is available to owners and admins of an event",
         )
+    return managed_event_ids
 
-    group_tasks_result = await session.execute(
-        select(col(Task.id)).where(col(Task.event_id).in_(managed_group_ids))
+
+async def _tasks_of_events(
+    session: AsyncSession, event_ids: list[uuid.UUID] | None
+) -> list[uuid.UUID] | None:
+    """The tasks of ``event_ids``; None (no filter) stays None."""
+    if event_ids is None:
+        return None
+    result = await session.execute(
+        select(col(Task.id)).where(col(Task.event_id).in_(event_ids))
     )
-    return list(group_tasks_result.scalars().all())
+    return list(result.scalars().all())
 
 
 def _non_sandbox_tasks() -> Any:
@@ -222,6 +237,7 @@ async def _overview_stats(  # noqa: ANN001
     date_from: dt.date | None,
     date_to: dt.date | None,
     task_ids_filter: list[uuid.UUID] | None = None,
+    event_ids_filter: list[uuid.UUID] | None = None,
 ) -> ReportingOverviewStats:
     # Booking counts
     booking_query = (
@@ -308,13 +324,9 @@ async def _overview_stats(  # noqa: ANN001
     # Confirmed bookings as % of total capacity
     fill_rate = confirmed_bookings / total_capacity * 100 if total_capacity > 0 else 0.0
 
-    # Volunteer counts
-    volunteer_query = select(
-        func.count().label("total"),
-        func.count().filter(col(User.is_active) == True).label("active"),  # noqa: E712
-    ).select_from(User)
-    vol_result = await session.execute(volunteer_query)
-    vol_row = vol_result.one()
+    active_volunteers, total_volunteers = await _volunteer_counts(
+        session, date_from, date_to, task_ids_filter, event_ids_filter
+    )
 
     return ReportingOverviewStats(
         total_bookings=total_bookings,
@@ -326,9 +338,59 @@ async def _overview_stats(  # noqa: ANN001
         total_shift_capacity=total_capacity,
         filled_shifts=filled_shifts,
         fill_rate=round(fill_rate, 1),
-        active_volunteers=vol_row.active,
-        total_volunteers=vol_row.total,
+        active_volunteers=active_volunteers,
+        total_volunteers=total_volunteers,
     )
+
+
+async def _volunteer_counts(  # noqa: ANN001
+    session,
+    date_from: dt.date | None,
+    date_to: dt.date | None,
+    task_ids_filter: list[uuid.UUID] | None,
+    event_ids_filter: list[uuid.UUID] | None,
+) -> tuple[int, int]:
+    """``(active, total)`` people in the report, never the whole installation.
+
+    Active is whoever holds a confirmed booking on a shift in the report, by
+    the shift's date like every booking number here. Total is those plus the
+    members of the events the report covers, an event counting when its days
+    overlap the range as a task's do. The bookers are part of the total because
+    someone who has left an event keeps the bookings they worked.
+
+    Without an event filter (the superadmin) a demo's people stay out, as its
+    bookings do.
+    """
+    booked = (
+        select(col(Booking.user_id))
+        .join(Shift, col(Booking.shift_id) == col(Shift.id))
+        .where(col(Booking.status) == "confirmed")
+    )
+    if task_ids_filter is not None:
+        booked = booked.where(col(Shift.task_id).in_(task_ids_filter))
+    else:
+        booked = booked.where(col(Shift.task_id).notin_(_non_sandbox_tasks()))
+    booked = _apply_shift_date_filters(booked, date_from, date_to)
+
+    members = select(col(EventMembership.user_id)).join(
+        Event, col(Event.id) == col(EventMembership.event_id)
+    )
+    if event_ids_filter is not None:
+        members = members.where(col(Event.id).in_(event_ids_filter))
+    else:
+        members = members.where(col(Event.is_sandbox).is_(False))
+    if date_from:
+        members = members.where(col(Event.end_date) >= date_from)
+    if date_to:
+        members = members.where(col(Event.start_date) <= date_to)
+
+    active = await session.execute(
+        select(func.count()).select_from(booked.distinct().subquery())
+    )
+    total = await session.execute(
+        select(func.count()).select_from(union(members, booked).subquery())
+    )
+    return active.scalar_one(), total.scalar_one()
 
 
 async def _bookings_trend(  # noqa: ANN001

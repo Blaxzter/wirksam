@@ -23,7 +23,7 @@
             "type": "Availability Type"
         },
         "fullyAvailableDays": "Fully available on all {count} days",
-        "fullyAvailableHint": "You can be scheduled for any matching shift in the programme.",
+        "fullyAvailableHint": "Organisers can see that you're free on all of these days. You still book your shifts yourself.",
         "fullyAvailableShort": "All programme days",
         "heatLegendFull": "full",
         "heatLegendLow": "less",
@@ -164,7 +164,7 @@
                 "showShifts": "Show the shifts",
                 "status": {
                     "draft": {
-                        "hint": "Stays hidden until you publish this task from the task list. Nobody can book a shift before then.",
+                        "hint": "Stays hidden until you publish this task on its own page. Nobody can book a shift before then.",
                         "label": "A draft",
                         "short": "Draft"
                     },
@@ -195,7 +195,7 @@
                 "sameWeekday": "Whole weeks, so every task lands on the same day of the week as last time."
             },
             "review": {
-                "draftNote": "The new event itself starts as a draft, so nobody outside it can find it. You can publish it from the event settings.",
+                "draftNote": "The new event itself starts as a draft, so nobody outside it can find it. You can publish it in the event settings, on the Details tab.",
                 "people": "People brought across",
                 "perTask": "Task by task",
                 "problemItem": "{task}: {problem}",
@@ -209,6 +209,7 @@
                 "taskStatusAllOpen": "Every task is open for booking straight away, so the people you bring across can sign up as soon as the copy exists.",
                 "taskStatusMixed": "{draft} of the {total} tasks come across as drafts. Publishing the event does not publish them, so open each of those in the new event and publish it there. The rest are open for booking straight away.",
                 "tasks": "Tasks",
+                "timezone": "Like the original, the copy is in the time zone {zone}.",
                 "untouched": "{name} stays exactly as it is.",
                 "visibilityPrivate": "Like the original, the copy is private: only the people you bring across or invite can see it.",
                 "visibilityPublic": "Like the original, the copy is public: once you publish it, anyone can find it and ask to join.",
@@ -279,7 +280,7 @@
                 "basicsHint": "What people will see when they look for this event.",
                 "dates": "Dates",
                 "datesHint": "The days the event runs. Tasks can only be scheduled inside this range.",
-                "visibilityHint": "You can change this later in the event settings."
+                "visibilityHint": "You can change this later in the event settings, on the Details tab."
             },
             "submit": "Create event",
             "subtitle": "All you need is a name and a date range. You can change everything else later.",
@@ -291,6 +292,8 @@
         "delete": "Delete Event",
         "deleteConfirm": "Are you sure you want to delete this event? All related availability data will be lost.",
         "detail": {
+            "aboutHint": "Only the event's organisers can change these details.",
+            "aboutTitle": "About this event",
             "dateConstraintHint": "Existing tasks limit the date range. To move everything at once, use \"Shift Dates\" below.",
             "earliestTask": "Earliest task: {date}",
             "editDescription": "Update the name, description, and date range for this event.",
@@ -308,7 +311,8 @@
                 "print": "Print",
                 "tasks": "Tasks"
             },
-            "printDescription": "Generate printable overview sheets or full task details for this group.",
+            "printDescription": "Print an overview of the event, or every task with its shifts.",
+            "publicNotPublished": "Nobody outside the event can find it until you set the status to \"Published\".",
             "shiftApply": "Shift all dates",
             "shiftBackward": "backward",
             "shiftDates": "Shift Dates",
@@ -317,12 +321,11 @@
             "shiftNewStart": "New start date",
             "shiftPreview": "{days} days {direction}",
             "shiftSuccess": "All dates moved.",
-            "tasks": "Tasks in this Group",
-            "tasksEmpty": "No tasks assigned to this group yet.",
+            "tasks": "Tasks in this event",
+            "tasksEmpty": "No tasks in this event yet.",
             "title": "Event Details",
             "updated": "Event updated."
         },
-        "draftBanner": "This event is a draft, so members can't see it yet. Set the status to \"Published\" to make it visible.",
         "edit": "Edit Event",
         "empty": "No events found.",
         "expired": "Expired",
@@ -336,7 +339,7 @@
         },
         "fields": {
             "defaultTimes": "Default time window",
-            "defaultTimesHint": "Optional. The availability grid shows only these hours by default. Tasks can still be scheduled outside them. For events that run into the next morning, leave both fields empty and set the times on each task instead.",
+            "defaultTimesHint": "Optional. The availability grid shows only these hours by default. Tasks can still be scheduled outside them. For events that run into the next morning, leave both fields empty, and add the shifts that cross midnight one at a time with \"Add single shift\".",
             "defaultTimesInvalid": "The end time must be after the start time. Time windows past midnight aren't supported yet, so leave both fields empty for events that run overnight.",
             "description": "Description",
             "endDate": "End Date",
@@ -355,6 +358,8 @@
             "emailsLabel": "Email addresses",
             "emailsPlaceholder": "anna{'@'}example.com, ben{'@'}example.com",
             "empty": "No open invitations.",
+            "expiredEmailHint": "This one no longer works. Invite the address again above, and withdraw this one to clear it.",
+            "expiredLinkHint": "This link no longer works. Create a new one above, and withdraw this one to clear it.",
             "forTasks": "In charge of: {tasks}",
             "linkCopied": "Link copied",
             "linksTitle": "Share links",
@@ -396,7 +401,7 @@
             "signIn": "I already have an account",
             "signedOutBody": "Sign in or create an account to see the invitation and accept it.",
             "signedOutTitle": "You have been invited",
-            "tasksHint": "As the person in charge you can edit the task and its shifts and see who has booked.",
+            "tasksHint": "As the person in charge you can edit the task's details and see who has booked. Usually you can change its shifts too. On tasks that earn vouchers, that's up to the organisers.",
             "tasksTitle": "You're asked to be in charge of"
         },
         "join": {
@@ -419,14 +424,22 @@
             "count": "no people | 1 person | {count} people",
             "empty": "Nobody here yet.",
             "leave": "Leave",
+            "leaveConfirmAction": "Leave event",
+            "leaveConfirmText": "Your bookings for shifts that aren't over yet are cancelled. You also lose your places in teams and any tasks you're in charge of, and you don't get them back if you return later.",
+            "leaveConfirmTitle": "Leave this event?",
             "left": "You have left this event",
             "ownershipTransferred": "This event now belongs to its new owner",
             "remove": "Remove {name}",
+            "removeConfirmAction": "Remove",
+            "removeConfirmText": "Their bookings for shifts that aren't over yet are cancelled. They also lose their places in teams and any tasks they're in charge of. WirkSam doesn't tell them, so let them know yourself.",
+            "removeConfirmTitle": "Remove {name} from this event?",
             "removed": "Removed from the event",
             "roleChanged": "Role updated",
             "subtitle": "Everyone taking part, and what they can do.",
             "title": "People",
             "transferAction": "Hand over",
+            "transferConfirmText": "{name} takes over straight away and you stay on as an organiser. Only {name} can hand it back.",
+            "transferConfirmTitle": "Hand this event over to {name}?",
             "transferHint": "The new owner takes full control. You stay on as an organiser.",
             "transferPlaceholder": "Choose a person…",
             "transferTitle": "Hand over this event",
@@ -441,12 +454,25 @@
         "status": {
             "draft": "Draft"
         },
+        "statusHints": {
+            "archived": "Over and done with. Only the people in it can still see it.",
+            "draft": "Still being prepared. Only the people in it can see it.",
+            "published": "Ready to go. Everyone in it gets a message when you publish, and a public event can be found by others."
+        },
         "statuses": {
             "archived": "Archived",
             "draft": "Draft",
             "published": "Published"
         },
         "subtitle": "Browse upcoming task programmes",
+        "timezone": {
+            "changeNote": "A shift at 10:00 stays at 10:00, then in {zone}. Reminders move with it.",
+            "hint": "Shift times count in this time zone. Reminders and calendars follow it.",
+            "label": "Time zone",
+            "localTimes": "Times are local to the event: {zone}",
+            "noMatch": "No time zone found",
+            "search": "Search for a city or region"
+        },
         "title": "Events",
         "visibility": {
             "private": {
@@ -795,7 +821,7 @@
             "affectedBookings": {
                 "cancel": "Cancel",
                 "confirm": "Proceed anyway",
-                "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. The people affected are not notified automatically, so you need to tell them yourself.",
+                "description": "These confirmed bookings will be cancelled because their shifts no longer exist once the shifts are recreated. WirkSam tells the people affected.",
                 "descriptionLocked": "Recreating the shifts would remove the shifts these people booked. Some of those shifts have started, and only an organiser can remove them.",
                 "locked": "Only an organiser can remove this shift, because it has started and people are booked.",
                 "lockedHint": "Change the dates or times so that the shifts that have started stay as they are, or ask an organiser to make this change.",

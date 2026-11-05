@@ -852,7 +852,7 @@ class TestNotifications:
             type_code="test.sandbox_skip",
             title="Something happened",
             body="Somewhere",
-            force_channels=[],
+            only_channels=[],
         )
 
         assert [n.recipient_id for n in created] == [test_user.id]

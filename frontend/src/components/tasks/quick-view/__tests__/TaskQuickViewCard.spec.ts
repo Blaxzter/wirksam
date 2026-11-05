@@ -78,6 +78,19 @@ beforeEach(() => {
 })
 
 describe('TaskQuickViewCard', () => {
+  it('stops saying "Takes vouchers" once the task is archived', () => {
+    const badge = '[data-testid="task-voucher-point-badge-t1"]'
+    expect(mountCard(task({ is_voucher_point: true })).find(badge).exists()).toBe(true)
+    expect(
+      mountCard(task({ is_voucher_point: true, status: 'archived' })).find(badge).exists(),
+    ).toBe(false)
+  })
+
+  it("passes the zone of the task's event on to the strip of days", () => {
+    const w = mountCard(task({ event_timezone: 'Asia/Tokyo' }))
+    expect(w.findComponent(WeekDayColumns).props('eventTimezone')).toBe('Asia/Tokyo')
+  })
+
   describe('the label', () => {
     it('counts the open shifts of the whole task, not of the days on screen', () => {
       const w = mountCard(task({ open_shifts: 3, next_shift_date: '2026-07-28' }))

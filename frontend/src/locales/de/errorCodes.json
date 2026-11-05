@@ -95,7 +95,7 @@
         "document_not_found": "Diese Datei ist nicht mehr da. Sie wird gelöscht, sobald über eine Anfrage entschieden ist.",
         "document_too_large": "Die Datei ist größer als 5 MB. Bitte wähle eine kleinere.",
         "document_unsupported": "Nur PDF-Dateien und Fotos (PNG, JPEG, WebP) können angehängt werden.",
-        "forbidden": "Das können nur die Teamleitungen und die Admins der Veranstaltung.",
+        "forbidden": "Das können nur die Teamleitungen und die Organisator:innen.",
         "member_not_found": "Diese Person ist nicht in diesem Team.",
         "name_taken": "In dieser Veranstaltung gibt es schon ein Team mit diesem Namen.",
         "not_event_member": "Nur Leute aus dieser Veranstaltung können ihren Teams hinzugefügt werden.",
@@ -160,6 +160,7 @@
         "not_a_point": "Bei dieser Aufgabe können keine Marken eingelöst werden.",
         "not_allowed": "Marken annehmen kannst du hier nur während deiner Schicht hier oder wenn du verantwortlich bist.",
         "pass_not_found": "Diesen Code gibt es nicht mehr. Zeig einen neuen.",
+        "point_archived": "Diese Aufgabe ist archiviert und nimmt keine Marken mehr an.",
         "rate_limited": "Zu viele Versuche. Warte kurz und versuch es noch einmal.",
         "request_conflict": "Bei dieser Einlösung ist etwas schiefgelaufen. Schließ sie und scanne noch einmal."
     },

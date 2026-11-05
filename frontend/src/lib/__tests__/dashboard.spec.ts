@@ -159,6 +159,71 @@ describe('shiftCountdown', () => {
   })
 })
 
+describe("on the clock of the shift's event", () => {
+  // Written out in UTC, so these say the same on any machine. It is 12:00 in Tokyo
+  // and 20:00 the evening before in Los Angeles.
+  const now = new Date('2026-07-18T03:00:00Z')
+  const inTokyo = { date: '2026-07-18', event_timezone: 'Asia/Tokyo' }
+
+  it('counts down in the zone of the event', () => {
+    expect(shiftCountdown({ ...inTokyo, start_time: '14:15', end_time: '17:00' }, now)).toEqual({
+      kind: 'startsIn',
+      hours: 2,
+      minutes: 15,
+    })
+    expect(shiftCountdown({ ...inTokyo, start_time: '11:00', end_time: '17:00' }, now)).toEqual({
+      kind: 'running',
+    })
+    expect(shiftCountdown({ ...inTokyo, start_time: '10:00', end_time: '11:00' }, now)).toEqual({
+      kind: 'over',
+    })
+  })
+
+  it('takes "today" from the event too', () => {
+    // Already the 18th in Tokyo, still the 17th in Los Angeles.
+    expect(dayOffset('2026-07-18', now, 'Asia/Tokyo')).toBe(0)
+    expect(dayOffset('2026-07-18', now, 'America/Los_Angeles')).toBe(1)
+    expect(
+      shiftCountdown(
+        {
+          date: '2026-07-18',
+          start_time: '14:00',
+          end_time: '15:00',
+          event_timezone: 'America/Los_Angeles',
+        },
+        now,
+      ),
+    ).toEqual({ kind: 'day' })
+  })
+
+  it('skips shifts over on their own clock', () => {
+    const plan = [
+      { ...inTokyo, booking_id: 'b1', start_time: '09:00', end_time: '11:00' },
+      { ...inTokyo, booking_id: 'b2', start_time: '14:00', end_time: '17:00' },
+    ]
+    expect(nextUnfinished(plan, now)?.booking_id).toBe('b2')
+    expect(endedShiftsKey(plan, now)).toBe('b1')
+  })
+
+  it('marks now on the day strip where the shift is', () => {
+    const strip = dayStrip({ ...inTokyo, start_time: '14:00', end_time: '17:00' }, now)!
+    expect(strip.nowAt).toBe(
+      dayStrip({ date: '2026-07-18', start_time: '14:00', end_time: '17:00' }, at(12))!.nowAt,
+    )
+    expect(
+      dayStrip(
+        {
+          date: '2026-07-18',
+          start_time: '14:00',
+          end_time: '17:00',
+          event_timezone: 'America/Los_Angeles',
+        },
+        now,
+      )!.nowAt,
+    ).toBeNull()
+  })
+})
+
 describe('finished shifts', () => {
   const plan = [
     { booking_id: 'b1', date: '2026-07-18', start_time: '09:00', end_time: '11:00' },

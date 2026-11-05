@@ -7,7 +7,9 @@ from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
 from app.crud.booking_reminder import booking_reminder as crud_reminder
+from app.crud.event import event as crud_event
 from app.crud.shift import shift as crud_shift
+from app.crud.task import task as crud_task
 from app.models.booking_reminder import BookingReminder
 from app.schemas.booking_reminder import (
     MAX_REMINDERS_PER_BOOKING,
@@ -122,6 +124,7 @@ async def add_booking_reminder(
 
     # Compute shift start datetime
     slot_start = _shift_start_datetime(shift.date, shift.start_time)
+    task = await crud_task.get(session, str(shift.task_id))
 
     return await crud_reminder.create_reminder(
         session,
@@ -130,6 +133,7 @@ async def add_booking_reminder(
         shift_id=shift.id,
         offset_minutes=body.offset_minutes,
         slot_start=slot_start,
+        zone=await crud_event.zone_of(session, task.event_id if task else None),
         channels=body.channels,
     )
 

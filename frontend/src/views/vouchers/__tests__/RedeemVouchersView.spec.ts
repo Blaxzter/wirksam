@@ -28,7 +28,8 @@ vi.mock('@/stores/auth', () => ({
 }))
 vi.mock('@/lib/api-errors', () => ({
   toastApiError: vi.fn(),
-  getApiErrorMessage: () => 'error',
+  getApiErrorMessage: (error: { message?: string }) => error.message ?? 'error',
+  normalizeApiError: (error: { code?: string }) => ({ code: error.code }),
 }))
 // A phone, so the picker is the full-screen list straight away.
 vi.mock('@vueuse/core', async (importOriginal) => ({
@@ -138,6 +139,42 @@ async function openPicker(w: Awaited<ReturnType<typeof mountView>>) {
 
 const row = (w: Awaited<ReturnType<typeof mountView>>, id: string) =>
   w.find(`[data-testid="row-${id}"]`)
+
+describe('RedeemVouchersView: a place archived while the page is open', () => {
+  const archived = {
+    code: 'voucher.point_archived',
+    message: 'This task is archived, so it no longer takes vouchers.',
+  }
+
+  async function checkTyped(w: Awaited<ReturnType<typeof mountView>>) {
+    await w.get('[data-testid="btn-voucher-type-code"]').trigger('click')
+    await flushPromises()
+    await w.get('[data-testid="voucher-code-input"]').setValue('K7M4QX')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+  }
+
+  it('says why, and moves on to a place that still takes them', async () => {
+    points = [point(), point({ task_id: 't2', name: 'Grill' })]
+    const w = await mountView()
+    api.post.mockRejectedValueOnce(archived)
+    points = [point({ task_id: 't2', name: 'Grill' })]
+    await checkTyped(w)
+
+    expect(w.get('[data-testid="voucher-check-problem"]').text()).toBe(archived.message)
+    expect(w.findAll('[data-testid="voucher-point"] option').map((o) => o.text())).toEqual(['Grill'])
+  })
+
+  it('still says why when no place is left', async () => {
+    const w = await mountView()
+    api.post.mockRejectedValueOnce(archived)
+    points = []
+    await checkTyped(w)
+
+    expect(w.find('[data-testid="voucher-redeem-empty"]').exists()).toBe(true)
+    expect(w.get('[data-testid="voucher-check-problem"]').text()).toBe(archived.message)
+  })
+})
 
 describe('RedeemVouchersView: picking the person', () => {
   it.each([

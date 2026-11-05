@@ -12,6 +12,7 @@ from sqlmodel import col
 from app.api.deps import CurrentSuperuser, CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.crud.event import EventScope
 from app.crud.event import event as crud_event
 from app.crud.event_invitation import event_invitation as crud_invitation
@@ -249,9 +250,12 @@ async def create_event(
     return await decorate_event(session, current_user, db_event)
 
 
-#: The event's voucher rules, NOT NULL columns, where an explicit ``null`` in a
-#: PATCH can only mean "leave it".
-_NOT_NULL_VOUCHER_RULES = ("voucher_manual_redeem", "managers_edit_voucher_shifts")
+#: NOT NULL columns where an explicit ``null`` in a PATCH can only mean "leave it".
+_NOT_NULL_SETTINGS = (
+    "timezone",
+    "voucher_manual_redeem",
+    "managers_edit_voucher_shifts",
+)
 
 
 @router.patch("/{event_id}", response_model=EventRead)
@@ -329,11 +333,26 @@ async def update_event(
 
     old_status = db_event.status
     update_data = event_in.model_dump(exclude_unset=True)
-    for f in _NOT_NULL_VOUCHER_RULES:
+    for f in _NOT_NULL_SETTINGS:
         if f in update_data and update_data[f] is None:
             # NOT NULL columns: an explicit null can only mean "leave it".
             del update_data[f]
+    zone_changing = update_data.get("timezone", db_event.timezone) != db_event.timezone
+    if zone_changing:
+        # Earned is earned: on the new clock a shift that has ended may not have
+        # yet, which must not turn its vouchers back into "still to come".
+        task_ids = await session.execute(
+            sa_select(col(Task.id)).where(col(Task.event_id) == event_id)
+        )
+        await vouchers.settle_earnings(
+            session,
+            now=clock.wall_clock_now(db_event.timezone),
+            task_ids=list(task_ids.scalars().all()),
+        )
     updated = await crud_event.update(session, db_obj=db_event, obj_in=update_data)
+    if zone_changing:
+        # A shift at 10:00 stays at 10:00, which is now a different moment.
+        await crud_reminder.reschedule(session, event_id=updated.id)
 
     # An event pulled back out of public listings should not keep its featured
     # slot on the home screen.
@@ -448,7 +467,7 @@ async def shift_event_dates(
         # What the shifts already over have earned stays earned: moving them
         # into the future must not turn it back into "still to come".
         await vouchers.settle_earnings(
-            session, now=clock.wall_clock_now(), task_ids=task_ids
+            session, now=clock.wall_clock_now(db_event.timezone), task_ids=task_ids
         )
 
         # 2. Shift tasks
@@ -477,6 +496,8 @@ async def shift_event_dates(
             .where(col(Shift.task_id).in_(task_ids))
             .values(date=Shift.date + delta)
         )
+        # Their reminders move with them, or they'd fire for the old dates.
+        await crud_reminder.reschedule(session, event_id=event_id)
 
         # 5. Shift schedule_overrides in tasks and shift_batches (JSON with date keys)
         if delta.days != 0:
@@ -805,7 +826,7 @@ async def clone_event(
     empty — and neither are ``is_featured``, ``is_sandbox`` or
     ``sandbox_expires_at``, all of which mean something about the *source*.
     The voucher rules (``voucher_manual_redeem``,
-    ``managers_edit_voucher_shifts``) are copied.
+    ``managers_edit_voucher_shifts``) and the time zone are copied.
 
     The clone always starts as a draft: publishing is a separate, deliberate
     act, and it is what fans a notification out to the roster.
@@ -852,6 +873,7 @@ async def clone_event(
         status="draft",
         visibility=body.visibility,
         created_by_id=current_user.id,
+        timezone=source.timezone,
     )
     new_event = await crud_event.create(session, obj_in=event_in)
     # Not inherited, spelled out: each of these is a statement about the source
@@ -1506,7 +1528,10 @@ async def remove_member(
     # spot on future rotas nor goes on earning hours and vouchers. Bookings on
     # shifts already over stay, because that work happened.
     await crud_booking.cancel_unfinished_bookings_in_event(
-        session, user_id=user_id, event_id=event_id, now=clock.wall_clock_now()
+        session,
+        user_id=user_id,
+        event_id=event_id,
+        now=clock.wall_clock_now(await crud_event.zone_of(session, event_id)),
     )
 
     # Clear the selection so the removed user is not stranded on an event

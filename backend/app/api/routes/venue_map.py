@@ -33,6 +33,7 @@ from app.crud.event import event as crud_event
 from app.crud.location import location as crud_location
 from app.crud.venue_map import venue_map as crud_venue_map
 from app.crud.venue_template import venue_template as crud_venue_template
+from app.logic import clock
 from app.logic.images import MAX_INPUT_BYTES, ImageProcessingError
 from app.logic.locations import resolve_location
 from app.logic.permissions import (
@@ -173,7 +174,7 @@ async def get_venue_map(
     for event admins only, as in ``GET /locations/{id}/shifts``).
     """
     event, role = await _member_event(current_user, session, event_id)
-    day = on or dt.date.today()
+    day = on or clock.wall_clock_now(event.timezone).date()
 
     plans = await crud_venue_map.list_plans_full(session, event_id=event.id)
     locations = await crud_location.list_for_event(session, event_id=event.id)

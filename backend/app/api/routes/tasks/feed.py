@@ -10,8 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
+from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
-from app.crud.shift import upcoming_condition
+from app.crud.shift import (
+    WallClocks,
+    on_own_clock,
+    shift_zone,
+    upcoming_condition,
+    wall_clocks,
+)
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic import clock
@@ -125,14 +132,14 @@ async def _query_shifts_first_available(
     session: AsyncSession,
     task_ids: list[uuid.UUID],
     user_id: uuid.UUID,
-    today: dt.date,
+    clocks: WallClocks,
     days: int,
 ) -> tuple[dict[uuid.UUID, list[FeedShiftEntry]], dict[uuid.UUID, dt.date]]:
     """For first-available mode: per-task 5-day window starting from the first shift date.
 
     Returns (shifts_by_task, window_starts).
     """
-    # CTE: first shift date >= today per task
+    # CTE: first shift date >= today (its event's) per task
     first_dates_cte = (
         select(
             col(Shift.task_id),
@@ -140,7 +147,9 @@ async def _query_shifts_first_available(
         )
         .where(
             col(Shift.task_id).in_(task_ids),
-            col(Shift.date) >= today,
+            on_own_clock(
+                clocks, shift_zone(), lambda now: col(Shift.date) >= now.date()
+            ),
         )
         .group_by(col(Shift.task_id))
         .cte("first_dates")
@@ -225,7 +234,7 @@ async def _get_aggregated_stats(
 async def _upcoming_stats(
     session: AsyncSession,
     task_ids: list[uuid.UUID],
-    now: dt.datetime,
+    clocks: WallClocks,
 ) -> dict[uuid.UUID, tuple[int, dt.date | None, dt.date | None]]:
     """``{task_id: (open_shifts, next_shift_date, next_open_shift_date)}``.
 
@@ -249,7 +258,7 @@ async def _upcoming_stats(
         .outerjoin(cnt_sub, col(Shift.id) == cnt_sub.c.shift_id)
         .where(
             col(Shift.task_id).in_(task_ids),
-            upcoming_condition(now.date(), now.time()),
+            upcoming_condition(clocks),
         )
         .group_by(col(Shift.task_id))
     )
@@ -276,27 +285,32 @@ async def _build_list_feed(
     user_id: uuid.UUID,
     focus_mode: FeedFocusMode,
     days: int,
-    now: dt.datetime,
+    clocks: WallClocks,
 ) -> list[FeedTaskItem]:
-    today = now.date()
-
     if focus_mode == "first_available":
         shifts_by_task, window_starts = await _query_shifts_first_available(
-            session, task_ids, user_id, today, days
+            session, task_ids, user_id, clocks, days
         )
     else:
-        # today-centered: shared window for all tasks
-        date_from = today
-        date_to = today + dt.timedelta(days=days - 1)
-        pairs = await _query_shifts_with_bookings(
-            session, task_ids, user_id, date_from, date_to
-        )
+        # today-centered: a window shared by the tasks whose events are on the
+        # same day, so one query per date in play rather than per event.
+        zones = await crud_event.zones_by_id(session, (t.event_id for t in tasks))
+        window_starts = {
+            t.id: clock.wall_clock_now(zones.get(t.event_id)).date() for t in tasks
+        }
         shifts_by_task: dict[uuid.UUID, list[FeedShiftEntry]] = defaultdict(list)
-        for eid, entry in pairs:
-            shifts_by_task[eid].append(entry)
-        window_starts = dict.fromkeys(task_ids, today)
+        for today in set(window_starts.values()):
+            pairs = await _query_shifts_with_bookings(
+                session,
+                [tid for tid, start in window_starts.items() if start == today],
+                user_id,
+                today,
+                today + dt.timedelta(days=days - 1),
+            )
+            for eid, entry in pairs:
+                shifts_by_task[eid].append(entry)
 
-    upcoming = await _upcoming_stats(session, task_ids, now)
+    upcoming = await _upcoming_stats(session, task_ids, clocks)
 
     items: list[FeedTaskItem] = []
     for ev in tasks:
@@ -376,8 +390,8 @@ async def task_feed(
     shift still to come that has a free place are listed, except the ones the
     caller runs: tasks in an event they organise and tasks they are in charge
     of show until their end date, full or not. The superadmin skips the rule.
-    "Now" is the events' wall clock (``EVENT_TIMEZONE``), the zone shift times
-    are written in.
+    "Now" is the wall clock of each shift's own event, the zone its times are
+    written in.
     """
     effective_status: str | None = None
     also_include_group_ids: list[uuid.UUID] | None = None
@@ -405,15 +419,15 @@ async def task_feed(
     gate = await bookable_filter(session, current_user) if bookable_only else None
     bookable_team_ids, bookable_admin_event_ids = gate if gate else (None, None)
 
-    now = clock.wall_clock_now()
-    today = now.date()
-    ev_date_from = date_from if date_from else today
+    clocks = await wall_clocks(session)
+    # Without a custom start date, tasks that have not ended on their own clock.
+    not_ended_on = None if date_from else clocks
     ev_date_to = date_to if view == "calendar" else None
     # Only enforce future-shift filter when no explicit date_from is provided
     # (i.e. user hasn't picked a custom date range to look at past tasks), and
     # never for the superadmin, whom no visibility rule narrows.
     future_shifts_cutoff = (
-        now
+        clocks
         if (not date_from and view != "calendar" and visible_event_ids is not None)
         else None
     )
@@ -425,8 +439,9 @@ async def task_feed(
         search=search,
         status=effective_status,
         booked_by_user_id=booked_by_user_id,
-        date_from=ev_date_from,
+        date_from=date_from,
         date_to=ev_date_to,
+        not_ended_on=not_ended_on,
         has_future_shifts=future_shifts_cutoff,
         open_shift_exempt_task_ids=also_include_task_ids,
         open_shift_exempt_event_ids=manageable_ids,
@@ -443,8 +458,9 @@ async def task_feed(
         search=search,
         status=effective_status,
         booked_by_user_id=booked_by_user_id,
-        date_from=ev_date_from,
+        date_from=date_from,
         date_to=ev_date_to,
+        not_ended_on=not_ended_on,
         has_future_shifts=future_shifts_cutoff,
         open_shift_exempt_task_ids=also_include_task_ids,
         open_shift_exempt_event_ids=manageable_ids,
@@ -464,7 +480,7 @@ async def task_feed(
 
     if view == "list":
         items = await _build_list_feed(
-            session, tasks, task_ids, current_user.id, focus_mode, days, now
+            session, tasks, task_ids, current_user.id, focus_mode, days, clocks
         )
     else:
         # cards and calendar both get aggregated stats

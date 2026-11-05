@@ -452,6 +452,8 @@ describe('VenueMapEditor: creating plans', () => {
       wrapper.find('[data-testid="picture-card"] [data-testid="plan-upload-zone"]').exists(),
     ).toBe(true)
     expect(q('tool-select').getAttribute('aria-pressed')).toBe('true')
+    // On a phone the upload lives in the sheet, which opens for it.
+    expect(wrapper.find('[data-testid="editor-panel"]').classes()).not.toContain('max-lg:hidden')
   })
 
   it('cannot pick a picture in the demo, but can draw', async () => {

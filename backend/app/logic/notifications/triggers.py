@@ -6,12 +6,14 @@ the request session is closed.
 
 import datetime as dt
 import uuid
+from functools import partial
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session
 from app.core.logger import get_logger
-from app.logic.notifications.messages import get_message
+from app.crud.booking import CancelledBooking
+from app.logic.notifications.messages import get_message, shift_times
 from app.logic.notifications.service import EmailBodyFactory, NotificationService
 from app.schemas.notification import NotificationData
 
@@ -27,6 +29,7 @@ async def dispatch_booking_confirmed(
     slot_start_time: dt.time | None = None,
     slot_end_time: dt.time | None = None,
     slot_location: str | None = None,
+    slot_zone: str | None = None,
     task_name: str | None = None,
     slot_id: uuid.UUID,
     task_id: uuid.UUID,
@@ -45,10 +48,7 @@ async def dispatch_booking_confirmed(
                     slot_title=slot_title,
                     task_name=task_name or "",
                     date=slot_date.strftime("%d.%m.%Y") if slot_date else "",
-                    start_time=slot_start_time.strftime("%H:%M")
-                    if slot_start_time
-                    else "",
-                    end_time=slot_end_time.strftime("%H:%M") if slot_end_time else "",
+                    **shift_times(slot_start_time, slot_end_time, slot_zone),
                     location=slot_location or "",
                 )
 
@@ -134,46 +134,90 @@ async def dispatch_booking_cancelled_by_user(
         logger.exception("Failed to dispatch booking.cancelled_by_user notification")
 
 
+def _cancelled_by_admin_message(
+    lang: str,
+    *,
+    bookings: list[CancelledBooking],
+    task_name: str,
+    reason: str | None,
+) -> tuple[str, str]:
+    """One person's notice: the shift and its day, or how many when several."""
+    if lang == "de":
+        task_label = f" in der Aufgabe „{task_name}“"
+        detail = f" Grund: {reason}" if reason else ""
+    else:
+        task_label = f" in the task “{task_name}”"
+        detail = f" Reason: {reason}" if reason else ""
+    if len(bookings) > 1:
+        return get_message(
+            "booking.cancelled_by_admin.many",
+            lang,
+            count=str(len(bookings)),
+            task_label=task_label,
+            detail=detail,
+        )
+    return get_message(
+        "booking.cancelled_by_admin",
+        lang,
+        slot_title=bookings[0].shift_title,
+        date=bookings[0].shift_date.strftime("%d.%m.%Y"),
+        task_label=task_label,
+        detail=detail,
+    )
+
+
 async def dispatch_booking_cancelled_by_admin(
     *,
-    user_ids: list[uuid.UUID],
-    slot_title: str,
-    task_name: str | None = None,
-    task_id: uuid.UUID | None = None,
+    cancelled: list[CancelledBooking],
+    actor_id: uuid.UUID,
+    task_id: uuid.UUID,
+    task_name: str,
+    task_is_open: bool,
+    now: dt.datetime,
     event_id: uuid.UUID | None = None,
     reason: str | None = None,
+    is_sandbox: bool = False,
 ) -> None:
-    """Notify users that their bookings were cancelled by admin action."""
-    if not user_ids:
+    """Tell people their bookings ended because someone removed the shifts.
+
+    Queued wherever an organiser or a person in charge removes shifts: deleting
+    a shift, a batch or a task, and regenerating. Each person hears once per
+    action however many of their shifts went, and the person who did it not at
+    all. A demo tells nobody, and neither does a shift that is already over
+    (``now`` is the event's wall clock): tidying up last year's task must not
+    write to everyone who worked it.
+
+    The notice opens the task when ``task_is_open``, meaning it still exists and
+    the person can read it. Otherwise it opens My Bookings, where the cancelled
+    booking is listed with its reason.
+    """
+    if is_sandbox:
+        return
+    by_person: dict[uuid.UUID, list[CancelledBooking]] = {}
+    for booking in cancelled:
+        if booking.user_id != actor_id and booking.shift_ends_at > now:
+            by_person.setdefault(booking.user_id, []).append(booking)
+    if not by_person:
         return
     try:
         async with async_session() as db:
             svc = NotificationService(db)
-
-            def _factory(lang: str) -> tuple[str, str]:
-                if lang == "de":
-                    task_label = f' für das Task „{task_name}"' if task_name else ""
-                    detail = f" (Grund: {reason})" if reason else ""
-                else:
-                    task_label = f' for task "{task_name}"' if task_name else ""
-                    detail = f" (Reason: {reason})" if reason else ""
-                return get_message(
-                    "booking.cancelled_by_admin",
-                    lang,
-                    slot_title=slot_title,
-                    task_label=task_label,
-                    detail=detail,
+            for user_id, bookings in by_person.items():
+                data: NotificationData = {"booking_id": str(bookings[0].booking_id)}
+                if task_is_open:
+                    data["task_id"] = str(task_id)
+                await svc.notify(
+                    recipient_ids=[user_id],
+                    type_code="booking.cancelled_by_admin",
+                    message_factory=partial(
+                        _cancelled_by_admin_message,
+                        bookings=bookings,
+                        task_name=task_name,
+                        reason=reason,
+                    ),
+                    data=data,
+                    scope_chain=_build_scope_chain(None, task_id, event_id),
                 )
-
-            await svc.notify(
-                recipient_ids=user_ids,
-                type_code="booking.cancelled_by_admin",
-                message_factory=_factory,
-                data={
-                    "task_id": str(task_id) if task_id else None,
-                    "event_id": str(event_id) if event_id else None,
-                },
-            )
             await db.commit()
     except Exception:
         logger.exception("Failed to dispatch booking.cancelled_by_admin notification")
@@ -745,11 +789,14 @@ async def dispatch_event_invitation_accepted(
     event_id: uuid.UUID,
     user_id: uuid.UUID,
     task_ids: list[uuid.UUID] | None = None,
+    joined: bool = True,
 ) -> None:
-    """Tell the event's admins that an invitee joined.
+    """Tell the event's admins that an invitee joined or took on tasks.
 
     ``task_ids`` are the tasks accepting put them in charge of; the notice
-    names them (``event.invitation_accepted.tasks``).
+    names them (``event.invitation_accepted.tasks``). ``joined`` is false for
+    someone who was a member already, who only took on those tasks
+    (``event.invitation_accepted.member``).
     """
     try:
         from sqlmodel import col, select
@@ -787,7 +834,9 @@ async def dispatch_event_invitation_accepted(
             def _factory(lang: str) -> tuple[str, str]:
                 if task_names:
                     return get_message(
-                        "event.invitation_accepted.tasks",
+                        "event.invitation_accepted.tasks"
+                        if joined
+                        else "event.invitation_accepted.member",
                         lang,
                         name=joiner_name,
                         event_name=name,
@@ -989,6 +1038,44 @@ async def dispatch_team_join_decided(
             await db.commit()
     except Exception:
         logger.exception("Failed to dispatch %s notification", type_code)
+
+
+async def dispatch_team_member_added(
+    *,
+    team_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> None:
+    """Tell someone they were put straight into a team, without having asked.
+
+    Sent as ``team.join_approved``, the same news for the person (they are in
+    the team), so one setting decides both. Its wording is its own, because
+    there was no request to approve.
+    """
+    try:
+        from app.models.event_team import EventTeam
+
+        async with async_session() as db:
+            team = await db.get(EventTeam, team_id)
+            if team is None:
+                return
+            team_name = team.name
+            event_name = await _event_name(db, team.event_id)
+            svc = NotificationService(db)
+            await svc.notify(
+                recipient_ids=[user_id],
+                type_code="team.join_approved",
+                message_factory=lambda lang: get_message(
+                    "team.join_approved.added",
+                    lang,
+                    team_name=team_name,
+                    event_name=event_name,
+                ),
+                data={"event_id": str(team.event_id), "team_id": str(team_id)},
+                scope_chain=[("event", team.event_id)],
+            )
+            await db.commit()
+    except Exception:
+        logger.exception("Failed to dispatch team.join_approved notification")
 
 
 async def dispatch_event_role_changed(

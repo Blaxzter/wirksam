@@ -161,3 +161,7 @@ This processes all markdown files and outputs:
 - [ ] Added screenshots to `frontend/src/changelog/images/de/` (if needed)
 - [ ] Ran `pnpm generate-changelog` in `frontend/`
 - [ ] Verified in browser (both locales, desktop + mobile)
+
+## Keep the feature pages true
+
+A release that changes how something works usually also changes what a feature page or guide says about it. They are Markdown in `frontend/src/docs/{en,de}/{feature,guide}/`, listed in `DOC_PAGES` in `frontend/src/lib/content-pages.ts`. Update them in the same change, in both languages. `frontend/src/lib/__tests__/docs-content.spec.ts` fails when the two languages drift apart, when a link points nowhere, or when a page names a screenshot that was never taken. New screenshots go into `frontend/scripts/take-screenshots.ts`, so the Screenshots workflow retakes them with every release.

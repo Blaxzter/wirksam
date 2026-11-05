@@ -21,6 +21,7 @@ import i18n from '@/locales/i18n'
 import { createRoutes } from '@/router/routes'
 
 export { default as i18n } from '@/locales/i18n'
+export { docFor } from '@/lib/docs-content'
 // The prerender script is plain JavaScript and reads the shared page list from
 // here instead of importing TypeScript itself.
 export {

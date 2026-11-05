@@ -1,38 +1,108 @@
 import datetime as dt
 import uuid
+from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
 from sqlalchemy import ColumnElement, Select, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Mapped, aliased
 from sqlmodel import col
 
+from app.core.config import settings
 from app.crud.base import CRUDBase
+from app.logic import clock
+from app.models.event import Event
 from app.models.shift import Shift
 from app.models.task import Task
 from app.schemas.shift import ShiftCreate, ShiftUpdate
 
 ShiftSortField = Literal["title", "date", "start_time", "category", "created_at"]
 
+#: "Now" per zone (:func:`wall_clocks`), for a view across events.
+WallClocks = Mapping[str, dt.datetime]
 
-def upcoming_condition(today: dt.date, now_time: dt.time) -> ColumnElement[bool]:
-    """The Shift row has not started yet, on the event wall clock.
+# Aliased, so the zone subqueries below mean the same whether or not the query
+# around them has joined tasks or events itself.
+_zone_task = aliased(Task, name="zone_task")
+_zone_event = aliased(Event, name="zone_event")
 
-    Later than today, or today with a start at or after ``now_time``; a shift
-    with no start time counts as not started until its day is over. Pass
-    ``clock.wall_clock_now()`` split into its date and time: shift times carry
+
+async def wall_clocks(db: AsyncSession) -> WallClocks:
+    """The time on every clock a shift can be on, in one query.
+
+    Every zone any event uses and the setting (for tasks without an event), not
+    only those of the events in view: a zone left out would silently drop that
+    event's shifts from a list, and almost every installation has one zone.
+    """
+    result = await db.execute(select(col(Event.timezone)).distinct())
+    zones = {settings.EVENT_TIMEZONE, *result.scalars()}
+    return {zone: clock.wall_clock_now(zone) for zone in zones}
+
+
+def task_zone() -> ColumnElement[str]:
+    """The zone of the Task row's event, for :func:`on_own_clock`."""
+    return func.coalesce(
+        select(col(_zone_event.timezone))
+        .where(col(_zone_event.id) == col(Task.event_id))
+        .correlate(Task)
+        .scalar_subquery(),
+        settings.EVENT_TIMEZONE,
+    )
+
+
+def shift_zone() -> ColumnElement[str]:
+    """The zone of the Shift row's event, for :func:`on_own_clock`."""
+    return func.coalesce(
+        select(col(_zone_event.timezone))
+        .select_from(_zone_task)
+        .join(_zone_event, col(_zone_event.id) == col(_zone_task.event_id))
+        .where(col(_zone_task.id) == col(Shift.task_id))
+        .correlate(Shift)
+        .scalar_subquery(),
+        settings.EVENT_TIMEZONE,
+    )
+
+
+def on_own_clock(
+    clocks: WallClocks,
+    zone: ColumnElement[str] | Mapped[str],
+    condition: Callable[[dt.datetime], ColumnElement[bool]],
+) -> ColumnElement[bool]:
+    """``condition(now)``, with each row judged on the clock of its own event.
+
+    One ``or_`` branch per zone, so it stays one query however many events are
+    in view. With a single zone in use, the plain condition.
+    """
+    if len(clocks) == 1:
+        return condition(next(iter(clocks.values())))
+    return or_(*(and_(zone == name, condition(now)) for name, now in clocks.items()))
+
+
+def upcoming_condition(clocks: WallClocks) -> ColumnElement[bool]:
+    """The Shift row has not started yet, on its event's wall clock.
+
+    Later than today, or today with a start at or after now; a shift with no
+    start time counts as not started until its day is over. Shift times carry
     no zone, so comparing them with the server's UTC clock would let an 18:00
     shift in a German summer "start" at 20:00.
 
     The one definition the task feed, the sidebar and the dashboard's open
     shifts share, so a shift counts as coming up in all three or in none.
     """
-    return or_(
-        col(Shift.date) > today,
-        and_(
-            col(Shift.date) == today,
-            or_(col(Shift.start_time).is_(None), col(Shift.start_time) >= now_time),
-        ),
-    )
+
+    def not_started(now: dt.datetime) -> ColumnElement[bool]:
+        return or_(
+            col(Shift.date) > now.date(),
+            and_(
+                col(Shift.date) == now.date(),
+                or_(
+                    col(Shift.start_time).is_(None),
+                    col(Shift.start_time) >= now.time(),
+                ),
+            ),
+        )
+
+    return on_own_clock(clocks, shift_zone(), not_started)
 
 
 class CRUDShift(CRUDBase[Shift, ShiftCreate, ShiftUpdate]):

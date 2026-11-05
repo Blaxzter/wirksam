@@ -1,5 +1,8 @@
 """Background poller that dispatches due booking reminders.
 
+It also runs the check for shifts about to start with places open
+(``unfilled_shifts``), for the same one worker.
+
 Runs as an asyncio task started during the FastAPI lifespan.
 Uses a PostgreSQL advisory lock so only one worker in a multi-process
 deployment runs the poller.
@@ -12,8 +15,14 @@ from sqlalchemy import text
 from app.core.db import async_session
 from app.core.logger import get_logger
 from app.crud.booking_reminder import booking_reminder as crud_reminder
-from app.logic.notifications.messages import format_time_until, get_message
+from app.crud.event import event as crud_event
+from app.logic.notifications.messages import (
+    format_time_until,
+    get_message,
+    shift_times,
+)
 from app.logic.notifications.service import NotificationService
+from app.logic.notifications.unfilled_shifts import check_upcoming_shifts
 from app.models.booking_reminder import BookingReminder
 from app.models.shift import Shift
 
@@ -27,6 +36,9 @@ _POLL_INTERVAL = 30
 
 # Run cleanup every N poll cycles (~50 min at 30s interval)
 _CLEANUP_EVERY_N_CYCLES = 100
+
+# Look for shifts about to start with places open every N poll cycles (~5 min)
+_UNFILLED_EVERY_N_CYCLES = 10
 
 
 async def _process_reminder(reminder: BookingReminder) -> None:
@@ -54,6 +66,7 @@ async def _process_reminder(reminder: BookingReminder) -> None:
             task_result = await db.execute(task_query)
             task = task_result.scalar_one_or_none()
             event_id = task.event_id if task else None
+            zone = await crud_event.zone_of(db, event_id)
 
             svc = NotificationService(db)
 
@@ -73,10 +86,7 @@ async def _process_reminder(reminder: BookingReminder) -> None:
                     slot_title=shift.title,
                     time_until=format_time_until(reminder.offset_minutes, lang),
                     date=shift.date.strftime("%d.%m.%Y") if shift.date else "",
-                    start_time=shift.start_time.strftime("%H:%M")
-                    if shift.start_time
-                    else "",
-                    end_time=shift.end_time.strftime("%H:%M") if shift.end_time else "",
+                    **shift_times(shift.start_time, shift.end_time, zone),
                     location=shift.location or "",
                 )
 
@@ -90,7 +100,7 @@ async def _process_reminder(reminder: BookingReminder) -> None:
                     "task_id": str(shift.task_id),
                 },
                 scope_chain=scope_chain,  # type: ignore[arg-type]
-                force_channels=reminder.channels,
+                only_channels=reminder.channels,
             )
 
             # Mark as sent
@@ -154,6 +164,14 @@ async def _cleanup_cycle() -> None:
             await db.rollback()
 
 
+async def _unfilled_cycle() -> None:
+    """Alert organisers about unfilled shifts; a failure waits for the next turn."""
+    try:
+        await check_upcoming_shifts()
+    except Exception:
+        logger.exception("Failed to check for unfilled shifts")
+
+
 async def run_reminder_poller() -> None:
     """Main poller loop. Acquires advisory lock, then polls forever."""
     # Try to acquire advisory lock (non-blocking)
@@ -179,6 +197,8 @@ async def run_reminder_poller() -> None:
                     logger.debug(f"Processed {processed} reminders")
 
                 cycle_count += 1
+                if cycle_count % _UNFILLED_EVERY_N_CYCLES == 0:
+                    await _unfilled_cycle()
                 if cycle_count >= _CLEANUP_EVERY_N_CYCLES:
                     await _cleanup_cycle()
                     cycle_count = 0

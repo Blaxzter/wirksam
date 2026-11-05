@@ -59,6 +59,7 @@ import {
 import Separator from '@/components/ui/separator/Separator.vue'
 import { TimePicker } from '@/components/ui/time-picker'
 
+import EventZoneHint from '@/components/events/EventZoneHint.vue'
 import { joinNames } from '@/components/events/teams/teamHelpers'
 import LocationFormDialog from '@/components/locations/LocationFormDialog.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
@@ -264,7 +265,7 @@ const redeemRoute = computed(() => ({
 const startedForVouchers = (shift: ShiftRead) =>
   (task.value?.vouchers_per_shift ?? 0) > 0 &&
   !canManageTask.value &&
-  shiftHasStarted(shift.date, shift.start_time)
+  shiftHasStarted(shift.date, shift.start_time, task.value?.event_timezone)
 
 /**
  * Why a shift that still has places cannot be booked any more, or `null`.
@@ -272,7 +273,7 @@ const startedForVouchers = (shift: ShiftRead) =>
  * never points at a shift the server would refuse; a click still opens it.
  */
 const notBookableNote = (shift: ShiftRead): string | null => {
-  if (shiftHasEnded(shift.date, shift.start_time, shift.end_time)) {
+  if (shiftHasEnded(shift.date, shift.start_time, shift.end_time, task.value?.event_timezone)) {
     return t('duties.shifts.detail.over')
   }
   if (startedForVouchers(shift)) return t('vouchers.task.startedNote')
@@ -572,7 +573,7 @@ const handleShiftClick = async (shift: ShiftRead) => {
     // Over, or a voucher shift already under way: nothing to book or cancel
     // here, so show the shift instead of offering what the server refuses.
     if (
-      shiftHasEnded(shift.date, shift.start_time, shift.end_time) ||
+      shiftHasEnded(shift.date, shift.start_time, shift.end_time, task.value?.event_timezone) ||
       (!myBookedShiftIds.value.has(shift.id) && startedForVouchers(shift))
     ) {
       openShiftDetail(shift)
@@ -996,6 +997,8 @@ onMounted(async () => {
               <span class="truncate">{{ audience }}</span>
             </span>
           </div>
+
+          <EventZoneHint :zone="task.event_timezone" />
 
           <!-- A draft, said calmly: who can't see it yet and who can change that -->
           <p

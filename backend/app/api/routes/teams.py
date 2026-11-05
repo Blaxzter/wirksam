@@ -34,9 +34,11 @@ from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
 from app.crud.user import user as crud_user
+from app.logic import clock
 from app.logic.notifications.triggers import (
     dispatch_team_join_decided,
     dispatch_team_join_requested,
+    dispatch_team_member_added,
 )
 from app.logic.permissions import (
     can_manage_team,
@@ -146,6 +148,12 @@ def _doc_read(
     )
 
 
+async def _today(session: DBDep, event_id: uuid.UUID) -> dt.date:
+    """Today where the event is. A check runs out on a date there, and a
+    document can be issued as late as today there."""
+    return clock.wall_clock_now(await crud_event.zone_of(session, event_id)).date()
+
+
 async def decorate_teams(
     session: DBDep, user: User, event_id: uuid.UUID, teams: list[EventTeam]
 ) -> list[EventTeamRead]:
@@ -158,7 +166,7 @@ async def decorate_teams(
     ids = [t.id for t in teams]
     role = await get_event_role(user, session, event_id)
     is_admin = role_at_least(role, "admin")
-    today = dt.date.today()
+    today = await _today(session, event_id)
     counts = await crud_team.counts(session, team_ids=ids)
     mine = await crud_team.rows_for_user(session, user_id=user.id, team_ids=ids)
     requirements = await crud_team.requirements_for_teams(session, team_ids=ids)
@@ -237,7 +245,7 @@ async def member_reads(
     event, the requester's other teams and their bookings in the event. Every
     piece is one query for all rows.
     """
-    today = dt.date.today()
+    today = await _today(session, event_id)
     team_by_id = {t.id: t for t in teams}
     requirements = await crud_team.requirements_for_teams(
         session, team_ids=list(team_by_id)
@@ -822,7 +830,7 @@ async def list_reusable_checks(
     return _reusable(
         reqs,
         [(check, req, name) for _, check, req, _, name in elsewhere],
-        dt.date.today(),
+        await _today(session, event_id),
     )
 
 
@@ -846,6 +854,8 @@ async def add_team_member(
     …/members/{user_id}``, which is for event admins, so a lead cannot demote
     a co-lead through here. A team with requirements needs the same checks as
     approving a request.
+
+    The person is told, unless they added themselves.
     """
     team = await _team_or_404(session, event_id=event_id, team_id=team_id)
     await require_team_manager(current_user, session, team)
@@ -872,6 +882,7 @@ async def add_team_member(
         await crud_team.requirements(session, team_id=team.id),
         body.checks,
         require_all=True,
+        today=await _today(session, event_id),
     )
     try:
         async with session.begin_nested():
@@ -891,14 +902,19 @@ async def add_team_member(
     await store_checks(
         session, member_id=member.id, checks=checks, checked_by=current_user
     )
-    if was_waiting:
-        # Placing someone who had asked is approving their request.
-        background_tasks.add_task(
-            dispatch_team_join_decided,
-            team_id=team.id,
-            user_id=body.user_id,
-            approved=True,
-        )
+    if body.user_id != current_user.id:
+        if was_waiting:
+            # Placing someone who had asked is approving their request.
+            background_tasks.add_task(
+                dispatch_team_join_decided,
+                team_id=team.id,
+                user_id=body.user_id,
+                approved=True,
+            )
+        else:
+            background_tasks.add_task(
+                dispatch_team_member_added, team_id=team.id, user_id=body.user_id
+            )
     return await _one_member_read(session, team, member)
 
 
@@ -965,6 +981,7 @@ async def decide_team_request(
             await crud_team.requirements(session, team_id=team.id),
             body.checks,
             require_all=True,
+            today=await _today(session, event_id),
         )
         if body.approve
         else []
@@ -1014,6 +1031,7 @@ async def record_team_checks(
         await crud_team.requirements(session, team_id=team.id),
         body.checks,
         require_all=False,
+        today=await _today(session, event_id),
     )
     await store_checks(
         session, member_id=member.id, checks=checks, checked_by=current_user

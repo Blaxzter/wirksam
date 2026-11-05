@@ -55,6 +55,9 @@ const SELECTED_EVENT_EXEMPT_ROUTES = new Set<string>([
   // wizard on it would shut the door on its main use.
   'event-clone',
   'event-settings',
+  // Scanned from paper, often by someone who hasn't got an event yet. It sorts
+  // out the selection itself.
+  'event-open',
   // "Did I get my vouchers?" the morning after: the page only reads once the
   // event is over, and without any event it points at the picker.
   'my-vouchers',

@@ -27,6 +27,7 @@ from app.core.errors import raise_problem
 from app.crud.event import event as crud_event
 from app.crud.location import location as crud_location
 from app.crud.task_manager import task_manager as crud_task_manager
+from app.logic import clock
 from app.logic.locations import propagate_rename
 from app.logic.permissions import (
     require_event_role,
@@ -224,8 +225,8 @@ async def list_location_shifts(
     alone, matching the task feed.
     """
     loc = await _load_location(session, location_id)
-    _, role = await _member_event(current_user, session, loc.event_id)
-    day = on or dt.date.today()
+    event, role = await _member_event(current_user, session, loc.event_id)
+    day = on or clock.wall_clock_now(event.timezone).date()
 
     count_sq = (
         select(func.count())

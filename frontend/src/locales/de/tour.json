@@ -154,7 +154,7 @@
             "title": "Hier beginnt eine neue Aufgabe"
         },
         "people": {
-            "body": "Jede Zeile ist eine Person in deiner Veranstaltung, und die Rolle daneben sagt, was sie darf: Mitglieder übernehmen Schichten, Admins planen mit, und wem die Veranstaltung gehört, kann sie an jemand anderen abgeben.",
+            "body": "Jede Zeile ist eine Person in deiner Veranstaltung, und die Rolle daneben sagt, was sie darf: Mitglieder übernehmen Schichten, Organisator:innen planen mit, und wem die Veranstaltung gehört, kann sie an jemand anderen abgeben.",
             "title": "Die Leute in deiner Veranstaltung"
         },
         "peoplePerShift": {

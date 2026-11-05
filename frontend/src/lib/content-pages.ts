@@ -9,6 +9,11 @@
  * `router/routes.ts`, a page in `lib/seo.ts`, and its copy under
  * `preauth.useCases.<key>` in both locales. `views/preauth/UseCaseView.vue`
  * renders all of them.
+ *
+ * A new feature page or guide is an entry in `DOC_PAGES` and in a group below
+ * it, its Markdown in `src/docs/<locale>/`, and its name and search copy under
+ * `preauth.docs.pages.<key>` and `preauth.seo.<key>`. Routes and the public page
+ * list follow from `DOC_PAGES`.
  */
 
 export interface UseCaseStep {
@@ -139,8 +144,71 @@ export const COMPARISON_SCREENSHOTS = [
   { key: 'bookings', screenshot: 'my-bookings' },
 ] as const
 
+/** Feature pages explain what something does, guides how to set it up, step by step. */
+export type DocKind = 'feature' | 'guide'
+
+export interface DocPage {
+  kind: DocKind
+  /** The last part of the URL, and the Markdown file's name. */
+  slug: string
+  /** Key under `preauth.seo` and `preauth.docs.pages`. */
+  key: string
+}
+
+export const DOC_PAGES = [
+  { kind: 'feature', slug: 'shift-planning', key: 'featureShiftPlanning' },
+  { kind: 'feature', slug: 'venue-map', key: 'featureVenueMap' },
+  { kind: 'feature', slug: 'members', key: 'featureMembers' },
+  { kind: 'feature', slug: 'people-in-charge', key: 'featurePeopleInCharge' },
+  { kind: 'feature', slug: 'teams', key: 'featureTeams' },
+  { kind: 'feature', slug: 'booking', key: 'featureBooking' },
+  { kind: 'feature', slug: 'notifications', key: 'featureNotifications' },
+  { kind: 'feature', slug: 'vouchers', key: 'featureVouchers' },
+  { kind: 'feature', slug: 'hours-and-reports', key: 'featureHoursAndReports' },
+  { kind: 'feature', slug: 'self-hosting', key: 'featureSelfHosting' },
+  { kind: 'guide', slug: 'first-event', key: 'guideFirstEvent' },
+  { kind: 'guide', slug: 'volunteer-start', key: 'guideVolunteerStart' },
+  { kind: 'guide', slug: 'people-in-charge', key: 'guidePeopleInCharge' },
+  { kind: 'guide', slug: 'vouchers', key: 'guideVouchers' },
+  { kind: 'guide', slug: 'redeem-vouchers', key: 'guideRedeemVouchers' },
+  { kind: 'guide', slug: 'teams', key: 'guideTeams' },
+  { kind: 'guide', slug: 'venue-map', key: 'guideVenueMap' },
+  { kind: 'guide', slug: 'next-year', key: 'guideNextYear' },
+] as const satisfies readonly DocPage[]
+
+/** `feature/vouchers`, how a page is named in `related` and in the Markdown glob. */
+export const docId = (page: DocPage) => `${page.kind}/${page.slug}`
+
+export const docRouteName = (page: DocPage) => `${page.kind}-${page.slug}`
+
+export const docPath = (page: DocPage) =>
+  `/${page.kind === 'feature' ? 'features' : 'guides'}/${page.slug}`
+
+export function docPageById(id: string): DocPage | undefined {
+  return DOC_PAGES.find((page) => docId(page) === id)
+}
+
+/** The overview pages, in display order. Keys under `preauth.docs.groups`. */
+export const DOC_GROUPS = {
+  feature: [
+    { key: 'plan', pages: ['feature/shift-planning', 'feature/venue-map'] },
+    { key: 'people', pages: ['feature/members', 'feature/people-in-charge', 'feature/teams'] },
+    { key: 'volunteers', pages: ['feature/booking', 'feature/notifications'] },
+    { key: 'thanks', pages: ['feature/vouchers', 'feature/hours-and-reports'] },
+    { key: 'run', pages: ['feature/self-hosting'] },
+  ],
+  guide: [
+    { key: 'start', pages: ['guide/first-event', 'guide/volunteer-start'] },
+    { key: 'share', pages: ['guide/people-in-charge', 'guide/teams', 'guide/venue-map'] },
+    { key: 'thanks', pages: ['guide/vouchers', 'guide/redeem-vouchers'] },
+    { key: 'again', pages: ['guide/next-year'] },
+  ],
+} as const satisfies Record<DocKind, readonly { key: string; pages: readonly string[] }[]>
+
 /** The cross-links at the foot of a content page; route names and copy keys. */
 export const RELATED_PAGES = [
+  { routeName: 'features', key: 'features' },
+  { routeName: 'guides', key: 'guides' },
   { routeName: 'alternatives', key: 'alternatives' },
   { routeName: 'use-case-club-festival', key: 'clubFestival' },
   { routeName: 'landing', key: 'landing' },

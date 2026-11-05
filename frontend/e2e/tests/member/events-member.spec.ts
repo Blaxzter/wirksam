@@ -38,6 +38,30 @@ test.describe('Member – RBAC', () => {
     await expect(member.getByTestId('section-join-requests')).toBeHidden()
   })
 
+  test('a member finds "Leave" through their settings', async ({ memberPage: member }) => {
+    await member.goto('/app/settings/event')
+    await member.getByTestId('settings-active-event-people').click()
+    await expect(member).toHaveURL(/event-settings.*tab=people/)
+    await expect(member.getByTestId('btn-leave-event')).toBeVisible()
+  })
+
+  test('the details tab shows a member the event, not a form they cannot save', async ({
+    memberPage: member,
+    workerEvent,
+  }) => {
+    await member.goto('/app/event-settings')
+    await expect(member.getByText(workerEvent.name).first()).toBeVisible()
+    await expect(member.getByTestId('event-details-summary')).toBeVisible()
+    await expect(member.getByRole('button', { name: /save|speichern/i })).toHaveCount(0)
+    await expect(member.getByTestId('btn-event-status-published')).toHaveCount(0)
+  })
+
+  test('member does not get the link to print the whole event', async ({ memberPage: member }) => {
+    await member.goto('/app/tasks')
+    await expect(member.getByTestId('page-heading')).toBeVisible()
+    await expect(member.getByTestId('btn-print-event')).toHaveCount(0)
+  })
+
   test('member cannot change anyone\'s role', async ({ memberPage: member }) => {
     await member.goto('/app/event-settings?tab=people')
     await expect(member.getByTestId('section-event-members')).toBeVisible()

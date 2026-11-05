@@ -72,6 +72,17 @@ test.describe('Venue map – on a phone', () => {
     expect(Math.round(box.width)).toBe(viewport.width)
   })
 
+  test('"Use a picture" brings the upload into view', async ({ adminPage: page }) => {
+    await page.goto(`/app/event-settings/${seeded.event.id}?tab=map`)
+    await page.getByTestId('plan-add').click()
+    await page.getByTestId('plan-name-input').fill(uniqueName('Grounds'))
+    await page.getByTestId('plan-create-picture').click()
+    await page.getByTestId('plan-name-save').click()
+
+    await expect(page.getByTestId('editor-panel')).toBeVisible()
+    await expect(page.getByTestId('plan-upload-zone')).toBeInViewport()
+  })
+
   test('an organiser draws a shape by tapping, finished with "Close shape"', async ({
     adminPage: page,
   }) => {

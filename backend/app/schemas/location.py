@@ -161,8 +161,10 @@ class LocationShiftRead(BaseModel):
     current_bookings: int = 0
     is_booked_by_me: bool = False
     my_booking_id: uuid.UUID | None = None
-    #: See ShiftRead: the team the task requires, and whether it bars the caller.
+    #: See ShiftRead: the event and its zone, the team the task requires, and
+    #: whether it bars the caller.
     event_id: uuid.UUID | None = None
+    event_timezone: str | None = None
     team_id: uuid.UUID | None = None
     team_name: str | None = None
     team_requires_approval: bool | None = None

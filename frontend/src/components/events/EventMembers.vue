@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { avatarUrlFor } from '@/composables/useAvatarUrl'
+import { useDialog } from '@/composables/useDialog'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { patch, delete: del, post } = useAuthenticatedClient()
+const { confirm, confirmDestructive } = useDialog()
 const authStore = useAuthStore()
 
 const busyUserId = ref<string | null>(null)
@@ -87,10 +89,26 @@ async function changeRole(member: EventMemberRead, role: AssignableEventRole) {
 }
 
 async function removeMember(member: EventMemberRead) {
+  const wasMe = member.user_id === myUserId.value
+  const name = member.name ?? member.email
+  const confirmed = await confirmDestructive(
+    wasMe
+      ? {
+          title: t('duties.events.members.leaveConfirmTitle'),
+          text: t('duties.events.members.leaveConfirmText'),
+          confirmText: t('duties.events.members.leaveConfirmAction'),
+        }
+      : {
+          title: t('duties.events.members.removeConfirmTitle', { name }),
+          text: t('duties.events.members.removeConfirmText'),
+          confirmText: t('duties.events.members.removeConfirmAction'),
+        },
+  )
+  if (!confirmed) return
+
   busyUserId.value = member.user_id
   try {
     await del({ url: `/events/${props.eventId}/members/${member.user_id}` })
-    const wasMe = member.user_id === myUserId.value
     toast.success(wasMe ? t('duties.events.members.left') : t('duties.events.members.removed'))
     if (wasMe) emit('left')
     else emit('updated')
@@ -103,6 +121,15 @@ async function removeMember(member: EventMemberRead) {
 
 async function transferOwnership() {
   if (!transferTargetId.value) return
+  const target = props.members.find((m) => m.user_id === transferTargetId.value)
+  const name = target?.name ?? target?.email ?? ''
+  const confirmed = await confirm({
+    title: t('duties.events.members.transferConfirmTitle', { name }),
+    text: t('duties.events.members.transferConfirmText', { name }),
+    confirmText: t('duties.events.members.transferAction'),
+  })
+  if (!confirmed) return
+
   transferring.value = true
   try {
     await post({

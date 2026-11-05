@@ -8,7 +8,14 @@
  * HTML together with the sitemap and `llms.txt`. One list, so a page added here
  * shows up in all of them.
  */
-import { USE_CASES } from '@/lib/content-pages'
+import {
+  DOC_PAGES,
+  type DocKind,
+  USE_CASES,
+  docId,
+  docPath,
+  docRouteName,
+} from '@/lib/content-pages'
 
 export const PUBLIC_LOCALES = ['en', 'de'] as const
 export type PublicLocale = (typeof PUBLIC_LOCALES)[number]
@@ -47,6 +54,13 @@ export interface PublicPage {
    * FAQ is not here because what it shows depends on a runtime switch (`faqKeys`).
    */
   faq?: { base: string; keys: readonly string[] }
+  /**
+   * The page one level up in the BreadcrumbList, between the landing page and
+   * this one. Its route name.
+   */
+  parent?: string
+  /** Set on a feature page or guide: its Markdown, for HowTo and FAQPage JSON-LD. */
+  doc?: { id: string; kind: DocKind }
 }
 
 export const PUBLIC_PAGES: readonly PublicPage[] = [
@@ -83,6 +97,38 @@ export const PUBLIC_PAGES: readonly PublicPage[] = [
     breadcrumbKey: 'preauth.useCases.clubFestival.breadcrumb',
     faq: { base: 'preauth.useCases.clubFestival.faq.items', keys: USE_CASES.clubFestival.faq },
   },
+  {
+    routeName: 'features',
+    path: '/features',
+    seoKey: 'features',
+    prerender: true,
+    changefreq: 'monthly',
+    priority: 0.8,
+    requires: 'LANDING_ENABLED',
+    breadcrumbKey: 'preauth.docs.hubs.feature.breadcrumb',
+  },
+  {
+    routeName: 'guides',
+    path: '/guides',
+    seoKey: 'guides',
+    prerender: true,
+    changefreq: 'monthly',
+    priority: 0.8,
+    requires: 'LANDING_ENABLED',
+    breadcrumbKey: 'preauth.docs.hubs.guide.breadcrumb',
+  },
+  ...DOC_PAGES.map((page): PublicPage => ({
+    routeName: docRouteName(page),
+    path: docPath(page),
+    seoKey: page.key,
+    prerender: true,
+    changefreq: 'monthly',
+    priority: 0.7,
+    requires: 'LANDING_ENABLED',
+    breadcrumbKey: `preauth.docs.pages.${page.key}.name`,
+    parent: page.kind === 'feature' ? 'features' : 'guides',
+    doc: { id: docId(page), kind: page.kind },
+  })),
   {
     routeName: 'preauth-changelog',
     path: '/changelog',

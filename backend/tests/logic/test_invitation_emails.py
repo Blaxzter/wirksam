@@ -19,8 +19,13 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.core.config import settings
-from app.logic.invitation_emails import InvitedTask, send_event_invitation_email
+from app.logic.invitation_emails import (
+    InvitedTask,
+    _expiry_date,  # pyright: ignore[reportPrivateUsage]
+    send_event_invitation_email,
+)
 from app.models.event import Event
+from tests.fixtures.clock import fixed_clock
 
 TRANSPORT = "app.logic.auth.emails._smtp_send"
 TOKEN = "invite-token-123"
@@ -66,7 +71,10 @@ def _email_settings(*, configured: bool = True) -> Generator[None, None, None]:
         patch.object(settings, "FRONTEND_HOST", "https://app.example.test"),
         patch.object(settings, "EVENT_TIMEZONE", "Europe/Berlin"),
         # A date in the current year is written without it.
-        patch("app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 7, 1, 9)),
+        patch(
+            "app.logic.clock.wall_clock_now",
+            fixed_clock(dt.datetime(2026, 7, 1, 9)),
+        ),
     ):
         yield
 
@@ -307,3 +315,26 @@ class TestDelivery:
                 language="en",
             )
         assert sent is False
+
+
+class TestExpiryDateOnTheEventsClock:
+    def test_the_last_day_is_the_events(self) -> None:
+        """20:00 UTC on 31 December is New Year's Day in Tokyo."""
+        expires_at = dt.datetime(2026, 12, 31, 20, 0)
+        with patch(
+            "app.logic.clock.wall_clock_now",
+            fixed_clock(dt.datetime(2026, 12, 31, 9)),
+        ):
+            assert "1 January" in _expiry_date(expires_at, "en", "Asia/Tokyo")
+            assert "31 December" in _expiry_date(expires_at, "en", "Europe/Berlin")
+
+    def test_without_an_event_zone_it_is_the_setting(self) -> None:
+        expires_at = dt.datetime(2026, 12, 31, 20, 0)
+        with (
+            patch.object(settings, "EVENT_TIMEZONE", "Asia/Tokyo"),
+            patch(
+                "app.logic.clock.wall_clock_now",
+                fixed_clock(dt.datetime(2026, 12, 31, 9)),
+            ),
+        ):
+            assert "1 January" in _expiry_date(expires_at, "en", None)

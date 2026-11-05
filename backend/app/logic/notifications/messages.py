@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.core.config import settings
 from app.logic import clock
 
 DEFAULT_LANGUAGE = "en"
@@ -92,15 +93,39 @@ def get_date_strings(language: str) -> dict[str, Any]:
     return {**english, **_messages[_resolve_lang(language)].get("dates", {})}
 
 
+def shift_times(
+    start: dt.time | None, end: dt.time | None, zone: str | None
+) -> dict[str, str]:
+    """``start_time`` and ``end_time`` for a message that states a shift's time.
+
+    Shift times are the event's wall clock. When the event isn't in the
+    installation's zone, the zone follows the time so that someone elsewhere
+    can't misread it: ``10:00–12:00 (Asia/Tokyo)``. Otherwise the wording is the
+    same as ever. ``zone`` ``None`` is a task without an event.
+    """
+    note = ""
+    if (start or end) and zone and zone != settings.EVENT_TIMEZONE:
+        note = f" ({zone})"
+    return {
+        "start_time": start.strftime("%H:%M") if start else "",
+        "end_time": (end.strftime("%H:%M") if end else "") + note,
+    }
+
+
 def day_span(
-    first: dt.date, last: dt.date, language: str, *, today: dt.date | None = None
+    first: dt.date,
+    last: dt.date,
+    language: str,
+    *,
+    today: dt.date | None = None,
+    zone: str | None = None,
 ) -> str:
     """The days something runs, as a mail says them.
 
     ``Fr, 17. – So, 19. Juli`` and ``Fri 17 – Sun 19 July``; one day is
     ``Fr, 17. Juli``, two months ``Fr, 31. Juli – So, 2. August``. The year
-    is added only when either end is outside the current one (on the events'
-    wall clock), the rule ``formatDaySpan`` follows in the app, so a mail and
+    is added only when either end is outside the current one (on the wall
+    clock of ``zone``, the event's), the rule ``formatDaySpan`` follows in the app, so a mail and
     the task page it links to read the same. The names and the order come
     from the ``dates`` block of the recipient's locale file.
     """
@@ -108,7 +133,7 @@ def day_span(
         first, last = last, first
     strings = get_date_strings(language)
     if today is None:
-        today = clock.wall_clock_now().date()
+        today = clock.wall_clock_now(zone).date()
     with_year = first.year != today.year or last.year != today.year
 
     def write(day: dt.date, template: str) -> str:

@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.event import event as crud_event
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic import clock
 from app.logic.permissions import (
@@ -36,12 +37,14 @@ from app.models.event import Event
 from app.models.user import User
 from app.schemas.event_membership import EventRole
 from app.schemas.event_team import TeamMemberStatus
+from app.schemas.task import TaskStatus
 from app.schemas.task_manager import TaskManagerBrief
 
 
 class _TaskAccessEntry(Protocol):
     id: uuid.UUID
     event_id: uuid.UUID | None
+    status: TaskStatus
     can_manage: bool
     can_manage_shifts: bool
     managers: list[TaskManagerBrief]
@@ -51,6 +54,7 @@ class _TaskAccessEntry(Protocol):
 
 
 class _TaskReadEntry(_TaskAccessEntry, Protocol):
+    event_timezone: str | None
     team_name: str | None
     team_requires_approval: bool | None
     my_team_status: TeamMemberStatus | None
@@ -87,7 +91,9 @@ async def mark_task_access(
             else None
         )
         read.can_manage = access[read.id] is not None
-        read.can_redeem = read.is_voucher_point and read.can_manage
+        read.can_redeem = (
+            read.is_voucher_point and read.can_manage and read.status != "archived"
+        )
 
     # The events' voucher-shift setting decides only for a person in charge
     # of a task that earns vouchers; one query for all of them.
@@ -114,12 +120,25 @@ async def mark_task_access(
     on_shift_candidates = [
         r.id
         for r in reads
-        if r.is_voucher_point and not r.can_manage and roles[r.event_id] is not None
+        if r.is_voucher_point
+        and r.status != "archived"
+        and not r.can_manage
+        and roles[r.event_id] is not None
     ]
     if on_shift_candidates:
-        on_shift = await on_shift_task_ids(
-            user, session, on_shift_candidates, now=clock.wall_clock_now()
+        # Each point on its own event's clock: one query per zone in play.
+        zones = await crud_event.zones_by_id(
+            session, (r.event_id for r in reads if r.id in on_shift_candidates)
         )
+        by_zone: dict[str | None, list[uuid.UUID]] = {}
+        for read in reads:
+            if read.id in on_shift_candidates:
+                by_zone.setdefault(zones.get(read.event_id), []).append(read.id)
+        on_shift: set[uuid.UUID] = set()
+        for zone, task_ids in by_zone.items():
+            on_shift |= await on_shift_task_ids(
+                user, session, task_ids, now=clock.wall_clock_now(zone)
+            )
         for read in reads:
             if read.id in on_shift:
                 read.can_redeem = True

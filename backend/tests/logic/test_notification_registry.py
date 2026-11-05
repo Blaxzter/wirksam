@@ -82,9 +82,14 @@ class TestRegistry:
         """Verify BOOKING_REMINDER is not user-configurable."""
         assert BOOKING_REMINDER.is_user_configurable is False
 
-    def test_unfilled_shift_alert_is_admin_only(self):
-        """Verify SHIFT_STARTING_SOON_UNFILLED is admin-only."""
-        assert SHIFT_STARTING_SOON_UNFILLED.is_admin_only is True
+    def test_unfilled_shift_alert_is_not_for_platform_admins_only(self):
+        """It goes to each event's organisers, who are not platform admins and
+        have to be able to find it in their preferences."""
+        assert SHIFT_STARTING_SOON_UNFILLED.is_admin_only is False
+
+    def test_unfilled_shift_alert_sends_no_mail_by_default(self):
+        """One per unfilled shift: nobody has asked for that much post."""
+        assert SHIFT_STARTING_SOON_UNFILLED.default_channels == ["push"]
 
     def test_registry_has_expected_categories(self):
         """Verify the registry covers expected categories."""

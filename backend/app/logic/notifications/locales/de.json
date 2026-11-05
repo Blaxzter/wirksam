@@ -16,8 +16,16 @@
     "body": "Deine Buchung „{slot_title}“ beginnt {time_until}.\n\n📅 {date} ⏰ {start_time}–{end_time}\n🏠 {location}"
   },
   "booking.cancelled_by_admin": {
-    "title": "Buchung durch Admin storniert",
-    "body": "Deine Buchung für „{slot_title}“{task_label} wurde von einem Administrator storniert.{detail}"
+    "title": "Buchung von der Organisation storniert",
+    "body": "Deine Buchung für „{slot_title}“ am {date}{task_label} wurde storniert, weil die Schicht entfernt wurde.{detail}"
+  },
+  "booking.cancelled_by_admin.many": {
+    "title": "Buchung von der Organisation storniert",
+    "body": "{count} deiner Buchungen{task_label} wurden storniert, weil ihre Schichten entfernt wurden. Du findest sie unter „Meine Buchungen“ bei „Storniert“.{detail}"
+  },
+  "shift.starting_soon_unfilled": {
+    "title": "Schicht beginnt bald mit freien Plätzen",
+    "body": "„{slot_title}“ beginnt in etwa {minutes} Minuten. {confirmed} von {max_bookings} Plätzen sind besetzt."
   },
   "shift.time_changed": {
     "title": "Schichtzeit geändert",
@@ -129,6 +137,10 @@
     "title": "Einladung angenommen",
     "body": "{name} ist „{event_name}“ beigetreten."
   },
+  "event.invitation_accepted.member": {
+    "title": "Einladung angenommen",
+    "body": "{name} hat die Einladung zu „{event_name}“ angenommen und ist jetzt verantwortlich für {tasks}."
+  },
   "event.invitation_accepted.tasks": {
     "title": "Einladung angenommen",
     "body": "{name} ist „{event_name}“ beigetreten und jetzt verantwortlich für {tasks}."
@@ -168,6 +180,10 @@
   "team.join_approved": {
     "title": "Du bist im Team",
     "body": "Deine Anfrage für das Team „{team_name}“ in „{event_name}“ wurde angenommen."
+  },
+  "team.join_approved.added": {
+    "title": "Du bist im Team",
+    "body": "Du wurdest in das Team „{team_name}“ in „{event_name}“ aufgenommen."
   },
   "team.join_declined": {
     "title": "Teamanfrage abgelehnt",

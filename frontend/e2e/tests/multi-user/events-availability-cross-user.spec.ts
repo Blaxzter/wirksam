@@ -45,8 +45,8 @@ test.describe('Cross-user – picker visibility', () => {
     memberPage,
   }) => {
     // Discover lists the first 100 by start date, and every worker's event starts
-    // tomorrow and stays in the database. Starting today keeps this one in reach
-    // however many of them a reused stack has piled up.
+    // tomorrow and stays until the next run's /testing/reset. One run can start more
+    // than 100 workers, so starting today keeps this one in reach however many there are.
     const event = await createEvent(
       adminPage,
       uniqueName('E2E Cross Discover'),

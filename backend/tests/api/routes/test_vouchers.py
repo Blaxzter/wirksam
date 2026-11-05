@@ -46,6 +46,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.voucher import VoucherEntry, VoucherPass
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import fixed_clock
 from tests.fixtures.sandbox import SandboxSetup
 
 DAY = dt.date(2026, 6, 11)
@@ -139,7 +140,7 @@ async def cast(
     test_outsider_user: User,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Cast:
-    monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: NOW)
+    monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(NOW))
     manager = await _user(db_session, "manager")
     staff = await _user(db_session, "staff")
     second_staff = await _user(db_session, "second_staff")
@@ -1781,7 +1782,8 @@ class TestPointPeople:
     ) -> None:
         """Half an hour after 18:00 the shift no longer runs."""
         monkeypatch.setattr(
-            "app.logic.clock.wall_clock_now", lambda: dt.datetime(2026, 6, 11, 18, 31)
+            "app.logic.clock.wall_clock_now",
+            fixed_clock(dt.datetime(2026, 6, 11, 18, 31)),
         )
         r = await self._get(async_client, app, cast, cast.staff)
         assert r.status_code == 403
@@ -2152,3 +2154,97 @@ class TestLeaving:
             )
         )
         assert pending == 0
+
+
+@pytest.mark.asyncio
+class TestAnArchivedPoint:
+    """It has left the list of points, so nothing else may reach it either."""
+
+    @pytest_asyncio.fixture
+    async def archived(self, db_session: AsyncSession, cast: Cast) -> Task:
+        cast.point.status = "archived"
+        db_session.add(cast.point)
+        await db_session.flush()
+        return cast.point
+
+    @pytest.mark.parametrize("who", ["admin", "manager", "staff"])
+    async def test_redeeming_is_refused_and_takes_nothing(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        archived: Task,
+        who: str,
+    ) -> None:
+        issued = await _issue(async_client, app, cast)
+
+        r = await _redeem(
+            async_client, app, cast, getattr(cast, who), code=issued["code"]
+        )
+
+        assert r.status_code == 409
+        assert _code(r) == "voucher.point_archived"
+        assert await _entries(db_session, cast) == []
+
+    async def test_checking_a_code_is_refused(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast, archived: Task
+    ) -> None:
+        issued = await _issue(async_client, app, cast)
+
+        r = await _check(async_client, app, cast, cast.admin, code=issued["code"])
+
+        assert r.status_code == 409
+        assert _code(r) == "voucher.point_archived"
+
+    @pytest.mark.parametrize("path", ["entries", "people"])
+    async def test_its_lists_are_refused(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        cast: Cast,
+        archived: Task,
+        path: str,
+    ) -> None:
+        with act_as(app, cast.admin):
+            r = await async_client.get(
+                f"{_base(cast.event)}/points/{archived.id}/{path}"
+            )
+
+        assert r.status_code == 409
+        assert _code(r) == "voucher.point_archived"
+
+    async def test_the_gate_still_comes_first(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast, archived: Task
+    ) -> None:
+        """A bystander learns nothing about the task's status."""
+        issued = await _issue(async_client, app, cast)
+
+        r = await _redeem(async_client, app, cast, cast.bystander, code=issued["code"])
+
+        assert r.status_code == 403
+        assert _code(r) == "voucher.not_allowed"
+
+    @pytest.mark.parametrize("who", ["admin", "manager"])
+    async def test_the_task_says_it_cannot_redeem(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        cast: Cast,
+        archived: Task,
+        who: str,
+    ) -> None:
+        with act_as(app, getattr(cast, who)):
+            r = await async_client.get(f"/api/v1/tasks/{archived.id}")
+
+        assert r.status_code == 200, r.text
+        assert r.json()["can_redeem"] is False
+
+    async def test_a_published_point_is_unaffected(
+        self, async_client: AsyncClient, app: FastAPI, cast: Cast
+    ) -> None:
+        issued = await _issue(async_client, app, cast)
+
+        r = await _redeem(async_client, app, cast, cast.admin, code=issued["code"])
+
+        assert r.status_code == 201, r.text

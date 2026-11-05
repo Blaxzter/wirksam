@@ -18,7 +18,7 @@ Two modes, controlled by `dev_mode` at the top of `justfile` (default: `"local"`
 ```bash
 just dev               # Uses dev_mode default
 just dev docker        # Full stack via Docker Compose watch (hot reload)
-just dev local         # DB+Adminer in Docker, migrations, demo seed, then backend + frontend in one terminal
+just dev local         # DB in Docker, migrations, demo seed, then backend + frontend in one terminal
 just dev-backend       # or start either one on its own
 just dev-frontend
 ```
@@ -31,7 +31,7 @@ container keeps running), and if either one dies the other is stopped too;
 `--no-migrate` / `--no-seed` skip those steps. `just seed --force` adds another
 demo event dated around today, `just seed --lang de` seeds it in German.
 
-`just test-e2e` also respects `dev_mode`: docker runs Playwright in a container, local runs `pnpm test:e2e` directly.
+`just test-e2e` also respects `dev_mode`: docker runs Playwright in a container, local runs `pnpm exec playwright test` directly.
 
 `just dev` URLs: frontend `http://wirksam.localhost:47300`, backend
 `http://wirksam.localhost:47301`, OpenAPI docs `http://wirksam.localhost:47301/docs`.
@@ -59,7 +59,7 @@ pnpm --prefix frontend test:e2e   # Playwright E2E
 
 Run a single backend test:
 ```bash
-cd backend && uv run pytest tests/api/test_users.py::test_read_user -v
+uv run --directory backend pytest tests/api/routes/test_users.py::TestUserRoutes::test_list_users -v
 ```
 
 ### Database Migrations
@@ -153,41 +153,17 @@ reused only within one event, and an expired one flags the member without
 revoking access. Design note:
 [`docs/plans/2026-10-26-event-teams.md`](docs/plans/2026-10-26-event-teams.md).
 
-**People in charge** of a task (`task_managers`, `app/api/routes/tasks/managers.py`;
-"Verantwortliche" in the German UI) add three more, also in `permissions.py`:
-`require_task_manager` (edit one task's details and its shifts; returns
-`"admin"` or `"manager"`, and a person in charge changing `status`, `team_id` or
-`event_id` gets `403 task.admin_only_field`), `require_task_visible` (reading
-one task: drafts and archived tasks only for event admins and the task's people
-in charge, `403 task.not_published` otherwise; a booker can always reopen their
-own shift) and `check_shift_history` (a booked shift that has started, or
-moving a booked shift's start or end into the past, is the event admins' —
-`403 task.shift_history_admin_only`).
-Only event admins name people in charge, delete or publish a task; a person in
-charge may step down. Being in charge counts only while the person is an event
-member, and leaving the event deletes the rows. Design note:
-[`docs/plans/2026-10-30-task-managers-and-vouchers.md`](docs/plans/2026-10-30-task-managers-and-vouchers.md).
+**People in charge** of a task (`task_managers`; "Verantwortliche" in the German UI)
+add `require_task_manager`, `require_shift_editor`, `check_voucher_shifts`,
+`check_shift_history` and `require_task_visible`, also in `permissions.py`; grepping
+for them finds every check. Being in charge counts only while the person is an event
+member, so never grant on the row alone. See [`docs/PEOPLE_IN_CHARGE.md`](docs/PEOPLE_IN_CHARGE.md).
 
-**Vouchers** ("Marken"; `app/api/routes/vouchers.py`, `app/logic/vouchers.py`)
-add one gate, `require_voucher_redeemer`: at a task flagged `is_voucher_point`,
-event admins, its people in charge and whoever has a confirmed booking on a
-shift of it running now (30 minutes either side) may redeem; without a code
-(picking the person) only admins, people in charge and staff on shift at a
-point also flagged `is_voucher_desk` who are approved members of its team
-(a desk without `team_id` gives its staff no such right, or anyone could book
-themselves onto it). **Earned vouchers are derived, never
-stored**, like worked hours: `tasks.vouchers_per_shift` for every booking that
-`work_hours.counts_as_worked()` on a shift that has ended. `voucher_entries`
-holds only redemptions and admin corrections, so a balance can go negative
-(shown as 0 available). A redemption takes a transaction-scoped advisory lock
-per (event, volunteer) (`crud_voucher.lock_ledger`) and a client `request_id`
-makes a retry return the first result. Codes (`voucher_passes`) are six
-characters, single use, two minutes, unique across the installation. Because
-earnings follow bookings, booking needs event membership, a published task
-(unless you manage it) and a shift that has not ended (`409
-booking.shift_over`, also for cancelling); on a task that earns vouchers, one
-that has not started (`409 booking.shift_started`, unless you manage the
-task). Leaving an event cancels the person's unfinished bookings.
+**Vouchers** ("Marken"; `app/api/routes/vouchers.py`, `app/logic/vouchers.py`) add one
+gate, `require_voucher_redeemer`; grepping for it finds every check. Earned is earned:
+anything that changes what an ended booking earned (a rate, moving or deleting a shift
+or task, attendance) must call `vouchers.settle_earnings` first, and a balance only
+goes down under `crud_voucher.lock_ledger`. See [`docs/VOUCHERS.md`](docs/VOUCHERS.md).
 
 For queries, `backend/app/logic/event_scope.py` returns the id list to filter
 by. `None` means unrestricted (superadmin only); an **empty list means "nothing"
@@ -218,14 +194,15 @@ Getting into an event: its admins invite by email or share a link
 (`/events/{id}/invitations` → `/invitations/{token}/accept`), or someone asks
 to join a **public** event and an event admin decides
 (`/events/{id}/join-request` → `.../join-requests/{id}/decide`). Private events
-are invitation-only. `is_featured` (superadmin-only) curates the home screen.
+are invitation-only. A targeted invitation can also name tasks to run; see
+[`docs/PEOPLE_IN_CHARGE.md`](docs/PEOPLE_IN_CHARGE.md#invitations-that-carry-tasks). `is_featured` (superadmin-only) curates the home screen.
 
 ### Frontend Structure
 
 ```
 frontend/src/
 ├── client/        # AUTO-GENERATED from OpenAPI — never hand-edit
-├── stores/        # Pinia (auth.ts, breadcrumb.ts, dialog.ts)
+├── stores/        # Pinia
 ├── router/        # Vue Router (PreAuth / PostAuth layouts + authGuard)
 ├── views/         # Page components (preauth/ and authenticated)
 ├── components/ui/ # shadcn-vue components — add via CLI only
@@ -275,10 +252,16 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
   `SANDBOX_MAX_ACTIVE` (25) tune the "check out a test event" demo. The first is
   also served to the browser as runtime config, so the landing page never shows
   a button the backend would refuse — see [`docs/SANDBOX.md`](docs/SANDBOX.md)
-- `EVENT_TIMEZONE` (IANA name, default `Europe/Berlin`) is the zone shift times are read in.
+- `EVENT_TIMEZONE` (IANA name, default `Europe/Berlin`) is the zone a new event starts with,
+  and what a task without an event is read in. Each event has its own (`events.timezone`).
   Shift dates and times carry no zone; "has this shift started / ended" compares them with
-  `app/logic/clock.py::wall_clock_now()`. Stored timestamps stay naive UTC (`clock.utc_now()`).
-  An unknown name refuses to boot. Tests patch `app.logic.clock.wall_clock_now`
+  `app/logic/clock.py::wall_clock_now(zone)`, passing the zone of the event the shift belongs
+  to. A view across events judges each shift on its own clock, in one query
+  (`crud/shift.py`: `wall_clocks`, `on_own_clock`). Moving a shift or changing an event's zone
+  must call `crud_reminder.reschedule`, and changing the zone settles earnings first. Stored
+  timestamps stay naive UTC (`clock.utc_now()`). An unknown name refuses to boot, or is a 422 on
+  an event. Tests patch `app.logic.clock.wall_clock_now` with something taking the zone
+  (`tests/fixtures/clock.py`)
 - `STORAGE_BACKEND` decides where uploaded files live: `.env.example` sets `s3` with the bundled
   Garage container (`COMPOSE_PROFILES=s3`; `just dev local` starts it), the code default is
   `postgres`. Rows hold a `storage_key`; read and write through `app/core/storage.py`, never a
@@ -290,11 +273,3 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
 - `SEARCH_INDEXING=false` in root `.env` makes the frontend container serve a `robots.txt` that disallows everything (for private deployments). `FRONTEND_HOST` also sets the absolute URLs in the prerendered pages and sitemap
 - Local mail (verification, password reset) goes to the mailcatcher container on port 1025; its inbox is at `http://localhost:1080`. With no SMTP configured at all, the link is written to the backend log instead
 - E2E tests authenticate through the `X-Test-User-Email` bypass, enabled by `VITE_E2E_AUTH_BYPASS` in `frontend/.env` and gated server-side on `TESTING`
-
-## Template Cleanup (when starting a new project)
-
-```bash
-just remove-examples     # Remove demo views and example routes
-just remove-domain       # Remove sample Projects/Tasks domain
-just clean-template      # Both + regenerate client
-```

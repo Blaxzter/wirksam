@@ -19,8 +19,9 @@ from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.logic import clock, vouchers
 from app.logic.invitations import invite_to_task, lock_invitation_quota
-from app.logic.locations import resolve_location
+from app.logic.locations import follow_task_place, has_place, resolve_location
 from app.logic.notifications.triggers import (
+    dispatch_booking_cancelled_by_admin,
     dispatch_event_invitation,
     dispatch_task_manager_added,
 )
@@ -30,7 +31,7 @@ from app.logic.permissions import (
     require_shift_editor,
     shift_history_refuses,
 )
-from app.logic.shift_generator import generate_shifts
+from app.logic.shift_generator import generate_shifts, renamed_shift_title
 from app.logic.task_managers import decorate_task_reads
 from app.logic.teams import ensure_team_in_event
 from app.models.booking import Booking
@@ -393,6 +394,7 @@ async def regenerate_task_shifts(
     payload: TaskUpdateWithShifts,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     dry_run: bool = Query(default=False),
     batch_id: str | None = Query(default=None),
 ) -> ShiftRegenerationResult:
@@ -401,9 +403,11 @@ async def regenerate_task_shifts(
     When dry_run=True, returns a preview without making changes.
     When batch_id is provided, only regenerates shifts belonging to that batch.
     Shifts are matched by (date, start_time, end_time) — matched shifts keep their bookings.
+    A kept shift takes the new title, place and category only where it still has
+    what the task or batch gave it. One someone typed stays.
 
-    Bookings on removed shifts are cancelled with a snapshot, as on every other
-    delete path. A person in charge may not remove a booked shift that has
+    Bookings on removed shifts are cancelled with a snapshot and the people told,
+    as on every other delete path. A person in charge may not remove a booked shift that has
     started (``check_shift_history``): the dry run marks such rows ``locked``,
     the real run refuses with 403 ``task.shift_history_admin_only``.
 
@@ -430,6 +434,10 @@ async def regenerate_task_shifts(
     effective_name = payload.name or db_task.name
     # The batch's own values when scoped to one, otherwise the task's.
     source = db_batch if db_batch else db_task
+    # What the kept shifts were given, read before 6a and 6b overwrite it.
+    old_name = db_task.name
+    old_place = (source.location, source.location_id)
+    old_category = source.category
     effective_start_date = payload.start_date or source.start_date
     effective_end_date = payload.end_date or source.end_date
     effective_location = (
@@ -493,10 +501,9 @@ async def regenerate_task_shifts(
         key = (shift.date, shift.start_time, shift.end_time)
         existing_lookup[key] = shift
 
-    # 4. Match new shifts to existing. The kept shifts take the new title,
-    #    places, location and category, but only in 6e below: the request
-    #    commits whatever is on the session, so touching them here would make
-    #    the dry run's preview a real edit.
+    # 4. Match new shifts to existing. The kept shifts are only touched in 6e
+    #    below: the request commits whatever is on the session, so touching
+    #    them here would make the dry run's preview a real edit.
     matched_keys: set[tuple[Any, ...]] = set()
     matched_updates: list[tuple[Shift, ShiftCreate]] = []
     shifts_to_create: list[ShiftCreate] = []
@@ -509,7 +516,7 @@ async def regenerate_task_shifts(
             shifts_to_create.append(new_shift)
 
     # 5. Find unmatched existing shifts (to be deleted) and their confirmed bookings
-    now = clock.wall_clock_now()
+    now = clock.wall_clock_now(await crud_event.zone_of(session, db_task.event_id))
     affected_bookings: list[AffectedBookingInfo] = []
     shifts_to_delete: list[Shift] = []
     any_locked = False
@@ -576,6 +583,13 @@ async def regenerate_task_shifts(
             if payload.end_date is not None:
                 db_task.end_date = payload.end_date
             if location_changed:
+                await follow_task_place(
+                    session,
+                    db_task.id,
+                    old=old_place,
+                    new=(effective_location, effective_location_id),
+                    shifts=False,
+                )
                 db_task.location = effective_location
                 db_task.location_id = effective_location_id
             if payload.category is not None:
@@ -612,10 +626,21 @@ async def regenerate_task_shifts(
         #     with a snapshot first, like every other delete path: the FK is
         #     SET NULL, so they would otherwise stay "confirmed" with no shift
         #     and drop out of everyone's hours without a word.
-        await crud_booking.cancel_bookings_for_shifts(
+        cancelled = await crud_booking.cancel_bookings_for_shifts(
             session,
             slot_ids=[s.id for s in shifts_to_delete],
             task_name=db_task.name,
+        )
+        background_tasks.add_task(
+            dispatch_booking_cancelled_by_admin,
+            cancelled=cancelled,
+            actor_id=current_user.id,
+            task_id=db_task.id,
+            task_name=db_task.name,
+            task_is_open=db_task.status == "published",
+            now=now,
+            event_id=db_task.event_id,
+            is_sandbox=db_task.is_sandbox,
         )
         for shift in shifts_to_delete:
             await session.delete(shift)
@@ -626,13 +651,19 @@ async def regenerate_task_shifts(
                 slot_in.batch_id = db_batch.id
             await crud_shift.create(session, obj_in=slot_in)
 
-        # 6e. Update the kept shifts.
+        # 6e. Update the kept shifts, leaving what someone typed on one alone.
         for existing, new_shift in matched_updates:
-            existing.title = new_shift.title
             existing.max_bookings = new_shift.max_bookings
-            existing.location = new_shift.location
-            existing.location_id = new_shift.location_id
-            existing.category = new_shift.category
+            title = renamed_shift_title(
+                existing.title, old_name=old_name, new_name=effective_name
+            )
+            if title is not None:
+                existing.title = title
+            if has_place(existing, old_place):
+                existing.location = new_shift.location
+                existing.location_id = new_shift.location_id
+            if (existing.category or None) == (old_category or None):
+                existing.category = new_shift.category
             session.add(existing)
 
         await session.flush()

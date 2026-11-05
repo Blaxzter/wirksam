@@ -4,7 +4,12 @@ services:
         ports:
             - "${POSTGRES_PORT}:5432"
 
+    # Off in development, so it stops holding port 8080. Start it with
+    # `docker compose --profile adminer up adminer -d`, or keep it on by adding
+    # adminer to COMPOSE_PROFILES in .env (comma-separated, e.g. s3,adminer).
+    # Production runs docker-compose.yml alone, where it has no profile.
     adminer:
+        profiles: ["adminer"]
         restart: "no"
         ports:
             - "8080:8080"

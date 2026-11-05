@@ -92,6 +92,7 @@ await build({
 const {
   render,
   i18n,
+  docFor,
   DEFAULT_PUBLIC_LOCALE,
   PUBLIC_LOCALES,
   PUBLIC_PAGES,
@@ -168,21 +169,65 @@ function faqPage(url, locale, entries) {
   }
 }
 
-/** Home › page, for the pages below the landing page (`breadcrumbKey` in seo.ts). */
+/**
+ * Home › page, or Home › parent › page, for the pages below the landing page
+ * (`breadcrumbKey` and `parent` in seo.ts).
+ */
 function breadcrumbList(page, locale, url) {
+  const parent = page.parent && PUBLIC_PAGES.find((p) => p.routeName === page.parent)
+  const items = [
+    { name: 'WirkSam', item: absolute(localizedPath('/', locale)) },
+    parent && {
+      name: t(locale, parent.breadcrumbKey),
+      item: absolute(localizedPath(parent.path, locale)),
+    },
+    { name: t(locale, page.breadcrumbKey), item: url },
+  ].filter(Boolean)
   return {
     '@type': 'BreadcrumbList',
     '@id': `${url}#breadcrumb`,
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'WirkSam',
-        item: absolute(localizedPath('/', locale)),
-      },
-      { '@type': 'ListItem', position: 2, name: t(locale, page.breadcrumbKey), item: url },
-    ],
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      ...item,
+    })),
   }
+}
+
+/** A guide's sections are its steps, each with the first screenshot it shows. */
+function howTo(doc, locale, url) {
+  return {
+    '@type': 'HowTo',
+    '@id': `${url}#howto`,
+    inLanguage: locale,
+    name: doc.title,
+    description: doc.lede,
+    step: doc.sections.map((section, index) => {
+      const shot = section.blocks.find((block) => block.type === 'shots')?.shots[0]
+      return {
+        '@type': 'HowToStep',
+        position: index + 1,
+        name: section.title,
+        text: section.text,
+        url: `${url}#${section.id}`,
+        ...(shot && { image: `${SITE_URL}/screenshots/${locale}/${shot.name}-light.png` }),
+      }
+    }),
+  }
+}
+
+/** What a feature page or guide adds to the page's structured data. */
+function docGraph(page, locale, url) {
+  const doc = docFor(page.doc.id, locale)
+  return [
+    page.doc.kind === 'guide' && howTo(doc, locale, url),
+    doc.faq.length > 0 &&
+      faqPage(
+        url,
+        locale,
+        doc.faq.map(({ question, text }) => ({ question, answer: text })),
+      ),
+  ]
 }
 
 function structuredData(page, locale, url, config) {
@@ -198,6 +243,7 @@ function structuredData(page, locale, url, config) {
             answer: t(locale, `${page.faq.base}.${key}.answer`),
           })),
         ),
+      ...(page.doc ? docGraph(page, locale, url) : []),
     ].filter(Boolean)
     return graph.length ? [jsonLd({ '@context': 'https://schema.org', '@graph': graph })] : []
   }

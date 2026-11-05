@@ -3,7 +3,7 @@
 /**
  * Start the whole local dev stack from one terminal:
  *
- *   1. Postgres + Adminer in Docker (waits until the DB is healthy), and the
+ *   1. Postgres in Docker (waits until the DB is healthy), and the
  *      Garage bucket when .env says STORAGE_BACKEND=s3 (.env.example does)
  *   2. Alembic migrations, and the bucket's CORS rule
  *   3. Dev login + demo event (`just seed`, a no-op once they exist)
@@ -11,7 +11,7 @@
  *      their output interleaved and prefixed
  *
  * Ctrl+C stops backend and frontend; the containers keep running so the
- * next start is instant (`docker compose stop db adminer garage` to stop them).
+ * next start is instant (`docker compose stop db garage` to stop them).
  *
  * Flags:
  *   --no-migrate   skip `alembic upgrade head`
@@ -139,8 +139,8 @@ for (const [name, port] of [['frontend', FRONTEND_PORT], ['backend', BACKEND_POR
     }
 }
 
-console.log(`\n▶ Starting Postgres + Adminer${useGarage ? ' + Garage' : ''}...`);
-run(`docker compose up db adminer${useGarage ? ' garage' : ''} -d --wait`);
+console.log(`\n▶ Starting Postgres${useGarage ? ' + Garage' : ''}...`);
+run(`docker compose up db${useGarage ? ' garage' : ''} -d --wait`);
 
 if (migrate) {
     console.log('\n▶ Running migrations...');

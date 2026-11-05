@@ -8,6 +8,8 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking_reminder import booking_reminder as crud_reminder
+from app.crud.event import event as crud_event
 from app.crud.event_invitation_task import (
     event_invitation_task as crud_invitation_task,
 )
@@ -20,9 +22,11 @@ from app.logic.event_scope import get_user_event_scope, get_visible_event_ids
 from app.logic.location_assignment import location_patch
 from app.logic.locations import (
     apply_location,
+    follow_task_place,
     resolve_location,
     unlink_task_children,
 )
+from app.logic.notifications.triggers import dispatch_booking_cancelled_by_admin
 from app.logic.permissions import (
     require_event_role,
     require_task_manager,
@@ -47,7 +51,7 @@ from app.schemas.task import (
 router = APIRouter()
 
 #: What only event admins may change on a task, even when a person in charge
-#: sends the edit: publishing fans a notification out to every account,
+#: sends the edit: publishing fans a notification out to the event's members,
 #: ``team_id`` decides who may book, moving needs admin in both events, and
 #: vouchers are currency, so the rate and the places that take them are the
 #: organisers' decision.
@@ -240,7 +244,9 @@ async def update_task(
         # shifts not over yet.
         await vouchers.settle_earnings(
             session,
-            now=clock.wall_clock_now(),
+            now=clock.wall_clock_now(
+                await crud_event.zone_of(session, db_task.event_id)
+            ),
             task_ids=[db_task.id],
             include_zero=rate_changing,
         )
@@ -266,6 +272,13 @@ async def update_task(
     update_data.update(
         await location_patch(session, db_task, update_data, event_id=target_event_id)
     )
+    old_place = (db_task.location, db_task.location_id)
+    new_place = (
+        update_data.get("location", db_task.location),
+        update_data.get("location_id", db_task.location_id),
+    )
+    if new_place != old_place:
+        await follow_task_place(session, db_task.id, old=old_place, new=new_place)
     new_name = update_data.get("name")
     if new_name and new_name != db_task.name:
         await _retitle_shifts(
@@ -275,6 +288,9 @@ async def update_task(
             session, task_id=db_task.id, old_name=db_task.name, new_name=new_name
         )
     updated = await crud_task.update(session, db_obj=db_task, obj_in=update_data)
+    if moving:
+        # Its shifts are now read in the target event's zone.
+        await crud_reminder.reschedule(session, task_id=updated.id)
 
     # Notify when task is published
     if old_status != "published" and updated.status == "published":
@@ -344,6 +360,7 @@ async def delete_task(
     task_id: str,
     session: DBDep,
     current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
     cancellation_reason: str | None = Query(default=None),
 ) -> None:
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
@@ -354,19 +371,30 @@ async def delete_task(
     result = await session.execute(stmt)
     slot_ids = list(result.scalars().all())
 
+    now = clock.wall_clock_now(await crud_event.zone_of(session, db_task.event_id))
     # What the worked shifts earned stays earned, under the task's name.
-    await vouchers.settle_earnings(
-        session, now=clock.wall_clock_now(), task_ids=[db_task.id]
-    )
+    await vouchers.settle_earnings(session, now=now, task_ids=[db_task.id])
     # An invitation that existed only to run this task is withdrawn, so its
     # link says so; the links themselves would go by cascade.
     await crud_invitation_task.detach_task(session, task_id=db_task.id)
     # Cancel confirmed bookings with snapshot before deleting
-    await crud_booking.cancel_bookings_for_shifts(
+    cancelled = await crud_booking.cancel_bookings_for_shifts(
         session,
         slot_ids=slot_ids,
         task_name=db_task.name,
         cancellation_reason=cancellation_reason,
+    )
+    background_tasks.add_task(
+        dispatch_booking_cancelled_by_admin,
+        cancelled=cancelled,
+        actor_id=current_user.id,
+        task_id=db_task.id,
+        task_name=db_task.name,
+        task_is_open=False,
+        now=now,
+        event_id=db_task.event_id,
+        reason=cancellation_reason,
+        is_sandbox=db_task.is_sandbox,
     )
 
     await session.delete(db_task)

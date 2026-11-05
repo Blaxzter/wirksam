@@ -18,7 +18,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
-from app.core.config import settings
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.voucher import voucher as crud_voucher
 from app.logic import vouchers, work_hours
@@ -30,6 +29,7 @@ from app.models.task import Task
 from app.models.user import User
 from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 from tests.fixtures.client import act_as
+from tests.fixtures.clock import fixed_clock
 
 DAY = dt.date(2026, 6, 11)
 
@@ -225,16 +225,6 @@ class TestPassRedeemable:
         now = at(DAY, 12)
         p = self._pass(expires_at=now + dt.timedelta(minutes=1), used_at=now)
         assert not vouchers.pass_redeemable(p, now)
-
-
-class TestToUtc:
-    def test_a_berlin_summer_evening_is_two_hours_earlier_in_utc(self) -> None:
-        assert settings.EVENT_TIMEZONE == "Europe/Berlin"
-        assert vouchers.to_utc(at(DAY, 18)) == at(DAY, 16)
-
-    def test_follows_the_setting(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Etc/GMT-3")  # UTC+3
-        assert vouchers.to_utc(at(DAY, 18)) == at(DAY, 15)
 
 
 # ── Derivation ────────────────────────────────────────────────────
@@ -663,7 +653,7 @@ class TestEarnedIsEarned:
 
     @pytest.fixture(autouse=True)
     def _evening(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr("app.logic.clock.wall_clock_now", lambda: at(DAY, 20))
+        monkeypatch.setattr("app.logic.clock.wall_clock_now", fixed_clock(at(DAY, 20)))
 
     async def test_lowering_the_rate_keeps_what_ended_shifts_earned(
         self,

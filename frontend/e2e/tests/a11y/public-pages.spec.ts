@@ -41,6 +41,24 @@ test.describe('a11y – public pages', () => {
     await expectNoA11yViolations(page, { label: 'comparison (/alternatives)' })
   })
 
+  test('feature overview has no serious or critical violations', async ({ page }) => {
+    await page.goto('/features')
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    await expectNoA11yViolations(page, { label: 'feature overview (/features)' })
+  })
+
+  test('feature page has no serious or critical violations', async ({ page }) => {
+    await page.goto('/de/features/vouchers')
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    await expectNoA11yViolations(page, { label: 'feature page (/de/features/vouchers)' })
+  })
+
+  test('guide has no serious or critical violations', async ({ page }) => {
+    await page.goto('/guides/vouchers')
+    await expect(page.getByTestId('page-heading')).toBeVisible()
+    await expectNoA11yViolations(page, { label: 'guide (/guides/vouchers)' })
+  })
+
   test('club festival page has no serious or critical violations', async ({ page }) => {
     await page.goto('/de/use-cases/club-festival')
     await expect(page.getByTestId('page-heading')).toBeVisible()

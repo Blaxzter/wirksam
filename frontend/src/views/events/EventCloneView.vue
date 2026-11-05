@@ -75,6 +75,7 @@ import type {
   TaskRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { timeZoneLabel } from '@/lib/timezones'
 
 const { t, locale } = useI18n()
 const { formatTimeRange } = useFormatters()
@@ -1142,6 +1143,9 @@ async function handleSubmit() {
       )
     }
     toast.success(parts.join(' '))
+    // The profile holds your role per event, and doesn't know the new one yet.
+    // Without it the settings show only the Details tab until a reload.
+    await authStore.loadProfile().catch(() => {})
     void router.push({ name: 'event-settings', params: { eventId: res.data.event.id } })
   } catch (error) {
     toastApiError(error)
@@ -1939,6 +1943,14 @@ async function handleSubmit() {
                 sourceEvent.visibility === 'public'
                   ? t('duties.events.clone.review.visibilityPublic')
                   : t('duties.events.clone.review.visibilityPrivate')
+              }}
+            </p>
+
+            <p class="text-sm text-muted-foreground" data-testid="review-timezone">
+              {{
+                t('duties.events.clone.review.timezone', {
+                  zone: timeZoneLabel(sourceEvent.timezone),
+                })
               }}
             </p>
 

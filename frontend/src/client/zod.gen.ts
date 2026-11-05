@@ -269,6 +269,7 @@ export const zDashboardOpenShift = z
     task_name: z.string(),
     event_id: z.uuid().nullish(),
     event_name: z.string().nullish(),
+    event_timezone: z.string().nullish(),
     title: z.string(),
     date: z.iso.date(),
     start_time: z.iso.time().nullish(),
@@ -296,6 +297,7 @@ export const zDashboardShift = z
     task_name: z.string(),
     event_id: z.uuid().nullish(),
     event_name: z.string().nullish(),
+    event_timezone: z.string().nullish(),
     title: z.string(),
     date: z.iso.date(),
     start_time: z.iso.time().nullish(),
@@ -403,6 +405,7 @@ export const zEventCreate = z.object({
   status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
   visibility: z.enum(['public', 'private']).optional().default('private'),
   created_by_id: z.uuid().nullish(),
+  timezone: z.string().max(64).optional(),
 })
 
 /**
@@ -527,6 +530,7 @@ export const zEventRead = z.object({
   sandbox_expires_at: z.iso.datetime().nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
+  timezone: z.string(),
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
   managers_edit_voucher_shifts: z.boolean().optional().default(false),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
@@ -597,6 +601,7 @@ export const zEventUpdate = z.object({
   default_end_time: z.iso.time().nullish(),
   status: z.enum(['draft', 'published', 'archived']).nullish(),
   visibility: z.enum(['public', 'private']).nullish(),
+  timezone: z.string().max(64).nullish(),
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).nullish(),
   managers_edit_voucher_shifts: z.boolean().nullish(),
 })
@@ -860,6 +865,7 @@ export const zLocationShiftRead = z
     is_booked_by_me: z.boolean().optional().default(false),
     my_booking_id: z.uuid().nullish(),
     event_id: z.uuid().nullish(),
+    event_timezone: z.string().nullish(),
     team_id: z.uuid().nullish(),
     team_name: z.string().nullish(),
     team_requires_approval: z.boolean().nullish(),
@@ -1481,6 +1487,7 @@ export const zShiftRead = z.object({
   is_booked_by_me: z.boolean().optional().default(false),
   collides_with_my_booking: z.boolean().optional().default(false),
   event_id: z.uuid().nullish(),
+  event_timezone: z.string().nullish(),
   team_id: z.uuid().nullish(),
   team_name: z.string().nullish(),
   team_requires_approval: z.boolean().nullish(),
@@ -1515,6 +1522,7 @@ export const zShiftSummary = z
     location: z.string().nullish(),
     category: z.string().nullish(),
     task_name: z.string().nullish(),
+    event_timezone: z.string().nullish(),
   })
   .register(z.globalRegistry, {
     description: 'Lightweight shift info nested inside a booking response.',
@@ -1747,6 +1755,7 @@ export const zFeedTaskItem = z
     team_id: z.uuid().nullish(),
     vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
     is_voucher_point: z.boolean().optional().default(false),
+    event_timezone: z.string().nullish(),
     id: z.uuid(),
     created_at: z.iso.datetime(),
     updated_at: z.iso.datetime(),
@@ -1864,6 +1873,7 @@ export const zTaskRead = z.object({
   team_id: z.uuid().nullish(),
   vouchers_per_shift: z.int().gte(0).lte(50).optional().default(0),
   is_voucher_point: z.boolean().optional().default(false),
+  event_timezone: z.string().nullish(),
   id: z.uuid(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
@@ -3480,7 +3490,7 @@ export const zVoucherShift = z
     end_time: z.iso.time().nullish(),
     ends_at: z.iso.datetime().register(z.globalRegistry, {
       description:
-        'When the shift ends, as naive UTC (the wall clock converted through EVENT_TIMEZONE), the same convention as created_at, so shifts and entries sort on one time line',
+        "When the shift ends, as naive UTC (the wall clock converted through the event's zone), the same convention as created_at, so shifts and entries sort on one time line",
     }),
     vouchers: z.int(),
     completed: z.boolean(),
@@ -3593,6 +3603,7 @@ export const zEventReadWritable = z.object({
   sandbox_expires_at: z.iso.datetime().nullish(),
   created_at: z.iso.datetime(),
   updated_at: z.iso.datetime(),
+  timezone: z.string(),
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
   managers_edit_voucher_shifts: z.boolean().optional().default(false),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
