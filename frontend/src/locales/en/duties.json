@@ -23,7 +23,6 @@
             "type": "Availability Type"
         },
         "fullyAvailableDays": "Fully available on all {count} days",
-        "fullyAvailableHint": "You can be scheduled for any matching shift in the programme.",
         "fullyAvailableShort": "All programme days",
         "heatLegendFull": "full",
         "heatLegendLow": "less",
@@ -164,7 +163,6 @@
                 "showShifts": "Show the shifts",
                 "status": {
                     "draft": {
-                        "hint": "Stays hidden until you publish this task from the task list. Nobody can book a shift before then.",
                         "label": "A draft",
                         "short": "Draft"
                     },
@@ -339,7 +337,6 @@
         },
         "fields": {
             "defaultTimes": "Default time window",
-            "defaultTimesHint": "Optional. The availability grid shows only these hours by default. Tasks can still be scheduled outside them. For events that run into the next morning, leave both fields empty and set the times on each task instead.",
             "defaultTimesInvalid": "The end time must be after the start time. Time windows past midnight aren't supported yet, so leave both fields empty for events that run overnight.",
             "description": "Description",
             "endDate": "End Date",
@@ -358,6 +355,8 @@
             "emailsLabel": "Email addresses",
             "emailsPlaceholder": "anna{'@'}example.com, ben{'@'}example.com",
             "empty": "No open invitations.",
+            "expiredEmailHint": "This one no longer works. Invite the address again above, and withdraw this one to clear it.",
+            "expiredLinkHint": "This link no longer works. Create a new one above, and withdraw this one to clear it.",
             "forTasks": "In charge of: {tasks}",
             "linkCopied": "Link copied",
             "linksTitle": "Share links",
@@ -399,7 +398,6 @@
             "signIn": "I already have an account",
             "signedOutBody": "Sign in or create an account to see the invitation and accept it.",
             "signedOutTitle": "You have been invited",
-            "tasksHint": "As the person in charge you can edit the task and its shifts and see who has booked.",
             "tasksTitle": "You're asked to be in charge of"
         },
         "join": {

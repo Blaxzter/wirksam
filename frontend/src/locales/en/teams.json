@@ -28,7 +28,6 @@
         "requirementsTitle": "Checks before joining",
         "requiresApproval": "Approval needed to join",
         "requiresApprovalOff": "Anyone in the event can join straight away.",
-        "requiresApprovalOn": "People ask to join, and a team lead or event admin approves them.",
         "save": "Save",
         "updated": "Team saved",
         "validFor": "Valid for (years)",
@@ -39,9 +38,7 @@
         "afterNamed": "We'll let you know when {names} decides.",
         "attach": "Attach a file",
         "attachFor": "Attach a file for {label}",
-        "attachHint": "PDF or photo, up to 5 MB, optional. Only the team leads and event admins see it, and it is deleted once your request has been decided.",
         "contact": "Questions? {contact}",
-        "description": "A team lead or an event admin looks at your request and decides.",
         "fileAttached": "File attached",
         "fileRemoved": "File removed",
         "fileTooLarge": "The file is larger than 5 MB. Please choose a smaller one.",
@@ -80,7 +77,6 @@
         "askedOn": "You asked on {date}.",
         "bringIt": "Show it to the team lead",
         "decider": "{names}, the team lead, decides. | {names}, the team leads, decide.",
-        "deciderAdmins": "The event admins decide.",
         "leads": "{names}, team lead | {names}, team leads",
         "leave": "Leave team",
         "leaveConfirm": "Leave “{name}”?",
@@ -131,7 +127,6 @@
         "notMember": "Teams belong to an event. Join this event first to see its teams.",
         "retry": "Try again",
         "subtitle": "Some tasks are reserved for a team, like the cash desk or the kitchen. Join a team to book its shifts.",
-        "subtitleAdmin": "Group people by job or qualification. Reserve a task for a team and only its members can book it.",
         "title": "Teams"
     },
     "presets": {

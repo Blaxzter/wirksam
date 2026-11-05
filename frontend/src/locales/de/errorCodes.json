@@ -95,7 +95,6 @@
         "document_not_found": "Diese Datei ist nicht mehr da. Sie wird gelöscht, sobald über eine Anfrage entschieden ist.",
         "document_too_large": "Die Datei ist größer als 5 MB. Bitte wähle eine kleinere.",
         "document_unsupported": "Nur PDF-Dateien und Fotos (PNG, JPEG, WebP) können angehängt werden.",
-        "forbidden": "Das können nur die Teamleitungen und die Admins der Veranstaltung.",
         "member_not_found": "Diese Person ist nicht in diesem Team.",
         "name_taken": "In dieser Veranstaltung gibt es schon ein Team mit diesem Namen.",
         "not_event_member": "Nur Leute aus dieser Veranstaltung können ihren Teams hinzugefügt werden.",

@@ -30,7 +30,7 @@ Under "Invitations", enter one address or a whole list in "Email addresses", sep
 
 Someone with an account gets the invitation as an ordinary message, according to their own settings. Someone without one gets an email in the language of the person inviting them, with a button to create an account. It doesn't carry any text of your own.
 
-This kind of invitation works for 14 days, once, and only for that address. Someone who signs in with a different address can't accept it. Open invitations are listed under "Waiting for a reply", where you can also withdraw them. WirkSam skips addresses that are already taking part or already invited, and tells you which ones afterwards.
+This kind of invitation works for 14 days, once, and only for that address. Someone who signs in with a different address can't accept it. Open invitations are listed under "Waiting for a reply", where you can also withdraw them. One that has run out is marked "Expired": invite the address again, and withdraw the old one to clear the list. WirkSam skips addresses that are already taking part or already invited, and tells you which ones afterwards.
 
 ## Daily limits
 
@@ -43,7 +43,7 @@ Withdrawn and accepted invitations count too. Anything over the limit isn't sent
 
 ## Inviting with a link
 
-"Create share link" makes a link and copies it straight away. Share it wherever you like, for example in your club's group chat. Any number of people can use it, it works for 14 days and you don't need any addresses. Under "Share links" you see how often it was used, and you can withdraw it there.
+"Create share link" makes a link and copies it straight away. Share it wherever you like, for example in your club's group chat. Any number of people can use it, it works for 14 days and you don't need any addresses. Under "Share links" you see how often it was used, and you can withdraw it there. A link that has run out is marked "Expired" and can't be copied any more.
 
 "Join as" applies here too. If you create the link with the role "Organiser", everyone who uses it becomes an organiser. For a big group, choose "Member".
 

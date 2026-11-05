@@ -23,7 +23,6 @@
             "type": "Verfügbarkeitstyp"
         },
         "fullyAvailableDays": "Voll verfügbar an allen {count} Tagen",
-        "fullyAvailableHint": "Du kannst für jede passende Schicht im Programm eingeplant werden.",
         "fullyAvailableShort": "Alle Programmtage",
         "heatLegendFull": "voll",
         "heatLegendLow": "wenig",
@@ -164,7 +163,6 @@
                 "showShifts": "Schichten anzeigen",
                 "status": {
                     "draft": {
-                        "hint": "Bleibt verborgen, bis du diese Aufgabe in der Aufgabenliste veröffentlichst. Vorher kann niemand eine Schicht buchen.",
                         "label": "Entwurf",
                         "short": "Entwurf"
                     },
@@ -339,7 +337,6 @@
         },
         "fields": {
             "defaultTimes": "Standard-Zeitfenster",
-            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lass beide Felder leer und lege die Zeiten bei den einzelnen Aufgaben fest.",
             "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lass für Veranstaltungen über Nacht beide Felder leer.",
             "description": "Beschreibung",
             "endDate": "Enddatum",
@@ -358,6 +355,8 @@
             "emailsLabel": "E-Mail-Adressen",
             "emailsPlaceholder": "anna{'@'}example.com, ben{'@'}example.com",
             "empty": "Keine offenen Einladungen.",
+            "expiredEmailHint": "Diese Einladung gilt nicht mehr. Lade die Adresse oben noch einmal ein und ziehe diese zurück, um sie aus der Liste zu nehmen.",
+            "expiredLinkHint": "Dieser Link gilt nicht mehr. Erstelle oben einen neuen und ziehe diesen zurück, um ihn aus der Liste zu nehmen.",
             "forTasks": "Verantwortlich für: {tasks}",
             "linkCopied": "Link kopiert",
             "linksTitle": "Geteilte Links",
@@ -399,7 +398,6 @@
             "signIn": "Ich habe schon ein Konto",
             "signedOutBody": "Melde dich an oder lege ein Konto an, um die Einladung zu sehen und anzunehmen.",
             "signedOutTitle": "Du wurdest eingeladen",
-            "tasksHint": "Als Verantwortliche:r kannst du die Aufgabe und ihre Schichten bearbeiten und sehen, wer gebucht hat.",
             "tasksTitle": "Du sollst verantwortlich sein für"
         },
         "join": {

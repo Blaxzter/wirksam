@@ -30,7 +30,7 @@ Trag unter „Einladungen“ im Feld „E-Mail-Adressen“ eine Adresse oder ein
 
 Wer schon ein Konto hat, bekommt die Einladung als normale Nachricht, nach den eigenen Einstellungen. Wer noch keines hat, bekommt eine E-Mail in der Sprache der einladenden Person, mit einem Knopf zum Anlegen des Kontos. Einen eigenen Text von euch enthält sie nicht.
 
-So eine Einladung gilt 14 Tage, nur einmal und nur für diese Adresse. Wer sich mit einer anderen Adresse anmeldet, kann sie nicht annehmen. Offene Einladungen stehen unter „Warten auf Antwort“, dort könnt ihr sie auch zurückziehen. Adressen, die schon dabei oder schon eingeladen sind, überspringt WirkSam und nennt sie euch danach.
+So eine Einladung gilt 14 Tage, nur einmal und nur für diese Adresse. Wer sich mit einer anderen Adresse anmeldet, kann sie nicht annehmen. Offene Einladungen stehen unter „Warten auf Antwort“, dort könnt ihr sie auch zurückziehen. Eine abgelaufene ist mit „Abgelaufen“ markiert: Ladet die Adresse noch einmal ein und zieht die alte zurück, damit die Liste aufgeräumt bleibt. Adressen, die schon dabei oder schon eingeladen sind, überspringt WirkSam und nennt sie euch danach.
 
 ## Grenzen pro Tag
 
@@ -43,7 +43,7 @@ Zurückgezogene und schon angenommene Einladungen zählen mit. Was darüber hina
 
 ## Per Link einladen
 
-„Link erstellen“ erzeugt einen Link und kopiert ihn gleich. Den teilt ihr, wo ihr wollt, zum Beispiel in der Gruppe eures Vereins. Beliebig viele Leute können ihn nutzen, er gilt 14 Tage und braucht keine Adressen. Unter „Geteilte Links“ seht ihr, wie oft er genutzt wurde, und könnt ihn zurückziehen.
+„Link erstellen“ erzeugt einen Link und kopiert ihn gleich. Den teilt ihr, wo ihr wollt, zum Beispiel in der Gruppe eures Vereins. Beliebig viele Leute können ihn nutzen, er gilt 14 Tage und braucht keine Adressen. Unter „Geteilte Links“ seht ihr, wie oft er genutzt wurde, und könnt ihn zurückziehen. Ein abgelaufener Link ist mit „Abgelaufen“ markiert und lässt sich nicht mehr kopieren.
 
 „Beitreten als“ gilt auch hier. Erstellt ihr den Link mit der Rolle „Organisator:in“, wird jede Person, die ihn nutzt, Organisator:in. Für die große Gruppe nehmt ihr also „Mitglied“.
 

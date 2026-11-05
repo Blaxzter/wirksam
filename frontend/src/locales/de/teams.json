@@ -28,7 +28,6 @@
         "requirementsTitle": "Nachweise vor dem Beitritt",
         "requiresApproval": "Beitritt nur mit Freigabe",
         "requiresApprovalOff": "Alle in der Veranstaltung können sofort beitreten.",
-        "requiresApprovalOn": "Wer beitreten möchte, fragt an. Eine Teamleitung oder ein Veranstaltungs-Admin gibt frei.",
         "save": "Speichern",
         "updated": "Team gespeichert",
         "validFor": "Gültig für (Jahre)",
@@ -39,9 +38,7 @@
         "afterNamed": "Wir sagen dir Bescheid, sobald {names} entschieden hat.",
         "attach": "Datei anhängen",
         "attachFor": "Datei für {label} anhängen",
-        "attachHint": "PDF oder Foto, bis 5 MB, freiwillig. Nur die Teamleitung und die Admins der Veranstaltung sehen sie, und sie wird gelöscht, sobald über deine Anfrage entschieden ist.",
         "contact": "Fragen? {contact}",
-        "description": "Eine Teamleitung oder ein Admin der Veranstaltung sieht sich deine Anfrage an und entscheidet.",
         "fileAttached": "Datei angehängt",
         "fileRemoved": "Datei entfernt",
         "fileTooLarge": "Die Datei ist größer als 5 MB. Bitte wähle eine kleinere.",
@@ -80,7 +77,6 @@
         "askedOn": "Angefragt am {date}.",
         "bringIt": "Der Teamleitung vorzeigen",
         "decider": "{names} aus der Teamleitung entscheidet. | {names} aus der Teamleitung entscheiden.",
-        "deciderAdmins": "Die Admins der Veranstaltung entscheiden.",
         "leads": "{names}, Teamleitung | {names}, Teamleitung",
         "leave": "Team verlassen",
         "leaveConfirm": "„{name}“ verlassen?",
@@ -131,7 +127,6 @@
         "notMember": "Teams gehören zu einer Veranstaltung. Tritt zuerst dieser Veranstaltung bei, um ihre Teams zu sehen.",
         "retry": "Erneut versuchen",
         "subtitle": "Manche Aufgaben sind einem Team vorbehalten, etwa die Kasse oder die Küche. Tritt einem Team bei, um seine Schichten zu buchen.",
-        "subtitleAdmin": "Fasse Leute nach Aufgabe oder Qualifikation zusammen. Ist eine Aufgabe einem Team vorbehalten, können nur seine Mitglieder sie buchen.",
         "title": "Teams"
     },
     "presets": {
