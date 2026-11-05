@@ -726,7 +726,11 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
     await open(page, '/app/availability')
     await capture(page, 'availability', mode)
 
-    await page.goto(`${BASE_URL}/app/settings/notifications`)
+    // The picture is for the row per kind of message, which sits below the fold.
+    await open(page, '/app/settings/notification-preferences')
+    await page
+      .getByTestId('section-per-type')
+      .evaluate((section) => section.scrollIntoView({ block: 'start' }))
     await capture(page, 'notification-preferences', mode)
 
     await open(page, `/app/tasks/${seeded.featuredTaskId}/add-shifts`)
