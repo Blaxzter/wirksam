@@ -3,6 +3,7 @@
         "about": "Beschreibung",
         "aboutPlaceholder": "Was macht dieses Team, und was sollte man mitbringen oder wissen?",
         "acceptsDocument": "Datei anhängen erlaubt",
+        "approvalOffWarning": "Die wartende Person wird beim Speichern aufgenommen, und angehängte Dateien werden gelöscht. | Die {count} wartenden Personen werden beim Speichern aufgenommen, und angehängte Dateien werden gelöscht.",
         "askIssueDate": "Nach dem Ausstellungsdatum fragen",
         "contact": "Kontakt",
         "contactPlaceholder": "Ansprechperson, z. B. Anna, 0151 1234567",

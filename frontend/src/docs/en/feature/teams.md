@@ -28,7 +28,7 @@ On the Teams page, people find their own teams under "Your teams" and the rest u
 
 New teams start with "Approval needed to join" on. Someone who wants in sends a request, with a note if they like. Team leads and organisers get an email and a push message, and the request appears at the top of the Teams page. For a team without checks, they decide right in the row with "Approve" or "Decline".
 
-Turn approval off and the team is open: anyone in the event can join straight away and book. That suits tasks where people can judge for themselves. If requests are waiting when you turn it off, they are all approved at that moment.
+Turn approval off and the team is open: anyone in the event can join straight away and book. That suits tasks where people can judge for themselves. If requests are waiting when you turn it off, they are all approved when you save, and any files attached to them are deleted. The form says how many before you do.
 
 The person hears the result: by email and push if they're in, by email if they're not, and in their inbox either way. A decline needs no reason, and they can ask again.
 

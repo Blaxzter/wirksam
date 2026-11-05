@@ -60,6 +60,14 @@ const isEdit = computed(() => !!props.team)
 /** Checks only make sense when someone decides, so they pin approval on. */
 const approvalLocked = computed(() => requirements.value.length > 0)
 const atLimit = computed(() => requirements.value.length >= MAX_REQUIREMENTS)
+/**
+ * Saving a team that has just stopped needing approval lets in everyone who is
+ * waiting and deletes the files they attached, so that gets said first.
+ */
+const approvalLeavingFor = computed(() => {
+  const leaving = !!props.team?.requires_approval && !requiresApproval.value && !approvalLocked.value
+  return leaving ? (props.team?.pending_count ?? 0) : 0
+})
 
 watch(open, (isOpen) => {
   if (!isOpen) return
@@ -217,6 +225,14 @@ async function save() {
             @update:model-value="(v: boolean) => (requiresApproval = v)"
           />
         </div>
+        <p
+          v-if="approvalLeavingFor > 0"
+          class="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
+          role="note"
+          data-testid="team-approval-off-warning"
+        >
+          {{ t('teams.form.approvalOffWarning', { count: approvalLeavingFor }, approvalLeavingFor) }}
+        </p>
 
         <section class="space-y-3" aria-labelledby="team-requirements-title">
           <div class="space-y-1">

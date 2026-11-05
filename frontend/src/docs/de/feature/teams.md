@@ -28,7 +28,7 @@ Auf der Seite „Teams“ findet jede Person ihre eigenen Teams unter „Deine T
 
 Neue Teams stehen auf „Beitritt nur mit Freigabe“. Wer dazukommen möchte, schickt eine Anfrage, auf Wunsch mit einer Nachricht. Teamleitungen und Organisator:innen bekommen eine E-Mail und eine Push-Nachricht, und die Anfrage steht oben auf der Seite „Teams“. Bei einem Team ohne Nachweise entscheiden sie direkt in der Zeile mit „Freigeben“ oder „Ablehnen“.
 
-Schaltet ihr die Freigabe aus, ist das Team offen: Alle in der Veranstaltung können sofort beitreten und buchen. Das passt, wenn die Leute sich selbst einschätzen können. Warten beim Ausschalten noch Anfragen, sind sie damit alle angenommen.
+Schaltet ihr die Freigabe aus, ist das Team offen: Alle in der Veranstaltung können sofort beitreten und buchen. Das passt, wenn die Leute sich selbst einschätzen können. Warten beim Ausschalten noch Anfragen, sind sie beim Speichern alle angenommen, und angehängte Dateien werden gelöscht. Das Formular sagt vorher, wie viele es sind.
 
 Die Person erfährt das Ergebnis: per E-Mail und Push, wenn sie dabei ist, per E-Mail, wenn nicht, und in beiden Fällen im Postfach. Eine Ablehnung braucht keinen Grund, und man kann erneut anfragen.
 

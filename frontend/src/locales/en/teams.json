@@ -3,6 +3,7 @@
         "about": "Description",
         "aboutPlaceholder": "What does this team do, and what do people need to bring or know?",
         "acceptsDocument": "People may attach a file",
+        "approvalOffWarning": "The person waiting to join is let in when you save, and any files they attached are deleted. | The {count} people waiting to join are let in when you save, and any files they attached are deleted.",
         "askIssueDate": "Ask for the issue date",
         "contact": "Contact",
         "contactPlaceholder": "Who to ask, e.g. Anna, 0151 1234567",
