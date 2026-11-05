@@ -51,7 +51,7 @@ Das machst du für jede Aufgabe einzeln.
 Öffne „Veranstaltungen verwalten“, auf dem Handy unter „Mehr“. Tippe in der Zeile deiner Veranstaltung auf den Stift, auf dem Handy wischst du die Tabelle dafür zur Seite. Im Tab „Personen“ steht weiter unten die Karte „Einladungen“:
 
 - **Per E-Mail:** Adressen unter „E-Mail-Adressen“ eintragen und „Einladung senden“ wählen.
-- **Per Link:** „Link erstellen“ kopiert einen Link, den du zum Beispiel in eure Gruppe schickst.
+- **Per Link:** „Link erstellen“ kopiert einen Link, den du zum Beispiel in deine Gruppe schickst.
 
 Unter „Beitreten als“ ist „Mitglied“ vorgewählt, das reicht zum Buchen. Für Leute, die mitplanen sollen, stellst du „Organisator:in“ ein.
 

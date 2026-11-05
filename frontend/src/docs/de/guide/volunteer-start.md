@@ -13,13 +13,13 @@ related: feature/booking, feature/notifications, feature/members
 
 Danach siehst du die Veranstaltung. Tippe auf „Annehmen und mitmachen“.
 
-> Kam die Einladung per E-Mail, gilt sie nur für diese Adresse, also nimm dieselbe fürs Konto. Eine Einladung gilt 14 Tage. Ist sie abgelaufen, frag die Organisation nach einer neuen.
+> Kam die Einladung per E-Mail, gilt sie nur für diese Adresse, also nimm dieselbe fürs Konto. Eine Einladung gilt 14 Tage. Ist sie abgelaufen, frag die Organisator:innen nach einer neuen.
 
 ## Sagen, wann du kannst
 
 Öffne „Verfügbarkeit“, am Handy unter „Mehr“. Wähle „Voll verfügbar“, „Tägliches Fenster“ oder „Bestimmte Zeiten“ (am Handy „Voll“, „Täglich“ oder „Termine“) und speichere oben rechts, am Handy mit dem Haken.
 
-Das sieht nur die Organisation, und gebucht ist damit noch nichts.
+Das sehen nur die Organisator:innen, und gebucht ist damit noch nichts.
 
 ![Die Seite „Meine Verfügbarkeit“ mit den drei Arten und dem Raster aus Tagen und Stunden](shot:availability)
 

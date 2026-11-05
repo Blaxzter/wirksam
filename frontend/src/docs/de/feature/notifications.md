@@ -77,7 +77,7 @@ Für eine einzelne Schicht öffnest du die Buchung. Auf ihrer Seite gibt es die 
 
 Nachrichten kommen auf Deutsch oder Englisch, in der Sprache deines Kontos. Das ist zuerst die Sprache, in der du dich registriert hast. Ändern kannst du sie im Profilmenü unter „Konto“ und „Sprache“, damit wechselt auch die Sprache der App. E-Mails, Push und Telegram folgen ihr.
 
-Eine Einladung an eine Adresse ohne Konto kommt in der Sprache der einladenden Person. Namen von Aufgaben und Schichten bleiben, wie die Organisation sie geschrieben hat.
+Eine Einladung an eine Adresse ohne Konto kommt in der Sprache der einladenden Person. Namen von Aufgaben und Schichten bleiben, wie die Organisator:innen sie geschrieben haben.
 
 ## Was du abschalten kannst
 

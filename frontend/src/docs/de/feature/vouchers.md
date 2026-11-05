@@ -1,6 +1,6 @@
 ---
 title: Marken statt Papier
-lede: Mit Marken dankt ihr Helfenden für ihre Schichten, zum Beispiel mit Essen und Getränken. WirkSam rechnet aus den gearbeiteten Schichten aus, wer wie viele hat, und am Stand werden sie per QR-Code, getipptem Code oder aus einer Liste eingelöst.
+lede: Mit Marken dankst du Helfenden für ihre Schichten, zum Beispiel mit Essen und Getränken. WirkSam rechnet aus den gearbeiteten Schichten aus, wer wie viele hat, und am Stand werden sie per QR-Code, getipptem Code oder aus einer Liste eingelöst.
 related: guide/vouchers, guide/redeem-vouchers, feature/people-in-charge, feature/hours-and-reports
 ---
 
@@ -10,9 +10,9 @@ Marken tauchen in einer Veranstaltung erst auf, wenn eine Aufgabe sie vergibt od
 
 ## Marken verdienen
 
-Bei jeder Aufgabe legt ihr fest, wie viele Marken eine Schicht bringt. Sobald eine gebuchte Schicht vorbei ist, sind sie da, ohne dass jemand etwas tun muss.
+Bei jeder Aufgabe legst du fest, wie viele Marken eine Schicht bringt. Sobald eine gebuchte Schicht vorbei ist, sind sie da, ohne dass jemand etwas tun muss.
 
-Was schon verdient wurde, bleibt, auch wenn die Schicht später gelöscht oder verlegt wird oder ihr die Anzahl pro Schicht ändert. Eine neue Anzahl gilt nur für Schichten, die noch nicht vorbei sind.
+Was schon verdient wurde, bleibt, auch wenn die Schicht später gelöscht oder verlegt wird oder du die Anzahl pro Schicht änderst. Eine neue Anzahl gilt nur für Schichten, die noch nicht vorbei sind.
 
 ## Was Helfende sehen
 
@@ -42,13 +42,13 @@ In der App einlösen geht bis zum Enddatum der Veranstaltung. Ihren Stand sehen 
 
 Ist bei jemandem der Akku leer, oder hat die Person kein Netz oder kein Smartphone, lässt sie sich aus einer Liste wählen, in der steht, wie viele Marken sie hat. Wer keine mehr hat, ist ausgegraut.
 
-Das ist bewusst eine eigene Regel, weil hier niemand etwas vorzeigen muss. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Das ist praktisch an einer vollen Theke, gilt aber für alle, die dort eine Schicht buchen. Ist euch das zu offen, stellt auf „Nur Organisator:innen und Verantwortliche“ um oder lasst die Schichten am Stand nur von einem [Team](/features/teams) buchen.
+Das ist bewusst eine eigene Regel, weil hier niemand etwas vorzeigen muss. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Das ist praktisch an einer vollen Theke, gilt aber für alle, die dort eine Schicht buchen. Ist dir das zu offen, stell auf „Nur Organisator:innen und Verantwortliche“ um oder lass die Schichten am Stand nur von einem [Team](/features/teams) buchen.
 
 ## Was Organisator:innen einstellen
 
 Sobald eine Veranstaltung Marken nutzt, haben ihre Einstellungen einen Tab „Marken“. Dort stehen zwei Regeln, die für alle Aufgaben der Veranstaltung gelten: wer ohne Code einlösen darf, und ob [Verantwortliche](/features/people-in-charge) bei Aufgaben mit Marken Schichten anlegen, verlegen und löschen dürfen.
 
-Die zweite Regel ist standardmäßig aus, weil jede zusätzliche Schicht zusätzliche Marken bringt. Verantwortliche ändern dort dann nur Beschreibung und Infos. Wenn ihr ihnen vertraut, schaltet ihr es für die ganze Veranstaltung frei. Bei Aufgaben ohne Marken ändert sich nichts.
+Die zweite Regel ist standardmäßig aus, weil jede zusätzliche Schicht zusätzliche Marken bringt. Verantwortliche ändern dort dann nur Beschreibung und Infos. Wenn du ihnen vertraust, schaltest du es für die ganze Veranstaltung frei. Bei Aufgaben ohne Marken ändert sich nichts.
 
 ![Der Tab „Marken“ mit den beiden Regeln und der Übersicht, wer wie viele Marken hat](shot:vouchers-settings)
 
@@ -56,7 +56,7 @@ Die zweite Regel ist standardmäßig aus, weil jede zusätzliche Schicht zusätz
 
 Unter den Regeln steht, wer wie viele Marken hat: verdient, eingelöst, verfügbar und was noch kommt, mit Suche und dem Verlauf jeder Person.
 
-Dort tragt ihr auch Korrekturen ein, zum Beispiel für Hilfe beim Aufbau ohne Schicht. Eine Korrektur braucht immer einen Grund, damit andere sie später nachvollziehen können, und sie kann ein Guthaben nicht unter null drücken.
+Dort trägst du auch Korrekturen ein, zum Beispiel für Hilfe beim Aufbau ohne Schicht. Eine Korrektur braucht immer einen Grund, damit andere sie später nachvollziehen können, und sie kann ein Guthaben nicht unter null drücken.
 
 ## Strengere Regeln beim Buchen
 

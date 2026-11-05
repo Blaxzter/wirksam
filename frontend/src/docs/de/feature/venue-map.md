@@ -61,7 +61,7 @@ Sie dienen nur der Orientierung, haben keine Schichten und keine Farbe. Die Lege
 
 ## Vorlagen
 
-Findet ihr jedes Jahr am selben Ort statt, musst du nicht neu zeichnen. Im Menü ⋮ eines Plans speichert „Als Vorlage speichern…“ seine Zeichnung und sein Bild, ohne Pins. Flächen verlieren dabei ihre Verbindung zu einem Ort, denn Orte gehören zur Veranstaltung.
+Findet deine Veranstaltung jedes Jahr am selben Ort statt, musst du nicht neu zeichnen. Im Menü ⋮ eines Plans speichert „Als Vorlage speichern…“ seine Zeichnung und sein Bild, ohne Pins. Flächen verlieren dabei ihre Verbindung zu einem Ort, denn Orte gehören zur Veranstaltung.
 
 Die Vorlage gehört dir: Nur du siehst sie, und du kannst in all deinen Veranstaltungen über „Plan hinzufügen“ und „Vorlage verwenden“ daraus starten. Spätere Änderungen am Plan ändern die Vorlage nicht. Du kannst bis zu 20 Vorlagen behalten und sie in derselben Auswahl umbenennen oder löschen.
 

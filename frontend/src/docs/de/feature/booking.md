@@ -42,19 +42,19 @@ Danach steht die Buchung in „Meine Buchungen“, du bekommst die Nachricht „
 
 Tippe auf der Aufgabenseite deine gebuchte Kachel an, oder öffne die Buchung und wähle „Buchung stornieren“. Nach einer Rückfrage ist der Platz wieder frei, und die Erinnerungen dazu fallen weg. Absagen geht bis zum Ende der Schicht, auch bei Aufgaben mit Marken. Solange die Regeln oben passen, kannst du die Schicht später wieder buchen.
 
-Löscht die Organisation eine Schicht, endet deine Buchung damit, und WirkSam sagt dir Bescheid. Sie steht dann in „Meine Buchungen“ unter „Storniert“, mit dem Grund, falls einer angegeben wurde. Wer eine Veranstaltung verlässt, verliert seine Buchungen für Schichten, die noch nicht vorbei sind.
+Löschen Organisator:innen eine Schicht, endet deine Buchung damit, und WirkSam sagt dir Bescheid. Sie steht dann in „Meine Buchungen“ unter „Storniert“, mit dem Grund, falls einer angegeben wurde. Wer eine Veranstaltung verlässt, verliert seine Buchungen für Schichten, die noch nicht vorbei sind.
 
 ## Meine Buchungen
 
 „Meine Buchungen“ (am Handy „Buchungen“ in der unteren Leiste) zeigt alle deine Schichten der gewählten Veranstaltung ab heute. Darüber stehen deine Stunden und, wenn die Veranstaltung sie nutzt, deine Marken. Du kannst suchen, einen anderen Zeitraum wählen und die Liste nach Datum, Aufgabe oder Ort anordnen. Abgesagte Buchungen blendest du mit „Storniert“ ein (am Handy im Filter), und „Entfernen“ nimmt sie aus deiner Liste.
 
-Eine Karte öffnet die Buchungsseite: Datum, Uhrzeit, Ort und Belegung, der Weg zur Aufgabe, deine Erinnerungen, wer noch dabei ist und „Buchung stornieren“. Unter „Meine Anmerkungen“ hinterlässt du eine Notiz für die Organisation, zum Beispiel dass du später kommst.
+Eine Karte öffnet die Buchungsseite: Datum, Uhrzeit, Ort und Belegung, der Weg zur Aufgabe, deine Erinnerungen, wer noch dabei ist und „Buchung stornieren“. Unter „Meine Anmerkungen“ hinterlässt du eine Notiz für die Organisator:innen, zum Beispiel dass du später kommst.
 
 ![„Meine Buchungen“ auf dem Handy mit den gebuchten Schichten als Karten](phone:bookings-phone)
 
 ## Angeben, wann du kannst
 
-Unter „Verfügbarkeit“ (am Handy unter „Mehr“) sagst du der Organisation, wann du helfen kannst. Das geht auf drei Arten:
+Unter „Verfügbarkeit“ (am Handy unter „Mehr“) sagst du den Organisator:innen, wann du helfen kannst. Das geht auf drei Arten:
 
 - **Voll verfügbar:** an allen Tagen der Veranstaltung.
 - **Tägliches Fenster:** jeden Tag dieselben Stunden, einzelne Tage kannst du abwählen.
@@ -90,9 +90,9 @@ Nein. Jede Person bucht mit dem eigenen Konto. Auch Organisator:innen können ni
 
 Meist sagt es die Kachel: Sie ist voll, vorbei oder hat bei einer Aufgabe mit Marken schon begonnen, sie überschneidet sich mit einer deiner Schichten, oder sie ist einem Team vorbehalten. Öffne die Schicht, dort steht der Grund.
 
-### Erfährt die Organisation, wenn ich absage?
+### Erfahren die Organisator:innen, wenn ich absage?
 
-Eine eigene Nachricht bekommt sie nicht, im Plan ist dein Platz aber sofort wieder frei. Sag bei einer kurzfristigen Absage also selbst Bescheid.
+Eine eigene Nachricht bekommen sie nicht, im Plan ist dein Platz aber sofort wieder frei. Sag bei einer kurzfristigen Absage also selbst Bescheid.
 
 ### Wer sieht, was ich gebucht habe?
 

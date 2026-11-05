@@ -1,12 +1,12 @@
 ---
 title: Stunden und Auswertungen
-lede: WirkSam zählt die Stunden jeder Person aus ihren gebuchten Schichten, ihr braucht dafür keine eigene Liste. Arbeit ohne Schicht tragt ihr von Hand nach, die Liste gibt es als CSV, und die Seite „Berichte“ zeigt, wie voll eure Schichten sind und wann am meisten los ist.
+lede: WirkSam zählt die Stunden jeder Person aus ihren gebuchten Schichten, du brauchst dafür keine eigene Liste. Arbeit ohne Schicht trägst du von Hand nach, die Liste gibt es als CSV, und die Seite „Berichte“ zeigt, wie voll die Schichten sind und wann am meisten los ist.
 related: feature/booking, feature/vouchers, feature/people-in-charge, guide/first-event
 ---
 
 Die Stunden laufen von selbst mit, es gibt nichts einzuschalten. Helfende sehen ihre eigenen Stunden unter „Meine Buchungen“, Organisator:innen die Stunden aller in den Einstellungen der Veranstaltung.
 
-Dazu kommen die Seite „Berichte“ für den Überblick über alle eure Veranstaltungen und Druckansichten für jede Aufgabe und die ganze Veranstaltung.
+Dazu kommen die Seite „Berichte“ für den Überblick über alle deine Veranstaltungen und Druckansichten für jede Aufgabe und die ganze Veranstaltung.
 
 ## Was als geleistet zählt
 
@@ -103,7 +103,7 @@ Nein. Die Übersicht und der Export sind nur für Organisator:innen. Verantwortl
 
 ### Warum ist mein Bericht leer?
 
-Meist liegt es am Zeitraum. Er reicht standardmäßig vom Anfang dieses Monats bis zum Ende des nächsten. Liegen die Schichten eurer Veranstaltung außerhalb, stell den Zeitraum auf ihre Tage.
+Meist liegt es am Zeitraum. Er reicht standardmäßig vom Anfang dieses Monats bis zum Ende des nächsten. Liegen die Schichten deiner Veranstaltung außerhalb, stell den Zeitraum auf ihre Tage.
 
 ### Welche Liste nehme ich für Bescheinigungen?
 

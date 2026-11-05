@@ -100,7 +100,7 @@ Passt es nicht mehr, wählst du auf der Karte „Verantwortlich“ den Punkt „
 
 Bringt eine Aufgabe Marken, ändern Verantwortliche dort standardmäßig nur Name, Beschreibung, Ort und Kategorie. Schichten hinzufügen, den Zeitplan ändern und Schichten löschen bleibt bei den Organisator:innen, weil jede zusätzliche Schicht zusätzliche Marken bringt. Ein Hinweis auf der Karte „Verantwortlich“ sagt das.
 
-Wenn ihr den Verantwortlichen vertraut, schaltet ihr es im Tab „Marken“ der Veranstaltungseinstellungen für alle Aufgaben frei. Aufgaben ohne Marken betrifft das nicht. Mehr dazu unter [Marken](/features/vouchers).
+Wenn du den Verantwortlichen vertraust, schaltest du es im Tab „Marken“ der Veranstaltungseinstellungen für alle Aufgaben frei. Aufgaben ohne Marken betrifft das nicht. Mehr dazu unter [Marken](/features/vouchers).
 
 ## Häufige Fragen
 
@@ -118,8 +118,8 @@ Nur, wenn sie selbst im Team sind. Ohne Teammitgliedschaft können das nur Organ
 
 ### Was passiert, wenn jemand die Veranstaltung verlässt?
 
-Damit endet auch die Verantwortung für alle Aufgaben dieser Veranstaltung. Kommt die Person später zurück, müsst ihr sie neu benennen.
+Damit endet auch die Verantwortung für alle Aufgaben dieser Veranstaltung. Kommt die Person später zurück, musst du sie neu benennen.
 
 ### Kommen Verantwortliche mit, wenn wir die Veranstaltung fürs nächste Jahr kopieren?
 
-Nur, wenn ihr beim Kopieren auch die Mitglieder übernehmt. Wie das geht, steht in der Anleitung [Veranstaltung fürs nächste Jahr kopieren](/guides/next-year).
+Nur, wenn du beim Kopieren auch die Mitglieder übernimmst. Wie das geht, steht in der Anleitung [Veranstaltung fürs nächste Jahr kopieren](/guides/next-year).

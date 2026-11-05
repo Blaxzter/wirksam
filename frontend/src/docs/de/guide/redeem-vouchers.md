@@ -38,7 +38,7 @@ Der Code bleibt nach dem Scannen mindestens eine Minute gültig, du musst dich a
 
 Hat die Person einen leeren Akku, kein Netz oder kein Smartphone, tippe auf „Person auswählen“. Das ist nur für diesen Fall gedacht. In der Liste suchst du nach Name oder E-Mail. Neben jedem Namen steht, wie viele Marken die Person hat. Wer keine hat, ist ausgegraut und lässt sich nicht wählen. Danach geht es weiter wie beim Code.
 
-Steht dort stattdessen „Kein Handy? Frag …“, hat eure Veranstaltung das Einlösen ohne Code den Verantwortlichen und Organisator:innen vorbehalten. Schick die Person zu den Genannten.
+Steht dort stattdessen „Kein Handy? Frag …“, hat diese Veranstaltung das Einlösen ohne Code den Verantwortlichen und Organisator:innen vorbehalten. Schick die Person zu den Genannten.
 
 ![Die Personenliste beim Einlösen ohne Code, mit der Zahl der Marken neben jedem Namen](phone:vouchers-picker)
 
