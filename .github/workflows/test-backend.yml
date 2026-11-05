@@ -79,7 +79,9 @@ jobs:
             - name: Diff coverage on changed lines
               if: github.event_name == 'pull_request' && matrix.storage == 'postgres'
               run: |
-                  git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+                  # Not --depth=1: if the base branch moved since the checkout, a
+                  # shallow fetch cuts its history and there is no merge base.
+                  git fetch --no-tags origin "${{ github.base_ref }}"
                   uv run diff-cover coverage.xml \
                     --compare-branch="origin/${{ github.base_ref }}" \
                     --fail-under=90
