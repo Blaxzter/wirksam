@@ -41,7 +41,7 @@ test.describe('Member – RBAC', () => {
   test('a member finds "Leave" through their settings', async ({ memberPage: member }) => {
     await member.goto('/app/settings/event')
     await member.getByTestId('settings-active-event-people').click()
-    await expect(member).toHaveURL(//app/event-settings.*tab=people/)
+    await expect(member).toHaveURL(/event-settings.*tab=people/)
     await expect(member.getByTestId('btn-leave-event')).toBeVisible()
   })
 

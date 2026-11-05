@@ -44,12 +44,12 @@ Not yet covered, and not currently tracked by an issue:
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
 | `chromium`   | 29         | 245     |
-| `member`     | 3          | 28      |
+| `member`     | 3          | 29      |
 | `mobile`     | 6          | 22      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **477** |
+| **Total**    | **64**     | **478** |
 
 ## Inventory
 
@@ -586,14 +586,15 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue plan templates** (1)
   - save a plan as a template, start a new plan from it, rename and delete it
 
-### Project `member` — 3 files, 28 tests
+### Project `member` — 3 files, 29 tests
 
-#### `frontend/e2e/tests/member/events-member.spec.ts` — 14 tests
+#### `frontend/e2e/tests/member/events-member.spec.ts` — 15 tests
 
-- **Member – RBAC** (8)
+- **Member – RBAC** (9)
   - member does not see the My Events sidebar link
   - member is redirected home from /app/events
   - member can open event settings but sees no management controls
+  - a member finds "Leave" through their settings
   - the details tab shows a member the event, not a form they cannot save
   - member does not get the link to print the whole event
   - member cannot change anyone's role
