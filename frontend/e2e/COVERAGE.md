@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 244     |
+| `chromium`   | 29         | 245     |
 | `member`     | 3          | 28      |
 | `mobile`     | 6          | 22      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **476** |
+| **Total**    | **64**     | **477** |
 
 ## Inventory
 
@@ -164,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 244 tests
+### Project `chromium` — 29 files, 245 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -355,11 +355,13 @@ Not yet covered, and not currently tracked by an issue:
   - a non-member cannot see the event settings content
   - member cannot shift dates via API
 
-#### `frontend/e2e/tests/authenticated/event-timezone.spec.ts` — 3 tests
+#### `frontend/e2e/tests/authenticated/event-timezone.spec.ts` — 4 tests
 
 - **Event time zone** (2)
   - an event created with a chosen zone shows it again in the settings
   - changing the zone says what happens before it is saved
+- **Event time zone › on a device a whole day behind the event** (1)
+  - a shift over where the event is counts as over, not as still to come
 - **Event time zone › on a device in Lisbon** (1)
   - the task page mentions the zone only when the event is elsewhere
 

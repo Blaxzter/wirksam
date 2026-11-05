@@ -111,7 +111,7 @@ const isConfirmed = computed(() => booking.value?.status === 'confirmed')
 const isInPast = computed(() => {
   const s = shift.value
   if (!s) return false
-  return shiftHasEnded(s.date, s.start_time, s.end_time)
+  return shiftHasEnded(s.date, s.start_time, s.end_time, s.event_timezone)
 })
 
 // ── Data loading ──────────────────────────────────────────────

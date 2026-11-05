@@ -265,7 +265,7 @@ const redeemRoute = computed(() => ({
 const startedForVouchers = (shift: ShiftRead) =>
   (task.value?.vouchers_per_shift ?? 0) > 0 &&
   !canManageTask.value &&
-  shiftHasStarted(shift.date, shift.start_time)
+  shiftHasStarted(shift.date, shift.start_time, task.value?.event_timezone)
 
 /**
  * Why a shift that still has places cannot be booked any more, or `null`.
@@ -273,7 +273,7 @@ const startedForVouchers = (shift: ShiftRead) =>
  * never points at a shift the server would refuse; a click still opens it.
  */
 const notBookableNote = (shift: ShiftRead): string | null => {
-  if (shiftHasEnded(shift.date, shift.start_time, shift.end_time)) {
+  if (shiftHasEnded(shift.date, shift.start_time, shift.end_time, task.value?.event_timezone)) {
     return t('duties.shifts.detail.over')
   }
   if (startedForVouchers(shift)) return t('vouchers.task.startedNote')
@@ -573,7 +573,7 @@ const handleShiftClick = async (shift: ShiftRead) => {
     // Over, or a voucher shift already under way: nothing to book or cancel
     // here, so show the shift instead of offering what the server refuses.
     if (
-      shiftHasEnded(shift.date, shift.start_time, shift.end_time) ||
+      shiftHasEnded(shift.date, shift.start_time, shift.end_time, task.value?.event_timezone) ||
       (!myBookedShiftIds.value.has(shift.id) && startedForVouchers(shift))
     ) {
       openShiftDetail(shift)

@@ -415,6 +415,7 @@ watch(
           :hide-full-shifts="hideFullShifts"
           :team-name="task.team_name"
           :book-before-start="(task.vouchers_per_shift ?? 0) > 0 && !canManage"
+          :event-timezone="task.event_timezone"
           :has-more-next="hasMoreNext"
           :has-more-previous="hasMorePrevious"
           :loading-next="loadingNext"

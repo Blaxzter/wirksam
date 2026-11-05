@@ -207,6 +207,28 @@ describe('ShiftDetailDialog', () => {
     expect(w.find('[data-testid="btn-book-shift"]').text()).toBe('Sign me up')
   })
 
+  it("offers no booking for a shift that is over on its event's clock", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    // 12:30 in Tokyo, 20:30 the evening before in Los Angeles.
+    vi.setSystemTime(new Date('2026-07-04T03:30:00Z'))
+    const when = { date: '2026-07-04', start_time: '10:00:00', end_time: '12:00:00' }
+    try {
+      const inTokyo = await openDialog({
+        shift: shift({ ...when, event_timezone: 'Asia/Tokyo' }),
+        managers,
+      })
+      expect(inTokyo.find('[data-testid="btn-book-shift"]').exists()).toBe(false)
+
+      const inLosAngeles = await openDialog({
+        shift: shift({ ...when, event_timezone: 'America/Los_Angeles' }),
+        managers,
+      })
+      expect(inLosAngeles.find('[data-testid="btn-book-shift"]').exists()).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('leaves Close to the sheet itself on a phone', async () => {
     phone.value = true
     const w = await openDialog({ managers })

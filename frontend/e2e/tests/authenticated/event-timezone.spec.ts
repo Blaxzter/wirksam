@@ -74,6 +74,42 @@ test.describe('Event time zone', () => {
     await deleteEvent(page, event.id).catch(() => {})
   })
 
+  test.describe('on a device a whole day behind the event', () => {
+    // Kiritimati is UTC+14, Pago Pago UTC-11, so its date is always ahead.
+    test.use({ contextOptions: { timezoneId: 'Pacific/Pago_Pago' } })
+
+    test('a shift over where the event is counts as over, not as still to come', async ({
+      adminPage: page,
+    }) => {
+      const zone = 'Pacific/Kiritimati'
+      const today = await page.evaluate(
+        (timeZone) => new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date()),
+        zone,
+      )
+      const event = await createEvent(page, uniqueName('E2E Far Zone'), 'published', 'public', {
+        start: today,
+        end: today,
+      })
+      await api(page, 'PATCH', `/events/${event.id}`, { timezone: zone })
+      const task = await createTaskWithShifts(page, {
+        name: uniqueName('E2E Far Zone Task'),
+        eventId: event.id,
+        status: 'published',
+        startDate: today,
+        endDate: today,
+        startTime: '00:00',
+        endTime: '00:01',
+        slotDuration: 1,
+        peoplePerShift: 1,
+      })
+
+      await page.goto(`/app/tasks/${task.task.id}`)
+      await expect(page.getByText(/this shift is over|schicht ist vorbei/i).first()).toBeVisible()
+
+      await deleteEvent(page, event.id).catch(() => {})
+    })
+  })
+
   test.describe('on a device in Lisbon', () => {
     test.use({ contextOptions: { timezoneId: 'Europe/Lisbon' } })
 

@@ -16,7 +16,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import type { DashboardAttention } from '@/client/types.gen'
 import { firstName } from '@/lib/format'
 import { parseServerDate } from '@/lib/server-time'
-import { shiftEndsAt, shiftHasEnded, shiftStartsAt } from '@/lib/shift-time'
+import { type ShiftZone, shiftEndsAt, shiftHasEnded, shiftStartsAt, wallClockIn } from '@/lib/shift-time'
 
 /** Open-shift cards a phone shows before handing over to the Tasks board. */
 export const MOBILE_OPEN_SHIFT_LIMIT = 4
@@ -33,6 +33,8 @@ export interface TimedShift {
   /** HH:MM[:SS] */
   start_time?: string | null
   end_time?: string | null
+  /** The zone of the shift's event, which its times are in. */
+  event_timezone?: string | null
 }
 
 const MS_PER_DAY = 86_400_000
@@ -58,9 +60,12 @@ export function calendarDaysBetween(from: string, to: string): number {
   return Math.round((utcDay(to) - utcDay(from)) / MS_PER_DAY)
 }
 
-/** Calendar days from today (per `now`) to `date`: 0 today, 1 tomorrow, -1 yesterday. */
-export function dayOffset(date: string, now: Date): number {
-  return calendarDaysBetween(localIsoDate(now), date)
+/**
+ * Calendar days from today (per `now`) to `date`: 0 today, 1 tomorrow, -1 yesterday.
+ * "Today" is the reader's, or the one in `zone` when a shift's own clock decides.
+ */
+export function dayOffset(date: string, now: Date, zone?: ShiftZone): number {
+  return calendarDaysBetween(zone ? wallClockIn(zone, now).date : localIsoDate(now), date)
 }
 
 export type GreetingBucket = 'morning' | 'afternoon' | 'evening'
@@ -124,13 +129,14 @@ export type Countdown =
  */
 export function shiftCountdown(shift: TimedShift, now: Date): Countdown {
   const t = now.getTime()
-  if (t >= shiftEndsAt(shift.date, shift.start_time, shift.end_time).getTime()) {
+  const zone = shift.event_timezone
+  if (t >= shiftEndsAt(shift.date, shift.start_time, shift.end_time, zone).getTime()) {
     return { kind: 'over' }
   }
   if (shift.start_time) {
-    const start = shiftStartsAt(shift.date, shift.start_time).getTime()
+    const start = shiftStartsAt(shift.date, shift.start_time, zone).getTime()
     if (t >= start) return { kind: 'running' }
-    if (dayOffset(shift.date, now) === 0) {
+    if (dayOffset(shift.date, now, zone) === 0) {
       const total = Math.ceil((start - t) / 60_000)
       return { kind: 'startsIn', hours: Math.floor(total / 60), minutes: total % 60 }
     }
@@ -147,7 +153,10 @@ export function shiftCountdown(shift: TimedShift, now: Date): Countdown {
  * reloaded.
  */
 export function nextUnfinished<T extends TimedShift>(shifts: readonly T[], now: Date): T | null {
-  return shifts.find((s) => !shiftHasEnded(s.date, s.start_time, s.end_time, now)) ?? null
+  return (
+    shifts.find((s) => !shiftHasEnded(s.date, s.start_time, s.end_time, s.event_timezone, now)) ??
+    null
+  )
 }
 
 /**
@@ -160,7 +169,7 @@ export function endedShiftsKey(
   now: Date,
 ): string {
   return shifts
-    .filter((s) => shiftHasEnded(s.date, s.start_time, s.end_time, now))
+    .filter((s) => shiftHasEnded(s.date, s.start_time, s.end_time, s.event_timezone, now))
     .map((s) => s.booking_id)
     .join(',')
 }
@@ -219,7 +228,9 @@ export function dayStrip(shift: TimedShift, now: Date): DayStrip | null {
   const startH = fractionalHours(shift.start_time)
   let endH = fractionalHours(shift.end_time)
   if (endH <= startH) endH = DAY_STRIP_END
-  const nowH = dayOffset(shift.date, now) === 0 ? now.getHours() + now.getMinutes() / 60 : null
+  // The shift's times are on its own clock, so "now" has to be as well.
+  const wall = wallClockIn(shift.event_timezone, now)
+  const nowH = wall.date === shift.date ? wall.hours : null
 
   const startHour = Math.min(
     DAY_STRIP_DEFAULT_START,
