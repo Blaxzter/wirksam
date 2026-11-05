@@ -80,7 +80,7 @@ Next to your own name is "Leave". Organisers have an icon for removing someone n
 
 The owner can't leave or be removed, and has to hand the event over first.
 
-Members have no menu entry of their own for the People tab. It opens through "Open event" on a suitable message in the inbox. If there isn't one, the organisers can remove you.
+Members reach the People tab through their settings: under "Active Event" is the link "See who's in this event, or leave it".
 
 ## Frequently asked questions
 

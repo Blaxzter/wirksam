@@ -5,6 +5,7 @@
             "currentLabel": "Aktuelle Veranstaltung",
             "description": "Aufgaben, Schichten und Buchungen beziehen sich auf die ausgewählte Veranstaltung.",
             "none": "Keine Veranstaltung gewählt",
+            "people": "Sehen, wer dabei ist, oder die Veranstaltung verlassen",
             "sidebarToggle": {
                 "description": "Zeigt in der Seitenleiste eine Auswahl, mit der du die Veranstaltung von überall aus wechseln kannst.",
                 "label": "Veranstaltungswechsler in der Seitenleiste anzeigen"

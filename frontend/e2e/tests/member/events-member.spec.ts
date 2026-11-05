@@ -38,6 +38,13 @@ test.describe('Member – RBAC', () => {
     await expect(member.getByTestId('section-join-requests')).toBeHidden()
   })
 
+  test('a member finds "Leave" through their settings', async ({ memberPage: member }) => {
+    await member.goto('/app/settings/event')
+    await member.getByTestId('settings-active-event-people').click()
+    await expect(member).toHaveURL(//app/event-settings.*tab=people/)
+    await expect(member.getByTestId('btn-leave-event')).toBeVisible()
+  })
+
   test('the details tab shows a member the event, not a form they cannot save', async ({
     memberPage: member,
     workerEvent,

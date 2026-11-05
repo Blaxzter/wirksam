@@ -80,7 +80,7 @@ Neben dem eigenen Namen steht „Verlassen“. Organisator:innen haben neben and
 
 Die Eigentümerin oder der Eigentümer kann weder gehen noch entfernt werden und übergibt die Veranstaltung zuerst.
 
-Mitglieder haben im Menü keinen eigenen Weg zum Tab „Personen“. Er öffnet sich über „Veranstaltung öffnen“ bei einer passenden Nachricht im Postfach. Gibt es keine, kann die Organisation dich entfernen.
+Mitglieder kommen über ihre Einstellungen zum Tab „Personen“: Unter „Aktive Veranstaltung“ steht der Link „Sehen, wer dabei ist, oder die Veranstaltung verlassen“.
 
 ## Häufige Fragen
 
