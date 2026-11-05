@@ -108,10 +108,10 @@ The backend sends reminders itself, so you don't need a cron job for them. Brows
 
 ## Behind Cloudflare
 
-With the Cloudflare proxy on, every request comes from a Cloudflare server. Without changes, the backend counts every rate limit against a handful of Cloudflare addresses and locks strangers out together. Trust Cloudflare's IP ranges in two places:
+With the Cloudflare proxy on, every request comes from a Cloudflare server. Without changes, the backend counts every rate limit against a handful of Cloudflare addresses and locks strangers out together. Cloudflare's IP ranges have to be trusted in two places:
 
-1. In Traefik: the two commented-out `forwardedHeaders.trustedIPs` lines in `docker-compose.traefik.yml`.
-2. In the backend: `FORWARDED_ALLOW_IPS` in `.env`, after the default private ranges.
+1. In Traefik: `docker-compose.traefik.yml` already includes them. A deploy doesn't restart Traefik, so after a change you copy the file to Traefik's folder and restart it there.
+2. In the backend: `FORWARDED_ALLOW_IPS` in `.env`, after the default private ranges. Without Cloudflare, leave the variable out.
 
 When Cloudflare changes the list, update both. If Cloudflare answers port 80 itself ("Always Use HTTPS"), Let's Encrypt's HTTP challenge fails. In that case, define a DNS-challenge resolver in Traefik and name it in `TRAEFIK_CERT_RESOLVER`.
 

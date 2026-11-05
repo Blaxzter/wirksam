@@ -306,23 +306,24 @@ With the Cloudflare proxy on, every request reaches Traefik from a Cloudflare
 server. Cloudflare passes the visitor's address on in `X-Forwarded-For`, but
 Traefik drops that header from senders it does not trust and writes the
 Cloudflare server's address instead, so the backend would key every rate limit
-on a handful of Cloudflare addresses and lock strangers out together. Trust
+on a handful of Cloudflare addresses and lock strangers out together.
 Cloudflare's ranges ([IPv4](https://www.cloudflare.com/ips-v4),
-[IPv6](https://www.cloudflare.com/ips-v6)) in two places:
+[IPv6](https://www.cloudflare.com/ips-v6)) have to be trusted in two places:
 
-1. Traefik, on both entrypoints (`docker-compose.traefik.yml` has the lines,
-   commented out):
-
-   ```
-   --entrypoints.web.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,...
-   --entrypoints.websecure.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,...
-   ```
+1. Traefik, on both entrypoints. `docker-compose.traefik.yml` already does this.
+   A deploy neither updates Traefik's copy of the file nor restarts it, so after a
+   change copy the file to the folder Traefik runs from and run
+   `docker compose -f docker-compose.traefik.yml up -d` there.
 
 2. The backend, in `.env`, after the default private ranges:
 
    ```
-   FORWARDED_ALLOW_IPS=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,173.245.48.0/20,103.21.244.0/22,...
+   FORWARDED_ALLOW_IPS=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
    ```
+
+Without Cloudflare, leave `FORWARDED_ALLOW_IPS` unset. The Traefik lines then don't
+change who the backend sees, because it only looks past Cloudflare's ranges if this
+variable lists them.
 
 Cloudflare changes the list rarely; when it does, update both.
 

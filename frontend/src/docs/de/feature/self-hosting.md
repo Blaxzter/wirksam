@@ -108,10 +108,10 @@ Erinnerungen verschickt das Backend selbst, dafür brauchst du keinen Cron-Job. 
 
 ## Hinter Cloudflare
 
-Mit eingeschaltetem Cloudflare-Proxy kommt jede Anfrage von einem Cloudflare-Server. Ohne Anpassung rechnet das Backend alle Rate-Limits auf wenige Cloudflare-Adressen an und sperrt so Fremde gemeinsam aus. Trag die IP-Bereiche von Cloudflare an zwei Stellen als vertrauenswürdig ein:
+Mit eingeschaltetem Cloudflare-Proxy kommt jede Anfrage von einem Cloudflare-Server. Ohne Anpassung rechnet das Backend alle Rate-Limits auf wenige Cloudflare-Adressen an und sperrt so Fremde gemeinsam aus. Die IP-Bereiche von Cloudflare müssen deshalb an zwei Stellen als vertrauenswürdig stehen:
 
-1. In Traefik: die zwei auskommentierten Zeilen mit `forwardedHeaders.trustedIPs` in `docker-compose.traefik.yml`.
-2. Im Backend: `FORWARDED_ALLOW_IPS` in `.env`, hinter den privaten Standardbereichen.
+1. In Traefik: `docker-compose.traefik.yml` enthält sie schon. Beim Deployen wird Traefik nicht neu gestartet. Nach einer Änderung kopierst du die Datei also in den Ordner von Traefik und startest es dort neu.
+2. Im Backend: `FORWARDED_ALLOW_IPS` in `.env`, hinter den privaten Standardbereichen. Ohne Cloudflare lässt du die Variable weg.
 
 Ändert Cloudflare die Liste, aktualisierst du beide. Antwortet Cloudflare selbst auf Port 80 („Always Use HTTPS“), scheitert die HTTP-Challenge von Let's Encrypt. Dann definierst du in Traefik einen DNS-Challenge-Resolver und trägst ihn in `TRAEFIK_CERT_RESOLVER` ein.
 
