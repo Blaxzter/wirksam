@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 243     |
+| `chromium`   | 29         | 244     |
 | `member`     | 3          | 28      |
-| `mobile`     | 6          | 21      |
+| `mobile`     | 6          | 22      |
 | `multi-user` | 7          | 74      |
 | `public`     | 8          | 49      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **474** |
+| **Total**    | **64**     | **476** |
 
 ## Inventory
 
@@ -164,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 243 tests
+### Project `chromium` — 29 files, 244 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -319,8 +319,10 @@ Not yet covered, and not currently tracked by an issue:
 - **Destructive – grant and revoke admin** (1)
   - the admin role opens and closes the admin area for that user
 
-#### `frontend/e2e/tests/authenticated/event-clone.spec.ts` — 6 tests
+#### `frontend/e2e/tests/authenticated/event-clone.spec.ts` — 7 tests
 
+- **Event clone – as an ordinary organiser** (1)
+  - the new event opens with every tab, without a reload
 - **Event clone wizard** (4)
   - event admin reaches the wizard from the events overview
   - picking tasks and walking the steps creates the copy
@@ -629,7 +631,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 6 files, 21 tests
+### Project `mobile` — 6 files, 22 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -668,11 +670,12 @@ Not yet covered, and not currently tracked by an issue:
 
 - the time zone picker fills a phone screen and picks a zone
 
-#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 4 tests
+#### `frontend/e2e/tests/mobile/venue-map.spec.ts` — 5 tests
 
-- **Venue map – on a phone** (4)
+- **Venue map – on a phone** (5)
   - "More" leads to the map
   - a tapped place opens as a bottom sheet
+  - "Use a picture" brings the upload into view
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 

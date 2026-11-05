@@ -17,7 +17,7 @@ Wechsle zum Tab „Lageplan“ und wähle „Plan hinzufügen“. Gib dem Plan e
 - **„Selbst zeichnen“:** Wähle unter „Form der Zeichenfläche“ Querformat, Hochformat oder Quadrat. Das lässt sich später nicht mehr ändern.
 - **„Bild verwenden“:** Für den Grundriss oder das Foto. Ein PDF exportierst du vorher als Bild.
 
-Bestätige mit „Plan anlegen“. Beim Bild wählst du danach mit „Bild auswählen“ die Datei aus, auf dem Handy findest du das unter „Markierungen & Bild“.
+Bestätige mit „Plan anlegen“. Beim Bild wählst du danach mit „Bild auswählen“ die Datei aus.
 
 ## Den Ort zeichnen
 

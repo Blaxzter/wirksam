@@ -17,7 +17,7 @@ Switch to the "Map" tab and choose "Add map". Give it a name, say "Grounds", and
 - **"Draw it yourself":** under "Shape of the drawing area", pick landscape, portrait or square. This can't be changed later.
 - **"Use a picture":** for your floor plan or photo. Export a PDF as an image first.
 
-Confirm with "Create map". For a picture, you then choose the file with "Choose picture"; on a phone that's under "Pins & picture".
+Confirm with "Create map". For a picture, you then choose the file with "Choose picture".
 
 ## Draw the venue
 

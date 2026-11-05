@@ -246,6 +246,17 @@ function openCreate() {
   createOpen.value = true
 }
 
+/**
+ * The file is the next thing to choose. On a phone the upload sits in the sheet,
+ * below the list of pins, where nobody would look for it.
+ */
+const pictureCard = ref<HTMLElement | null>(null)
+async function showPictureCard() {
+  sheetOpen.value = true
+  await nextTick()
+  pictureCard.value?.scrollIntoView?.({ block: 'nearest' })
+}
+
 async function createPlan(value: PlanCreateValue) {
   if (creating.value) return
   creating.value = true
@@ -262,6 +273,7 @@ async function createPlan(value: PlanCreateValue) {
     if (value.mode === 'picture') wantsPicture.value.add(res.data.id)
     await selectPlan(res.data.id)
     createOpen.value = false
+    if (value.mode === 'picture') void showPictureCard()
     emit('changed')
     if (fromTemplate) {
       // The drawing is there already; what is left is placing the pins.
@@ -1666,7 +1678,8 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
         </div>
 
         <section
-          class="space-y-2 rounded-lg border p-3 max-lg:rounded-none max-lg:border-0 max-lg:border-t max-lg:px-0 max-lg:pb-0"
+          ref="pictureCard"
+          class="space-y-2 rounded-lg border p-3 max-lg:scroll-mb-24 max-lg:rounded-none max-lg:border-0 max-lg:border-t max-lg:px-0 max-lg:pb-0"
           :class="[
             wantsPicture.has(plan.id) && !hasImage ? 'ring-primary/40 ring-2' : '',
             hasSelection ? 'max-lg:hidden' : '',
