@@ -95,6 +95,7 @@
         "document_not_found": "That file is no longer there. It is deleted once a request has been decided.",
         "document_too_large": "The file is larger than 5 MB. Please choose a smaller one.",
         "document_unsupported": "Only PDF files and photos (PNG, JPEG, WebP) can be attached.",
+        "forbidden": "Only this team's leads and the organisers can do this.",
         "member_not_found": "That person is not in this team.",
         "name_taken": "This event already has a team with that name.",
         "not_event_member": "Only people in this event can be added to its teams.",

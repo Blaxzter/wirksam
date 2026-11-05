@@ -23,6 +23,7 @@
             "type": "Verfügbarkeitstyp"
         },
         "fullyAvailableDays": "Voll verfügbar an allen {count} Tagen",
+        "fullyAvailableHint": "Die Organisator:innen sehen, dass du an all diesen Tagen Zeit hast. Deine Schichten buchst du trotzdem selbst.",
         "fullyAvailableShort": "Alle Programmtage",
         "heatLegendFull": "voll",
         "heatLegendLow": "wenig",
@@ -163,6 +164,7 @@
                 "showShifts": "Schichten anzeigen",
                 "status": {
                     "draft": {
+                        "hint": "Bleibt verborgen, bis du diese Aufgabe auf ihrer Seite veröffentlichst. Vorher kann niemand eine Schicht buchen.",
                         "label": "Entwurf",
                         "short": "Entwurf"
                     },
@@ -337,6 +339,7 @@
         },
         "fields": {
             "defaultTimes": "Standard-Zeitfenster",
+            "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lass beide Felder leer und lege Schichten über Mitternacht einzeln mit „Einzelne Schicht hinzufügen“ an.",
             "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lass für Veranstaltungen über Nacht beide Felder leer.",
             "description": "Beschreibung",
             "endDate": "Enddatum",
@@ -398,6 +401,7 @@
             "signIn": "Ich habe schon ein Konto",
             "signedOutBody": "Melde dich an oder lege ein Konto an, um die Einladung zu sehen und anzunehmen.",
             "signedOutTitle": "Du wurdest eingeladen",
+            "tasksHint": "Als Verantwortliche:r kannst du die Angaben der Aufgabe ändern und sehen, wer gebucht hat. Meist kannst du auch ihre Schichten ändern. Bei Aufgaben mit Marken entscheiden das die Organisator:innen.",
             "tasksTitle": "Du sollst verantwortlich sein für"
         },
         "join": {

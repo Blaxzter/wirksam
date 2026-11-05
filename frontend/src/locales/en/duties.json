@@ -23,6 +23,7 @@
             "type": "Availability Type"
         },
         "fullyAvailableDays": "Fully available on all {count} days",
+        "fullyAvailableHint": "Organisers can see that you're free on all of these days. You still book your shifts yourself.",
         "fullyAvailableShort": "All programme days",
         "heatLegendFull": "full",
         "heatLegendLow": "less",
@@ -163,6 +164,7 @@
                 "showShifts": "Show the shifts",
                 "status": {
                     "draft": {
+                        "hint": "Stays hidden until you publish this task on its own page. Nobody can book a shift before then.",
                         "label": "A draft",
                         "short": "Draft"
                     },
@@ -337,6 +339,7 @@
         },
         "fields": {
             "defaultTimes": "Default time window",
+            "defaultTimesHint": "Optional. The availability grid shows only these hours by default. Tasks can still be scheduled outside them. For events that run into the next morning, leave both fields empty, and add the shifts that cross midnight one at a time with \"Add single shift\".",
             "defaultTimesInvalid": "The end time must be after the start time. Time windows past midnight aren't supported yet, so leave both fields empty for events that run overnight.",
             "description": "Description",
             "endDate": "End Date",
@@ -398,6 +401,7 @@
             "signIn": "I already have an account",
             "signedOutBody": "Sign in or create an account to see the invitation and accept it.",
             "signedOutTitle": "You have been invited",
+            "tasksHint": "As the person in charge you can edit the task's details and see who has booked. Usually you can change its shifts too. On tasks that earn vouchers, that's up to the organisers.",
             "tasksTitle": "You're asked to be in charge of"
         },
         "join": {
