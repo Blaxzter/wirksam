@@ -12,19 +12,19 @@
         "fit": {
             "eyebrow": "Which one fits",
             "goodFitLabel": "A good fit when",
-            "lede": "Every tool here is a sensible choice for some events. These notes say which.",
+            "lede": "Every tool here is a sensible choice for some events.",
             "lessSuitedLabel": "Less suited when",
             "sourcesLabel": "Sources",
             "title": "When each tool makes sense"
         },
         "hero": {
             "eyebrow": "Comparison",
-            "lede": "There are several good ways to organise volunteers for an event. This page puts WirkSam next to five of them, including some that suit certain events better, so you can pick the one that fits yours.",
+            "lede": "There are several ways to organise volunteers for an event. This page puts WirkSam next to five others, some of which suit certain events better.",
             "title": "WirkSam and the alternatives"
         },
         "screenshots": {
             "eyebrow": "See for yourself",
-            "lede": "These are screenshots from the app, so you can judge the interface.",
+            "lede": "These are screenshots from the app.",
             "title": "What WirkSam looks like"
         },
         "table": {
@@ -32,7 +32,7 @@
             "caption": "Volunteer scheduling tools compared by price, accounts, open source, self-hosting, languages and reminders",
             "eyebrow": "At a glance",
             "lede": "What each tool costs, whether helpers need an account, and whether you can run it yourself.",
-            "title": "The facts side by side",
+            "title": "The tools compared",
             "toolColumn": "Tool"
         },
         "tools": {
@@ -869,7 +869,7 @@
     "useCases": {
         "clubFestival": {
             "breadcrumb": "Club festival",
-            "ctaTitle": "Ready for your next club festival?",
+            "ctaTitle": "Try it at your next club festival",
             "faq": {
                 "eyebrow": "Questions",
                 "items": {
@@ -930,7 +930,7 @@
                         "title": "Three versions of the same spreadsheet"
                     }
                 },
-                "lede": "Most of it has the same cause: the plan lives in too many places at once.",
+                "lede": "Most of it comes from the plan being in too many places at once.",
                 "title": "Where helper planning usually goes wrong"
             },
             "steps": {
