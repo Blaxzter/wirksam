@@ -104,7 +104,9 @@ test.describe('Event time zone', () => {
       })
 
       await page.goto(`/app/tasks/${task.task.id}`)
-      await expect(page.getByText(/this shift is over|schicht ist vorbei/i).first()).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: /this shift is over|schicht ist vorbei/i }),
+      ).toBeVisible()
 
       await deleteEvent(page, event.id).catch(() => {})
     })
