@@ -1,4 +1,9 @@
-"""Pinning the event wall clock (``app.logic.clock.wall_clock_now``)."""
+"""Pinning the event wall clock (``app.logic.clock.wall_clock_now``).
+
+Pin it when a test compares with a date the app works out. ``date.today()`` is
+not the app's today: CI runs in UTC, so between midnight in Berlin and midnight
+UTC it is a day behind the event's date.
+"""
 
 import datetime as dt
 from collections.abc import Callable

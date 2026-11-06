@@ -7,7 +7,8 @@ file attached to a request lives only until the request is decided.
 
 import io
 import uuid
-from datetime import date, timedelta
+from collections.abc import Callable
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -388,7 +389,9 @@ class TestApprovingWithChecks:
         test_event: Event,
         test_user: User,
         as_event_admin: None,
+        wall_clock: Callable[[datetime], None],
     ):
+        wall_clock(datetime(2026, 7, 2, 0, 30))
         team = await _team(
             db_session,
             test_event,
@@ -412,9 +415,7 @@ class TestApprovingWithChecks:
         by_label = {c["label"]: c for c in r.json()["checks"]}
         assert by_label["Führerschein B"]["issued_on"] is None
         assert by_label["Führerschein B"]["expires_on"] is None
-        assert by_label["Belehrung"]["expires_on"] == (
-            add_years(date.today(), 1).isoformat()
-        )
+        assert by_label["Belehrung"]["expires_on"] == "2027-07-02"
 
 
 @pytest.mark.asyncio
