@@ -88,6 +88,34 @@ test.describe('public pages per language', () => {
   })
 })
 
+test.describe('an English page opened by a German browser', () => {
+  test.use({ locale: 'de-DE' })
+
+  test.beforeEach(async ({ page }) => {
+    // The redirect is part of the prerendered HTML (scripts/prerender.mjs).
+    // The dev server answers with the bare shell, so there is nothing to test.
+    const html = await (await page.request.get('/terms')).text()
+    // eslint-disable-next-line playwright/no-skipped-test
+    test.skip(!html.includes('data-prerendered'), 'needs the prerendered build (CI runs preview)')
+  })
+
+  test('goes to the German page, and stays on English once English is picked', async ({ page }) => {
+    await page.goto('/terms?ref=test')
+    await expect(page).toHaveURL(/\/de\/terms\?ref=test$/)
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de')
+
+    await page.getByRole('button', { name: 'Sprache wechseln' }).click()
+    await page.getByRole('menuitem', { name: /English/ }).click()
+    await expect(page).toHaveURL(/\/terms\?ref=test$/)
+    await expect(page).not.toHaveURL(/\/de\//)
+
+    // A full load of the English URL now finds the stored pick and stays.
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page).not.toHaveURL(/\/de\//)
+  })
+})
+
 test.describe('a deployment without the landing page', () => {
   // LANDING_ENABLED reaches the browser through config.js, so serving a
   // different one is the whole switch from the app's side.

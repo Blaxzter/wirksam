@@ -132,6 +132,41 @@ function jsonLd(data) {
   return `<script type="application/ld+json">${json}</script>`
 }
 
+/**
+ * Send a visitor who reads another language to that language's copy of this
+ * page before it is ever painted.
+ *
+ * Only the default-locale pages need it, since they sit at the unprefixed URL.
+ * Without it, somebody whose browser speaks German opens `/` and reads it in
+ * English until the app has loaded and redraws it in German: the text jumps,
+ * and the largest paint is the second one. The choice is read in the same order
+ * as `detectLocale()` in `src/locales/i18n.ts` (the stored pick, then the browser
+ * language), so the two can never disagree. A stored `en` stays, and so does
+ * someone who switched to English on `/de/…`, because `LanguageSwitch.vue`
+ * stores the pick before it moves. Crawlers announce English and stay as well.
+ */
+function localeRedirect(page) {
+  const twins = Object.fromEntries(
+    PUBLIC_LOCALES.filter((alt) => alt !== DEFAULT_PUBLIC_LOCALE).map((alt) => [
+      alt,
+      localizedPath(page.path, alt),
+    ]),
+  )
+  return `<script>
+      ;(function () {
+        try {
+          var twins = ${JSON.stringify(twins)}
+          var locale = localStorage.getItem('locale') || (navigator.language || '').split('-')[0]
+          if (Object.prototype.hasOwnProperty.call(twins, locale)) {
+            location.replace(twins[locale] + location.search + location.hash)
+          }
+        } catch (e) {
+          // Storage blocked: the app picks the language once it runs.
+        }
+      })()
+    </script>`
+}
+
 function setMeta(html, attr, key, content) {
   const pattern = new RegExp(`<meta ${attr}="${key}" content="[^"]*"\\s*/?>`)
   const tag = `<meta ${attr}="${key}" content="${escapeAttr(content)}" />`
@@ -316,6 +351,13 @@ function documentFor(template, page, locale, body, config) {
     ...structuredData(page, locale, url, config),
   ]
   html = html.replace('</head>', `    ${head.join('\n    ')}\n  </head>`)
+
+  // First thing in <head>: a script after a stylesheet waits for it to load.
+  if (locale === DEFAULT_PUBLIC_LOCALE) {
+    const charset = '<meta charset="UTF-8" />'
+    if (!html.includes(charset)) throw new Error(`index.html has no ${charset}`)
+    html = html.replace(charset, `${charset}\n    ${localeRedirect(page)}`)
+  }
 
   if (!html.includes('<div id="app"></div>')) throw new Error('index.html has no empty #app')
   // `data-prerendered` tells main.ts to keep this on screen until the app is ready.
