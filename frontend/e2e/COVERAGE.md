@@ -47,9 +47,9 @@ Not yet covered, and not currently tracked by an issue:
 | `member`     | 3          | 29      |
 | `mobile`     | 6          | 22      |
 | `multi-user` | 7          | 74      |
-| `public`     | 8          | 49      |
+| `public`     | 8          | 50      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **478** |
+| **Total**    | **64**     | **479** |
 
 ## Inventory
 
@@ -797,7 +797,7 @@ Not yet covered, and not currently tracked by an issue:
 - the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 
-### Project `public` — 8 files, 49 tests
+### Project `public` — 8 files, 50 tests
 
 #### `frontend/e2e/tests/public/content-pages.spec.ts` — 17 tests
 
@@ -830,7 +830,7 @@ Not yet covered, and not currently tracked by an issue:
   - the old /how-it-works path redirects to the landing section
   - shows both the organiser and volunteer journeys
 
-#### `frontend/e2e/tests/public/landing.spec.ts` — 9 tests
+#### `frontend/e2e/tests/public/landing.spec.ts` — 10 tests
 
 - **landing page** (5)
   - renders main hero and auth actions
@@ -841,6 +841,8 @@ Not yet covered, and not currently tracked by an issue:
 - **public pages per language** (2)
   - /de serves the landing page in German
   - switching language on a public page moves to its other URL
+- **an English page opened by a German browser** (1)
+  - goes to the German page, and stays on English once English is picked
 - **a deployment without the landing page** (2)
   - / leads to the sign-in screen
   - the legal pages stay, without links into the missing landing page

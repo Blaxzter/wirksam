@@ -36,7 +36,9 @@ function setMeta(name: string, content: string) {
  * - On `/de/…` the page is German whatever the visitor chose before, and
  *   leaving it returns to that choice (`fallbackLocale`, normally the stored
  *   preference). A URL without a prefix changes nothing, so somebody whose
- *   browser speaks German still reads `/` in German.
+ *   browser speaks German still reads `/` in German. Opened from outside the
+ *   app they rarely get that far: the prerendered `/` sends them to `/de` before
+ *   its first paint (`localeRedirect` in scripts/prerender.mjs).
  * - A public page gets its own title and description from `preauth.seo`, and
  *   every other page gets back the ones `index.html` shipped with. The
  *   prerendered HTML already carries them; this is for client-side navigation

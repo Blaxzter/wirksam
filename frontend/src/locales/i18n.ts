@@ -51,6 +51,9 @@ const supportedLocales = ['en', 'de']
  *
  * Outside a browser, which is where the build-time prerender runs, there is no
  * choice to read and the prerender sets the locale itself.
+ *
+ * `localeRedirect` in scripts/prerender.mjs repeats this in the `<head>` of the
+ * English public pages, so change both together.
  */
 export function detectLocale(): string {
   if (typeof window === 'undefined') return 'en'
