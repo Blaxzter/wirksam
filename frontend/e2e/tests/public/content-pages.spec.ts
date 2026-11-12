@@ -86,8 +86,11 @@ test.describe('feature pages and guides', () => {
     await page.goto('/features')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('What WirkSam can do')
     await expect(page).toHaveTitle(/All features/)
-    await expect(page.locator('[data-testid^="docs-group-"]')).toHaveCount(5)
     await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(10)
+    await expect(page.getByTestId('page-art')).toHaveAttribute('data-art', 'roster')
+    // Each card names its group.
+    const vouchers = page.getByTestId('doc-card-featureVouchers')
+    await expect(vouchers.getByTestId('doc-group-label')).toHaveText('Say thanks and keep count')
 
     await page.getByTestId('doc-card-featureVouchers').click()
     await expect(page).toHaveURL(/\/features\/vouchers$/)
@@ -101,6 +104,10 @@ test.describe('feature pages and guides', () => {
     await expect(page).toHaveTitle(/vouchers/i)
     await expect(page.getByTestId('content-cta-primary')).toBeVisible()
     await expect(page.locator('[data-testid="doc-body"] h2').first()).toBeVisible()
+
+    // A drawing of the page's subject beside the title, and the page in three points.
+    await expect(page.getByTestId('page-art')).toHaveAttribute('data-art', 'vouchers')
+    await expect(page.getByTestId('doc-points').locator('li')).toHaveCount(3)
 
     const item = page.locator('#faq details').first()
     await item.locator('summary').scrollIntoViewIfNeeded()
@@ -129,9 +136,12 @@ test.describe('feature pages and guides', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Marken statt Papier')
     await page.evaluate(() => ((window as unknown as { sameApp: boolean }).sameApp = true))
 
-    await page.getByTestId('doc-body').getByRole('link', { name: 'Team', exact: true }).click()
-    await expect(page).toHaveURL(/\/de\/features\/teams$/)
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Team')
+    await page
+      .getByTestId('doc-body')
+      .getByRole('link', { name: 'Verantwortliche', exact: true })
+      .click()
+    await expect(page).toHaveURL(/\/de\/features\/people-in-charge$/)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Verantwortliche')
     await expect(page.locator('html')).toHaveAttribute('lang', 'de')
     // Still the same document: the link was followed by the router, not a reload.
     expect(await page.evaluate(() => (window as unknown as { sameApp?: boolean }).sameApp)).toBe(
@@ -141,12 +151,36 @@ test.describe('feature pages and guides', () => {
 
   test('a screenshot opens large, and a phone capture keeps its shape', async ({ page }) => {
     await page.goto('/features/vouchers')
-    const phone = page.getByTestId('doc-body').locator('img[src*="vouchers-my"]')
+    await page.getByTestId('doc-device-phone').filter({ visible: true }).click()
+    const phone = page.getByTestId('doc-body').locator('img[src*="vouchers-my-phone"]')
     await phone.scrollIntoViewIfNeeded()
     await expect(phone).toHaveAttribute('width', '780')
     await phone.click()
     await expect(page.getByRole('dialog')).toBeVisible()
-    await expect(page.getByRole('dialog').locator('img')).toHaveAttribute('src', /vouchers-my/)
+    await expect(page.getByRole('dialog').locator('img')).toHaveAttribute(
+      'src',
+      /vouchers-my-phone/,
+    )
+  })
+
+  test('a guide numbers the parts of a screenshot it names, on a computer or a phone', async ({
+    page,
+  }) => {
+    await page.goto('/guides/first-event')
+    const body = page.getByTestId('doc-body')
+    // "Shift Duration" is the second part the step names, so it is number 2 on the picture.
+    const pin = body.locator('.shot-mark[data-mark="duration"]')
+    await pin.scrollIntoViewIfNeeded()
+    await expect(pin).toHaveText('2')
+    await body.locator('.doc-mark[data-mark="duration"]').hover()
+    await expect(pin).toHaveClass(/is-active/)
+
+    // The same step as a phone shows it, and the page remembers that choice.
+    const phone = page.getByTestId('doc-device-phone').filter({ visible: true })
+    await phone.click()
+    await expect(body.locator('img[src*="task-schedule-phone"]')).toBeVisible()
+    await page.reload()
+    await expect(phone).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('fits a phone without sideways scrolling', async ({ page }) => {

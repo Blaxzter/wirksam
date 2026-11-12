@@ -75,6 +75,7 @@ import type {
   TaskRead,
 } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
+import { durationOptions } from '@/lib/shift-durations'
 import { timeZoneLabel } from '@/lib/timezones'
 
 const { t, locale } = useI18n()
@@ -92,7 +93,6 @@ const NOTE_MAX_LENGTH = 500
 /** The API refuses more than this in one request — every batch and every shift
  *  row of every task named here is written in a single transaction. */
 const MAX_TASKS = 50
-const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120]
 /** `GET /shifts/` caps `limit` at 200 and 422s above it, so the preload pages. */
 const SHIFT_PAGE_SIZE = 200
 /** A stop so a server that never advances cannot spin here forever. */
@@ -368,20 +368,6 @@ function setTaskDate(taskId: string, field: 'startDate' | 'endDate', value: Date
 
 function taskDateValue(iso: string): DateValue | undefined {
   return iso ? parseDate(iso) : undefined
-}
-
-/**
- * The shift lengths this task's dropdown offers.
- *
- * A source task set to 3-hour shifts is not in DURATION_OPTIONS, and reka-ui
- * derives the trigger label from a matching SelectItem — with no match the box
- * renders empty while the preview still uses the real number.
- */
-function durationOptions(taskId: string): number[] {
-  const current = taskConfigs.value[taskId]?.durationMinutes
-  const options = new Set(DURATION_OPTIONS)
-  if (current && current > 0) options.add(current)
-  return [...options].sort((a, b) => a - b)
 }
 
 /** Copy mode reproduces shift rows verbatim, so a rename stops at the task. */
@@ -1706,7 +1692,11 @@ async function handleSubmit() {
                             />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem v-for="d in durationOptions(task.id)" :key="d" :value="d">
+                            <SelectItem
+                              v-for="d in durationOptions(taskConfigs[task.id]?.durationMinutes)"
+                              :key="d"
+                              :value="d"
+                            >
                               {{ t('duties.tasks.createView.schedule.minutes', { n: d }) }}
                             </SelectItem>
                           </SelectContent>

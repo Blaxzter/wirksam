@@ -5,26 +5,48 @@
  * anonymous visitor sees. storageState is cleared explicitly so no other
  * project's session can leak in and change what renders.
  */
-import { expect, test } from '@playwright/test'
+import { type Page, expect, test } from '@playwright/test'
 
 import { expectNoA11yViolations } from '../../helpers/a11y.js'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
+/**
+ * The roster board fades its shifts in one after another, and text that is half
+ * faded in fails the contrast rule. Its "you" badge comes last, so once that
+ * stands the board is in the state a visitor reads.
+ */
+async function boardSettled(page: Page): Promise<void> {
+  await expect(page.getByTestId('board-you')).toHaveCSS('opacity', '1', { timeout: 15_000 })
+}
+
 test.describe('a11y – public pages', () => {
   test('landing page has no serious or critical violations', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('page-heading')).toBeVisible()
+    await boardSettled(page)
     await expectNoA11yViolations(page, { label: 'landing (/)' })
   })
 
   test('landing page volunteer journey has no serious or critical violations', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByTestId('page-heading')).toBeVisible()
+    await boardSettled(page)
 
     // The second journey tab renders a whole panel that the default scan never
     // sees, so it gets its own pass.
     await page.locator('#how-it-works').getByRole('tab').nth(1).click()
+    // The click scrolls past the hero, so the section dock fades in while the
+    // tab changes colour. Text caught halfway fails the contrast rule.
+    await page.waitForFunction(() =>
+      document
+        .getAnimations()
+        .every(
+          (animation) =>
+            animation.playState !== 'running' ||
+            animation.effect?.getComputedTiming().iterations === Infinity,
+        ),
+    )
     await expectNoA11yViolations(page, { label: 'landing – volunteer journey (/)' })
   })
 
@@ -44,6 +66,7 @@ test.describe('a11y – public pages', () => {
   test('feature overview has no serious or critical violations', async ({ page }) => {
     await page.goto('/features')
     await expect(page.getByTestId('page-heading')).toBeVisible()
+    await boardSettled(page)
     await expectNoA11yViolations(page, { label: 'feature overview (/features)' })
   })
 

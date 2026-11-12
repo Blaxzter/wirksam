@@ -17,7 +17,7 @@ You then see the event. Tap "Accept and join".
 
 ## Say when you can help
 
-Open "Availability", under "More" on a phone. Choose "Fully available", "Daily window" or "Specific times" ("Full", "Daily" or "Specific" on a phone) and save at the top right, with the tick on a phone.
+Open "Availability", under "More" on a phone. Choose "Fully available", "Daily window" or "Specific times" ("Full", "Daily" or "Specific" on a phone) [[modes]] and save at the top right [[save]], with the tick on a phone.
 
 Only the organisers see this, and it doesn't book anything yet.
 
@@ -25,12 +25,12 @@ Only the organisers see this, and it doesn't book anything yet.
 
 ## Book shifts
 
-Open "Tasks" and tap a task's name. On its page, tap a free shift and confirm when asked. Your shifts then appear on the home screen and under "Bookings" ("My Bookings" on a computer).
+Open "Tasks" and tap a task's name. On its page, tap a free shift and confirm when asked. Your shifts then appear on the home screen [[next]] and under "Bookings" ("My Bookings" on a computer) [[booking]].
 
 If you can't make it after all, open the booking there and choose "Cancel Booking". You can do that until the shift ends.
 
-![The home screen on a phone with the next shift and the plan](phone:dashboard-phone)
-!["My Bookings" on a phone with the booked shifts as cards](phone:bookings-phone)
+![The home screen with the next shift and the plan](shot:helper-home)
+!["My Bookings" with the booked shifts as cards](shot:helper-bookings)
 
 ## Put your shifts in your calendar
 
@@ -42,9 +42,9 @@ New shifts appear by themselves, and cancelled ones disappear again.
 
 In the profile menu, open "Notifications". By default WirkSam reminds you one day before by email and 15 minutes before by push. For push to arrive, tap "Enable push notifications" and agree in the browser.
 
-Under "Default Booking Reminders" you can change the times and channels for new bookings. All messages are also in the "Inbox".
+Under "Default Booking Reminders" [[reminders]] you can change the times and channels for new bookings. All messages are also in the "Inbox".
 
-![Notification settings with a row per kind of message and switches for email, push and Telegram](shot:notification-preferences)
+![The reminders for new bookings, with the settings per kind of message below them](shot:notification-reminders)
 
 ## Install the app if you like
 

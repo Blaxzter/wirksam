@@ -27,7 +27,7 @@ Everything saves by itself, and "Undo" takes back the last drawing step.
 
 ## Add the pins
 
-"Add pins" lists all the places not on the map yet. On a phone, "Pins & picture" opens this list. Pick a place and tap the spot on the map. You can move a pin afterwards.
+"Add pins" lists all the places not on the map yet. On a phone, "Pins & picture" opens this list. Pick a place and tap the spot on the map. You can move a pin [[pin]] afterwards.
 
 For toilets, first aid or parking, use "Other points". These symbols are only for finding your way.
 
@@ -37,7 +37,7 @@ Once the map has a picture or a drawing, everyone in the event finds it under "M
 
 ## Connect the shifts to the places
 
-A pin's colour comes from the shifts at that place. When you create a task, choose the place from the list under "Location", and all its shifts take it on. The same goes for each new batch under "Add Shifts". A typed-in location doesn't count.
+A pin's colour comes from the shifts at that place. When you create a task, choose the place from the list under "Location", and all its shifts take it on [[place]]. The same goes for each new batch under "Add Shifts". A typed-in location doesn't count.
 
 If you change a task's place later, its shifts follow, unless a shift has a place of its own. A batch with its own place is changed with "Edit" on that batch.
 

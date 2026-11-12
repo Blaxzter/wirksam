@@ -6,7 +6,7 @@ related: feature/people-in-charge, guide/first-event, guide/vouchers, feature/me
 
 ## Open the list of people in charge
 
-Open the task. Its page has an "In charge" card, where you choose "Manage". The same thing is in the task's menu under "Manage people in charge".
+Open the task. Its page has an "In charge" card, where you choose "Manage" [[managers]]. The same thing is in the task's menu [[menu]] under "Manage people in charge".
 
 ![The task page with the cards for people in charge and vouchers](shot:task-detail)
 
@@ -18,7 +18,7 @@ Under "Add a person", type a name or email address and pick the person from the 
 
 ## Invite anyone else by email address
 
-If they aren't in the event yet, type their full email address and choose "Invite anna@example.com", or "Invite by e-mail" on a phone. They get an invitation and appear in the list as "Invited". They're in charge once they accept.
+If they aren't in the event yet, type their full email address [[address]] and choose "Invite anna@example.com" [[invite]], or "Invite by e-mail" on a phone. They get an invitation and appear in the list as "Invited" [[invited]]. They're in charge once they accept.
 
 They can only accept with an account under exactly that address, so ask which one they use.
 

@@ -2,12 +2,22 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
+import allCaptures from '@/docs/captures.json'
 import dePreauth from '@/locales/de/preauth.json'
 import enPreauth from '@/locales/en/preauth.json'
 
 import { parseDoc } from '../../../scripts/docs-plugin'
-import { DOC_GROUPS, DOC_PAGES, docId, docPageById, docPath, docRouteName } from '../content-pages'
-import type { Doc, DocShot } from '../doc-types'
+import {
+  DOC_GROUPS,
+  DOC_PAGES,
+  PAGE_ART,
+  docId,
+  docPageById,
+  docPath,
+  docRouteName,
+} from '../content-pages'
+import { shotFile } from '../doc-shots'
+import type { Captures, Doc, DocDevice, DocShot, MarkPlace } from '../doc-types'
 import { docFor, docIds, loadDoc } from '../docs-content'
 import { publicPageFor } from '../seo'
 
@@ -43,6 +53,12 @@ describe('parseDoc', () => {
     expect(parseDoc(source('Text'), 'en').related).toEqual([])
   })
 
+  it('reads the points, separated by a bar, and has none unless it names some', () => {
+    const doc = parseDoc(source('Text', 'points: One thing | Another thing | A third\n'), 'en')
+    expect(doc.points).toEqual(['One thing', 'Another thing', 'A third'])
+    expect(parseDoc(source('Text'), 'en').points).toEqual([])
+  })
+
   it('refuses a page without front matter, a title or a lede', () => {
     expect(() => parseDoc('Just text', 'en', 'a.md')).toThrow('a.md: no front matter')
     expect(() => parseDoc('---\nlede: x\n---\nText', 'en', 'b.md')).toThrow('b.md: no title')
@@ -73,25 +89,89 @@ describe('parseDoc', () => {
   })
 
   it('takes screenshots out of the text and puts adjacent ones in one row', () => {
+    const captures: Captures = {
+      'one-shot': { marks: {} },
+      'one-shot-phone': { marks: {} },
+      'two-phone': { marks: {} },
+    }
     const doc = parseDoc(
       source(
-        '## S\n\nBefore\n\n![One](phone:one-shot)\n![Two](phone:two)\n\nBetween\n\n![Three](shot:three)',
+        '## S\n\nBefore\n\n![One](shot:one-shot)\n![Two](shot:two)\n\nBetween\n\n![Three](shot:three)',
       ),
       'en',
+      'a.md',
+      captures,
     )
     expect(doc.sections[0]!.blocks).toEqual([
       { type: 'html', html: '<p>Before</p>\n' },
       {
         type: 'shots',
         shots: [
-          { alt: 'One', phone: true, name: 'one-shot' },
-          { alt: 'Two', phone: true, name: 'two' },
+          { alt: 'One', name: 'one-shot', devices: { desktop: [], phone: [] } },
+          { alt: 'Two', name: 'two', devices: { phone: [] } },
         ],
       },
       { type: 'html', html: '<p>Between</p>\n' },
-      { type: 'shots', shots: [{ alt: 'Three', phone: false, name: 'three' }] },
+      // Not captured at all: from the computer, as before there were phones.
+      { type: 'shots', shots: [{ alt: 'Three', name: 'three', devices: { desktop: [] } }] },
     ])
     expect(doc.sections[0]!.text).toBe('Before Between')
+  })
+
+  it('numbers the marks a section names, per device, in the order it names them', () => {
+    const captures: Captures = {
+      form: {
+        marks: {
+          save: { box: [0.8, 0.1, 0.1, 0.05], pin: [0.78, 0.12] },
+          name: { box: [0.1, 0.2, 0.5, 0.05], pin: [0.08, 0.22] },
+        },
+      },
+      'form-phone': { marks: { name: { box: [0.05, 0.3, 0.9, 0.04], pin: [0.5, 0.27] } } },
+    }
+    const doc = parseDoc(
+      source(
+        '## S\n\nType a name [[name]], then save [[save]]. Saved [[save]].\n\n![Form](shot:form)',
+      ),
+      'en',
+      'a.md',
+      captures,
+    )
+    const [text, shots] = doc.sections[0]!.blocks
+    const name = 'data-mark="name" data-desktop="1" data-phone="1"'
+    const save = 'data-mark="save" data-desktop="2"'
+    expect(text).toEqual({
+      type: 'html',
+      html:
+        `<p>Type a name<span class="doc-mark" ${name} aria-hidden="true"></span>, ` +
+        `then save<span class="doc-mark" ${save} aria-hidden="true"></span>. ` +
+        `Saved<span class="doc-mark" ${save} aria-hidden="true"></span>.</p>\n`,
+    })
+    expect(shots).toEqual({
+      type: 'shots',
+      shots: [
+        {
+          alt: 'Form',
+          name: 'form',
+          devices: {
+            desktop: [
+              { key: 'name', n: 1, box: [0.1, 0.2, 0.5, 0.05], pin: [0.08, 0.22] },
+              { key: 'save', n: 2, box: [0.8, 0.1, 0.1, 0.05], pin: [0.78, 0.12] },
+            ],
+            phone: [{ key: 'name', n: 1, box: [0.05, 0.3, 0.9, 0.04], pin: [0.5, 0.27] }],
+          },
+        },
+      ],
+    })
+    // The marks are pictures of numbers, not words.
+    expect(doc.sections[0]!.text).toBe('Type a name, then save. Saved.')
+  })
+
+  it('leaves a mark without a number where no screenshot of its section shows it', () => {
+    const doc = parseDoc(source('## S\n\nSee [[nowhere]].'), 'en')
+    expect(doc.sections[0]!.blocks[0]).toEqual({
+      type: 'html',
+      html: '<p>See<span class="doc-mark" data-mark="nowhere" aria-hidden="true"></span>.</p>\n',
+    })
   })
 
   it.each(['Frequently asked questions', 'Häufige Fragen'])(
@@ -246,14 +326,45 @@ describe.each(pages)('%s', (id) => {
     expect(de.lede).not.toBe(en.lede)
   })
 
+  it('has a drawing beside its title', () => {
+    expect(PAGE_ART[id], id).toBeDefined()
+  })
+
+  it.each(['en', 'de'] as const)(
+    'sums itself up in three short points in %s, or not at all',
+    (locale) => {
+      const { points } = locale === 'en' ? en : de
+      if (docPageById(id)?.kind === 'guide') return
+      expect(points).toHaveLength(3)
+      for (const point of points) {
+        // One line in a box of three: a point that needs two sentences is text.
+        expect(point.length, point).toBeLessThanOrEqual(60)
+        expect(point, point).not.toMatch(/[.|]$/)
+      }
+    },
+  )
+
   it('has the same structure in both languages', () => {
     expect(de.sections).toHaveLength(en.sections.length)
     expect(de.faq).toHaveLength(en.faq.length)
     expect(de.related).toEqual(en.related)
-    expect(shotsOf(de).map((shot) => [shot.name, shot.phone])).toEqual(
-      shotsOf(en).map((shot) => [shot.name, shot.phone]),
-    )
+    expect(de.points).toHaveLength(en.points.length)
+    expect(shotsOf(de).map((shot) => shot.name)).toEqual(shotsOf(en).map((shot) => shot.name))
+    // The same parts marked, in the same order: a number means the same in both.
+    const marksOf = (doc: Doc) =>
+      shotsOf(doc).map((shot) => (shot.devices.desktop ?? []).map((mark) => mark.key))
+    expect(marksOf(de)).toEqual(marksOf(en))
   })
+
+  it.each(['en', 'de'] as const)(
+    'marks only what a screenshot beside it shows, in %s',
+    (locale) => {
+      const html = htmlOf(locale === 'en' ? en : de)
+      for (const [mark] of html.matchAll(/<span class="doc-mark"[^>]*>/g)) {
+        expect(mark, mark).toMatch(/data-(desktop|phone)=/)
+      }
+    },
+  )
 
   it('has something in every section', () => {
     expect(en.sections.length).toBeGreaterThan(0)
@@ -286,9 +397,13 @@ describe.each(pages)('%s', (id) => {
   it.each(['en', 'de'] as const)('only shows screenshots that were taken, in %s', (locale) => {
     for (const shot of shotsOf(locale === 'en' ? en : de)) {
       expect(shot.alt).toBeTruthy()
-      for (const mode of ['light', 'dark']) {
-        const file = resolve(SCREENSHOTS, locale, `${shot.name}-${mode}.png`)
-        expect(existsSync(file), file).toBe(true)
+      // Every screen on a computer and on a phone, so the choice between them holds.
+      expect(Object.keys(shot.devices).sort(), shot.name).toEqual(['desktop', 'phone'])
+      for (const device of Object.keys(shot.devices) as DocDevice[]) {
+        for (const mode of ['light', 'dark']) {
+          const file = resolve(SCREENSHOTS, locale, `${shotFile(shot.name, device)}-${mode}.png`)
+          expect(existsSync(file), file).toBe(true)
+        }
       }
     }
   })
@@ -300,6 +415,14 @@ describe.each([
 ])('%s copy', (_locale, messages) => {
   it.each(DOC_PAGES.map((page) => page.key))('has a name for %s', (key) => {
     expect(messages.docs.pages[key as keyof typeof messages.docs.pages].name).toBeTruthy()
+  })
+
+  it.each(DOC_PAGES.map((page) => page.key))('has one short line for %s', (key) => {
+    const { tagline } = messages.docs.pages[key as keyof typeof messages.docs.pages]
+    expect(tagline).toBeTruthy()
+    // A card on the overview is read at a glance: the search description is not it.
+    expect(tagline.length).toBeLessThanOrEqual(90)
+    expect(tagline).not.toMatch(/[@|{]/)
   })
 
   it('has a heading for every group', () => {
@@ -316,5 +439,26 @@ describe.each([
     for (const field of ['all', 'breadcrumb', 'eyebrow', 'lede', 'title'] as const) {
       expect(hub[field]).toBeTruthy()
     }
+  })
+})
+
+describe.each(['en', 'de'] as const)('the marks measured in %s', (locale) => {
+  const inside = (share: number) => share >= 0 && share <= 1
+  // JSON's numbers come as plain arrays, not the tuples the type names.
+  const captures = (allCaptures as unknown as Record<string, Captures>)[locale] ?? {}
+  const marks = Object.entries(captures).flatMap(([file, { marks }]) =>
+    Object.entries(marks).map(([key, place]): [string, MarkPlace] => [`${file} ${key}`, place]),
+  )
+
+  it('were measured', () => {
+    expect(marks.length).toBeGreaterThan(0)
+  })
+
+  it.each(marks)('puts %s and its number on the capture', (_name, { box, pin }) => {
+    const [left, top, width, height] = box
+    expect([left, top, left + width, top + height].every(inside)).toBe(true)
+    expect(width).toBeGreaterThan(0)
+    expect(height).toBeGreaterThan(0)
+    expect(pin.every(inside)).toBe(true)
   })
 })

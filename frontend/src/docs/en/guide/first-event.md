@@ -24,13 +24,13 @@ Under "Task Dates", choose "One day", "Date range" or "Specific dates", then the
 
 Under "Schedule & Shifts", set how a day is split up:
 
-- "Default Start Time" and "Default End Time", filled in with 10:00 and 18:00
-- "Shift Duration", filled in with 30 minutes
-- "People per Shift", filled in with 2
+- "Default Start Time" [[start]] and "Default End Time", filled in with 10:00 and 18:00
+- "Shift Duration" [[duration]], filled in with 30 minutes
+- "People per Shift" [[people]], filled in with 2
 
 If the time doesn't divide evenly, "Remaining time" asks what should happen to the rest. With several days, "Date Exceptions" lets you give one day different times.
 
-![The form that builds the shifts, next to the preview of what it creates](shot:shift-schedule)
+![The "Schedule & Shifts" section of a new task, with the times, shift length and people per shift it starts with](shot:task-schedule)
 
 ## Check the preview and save
 
@@ -40,7 +40,7 @@ When it looks right, choose "Create Task". You land on the new task's page. Add 
 
 ## Publish the task
 
-A new task is a draft, so volunteers can't see it yet. On its page, choose "Publish now". On a phone, tap the "Draft" status next to the name and choose "Published".
+A new task is a draft, so volunteers can't see it yet. On its page, choose "Publish now". On a phone, tap the "Draft" status [[status]] next to the name and choose "Published".
 
 Do this for each task.
 
@@ -50,11 +50,11 @@ Do this for each task.
 
 Open "Manage Events", which is under "More" on a phone. Tap the pencil in your event's row; on a phone, swipe the table sideways to reach it. On the "People" tab, further down, is the "Invitations" card:
 
-- **By email:** enter addresses under "Email addresses" and choose "Send invitation".
-- **By link:** "Create share link" copies a link you can post in your group chat, for example.
+- **By email:** enter addresses under "Email addresses" [[emails]] and choose "Send invitation".
+- **By link:** "Create share link" [[link]] copies a link you can post in your group chat, for example.
 
-Under "Join as", "Member" is selected, which is all that booking needs. For people who should help plan, choose "Organiser".
+Under "Join as" [[role]], "Member" is selected, which is all that booking needs. For people who should help plan, choose "Organiser".
 
 It helps to send the people you invite the guide [Getting started as a volunteer](/guides/volunteer-start) as well.
 
-![The People tab in the event's settings](shot:event-people)
+![The Invitations card with the field for email addresses, the role and the button for a link](shot:event-invitations)

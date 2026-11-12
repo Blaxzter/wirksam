@@ -127,7 +127,7 @@ async function save() {
 
     <CardContent class="space-y-5">
       <!-- Who may pick the person instead of scanning a code -->
-      <div class="space-y-3">
+      <div class="space-y-3" data-testid="voucher-manual-rule">
         <div class="space-y-1">
           <h3 id="voucher-manual-title" class="text-[15px] font-bold">
             {{ t('vouchers.eventSettings.manualTitle') }}
@@ -197,7 +197,10 @@ async function save() {
       <Separator />
 
       <!-- May people in charge change the shifts of tasks that earn vouchers? -->
-      <div class="flex items-start justify-between gap-4">
+      <div
+        class="flex items-start justify-between gap-4"
+        data-testid="voucher-managers-edit-shifts-rule"
+      >
         <div class="min-w-0 space-y-1">
           <Label for="voucher-managers-edit-shifts" class="text-[15px] font-bold leading-snug">
             {{ t('vouchers.eventSettings.shiftsTitle') }}

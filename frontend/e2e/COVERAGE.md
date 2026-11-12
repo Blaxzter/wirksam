@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 245     |
+| `chromium`   | 29         | 246     |
 | `member`     | 3          | 29      |
 | `mobile`     | 6          | 22      |
 | `multi-user` | 7          | 74      |
-| `public`     | 8          | 50      |
+| `public`     | 8          | 51      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **479** |
+| **Total**    | **64**     | **481** |
 
 ## Inventory
 
@@ -164,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 245 tests
+### Project `chromium` — 29 files, 246 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -530,7 +530,7 @@ Not yet covered, and not currently tracked by an issue:
   - admin sees Add Shifts button
   - admin can delete task
 
-#### `frontend/e2e/tests/authenticated/task-edit.spec.ts` — 10 tests
+#### `frontend/e2e/tests/authenticated/task-edit.spec.ts` — 11 tests
 
 - **Task Edit – page access** (4)
   - can navigate to edit page via URL
@@ -539,10 +539,11 @@ Not yet covered, and not currently tracked by an issue:
   - shows schedule configuration section
 - **Task Edit – a task with several shift series** (1)
   - an organiser renames it, and every series keeps its shifts
-- **Task Add Shifts – page access** (3)
+- **Task Add Shifts – page access** (4)
   - can navigate to add-shifts page via URL
   - shows add-shifts heading
   - shows back button
+  - starts from the task's schedule, even a shift length the list does not offer
 - **Task Edit/Add Shifts – member RBAC** (2)
   - member cannot access edit page
   - member cannot access add-shifts page
@@ -797,9 +798,9 @@ Not yet covered, and not currently tracked by an issue:
 - the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 
-### Project `public` — 8 files, 50 tests
+### Project `public` — 8 files, 51 tests
 
-#### `frontend/e2e/tests/public/content-pages.spec.ts` — 17 tests
+#### `frontend/e2e/tests/public/content-pages.spec.ts` — 18 tests
 
 - **comparison page** (4)
   - shows the comparison table with its date and sources
@@ -810,12 +811,13 @@ Not yet covered, and not currently tracked by an issue:
   - answers first, then walks through the steps and the FAQ
   - stays in German when following a related link
   - offers the demo next to the sign-up
-- **feature pages and guides** (7)
+- **feature pages and guides** (8)
   - the overview groups the feature pages and leads to one
   - a feature page explains in sections, with the FAQ and links to read on
   - a guide numbers its steps and gets straight to them
   - a link in the text stays in the app and in German
   - a screenshot opens large, and a phone capture keeps its shape
+  - a guide numbers the parts of a screenshot it names, on a computer or a phone
   - fits a phone without sideways scrolling
   - the landing page and the header lead there
 - **links into the content pages** (1)

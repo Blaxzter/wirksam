@@ -80,6 +80,9 @@ const track = ref<string>('organiser')
       </TabsList>
 
       <TabsContent v-for="item in tracks" :key="item.key" :value="item.key" class="w-full">
+        <p class="mx-auto mb-10 max-w-2xl text-center text-pretty text-lg leading-relaxed">
+          {{ t(`preauth.landing.journey.${item.key}.intro`) }}
+        </p>
         <ol class="flex flex-col items-stretch gap-2 xl:flex-row xl:items-stretch">
           <li
             v-for="(step, index) in item.steps"

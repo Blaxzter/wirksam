@@ -6,7 +6,7 @@ related: feature/teams, guide/people-in-charge, guide/vouchers, guide/first-even
 
 ## Create the team
 
-Open "Teams" in the sidebar, or under "More" on a phone, and choose "New team". Give it a name, say "Cash desk". "Description" and "Contact" are optional, and everyone who looks at the team sees them.
+Open "Teams" in the sidebar, or under "More" on a phone, and choose "New team" [[create]]. Give it a name, say "Cash desk". "Description" and "Contact" are optional, and everyone who looks at the team sees them.
 
 ![The Teams page with waiting requests, the list of teams and the members of the chosen team](shot:teams)
 
@@ -32,7 +32,7 @@ Open a task and choose "Edit". Under "Who can book", choose "Only one team", pic
 
 Waiting requests appear at the top of the Teams page, and you get an email and a push message. For a team without checks, choose "Approve" or "Decline" right there.
 
-With checks, choose "Review request". Look at the document, tick "I've checked: …", enter the date under "Issued on" where asked, and choose, for example, "Approve Anna". "Decline" works without any ticks. Don't keep a copy: WirkSam only saves that you saw it, when, and the date. An attached file is deleted as soon as you decide.
+With checks, choose "Review request". Look at the document, tick "I've checked: …" [[check]], enter the date under "Issued on" [[issued]] where asked, and choose, for example, "Approve Anna" [[approve]]. "Decline" [[decline]] works without any ticks. Don't keep a copy: WirkSam only saves that you saw it, when, and the date. An attached file is deleted as soon as you decide.
 
 ![Reviewing a request to join, with a tick and the issue date for each check](shot:team-review)
 

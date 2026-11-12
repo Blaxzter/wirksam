@@ -16,7 +16,7 @@ test.describe('landing page', () => {
     // otherwise start before the app has hydrated, and fail on an empty body.
     await expect(page.getByTestId('page-heading')).toBeVisible()
 
-    for (const id of ['audience', 'how-it-works', 'features', 'about', 'faq', 'get-started']) {
+    for (const id of ['how-it-works', 'features', 'about', 'faq', 'get-started']) {
       await expect(page.locator(`#${id}`)).toBeVisible()
     }
   })

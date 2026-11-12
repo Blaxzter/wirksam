@@ -14,17 +14,17 @@ Fehlt der Knopf, prüfe die Uhrzeit und ob die richtige Veranstaltung ausgewähl
 
 ## Den Ort prüfen
 
-Oben neben „Wo“ steht dein Stand. Darfst du gerade an mehreren Orten einlösen, wählst du hier den richtigen. Die Einlösung wird für diesen Ort gezählt.
+Oben neben „Wo“ [[place]] steht dein Stand. Darfst du gerade an mehreren Orten einlösen, wählst du hier den richtigen. Die Einlösung wird für diesen Ort gezählt.
 
-![Marken einlösen auf dem Handy, oben der Ort, darunter der Code und der Knopf für die Personenliste](phone:vouchers-redeem)
+![Marken einlösen, oben der Ort, darunter der Code und der Knopf für die Personenliste](shot:vouchers-redeem)
 
 ## Code scannen oder eintippen
 
-Die Person öffnet „Meine Marken“ und tippt auf „Code zeigen“. Halte den QR-Code vor die Kamera. Beim ersten Mal fragt der Browser nach der Kamera, erlaube das. Die Kamera läuft danach von Person zu Person weiter.
+Die Person öffnet „Meine Marken“ und tippt auf „Code zeigen“. Halte den QR-Code [[qr]] vor die Kamera. Beim ersten Mal fragt der Browser nach der Kamera, erlaube das. Die Kamera läuft danach von Person zu Person weiter.
 
-Geht das Scannen nicht, tippe auf „Code stattdessen eintippen“, gib die sechs Zeichen ein und tippe auf „Weiter“. Bindestrich und Kleinschreibung sind egal. Die Zeichen 0, O, 1, I und L kommen in Codes nicht vor.
+Geht das Scannen nicht, tippe auf „Code stattdessen eintippen“, gib die sechs Zeichen [[code]] ein und tippe auf „Weiter“. Bindestrich und Kleinschreibung sind egal. Die Zeichen 0, O, 1, I und L kommen in Codes nicht vor.
 
-![Der Code zum Vorzeigen, als QR-Code und zum Abtippen](phone:vouchers-code)
+![Der Code zum Vorzeigen, als QR-Code und zum Abtippen](shot:vouchers-code)
 
 ## Anzahl wählen und einlösen
 
@@ -36,11 +36,11 @@ Der Code bleibt nach dem Scannen mindestens eine Minute gültig, du musst dich a
 
 ## Ohne Code: Person auswählen
 
-Hat die Person einen leeren Akku, kein Netz oder kein Smartphone, tippe auf „Person auswählen“. Das ist nur für diesen Fall gedacht. In der Liste suchst du nach Name oder E-Mail. Neben jedem Namen steht, wie viele Marken die Person hat. Wer keine hat, ist ausgegraut und lässt sich nicht wählen. Danach geht es weiter wie beim Code.
+Hat die Person einen leeren Akku, kein Netz oder kein Smartphone, tippe auf „Person auswählen“. Das ist nur für diesen Fall gedacht. In der Liste suchst du nach Name oder E-Mail [[search]]. Neben jedem Namen steht, wie viele Marken die Person hat [[count]]. Wer keine hat, ist ausgegraut und lässt sich nicht wählen. Danach geht es weiter wie beim Code.
 
 Steht dort stattdessen „Kein Handy? Frag …“, hat diese Veranstaltung das Einlösen ohne Code den Verantwortlichen und Organisator:innen vorbehalten. Schick die Person zu den Genannten.
 
-![Die Personenliste beim Einlösen ohne Code, mit der Zahl der Marken neben jedem Namen](phone:vouchers-picker)
+![Die Personenliste beim Einlösen ohne Code, mit der Zahl der Marken neben jedem Namen](shot:vouchers-picker)
 
 ## Auf Meldungen reagieren
 
