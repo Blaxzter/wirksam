@@ -199,6 +199,12 @@ async function loadPeople() {
   await Promise.all([loadMembers(), loadInvitations(), loadJoinRequests(), loadHours()])
 }
 
+/** A request was decided: the sidebar's count of waiting requests goes down with it. */
+async function handleJoinRequestsUpdated() {
+  await loadPeople()
+  if (targetEventId.value) void authStore.refreshSelectedEvent(targetEventId.value)
+}
+
 /** After leaving an event the user no longer belongs here — send them home. */
 async function handleLeft() {
   await authStore.loadProfile()
@@ -374,7 +380,7 @@ onMounted(loadEvent)
           v-if="canManage"
           :event-id="targetEventId"
           :requests="joinRequests"
-          @updated="loadPeople"
+          @updated="handleJoinRequestsUpdated"
         />
         <EventMembers
           :event-id="targetEventId"

@@ -33,6 +33,13 @@ describe('notificationTarget', () => {
     })
   })
 
+  it('opens the People tab for a join request or an accepted invitation', () => {
+    expect(notificationTarget({ event_id: 'e1', user_id: 'u1' })).toEqual({
+      kind: 'people',
+      to: { name: 'event-settings', params: { eventId: 'e1' }, query: { tab: 'people' } },
+    })
+  })
+
   it('opens the event, or my bookings', () => {
     expect(notificationTarget({ event_id: 'e1' })).toEqual({
       kind: 'event',
