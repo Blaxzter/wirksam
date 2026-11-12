@@ -570,6 +570,31 @@ class TestEmailHtmlBody:
 
         assert "https://app.example.test/app/event-settings/event-7" in html
 
+    def test_a_join_request_opens_the_people_tab(self) -> None:
+        """Test that a notice about a person in an event opens People.
+
+        A join request and an accepted invitation carry the event and the
+        person; the request is decided on the People tab, not on Details.
+        """
+        with _email_settings():
+            html = _build_html(
+                title="T", body="B", data={"event_id": "event-7", "user_id": "u-1"}
+            )
+
+        assert "https://app.example.test/app/event-settings/event-7?tab=people" in html
+
+    def test_a_team_notice_opens_the_team(self) -> None:
+        """Test that a team request opens its team, like the in-app link."""
+        with _email_settings():
+            html = _build_html(
+                title="T",
+                body="B",
+                data={"event_id": "event-7", "team_id": "team-3", "user_id": "u-1"},
+            )
+
+        assert "https://app.example.test/app/teams/event-7?team=team-3" in html
+        assert "/app/event-settings/" not in html
+
     def test_task_id_wins_over_event_id(self) -> None:
         """Test that the task link takes precedence when both ids are present."""
         with _email_settings():

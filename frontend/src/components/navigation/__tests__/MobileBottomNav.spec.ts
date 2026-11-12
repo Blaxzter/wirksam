@@ -19,7 +19,7 @@ const auth = vi.hoisted(() => ({
   selectedEvent: null as Record<string, unknown> | null,
   isManager: false,
   isAdmin: false,
-  canManageEvent: () => false,
+  canManageEvent: (): boolean => false,
 }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => auth }))
 
@@ -53,6 +53,7 @@ const routes: RouteRecordRaw[] = [
   ['my-vouchers', '/app/vouchers/:eventId?'],
   ['teams', '/app/teams/:eventId?'],
   ['event-map', '/app/map/:eventId?'],
+  ['event-settings', '/app/event-settings/:eventId?'],
   ['reporting', '/app/reporting'],
   ['my-events', '/app/events'],
   ['admin-users', '/app/admin/users'],
@@ -70,6 +71,7 @@ const TABS = ['home', 'tasks', 'bookings', 'inbox', 'more'] as const
 beforeEach(() => {
   i18n.global.locale.value = 'en'
   auth.selectedEvent = null
+  auth.canManageEvent = () => false
 })
 
 describe('MobileBottomNav', () => {
@@ -126,6 +128,27 @@ describe('MobileBottomNav', () => {
     expect(w.find('[data-testid="mobile-more-my-vouchers"]').exists()).toBe(true)
     expect(w.find('[data-testid="mobile-more-teams"]').exists()).toBe(true)
     expect(w.find('[data-testid="mobile-more-event-map"]').exists()).toBe(true)
+  })
+
+  it('offers the event’s settings to whoever runs it, with the requests waiting', async () => {
+    auth.selectedEvent = { id: 'e1', pending_request_count: 2, pending_team_request_count: 1 }
+    auth.canManageEvent = () => true
+    const w = await mountAt('home')
+    const more = w.find('[data-testid="mobile-nav-more"]')
+    expect(more.attributes('aria-label')).toBe('More, 3 requests to decide')
+    expect(w.find('[data-testid="mobile-nav-more-dot"]').exists()).toBe(true)
+    await more.trigger('click')
+    expect(w.find('[data-testid="mobile-more-event-settings"]').exists()).toBe(true)
+    expect(w.find('[data-testid="mobile-more-badge-event-settings"]').text()).toContain('2')
+  })
+
+  it('keeps the event’s settings from a plain member', async () => {
+    // The server counts requests for admins only; a member gets nothing anyway.
+    auth.selectedEvent = { id: 'e1', pending_request_count: 2 }
+    const w = await mountAt('home')
+    expect(w.find('[data-testid="mobile-nav-more-dot"]').exists()).toBe(false)
+    await w.find('[data-testid="mobile-nav-more"]').trigger('click')
+    expect(w.find('[data-testid="mobile-more-event-settings"]').exists()).toBe(false)
   })
 
   // The sheet puts focus on its first link as it opens. Styled with plain

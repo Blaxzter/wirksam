@@ -61,6 +61,7 @@
         "bookings": "Open bookings",
         "event": "Open event",
         "invitation": "Open invitation",
+        "people": "Open people",
         "task": "Open task",
         "team": "Open team"
     },

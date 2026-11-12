@@ -6,6 +6,7 @@ import {
   Bell,
   BookCheck,
   CalendarCheck,
+  CalendarCog,
   CalendarDays,
   CalendarRange,
   ChevronsUpDown,
@@ -46,7 +47,7 @@ import {
 
 import EventSwitcherMenu from '@/components/navigation/EventSwitcherMenu.vue'
 import NavMain from '@/components/navigation/NavMain.vue'
-import type { NavSubItem } from '@/components/navigation/NavMain.vue'
+import type { NavItem, NavSubItem } from '@/components/navigation/NavMain.vue'
 import NavUser from '@/components/navigation/NavUser.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
@@ -287,8 +288,53 @@ const navMain = computed(() => {
   ]
 })
 
+/** Join requests waiting in the selected event; only counted for its admins. */
+const joinRequestCount = computed(() => authStore.selectedEvent?.pending_request_count ?? 0)
+
+/**
+ * The selected event's settings, for whoever runs it: the entry opens the
+ * page and folds out to its tabs, so no detour through "Manage events" or the
+ * task list. The links carry no event id and follow the selected event. The
+ * tabs are the ones `EventSettingsView` shows an event admin.
+ */
+const eventSettingsItem = computed<NavItem | null>(() => {
+  const event = authStore.selectedEvent
+  if (!event || !authStore.canManageEvent(event.id)) return null
+  const waiting = joinRequestCount.value
+  const waitingLabel = t('teams.nav.waiting', { count: waiting }, waiting)
+  const tab = (titleKey: string, name?: string, badge?: NavSubItem['badge']): NavSubItem => ({
+    title: titleKey,
+    titleKey,
+    routeName: 'event-settings',
+    // `undefined` is Details, the tab the page opens on without a query.
+    routeQuery: { tab: name },
+    badge,
+  })
+  return {
+    title: 'Event',
+    titleKey: 'navigation.sidebar.items.eventSettings.label',
+    icon: CalendarCog,
+    routeName: 'event-settings',
+    isActive: route.name === 'event-settings',
+    badge: waiting,
+    badgeLabel: waitingLabel,
+    items: [
+      tab('duties.events.detail.nav.details'),
+      tab(
+        'duties.events.detail.nav.people',
+        'people',
+        waiting > 0 ? { text: String(waiting), label: waitingLabel, variant: 'default' } : undefined,
+      ),
+      ...(showVouchers.value ? [tab('vouchers.eventSettings.tab', 'vouchers')] : []),
+      tab('locations.settings.tab', 'locations'),
+      tab('mapEditor.settings.tab', 'map'),
+    ],
+  }
+})
+
 const navManager = computed(() => {
-  const items = []
+  const items: NavItem[] = []
+  if (eventSettingsItem.value) items.push(eventSettingsItem.value)
   if (authStore.isManager) {
     items.push({
       title: 'Reports',

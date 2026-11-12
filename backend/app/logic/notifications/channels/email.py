@@ -211,6 +211,17 @@ def _build_html(
             action_link = f"{frontend_url}/invite/{data['token']}"
         elif "task_id" in data:
             action_link = f"{frontend_url}/app/tasks/{data['task_id']}"
+        elif "team_id" in data and "event_id" in data:
+            # A team request or decision: the Teams page, on that team.
+            action_link = (
+                f"{frontend_url}/app/teams/{data['event_id']}?team={data['team_id']}"
+            )
+        elif "user_id" in data and "event_id" in data:
+            # A join request or an accepted invitation: the People tab, where
+            # the request is decided and the newcomer shows up.
+            action_link = (
+                f"{frontend_url}/app/event-settings/{data['event_id']}?tab=people"
+            )
         elif "event_id" in data:
             # ``/app/events/{id}`` is not a route: the Vue router has
             # ``events`` (the list), ``events/create`` and

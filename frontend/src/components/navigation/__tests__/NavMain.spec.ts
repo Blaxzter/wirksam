@@ -165,6 +165,69 @@ describe('NavMain: group label', () => {
   })
 })
 
+describe('NavMain: the tabs of one page', () => {
+  // The event's settings fold out to its tabs: one route, told apart by `?tab=`.
+  async function mountTabs(path: string, badge?: number) {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ name: 'event-settings', path: '/settings/:eventId?', component: page }],
+    })
+    await router.push(path)
+    await router.isReady()
+    const tab = (title: string, name?: string): NavSubItem => ({
+      title,
+      routeName: 'event-settings',
+      routeQuery: { tab: name },
+    })
+    const items: NavItem[] = [
+      {
+        title: 'Event',
+        routeName: 'event-settings',
+        isActive: true,
+        badge,
+        badgeLabel: badge ? `${badge} requests to decide` : undefined,
+        items: [tab('Details'), tab('People', 'people'), tab('Map', 'map')],
+      },
+    ]
+    return mount(
+      { render: () => h(SidebarProvider, () => h(NavMain, { open: true, items })) },
+      { global: { plugins: [i18n, router] } },
+    )
+  }
+
+  const current = (w: Awaited<ReturnType<typeof mountTabs>>) =>
+    w
+      .findAll('[data-sidebar="menu-sub-button"]')
+      .filter((link) => link.attributes('data-active') === 'true')
+      .map((link) => link.text())
+
+  it('lights only the tab that is open', async () => {
+    expect(current(await mountTabs('/settings?tab=people'))).toEqual(['People'])
+  })
+
+  it('lights the first tab when the page has no tab in its address', async () => {
+    expect(current(await mountTabs('/settings/e1'))).toEqual(['Details'])
+  })
+
+  it('links each tab by its query', async () => {
+    const w = await mountTabs('/settings')
+    const hrefs = w.findAll('[data-sidebar="menu-sub-button"]').map((a) => a.attributes('href'))
+    expect(hrefs).toEqual(['/settings', '/settings?tab=people', '/settings?tab=map'])
+  })
+
+  it('shows what waits on the entry itself, for a screen reader too', async () => {
+    const w = await mountTabs('/settings', 2)
+    const badge = w.find('[data-testid="sidebar-badge-event-settings"]')
+    expect(badge.exists()).toBe(true)
+    expect(spoken(badge.element).replace(/\s+/g, ' ').trim()).toBe('2 requests to decide')
+  })
+
+  it('draws no badge when nothing waits', async () => {
+    const w = await mountTabs('/settings', 0)
+    expect(w.find('[data-testid="sidebar-badge-event-settings"]').exists()).toBe(false)
+  })
+})
+
 describe('NavMain: the icon-only sidebar', () => {
   // Collapsed to icons, every other entry names itself in a tooltip
   // (SidebarMenuButton's); one with sub-items has to do the same.

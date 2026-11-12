@@ -10,7 +10,7 @@ import type { RouteLocationRaw } from 'vue-router'
 import { parseServerDate } from '@/lib/server-time'
 
 /** What a notice opens, which names its "Open …" link. */
-export type NotificationTargetKind = 'invitation' | 'task' | 'team' | 'event' | 'bookings'
+export type NotificationTargetKind = 'invitation' | 'task' | 'team' | 'people' | 'event' | 'bookings'
 
 export interface NotificationTarget {
   kind: NotificationTargetKind
@@ -27,6 +27,11 @@ const text = (value: unknown): string | null =>
  * An invitation opens the invitation itself, before its event: the event's
  * page is a 404 to someone not in a private event yet. Booking notices carry
  * their task too, and open the task.
+ *
+ * A notice about a person in an event (`event_id` and `user_id`, no team) is
+ * a join request or an accepted invitation, and opens the event's People tab,
+ * where the request is decided and the newcomer shows up. `public/sw.js` and
+ * the backend's mail link (`channels/email.py`) follow the same rules.
  */
 export function notificationTarget(
   data: Record<string, unknown> | null | undefined,
@@ -44,6 +49,11 @@ export function notificationTarget(
     return {
       kind: 'team',
       to: { name: 'teams', params: { eventId }, query: { team: teamId } },
+    }
+  if (eventId && text(data.user_id))
+    return {
+      kind: 'people',
+      to: { name: 'event-settings', params: { eventId }, query: { tab: 'people' } },
     }
   if (eventId) return { kind: 'event', to: { name: 'event-settings', params: { eventId } } }
   if (text(data.booking_id)) return { kind: 'bookings', to: { name: 'my-bookings' } }
