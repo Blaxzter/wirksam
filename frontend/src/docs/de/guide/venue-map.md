@@ -27,7 +27,7 @@ Alles wird von selbst gespeichert, „Rückgängig“ nimmt den letzten Zeichens
 
 ## Pins setzen
 
-„Markierungen setzen“ listet alle Orte, die noch nicht auf dem Plan sind. Auf dem Handy öffnet „Markierungen & Bild“ diese Liste. Wähle einen Ort und tippe auf die Stelle im Plan. Einen gesetzten Pin kannst du danach verschieben.
+„Markierungen setzen“ listet alle Orte, die noch nicht auf dem Plan sind. Auf dem Handy öffnet „Markierungen & Bild“ diese Liste. Wähle einen Ort und tippe auf die Stelle im Plan. Einen gesetzten Pin [[pin]] kannst du danach verschieben.
 
 Für Toiletten, Erste Hilfe oder den Parkplatz nimmst du „Weitere Punkte“. Diese Symbole dienen nur der Orientierung.
 
@@ -37,7 +37,7 @@ Sobald der Plan ein Bild oder eine Zeichnung hat, finden ihn alle in der Veranst
 
 ## Schichten mit den Orten verbinden
 
-Die Farbe eines Pins kommt von den Schichten an diesem Ort. Wähle beim Anlegen einer Aufgabe unter „Ort“ den passenden Ort aus der Liste, dann übernehmen ihn alle ihre Schichten. Dasselbe gilt für jede neue Serie unter „Schichten hinzufügen“. Ein selbst eingetippter Ort zählt nicht.
+Die Farbe eines Pins kommt von den Schichten an diesem Ort. Wähle beim Anlegen einer Aufgabe unter „Ort“ den passenden Ort aus der Liste, dann übernehmen ihn alle ihre Schichten [[place]]. Dasselbe gilt für jede neue Serie unter „Schichten hinzufügen“. Ein selbst eingetippter Ort zählt nicht.
 
 Änderst du den Ort einer Aufgabe später, ziehen ihre Schichten mit, außer eine Schicht hat einen eigenen Ort. Den Ort einer Serie mit eigenem Ort änderst du bei der Serie über „Bearbeiten“.
 

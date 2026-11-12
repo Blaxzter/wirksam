@@ -13,7 +13,7 @@ import ScreenshotFrame from '@/components/landing/ScreenshotFrame.vue'
 import ScreenshotLightbox from '@/components/landing/ScreenshotLightbox.vue'
 import SectionHeading from '@/components/landing/SectionHeading.vue'
 
-import { USE_CASES, type UseCaseKey } from '@/lib/content-pages'
+import { USE_CASES, type UseCaseKey, pageLook } from '@/lib/content-pages'
 
 /**
  * One page per kind of event (club festival, …), all with the same shape: the
@@ -40,6 +40,9 @@ const gallery = computed<ScreenshotItem[]>(() =>
 )
 
 const zoomed = ref<number | null>(null)
+
+
+const look = computed(() => pageLook(props.useCase))
 </script>
 
 <template>
@@ -48,6 +51,8 @@ const zoomed = ref<number | null>(null)
     :title="t(`${base}.hero.title`)"
     :lede="t(`${base}.hero.lede`)"
     :breadcrumb="t(`${base}.breadcrumb`)"
+    :art="look.art"
+    :color="look.color"
     :cta-title="t(`${base}.ctaTitle`)"
   >
     <LandingSection id="problems">

@@ -157,6 +157,11 @@
     },
     "docs": {
         "ctaTitle": "See it for yourself",
+        "device": {
+            "desktop": "Computer",
+            "label": "Screens",
+            "phone": "Phone"
+        },
         "faqTitle": "Frequently asked questions",
         "groups": {
             "feature": {
@@ -178,7 +183,7 @@
                 "all": "All features",
                 "breadcrumb": "Features",
                 "eyebrow": "Features",
-                "lede": "WirkSam plans volunteer shifts for events: you lay out the tasks and shifts, people book themselves in and get reminded. Each page below explains one part in full, including what organisers can set and what volunteers see.",
+                "lede": "You lay out the tasks and shifts, people book themselves in and get reminded. Each page explains one part in full.",
                 "title": "What WirkSam can do"
             },
             "guide": {
@@ -189,61 +194,80 @@
                 "title": "Step by step"
             }
         },
+        "inShort": "In short",
         "onThisPage": "On this page",
         "pages": {
             "featureBooking": {
-                "name": "Booking shifts"
+                "name": "Booking shifts",
+                "tagline": "Volunteers pick their own shifts."
             },
             "featureHoursAndReports": {
-                "name": "Hours and reports"
+                "name": "Hours and reports",
+                "tagline": "Count each person's hours and see how full the shifts are."
             },
             "featureMembers": {
-                "name": "Invitations and roles"
+                "name": "Invitations and roles",
+                "tagline": "Invite by email or link and hand out the roles."
             },
             "featureNotifications": {
-                "name": "Reminders and notifications"
+                "name": "Reminders and notifications",
+                "tagline": "WirkSam sends a reminder before every shift by email, push, or Telegram."
             },
             "featurePeopleInCharge": {
-                "name": "People in charge"
+                "name": "People in charge",
+                "tagline": "Hand a single task over to someone."
             },
             "featureSelfHosting": {
-                "name": "Run it yourself"
+                "name": "Run it yourself",
+                "tagline": "WirkSam is open source and runs with Docker Compose on your own server."
             },
             "featureShiftPlanning": {
-                "name": "Shift planning"
+                "name": "Shift planning",
+                "tagline": "Describe a task once and its shifts are created from that."
             },
             "featureTeams": {
-                "name": "Teams"
+                "name": "Teams",
+                "tagline": "Reserve tasks for a team and tick off the checks its members need."
             },
             "featureVenueMap": {
-                "name": "Venue map"
+                "name": "Venue map",
+                "tagline": "Pins on your floor plan show where people are still missing."
             },
             "featureVouchers": {
-                "name": "Vouchers"
+                "name": "Vouchers",
+                "tagline": "Volunteers earn vouchers for food and drinks and show a QR code at the stand."
             },
             "guideFirstEvent": {
-                "name": "Your first event in 10 minutes"
+                "name": "Your first event in 10 minutes",
+                "tagline": "From an empty account to a plan everyone can book."
             },
             "guideNextYear": {
-                "name": "Copy an event for next year"
+                "name": "Copy an event for next year",
+                "tagline": "Carry last year's tasks and shifts over to new dates."
             },
             "guidePeopleInCharge": {
-                "name": "Name people in charge"
+                "name": "Name people in charge",
+                "tagline": "Give someone a task to look after, by name or email address."
             },
             "guideRedeemVouchers": {
-                "name": "Redeem vouchers at a stand"
+                "name": "Redeem vouchers at a stand",
+                "tagline": "For whoever is at the stand: scan or type the code and pick the amount."
             },
             "guideTeams": {
-                "name": "Set up a team"
+                "name": "Set up a team",
+                "tagline": "Create a team and set how people join and which checks they need."
             },
             "guideVenueMap": {
-                "name": "Create a venue map"
+                "name": "Create a venue map",
+                "tagline": "Upload a plan or draw one, and pin each place where people work."
             },
             "guideVolunteerStart": {
-                "name": "Getting started as a volunteer"
+                "name": "Getting started as a volunteer",
+                "tagline": "From the invitation to your first booked shift."
             },
             "guideVouchers": {
-                "name": "Set up vouchers"
+                "name": "Set up vouchers",
+                "tagline": "Set how many vouchers a shift earns and where they can be redeemed."
             }
         },
         "readOn": "Read on"
@@ -303,32 +327,6 @@
             "legalIntro": "The full detail is in the small print:",
             "nameExplainer": "The name is a German pun: “wirksam” means effective, and “zusammen” means together. Volunteering works best when people work together, hence WirkSam.",
             "title": "A small open-source project"
-        },
-        "audience": {
-            "eyebrow": "Who it's for",
-            "lede": "Organisers make the plan. Volunteers sign up and show up on the day.",
-            "organiser": {
-                "description": "You see who is covering what and which slots are still empty, without keeping a spreadsheet and chasing people over email.",
-                "label": "For organisers",
-                "points": {
-                    "0": "Set up an event yourself. Nobody has to approve it.",
-                    "1": "Invite your team by email or with a share link.",
-                    "2": "WirkSam creates all of a task's shifts from its days and hours."
-                },
-                "title": "You run the event"
-            },
-            "title": "For the people who plan and the people who help",
-            "volunteer": {
-                "description": "Your shifts are in one list, so you don't have to dig through a spreadsheet or a reply-all thread.",
-                "label": "For volunteers",
-                "points": {
-                    "0": "Open the invitation and sign in, and you're part of the event.",
-                    "1": "Say when you're free before the shifts are handed out.",
-                    "2": "Book what fits, cancel in good time if plans change.",
-                    "3": "You get a reminder before every shift, on the channel you set."
-                },
-                "title": "You lend a hand"
-            }
         },
         "faq": {
             "eyebrow": "Questions",
@@ -435,60 +433,31 @@
             "rows": {
                 "bookings": {
                     "description": "It has everything you signed up for, soonest first. Only you can cancel your booking. Organisers can't take you off a shift individually.",
-                    "points": {
-                        "0": "Filter by what's coming up, this month, or everything.",
-                        "1": "Cancel in two clicks and the slot reopens for someone else.",
-                        "2": "Subscribe from your own calendar app and your shifts sit alongside the rest of your week."
-                    },
                     "screenshotAlt": "The My Bookings page listing confirmed shifts with their dates, times, and locations.",
                     "title": "All your shifts in one list"
                 },
                 "clone": {
                     "description": "Copy an event you have already run onto new dates. The tasks, shifts, and times come across, and the original stays as it was.",
-                    "points": {
-                        "0": "Set the new dates and everything moves with them, landing on the same weekday as last time.",
-                        "1": "Tick only the tasks that are coming back.",
-                        "2": "Last year's sign-ups don't carry over, so the copy starts with empty shifts."
-                    },
                     "screenshotAlt": "The copy-event screen listing last year's tasks with their shift counts, each ticked to come across to the new dates.",
                     "title": "Copy last year's event"
                 },
                 "overview": {
                     "description": "Your event's tasks as a list, as cards, or on a calendar, with the open places shown on every shift.",
-                    "points": {
-                        "0": "Search and filter by category, location, or date.",
-                        "1": "Hide the shifts that are already full to see what still needs covering.",
-                        "2": "The app shows one event at a time, so nobody reads the wrong roster."
-                    },
                     "screenshotAlt": "The task list with a week of shifts beside each entry, showing booked and open places per slot.",
                     "title": "Everyone sees the same plan"
                 },
                 "reminders": {
                     "description": "WirkSam reminds people of their shifts, and each person chooses how.",
-                    "points": {
-                        "0": "Email, browser push, or Telegram, set or turned off separately for each kind of notification.",
-                        "1": "Everything also lands in an inbox inside the app."
-                    },
                     "screenshotAlt": "Notification settings with a row per notification type and per-channel switches for email, push, and Telegram.",
                     "title": "A reminder before every shift"
                 },
                 "shifts": {
                     "description": "You set the days, the daily hours, how long a shift runs, and how many people it needs, and the shifts are created from that.",
-                    "points": {
-                        "0": "If the hours don't divide evenly, choose whether to drop the remainder, shorten the last shift, or stretch it.",
-                        "1": "For a date with different hours, add an override and the rest stays as it is.",
-                        "2": "A live preview lists every shift before it's created. Click one to leave it out."
-                    },
                     "screenshotAlt": "The shift schedule form beside a live preview of every shift it would create.",
                     "title": "Generate shifts from a schedule"
                 },
                 "venue": {
                     "description": "Upload a floor plan or draw your venue right in the app, and pin each place where people work. The map then shows where help is still missing.",
-                    "points": {
-                        "0": "Every pin is coloured by how well that place is staffed on the chosen day.",
-                        "1": "Helpers see on the map where their shift is, so nobody has to ask where to go.",
-                        "2": "Several plans per event, for example the building and the outdoor area."
-                    },
                     "screenshotAlt": "The venue map: a drawn floor plan with a pin for each place, coloured by how well it is staffed, beside a list of all places with their booked slots.",
                     "title": "See where help is needed"
                 }
@@ -547,6 +516,7 @@
             "lede": "Pick the one that applies to you below.",
             "organiser": {
                 "footnote": "After that you can print the roster or pull a report on how the work is spread.",
+                "intro": "You see who is covering what and which slots are still empty, without keeping a spreadsheet and chasing people over email.",
                 "steps": {
                     "create": {
                         "description": "Give it a name and the dates it runs. It's yours, and it stays private until you decide otherwise.",
@@ -570,6 +540,7 @@
             "title": "Four steps, whether you're organising or helping out",
             "volunteer": {
                 "footnote": "If your plans change, cancel from My Bookings and the place reopens for somebody else.",
+                "intro": "Your shifts are in one list, so you don't have to dig through a spreadsheet or a reply-all thread.",
                 "steps": {
                     "accept": {
                         "description": "See the event, who invited you, and your role before you decide.",
@@ -602,7 +573,6 @@
         },
         "nav": {
             "about": "About",
-            "audience": "Who it's for",
             "faq": "FAQ",
             "features": "Features",
             "howItWorks": "How it works",

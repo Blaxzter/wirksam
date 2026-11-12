@@ -1,90 +1,140 @@
 ---
 title: Teams und Nachweise
-lede: Mit einem Team reservierst du Aufgaben für die Leute, die sie übernehmen sollen, etwa an der Kasse oder beim Fahrdienst. Du entscheidest, wer dazukommt, und hakst Nachweise wie Führungszeugnis oder Erste-Hilfe-Kurs vor der Freigabe ab, ohne eine Kopie aufzubewahren.
+lede: Mit einem Team reservierst du Aufgaben wie die Kasse oder den Fahrdienst für bestimmte Leute. Nachweise wie ein Führungszeugnis hakst du ab, ohne eine Kopie aufzubewahren.
+points: Aufgaben einem Team vorbehalten | Du entscheidest, wer ins Team kommt | Nachweise abhaken, ohne eine Kopie zu speichern
 related: guide/teams, feature/people-in-charge, feature/booking, feature/vouchers
 ---
 
-Normalerweise kann jede Person in einer Veranstaltung jede Schicht buchen. Das passt nicht für jede Aufgabe: An die Kasse soll jemand, den du kennst, und in die Kinderbetreuung nur, wer ein Führungszeugnis vorgezeigt hat.
+Normalerweise kann jede Person in einer Veranstaltung jede Schicht buchen. Für manche Aufgaben passt das nicht. An die Kasse soll jemand, den du kennst, und in die Kinderbetreuung nur, wer ein Führungszeugnis vorgezeigt hat.
 
-Ist keine Aufgabe reserviert, ändert sich am Buchen nichts, und Helfende sehen den Menüpunkt „Teams“ erst, wenn es ein Team gibt. Ein Team gehört zu einer Veranstaltung. Eine Aufgabe kann einem Team vorbehalten sein, ein Team kann viele Aufgaben haben.
+Ist keine Aufgabe reserviert, ändert sich am Buchen nichts. Den Menüpunkt „Teams“ sehen Helfende erst, wenn es ein Team gibt.
 
 ## Aufgaben einem Team vorbehalten
 
-Beim Anlegen oder Bearbeiten einer Aufgabe legen Organisator:innen unter „Wer kann buchen“ fest, wer ihre Schichten buchen darf. Standard ist „Alle in der Veranstaltung“. Mit „Nur ein Team“ wählst du ein Team aus der Liste oder legst dort mit „Neues Team…“ gleich eines an. Solange keines gewählt ist, können weiter alle buchen.
+Ein Team gehört zu einer Veranstaltung. Eine Aufgabe kann einem Team vorbehalten sein, ein Team kann viele Aufgaben haben.
 
-Organisator:innen können solche Schichten immer buchen, auch ohne im Team zu sein. [Verantwortliche](/features/people-in-charge) nicht, sie müssen dafür ins Team.
+Organisator:innen legen beim Anlegen oder Bearbeiten einer Aufgabe unter „Wer kann buchen“ fest, wer ihre Schichten buchen darf. Standard ist „Alle in der Veranstaltung“. Mit „Nur ein Team“ wählst du ein Team aus der Liste oder legst mit „Neues Team…“ gleich eines an.
 
-## Was alle anderen sehen
+Solange kein Team gewählt ist, können weiter alle buchen. Organisator:innen können solche Schichten immer buchen, auch ohne im Team zu sein. [Verantwortliche](/features/people-in-charge) müssen dafür ins Team.
 
-Eine reservierte Aufgabe bleibt für alle in der Veranstaltung sichtbar, sie ist nur gesperrt. In der Aufgabenliste steht „Nur Kasse“ mit einem Schloss, auf der Aufgabenseite „Nur Mitglieder von Kasse können diese Schichten buchen.“, und jede Schicht trägt ein Schloss.
+## Was Helfende sehen
 
-Der Weg hinein steht direkt daneben: „Kasse beitreten“ bei einem offenen Team, „Bei Kasse anfragen“ bei einem mit Freigabe. Nach dem Anfragen steht dort „Anfrage gesendet“.
+Eine reservierte Aufgabe bleibt für alle in der Veranstaltung sichtbar, sie ist nur gesperrt. Für ein Team namens Kasse heißt das:
 
-Wer nur sehen will, was sich buchen lässt, schaltet in den Filtern „Nur Aufgaben, die ich buchen kann“ ein. Standardmäßig ist das aus.
+- In der Aufgabenliste steht „Nur Kasse“ mit einem Schloss.
+- Auf der Aufgabenseite steht „Nur Mitglieder von Kasse können diese Schichten buchen.“
+- Jede Schicht trägt ein Schloss.
+- Direkt daneben steht der Weg ins Team: „Kasse beitreten“ bei einem offenen Team, „Bei Kasse anfragen“ bei einem mit Freigabe. Nach dem Anfragen steht dort „Anfrage gesendet“.
 
-Auf der Seite „Teams“ findet jede Person ihre eigenen Teams unter „Deine Teams“ und die übrigen unter „Weitere Teams“. Dort steht, was ein Team macht und wie viele Schichten noch offen sind.
+Auf der Seite „Teams“ stehen deine eigenen Teams unter „Deine Teams“, die übrigen unter „Weitere Teams“. Dort siehst du, was ein Team macht und wie viele Schichten noch offen sind.
 
-## Offene Teams und Teams mit Freigabe
+## Wer ins Team kommt
 
-Neue Teams stehen auf „Beitritt nur mit Freigabe“. Wer dazukommen möchte, schickt eine Anfrage, auf Wunsch mit einer Nachricht. Teamleitungen und Organisator:innen bekommen eine E-Mail und eine Push-Nachricht, und die Anfrage steht oben auf der Seite „Teams“. Bei einem Team ohne Nachweise entscheiden sie direkt in der Zeile mit „Freigeben“ oder „Ablehnen“.
+Neue Teams stehen auf „Beitritt nur mit Freigabe“. Wer dazukommen möchte, schickt eine Anfrage, auf Wunsch mit einer Nachricht. Danach geht es so weiter:
 
-Schaltest du die Freigabe aus, ist das Team offen: Alle in der Veranstaltung können sofort beitreten und buchen. Das passt, wenn die Leute sich selbst einschätzen können. Warten beim Ausschalten noch Anfragen, sind sie beim Speichern alle angenommen, und angehängte Dateien werden gelöscht. Das Formular sagt vorher, wie viele es sind.
+1. Teamleitungen und Organisator:innen bekommen eine E-Mail und eine Push-Nachricht.
+2. Die Anfrage steht oben auf der Seite „Teams“.
+3. Bei einem Team ohne Nachweise entscheiden sie direkt in der Zeile mit „Freigeben“ oder „Ablehnen“.
+4. Die Person erfährt das Ergebnis per E-Mail und im Postfach. Ist sie dabei, kommt eine Push-Nachricht dazu.
 
-Die Person erfährt das Ergebnis: per E-Mail und Push, wenn sie dabei ist, per E-Mail, wenn nicht, und in beiden Fällen im Postfach. Eine Ablehnung braucht keinen Grund, und man kann erneut anfragen.
+Eine Ablehnung braucht keinen Grund. Wer abgelehnt wurde, kann erneut anfragen.
+
+Schaltest du die Freigabe aus, ist das Team offen: Alle in der Veranstaltung können sofort beitreten und buchen. Das passt, wenn die Leute sich selbst einschätzen können.
 
 ![Die Seite „Teams“ mit wartenden Anfragen, der Liste der Teams und den Mitgliedern des gewählten Teams](shot:teams)
 
-## Teamleitungen und direkt hinzufügen
+## Teamleitungen
 
-Organisator:innen machen ein Mitglied im Menü seiner Zeile mit „Zur Teamleitung machen“ zur Teamleitung. Eine Teamleitung entscheidet über Anfragen, fügt Leute hinzu, erfasst Nachweise und entfernt Mitglieder, und zwar bei ihrem Team unter „Deine Teams“. Das Team bearbeiten oder löschen, Aufgaben reservieren, Teamleitungen ernennen und andere Teamleitungen entfernen bleibt bei den Organisator:innen.
+Organisator:innen machen ein Mitglied im Menü seiner Zeile mit „Zur Teamleitung machen“ zur Teamleitung. Eine Teamleitung kann bei ihrem Team unter „Deine Teams“:
 
-Mit „Jemanden aus der Veranstaltung hinzufügen“ kommt eine Person direkt ins Team, ohne Anfrage. Sie muss schon in der Veranstaltung sein. Hat das Team Nachweise, sind dieselben Häkchen nötig wie bei einer Anfrage. WirkSam sagt der Person Bescheid, außer du hast dich selbst hinzugefügt.
+- über Anfragen entscheiden
+- Leute hinzufügen
+- Nachweise erfassen
+- Mitglieder entfernen
 
-## Nachweise und Prüfung
+Das Team bearbeiten oder löschen, Aufgaben reservieren, Teamleitungen ernennen und andere Teamleitungen entfernen bleibt bei den Organisator:innen.
 
-Ein Team kann bis zu zehn Nachweise verlangen, die jemand sehen muss, bevor eine Person dazukommt. Ein neues Team hat keine. Teams mit Nachweisen brauchen immer eine Freigabe.
+Mit „Jemanden aus der Veranstaltung hinzufügen“ kommt eine Person ohne Anfrage ins Team. Sie muss schon in der Veranstaltung sein. WirkSam sagt ihr Bescheid, außer du hast dich selbst hinzugefügt.
 
-Es gibt drei Vorlagen, und alle lassen sich anpassen:
+## Nachweise prüfen
 
-- **Erweitertes Führungszeugnis:** fragt nach dem Ausstellungsdatum, gilt 5 Jahre, keine Datei
-- **Erste-Hilfe-Kurs:** fragt nach dem Ausstellungsdatum, gilt 2 Jahre, Datei erlaubt
-- **Führerschein Klasse B:** kein Datum, läuft nicht ab, keine Datei
+Ein Team kann bis zu zehn Nachweise verlangen. Jemand muss sie gesehen haben, bevor eine Person dazukommt. Ein neues Team hat keine, und ein Team mit Nachweisen braucht immer eine Freigabe.
 
-„Etwas anderes“ fügt einen eigenen hinzu. Pro Nachweis legst du fest, was geprüft wird, einen freiwilligen Hinweis, ob nach dem Ausstellungsdatum gefragt wird, ob eine Datei angehängt werden darf und wie viele Jahre er gilt.
+Es gibt drei Vorlagen, die du alle anpassen kannst:
 
-Eine Anfrage mit Nachweisen öffnet sich mit „Anfrage prüfen“. Freigeben geht erst, wenn jeder Nachweis abgehakt ist, mit Ausstellungsdatum, wo danach gefragt wird. WirkSam lehnt ein Datum in der Zukunft ab und eines, das so alt ist, dass der Nachweis schon abgelaufen wäre. Die Gültigkeit zählt ab dem Ausstellungsdatum, ohne Datum ab dem Tag der Prüfung.
+- Erweitertes Führungszeugnis: fragt nach dem Ausstellungsdatum, gilt 5 Jahre, keine Datei
+- Erste-Hilfe-Kurs: fragt nach dem Ausstellungsdatum, gilt 2 Jahre, Datei erlaubt
+- Führerschein Klasse B: kein Datum, läuft nicht ab, keine Datei
+
+„Etwas anderes“ fügt einen eigenen Nachweis hinzu.
+
+Eine Anfrage mit Nachweisen öffnest du mit „Anfrage prüfen“. Freigeben geht erst, wenn jeder Nachweis abgehakt ist. Wo danach gefragt wird, trägst du auch das Ausstellungsdatum ein.
+
+Fügst du jemanden direkt hinzu, sind dieselben Häkchen nötig wie bei einer Anfrage.
 
 ![Eine Beitrittsanfrage prüfen, mit einem Häkchen und dem Ausstellungsdatum pro Nachweis](shot:team-review)
 
-## Was gespeichert wird und was nicht
+## Was nach der Prüfung bleibt
 
-Ein Häkchen speichert, wer geprüft hat, wann, das Ausstellungsdatum und bis wann der Nachweis gilt. Eine Kopie des Dokuments behält WirkSam dafür nicht. Teamleitungen und Organisator:innen sehen in der Mitgliederliste, welcher Nachweis bis wann gilt.
+Ein Häkchen speichert, wer geprüft hat, wann, das Ausstellungsdatum und bis wann der Nachweis gilt. Eine Kopie des Dokuments behält WirkSam nicht. In der Mitgliederliste sehen Teamleitungen und Organisator:innen, welcher Nachweis bis wann gilt.
 
-Wurde dieselbe Person in dieser Veranstaltung schon in einem anderen Team auf einen gleichnamigen Nachweis geprüft, steht das bei der Prüfung, und das Datum ist schon eingetragen. Abhaken musst du trotzdem selbst. In eine andere Veranstaltung wird das nie übernommen.
+Ist bei einem Nachweis „Datei anhängen erlaubt“ eingeschaltet, kann die Person freiwillig eine Datei anhängen.
 
-Verlässt jemand das Team oder die Veranstaltung oder wird entfernt, sind auch die Häkchen weg.
+> Eine angehängte Datei löscht WirkSam, sobald über die Anfrage entschieden ist. Nach einer Freigabe bleibt nur das Häkchen.
 
-## Angehängte Dateien
-
-Ist bei einem Nachweis „Datei anhängen erlaubt“ eingeschaltet, kann die Person beim Anfragen oder später unter „Deine Teams“ eine Datei anhängen, ersetzen oder entfernen. Das ist freiwillig: ein PDF oder Foto (PNG, JPEG, WebP) pro Nachweis, bis 5 MB.
-
-Öffnen können die Datei die Person selbst, die Teamleitungen und die Organisator:innen, andere Helfende nicht. Sie wird gelöscht, sobald über die Anfrage entschieden ist, egal wie, und auch dann, wenn die Person ihre Anfrage zurückzieht oder die Veranstaltung verlässt. Nach einer Freigabe bleibt nur das Häkchen. Bei Fotos entfernt WirkSam beim Hochladen eingebettete Daten wie den Aufnahmeort. In Demo-Veranstaltungen lassen sich keine Dateien anhängen.
-
-## Wenn ein Nachweis abläuft
-
-Ein abgelaufener Nachweis sperrt niemanden aus. Die Person bleibt im Team und kann weiter buchen. In der Mitgliederliste steht bei ihr „Neuer Nachweis nötig“, und unter „Deine Teams“ liest sie: „Einer deiner Nachweise für dieses Team ist abgelaufen. Du kannst weiter buchen; sprich die Teamleitung wegen eines neuen an.“ Eine Nachricht verschickt WirkSam dazu nicht.
-
-Hast du einen neuen gesehen, wählst du im Menü der Zeile „Neuen Nachweis erfassen“ und hakst ihn ab. Dieselbe Markierung erscheint, wenn du einen Nachweis ergänzt, nachdem jemand beigetreten ist, oder wenn du einen Nachweis umbenennst oder neu nach dem Ausstellungsdatum fragst, weil die alten Häkchen dann nicht mehr gelten.
+Läuft ein Nachweis ab, sperrt das niemanden aus: Die Person bleibt im Team und kann weiter buchen.
 
 ## Häufige Fragen
 
 ### Speichert WirkSam das Führungszeugnis?
 
-Nein. Die Vorlage „Erweitertes Führungszeugnis“ nimmt keine Datei an: Die Person zeigt es vor, und du hakst es ab. WirkSam speichert, wer es wann gesehen hat, das Ausstellungsdatum und bis wann die Prüfung gilt. Das bleibt so, solange du dort nicht selbst „Datei anhängen erlaubt“ einschaltest.
+Nein. Die Vorlage „Erweitertes Führungszeugnis“ nimmt keine Datei an: Die Person zeigt es vor, und du hakst es ab. WirkSam speichert, wer es wann gesehen hat, das Ausstellungsdatum und bis wann die Prüfung gilt.
 
-### Was passiert mit gebuchten Schichten, wenn jemand das Team verlässt?
+Das bleibt so, solange du dort nicht selbst „Datei anhängen erlaubt“ einschaltest.
 
-Sie bleiben gebucht, nur neue gehen nicht mehr. Bei einem Team mit Freigabe muss die Person erneut anfragen, um zurückzukommen. Verlässt sie die ganze Veranstaltung, verliert sie auch ihre Buchungen für Schichten, die noch nicht vorbei sind.
+### Wie sehe ich nur die Aufgaben, die ich buchen kann?
+
+Schalte in den Filtern „Nur Aufgaben, die ich buchen kann“ ein. Standardmäßig ist das aus.
+
+### Was passiert mit wartenden Anfragen, wenn wir die Freigabe ausschalten?
+
+Beim Speichern sind sie alle angenommen, und angehängte Dateien werden gelöscht. Das Formular sagt vorher, wie viele es sind.
+
+### Was lässt sich an einem Nachweis einstellen?
+
+Du legst fest, was geprüft wird, und kannst einen Hinweis dazuschreiben. Außerdem bestimmst du, ob nach dem Ausstellungsdatum gefragt wird und ob eine Datei angehängt werden darf. Dazu kommt, wie viele Jahre der Nachweis gilt.
+
+### Welches Ausstellungsdatum nimmt WirkSam an?
+
+Kein Datum in der Zukunft und keines, das so alt ist, dass der Nachweis schon abgelaufen wäre. Die Gültigkeit zählt ab dem Ausstellungsdatum. Fragt der Nachweis nicht nach einem Datum, zählt sie ab dem Tag der Prüfung.
+
+### Muss ich jemanden für jedes Team neu prüfen?
+
+Abhaken musst du in jedem Team selbst. Wurde die Person in einem anderen Team dieser Veranstaltung schon auf einen gleichnamigen Nachweis geprüft, steht das bei der Prüfung. Das Datum ist dann schon eingetragen.
+
+In eine andere Veranstaltung wird das nie übernommen.
+
+### Was passiert mit angehängten Dateien?
+
+Die Person kann beim Anfragen oder später unter „Deine Teams“ eine Datei anhängen, ersetzen oder entfernen. Erlaubt ist ein PDF oder Foto (PNG, JPEG, WebP) pro Nachweis, bis 5 MB. Öffnen können sie die Person selbst, die Teamleitungen und die Organisator:innen, andere Helfende nicht.
+
+Die Datei wird gelöscht, sobald über die Anfrage entschieden ist, egal wie. Das gilt auch, wenn die Person ihre Anfrage zurückzieht oder die Veranstaltung verlässt.
+
+Bei Fotos entfernt WirkSam beim Hochladen eingebettete Daten wie den Aufnahmeort. In Demo-Veranstaltungen lassen sich keine Dateien anhängen.
+
+### Was passiert, wenn ein Nachweis abläuft?
+
+In der Mitgliederliste steht bei der Person „Neuer Nachweis nötig“. Sie selbst liest unter „Deine Teams“: „Einer deiner Nachweise für dieses Team ist abgelaufen. Du kannst weiter buchen; sprich die Teamleitung wegen eines neuen an.“ Eine Nachricht verschickt WirkSam dazu nicht.
+
+Hast du einen neuen gesehen, wählst du im Menü der Zeile „Neuen Nachweis erfassen“ und hakst ihn ab.
+
+Dieselbe Markierung erscheint, wenn du einen Nachweis ergänzt, nachdem jemand beigetreten ist. Das gilt auch, wenn du einen Nachweis umbenennst oder neu nach dem Ausstellungsdatum fragst. Die alten Häkchen gelten dann nicht mehr.
+
+### Was passiert, wenn jemand das Team verlässt?
+
+Gebuchte Schichten bleiben gebucht, nur neue gehen nicht mehr. Bei einem Team mit Freigabe muss die Person erneut anfragen, um zurückzukommen. Verlässt sie die ganze Veranstaltung, verliert sie auch ihre Buchungen für Schichten, die noch nicht vorbei sind.
+
+Ihre Häkchen sind weg, sobald sie das Team oder die Veranstaltung verlässt oder entfernt wird.
 
 ### Können wir eine Aufgabe auch nachträglich einem Team vorbehalten?
 
@@ -96,4 +146,6 @@ Seine Aufgaben stehen danach wieder allen in der Veranstaltung offen, und gebuch
 
 ### Kommen Teams und Nachweise mit, wenn wir eine Veranstaltung kopieren?
 
-Die Teams und die verlangten Nachweise ja, die Häkchen nein. Kopierst du auch die Mitglieder, bleiben sie in ihren Teams und stehen dort mit „Neuer Nachweis nötig“, wenn das Team Nachweise verlangt. Offene Anfragen bleiben zurück. Mehr dazu in der Anleitung [Veranstaltung fürs nächste Jahr kopieren](/guides/next-year).
+Die Teams und die verlangten Nachweise ja, die Häkchen nein. Kopierst du auch die Mitglieder, bleiben sie in ihren Teams. Verlangt ein Team Nachweise, steht bei ihnen „Neuer Nachweis nötig“.
+
+Offene Anfragen bleiben zurück. Mehr dazu in der Anleitung [Veranstaltung fürs nächste Jahr kopieren](/guides/next-year).

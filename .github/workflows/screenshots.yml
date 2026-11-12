@@ -19,7 +19,8 @@ permissions:
 jobs:
     screenshots:
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        # Two languages, each on a computer and a phone.
+        timeout-minutes: 75
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
@@ -76,7 +77,8 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
                   NAME: ${{ github.event.release.tag_name || github.run_id }}
               run: |
-                  if git diff --quiet -- frontend/public/screenshots; then
+                  # The marks the guides put on the screenshots move with them.
+                  if git diff --quiet -- frontend/public/screenshots frontend/src/docs/captures.json; then
                       echo "Screenshots unchanged." >> "$GITHUB_STEP_SUMMARY"
                       exit 0
                   fi
@@ -84,7 +86,7 @@ jobs:
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                   git switch -c "$branch"
-                  git add frontend/public/screenshots
+                  git add frontend/public/screenshots frontend/src/docs/captures.json
                   git commit -m "docs(screenshots): retake for $NAME"
                   git push origin "$branch"
                   # Creating the pull request needs "Allow GitHub Actions to

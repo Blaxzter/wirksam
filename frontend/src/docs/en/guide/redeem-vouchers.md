@@ -14,17 +14,17 @@ If the button is missing, check the time and whether the right event is selected
 
 ## Check the place
 
-Next to "Where" at the top is your stand. If you can redeem at several places right now, choose the right one here. The redemption is counted for that place.
+Next to "Where" [[place]] at the top is your stand. If you can redeem at several places right now, choose the right one here. The redemption is counted for that place.
 
-![Redeeming vouchers on a phone, with the place at the top, then the code and the button for the list of people](phone:vouchers-redeem)
+![Redeeming vouchers, with the place at the top, then the code and the button for the list of people](shot:vouchers-redeem)
 
 ## Scan or type the code
 
-The volunteer opens "My vouchers" and taps "Show my code". Hold the QR code in front of the camera. The first time, your browser asks about the camera, so allow it. The camera then keeps running from one person to the next.
+The volunteer opens "My vouchers" and taps "Show my code". Hold the QR code [[qr]] in front of the camera. The first time, your browser asks about the camera, so allow it. The camera then keeps running from one person to the next.
 
-If scanning doesn't work, tap "Type the code instead", enter the six characters and tap "Continue". Dashes and small letters don't matter. Codes never contain 0, O, 1, I or L.
+If scanning doesn't work, tap "Type the code instead", enter the six characters [[code]] and tap "Continue". Dashes and small letters don't matter. Codes never contain 0, O, 1, I or L.
 
-![The code to show, as a QR code and to type in](phone:vouchers-code)
+![The code to show, as a QR code and to type in](shot:vouchers-code)
 
 ## Choose the amount and redeem
 
@@ -36,11 +36,11 @@ The code stays valid for at least a minute after scanning, so there's no need to
 
 ## No code: pick the person
 
-If the person's battery is flat, or they have no signal or no smartphone, tap "Pick a person". This is only meant for that case. Search the list by name or email. Each name shows how many vouchers the person has. People with none are greyed out and can't be chosen. After that it works the same as with a code.
+If the person's battery is flat, or they have no signal or no smartphone, tap "Pick a person". This is only meant for that case. Search the list by name or email [[search]]. Each name shows how many vouchers the person has [[count]]. People with none are greyed out and can't be chosen. After that it works the same as with a code.
 
 If it says "No phone? Ask …" instead, your event keeps redeeming without a code to people in charge and organisers. Send the person to whoever is named.
 
-![The list of people when redeeming without a code, with the number of vouchers next to each name](phone:vouchers-picker)
+![The list of people when redeeming without a code, with the number of vouchers next to each name](shot:vouchers-picker)
 
 ## Respond to messages
 

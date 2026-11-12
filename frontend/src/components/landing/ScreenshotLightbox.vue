@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from '@lucide/vue'
 import {
@@ -12,6 +12,8 @@ import {
   VisuallyHidden,
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
+
+import ShotMarks from '@/components/content/ShotMarks.vue'
 
 import { type ScreenshotItem, useScreenshotSource } from '@/composables/useScreenshotSource'
 
@@ -44,6 +46,9 @@ const open = computed({
 const current = computed(() => (index.value === null ? null : (props.items[index.value] ?? null)))
 
 const { src, onError } = useScreenshotSource(() => current.value?.name ?? '')
+
+/** The mark being pointed at on the open screenshot. */
+const active = ref<string | null>(null)
 
 function step(delta: number) {
   if (index.value === null || props.items.length === 0) return
@@ -97,14 +102,24 @@ watch(open, (isOpen) => {
             <ChevronLeftIcon class="size-5" />
           </button>
 
-          <figure class="min-w-0 flex-1">
-            <img
-              v-if="current"
-              :src="src"
-              :alt="current.alt"
-              class="max-h-[75vh] w-full rounded-lg object-contain shadow-2xl"
-              @error="onError"
-            />
+          <figure class="flex min-w-0 flex-1 flex-col items-center">
+            <!-- As wide as the picture, so the marks sit where they belong. -->
+            <span v-if="current" class="relative block max-w-full overflow-hidden rounded-lg">
+              <img
+                :src="src"
+                :alt="current.alt"
+                :width="current.phone ? 780 : 1440"
+                :height="current.phone ? 1688 : 900"
+                class="block h-auto max-h-[75vh] w-auto max-w-full shadow-2xl"
+                @error="onError"
+              />
+              <ShotMarks
+                v-if="current.marks?.length"
+                :marks="current.marks"
+                :active="active"
+                @point="active = $event"
+              />
+            </span>
             <figcaption class="mt-4 text-center text-sm text-white/80">
               {{ current?.caption }}
             </figcaption>

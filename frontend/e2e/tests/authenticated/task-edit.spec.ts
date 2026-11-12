@@ -113,6 +113,32 @@ test.describe('Task Add Shifts – page access', () => {
     await page.goto(`/app/tasks/${created.task.id}/add-shifts`)
     await expect(page.getByTestId('btn-back')).toBeVisible()
   })
+
+  test("starts from the task's schedule, even a shift length the list does not offer", async ({
+    adminPage: page,
+  }) => {
+    // Shifts of four and a half hours until seven in the evening: not one of
+    // the usual lengths, and an end a 12-hour clock would write as "07:00 PM".
+    const long = await createTaskWithShifts(page, {
+      name: uniqueName('E2E Long Shifts'),
+      status: 'published',
+      startTime: '10:00',
+      endTime: '19:00',
+      slotDuration: 270,
+      peoplePerShift: 4,
+    })
+    try {
+      await page.goto(`/app/tasks/${long.task.id}/add-shifts`)
+      const times = page.getByTestId('input-daily-window').locator('input')
+      await expect(times.nth(0)).toHaveValue('10:00')
+      await expect(times.nth(1)).toHaveValue('19:00')
+      await expect(page.getByTestId('input-shift-duration').getByRole('combobox')).toContainText(
+        '270',
+      )
+    } finally {
+      await deleteTask(page, long.task.id).catch(() => {})
+    }
+  })
 })
 
 test.describe('Task Edit/Add Shifts – member RBAC', () => {

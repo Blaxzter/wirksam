@@ -52,6 +52,8 @@ jobs:
             ci: 'internal',
             build: 'internal',
             revert: 'internal',
+            // `merge: dev -> main (vX.Y.Z)`
+            merge: 'internal',
           }
 
           const existing = (process.env.CURRENT_LABELS ?? '').split(',').map((n) => n.trim())

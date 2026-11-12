@@ -9,8 +9,11 @@
 withDefaults(
   defineProps<{
     id: string
-    /** Background band. Alternating `plain`/`tinted` gives the page rhythm. */
-    tone?: 'plain' | 'tinted' | 'hero'
+    /**
+     * Background band. Alternating `plain`/`tinted` gives the page rhythm.
+     * `accent` is `tinted` lit in `--art`, the colour a content page sets.
+     */
+    tone?: 'plain' | 'tinted' | 'hero' | 'accent'
     /** Inner container width. `wide` suits screenshot rows, `full` the step chain. */
     width?: 'default' | 'wide' | 'full'
   }>(),
@@ -26,6 +29,7 @@ withDefaults(
       'bg-background': tone === 'plain',
       'bg-muted/40': tone === 'tinted',
       'relative overflow-hidden bg-hero text-hero-foreground': tone === 'hero',
+      'relative overflow-hidden bg-muted/40': tone === 'accent',
     }"
   >
     <!-- Soft tonal glows, matching the select-event hero pane. -->
@@ -43,6 +47,25 @@ withDefaults(
           radial-gradient(
             ellipse 100% 80% at 100% 100%,
             color-mix(in oklab, var(--hero-speck) var(--hero-speck-opacity), transparent) 0%,
+            transparent 70%
+          );
+      "
+    />
+
+    <div
+      v-if="tone === 'accent'"
+      aria-hidden="true"
+      class="absolute inset-0"
+      style="
+        background:
+          radial-gradient(
+            ellipse 55% 75% at 88% 20%,
+            color-mix(in oklab, var(--art) 24%, transparent) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 45% 60% at 0% 100%,
+            color-mix(in oklab, var(--art) 12%, transparent) 0%,
             transparent 70%
           );
       "

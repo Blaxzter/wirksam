@@ -17,10 +17,26 @@
  * local database happened to contain.
  *
  * Each page is captured twice, light and dark, always in the default (earthy)
- * palette, into `public/screenshots/<lang>/<name>-<mode>.png`.
+ * palette, into `public/screenshots/<lang>/<name>-<mode>.png`. What the feature
+ * pages and guides show is captured on a phone as well, as `<name>-phone-<mode>.png`,
+ * since a visitor can choose between the two there.
+ *
+ * Those captures also measure the parts the text points at with numbered marks
+ * (`MARKS`), and write where they are to `src/docs/captures.json`, so the
+ * numbers land on the right spot again after every capture.
  */
-import { type Browser, type BrowserContext, type Page, expect, test } from '@playwright/test'
+import {
+  type Browser,
+  type BrowserContext,
+  type ElementHandle,
+  type Locator,
+  type Page,
+  expect,
+  test,
+} from '@playwright/test'
+import { readFileSync, writeFileSync } from 'node:fs'
 
+import type { Captures, MarkPlace } from '../src/lib/doc-types'
 import {
   type CastMember,
   type Locale,
@@ -38,6 +54,14 @@ const VIEWPORT = { width: 1440, height: 900 }
 // Sizes in `components/landing/ScreenshotFrame.vue` follow this.
 const PHONE_VIEWPORT = { width: 390, height: 844 }
 const MODES = ['light', 'dark'] as const
+const DEVICES = ['desktop', 'phone'] as const
+type Mode = (typeof MODES)[number]
+type Device = (typeof DEVICES)[number]
+
+const CAPTURES_FILE = 'src/docs/captures.json'
+
+/** The file a screen is saved under on a device, as `src/lib/doc-shots.ts` reads it. */
+const fileOf = (name: string, device: Device) => (device === 'phone' ? `${name}-phone` : name)
 
 const EMAIL_DOMAIN = 'example.org'
 const world = WORLD[LANG]
@@ -512,7 +536,274 @@ async function openContext(
   return { context, page }
 }
 
-async function capture(page: Page, name: string, mode: string): Promise<void> {
+/** How to find a part of a capture that the text points at. */
+type Find = (page: Page, device: Device) => Locator
+/** The parts of one screen, by the key the text uses. */
+type Marks = Record<string, Find>
+
+/** What this run took, with its marks, for `src/docs/captures.json`. */
+const captured: Captures = {}
+
+/**
+ * How far a mark's number reaches from its centre, in pixels of the capture,
+ * and the gap it keeps to its part: `ShotMarks.vue` draws a 1.25rem badge with
+ * a ring, and a docs page shows a computer capture at about half its size and
+ * a phone capture at about two thirds.
+ */
+const PIN = { desktop: { radius: 26, gap: 4 }, phone: { radius: 19, gap: 3 } } as const
+
+/** Left, top, right and bottom, in pixels of the page. */
+type Edges = [number, number, number, number]
+
+/**
+ * Where each mark's number goes, as a centre in pixels: the first spot beside
+ * its part that covers no text, no control and no other mark. Left of the
+ * part first, then off its top left corner, above it, right of it, off its top
+ * right corner, inside its right end, below it. With no free spot, the one
+ * that covers the least. A part something else covers, a sheet over a list
+ * say, gets none. Runs in the page.
+ */
+function placePins({
+  parts: marked,
+  radius,
+  gap,
+}: {
+  parts: { edges: Edges; element: Element }[]
+  radius: number
+  gap: number
+}): ([number, number] | null)[] {
+  const parts = marked.map(({ edges }) => edges)
+  const width = window.innerWidth
+  const height = window.innerHeight
+
+  // Whether a colour hides what is behind it. Computed colours come as
+  // `rgba(r, g, b, a)`, or with `/ a` in the other colour spaces.
+  const opacity = (element: Element) => {
+    if (['IMG', 'CANVAS', 'VIDEO'].includes(element.tagName)) return 1
+    const colour = getComputedStyle(element).backgroundColor
+    if (colour === 'transparent') return 0
+    const slash = colour.match(/\/\s*([\d.]+)(%?)\s*\)$/)
+    if (slash) return Number(slash[1]) / (slash[2] ? 100 : 1)
+    const rgba = colour.match(/^rgba\(.*,\s*([\d.]+)\)$/)
+    return rgba ? Number(rgba[1]) : 1
+  }
+  // How this point of an element shows: not at all under something solid,
+  // dimmed under a dialog's backdrop, or clearly.
+  const shows = (element: Element, x: number, y: number): 'clear' | 'dimmed' | false => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return false
+    let dimmed = false
+    for (const hit of document.elementsFromPoint(x, y)) {
+      if (element.contains(hit) || hit.contains(element)) return dimmed ? 'dimmed' : 'clear'
+      const alpha = opacity(hit)
+      if (alpha >= 0.9) return false
+      if (alpha >= 0.1) dimmed = true
+    }
+    return false
+  }
+  const middle = (rect: DOMRect): [number, number] => [
+    Math.min(Math.max(rect.left + rect.width / 2, 0), width - 1),
+    Math.min(Math.max(rect.top + rect.height / 2, 0), height - 1),
+  ]
+  const visible = (rect: DOMRect) =>
+    rect.width >= 2 &&
+    rect.height >= 2 &&
+    rect.right > 0 &&
+    rect.bottom > 0 &&
+    rect.left < width &&
+    rect.top < height
+
+  // What a number must not cover: the text and the controls a visitor sees,
+  // and whether they are dimmed.
+  type Seen = { edges: Edges; dimmed: boolean }
+  const texts: Seen[] = []
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const element = node.parentElement
+    if (!node.textContent?.trim() || !element) continue
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    for (const rect of range.getClientRects()) {
+      const seen = visible(rect) && shows(element, ...middle(rect))
+      if (seen) {
+        texts.push({
+          edges: [rect.left, rect.top, rect.right, rect.bottom],
+          dimmed: seen === 'dimmed',
+        })
+      }
+    }
+  }
+  const controls: Seen[] = []
+  const selector =
+    'input, textarea, select, button, img, svg, canvas, video, [role="switch"], [role="checkbox"], [role="radio"]'
+  for (const element of document.querySelectorAll(selector)) {
+    // A button with nothing in it is a click area, like the edge of the
+    // sidebar, and paints nothing.
+    const empty =
+      element.tagName === 'BUTTON' &&
+      !element.getAttribute('role') &&
+      !element.textContent?.trim() &&
+      !element.querySelector('svg, img')
+    const rect = element.getBoundingClientRect()
+    const seen = !empty && visible(rect) && shows(element, ...middle(rect))
+    if (seen) {
+      controls.push({
+        edges: [rect.left, rect.top, rect.right, rect.bottom],
+        dimmed: seen === 'dimmed',
+      })
+    }
+  }
+
+  // A part shows if one of five points across it does.
+  const partShows = ({ edges: [left, top, right, bottom], element }: (typeof marked)[number]) =>
+    [
+      [0.5, 0.5],
+      [0.25, 0.25],
+      [0.75, 0.25],
+      [0.25, 0.75],
+      [0.75, 0.75],
+    ].some(([fx, fy]) => shows(element, left + (right - left) * fx!, top + (bottom - top) * fy!))
+
+  const covers = ([cx, cy]: [number, number], [left, top, right, bottom]: Edges) =>
+    Math.hypot(cx - Math.min(Math.max(cx, left), right), cy - Math.min(Math.max(cy, top), bottom)) <
+    radius
+  const holds = (outer: Edges, inner: Edges) =>
+    outer[0] <= inner[0] + 1 &&
+    outer[1] <= inner[1] + 1 &&
+    outer[2] >= inner[2] - 1 &&
+    outer[3] >= inner[3] - 1
+  const onScreen = ([cx, cy]: [number, number]) =>
+    cx - radius >= 1 && cy - radius >= 1 && cx + radius <= width - 1 && cy + radius <= height - 1
+
+  const pins: ([number, number] | null)[] = []
+  for (const [index, part] of parts.entries()) {
+    if (!partShows(marked[index]!)) {
+      pins.push(null)
+      continue
+    }
+    const [left, top, right, bottom] = part
+    const line = top + Math.min((bottom - top) / 2, radius)
+    const off = (radius + gap) * 0.72
+    const spots: [number, number][] = [
+      [left - gap - radius, line],
+      [left - off, top - off],
+      [left + radius, top - gap - radius],
+      [right + gap + radius, line],
+      [right + off, top - off],
+      [right - gap - radius, line],
+      [left + radius, bottom + gap + radius],
+    ]
+    // What covering each thing costs. The part's own text most, since that is
+    // what the number points at; what a backdrop dims least. A control that
+    // holds the part, the part itself say, costs nothing, as long as the
+    // number covers none of its text. Another marked part counts, unless it
+    // holds this one.
+    const blocking = [
+      ...texts.map(({ edges, dimmed }) => ({
+        edges,
+        weight: (holds(part, edges) ? 3 : 1) * (dimmed ? 0.3 : 1),
+      })),
+      ...controls
+        .filter(({ edges }) => !holds(edges, part))
+        .map(({ edges, dimmed }) => ({ edges, weight: dimmed ? 0.3 : 1 })),
+      ...parts
+        .filter((other) => other !== part && !holds(other, part))
+        .map((edges) => ({ edges, weight: 1 })),
+    ]
+    const placed = pins.filter((pin): pin is [number, number] => pin !== null)
+    const cost = (spot: [number, number]) =>
+      blocking.reduce((sum, { edges, weight }) => sum + (covers(spot, edges) ? weight : 0), 0) +
+      placed.filter(([x, y]) => Math.hypot(spot[0] - x, spot[1] - y) < radius * 2 + 2).length * 10
+    const free = spots.find((spot) => onScreen(spot) && cost(spot) === 0)
+    pins.push(
+      free ??
+        spots
+          .map((spot): [number, number] => [
+            Math.min(Math.max(spot[0], radius + 1), width - radius - 1),
+            Math.min(Math.max(spot[1], radius + 1), height - radius - 1),
+          ])
+          .reduce((best, spot) => (cost(spot) < cost(best) ? spot : best)),
+    )
+  }
+  return pins
+}
+
+/**
+ * Where each marked part is, as shares of the capture, clipped to it, and
+ * where its number goes. A part that is missing or off screen is left out and
+ * said so, rather than failing the run: the docs test then names the mark no
+ * screenshot shows.
+ */
+async function measure(
+  page: Page,
+  file: string,
+  marks: Marks,
+  device: Device,
+): Promise<Record<string, MarkPlace>> {
+  const { width, height } = page.viewportSize()!
+  const parts: { key: string; edges: Edges; element: ElementHandle<Element> }[] = []
+  for (const [key, find] of Object.entries(marks)) {
+    const part = find(page, device).filter({ visible: true }).first()
+    const box = await part.boundingBox({ timeout: 3_000 }).catch(() => null)
+    const left = Math.max(box?.x ?? 0, 0)
+    const top = Math.max(box?.y ?? 0, 0)
+    const right = Math.min((box?.x ?? 0) + (box?.width ?? 0), width)
+    const bottom = Math.min((box?.y ?? 0) + (box?.height ?? 0), height)
+    if (!box || right - left < 4 || bottom - top < 4) {
+      console.log(`  ! ${file}: no ${key} on screen`)
+      continue
+    }
+    parts.push({ key, edges: [left, top, right, bottom], element: await part.elementHandle() })
+  }
+
+  const pins = parts.length
+    ? await page.evaluate(placePins, {
+        parts: parts.map(({ edges, element }) => ({ edges, element })),
+        ...PIN[device],
+      })
+    : []
+  const share = (value: number, of: number) => Math.round((value / of) * 10_000) / 10_000
+  const places: Record<string, MarkPlace> = {}
+  for (const [index, { key, edges }] of parts.entries()) {
+    const pin = pins[index]
+    if (!pin) {
+      console.log(`  ! ${file}: ${key} is covered`)
+      continue
+    }
+    const [left, top, right, bottom] = edges
+    places[key] = {
+      box: [
+        share(left, width),
+        share(top, height),
+        share(right - left, width),
+        share(bottom - top, height),
+      ],
+      pin: [share(pin[0], width), share(pin[1], height)],
+    }
+  }
+  return places
+}
+
+/** Keep this language's captures and marks, beside those of the other. */
+function writeCaptures(): void {
+  const all = JSON.parse(readFileSync(CAPTURES_FILE, 'utf-8')) as Record<string, Captures>
+  const sorted = Object.fromEntries(
+    Object.keys(captured)
+      .sort()
+      .map((name) => [name, captured[name]!]),
+  )
+  all[LANG] = sorted
+  writeFileSync(CAPTURES_FILE, `${JSON.stringify(all, null, 2)}\n`)
+  console.log(`  wrote ${CAPTURES_FILE}`)
+}
+
+/** Save what is on screen as `name` on this device, and measure the parts `MARKS` names. */
+async function capture(
+  page: Page,
+  name: string,
+  mode: Mode,
+  device: Device = 'desktop',
+): Promise<void> {
+  const file = fileOf(name, device)
   // Let data fetches and transitions settle. `networkidle` is unusable here —
   // Vite's HMR socket keeps the connection busy and would burn the timeout.
   await page.waitForTimeout(900)
@@ -526,14 +817,124 @@ async function capture(page: Page, name: string, mode: string): Promise<void> {
   await page.addStyleTag({
     content: '#__vue-devtools-container__, #vue-inspector-container { display: none !important; }',
   })
-  const path = `${SCREENSHOT_DIR}/${name}-${mode}.png`
-  await page.screenshot({ path, type: 'png' })
+  const path = `${SCREENSHOT_DIR}/${file}-${mode}.png`
+  const image = await page.screenshot({ type: 'png' })
+  // A blank page compresses to a few kilobytes, a screen of the app to many
+  // times that. It happens when the dev server reloads the page mid-run, after
+  // an edit to the source, and a retry would show the page without what this
+  // capture opened on it.
+  if (image.length < 20_000) {
+    throw new Error(`${path} came out blank: did the dev server reload the page?`)
+  }
+  await save(path, image)
   console.log(`  saved ${path}`)
+  // Light and dark are laid out alike, so either measures the marks.
+  captured[file] = { marks: await measure(page, file, MARKS[name] ?? {}, device) }
 }
 
+/**
+ * Write a capture, trying again for a few seconds while the file is locked. On
+ * Windows something, a virus scanner or the search index, sometimes holds a
+ * file just written, and one failed write would cost the whole run.
+ */
+async function save(path: string, image: Buffer): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      writeFileSync(path, image)
+      return
+    } catch (error) {
+      if (attempt === 5) throw error
+      await new Promise((resolve) => setTimeout(resolve, 1_000))
+    }
+  }
+}
+
+/**
+ * Open a page and wait until it is there. Its heading is enough: on a phone
+ * some pages keep it out of sight, so being in the page counts.
+ */
 async function open(page: Page, path: string): Promise<void> {
   await page.goto(`${BASE_URL}${path}`)
-  await expect(page.getByTestId('page-heading')).toBeVisible({ timeout: 20_000 })
+  await page.getByTestId('page-heading').first().waitFor({ state: 'attached', timeout: 20_000 })
+}
+
+/** Scroll a part of the page to the middle of the screen, or as near as it goes. */
+async function bringIntoView(page: Page, testId: string): Promise<void> {
+  await page
+    .getByTestId(testId)
+    .filter({ visible: true })
+    .first()
+    .evaluate((node) => node.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(300)
+}
+
+// ── Marks ────────────────────────────────────────────────────────────────────
+
+const byId =
+  (testId: string): Find =>
+  (page) =>
+    page.getByTestId(testId)
+
+/**
+ * The parts of each screen the guides point at, by the key the Markdown
+ * writes as `[[key]]`. A part a device does not show is left out there.
+ */
+const MARKS: Record<string, Marks> = {
+  'shift-schedule': {
+    start: byId('input-default-start-time'),
+    duration: byId('input-shift-duration'),
+    people: byId('input-people-per-shift'),
+  },
+  'task-schedule': {
+    start: byId('input-default-start-time'),
+    duration: byId('input-shift-duration'),
+    people: byId('input-people-per-shift'),
+  },
+  'task-detail': {
+    status: byId('task-status'),
+    menu: byId('btn-task-more'),
+    managers: byId('btn-task-managers-card'),
+    vouchers: byId('btn-task-vouchers-card'),
+  },
+  'event-invitations': {
+    emails: byId('input-invite-emails'),
+    link: byId('btn-create-share-link'),
+    role: (page) => page.locator('#invite-role'),
+  },
+  'clone-event': { tasks: byId('check-all-tasks') },
+  'people-in-charge': {
+    // On a phone the field opens a sheet of its own, where the typing happens.
+    address: (page, device) =>
+      page.getByTestId(device === 'phone' ? 'task-add-manager-sheet-input' : 'task-add-manager'),
+    invite: byId('task-add-manager-invite'),
+    invited: byId(`task-manager-invitation-${addressOf('anna.weber')}`),
+  },
+  teams: { create: byId('btn-create-team'), requests: byId('team-requests') },
+  'team-review': {
+    check: (page) => page.locator('button[data-testid^="team-check-"]'),
+    issued: (page) => page.locator('[data-testid^="team-issued-"]'),
+    approve: byId('btn-team-review-approve'),
+    decline: byId('btn-team-review-decline'),
+  },
+  'shift-dialog': { place: byId('shift-detail-location') },
+  availability: { modes: byId('availability-mode-picker'), save: byId('btn-save') },
+  'notification-reminders': { reminders: byId('section-reminders') },
+  'vouchers-settings': {
+    'no-code': byId('voucher-manual-rule'),
+    shifts: byId('voucher-managers-edit-shifts-rule'),
+  },
+  'vouchers-redeem': { place: byId('voucher-point') },
+  'vouchers-code': { qr: byId('voucher-code-qr'), code: byId('voucher-code-text') },
+  'vouchers-picker': {
+    search: (page, device) =>
+      page.getByTestId(
+        device === 'phone' ? 'voucher-pick-person-sheet-input' : 'voucher-pick-person',
+      ),
+    count: (page) => page.locator('[data-testid^="voucher-pick-count-"]'),
+  },
+  'helper-home': { next: byId('dashboard-next-shift') },
+  'helper-bookings': { booking: byId('booking-card') },
+  'venue-map': { pin: (page) => page.locator('[data-testid^="map-marker-"]') },
 }
 
 /**
@@ -546,8 +947,12 @@ async function open(page: Page, path: string): Promise<void> {
  * a visitor does, as the organiser, and opens the map. The demo's countdown
  * banner is hidden for the capture; it says nothing about the map.
  */
-async function captureVenueMap(browser: Browser, mode: (typeof MODES)[number]): Promise<void> {
-  const context = await browser.newContext({ viewport: VIEWPORT })
+async function captureVenueMap(browser: Browser, mode: Mode, device: Device): Promise<void> {
+  const context = await browser.newContext(
+    device === 'phone'
+      ? { viewport: PHONE_VIEWPORT, deviceScaleFactor: 2 }
+      : { viewport: VIEWPORT },
+  )
   await context.addInitScript(
     (setup: { lang: string; mode: string }) => {
       localStorage.setItem('locale', setup.lang)
@@ -562,7 +967,7 @@ async function captureVenueMap(browser: Browser, mode: (typeof MODES)[number]): 
   page.setDefaultTimeout(25_000)
 
   await page.goto(`${BASE_URL}${LANG === 'de' ? '/de' : '/'}`)
-  await page.getByTestId('btn-cta-demo').click()
+  await page.getByTestId('btn-cta-demo').filter({ visible: true }).first().click()
   await page.getByTestId('btn-sandbox-role-manager').click()
   await page.getByTestId('btn-sandbox-start').click()
   await page.waitForURL(/\/app\//, { timeout: 30_000 })
@@ -583,90 +988,176 @@ async function captureVenueMap(browser: Browser, mode: (typeof MODES)[number]): 
       html { padding-top: 0 !important; --demo-banner-height: 0px !important; }
     `,
   })
-  await capture(page, 'venue-map', mode)
+  await capture(page, 'venue-map', mode, device)
 
   // Tidy up rather than leave the demo to the TTL sweep.
   await banner.evaluate((node) => node.remove())
   await page
     .getByTestId('btn-sandbox-exit')
+    .filter({ visible: true })
+    .first()
     .click()
     .then(() => page.getByTestId('btn-dialog-confirm').click())
     .catch(() => undefined)
   await context.close()
 }
 
-/** What the feature pages and guides show of the organiser's screens. */
-async function captureOrganiserDocs(
-  page: Page,
+/** The organiser's screens: for the landing page, the feature pages and the guides. */
+async function captureOrganiser(
+  browser: Browser,
   seeded: SeededWorld,
-  mode: (typeof MODES)[number],
+  mode: Mode,
+  device: Device,
 ): Promise<void> {
+  const { context, page } = await openContext(browser, seeded.organiserEmail, mode, {
+    phone: device === 'phone',
+  })
+  const shot = (name: string) => capture(page, name, mode, device)
+  const visible = (testId: string) => page.getByTestId(testId).filter({ visible: true }).first()
   const taskPath = `/app/tasks/${seeded.featuredTaskId}`
 
-  await open(page, taskPath)
-  await page.getByTestId(`shift-card-${seeded.featuredShiftId}`).locator('button').first().click()
-  await page.getByRole('dialog').waitFor()
-  await capture(page, 'shift-dialog', mode)
+  // Only on the landing page, which shows the computer.
+  if (device === 'desktop') {
+    await open(page, '/app/home')
+    await shot('dashboard')
+
+    await open(page, '/app/bookings')
+    await shot('my-bookings')
+  }
+
+  await open(page, '/app/tasks')
+  await shot('tasks')
 
   await open(page, taskPath)
-  await page.getByTestId('btn-task-more').filter({ visible: true }).first().click()
-  await page.getByTestId('btn-task-managers').click()
+  await shot('task-detail')
+
+  await open(page, '/app/availability')
+  await shot('availability')
+
+  // The picture is for the row per kind of message, which sits below the fold.
+  await open(page, '/app/settings/notification-preferences')
+  await visible('section-per-type').evaluate((section) =>
+    section.scrollIntoView({ block: 'start' }),
+  )
+  await shot('notification-preferences')
+
+  // What a volunteer sets up first: when the reminders for a booking come.
+  await visible('section-reminders').evaluate((section) =>
+    section.scrollIntoView({ block: 'start' }),
+  )
+  await shot('notification-reminders')
+
+  await open(page, `${taskPath}/add-shifts`)
+  // A phone has the form for the shifts further down.
+  if (device === 'phone') await bringIntoView(page, 'input-daily-window')
+  await shot('shift-schedule')
+
+  // A new task's schedule, with what it starts from, as the guide to a first
+  // event describes it. Its sections open one at a time, from their headers.
+  await open(page, '/app/tasks/create')
+  await visible('section-schedule').getByRole('button').first().click()
+  await expect(visible('input-shift-duration')).toBeVisible()
+  await bringIntoView(page, 'section-schedule')
+  await shot('task-schedule')
+
+  // The wizard opens on its first step, which is a name and two dates. The
+  // second step is the one worth advertising (last year's tasks, ticked, and
+  // the list of what deliberately stays behind), so open it first. The click
+  // also waits out the source load: the stepper only exists once the event,
+  // its tasks and their shifts are in.
+  await open(page, `/app/events/clone/${seeded.eventId}`)
+  await visible('step-tasks').click()
+  await shot('clone-event')
+
+  await open(page, taskPath)
+  await page
+    .getByTestId(`shift-card-${seeded.featuredShiftId}`)
+    .filter({ visible: true })
+    .first()
+    .locator('button')
+    .first()
+    .click()
+  await page.getByRole('dialog').waitFor()
+  await shot('shift-dialog')
+
+  await open(page, taskPath)
+  await visible('btn-task-managers-card').click()
   const managers = page.getByTestId('task-managers-dialog')
   await managers.waitFor()
-  await managers.locator('input').first().fill(addressOf('ben.wolf'))
-  await capture(page, 'people-in-charge', mode)
+  if (device === 'phone') {
+    await visible('task-add-manager').click()
+    await page.getByTestId('task-add-manager-sheet-input').fill(addressOf('ben.wolf'))
+  } else {
+    await managers.getByTestId('task-add-manager').fill(addressOf('ben.wolf'))
+  }
+  await visible('task-add-manager-invite').waitFor()
+  await shot('people-in-charge')
 
   const settings = `${BASE_URL}/app/event-settings/${seeded.eventId}`
   await page.goto(`${settings}?tab=vouchers`)
-  await page.getByTestId('tab-vouchers').waitFor()
-  await capture(page, 'vouchers-settings', mode)
+  await page.getByTestId('tab-vouchers').waitFor({ state: 'attached' })
+  await visible('voucher-manual-rule').waitFor()
+  await shot('vouchers-settings')
 
   await page.goto(`${settings}?tab=people`)
-  await page.getByTestId('tab-people').waitFor()
-  await capture(page, 'event-people', mode)
+  await page.getByTestId('tab-people').waitFor({ state: 'attached' })
+  await visible('section-event-invitations').waitFor()
+  await shot('event-people')
 
-  const hours = page.getByTestId('section-event-hours')
-  await hours.waitFor()
-  await hours.scrollIntoViewIfNeeded()
-  await capture(page, 'event-hours', mode)
+  // The card a guide invites people with, which comes last on the tab.
+  await bringIntoView(page, 'section-event-invitations')
+  await shot('event-invitations')
+
+  await bringIntoView(page, 'section-event-hours')
+  await shot('event-hours')
 
   await open(page, '/app/reporting')
-  await capture(page, 'reports', mode)
+  await shot('reports')
 
   await open(page, `/app/teams/${seeded.eventId}`)
-  await capture(page, 'teams', mode)
+  await shot('teams')
 
-  await page.locator('[data-testid^="btn-review-team-request-"]').first().click()
+  await page
+    .locator('[data-testid^="btn-review-team-request-"]')
+    .filter({ visible: true })
+    .first()
+    .click()
   await page.getByTestId('team-review-dialog').waitFor()
-  await capture(page, 'team-review', mode)
+  await shot('team-review')
+
+  await context.close()
 }
 
-/** Volunteers and the people at a stand mostly see WirkSam on a phone. */
-async function capturePhoneDocs(
+/** What a volunteer and the people at a stand see, mostly on a phone. */
+async function captureHelpers(
   browser: Browser,
   seeded: SeededWorld,
-  mode: (typeof MODES)[number],
+  mode: Mode,
+  device: Device,
 ): Promise<void> {
   const signIn = async (member: CastMember) => {
     const email = addressOf(member.handle)
     await apiAs('PUT', '/users/me/selected-event', email, { selected_event_id: seeded.eventId })
-    return openContext(browser, email, mode, { name: member.name, phone: true })
+    return openContext(browser, email, mode, { name: member.name, phone: device === 'phone' })
   }
 
   const helper = await signIn(volunteer('Hannah'))
   await helper.page.goto(`${BASE_URL}/app/home`)
-  await capture(helper.page, 'dashboard-phone', mode)
+  await helper.page.getByTestId('dashboard-next-shift').first().waitFor({ state: 'attached' })
+  await capture(helper.page, 'helper-home', mode, device)
 
   await helper.page.goto(`${BASE_URL}/app/bookings`)
-  await capture(helper.page, 'bookings-phone', mode)
+  await helper.page.getByTestId('booking-card').first().waitFor({ state: 'attached' })
+  await capture(helper.page, 'helper-bookings', mode, device)
 
   await helper.page.goto(`${BASE_URL}/app/vouchers/${seeded.eventId}`)
-  await helper.page.getByTestId('my-vouchers-balance').waitFor()
-  await capture(helper.page, 'vouchers-my', mode)
+  await helper.page.getByTestId('my-vouchers-balance').filter({ visible: true }).first().waitFor()
+  await capture(helper.page, 'vouchers-my', mode, device)
 
   await helper.page.getByTestId('btn-show-voucher-code').filter({ visible: true }).first().click()
   await helper.page.getByTestId('voucher-code-dialog').waitFor()
-  await capture(helper.page, 'vouchers-code', mode)
+  await helper.page.getByTestId('voucher-code-qr').waitFor()
+  await capture(helper.page, 'vouchers-code', mode, device)
   await helper.context.close()
 
   const atStand = await signIn(volunteer('Miriam'))
@@ -692,12 +1183,12 @@ async function capturePhoneDocs(
   })
   await atStand.page.goto(`${BASE_URL}/app/vouchers/redeem/${seeded.eventId}`)
   await atStand.page.getByTestId('btn-voucher-pick-person').waitFor()
-  await capture(atStand.page, 'vouchers-redeem', mode)
+  await capture(atStand.page, 'vouchers-redeem', mode, device)
 
   await atStand.page.getByTestId('btn-voucher-pick-person').click()
   await atStand.page.waitForTimeout(600)
   await atStand.page.mouse.move(2, 2)
-  await capture(atStand.page, 'vouchers-picker', mode)
+  await capture(atStand.page, 'vouchers-picker', mode, device)
   await atStand.context.close()
 }
 
@@ -708,54 +1199,14 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
   console.log(`Seeded "${world.event.name}" with ${seeded.tasks.length} tasks.`)
 
   for (const mode of MODES) {
-    const { context, page } = await openContext(browser, seeded.organiserEmail, mode)
-    console.log(`\n${LANG} / ${mode}`)
-
-    await open(page, '/app/home')
-    await capture(page, 'dashboard', mode)
-
-    await open(page, '/app/tasks')
-    await capture(page, 'tasks', mode)
-
-    await open(page, `/app/tasks/${seeded.featuredTaskId}`)
-    await capture(page, 'task-detail', mode)
-
-    await open(page, '/app/bookings')
-    await capture(page, 'my-bookings', mode)
-
-    await open(page, '/app/availability')
-    await capture(page, 'availability', mode)
-
-    // The picture is for the row per kind of message, which sits below the fold.
-    await open(page, '/app/settings/notification-preferences')
-    await page
-      .getByTestId('section-per-type')
-      .evaluate((section) => section.scrollIntoView({ block: 'start' }))
-    await capture(page, 'notification-preferences', mode)
-
-    await open(page, `/app/tasks/${seeded.featuredTaskId}/add-shifts`)
-    await capture(page, 'shift-schedule', mode)
-
-    // The wizard opens on its first step, which is a name and two dates. The
-    // second step is the one worth advertising — last year's tasks, ticked,
-    // and the list of what deliberately stays behind — so open it first. The
-    // click also waits out the source load: the stepper only exists once the
-    // event, its tasks and their shifts are in.
-    await open(page, `/app/events/clone/${seeded.eventId}`)
-    await page.locator('[data-testid="step-tasks"]').click()
-    await capture(page, 'clone-event', mode)
-
-    await captureOrganiserDocs(page, seeded, mode)
-
-    await context.close()
-
-    await capturePhoneDocs(browser, seeded, mode)
+    for (const device of DEVICES) {
+      console.log(`\n${LANG} / ${mode} / ${device}`)
+      await captureOrganiser(browser, seeded, mode, device)
+      await captureHelpers(browser, seeded, mode, device)
+      await captureVenueMap(browser, mode, device)
+    }
   }
 
-  for (const mode of MODES) {
-    console.log(`\n${LANG} / ${mode} / venue map`)
-    await captureVenueMap(browser, mode)
-  }
-
+  writeCaptures()
   console.log(`\nDone [${LANG}].`)
 })

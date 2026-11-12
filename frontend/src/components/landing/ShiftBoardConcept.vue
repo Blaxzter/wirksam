@@ -239,8 +239,11 @@ onBeforeUnmount(() => {
                 enter-from-class="scale-50 opacity-0"
                 enter-to-class="scale-100 opacity-100"
               >
+                <!-- The last thing to appear, which is how a test knows the board has
+                     stopped moving. -->
                 <span
                   v-if="slot.mine && youVisible"
+                  data-testid="board-you"
                   class="absolute -right-1 -top-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm"
                 >
                   {{ t('preauth.landing.hero.board.you') }}

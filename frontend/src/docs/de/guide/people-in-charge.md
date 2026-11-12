@@ -6,7 +6,7 @@ related: feature/people-in-charge, guide/first-event, guide/vouchers, feature/me
 
 ## Die Liste der Verantwortlichen öffnen
 
-Öffne die Aufgabe. Auf ihrer Seite steht die Karte „Verantwortlich“, dort wählst du „Verwalten“. Dasselbe findest du im Menü der Aufgabe unter „Verantwortliche verwalten“.
+Öffne die Aufgabe. Auf ihrer Seite steht die Karte „Verantwortlich“, dort wählst du „Verwalten“ [[managers]]. Dasselbe findest du im Menü der Aufgabe [[menu]] unter „Verantwortliche verwalten“.
 
 ![Die Aufgabenseite mit den Karten für Verantwortliche und Marken](shot:task-detail)
 
@@ -18,7 +18,7 @@ Unter „Person hinzufügen“ tippst du einen Namen oder eine E-Mail-Adresse un
 
 ## Alle anderen per E-Mail-Adresse einladen
 
-Ist die Person noch nicht in der Veranstaltung, tippst du ihre ganze E-Mail-Adresse und wählst „anna@example.com einladen“, auf dem Handy „Per E-Mail einladen“. Sie bekommt eine Einladung und steht mit „Eingeladen“ in der Liste. Verantwortlich ist sie, sobald sie annimmt.
+Ist die Person noch nicht in der Veranstaltung, tippst du ihre ganze E-Mail-Adresse [[address]] und wählst „anna@example.com einladen“ [[invite]], auf dem Handy „Per E-Mail einladen“. Sie bekommt eine Einladung und steht mit „Eingeladen“ [[invited]] in der Liste. Verantwortlich ist sie, sobald sie annimmt.
 
 Annehmen kann sie nur mit einem Konto zu genau dieser Adresse. Frag also nach, welche sie nutzt.
 

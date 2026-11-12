@@ -1,31 +1,36 @@
 ---
 title: Marken statt Papier
-lede: Mit Marken dankst du Helfenden für ihre Schichten, zum Beispiel mit Essen und Getränken. WirkSam rechnet aus den gearbeiteten Schichten aus, wer wie viele hat, und am Stand werden sie per QR-Code, getipptem Code oder aus einer Liste eingelöst.
+lede: Mit Marken dankst du Helfenden für ihre Schichten, zum Beispiel mit Essen und Getränken. WirkSam rechnet aus den gearbeiteten Schichten aus, wer wie viele hat.
+points: Marken entstehen aus gearbeiteten Schichten | Einlösen per QR-Code, getipptem Code oder Liste | Übersicht und Korrekturen für Organisator:innen
 related: guide/vouchers, guide/redeem-vouchers, feature/people-in-charge, feature/hours-and-reports
 ---
 
-Papiermarken müssen gedruckt, abgezählt, verteilt und am Ende wieder eingesammelt werden. In WirkSam steht schon fest, wer welche Schicht gearbeitet hat, also ergibt sich das Guthaben von selbst.
+Papiermarken müssen gedruckt, abgezählt, verteilt und am Ende wieder eingesammelt werden. WirkSam weiß schon, wer welche Schicht gearbeitet hat. Daraus ergibt sich das Guthaben von selbst.
 
 Marken tauchen in einer Veranstaltung erst auf, wenn eine Aufgabe sie vergibt oder annimmt. Bis dahin sieht alles aus wie bisher.
 
 ## Marken verdienen
 
-Bei jeder Aufgabe legst du fest, wie viele Marken eine Schicht bringt. Sobald eine gebuchte Schicht vorbei ist, sind sie da, ohne dass jemand etwas tun muss.
+Bei jeder Aufgabe legst du fest, wie viele Marken eine Schicht bringt. Ist eine gebuchte Schicht vorbei, sind die Marken da. Dafür muss niemand etwas tun.
 
-Was schon verdient wurde, bleibt, auch wenn die Schicht später gelöscht oder verlegt wird oder du die Anzahl pro Schicht änderst. Eine neue Anzahl gilt nur für Schichten, die noch nicht vorbei sind.
+Was schon verdient ist, bleibt. Das gilt auch, wenn die Schicht später gelöscht oder verlegt wird oder du die Anzahl pro Schicht änderst.
 
 ## Was Helfende sehen
 
-„Meine Marken“ zeigt, was gerade verfügbar ist, was verdient, eingelöst oder korrigiert wurde und was aus gebuchten Schichten noch kommt. Darunter steht der Verlauf. Die Seite bleibt auch nach der Veranstaltung erreichbar.
+„Meine Marken“ zeigt, was gerade verfügbar ist und was aus gebuchten Schichten noch kommt. Dazu steht dort, was verdient, eingelöst oder korrigiert wurde. Darunter folgt der Verlauf.
 
 „Code zeigen“ öffnet einen QR-Code mit sechs Zeichen zum Abtippen. Er gilt zwei Minuten und nur einmal, danach erscheint von selbst ein neuer. Der Bildschirm bleibt dabei an.
 
-![„Meine Marken“ auf dem Handy mit den verfügbaren Marken und dem Verlauf](phone:vouchers-my)
-![Der Code zum Vorzeigen, als QR-Code und zum Abtippen](phone:vouchers-code)
+![„Meine Marken“ mit den verfügbaren Marken und dem Verlauf](shot:vouchers-my)
+![Der Code zum Vorzeigen, als QR-Code und zum Abtippen](shot:vouchers-code)
 
 ## Am Stand einlösen
 
-Jede Aufgabe kann eine Einlösestelle sein, zum Beispiel die Küche oder der Getränkestand. Dort öffnet man „Marken einlösen“, scannt den Code mit der Kamera oder tippt ihn ein und wählt die Anzahl. Mehr als vorhanden lässt sich nicht einlösen.
+Jede Aufgabe kann eine Einlösestelle sein, zum Beispiel die Küche oder der Getränkestand. Dort geht das Einlösen so:
+
+1. „Marken einlösen“ öffnen.
+2. Den Code mit der Kamera scannen oder eintippen.
+3. Die Anzahl wählen. Mehr als vorhanden lässt sich nicht einlösen.
 
 Einlösen dürfen:
 
@@ -33,51 +38,78 @@ Einlösen dürfen:
 - die Verantwortlichen dieser Aufgabe
 - alle, die dort gerade Schicht haben, 30 Minuten davor und danach mitgezählt
 
-In der App einlösen geht bis zum Enddatum der Veranstaltung. Ihren Stand sehen Helfende auch danach.
+![Marken einlösen, mit Kamera und dem Feld zum Eintippen](shot:vouchers-redeem)
+![Die Personenliste beim Einlösen ohne Code, mit der Zahl der Marken neben jedem Namen](shot:vouchers-picker)
 
-![Marken einlösen auf dem Handy, mit Kamera und dem Feld zum Eintippen](phone:vouchers-redeem)
-![Die Personenliste beim Einlösen ohne Code, mit der Zahl der Marken neben jedem Namen](phone:vouchers-picker)
+Hat jemand einen leeren Akku, kein Netz oder kein Smartphone, geht es auch ohne Code. Dann wählst du die Person aus einer Liste, in der ihre Marken stehen. Wer keine mehr hat, ist ausgegraut.
 
-## Einlösen ohne Code
-
-Ist bei jemandem der Akku leer, oder hat die Person kein Netz oder kein Smartphone, lässt sie sich aus einer Liste wählen, in der steht, wie viele Marken sie hat. Wer keine mehr hat, ist ausgegraut.
-
-Das ist bewusst eine eigene Regel, weil hier niemand etwas vorzeigen muss. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Das ist praktisch an einer vollen Theke, gilt aber für alle, die dort eine Schicht buchen. Ist dir das zu offen, stell auf „Nur Organisator:innen und Verantwortliche“ um oder lass die Schichten am Stand nur von einem [Team](/features/teams) buchen.
+> Ohne Code einlösen dürfen standardmäßig auch alle, die gerade an einer Einlösestelle Schicht haben. Das gilt für jede Person, die dort eine Schicht bucht.
 
 ## Was Organisator:innen einstellen
 
-Sobald eine Veranstaltung Marken nutzt, haben ihre Einstellungen einen Tab „Marken“. Dort stehen zwei Regeln, die für alle Aufgaben der Veranstaltung gelten: wer ohne Code einlösen darf, und ob [Verantwortliche](/features/people-in-charge) bei Aufgaben mit Marken Schichten anlegen, verlegen und löschen dürfen.
+Sobald eine Veranstaltung Marken nutzt, haben ihre Einstellungen einen Tab „Marken“. Dort stehen zwei Regeln für alle Aufgaben der Veranstaltung:
 
-Die zweite Regel ist standardmäßig aus, weil jede zusätzliche Schicht zusätzliche Marken bringt. Verantwortliche ändern dort dann nur Beschreibung und Infos. Wenn du ihnen vertraust, schaltest du es für die ganze Veranstaltung frei. Bei Aufgaben ohne Marken ändert sich nichts.
+- Wer ohne Code einlösen darf. Ist dir die Voreinstellung zu offen, stellst du auf „Nur Organisator:innen und Verantwortliche“ um.
+- Ob [Verantwortliche](/features/people-in-charge) bei Aufgaben mit Marken Schichten anlegen, verlegen und löschen dürfen. Das ist standardmäßig aus, weil jede zusätzliche Schicht zusätzliche Marken bringt. Verantwortliche ändern dort dann nur Beschreibung und Infos.
+
+Wenn du deinen Verantwortlichen vertraust, schaltest du die zweite Regel für die ganze Veranstaltung frei.
 
 ![Der Tab „Marken“ mit den beiden Regeln und der Übersicht, wer wie viele Marken hat](shot:vouchers-settings)
 
-## Übersicht und Korrekturen
+Unter den Regeln steht, wer wie viele Marken hat: verdient, eingelöst, verfügbar und was noch kommt. Dazu gibt es eine Suche und den Verlauf jeder Person.
 
-Unter den Regeln steht, wer wie viele Marken hat: verdient, eingelöst, verfügbar und was noch kommt, mit Suche und dem Verlauf jeder Person.
+Dort trägst du auch Korrekturen ein, zum Beispiel für Hilfe beim Aufbau ohne Schicht. Eine Korrektur braucht immer einen Grund, damit andere sie später nachvollziehen können. Unter null drücken kann sie ein Guthaben nicht.
 
-Dort trägst du auch Korrekturen ein, zum Beispiel für Hilfe beim Aufbau ohne Schicht. Eine Korrektur braucht immer einen Grund, damit andere sie später nachvollziehen können, und sie kann ein Guthaben nicht unter null drücken.
+## Regeln beim Buchen
 
-## Strengere Regeln beim Buchen
+Weil Marken an Buchungen hängen, gelten in WirkSam für alle Aufgaben ein paar Regeln. Buchen geht nur:
 
-Weil Marken an Buchungen hängen, gelten in WirkSam ein paar Regeln für alle Aufgaben: Buchen geht nur als Mitglied der Veranstaltung, nur bei veröffentlichten Aufgaben und nur, solange die Schicht nicht vorbei ist. Auch absagen geht danach nicht mehr.
+- als Mitglied der Veranstaltung
+- bei veröffentlichten Aufgaben
+- solange die Schicht nicht vorbei ist
 
-Bei Aufgaben mit Marken endet das Buchen schon mit dem Schichtbeginn. Wer die Aufgabe betreut, darf trotzdem noch buchen. Wer eine Veranstaltung verlässt, verliert seine Buchungen für Schichten, die noch nicht vorbei sind.
+Ist die Schicht vorbei, geht auch kein Absagen mehr. Bei Aufgaben mit Marken endet das Buchen schon mit dem Schichtbeginn.
 
 ## Häufige Fragen
 
 ### Können wir Papiermarken und die App gleichzeitig nutzen?
 
-Ja. Eine Aufgabe, die keine Einlösestelle ist, nimmt in der App keine Marken an, Papiermarken gehen dort trotzdem. WirkSam zählt aber nur, was in der App eingelöst wurde.
+Ja. Eine Aufgabe, die in der App keine Marken annimmt, kann trotzdem Papiermarken nehmen. WirkSam zählt aber nur, was in der App eingelöst wurde.
 
 ### Was passiert mit den Marken, wenn eine Schicht gelöscht wird?
 
-Wurde die Schicht schon gearbeitet, bleiben die Marken. Bei Schichten, die noch nicht vorbei sind, gibt es nichts zu behalten, denn Marken entstehen erst mit dem Ende der Schicht.
+Wurde die Schicht schon gearbeitet, bleiben die Marken. Bei Schichten, die noch nicht vorbei sind, gibt es nichts zu behalten. Marken entstehen erst mit dem Ende der Schicht.
+
+### Was passiert, wenn ich die Anzahl pro Schicht ändere?
+
+Die neue Anzahl gilt nur für Schichten, die noch nicht vorbei sind. Was schon verdient ist, bleibt.
 
 ### Kann jemand denselben Code zweimal benutzen?
 
 Nein. Ein Code gilt nur einmal und höchstens zwei Minuten. Geht eine Einlösung wegen schlechter Verbindung zweimal raus, zählt sie nur einmal.
 
+### Wie mache ich das Einlösen ohne Code strenger?
+
+Stell im Tab „Marken“ auf „Nur Organisator:innen und Verantwortliche“ um. Oder lass die Schichten am Stand nur von einem [Team](/features/teams) buchen.
+
+Ohne Code muss niemand etwas vorzeigen, deshalb gibt es dafür bewusst eine eigene Regel. Die offene Voreinstellung ist praktisch an einer vollen Theke.
+
+### Bis wann lassen sich Marken einlösen?
+
+In der App bis zum Enddatum der Veranstaltung. „Meine Marken“ bleibt auch danach erreichbar, Helfende sehen ihren Stand also weiterhin.
+
+### Darf jemand nach Schichtbeginn noch eine Schicht mit Marken buchen?
+
+Ja, wer die Aufgabe betreut. Für alle anderen endet das Buchen mit dem Schichtbeginn.
+
+### Was passiert mit meinen Buchungen, wenn ich eine Veranstaltung verlasse?
+
+Buchungen für Schichten, die noch nicht vorbei sind, fallen weg.
+
+### Gilt die Regel für Verantwortliche auch bei Aufgaben ohne Marken?
+
+Nein. Bei Aufgaben ohne Marken ändert sich für Verantwortliche nichts.
+
 ### Kostet das etwas extra?
 
-Nein. WirkSam ist kostenlos, Marken sind einfach ein Teil davon.
+Nein. WirkSam ist kostenlos, und Marken gehören dazu.

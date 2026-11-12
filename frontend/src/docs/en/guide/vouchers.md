@@ -6,7 +6,7 @@ related: feature/vouchers, guide/redeem-vouchers, guide/people-in-charge, featur
 
 ## Set the vouchers per shift
 
-Open the task whose shifts should bring vouchers. Its page has a Vouchers card with a "Set up" button. Under "Vouchers per shift", enter how many each person gets per shift once it's over. 0 means none.
+Open the task whose shifts should bring vouchers. Its page has a Vouchers card with a "Set up" button [[vouchers]]. Under "Vouchers per shift", enter how many each person gets per shift once it's over. 0 means none.
 
 Do this for each task that should bring vouchers. Different numbers are fine, say two for the kitchen and three for the clear-down.
 
@@ -22,8 +22,8 @@ A task can do both: bring vouchers and take them.
 
 Once a task gives or takes vouchers, the event's settings have a Vouchers tab with two rules:
 
-- **Redeem without a code:** For people whose phone isn't working, you pick the person from a list. By default this also includes everyone on shift at a place that takes vouchers. If that's too open for you, switch to "Only organisers and the people in charge".
-- **Shifts on tasks with vouchers:** By default, only organisers add, move and delete them, because shifts decide how many vouchers someone gets. You can open this up to people in charge.
+- **Redeem without a code:** [[no-code]] For people whose phone isn't working, you pick the person from a list. By default this also includes everyone on shift at a place that takes vouchers. If that's too open for you, switch to "Only organisers and the people in charge".
+- **Shifts on tasks with vouchers:** [[shifts]] By default, only organisers add, move and delete them, because shifts decide how many vouchers someone gets. You can open this up to people in charge.
 
 ![The Vouchers tab with the two rules and the overview of who has how many vouchers](shot:vouchers-settings)
 

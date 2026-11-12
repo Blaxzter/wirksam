@@ -36,7 +36,13 @@ import type { EventRead, TaskRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
 const { t } = useI18n()
-const { formatTime, formatDateLabel } = useFormatters()
+const { formatDateLabel } = useFormatters()
+/**
+ * A stored time ("19:00:00") as the schedule form's 24-hour "HH:MM", as in
+ * `TaskEditView`. Not `formatTime`: on a 12-hour clock that gives "07:00 PM",
+ * which the form cuts off and the shift preview reads as seven in the morning.
+ */
+const clockValue = (time: string): string => time.slice(0, 5)
 const route = useRoute()
 const router = useRouter()
 const breadcrumbStore = useBreadcrumbStore()
@@ -222,8 +228,8 @@ const loadTask = async () => {
     location.value = ev.location ?? ''
     locationId.value = ev.location_id ?? null
     category.value = ev.category ?? ''
-    if (ev.default_start_time) defaultStartTime.value = formatTime(ev.default_start_time)
-    if (ev.default_end_time) defaultEndTime.value = formatTime(ev.default_end_time)
+    if (ev.default_start_time) defaultStartTime.value = clockValue(ev.default_start_time)
+    if (ev.default_end_time) defaultEndTime.value = clockValue(ev.default_end_time)
     if (ev.shift_duration_minutes) shiftDurationMinutes.value = ev.shift_duration_minutes
     if (ev.people_per_shift) peoplePerShift.value = ev.people_per_shift
 

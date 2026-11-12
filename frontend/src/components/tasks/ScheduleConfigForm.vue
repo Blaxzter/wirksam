@@ -21,6 +21,8 @@ import {
 import Separator from '@/components/ui/separator/Separator.vue'
 import { TimePicker } from '@/components/ui/time-picker'
 
+import { durationOptions } from '@/lib/shift-durations'
+
 const props = defineProps<{
   hasRemainder: boolean
   availableDates: string[]
@@ -44,7 +46,8 @@ const overrides = defineModel<Array<{ date: string; startTime: string; endTime: 
 const { t } = useI18n()
 const { formatDateLabel } = useFormatters()
 
-const durationOptions = [15, 30, 45, 60, 90, 120]
+// A length set elsewhere, say 5 hours, is offered too, or the box stays empty.
+const durations = computed(() => durationOptions(shiftDurationMinutes.value))
 
 const addOverride = () => {
   overrides.value.push({
@@ -97,7 +100,7 @@ const outsideEventWindow = computed(() => {
 
 <template>
   <div class="grid grid-cols-2 gap-4" data-testid="input-daily-window">
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="input-default-start-time">
       <Label>{{ t('duties.tasks.createView.schedule.defaultStartTime') }}</Label>
       <TimePicker v-model="defaultStartTime" />
     </div>
@@ -124,7 +127,7 @@ const outsideEventWindow = computed(() => {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem v-for="d in durationOptions" :key="d" :value="d">
+          <SelectItem v-for="d in durations" :key="d" :value="d">
             {{ t('duties.tasks.createView.schedule.minutes', { n: d }) }}
           </SelectItem>
         </SelectContent>

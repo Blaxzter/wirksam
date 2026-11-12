@@ -205,6 +205,109 @@ export const DOC_GROUPS = {
   ],
 } as const satisfies Record<DocKind, readonly { key: string; pages: readonly string[] }[]>
 
+/**
+ * The colour a page is drawn in. Each is one of the chart colours, which are
+ * tuned for both themes. It tints the header, the picture, the summary and the
+ * markers on the page; text stays in the theme's own colours, so it never
+ * decides whether something is readable.
+ */
+export type Accent = 'green' | 'orange' | 'amber' | 'blue'
+
+export const ACCENT_COLORS: Readonly<Record<Accent, string>> = {
+  green: 'var(--chart-1)',
+  orange: 'var(--chart-2)',
+  amber: 'var(--chart-3)',
+  blue: 'var(--chart-4)',
+}
+
+/**
+ * A feature page or guide takes the colour of its group, so a group looks the
+ * same on the overview and on each of its pages.
+ */
+export const GROUP_ACCENTS: Readonly<Record<DocKind, Readonly<Record<string, Accent>>>> = {
+  feature: { plan: 'green', people: 'orange', volunteers: 'blue', thanks: 'amber', run: 'green' },
+  guide: { start: 'green', share: 'orange', thanks: 'amber', again: 'blue' },
+}
+
+/**
+ * The drawing beside a page's title, see `components/content/PageArt.vue`.
+ * `roster` is the roster board from the landing page.
+ */
+export type ArtKind =
+  | 'roster'
+  | 'shifts'
+  | 'venue'
+  | 'members'
+  | 'inCharge'
+  | 'teams'
+  | 'booking'
+  | 'notify'
+  | 'vouchers'
+  | 'reports'
+  | 'terminal'
+  | 'clone'
+  | 'steps'
+  | 'festival'
+  | 'compare'
+
+/** By id for a feature page or guide, by copy key for a page that stands alone. */
+export const PAGE_ART: Readonly<Record<string, ArtKind>> = {
+  features: 'roster',
+  guides: 'steps',
+  alternatives: 'compare',
+  clubFestival: 'festival',
+  'feature/shift-planning': 'shifts',
+  'feature/venue-map': 'venue',
+  'feature/members': 'members',
+  'feature/people-in-charge': 'inCharge',
+  'feature/teams': 'teams',
+  'feature/booking': 'booking',
+  'feature/notifications': 'notify',
+  'feature/vouchers': 'vouchers',
+  'feature/hours-and-reports': 'reports',
+  'feature/self-hosting': 'terminal',
+  'guide/first-event': 'shifts',
+  'guide/volunteer-start': 'booking',
+  'guide/people-in-charge': 'inCharge',
+  'guide/vouchers': 'vouchers',
+  'guide/redeem-vouchers': 'vouchers',
+  'guide/teams': 'teams',
+  'guide/venue-map': 'venue',
+  'guide/next-year': 'clone',
+}
+
+/** The colour of a page that stands alone, by the same key as in `PAGE_ART`. */
+export const PAGE_ACCENTS: Readonly<Record<string, Accent>> = {
+  features: 'green',
+  guides: 'amber',
+  alternatives: 'blue',
+  clubFestival: 'orange',
+}
+
+/** The colour of a feature page or guide: its group's. */
+export function docAccent(id: string): Accent {
+  const page = docPageById(id)
+  if (!page) return 'green'
+  const group = DOC_GROUPS[page.kind].find((item) =>
+    (item.pages as readonly string[]).includes(id),
+  )
+  return (group && GROUP_ACCENTS[page.kind][group.key]) ?? 'green'
+}
+
+/** What a page looks like: its drawing and its colour, as a CSS value. */
+export function pageLook(key: string): { art?: ArtKind; color: string } {
+  const accent = docPageById(key) ? docAccent(key) : (PAGE_ACCENTS[key] ?? 'green')
+  return { art: PAGE_ART[key], color: ACCENT_COLORS[accent] }
+}
+
+/** What the terminal beside the self-hosting page's title types out: the page's own commands. */
+export const TERMINAL_COMMANDS: readonly string[] = [
+  'git clone https://github.com/Blaxzter/wirksam.git',
+  'cd wirksam',
+  'cp .env.example .env',
+  'docker compose -f docker-compose.yml up -d --build',
+]
+
 /** The cross-links at the foot of a content page; route names and copy keys. */
 export const RELATED_PAGES = [
   { routeName: 'features', key: 'features' },

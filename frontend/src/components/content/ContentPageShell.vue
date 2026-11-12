@@ -10,16 +10,22 @@ import { useSandboxStore } from '@/stores/sandbox'
 
 import { Button } from '@/components/ui/button'
 
+import PageArt from '@/components/content/PageArt.vue'
 import LandingCta from '@/components/landing/LandingCta.vue'
 import LandingSection from '@/components/landing/LandingSection.vue'
-import SectionHeading from '@/components/landing/SectionHeading.vue'
 import SandboxStartDialog from '@/components/sandbox/SandboxStartDialog.vue'
+
+import type { ArtKind } from '@/lib/content-pages'
 
 /**
  * The frame around a content page (comparison, use cases): a breadcrumb back
  * to the landing page, the `h1` with an answer-first lede, the same two calls
  * to action as the landing hero, the page's own sections in the slot, and the
  * closing call to action.
+ *
+ * Beside the title stands a drawing of what the page is about (`art`). The
+ * page's colour (`color`) is set here as `--art`, so the header, the drawing and
+ * whatever the page puts in the slot can all be drawn in it.
  *
  * The demo button and its dialog follow `SANDBOX_ENABLED` through the sandbox
  * store, exactly like the landing page, so a deployment without the demo never
@@ -38,6 +44,10 @@ defineProps<{
   parent?: { routeName: string; label: string }
   /** Leaves the two buttons out of the header, for a page someone reads to get a job done. */
   hideActions?: boolean
+  /** The drawing beside the title. */
+  art?: ArtKind
+  /** The page's colour, as a CSS value; see `pageLook`. */
+  color?: string
 }>()
 
 const authStore = useAuthStore()
@@ -61,10 +71,10 @@ function openDemo() {
 </script>
 
 <template>
-  <div>
-    <LandingSection id="intro" tone="tinted">
-      <nav :aria-label="t('preauth.content.breadcrumbLabel')" class="flex justify-center">
-        <ol class="flex items-center gap-1.5 text-sm text-muted-foreground">
+  <div :style="{ '--art': color ?? 'var(--chart-1)' }">
+    <LandingSection id="intro" tone="accent" width="wide">
+      <nav :aria-label="t('preauth.content.breadcrumbLabel')">
+        <ol class="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
           <li>
             <RouterLink :to="{ name: 'landing' }" class="transition-colors hover:text-foreground">
               {{ t('preauth.layout.appName') }}
@@ -86,43 +96,62 @@ function openDemo() {
         </ol>
       </nav>
 
-      <SectionHeading level="h1" :eyebrow="eyebrow" :title="title" :lede="lede" class="mt-6" />
-
       <div
-        v-if="!hideActions"
-        class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+        class="mt-8 grid items-center gap-10 lg:gap-14"
+        :class="{ 'lg:grid-cols-[1.1fr_1fr]': art }"
       >
-        <Button
-          data-testid="content-cta-primary"
-          size="lg"
-          class="w-full gap-2 sm:w-auto"
-          @click="authStore.isAuthenticated ? goToDashboard() : signIn()"
-        >
-          {{
-            authStore.isAuthenticated
-              ? t('preauth.layout.navigation.goToDashboard')
-              : t('preauth.landing.hero.ctaPrimary')
-          }}
-          <ArrowRightIcon class="size-4" />
-        </Button>
-        <Button
-          v-if="sandboxStore.enabled"
-          data-testid="content-cta-demo"
-          variant="outline"
-          size="lg"
-          class="w-full gap-2 sm:w-auto"
-          @click="openDemo"
-        >
-          <FlaskConicalIcon class="size-4" />
-          {{ t('preauth.landing.hero.ctaDemo') }}
-        </Button>
+        <div :class="{ 'max-w-3xl': !art }">
+          <p
+            class="inline-flex items-center gap-2 rounded-full bg-(--art)/18 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground"
+          >
+            <span class="size-1.5 rounded-full bg-(--art)" aria-hidden="true" />
+            {{ eyebrow }}
+          </p>
+          <h1
+            data-testid="page-heading"
+            class="mt-4 text-balance text-3xl font-bold tracking-tight sm:text-4xl"
+          >
+            {{ title }}
+          </h1>
+          <p class="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {{ lede }}
+          </p>
+
+          <div v-if="!hideActions" class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button
+              data-testid="content-cta-primary"
+              size="lg"
+              class="w-full gap-2 sm:w-auto"
+              @click="authStore.isAuthenticated ? goToDashboard() : signIn()"
+            >
+              {{
+                authStore.isAuthenticated
+                  ? t('preauth.layout.navigation.goToDashboard')
+                  : t('preauth.landing.hero.ctaPrimary')
+              }}
+              <ArrowRightIcon class="size-4" />
+            </Button>
+            <Button
+              v-if="sandboxStore.enabled"
+              data-testid="content-cta-demo"
+              variant="outline"
+              size="lg"
+              class="w-full gap-2 sm:w-auto"
+              @click="openDemo"
+            >
+              <FlaskConicalIcon class="size-4" />
+              {{ t('preauth.landing.hero.ctaDemo') }}
+            </Button>
+          </div>
+          <p v-if="sandboxStore.enabled && !hideActions" class="mt-3 text-sm text-muted-foreground">
+            {{ t('sandbox.cta.note') }}
+          </p>
+        </div>
+
+        <div v-if="art" data-testid="content-header-media">
+          <PageArt :kind="art" />
+        </div>
       </div>
-      <p
-        v-if="sandboxStore.enabled && !hideActions"
-        class="mt-3 text-center text-sm text-muted-foreground"
-      >
-        {{ t('sandbox.cta.note') }}
-      </p>
     </LandingSection>
 
     <slot />
