@@ -6,7 +6,7 @@ related: feature/vouchers, guide/redeem-vouchers, guide/people-in-charge, featur
 
 ## Marken pro Schicht festlegen
 
-Öffne die Aufgabe, deren Schichten Marken bringen sollen. Auf ihrer Seite gibt es die Karte „Marken“ mit dem Knopf „Einstellen“. Trag dort unter „Marken pro Schicht“ ein, wie viele jede Person pro Schicht bekommt, sobald sie vorbei ist. 0 heißt keine.
+Öffne die Aufgabe, deren Schichten Marken bringen sollen. Auf ihrer Seite gibt es die Karte „Marken“ mit dem Knopf „Einstellen“ [[vouchers]]. Trag dort unter „Marken pro Schicht“ ein, wie viele jede Person pro Schicht bekommt, sobald sie vorbei ist. 0 heißt keine.
 
 Das machst du für jede Aufgabe, die Marken bringen soll. Unterschiedliche Anzahlen sind kein Problem, zum Beispiel zwei für die Küche und drei für den Abbau.
 
@@ -22,8 +22,8 @@ Eine Aufgabe kann beides sein: Marken bringen und Marken annehmen.
 
 Sobald eine Aufgabe Marken vergibt oder annimmt, haben die Einstellungen der Veranstaltung den Tab „Marken“. Dort stehen zwei Regeln:
 
-- **Ohne Code einlösen:** Für Leute, deren Handy nicht geht, wird die Person aus einer Liste gewählt. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Ist dir das zu offen, stell auf „Nur Organisator:innen und Verantwortliche“ um.
-- **Schichten bei Aufgaben mit Marken:** Standardmäßig legen, verlegen und löschen sie nur Organisator:innen, weil Schichten entscheiden, wie viele Marken jemand bekommt. Du kannst es für Verantwortliche freischalten.
+- **Ohne Code einlösen:** [[no-code]] Für Leute, deren Handy nicht geht, wird die Person aus einer Liste gewählt. Standardmäßig dürfen das auch alle, die gerade an einer Einlösestelle Schicht haben. Ist dir das zu offen, stell auf „Nur Organisator:innen und Verantwortliche“ um.
+- **Schichten bei Aufgaben mit Marken:** [[shifts]] Standardmäßig legen, verlegen und löschen sie nur Organisator:innen, weil Schichten entscheiden, wie viele Marken jemand bekommt. Du kannst es für Verantwortliche freischalten.
 
 ![Der Tab „Marken“ mit den beiden Regeln und der Übersicht, wer wie viele Marken hat](shot:vouchers-settings)
 

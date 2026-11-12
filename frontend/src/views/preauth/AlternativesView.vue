@@ -14,7 +14,12 @@ import ScreenshotFrame from '@/components/landing/ScreenshotFrame.vue'
 import ScreenshotLightbox from '@/components/landing/ScreenshotLightbox.vue'
 import SectionHeading from '@/components/landing/SectionHeading.vue'
 
-import { COMPARED_TOOLS, COMPARISON_SCREENSHOTS, type ComparedTool } from '@/lib/content-pages'
+import {
+  COMPARED_TOOLS,
+  COMPARISON_SCREENSHOTS,
+  type ComparedTool,
+  pageLook,
+} from '@/lib/content-pages'
 
 /**
  * WirkSam next to the other ways of planning volunteers. The table does not
@@ -50,6 +55,8 @@ const zoomed = ref<number | null>(null)
     :title="t(`${A}.hero.title`)"
     :lede="t(`${A}.hero.lede`)"
     :breadcrumb="t(`${A}.breadcrumb`)"
+    :art="pageLook('alternatives').art"
+    :color="pageLook('alternatives').color"
   >
     <LandingSection id="comparison" width="full">
       <SectionHeading

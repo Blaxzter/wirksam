@@ -16,7 +16,7 @@ Unter „Wann es wieder losgeht“ ist alles vorbelegt: Der Name endet auf „(K
 
 ## Aufgaben und Leute auswählen
 
-Unter „Was mitkommt“ sind alle Aufgaben angehakt, bis zu 50 auf einmal. Nimm weg, was nicht wieder stattfindet.
+Unter „Was mitkommt“ [[tasks]] sind alle Aufgaben angehakt, bis zu 50 auf einmal. Nimm weg, was nicht wieder stattfindet.
 
 „Dieselben Personen übernehmen“ ist eingeschaltet. Organisator:innen bleiben Organisator:innen, und Verantwortliche kommen mit, wenn die Personen mitkommen. Schaltest du es aus, bist du allein in der neuen Veranstaltung.
 
@@ -45,6 +45,6 @@ Unter „Noch einmal ansehen“ stehen die Zahlen und jede Aufgabe. „Kopie anl
 
 Die neue Veranstaltung startet als Entwurf. Von außen ist sie dann nicht zu finden, wer dabei ist, sieht sie trotzdem. Wähle in den Einstellungen, die sich gerade geöffnet haben, im Tab „Details“ unter „Status“ die Option „Veröffentlicht“ und tippe auf „Speichern“. Alle in der Veranstaltung bekommen eine Nachricht, und eine öffentliche Veranstaltung können von da an auch andere finden.
 
-Die Aufgaben sind damit noch nicht veröffentlicht. Wechsle zur neuen Veranstaltung: Tippe oben in der Seitenleiste auf den Namen der aktuellen, auf dem Handy auf „Mehr“ und „Veranstaltung wechseln“. Öffne unter „Aufgaben“ jede Aufgabe, die noch Entwurf ist, und wähle „Jetzt veröffentlichen“. Auf dem Handy tippst du dafür auf den Status neben dem Namen. Bis dahin kann niemand ihre Schichten buchen.
+Die Aufgaben sind damit noch nicht veröffentlicht. Wechsle zur neuen Veranstaltung: Tippe oben in der Seitenleiste auf den Namen der aktuellen, auf dem Handy auf „Mehr“ und „Veranstaltung wechseln“. Öffne unter „Aufgaben“ jede Aufgabe, die noch Entwurf ist, und wähle „Jetzt veröffentlichen“. Auf dem Handy tippst du dafür auf den Status [[status]] neben dem Namen. Bis dahin kann niemand ihre Schichten buchen.
 
 ![Die Seite einer Aufgabe mit den Karten für Verantwortliche und Marken und den Schichten](shot:task-detail)

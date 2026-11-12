@@ -16,7 +16,7 @@ Change the name and, if needed, the dates. The tasks move along by themselves.
 
 ## Choose the tasks and people
 
-Under "What to bring across", all the tasks are ticked, up to 50 at a time. Untick whatever isn't happening again.
+Under "What to bring across" [[tasks]], all the tasks are ticked, up to 50 at a time. Untick whatever isn't happening again.
 
 "Bring the same people across" is on. Organisers stay organisers, and people in charge come along if the people do. If you turn it off, you're alone in the new event.
 
@@ -45,6 +45,6 @@ Under "Tell people", "Let everyone know" is off. If you turn it on, the people y
 
 The new event starts as a draft. That keeps it hidden from outsiders, while the people in it can still see it. In the settings that have just opened, on the Details tab, choose "Published" under "Status" and tap "Save". Everyone in the event gets a message, and if the event is public, others can find it from then on.
 
-That doesn't publish the tasks. Switch to the new event: tap the current event's name at the top of the sidebar, or on a phone "More" and "Change event". Under "Tasks", open each task that's still a draft and choose "Publish now". On a phone, tap the status next to the name instead. Until then, nobody can book its shifts.
+That doesn't publish the tasks. Switch to the new event: tap the current event's name at the top of the sidebar, or on a phone "More" and "Change event". Under "Tasks", open each task that's still a draft and choose "Publish now". On a phone, tap the status [[status]] next to the name instead. Until then, nobody can book its shifts.
 
 ![A task's page with the cards for people in charge and vouchers, and the shifts](shot:task-detail)

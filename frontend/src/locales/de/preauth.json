@@ -157,6 +157,11 @@
     },
     "docs": {
         "ctaTitle": "Probier es selbst aus",
+        "device": {
+            "desktop": "Computer",
+            "label": "Ansicht",
+            "phone": "Handy"
+        },
         "faqTitle": "Häufige Fragen",
         "groups": {
             "feature": {
@@ -178,7 +183,7 @@
                 "all": "Alle Funktionen",
                 "breadcrumb": "Funktionen",
                 "eyebrow": "Funktionen",
-                "lede": "WirkSam plant Schichten für Helfende: Du legst Aufgaben und Schichten an, die Leute tragen sich selbst ein und werden erinnert. Jede Seite unten erklärt einen Teil ausführlich, auch was Organisator:innen einstellen und was Helfende sehen.",
+                "lede": "Du legst Aufgaben und Schichten an, die Leute tragen sich selbst ein und werden erinnert. Jede Seite erklärt einen Teil davon ausführlich.",
                 "title": "Was WirkSam kann"
             },
             "guide": {
@@ -189,61 +194,80 @@
                 "title": "Schritt für Schritt"
             }
         },
+        "inShort": "Kurz gesagt",
         "onThisPage": "Auf dieser Seite",
         "pages": {
             "featureBooking": {
-                "name": "Schichten buchen"
+                "name": "Schichten buchen",
+                "tagline": "Helfende suchen sich ihre Schichten selbst aus."
             },
             "featureHoursAndReports": {
-                "name": "Stunden und Auswertungen"
+                "name": "Stunden und Auswertungen",
+                "tagline": "Zähl die Stunden jeder Person und sieh, wie voll die Schichten sind."
             },
             "featureMembers": {
-                "name": "Einladungen und Rollen"
+                "name": "Einladungen und Rollen",
+                "tagline": "Lade per E-Mail oder Link ein und verteile die Rollen."
             },
             "featureNotifications": {
-                "name": "Erinnerungen und Benachrichtigungen"
+                "name": "Erinnerungen und Benachrichtigungen",
+                "tagline": "WirkSam erinnert vor jeder Schicht per E-Mail, Push oder Telegram."
             },
             "featurePeopleInCharge": {
-                "name": "Verantwortliche"
+                "name": "Verantwortliche",
+                "tagline": "Gib eine einzelne Aufgabe an jemanden ab."
             },
             "featureSelfHosting": {
-                "name": "Selbst betreiben"
+                "name": "Selbst betreiben",
+                "tagline": "WirkSam ist Open Source und läuft mit Docker Compose auf deinem Server."
             },
             "featureShiftPlanning": {
-                "name": "Schichtplanung"
+                "name": "Schichtplanung",
+                "tagline": "Beschreib eine Aufgabe einmal, die Schichten entstehen daraus."
             },
             "featureTeams": {
-                "name": "Teams"
+                "name": "Teams",
+                "tagline": "Reserviere Aufgaben für ein Team und hake Nachweise ab."
             },
             "featureVenueMap": {
-                "name": "Lageplan"
+                "name": "Lageplan",
+                "tagline": "Pins auf deinem Plan zeigen, wo noch Leute fehlen."
             },
             "featureVouchers": {
-                "name": "Marken"
+                "name": "Marken",
+                "tagline": "Wer hilft, bekommt Marken für Essen und Getränke und zeigt am Stand einen QR-Code."
             },
             "guideFirstEvent": {
-                "name": "Deine erste Veranstaltung in 10 Minuten"
+                "name": "Deine erste Veranstaltung in 10 Minuten",
+                "tagline": "Vom leeren Konto zum Plan, den alle buchen können."
             },
             "guideNextYear": {
-                "name": "Veranstaltung fürs nächste Jahr kopieren"
+                "name": "Veranstaltung fürs nächste Jahr kopieren",
+                "tagline": "Aufgaben und Schichten vom letzten Jahr auf neue Termine übernehmen."
             },
             "guidePeopleInCharge": {
-                "name": "Verantwortliche benennen"
+                "name": "Verantwortliche benennen",
+                "tagline": "Gib jemandem eine Aufgabe zum Betreuen, per Name oder E-Mail-Adresse."
             },
             "guideRedeemVouchers": {
-                "name": "Marken am Stand einlösen"
+                "name": "Marken am Stand einlösen",
+                "tagline": "Für alle am Stand: Code scannen oder eintippen und die Anzahl wählen."
             },
             "guideTeams": {
-                "name": "Team einrichten"
+                "name": "Team einrichten",
+                "tagline": "Leg ein Team an und bestimme, wie man beitritt und welche Nachweise nötig sind."
             },
             "guideVenueMap": {
-                "name": "Lageplan anlegen"
+                "name": "Lageplan anlegen",
+                "tagline": "Plan hochladen oder zeichnen und für jeden Einsatzort einen Pin setzen."
             },
             "guideVolunteerStart": {
-                "name": "Loslegen als Helfer:in"
+                "name": "Loslegen als Helfer:in",
+                "tagline": "Von der Einladung bis zur ersten gebuchten Schicht."
             },
             "guideVouchers": {
-                "name": "Marken einrichten"
+                "name": "Marken einrichten",
+                "tagline": "Leg fest, wie viele Marken eine Schicht bringt und wo man sie einlöst."
             }
         },
         "readOn": "Weiterlesen"
@@ -303,32 +327,6 @@
             "legalIntro": "Alles Weitere steht im Kleingedruckten:",
             "nameExplainer": "Der Name ist ein Wortspiel aus „wirksam“ und „zusammen“. Ehrenamt funktioniert am besten, wenn wir gemeinsam anpacken, daher WirkSam.",
             "title": "Ein kleines Open-Source-Projekt"
-        },
-        "audience": {
-            "eyebrow": "Für wen",
-            "lede": "Organisator:innen machen den Plan, Helfende tragen sich ein und sind am Tag selbst da.",
-            "organiser": {
-                "description": "Du siehst, wer welchen Dienst übernimmt und welche Plätze noch frei sind, und musst dafür keine Tabelle per E-Mail herumschicken.",
-                "label": "Für Organisator:innen",
-                "points": {
-                    "0": "Leg deine Veranstaltung selbst an. Niemand muss sie freigeben.",
-                    "1": "Lade dein Team per E-Mail oder mit einem Link ein.",
-                    "2": "Aus den Tagen und Zeiten einer Aufgabe erzeugt WirkSam alle ihre Schichten."
-                },
-                "title": "Du machst den Plan"
-            },
-            "title": "Für alle, die planen oder mithelfen",
-            "volunteer": {
-                "description": "Deine Schichten stehen in einer Liste, und du musst keine Tabelle oder Mail an alle danach durchsuchen.",
-                "label": "Für Helfende",
-                "points": {
-                    "0": "Öffne die Einladung und melde dich an, dann bist du dabei.",
-                    "1": "Sag, wann du kannst, bevor die Schichten verteilt werden.",
-                    "2": "Buche, was passt, und sag rechtzeitig ab, wenn nötig.",
-                    "3": "Vor jeder Schicht bekommst du eine Erinnerung, über den Weg, den du eingestellt hast."
-                },
-                "title": "Du packst mit an"
-            }
         },
         "faq": {
             "eyebrow": "Fragen",
@@ -435,60 +433,31 @@
             "rows": {
                 "bookings": {
                     "description": "Hier steht alles, wofür du dich eingetragen hast, das Nächste zuerst. Absagen kannst nur du selbst, auch Organisator:innen können dich nicht einzeln austragen.",
-                    "points": {
-                        "0": "Filtere nach demnächst, diesem Monat oder allem.",
-                        "1": "Mit zwei Klicks absagen, und der Platz wird wieder frei.",
-                        "2": "Im eigenen Kalender abonnieren, dann stehen die Schichten neben dem Rest der Woche."
-                    },
                     "screenshotAlt": "Die Seite „Meine Buchungen“ mit den bestätigten Schichten samt Datum, Uhrzeit und Ort.",
                     "title": "Alle deine Schichten in einer Liste"
                 },
                 "clone": {
                     "description": "Kopiere eine Veranstaltung, die es schon gab, auf neue Termine. Aufgaben, Schichten und Zeiten kommen mit, und das Original bleibt, wie es war.",
-                    "points": {
-                        "0": "Setz die neuen Termine, dann rückt alles mit und landet auf demselben Wochentag wie beim letzten Mal.",
-                        "1": "Hak nur die Aufgaben an, die wieder dabei sind.",
-                        "2": "Die Eintragungen vom letzten Mal kommen nicht mit, die Kopie startet mit leeren Schichten."
-                    },
                     "screenshotAlt": "Die Seite zum Kopieren einer Veranstaltung: die Aufgaben vom letzten Mal mit ihrer Schichtzahl, alle angehakt für die neuen Termine.",
                     "title": "Nächstes Jahr nicht wieder von vorn"
                 },
                 "overview": {
                     "description": "Die Aufgaben deiner Veranstaltung als Liste, als Karten oder im Kalender, mit den freien Plätzen an jeder Schicht.",
-                    "points": {
-                        "0": "Suchen und filtern nach Kategorie, Ort oder Datum.",
-                        "1": "Volle Schichten ausblenden und nur sehen, was noch fehlt.",
-                        "2": "Die App zeigt immer nur eine Veranstaltung, so liest niemand im falschen Plan."
-                    },
                     "screenshotAlt": "Die Aufgabenliste mit einer Wochenansicht der Schichten daneben, jeweils mit gebuchten und freien Plätzen.",
                     "title": "Alle sehen denselben Plan"
                 },
                 "reminders": {
                     "description": "WirkSam erinnert die Leute an ihre Schichten, und jede Person wählt selbst, auf welchem Weg.",
-                    "points": {
-                        "0": "E-Mail, Browser-Push oder Telegram, für jede Art von Benachrichtigung einzeln wählbar und abschaltbar.",
-                        "1": "Alles landet zusätzlich im Posteingang in der App."
-                    },
                     "screenshotAlt": "Die Benachrichtigungseinstellungen: pro Art eine Zeile, mit Schaltern für E-Mail, Push und Telegram.",
                     "title": "Erinnerungen vor jeder Schicht"
                 },
                 "shifts": {
                     "description": "Du legst die Tage, die täglichen Zeiten, die Schichtlänge und die Personenzahl fest, und die Schichten entstehen daraus.",
-                    "points": {
-                        "0": "Wenn die Zeit nicht aufgeht, wählst du: Rest weglassen, letzte Schicht kürzen oder verlängern.",
-                        "1": "Für einen Tag mit anderen Zeiten legst du eine Ausnahme an, der Rest bleibt, wie er ist.",
-                        "2": "Die Vorschau zeigt jede Schicht, bevor sie angelegt wird. Klick eine an, um sie wegzulassen."
-                    },
                     "screenshotAlt": "Das Formular für den Zeitplan neben einer Vorschau aller Schichten, die daraus entstünden.",
                     "title": "Schichten aus einem Zeitplan erzeugen"
                 },
                 "venue": {
                     "description": "Lade einen Lageplan hoch oder zeichne deinen Veranstaltungsort direkt in der App und setze für jeden Einsatzort einen Pin. Die Karte zeigt dann, wo noch Hilfe fehlt.",
-                    "points": {
-                        "0": "Jeder Pin ist danach eingefärbt, wie gut der Ort am gewählten Tag besetzt ist.",
-                        "1": "Helfende sehen auf der Karte, wo ihre Schicht ist, und müssen nicht erst fragen, wohin.",
-                        "2": "Mehrere Pläne pro Veranstaltung, zum Beispiel für das Gebäude und das Außengelände."
-                    },
                     "screenshotAlt": "Der Lageplan: ein gezeichneter Grundriss mit einem Pin für jeden Ort, eingefärbt nach Besetzung, daneben eine Liste aller Orte mit ihren gebuchten Plätzen.",
                     "title": "Sehen, wo Hilfe fehlt"
                 }
@@ -547,6 +516,7 @@
             "lede": "Wähl unten aus, was auf dich zutrifft.",
             "organiser": {
                 "footnote": "Danach kannst du den Dienstplan drucken oder auswerten, wie sich die Arbeit verteilt.",
+                "intro": "Du siehst, wer welchen Dienst übernimmt und welche Plätze noch frei sind, und musst dafür keine Tabelle per E-Mail herumschicken.",
                 "steps": {
                     "create": {
                         "description": "Du gibst einen Namen und die Tage an. Die Veranstaltung gehört dir und bleibt privat, bis du etwas anderes entscheidest.",
@@ -570,6 +540,7 @@
             "title": "Vier Schritte, egal ob du organisierst oder mithilfst",
             "volunteer": {
                 "footnote": "Wenn dir etwas dazwischenkommt, sag unter „Meine Buchungen“ ab, dann wird der Platz wieder frei.",
+                "intro": "Deine Schichten stehen in einer Liste, und du musst keine Tabelle oder Mail an alle danach durchsuchen.",
                 "steps": {
                     "accept": {
                         "description": "Du siehst die Veranstaltung, wer dich eingeladen hat und deine Rolle, bevor du entscheidest.",
@@ -602,7 +573,6 @@
         },
         "nav": {
             "about": "Über WirkSam",
-            "audience": "Für wen",
             "faq": "FAQ",
             "features": "Funktionen",
             "howItWorks": "Der Ablauf",

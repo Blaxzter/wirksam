@@ -17,7 +17,7 @@ Danach siehst du die Veranstaltung. Tippe auf „Annehmen und mitmachen“.
 
 ## Sagen, wann du kannst
 
-Öffne „Verfügbarkeit“, am Handy unter „Mehr“. Wähle „Voll verfügbar“, „Tägliches Fenster“ oder „Bestimmte Zeiten“ (am Handy „Voll“, „Täglich“ oder „Termine“) und speichere oben rechts, am Handy mit dem Haken.
+Öffne „Verfügbarkeit“, am Handy unter „Mehr“. Wähle „Voll verfügbar“, „Tägliches Fenster“ oder „Bestimmte Zeiten“ (am Handy „Voll“, „Täglich“ oder „Termine“) [[modes]] und speichere oben rechts [[save]], am Handy mit dem Haken.
 
 Das sehen nur die Organisator:innen, und gebucht ist damit noch nichts.
 
@@ -25,12 +25,12 @@ Das sehen nur die Organisator:innen, und gebucht ist damit noch nichts.
 
 ## Schichten buchen
 
-Öffne „Aufgaben“ und tippe auf den Namen einer Aufgabe. Auf ihrer Seite tippst du eine freie Schicht an und bestätigst die Frage. Deine Schichten stehen danach auf der Startseite und unter „Buchungen“ (am Rechner „Meine Buchungen“).
+Öffne „Aufgaben“ und tippe auf den Namen einer Aufgabe. Auf ihrer Seite tippst du eine freie Schicht an und bestätigst die Frage. Deine Schichten stehen danach auf der Startseite [[next]] und unter „Buchungen“ (am Rechner „Meine Buchungen“) [[booking]].
 
 Schaffst du es doch nicht, öffne dort die Buchung und wähle „Buchung stornieren“. Das geht bis zum Ende der Schicht.
 
-![Die Startseite auf dem Handy mit der nächsten Schicht und dem Plan](phone:dashboard-phone)
-![„Meine Buchungen“ auf dem Handy mit den gebuchten Schichten als Karten](phone:bookings-phone)
+![Die Startseite mit der nächsten Schicht und dem Plan](shot:helper-home)
+![„Meine Buchungen“ mit den gebuchten Schichten als Karten](shot:helper-bookings)
 
 ## Schichten in den Kalender holen
 
@@ -42,9 +42,9 @@ Neue Schichten kommen von selbst dazu, und abgesagte verschwinden wieder.
 
 Im Profilmenü findest du „Benachrichtigungen“. Voreingestellt erinnert WirkSam dich einen Tag vorher per E-Mail und 15 Minuten vorher per Push. Damit Push ankommt, tippe auf „Push-Benachrichtigungen aktivieren“ und stimme im Browser zu.
 
-Unter „Standard-Buchungserinnerungen“ änderst du Zeitpunkte und Wege für neue Buchungen. Alle Nachrichten stehen außerdem im „Postfach“.
+Unter „Standard-Buchungserinnerungen“ [[reminders]] änderst du Zeitpunkte und Wege für neue Buchungen. Alle Nachrichten stehen außerdem im „Postfach“.
 
-![Die Benachrichtigungseinstellungen mit einer Zeile pro Art und Schaltern für E-Mail, Push und Telegram](shot:notification-preferences)
+![Die Erinnerungen für neue Buchungen, darunter die Einstellungen pro Art von Nachricht](shot:notification-reminders)
 
 ## Die App installieren, wenn du magst
 

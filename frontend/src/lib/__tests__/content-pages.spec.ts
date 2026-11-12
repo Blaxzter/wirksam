@@ -7,9 +7,16 @@ import {
   COMPARED_TOOLS,
   COMPARISON_CRITERIA,
   COMPARISON_SCREENSHOTS,
+  ACCENT_COLORS,
+  DOC_GROUPS,
+  GROUP_ACCENTS,
+  PAGE_ACCENTS,
+  PAGE_ART,
   RELATED_PAGES,
   USE_CASES,
   type UseCaseKey,
+  docAccent,
+  pageLook,
   relatedPages,
   useCaseForRoute,
 } from '../content-pages'
@@ -37,6 +44,37 @@ describe('relatedPages', () => {
 
   it('lists every page from elsewhere', () => {
     expect(relatedPages('terms')).toEqual(RELATED_PAGES)
+  })
+})
+
+describe('how a page looks', () => {
+  it('gives every group of feature pages and guides a colour', () => {
+    for (const kind of ['feature', 'guide'] as const) {
+      for (const group of DOC_GROUPS[kind]) {
+        expect(GROUP_ACCENTS[kind][group.key], group.key).toBeDefined()
+      }
+    }
+  })
+
+  it('colours a feature page or guide like its group', () => {
+    expect(docAccent('feature/vouchers')).toBe(GROUP_ACCENTS.feature.thanks)
+    expect(docAccent('guide/next-year')).toBe(GROUP_ACCENTS.guide.again)
+    expect(docAccent('feature/nothing')).toBe('green')
+  })
+
+  it('draws and colours every page that stands alone', () => {
+    for (const key of ['features', 'guides', 'alternatives', ...Object.keys(USE_CASES)]) {
+      expect(PAGE_ART[key], key).toBeDefined()
+      expect(pageLook(key)).toEqual({ art: PAGE_ART[key], color: ACCENT_COLORS[PAGE_ACCENTS[key]!] })
+    }
+  })
+
+  it('looks up a feature page by its id, and falls back to green for a page it does not know', () => {
+    expect(pageLook('feature/vouchers')).toEqual({
+      art: 'vouchers',
+      color: ACCENT_COLORS[GROUP_ACCENTS.feature.thanks!],
+    })
+    expect(pageLook('nowhere')).toEqual({ art: undefined, color: ACCENT_COLORS.green })
   })
 })
 

@@ -6,7 +6,7 @@ related: feature/teams, guide/people-in-charge, guide/vouchers, guide/first-even
 
 ## Team anlegen
 
-Öffne „Teams“ in der Seitenleiste, auf dem Handy unter „Mehr“, und wähle „Neues Team“. Gib einen Namen ein, zum Beispiel „Kasse“. „Beschreibung“ und „Kontakt“ sind freiwillig, und alle sehen sie, die sich das Team ansehen.
+Öffne „Teams“ in der Seitenleiste, auf dem Handy unter „Mehr“, und wähle „Neues Team“ [[create]]. Gib einen Namen ein, zum Beispiel „Kasse“. „Beschreibung“ und „Kontakt“ sind freiwillig, und alle sehen sie, die sich das Team ansehen.
 
 ![Die Seite „Teams“ mit wartenden Anfragen, der Liste der Teams und den Mitgliedern des gewählten Teams](shot:teams)
 
@@ -32,7 +32,7 @@ Dann wählst du „Speichern“. Ohne Nachweise speicherst du gleich. Teams mit 
 
 Wartende Anfragen stehen oben auf der Seite „Teams“, und du bekommst eine E-Mail und eine Push-Nachricht. Bei einem Team ohne Nachweise wählst du direkt „Freigeben“ oder „Ablehnen“.
 
-Mit Nachweisen wählst du „Anfrage prüfen“. Sieh dir das Dokument an, hake „Geprüft: …“ ab, trag unter „Ausgestellt am“ das Datum ein, wo danach gefragt wird, und wähle zum Beispiel „Anna freigeben“. „Ablehnen“ geht ohne Häkchen. Behalte keine Kopie: WirkSam speichert nur, dass du es gesehen hast, wann, und das Datum. Eine angehängte Datei wird gelöscht, sobald du entscheidest.
+Mit Nachweisen wählst du „Anfrage prüfen“. Sieh dir das Dokument an, hake „Geprüft: …“ [[check]] ab, trag unter „Ausgestellt am“ [[issued]] das Datum ein, wo danach gefragt wird, und wähle zum Beispiel „Anna freigeben“ [[approve]]. „Ablehnen“ [[decline]] geht ohne Häkchen. Behalte keine Kopie: WirkSam speichert nur, dass du es gesehen hast, wann, und das Datum. Eine angehängte Datei wird gelöscht, sobald du entscheidest.
 
 ![Eine Beitrittsanfrage prüfen, mit einem Häkchen und dem Ausstellungsdatum pro Nachweis](shot:team-review)
 

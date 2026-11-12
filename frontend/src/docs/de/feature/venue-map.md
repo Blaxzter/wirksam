@@ -1,12 +1,11 @@
 ---
 title: Lageplan
-lede: Der Lageplan zeigt allen in der Veranstaltung, wo was ist, und an der Farbe, wo am gewählten Tag noch Hilfe fehlt. Dafür lädst du einen Plan hoch oder zeichnest den Ort in der App und setzt für jeden Einsatzort einen Pin.
+lede: Der Lageplan zeigt allen in der Veranstaltung, wo was ist. Die Farbe der Pins zeigt, wo am gewählten Tag noch Hilfe fehlt.
+points: Bild hochladen oder den Ort selbst zeichnen | Ein Pin für jeden Einsatzort | Die Farbe zeigt, wo Leute fehlen
 related: guide/venue-map, feature/shift-planning, feature/booking, guide/next-year
 ---
 
-Neue Helfende fragen meist dasselbe: Wo ist Stand 3, wo sind die Toiletten, wo soll ich hin. Der Lageplan beantwortet das, und dir zeigt er nebenbei, wo noch Leute fehlen.
-
-Der Eintrag „Lageplan“ erscheint in der Navigation erst, wenn ein Plan ein Bild oder eine Zeichnung hat.
+Neue Helfende fragen meist dasselbe: Wo ist Stand 3, wo sind die Toiletten, wo soll ich hin? Der Lageplan beantwortet das. Dir zeigt er nebenbei, wo noch Leute fehlen.
 
 ## Bild hochladen oder selbst zeichnen
 
@@ -16,21 +15,27 @@ Pläne legst du als Organisator:in in den Einstellungen der Veranstaltung an, im
 - „Bild verwenden“ nimmt einen Grundriss oder ein Foto als PNG, JPG oder WebP, bis 20 MB. Ein PDF exportierst du vorher als Bild.
 - „Vorlage verwenden“ startet mit einer Zeichnung, die du dir früher gespeichert hast.
 
-Beides lässt sich kombinieren: Auf einem Bild kannst du zeichnen, und unter eine Zeichnung kannst du mit „Bild darunterlegen“ später eins legen. Die Zeichnung passt sich dann an die Seitenverhältnisse des Bildes an, prüf danach, ob noch alles richtig sitzt.
+Der Eintrag „Lageplan“ erscheint in der Navigation erst, wenn ein Plan ein Bild oder eine Zeichnung hat.
 
 ## Den Ort zeichnen
 
 Zum Zeichnen gibt es „Rechteck“, „Fläche“, „Linie“ und „Text“. Unter „Aussehen“ wird daraus eine Bühne, ein Gebäude, ein Raum, Wasser oder ein Weg. „Deko“ bringt Bäume, Bänke, Pavillons und Biertische auf den Plan, dazu Hecken, Zäune, Bäche und Sand.
 
-Ein Rechteck oder eine Fläche kann unter „Verknüpfter Ort“ mit einem Ort verbunden werden. Wer darauf tippt, sieht diesen Ort, und ein eigener Pin ist dafür nicht mehr nötig.
+Unter „Weitere Punkte“ gibt es Symbole für „Eingang“, „Info-Stand“, „Erste Hilfe“, „Toiletten“, „Parkplatz“ und „Küche“. Du kannst sie beliebig oft setzen und ihnen eine „Beschriftung“ geben, zum Beispiel „Nordtor“.
 
-Alles wird von selbst gespeichert. „Rückgängig“ nimmt Zeichenschritte zurück, gesetzte Pins aber nicht.
+Diese Symbole dienen nur der Orientierung und haben weder Schichten noch Farbe. Das steht auch in der Legende. Die Suche findet sie trotzdem.
 
 ## Pins für die Einsatzorte
 
-Für jeden Einsatzort setzt du einen Pin, in der App „Markierung“ genannt. „Markierungen setzen“ listet alle [Orte der Veranstaltung](/features/shift-planning), die noch nicht auf diesem Plan sind. Du wählst einen aus und tippst auf die Stelle im Plan, oder du nimmst „In die Mitte setzen“ und ziehst ihn danach an die richtige Stelle.
+Für jeden Einsatzort setzt du einen Pin, in der App „Markierung“ genannt:
 
-Ein Ort kann pro Plan einen Pin haben. Name und Beschreibung änderst du weiter im Tab „Orte“, und ein ausgetauschtes Bild lässt die Pins, wo sie sind.
+1. Öffne „Markierungen setzen“. Dort stehen alle [Orte der Veranstaltung](/features/shift-planning), die noch nicht auf diesem Plan sind.
+2. Wähl einen Ort aus.
+3. Tipp auf die Stelle im Plan. Oder nimm „In die Mitte setzen“ und zieh den Pin danach an die richtige Stelle.
+
+Ein Ort kann pro Plan einen Pin haben. Name und Beschreibung änderst du weiter im Tab „Orte“.
+
+Statt eines Pins kannst du auch ein Rechteck oder eine Fläche unter „Verknüpfter Ort“ mit einem Ort verbinden. Wer darauf tippt, sieht dann diesen Ort.
 
 ## Die Farbe zeigt die Besetzung
 
@@ -41,56 +46,88 @@ Jeder Einsatzort steht auf dem Plan als Schild mit Nummer, Name und gebuchten Pl
 - rot, „Unterbesetzt“: weniger als die Hälfte ist gebucht
 - grau, „Keine Schichten“: dort gibt es an dem Tag keine Schichten
 
-Den Tag wechselst du mit den Pfeilen. Läuft die Veranstaltung gerade, startet der Plan bei heute, sonst bei ihrem ersten Tag. Daneben steht die Liste „Alle Orte“ mit denselben Zahlen.
+Den Tag wechselst du mit den Pfeilen. Läuft die Veranstaltung gerade, startet der Plan bei heute, sonst bei ihrem ersten Tag.
 
-Wer einen Ort antippt, sieht Beschreibung, Adresse und Ansprechperson und die Schichten des Tages und kann direkt mit „Buchen“ eine nehmen. „Meine Schichten“ ist eingeschaltet und hebt die Orte hervor, an denen du an dem Tag selbst Schicht hast. „Ort suchen“ findet einen Ort über alle Pläne.
+Tippst du auf einen Ort, siehst du Beschreibung, Adresse, Ansprechperson und die Schichten des Tages. Mit „Buchen“ nimmst du direkt eine davon.
 
-Gezählt werden Schichten, die mit dem Ort verbunden sind. Helfende sehen die Zahlen ihrer veröffentlichten Aufgaben, bei Organisator:innen zählen auch Entwürfe mit.
+Außerdem hat der Lageplan:
+
+- die Liste „Alle Orte“ neben dem Plan, mit denselben Zahlen
+- „Meine Schichten“, das die Orte hervorhebt, an denen du an dem Tag selbst Schicht hast. Es ist von Anfang an eingeschaltet.
+- „Ort suchen“, das einen Ort über alle Pläne findet
 
 ![Der Lageplan mit Pins, deren Farbe die Besetzung des Tages zeigt, und der Liste der Orte](shot:venue-map)
 
-Der Plan begegnet Helfenden auch anderswo: In einer geöffneten Schicht steht er unter „Ort und Lageplan“, und auf der Seite einer Aufgabe, wenn alle Schichten denselben Ort haben. Auch auf den Ausdruck einer solchen Aufgabe kann er.
+Helfende sehen den Plan auch an anderen Stellen:
+
+- in einer geöffneten Schicht unter „Ort und Lageplan“
+- auf der Seite einer Aufgabe, wenn alle ihre Schichten denselben Ort haben
+- auf Wunsch auf dem Ausdruck einer solchen Aufgabe
 
 ![Die Details einer Schicht mit ihrem Ort, den Verantwortlichen und wer dabei ist](shot:shift-dialog)
-
-## Symbole für alles andere
-
-Unter „Weitere Punkte“ gibt es „Eingang“, „Info-Stand“, „Erste Hilfe“, „Toiletten“, „Parkplatz“ und „Küche“. Diese Symbole kannst du beliebig oft setzen und mit einer „Beschriftung“ versehen, zum Beispiel „Nordtor“.
-
-Sie dienen nur der Orientierung, haben keine Schichten und keine Farbe. Die Legende sagt das auch dazu, und die Suche findet sie trotzdem.
 
 ## Vorlagen
 
 Findet deine Veranstaltung jedes Jahr am selben Ort statt, musst du nicht neu zeichnen. Im Menü ⋮ eines Plans speichert „Als Vorlage speichern…“ seine Zeichnung und sein Bild, ohne Pins. Flächen verlieren dabei ihre Verbindung zu einem Ort, denn Orte gehören zur Veranstaltung.
 
-Die Vorlage gehört dir: Nur du siehst sie, und du kannst in all deinen Veranstaltungen über „Plan hinzufügen“ und „Vorlage verwenden“ daraus starten. Spätere Änderungen am Plan ändern die Vorlage nicht. Du kannst bis zu 20 Vorlagen behalten und sie in derselben Auswahl umbenennen oder löschen.
-
-## Mehrere Pläne pro Veranstaltung
-
-Eine Veranstaltung kann mehrere Pläne haben, zum Beispiel „Gelände“ und „Halle, Erdgeschoss“. Sie stehen nebeneinander als Reiter, die Reihenfolge änderst du im Menü ⋮ mit „Nach links schieben“ und „Nach rechts schieben“.
-
-Ein Ort kann auf mehreren Plänen einen Pin haben. Löschst du einen Plan, verschwinden seine Pins, die Orte selbst bleiben.
+Die Vorlage gehört dir: Nur du siehst sie. In all deinen Veranstaltungen startest du über „Plan hinzufügen“ und „Vorlage verwenden“ daraus.
 
 ## Auf dem Handy
 
-Auf dem Handy liegt der Lageplan unter „Mehr“. Mit zwei Fingern zoomst du, mit einem verschiebst du, dazu gibt es Knöpfe für Plus und Minus. Tippst du auf einen Ort, schiebt er sich von unten ins Bild, mit den Schichten des Tages und „Buchen“. Die Suche liegt hinter der Lupe, die Liste „Alle Orte“ und „Meine Schichten“ im Menü ⋮, die Auswahl der Pläne oben in der Kopfzeile.
+Auf dem Handy liegt der Lageplan unter „Mehr“. Mit zwei Fingern zoomst du, mit einem verschiebst du, dazu gibt es Knöpfe für Plus und Minus. Tippst du auf einen Ort, schiebt er sich von unten ins Bild, mit den Schichten des Tages und „Buchen“.
 
-Auch Organisator:innen können dort arbeiten. Der Stift oben öffnet die Bearbeitung, die Werkzeuge liegen dann unter dem Plan, und „Markierungen & Bild“ zeigt die Liste der Orte. Pins setzt du per Antippen und verschiebst sie mit dem Finger.
+Wo du den Rest findest:
+
+- Die Suche liegt hinter der Lupe.
+- Die Liste „Alle Orte“ und „Meine Schichten“ stehen im Menü ⋮.
+- Die Auswahl der Pläne ist oben in der Kopfzeile.
 
 ## Häufige Fragen
 
+### Kann ich auf einem Bild auch zeichnen?
+
+Ja, beides lässt sich kombinieren. Auf einem Bild kannst du zeichnen, und unter eine Zeichnung legst du später mit „Bild darunterlegen“ eins.
+
+Die Zeichnung passt sich dann an die Seitenverhältnisse des Bildes an. Prüf danach, ob noch alles richtig sitzt.
+
+### Muss ich den Plan speichern?
+
+Nein, alles wird von selbst gespeichert. „Rückgängig“ nimmt Zeichenschritte zurück, gesetzte Pins aber nicht.
+
+### Bleiben die Pins, wenn ich das Bild austausche?
+
+Ja, sie bleiben, wo sie sind.
+
+### Kann eine Veranstaltung mehrere Pläne haben?
+
+Ja, zum Beispiel „Gelände“ und „Halle, Erdgeschoss“. Sie stehen nebeneinander als Reiter. Die Reihenfolge änderst du im Menü ⋮ mit „Nach links schieben“ und „Nach rechts schieben“.
+
+Ein Ort kann auf mehreren Plänen einen Pin haben. Löschst du einen Plan, verschwinden seine Pins, die Orte selbst bleiben.
+
 ### Warum bleibt ein Pin grau?
 
-Grau heißt, dass es dort am angezeigten Tag keine Schichten gibt. Prüf den Tag und ob die Schichten wirklich diesen Ort haben. Ein selbst eingetippter Ort zählt nicht, er muss aus der Liste der Orte gewählt sein. Aufgaben im Entwurf zählen nur für Organisator:innen.
+Grau heißt, dass es dort am angezeigten Tag keine Schichten gibt. Prüf den Tag und ob die Schichten wirklich diesen Ort haben.
+
+Gezählt werden nur Schichten, die mit dem Ort verbunden sind. Ein selbst eingetippter Ort zählt nicht, er muss aus der Liste der Orte gewählt sein. Helfende sehen die Zahlen ihrer veröffentlichten Aufgaben, bei Organisator:innen zählen auch Entwürfe mit.
+
+### Können Helfende direkt vom Plan aus buchen?
+
+Ja. Ein Ort zeigt die Schichten des Tages mit „Buchen“. Es gelten dieselben Regeln wie überall, also zum Beispiel, wenn eine Schicht einem [Team](/features/teams) vorbehalten ist.
 
 ### Wer sieht den Lageplan?
 
 Alle in der Veranstaltung, sobald ein Plan ein Bild oder eine Zeichnung hat. Ändern können ihn nur Organisator:innen, Verantwortliche nicht. Von außerhalb der Veranstaltung sieht ihn niemand.
 
+### Wie viele Vorlagen kann ich behalten?
+
+Bis zu 20. In der Auswahl unter „Vorlage verwenden“ kannst du sie auch umbenennen oder löschen. Spätere Änderungen am Plan ändern die Vorlage nicht.
+
 ### Kommt der Lageplan mit, wenn wir die Veranstaltung kopieren?
 
 Ja. Orte, Pläne, Bilder, Zeichnungen und Pins kommen immer mit. Wie das geht, steht in [Veranstaltung fürs nächste Jahr kopieren](/guides/next-year).
 
-### Können Helfende direkt vom Plan aus buchen?
+### Kann ich den Plan auf dem Handy bearbeiten?
 
-Ja. Ein Ort zeigt die Schichten des Tages mit „Buchen“. Es gelten dieselben Regeln wie überall, also zum Beispiel, wenn eine Schicht einem [Team](/features/teams) vorbehalten ist.
+Ja, als Organisator:in. Der Stift oben öffnet die Bearbeitung, die Werkzeuge liegen dann unter dem Plan. „Markierungen & Bild“ zeigt die Liste der Orte.
+
+Pins setzt du per Antippen und verschiebst sie mit dem Finger.

@@ -24,13 +24,13 @@ Unter „Termine der Aufgabe“ wählst du „Ein Tag“, „Zeitraum“ oder �
 
 Unter „Zeitplan & Schichten“ legst du fest, wie ein Tag aufgeteilt wird:
 
-- „Standard-Startzeit“ und „Standard-Endzeit“, vorbelegt mit 10:00 und 18:00
-- „Schichtdauer“, vorbelegt mit 30 Minuten
-- „Personen pro Schicht“, vorbelegt mit 2
+- „Standard-Startzeit“ [[start]] und „Standard-Endzeit“, vorbelegt mit 10:00 und 18:00
+- „Schichtdauer“ [[duration]], vorbelegt mit 30 Minuten
+- „Personen pro Schicht“ [[people]], vorbelegt mit 2
 
 Geht die Zeit nicht genau auf, fragt WirkSam unter „Restzeit“, was mit dem Rest passieren soll. Bei mehreren Tagen kannst du unter „Datumsausnahmen“ einem Tag andere Zeiten geben.
 
-![Das Formular für die Schichten neben der Vorschau mit den Schichten, die daraus entstehen](shot:shift-schedule)
+![Der Abschnitt „Zeitplan & Schichten“ einer neuen Aufgabe, mit den vorbelegten Zeiten, der Schichtdauer und den Personen pro Schicht](shot:task-schedule)
 
 ## Vorschau prüfen und speichern
 
@@ -40,7 +40,7 @@ Passt alles, wähle „Aufgabe erstellen“. Du landest auf der Seite der neuen 
 
 ## Aufgabe veröffentlichen
 
-Eine neue Aufgabe ist ein Entwurf, Helfende sehen sie noch nicht. Wähle auf ihrer Seite „Jetzt veröffentlichen“. Auf dem Handy tippst du auf den Status „Entwurf“ neben dem Namen und wählst „Veröffentlicht“.
+Eine neue Aufgabe ist ein Entwurf, Helfende sehen sie noch nicht. Wähle auf ihrer Seite „Jetzt veröffentlichen“. Auf dem Handy tippst du auf den Status „Entwurf“ [[status]] neben dem Namen und wählst „Veröffentlicht“.
 
 Das machst du für jede Aufgabe einzeln.
 
@@ -50,11 +50,11 @@ Das machst du für jede Aufgabe einzeln.
 
 Öffne „Veranstaltungen verwalten“, auf dem Handy unter „Mehr“. Tippe in der Zeile deiner Veranstaltung auf den Stift, auf dem Handy wischst du die Tabelle dafür zur Seite. Im Tab „Personen“ steht weiter unten die Karte „Einladungen“:
 
-- **Per E-Mail:** Adressen unter „E-Mail-Adressen“ eintragen und „Einladung senden“ wählen.
-- **Per Link:** „Link erstellen“ kopiert einen Link, den du zum Beispiel in deine Gruppe schickst.
+- **Per E-Mail:** Adressen unter „E-Mail-Adressen“ [[emails]] eintragen und „Einladung senden“ wählen.
+- **Per Link:** „Link erstellen“ [[link]] kopiert einen Link, den du zum Beispiel in deine Gruppe schickst.
 
-Unter „Beitreten als“ ist „Mitglied“ vorgewählt, das reicht zum Buchen. Für Leute, die mitplanen sollen, stellst du „Organisator:in“ ein.
+Unter „Beitreten als“ [[role]] ist „Mitglied“ vorgewählt, das reicht zum Buchen. Für Leute, die mitplanen sollen, stellst du „Organisator:in“ ein.
 
 Schick den Eingeladenen am besten gleich die Anleitung [Loslegen als Helfer:in](/guides/volunteer-start) mit.
 
-![Der Tab „Personen“ in den Einstellungen der Veranstaltung](shot:event-people)
+![Die Karte „Einladungen“ mit dem Feld für E-Mail-Adressen, der Rolle und dem Knopf für den Link](shot:event-invitations)

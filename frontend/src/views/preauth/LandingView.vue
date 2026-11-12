@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { CircleHelpIcon, InfoIcon, LayoutGridIcon, UsersIcon, WorkflowIcon } from '@lucide/vue'
+import { CircleHelpIcon, InfoIcon, LayoutGridIcon, WorkflowIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -9,7 +9,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useSandboxStore } from '@/stores/sandbox'
 
 import LandingAbout from '@/components/landing/LandingAbout.vue'
-import LandingAudience from '@/components/landing/LandingAudience.vue'
 import LandingCta from '@/components/landing/LandingCta.vue'
 import LandingFaq from '@/components/landing/LandingFaq.vue'
 import LandingFeatures from '@/components/landing/LandingFeatures.vue'
@@ -35,7 +34,6 @@ const { t } = useI18n()
 const demoDialogOpen = ref(false)
 
 const sections = computed(() => [
-  { id: 'audience', label: t('preauth.landing.nav.audience'), icon: UsersIcon },
   { id: 'how-it-works', label: t('preauth.landing.nav.howItWorks'), icon: WorkflowIcon },
   { id: 'features', label: t('preauth.landing.nav.features'), icon: LayoutGridIcon },
   { id: 'about', label: t('preauth.landing.nav.about'), icon: InfoIcon },
@@ -67,7 +65,6 @@ function openDemo() {
 
     <LandingSectionNav :items="sections" />
 
-    <LandingAudience />
     <LandingJourney />
     <LandingFeatures />
     <LandingAbout />

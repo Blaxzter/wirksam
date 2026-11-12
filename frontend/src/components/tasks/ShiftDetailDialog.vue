@@ -497,7 +497,11 @@ const actionClass = computed(() =>
         <template v-else-if="resolvedShift">
           <!-- Where, what, and what it earns: a row of chips that wraps -->
           <ul v-if="facts" class="flex flex-wrap gap-1.5" data-testid="shift-detail-facts">
-            <li v-if="resolvedShift.location" :class="chipClass">
+            <li
+              v-if="resolvedShift.location"
+              :class="chipClass"
+              data-testid="shift-detail-location"
+            >
               <MapPin class="size-3.5 shrink-0" aria-hidden="true" />
               <span class="truncate">{{ resolvedShift.location }}</span>
             </li>

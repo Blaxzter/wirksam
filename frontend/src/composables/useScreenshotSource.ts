@@ -10,12 +10,29 @@ import {
 
 import { useI18n } from 'vue-i18n'
 
+import type { DocMark } from '@/lib/doc-types'
+
 /** One product screenshot, as shown in a feature row and in the lightbox. */
 export interface ScreenshotItem {
   /** File basename, without the `-light`/`-dark` suffix or extension. */
   name: string
   alt: string
   caption?: string
+  /** Taken on a phone, so taller than wide. */
+  phone?: boolean
+  /** The numbers the text beside it points at. */
+  marks?: DocMark[]
+}
+
+/**
+ * One part of a capture, for a frame too small to show all of it legibly:
+ * the top left corner as a share of the capture's width and height, and how
+ * wide the capture is drawn, in frame widths.
+ */
+export interface ScreenshotFocus {
+  x: number
+  y: number
+  zoom: number
 }
 
 /** Which capture is being tried: the localised one, the English one, or neither. */
