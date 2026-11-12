@@ -14,6 +14,7 @@
         "inbox": "Postfach",
         "more": "Mehr",
         "moreDescription": "Alles Weitere in WirkSam",
+        "moreWaiting": "Mehr, {count} Anfrage zu entscheiden | Mehr, {count} Anfragen zu entscheiden",
         "tasks": "Aufgaben"
     },
     "sidebar": {
@@ -30,6 +31,9 @@
             "availability": {
                 "description": "Deine Verfügbarkeit für die ausgewählte Veranstaltung",
                 "label": "Verfügbarkeit"
+            },
+            "eventSettings": {
+                "label": "Veranstaltung"
             },
             "home": {
                 "label": "Startseite"

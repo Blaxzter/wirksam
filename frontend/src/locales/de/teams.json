@@ -118,7 +118,6 @@
     },
     "nav": {
         "label": "Teams",
-        "moreWaiting": "Mehr, {count} Team-Anfrage zu entscheiden | Mehr, {count} Team-Anfragen zu entscheiden",
         "waiting": "{count} Anfrage zu entscheiden | {count} Anfragen zu entscheiden"
     },
     "page": {

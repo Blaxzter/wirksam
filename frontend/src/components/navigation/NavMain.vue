@@ -101,6 +101,27 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
     ([key, value]) => String(route.params[key]) === String(value),
   )
 }
+
+/**
+ * A sub-item is current when its route is, and so is its query: the tabs of
+ * one page (`?tab=people`) share a route name. A query value left
+ * `undefined` means "not set", which is how the page's first tab reads.
+ */
+const isSubItemActive = (subItem: NavSubItem) => {
+  if (!isRouteActive(subItem.routeName, subItem.routeParams)) return false
+  return Object.entries(subItem.routeQuery ?? {}).every(([key, value]) =>
+    value == null ? route.query[key] == null : String(route.query[key]) === String(value),
+  )
+}
+
+/** Sub-items can share a route (every task, every tab), so the key takes all of it. */
+const subItemKey = (subItem: NavSubItem) =>
+  [
+    subItem.routeName ?? subItem.url ?? '',
+    JSON.stringify(subItem.routeParams ?? {}),
+    JSON.stringify(subItem.routeQuery ?? {}),
+    subItem.titleKey ?? subItem.title,
+  ].join('|')
 </script>
 
 <template>
@@ -162,6 +183,14 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
                     >
                       <component :is="item.icon" v-if="item.icon" class="size-4 shrink-0" />
                       <span class="truncate">{{ resolveTitle(item) }}</span>
+                      <span
+                        v-if="item.badge"
+                        class="ml-auto flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-700 px-1 text-[10px] font-bold text-white"
+                        :data-testid="'sidebar-badge-' + item.routeName"
+                      >
+                        <span aria-hidden="true">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+                        <span class="sr-only">{{ item.badgeLabel ?? item.badge }}</span>
+                      </span>
                     </RouterLink>
                   </TooltipTrigger>
                   <TooltipContent
@@ -191,14 +220,8 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
             </SidebarSplitButton>
             <CollapsibleContent>
               <SidebarMenuSub class="mr-0 max-h-48 overflow-y-auto scrollbar-none">
-                <SidebarMenuSubItem
-                  v-for="subItem in item.items"
-                  :key="subItem.routeName ?? subItem.titleKey ?? subItem.title"
-                >
-                  <SidebarMenuSubButton
-                    :is-active="isRouteActive(subItem.routeName, subItem.routeParams)"
-                    as-child
-                  >
+                <SidebarMenuSubItem v-for="subItem in item.items" :key="subItemKey(subItem)">
+                  <SidebarMenuSubButton :is-active="isSubItemActive(subItem)" as-child>
                     <RouterLink
                       v-if="subItem.routeName"
                       :to="{
@@ -236,7 +259,7 @@ const isRouteActive = (routeName?: string, routeParams?: Record<string, string>)
                         </TooltipContent>
                       </Tooltip>
                       <span
-                        v-else-if="isRouteActive(subItem.routeName, subItem.routeParams)"
+                        v-else-if="isSubItemActive(subItem)"
                         class="ml-auto size-1.5 rounded-full bg-foreground"
                       />
                     </RouterLink>

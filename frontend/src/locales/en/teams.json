@@ -118,7 +118,6 @@
     },
     "nav": {
         "label": "Teams",
-        "moreWaiting": "More, {count} team request to decide | More, {count} team requests to decide",
         "waiting": "{count} request to decide | {count} requests to decide"
     },
     "page": {

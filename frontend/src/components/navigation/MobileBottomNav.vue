@@ -7,6 +7,7 @@ import {
   Bell,
   BookCheck,
   CalendarCheck,
+  CalendarCog,
   CalendarDays,
   CalendarRange,
   House,
@@ -48,6 +49,17 @@ const showTeams = computed(() => {
 })
 /** Team requests this user may decide in the selected event. */
 const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
+/** Same rule as the sidebar: the selected event's settings, for whoever runs it. */
+const canManageSelected = computed(() => {
+  const event = authStore.selectedEvent
+  return !!event && authStore.canManageEvent(event.id)
+})
+/** Join requests waiting in the selected event; only counted for its admins. */
+const joinRequestCount = computed(() =>
+  canManageSelected.value ? (authStore.selectedEvent?.pending_request_count ?? 0) : 0,
+)
+/** Everything in the sheet that waits on a decision. */
+const waitingCount = computed(() => teamRequestCount.value + joinRequestCount.value)
 
 interface MoreItem {
   routeName: string
@@ -110,6 +122,14 @@ const moreGroups = computed<MoreItem[][]>(() => {
   )
 
   const manage: MoreItem[] = []
+  if (canManageSelected.value) {
+    manage.push({
+      routeName: 'event-settings',
+      labelKey: 'navigation.sidebar.items.eventSettings.label',
+      icon: CalendarCog,
+      badge: joinRequestCount.value,
+    })
+  }
   if (authStore.isManager) {
     manage.push(
       { routeName: 'reporting', labelKey: 'admin.reporting.title', icon: BarChart3 },
@@ -243,8 +263,8 @@ const notificationDisplayCount = computed(() => {
       ]"
       :aria-expanded="moreOpen"
       :aria-label="
-        teamRequestCount > 0
-          ? t('teams.nav.moreWaiting', { count: teamRequestCount }, teamRequestCount)
+        waitingCount > 0
+          ? t('navigation.mobileBottomNav.moreWaiting', { count: waitingCount }, waitingCount)
           : undefined
       "
       @click="moreOpen = true"
@@ -253,7 +273,7 @@ const notificationDisplayCount = computed(() => {
         <Menu class="size-5" aria-hidden="true" />
         <!-- Something to decide outranks something new to read. -->
         <span
-          v-if="teamRequestCount > 0"
+          v-if="waitingCount > 0"
           class="absolute top-0.5 right-3 size-2 rounded-full bg-red-700"
           data-testid="mobile-nav-more-dot"
         />
