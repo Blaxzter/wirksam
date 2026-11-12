@@ -107,6 +107,10 @@ self.addEventListener('notificationclick', (task) => {
     url = `/app/tasks/${data.task_id}`
   } else if (data.team_id && data.event_id) {
     url = `/app/teams/${data.event_id}?team=${data.team_id}`
+  } else if (data.event_id && data.user_id) {
+    // A join request or an accepted invitation: the People tab, where the
+    // request is decided and the newcomer shows up.
+    url = `/app/event-settings/${data.event_id}?tab=people`
   } else if (data.event_id) {
     url = `/app/event-settings/${data.event_id}`
   } else if (data.booking_id) {
