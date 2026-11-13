@@ -73,6 +73,21 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/*
+ * The signed-in app's top bar is sticky (`PostAuthHeader.vue`), which sets
+ * `data-app-header` and `--app-header-height` on <html> while it is mounted.
+ * Anything scrolled into view (`scrollIntoView`, focus, a `#hash`) stops below
+ * the bar and the demo banner instead of underneath them. The public pages
+ * leave this off: their sections carry their own `scroll-mt-*`.
+ *
+ * Exactly the bar, no breathing room: a `StickyPageBar` pins at this same line,
+ * and `scrollIntoView({ block: 'nearest' })` on something inside a pinned bar
+ * (the settings tab row keeps its tab in view) would otherwise nudge the page.
+ */
+html[data-app-header] {
+  scroll-padding-top: calc(var(--demo-banner-height, 0px) + var(--app-header-height));
+}
+
 /* The warm dotted ground a venue plan lies on (map page and editor). */
 @utility map-ground {
   background-color: var(--map-canvas);

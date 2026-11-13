@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, useTemplateRef } from 'vue'
 
 import { ArrowLeft } from '@lucide/vue'
+import { useResizeObserver, useWindowScroll } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -44,11 +45,44 @@ const mobileParent = computed(() => {
   }
   return null
 })
+
+/**
+ * The bar stays at the top of the window while the page scrolls, so the way
+ * back, the inbox and the account menu are always one tap away.
+ *
+ * Its height goes on the root as `--app-header-height` for whatever pins itself
+ * beneath it (`StickyPageBar`, the settings and changelog side navs), and
+ * `data-app-header` turns on the matching `scroll-padding-top` in index.css, so
+ * `scrollIntoView` and focus never park something under the bar. It is measured
+ * rather than restated because the bar shrinks while the sidebar is collapsed.
+ */
+const header = useTemplateRef<HTMLElement>('header')
+
+useResizeObserver(header, ([entry]) => {
+  const height = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height
+  const root = document.documentElement
+  root.style.setProperty('--app-header-height', `${height}px`)
+  root.dataset.appHeader = ''
+})
+
+onBeforeUnmount(() => {
+  const root = document.documentElement
+  root.style.removeProperty('--app-header-height')
+  delete root.dataset.appHeader
+})
+
+// A hairline under the bar once the page has scrolled beneath it.
+const { y: scrollY } = useWindowScroll()
+const scrolled = computed(() => scrollY.value > 0)
 </script>
 
 <template>
+  <!-- A shadow rather than a border, so the line costs no height and nothing
+       below shifts by a pixel when it appears. -->
   <header
-    class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
+    ref="header"
+    class="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 bg-background transition-[width,height,box-shadow] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
+    :class="scrolled ? 'shadow-[0_1px_0_var(--border)]' : undefined"
   >
     <div class="flex flex-1 items-center gap-2 px-4">
       <!-- Phones reach the rest of the app through the bottom nav's "More" tab. -->

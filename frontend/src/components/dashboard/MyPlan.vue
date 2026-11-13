@@ -100,7 +100,7 @@ const wideTimes = computed(() =>
     id="dashboard-plan"
     data-testid="dashboard-my-shifts"
     aria-labelledby="dashboard-plan-title"
-    class="min-w-0 scroll-mt-[calc(var(--demo-banner-height,0px)+1rem)] @4xl:rounded-[22px] @4xl:border @4xl:bg-card @4xl:px-4 @4xl:pt-5 @4xl:pb-3 @4xl:text-card-foreground"
+    class="min-w-0 scroll-mt-4 @4xl:rounded-[22px] @4xl:border @4xl:bg-card @4xl:px-4 @4xl:pt-5 @4xl:pb-3 @4xl:text-card-foreground"
   >
     <div
       class="mb-1.5 flex items-center justify-between gap-2 @4xl:mb-0 @4xl:items-start @4xl:px-2 @4xl:pb-1"

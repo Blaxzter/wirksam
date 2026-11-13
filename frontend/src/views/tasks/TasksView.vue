@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import TaskCalendarView from '@/components/tasks/TaskCalendarView.vue'
@@ -344,8 +345,9 @@ onMounted(loadTasks)
       </div>
     </div>
 
-    <!-- Search & Filter (hidden for calendar — it has its own navigation) -->
-    <div
+    <!-- Search & Filter (hidden for calendar — it has its own navigation).
+         Pinned under the top bar, so narrowing a long board needs no trip back up. -->
+    <StickyPageBar
       v-if="filters.viewMode !== 'calendar'"
       data-testid="task-board-filters"
       class="flex flex-wrap items-center gap-4"
@@ -360,7 +362,7 @@ onMounted(loadTasks)
         />
       </div>
       <TaskFilterMenu />
-    </div>
+    </StickyPageBar>
 
     <!-- Loading (only shown on initial load, not calendar refetches) -->
     <div v-if="loading && feedItems.length === 0" class="py-12 text-center text-muted-foreground">

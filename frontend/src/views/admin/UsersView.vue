@@ -14,6 +14,7 @@ import RejectUserDialog from '@/components/admin/users/RejectUserDialog.vue'
 import UsersGroupedList from '@/components/admin/users/UsersGroupedList.vue'
 import UserStatsCards from '@/components/admin/users/UserStatsCards.vue'
 import UsersTable from '@/components/admin/users/UsersTable.vue'
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import {
@@ -322,14 +323,17 @@ onMounted(loadUsers)
     />
 
 
-    <div class="space-y-3 pt-4">
-      <div class="flex items-baseline justify-between">
-        <h2 class="text-lg font-semibold">
-          {{ currentSectionLabel }}
-        </h2>
-        <span class="text-sm text-muted-foreground">{{ currentTotal }}</span>
-      </div>
+    <div class="flex items-baseline justify-between pt-4">
+      <h2 class="text-lg font-semibold">
+        {{ currentSectionLabel }}
+      </h2>
+      <span class="text-sm text-muted-foreground">{{ currentTotal }}</span>
+    </div>
 
+    <!-- Search and status pinned under the top bar while the table scrolls.
+         A sibling of the table rather than wrapped with the heading: a sticky
+         element only sticks within its parent. -->
+    <StickyPageBar class="-mt-5 space-y-3">
       <div class="relative">
         <Search
           class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -364,7 +368,7 @@ onMounted(loadUsers)
           <span class="ml-1.5 text-xs opacity-70">{{ option.count }}</span>
         </Button>
       </div>
-    </div>
+    </StickyPageBar>
 
     <div v-if="loading && users.length === 0" class="py-12 text-center text-muted-foreground">
       {{ t('common.states.loading') }}

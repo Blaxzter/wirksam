@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import NotificationRow from '@/components/notifications/NotificationRow.vue'
 
 import { groupByDay } from '@/lib/notifications'
@@ -311,51 +312,53 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Classification pills (horizontal scroll, no wrap) -->
-    <div class="relative overflow-hidden">
-      <div
-        class="from-background pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r to-transparent transition-opacity duration-200"
-        :class="showFadeLeft ? 'opacity-100' : 'opacity-0'"
-      />
-      <div
-        class="from-background pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l to-transparent transition-opacity duration-200"
-        :class="showFadeRight ? 'opacity-100' : 'opacity-0'"
-      />
-      <div
-        ref="pillsContainer"
-        role="tablist"
-        class="no-scrollbar touch-pan-x flex gap-1.5 overflow-x-auto scroll-smooth"
-        @scroll="updatePillsOverflow"
-      >
-        <button
-          v-for="pill in filterPills"
-          :key="pill.key"
-          type="button"
-          role="tab"
-          :aria-selected="activeFilter === pill.key"
-          class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors"
-          :class="
-            activeFilter === pill.key
-              ? 'bg-foreground text-background'
-              : 'bg-card text-muted-foreground border-border hover:bg-muted border'
-          "
-          @click="activeFilter = pill.key"
+    <!-- Classification pills (horizontal scroll, no wrap), pinned under the top bar -->
+    <StickyPageBar>
+      <div class="relative overflow-hidden">
+        <div
+          class="from-background pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r to-transparent transition-opacity duration-200"
+          :class="showFadeLeft ? 'opacity-100' : 'opacity-0'"
+        />
+        <div
+          class="from-background pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l to-transparent transition-opacity duration-200"
+          :class="showFadeRight ? 'opacity-100' : 'opacity-0'"
+        />
+        <div
+          ref="pillsContainer"
+          role="tablist"
+          class="no-scrollbar touch-pan-x flex gap-1.5 overflow-x-auto scroll-smooth"
+          @scroll="updatePillsOverflow"
         >
-          {{ pill.label }}
-          <span
-            v-if="pill.count > 0"
-            class="rounded-full px-1.5 py-px text-[10px] leading-tight font-semibold"
+          <button
+            v-for="pill in filterPills"
+            :key="pill.key"
+            type="button"
+            role="tab"
+            :aria-selected="activeFilter === pill.key"
+            class="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors"
             :class="
               activeFilter === pill.key
-                ? 'bg-background/20 text-background'
-                : 'bg-muted text-foreground'
+                ? 'bg-foreground text-background'
+                : 'bg-card text-muted-foreground border-border hover:bg-muted border'
             "
+            @click="activeFilter = pill.key"
           >
-            {{ pill.count }}
-          </span>
-        </button>
+            {{ pill.label }}
+            <span
+              v-if="pill.count > 0"
+              class="rounded-full px-1.5 py-px text-[10px] leading-tight font-semibold"
+              :class="
+                activeFilter === pill.key
+                  ? 'bg-background/20 text-background'
+                  : 'bg-muted text-foreground'
+              "
+            >
+              {{ pill.count }}
+            </span>
+          </button>
+        </div>
       </div>
-    </div>
+    </StickyPageBar>
 
     <!-- Initial load: skeleton cards mirroring real entries. -->
     <ul
