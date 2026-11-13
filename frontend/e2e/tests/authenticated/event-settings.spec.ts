@@ -104,6 +104,35 @@ test.describe('Event Settings – details tab', () => {
     }
   })
 
+  test('switching tabs keeps the page instead of loading the event again', async ({
+    adminPage: page,
+  }) => {
+    await page.goto(`/app/event-settings/${event.id}`)
+    await expect(page.locator('input').first()).toHaveValue(event.name)
+
+    const eventReads: string[] = []
+    page.on('request', (req) => {
+      if (req.method() === 'GET' && new URL(req.url()).pathname.endsWith(`/events/${event.id}`))
+        eventReads.push(req.url())
+    })
+    const headingAt = async () => {
+      const box = await page.getByTestId('page-heading').boundingBox()
+      return { x: box?.x, y: box?.y }
+    }
+    const heading = await headingAt()
+
+    for (const tab of ['people', 'locations', 'map', 'details'] as const) {
+      await page.getByTestId(`tab-${tab}`).click()
+      await expect(page).toHaveURL(
+        tab === 'details' ? /event-settings\/[^?]+$/ : new RegExp(`\\?tab=${tab}$`),
+      )
+      // The heading holds still: the map tab used to widen the page under it.
+      expect(await headingAt()).toEqual(heading)
+    }
+    await expect(page.locator('input').first()).toHaveValue(event.name)
+    expect(eventReads).toEqual([])
+  })
+
   test('falls back to selected event when no eventId query is provided', async ({
     adminPage: page,
     workerEvent,
