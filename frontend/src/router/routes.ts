@@ -193,10 +193,14 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           },
         },
         {
+          // `?tab=` switches tabs in place: keyed by the full path, every tab
+          // would remount the page and load the whole event again. A different
+          // event is the view's own watcher's job.
           path: 'event-settings/:eventId?',
           name: 'event-settings',
           component: () => import('@/views/events/EventSettingsView.vue'),
           meta: {
+            routerViewKey: 'event-settings',
             breadcrumbs: [{ title: 'Event Details', titleKey: 'duties.events.detail.title' }],
           },
         },

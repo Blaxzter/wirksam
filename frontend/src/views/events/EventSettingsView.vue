@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { type Ref, computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Info, Map as MapIcon, MapPin, Pencil, Ticket, Users, UsersRound } from '@lucide/vue'
+import { Info, Map as MapIcon, MapPin, Pencil, Ticket, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -49,6 +49,8 @@ type Tab = 'details' | 'people' | 'vouchers' | 'locations' | 'map'
 const activeTab = ref<Tab>('details')
 
 function readTabFromQuery() {
+  // The route also changes on the way out; another page's `?tab=` is not ours.
+  if (route.name !== 'event-settings') return
   const qTab = route.query.tab
   // Teams moved to a page of their own; old `?tab=teams` links land there.
   if (qTab === 'teams') {
@@ -122,9 +124,6 @@ const shownTab = computed<Tab>(() => {
   return activeTab.value
 })
 
-/** Requests a lead or admin could decide, across every team they manage. */
-const teamRequestCount = computed(() => event.value?.pending_team_request_count ?? 0)
-
 // On a phone the tab row scrolls sideways: keep the chosen tab in view, so a
 // `?tab=map` link does not open with its tab cut off at the edge.
 const tabRow = ref<HTMLElement | null>(null)
@@ -139,53 +138,43 @@ watch(
   { immediate: true },
 )
 
-async function loadMembers() {
-  if (!targetEventId.value) return
+/**
+ * Read one list of the event into `target`. The page outlives a switch to
+ * another event (tabs no longer remount it), so an answer that arrives after
+ * the switch is dropped rather than shown under the new event's name.
+ */
+async function loadList<T>(
+  target: Ref<T[]>,
+  url: string,
+  query?: Record<string, string>,
+): Promise<void> {
+  const id = targetEventId.value
+  if (!id) return
+  let data: T[] = []
   try {
-    const res = await get<{ data: EventMemberRead[] }>({
-      url: `/events/${targetEventId.value}/members`,
-    })
-    members.value = res.data
+    data = (await get<{ data: T[] }>({ url: `/events/${id}/${url}`, query })).data
   } catch {
-    members.value = []
+    // An empty list, as before: the section shows its empty state.
   }
+  if (id === targetEventId.value) target.value = data
 }
 
-async function loadInvitations() {
-  if (!targetEventId.value || !canManage.value) return
-  try {
-    const res = await get<{ data: EventInvitationRead[] }>({
-      url: `/events/${targetEventId.value}/invitations`,
-    })
-    invitations.value = res.data
-  } catch {
-    invitations.value = []
-  }
+function loadMembers() {
+  return loadList(members, 'members')
 }
 
-async function loadJoinRequests() {
-  if (!targetEventId.value || !canManage.value) return
-  try {
-    const res = await get<{ data: EventJoinRequestRead[] }>({
-      url: `/events/${targetEventId.value}/join-requests`,
-      query: { status: 'pending' },
-    })
-    joinRequests.value = res.data
-  } catch {
-    joinRequests.value = []
-  }
+function loadInvitations() {
+  return canManage.value ? loadList(invitations, 'invitations') : Promise.resolve()
 }
 
-async function loadHours() {
-  if (!targetEventId.value || !canManage.value) return
-  try {
-    const res = await get<{ data: VolunteerHours[] }>({
-      url: `/events/${targetEventId.value}/hours`,
-    })
-    hours.value = res.data
-  } catch {
-    hours.value = []
-  }
+function loadJoinRequests() {
+  return canManage.value
+    ? loadList(joinRequests, 'join-requests', { status: 'pending' })
+    : Promise.resolve()
+}
+
+function loadHours() {
+  return canManage.value ? loadList(hours, 'hours') : Promise.resolve()
 }
 
 /** Total minutes per member, for the badge on each roster row. */
@@ -212,23 +201,25 @@ async function handleLeft() {
 }
 
 async function loadEvent() {
-  if (!targetEventId.value) return
+  const id = targetEventId.value
+  if (!id) return
   loading.value = true
   try {
     const [eventRes, tasksRes] = await Promise.all([
-      get<{ data: EventRead }>({ url: `/events/${targetEventId.value}` }),
+      get<{ data: EventRead }>({ url: `/events/${id}` }),
       get<{ data: TaskListResponse }>({
         url: '/tasks/',
-        query: { limit: 200, event_id: targetEventId.value, all_events: true },
+        query: { limit: 200, event_id: id, all_events: true },
       }),
     ])
+    if (id !== targetEventId.value) return
     event.value = eventRes.data
     tasks.value = tasksRes.data.items
     if (isMember.value) await loadPeople()
   } catch (error) {
-    toastApiError(error)
+    if (id === targetEventId.value) toastApiError(error)
   } finally {
-    loading.value = false
+    if (id === targetEventId.value) loading.value = false
   }
 }
 
@@ -250,7 +241,9 @@ onMounted(loadEvent)
 </script>
 
 <template>
-  <div class="mx-auto space-y-6" :class="shownTab === 'map' ? 'max-w-6xl' : 'max-w-4xl'">
+  <!-- One width for every tab, so the heading and the tab row stay put. The map
+       editor uses all of it; the other tabs keep the narrower column. -->
+  <div class="mx-auto max-w-6xl space-y-6">
     <div class="space-y-2">
       <h1 data-testid="page-heading" class="text-2xl sm:text-3xl font-bold">
         {{ t('duties.events.detail.title') }}
@@ -297,27 +290,6 @@ onMounted(loadEvent)
           {{ joinRequests.length }}
         </span>
       </Button>
-      <!-- A shortcut, not a tab: teams have their own page in the main
-           navigation, because volunteers use them and never come here. -->
-      <Button
-        v-if="isMember && targetEventId"
-        variant="ghost"
-        class="shrink-0 rounded-none border-b-2 border-transparent"
-        as-child
-        data-testid="tab-teams"
-      >
-        <RouterLink :to="{ name: 'teams', params: { eventId: targetEventId } }">
-          <UsersRound class="mr-2 h-4 w-4" />
-          {{ t('teams.tab') }}
-          <span
-            v-if="teamRequestCount > 0"
-            class="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground"
-            data-testid="teams-tab-badge"
-          >
-            {{ teamRequestCount }}
-          </span>
-        </RouterLink>
-      </Button>
       <template v-if="canManage">
         <Button
           v-if="usesVouchers"
@@ -363,7 +335,13 @@ onMounted(loadEvent)
       {{ t('common.states.loading') }}
     </div>
 
-    <template v-else-if="event && targetEventId">
+    <VenueMapEditor
+      v-else-if="event && targetEventId && shownTab === 'map'"
+      :event-id="targetEventId"
+      :sandbox="!!event.is_sandbox"
+    />
+
+    <div v-else-if="event && targetEventId" class="max-w-4xl">
       <template v-if="shownTab === 'details'">
         <EventEditForm
           v-if="canManage"
@@ -410,11 +388,6 @@ onMounted(loadEvent)
         <EventVouchers :event-id="targetEventId" :members="members" />
       </div>
       <EventLocations v-else-if="shownTab === 'locations'" :event-id="targetEventId" />
-      <VenueMapEditor
-        v-else-if="shownTab === 'map'"
-        :event-id="targetEventId"
-        :sandbox="!!event?.is_sandbox"
-      />
-    </template>
+    </div>
   </div>
 </template>

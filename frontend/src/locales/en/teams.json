@@ -235,6 +235,5 @@
         "tasks": "{count} task | {count} tasks",
         "unlocks": "Unlocks {tasks}",
         "unlocksLabel": "Unlocks"
-    },
-    "tab": "Teams"
+    }
 }

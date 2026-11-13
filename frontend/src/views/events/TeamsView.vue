@@ -84,19 +84,13 @@ const others = computed(() =>
 // Bumped per load: switching events mid-request must not show the old event's teams.
 let generation = 0
 
-async function loadDecisionData(id: string, gen: number) {
-  if (!canDecide.value) {
-    requests.value = []
-    members.value = []
-    return
-  }
+/** The waiting requests and the event's people, for whoever decides requests. */
+async function fetchDecisionData(id: string) {
   const [reqRes, memRes] = await Promise.all([
     get<{ data: EventTeamMemberRead[] }>({ url: `/events/${id}/teams/requests` }),
     get<{ data: EventMemberRead[] }>({ url: `/events/${id}/members` }),
   ])
-  if (gen !== generation) return
-  requests.value = reqRes.data
-  members.value = memRes.data
+  return { requests: reqRes.data, members: memRes.data }
 }
 
 async function load({ quiet = false } = {}) {
@@ -109,14 +103,23 @@ async function load({ quiet = false } = {}) {
   if (!quiet) loading.value = true
   loadError.value = false
   try {
-    const [eventRes, teamsRes] = await Promise.all([
+    // An event admin decides requests whatever the teams say, so theirs go out
+    // with the first reads; a team lead's wait for the teams to say so.
+    const [eventRes, teamsRes, adminData] = await Promise.all([
       get<{ data: EventRead }>({ url: `/events/${id}` }),
       get<{ data: EventTeamRead[] }>({ url: `/events/${id}/teams` }),
+      canEdit.value ? fetchDecisionData(id) : null,
     ])
     if (gen !== generation) return
+    const decides = canEdit.value || teamsRes.data.some((team) => team.can_manage)
+    const decisionData = adminData ?? (decides ? await fetchDecisionData(id) : null)
+    if (gen !== generation) return
+    // All at once: the requests sit above the teams, and arriving after them
+    // they would push the whole page down.
     event.value = eventRes.data
     teams.value = teamsRes.data
-    await loadDecisionData(id, gen)
+    requests.value = decisionData?.requests ?? []
+    members.value = decisionData?.members ?? []
   } catch (error) {
     if (gen !== generation) return
     // A failed reload keeps what is on screen and says so; a failed first

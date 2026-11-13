@@ -235,6 +235,5 @@
         "tasks": "{count} Aufgabe | {count} Aufgaben",
         "unlocks": "Schaltet {tasks} frei",
         "unlocksLabel": "Schaltet frei"
-    },
-    "tab": "Teams"
+    }
 }
