@@ -43,13 +43,13 @@ Not yet covered, and not currently tracked by an issue:
 | ------------ | ---------- | ------- |
 | `a11y`       | 5          | 38      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 246     |
+| `chromium`   | 29         | 247     |
 | `member`     | 3          | 29      |
 | `mobile`     | 6          | 22      |
-| `multi-user` | 7          | 74      |
+| `multi-user` | 7          | 75      |
 | `public`     | 8          | 51      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **481** |
+| **Total**    | **64**     | **483** |
 
 ## Inventory
 
@@ -164,7 +164,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 246 tests
+### Project `chromium` — 29 files, 247 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -332,14 +332,15 @@ Not yet covered, and not currently tracked by an issue:
   - a plain participant is bounced off the wizard
   - running some other event does not open the wizard for this one
 
-#### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 16 tests
+#### `frontend/e2e/tests/authenticated/event-settings.spec.ts` — 17 tests
 
-- **Event Settings – details tab** (6)
+- **Event Settings – details tab** (7)
   - details tab is the default view
   - edit form is pre-filled with the target event data
   - can update event name via edit form
   - can update event description
   - a draft can be published and made public
+  - switching tabs keeps the page instead of loading the event again
   - falls back to selected event when no eventId query is provided
 - **Event Settings – date constraints** (4)
   - shows calendar legend when tasks exist
@@ -683,7 +684,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 74 tests
+### Project `multi-user` — 7 files, 75 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -749,15 +750,16 @@ Not yet covered, and not currently tracked by an issue:
   - featuring is refused for a private event
   - a member already in the event does not see it offered again
 
-#### `frontend/e2e/tests/multi-user/event-teams.spec.ts` — 6 tests
+#### `frontend/e2e/tests/multi-user/event-teams.spec.ts` — 7 tests
 
 - **Event teams – setting up** (3)
   - an organiser creates a team with a requirement from the Teams page
   - the task form reserves a task for one team
   - a volunteer sees the Teams page without the organiser controls
-- **Event teams – asking, reviewing and booking** (3)
+- **Event teams – asking, reviewing and booking** (4)
   - a non-member cannot book a reserved task
   - asking with a file, approving after the check, then booking
+  - the waiting requests arrive with the teams, not after them
   - declining keeps the task locked and deletes the file
 
 #### `frontend/e2e/tests/multi-user/events-availability-cross-user.spec.ts` — 6 tests

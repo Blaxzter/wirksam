@@ -314,6 +314,36 @@ test.describe('Event teams – asking, reviewing and booking', () => {
     await expect(disposablePage.getByTestId(`shift-card-${shift.id}`)).toContainText('1 of 2')
   })
 
+  test('the waiting requests arrive with the teams, not after them', async ({
+    adminPage,
+    disposablePage,
+  }) => {
+    await api(disposablePage, 'POST', `/events/${event.id}/teams/${team.id}/join`, {
+      message: null,
+    })
+    // Hold the requests back. Shown as soon as they land, they would appear
+    // above teams already on screen and push the whole page down. `fallback`,
+    // not `continue`: the fixture's own route adds the identity header.
+    await adminPage.route(`**/events/${event.id}/teams/requests`, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await route.fallback()
+    })
+
+    await adminPage.goto(teamsUrl(event.id))
+    // Checked every frame: in the one where the teams first show, are the
+    // requests there too?
+    const firstFrame = await adminPage.waitForFunction(
+      () =>
+        document.querySelector('[data-testid="teams-manage-list"]') && {
+          requests: !!document.querySelector('[data-testid="team-requests"]'),
+        },
+      undefined,
+      // The page load plus the held-back second; more than the 5 s default.
+      { polling: 'raf', timeout: 10_000 },
+    )
+    expect(await firstFrame.jsonValue()).toEqual({ requests: true })
+  })
+
   test('declining keeps the task locked and deletes the file', async ({
     adminPage,
     disposablePage,
