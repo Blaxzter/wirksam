@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+import ScrollRow from '@/components/utils/ScrollRow.vue'
+
 import ShiftCalendarDay from './ShiftCalendarDay.vue'
 import ShiftCalendarMonth from './ShiftCalendarMonth.vue'
 import ShiftCalendarWeek from './ShiftCalendarWeek.vue'
@@ -198,7 +200,6 @@ const goToToday = () => {
 // ── Month picker ──
 
 const pickerOpen = ref(false)
-const monthPickerScroll = ref<HTMLElement>()
 const activeMonthBtn = ref<HTMLElement | null>(null)
 
 const monthNamesShort = computed(() => {
@@ -350,10 +351,10 @@ watch(calendarDate, (d) => emit('update:calendarDate', dateToStr(d)))
   </div>
 
   <!-- Inline month picker -->
-  <div
+  <ScrollRow
     v-if="pickerOpen"
-    ref="monthPickerScroll"
-    class="flex items-center gap-2 overflow-x-auto no-scrollbar touch-pan-x rounded-md border bg-muted/30 p-2"
+    class="rounded-md border bg-muted/30 p-2"
+    content-class="items-center gap-2"
   >
     <template v-for="entry in monthPickerItems" :key="entry.key">
       <div
@@ -381,7 +382,7 @@ watch(calendarDate, (d) => emit('update:calendarDate', dateToStr(d)))
         {{ entry.label }}
       </button>
     </template>
-  </div>
+  </ScrollRow>
 
   <!-- View components -->
   <ShiftCalendarMonth
@@ -420,13 +421,3 @@ watch(calendarDate, (d) => emit('update:calendarDate', dateToStr(d)))
     @navigate-booking="emit('navigateBooking', $event)"
   />
 </template>
-
-<style scoped>
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-</style>

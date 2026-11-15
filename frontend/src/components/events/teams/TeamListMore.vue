@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 
 import { joinNames } from '@/components/events/teams/teamHelpers'
+import ScrollRow from '@/components/utils/ScrollRow.vue'
 
 import type { EventTeamRead } from '@/client/types.gen'
 
@@ -122,11 +123,7 @@ function joinLabelNamed(team: EventTeamRead): string {
         {{ t('teams.more.title') }} · {{ teams.length }}
       </h2>
       <template v-if="compact">
-        <div
-          role="group"
-          :aria-label="t('teams.more.filterLabel')"
-          class="flex gap-1.5 overflow-x-auto"
-        >
+        <ScrollRow role="group" :aria-label="t('teams.more.filterLabel')" content-class="gap-1.5">
           <Button
             v-for="f in filters"
             :key="f.value"
@@ -139,7 +136,7 @@ function joinLabelNamed(team: EventTeamRead): string {
           >
             {{ t(f.key) }}
           </Button>
-        </div>
+        </ScrollRow>
         <div class="relative w-full sm:w-56">
           <Search
             class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"

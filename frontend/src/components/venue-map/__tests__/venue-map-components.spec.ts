@@ -484,7 +484,8 @@ describe('VenuePlanSwitcher', () => {
       props: { plans, modelValue: 'a' },
       global: { plugins: [i18n] },
     })
-    const buttons = wrapper.findAll('button')
+    // The chips, not the row's scroll arrows.
+    const buttons = wrapper.findAll('[data-slot="scroll-row"] button')
     expect(buttons.map((b) => b.text())).toEqual(['Grounds', 'Hall'])
     await buttons[1]!.trigger('click')
     expect(wrapper.emitted('update:modelValue')).toEqual([['b']])

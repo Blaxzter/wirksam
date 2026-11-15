@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { useFormatters } from '@/composables/useFormatters'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
+import ScrollRow from '@/components/utils/ScrollRow.vue'
 
 const props = defineProps<{
   days: Date[]
@@ -172,8 +173,9 @@ function dayLabel(d: Date) {
 
       <!-- Day columns: scroll on mobile, fluid on desktop. Pointer events live
            on this scroll container so painting works for both mouse and touch. -->
-      <div
-        class="flex flex-1 gap-1 overflow-x-auto sm:gap-1.5"
+      <ScrollRow
+        class="flex-1"
+        content-class="gap-1 sm:gap-1.5"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
@@ -233,7 +235,7 @@ function dayLabel(d: Date) {
             {{ dayCount(di) > 0 ? `${dayCount(di)}h` : '–' }}
           </div>
         </div>
-      </div>
+      </ScrollRow>
     </div>
   </div>
 </template>
