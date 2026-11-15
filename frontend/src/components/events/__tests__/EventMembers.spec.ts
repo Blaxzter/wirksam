@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { Select } from '@/components/ui/select'
+
 import EventMembers from '@/components/events/EventMembers.vue'
 
 import type { EventMemberRead } from '@/client/types.gen'
@@ -91,7 +93,10 @@ describe('EventMembers', () => {
       isOwner: true,
       members: [member('me', 'Mira', 'owner'), member('u2', 'Tomas', 'member')],
     })
-    await w.get('[data-testid="transfer-ownership"] select').setValue('u2')
+    w.get('[data-testid="transfer-ownership"]')
+      .findComponent(Select)
+      .vm.$emit('update:modelValue', 'u2')
+    await flushPromises()
 
     await w.get('[data-testid="btn-transfer-ownership"]').trigger('click')
     await flushPromises()

@@ -5,6 +5,8 @@ import { defineComponent, h, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { SelectItem } from '@/components/ui/select'
+
 import type { EventMemberRead, VoucherPointRead } from '@/client/types.gen'
 import i18n from '@/locales/i18n'
 import RedeemVouchersView from '@/views/vouchers/RedeemVouchersView.vue'
@@ -162,7 +164,7 @@ describe('RedeemVouchersView: a place archived while the page is open', () => {
     await checkTyped(w)
 
     expect(w.get('[data-testid="voucher-check-problem"]').text()).toBe(archived.message)
-    expect(w.findAll('[data-testid="voucher-point"] option').map((o) => o.text())).toEqual(['Grill'])
+    expect(w.findAllComponents(SelectItem).map((o) => o.text())).toEqual(['Grill'])
   })
 
   it('still says why when no place is left', async () => {

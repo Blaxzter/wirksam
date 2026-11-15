@@ -836,6 +836,10 @@ describe('isEditableTarget', () => {
     Object.defineProperty(div, 'isContentEditable', { value: true })
     expect(isEditableTarget(div)).toBe(true)
     expect(isEditableTarget(document.createElement('div'))).toBe(false)
+    const trigger = document.createElement('button')
+    trigger.setAttribute('role', 'combobox')
+    expect(isEditableTarget(trigger)).toBe(true)
+    expect(isEditableTarget(document.createElement('button'))).toBe(false)
   })
 })
 

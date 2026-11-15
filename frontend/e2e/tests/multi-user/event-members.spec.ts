@@ -22,6 +22,7 @@ import {
   getUserIdByEmail,
   uniqueName,
 } from '../../helpers/api.js'
+import { pickOption } from '../../helpers/ui.js'
 
 /** Shared task payload for creating a test task in an event. */
 function taskPayload(eventId: string, name: string) {
@@ -102,7 +103,7 @@ test.describe('Event members – People tab', () => {
     const memberRow = adminPage
       .getByTestId('event-member-row')
       .filter({ hasText: memberUser.email })
-    await memberRow.getByRole('combobox').selectOption('admin')
+    await pickOption(memberRow.getByRole('combobox'), 'Organiser')
 
     await adminPage.reload()
     await expect(

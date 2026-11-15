@@ -12,7 +12,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { DatePicker } from '@/components/ui/date-picker'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
-import { NativeSelect } from '@/components/ui/native-select'
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -22,6 +21,13 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from '@/components/ui/responsive-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
 import type { EventMemberRead, WorkLogRead } from '@/client/types.gen'
@@ -135,12 +141,16 @@ async function save() {
       <ResponsiveDialogBody class="space-y-4 pb-2">
         <div v-if="!lockedUser" class="space-y-2">
           <Label for="work-log-member">{{ t('duties.hours.form.member') }}</Label>
-          <NativeSelect id="work-log-member" v-model="memberId" data-testid="work-log-member">
-            <option value="">{{ t('duties.hours.form.memberPlaceholder') }}</option>
-            <option v-for="m in members" :key="m.user_id" :value="m.user_id">
-              {{ m.name ?? m.email }}
-            </option>
-          </NativeSelect>
+          <Select v-model="memberId">
+            <SelectTrigger id="work-log-member" class="w-full" data-testid="work-log-member">
+              <SelectValue :placeholder="t('duties.hours.form.memberPlaceholder')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="m in members" :key="m.user_id" :value="m.user_id">
+                {{ m.name ?? m.email }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div class="grid grid-cols-2 gap-3">

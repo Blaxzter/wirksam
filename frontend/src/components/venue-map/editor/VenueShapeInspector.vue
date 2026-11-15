@@ -7,7 +7,13 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import VenueDecorPalette from '@/components/venue-map/editor/VenueDecorPalette.vue'
@@ -192,9 +198,12 @@ function onStyle(style: ShapeStyle) {
   emit('update', { style })
 }
 
-function onLink(event: Event) {
-  const value = (event.target as HTMLSelectElement).value
-  emit('update', { location_id: value || null })
+/** The "not linked" option: a Select item cannot have an empty value. */
+const NO_LINK = '__none__'
+
+function onLink(value: unknown) {
+  const id = String(value ?? NO_LINK)
+  emit('update', { location_id: id === NO_LINK ? null : id })
 }
 
 function onStrokeCommit() {
@@ -463,18 +472,17 @@ const canRemoveVertex = computed(() => {
 
     <div v-if="linkable" class="space-y-1.5">
       <Label for="map-editor-shape-link">{{ t('mapEditor.inspector.link') }}</Label>
-      <NativeSelect
-        id="map-editor-shape-link"
-        :model-value="shape.location_id ?? ''"
-        class="w-full"
-        data-testid="shape-link"
-        @change="onLink"
-      >
-        <NativeSelectOption value="">{{ t('mapEditor.inspector.linkNone') }}</NativeSelectOption>
-        <NativeSelectOption v-for="loc in locations" :key="loc.id" :value="loc.id">
-          {{ loc.name }}
-        </NativeSelectOption>
-      </NativeSelect>
+      <Select :model-value="shape.location_id ?? NO_LINK" @update:model-value="onLink">
+        <SelectTrigger id="map-editor-shape-link" class="w-full" data-testid="shape-link">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem :value="NO_LINK">{{ t('mapEditor.inspector.linkNone') }}</SelectItem>
+          <SelectItem v-for="loc in locations" :key="loc.id" :value="loc.id">
+            {{ loc.name }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <p class="text-muted-foreground text-xs">{{ t('mapEditor.inspector.linkHint') }}</p>
     </div>
 

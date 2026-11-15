@@ -33,3 +33,17 @@ export async function pickDate(trigger: Locator, dateStr: string) {
     .getByText(String(day), { exact: true })
     .click()
 }
+
+/**
+ * Pick an option from a shadcn-vue/reka-ui Select.
+ * Its list is portalled to the body, so the option is found on the page, not
+ * under the trigger; waits for the list to close so the next step starts clean.
+ * @param trigger - locator for the Select trigger (`role="combobox"`)
+ * @param name - the option's visible text
+ */
+export async function pickOption(trigger: Locator, name: string | RegExp) {
+  await trigger.click()
+  const listbox = trigger.page().getByRole('listbox')
+  await listbox.getByRole('option', { name, exact: typeof name === 'string' }).click()
+  await expect(listbox).toHaveCount(0)
+}
