@@ -276,7 +276,11 @@ function roleIcon(role: EventRole) {
         </p>
         <div class="flex flex-col gap-2 sm:flex-row">
           <Select v-model="transferTargetId">
-            <SelectTrigger class="w-full min-w-0 sm:flex-1" data-testid="transfer-target">
+            <SelectTrigger
+              class="w-full min-w-0 sm:flex-1"
+              data-testid="transfer-target"
+              :aria-label="t('duties.events.members.transferTitle')"
+            >
               <SelectValue :placeholder="t('duties.events.members.transferPlaceholder')" />
             </SelectTrigger>
             <SelectContent>

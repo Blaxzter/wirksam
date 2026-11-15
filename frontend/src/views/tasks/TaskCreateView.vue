@@ -691,7 +691,7 @@ const handleSubmit = async () => {
           <!-- Select existing event -->
           <div v-if="eventMode === 'existing'" class="mt-4">
             <Select v-model="selectedEventId">
-              <SelectTrigger>
+              <SelectTrigger :aria-label="t('duties.tasks.createView.sections.event')">
                 <SelectValue :placeholder="t('duties.tasks.createView.eventOption.existing')" />
               </SelectTrigger>
               <SelectContent>

@@ -111,6 +111,9 @@
         "noMatch": "Niemand passt.",
         "similar": "Ähnlich in der Veranstaltung"
     },
+    "select": {
+        "choose": "Bitte auswählen"
+    },
     "states": {
         "error": "Fehler",
         "info": "Info",

@@ -111,6 +111,9 @@
         "noMatch": "Nobody matches.",
         "similar": "Similar in this event"
     },
+    "select": {
+        "choose": "Choose one"
+    },
     "states": {
         "error": "Error",
         "info": "Info",
