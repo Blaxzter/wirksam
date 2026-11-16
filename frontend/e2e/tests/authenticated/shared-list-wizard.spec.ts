@@ -155,9 +155,7 @@ test.describe('Shared list wizard', () => {
     await waitForDays(page)
     await goToSettings(page)
 
-    const maxPer = page.getByTestId('wizard-max-per')
-    await expect(maxPer).toHaveValue('')
-    await expect(maxPer.locator('option:checked')).toHaveText('as many as are free')
+    await expect(page.getByTestId('wizard-max-per')).toHaveText('as many as are free')
     await expect(page.getByTestId('wizard-title')).toHaveValue(
       `${kitchen.task.name}: who can help?`,
     )

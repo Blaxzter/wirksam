@@ -13,7 +13,13 @@ import { useI18n } from 'vue-i18n'
 import type { SortDir } from '@/composables/useTableQuery'
 
 import { Button } from '@/components/ui/button'
-import { NativeSelect } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const props = defineProps<{
   options: readonly { value: K; label: string }[]
@@ -40,11 +46,16 @@ const key = computed<AcceptableValue>({
     <label :for="id" class="shrink-0 text-sm text-muted-foreground">
       {{ t('common.sort.label') }}
     </label>
-    <NativeSelect :id="id" v-model="key" class="h-11" data-testid="sort-select-key">
-      <option v-for="option in props.options" :key="option.value" :value="option.value">
-        {{ option.label }}
-      </option>
-    </NativeSelect>
+    <Select v-model="key">
+      <SelectTrigger :id="id" class="h-11 min-w-0 flex-1" data-testid="sort-select-key">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem v-for="option in props.options" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </SelectItem>
+      </SelectContent>
+    </Select>
     <Button
       variant="outline"
       size="icon"

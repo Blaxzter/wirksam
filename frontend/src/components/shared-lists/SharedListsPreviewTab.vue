@@ -15,7 +15,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSharedListsStore } from '@/stores/sharedLists'
 
 import { Button } from '@/components/ui/button'
-import { NativeSelect } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import PublicListPreview from '@/components/guest/PublicListPreview.vue'
@@ -117,16 +123,20 @@ const facts = computed(() => {
           <label for="shared-lists-preview-pick" class="text-sm font-semibold">
             {{ t('sharedLists.preview.which') }}
           </label>
-          <NativeSelect
-            id="shared-lists-preview-pick"
-            v-model="pick"
-            class="h-11 sm:h-9"
-            data-testid="shared-lists-preview-pick"
-          >
-            <option v-for="row in choices" :key="row.id" :value="row.id">
-              {{ row.title }} ({{ t(`sharedLists.status.${row.effective_status}`) }})
-            </option>
-          </NativeSelect>
+          <Select v-model="pick">
+            <SelectTrigger
+              id="shared-lists-preview-pick"
+              class="h-11 w-full sm:h-9"
+              data-testid="shared-lists-preview-pick"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="row in choices" :key="row.id" :value="row.id">
+                {{ row.title }} ({{ t(`sharedLists.status.${row.effective_status}`) }})
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <p class="text-[15px]">{{ t('sharedLists.preview.intro') }}</p>
         <ul

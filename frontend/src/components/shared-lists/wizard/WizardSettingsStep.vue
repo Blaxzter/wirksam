@@ -8,6 +8,7 @@ import { computed } from 'vue'
 
 import { type DateValue, parseDate } from '@internationalized/date'
 import { TriangleAlert } from '@lucide/vue'
+import type { AcceptableValue } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import { useSharedListFormat } from '@/composables/useSharedListFormat'
@@ -15,8 +16,14 @@ import { useSharedListFormat } from '@/composables/useSharedListFormat'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
@@ -66,10 +73,12 @@ const showNamesChanged = computed(
 )
 
 /** The select speaks strings; '' stands for "as many as are free". */
-const maxPerValue = computed({
-  get: () => (maxPerPerson.value === null ? '' : String(maxPerPerson.value)),
-  set: (value: string) => {
-    maxPerPerson.value = value === '' ? null : Number(value)
+/** "As many as are free" as the picker's value: reka's Select keeps "" for "nothing chosen". */
+const UNLIMITED = 'all'
+const maxPerValue = computed<AcceptableValue>({
+  get: () => (maxPerPerson.value === null ? UNLIMITED : String(maxPerPerson.value)),
+  set: (value) => {
+    maxPerPerson.value = value === UNLIMITED || value == null ? null : Number(value)
   },
 })
 
@@ -254,25 +263,29 @@ function setAsk(field: 'email' | 'phone', value: unknown) {
 
     <div class="grid gap-2 sm:max-w-xs">
       <Label for="wizard-max-per">{{ t('sharedListWizard.settings.maxPer.label') }}</Label>
-      <NativeSelect
-        id="wizard-max-per"
-        v-model="maxPerValue"
-        class="w-full"
-        aria-describedby="wizard-max-per-hint"
-        data-testid="wizard-max-per"
-      >
-        <NativeSelectOption
-          v-for="option in maxOptions"
-          :key="option ?? 'all'"
-          :value="option === null ? '' : String(option)"
+      <Select v-model="maxPerValue">
+        <SelectTrigger
+          id="wizard-max-per"
+          class="w-full"
+          aria-describedby="wizard-max-per-hint"
+          data-testid="wizard-max-per"
         >
-          {{
-            option === null
-              ? t('sharedListWizard.settings.maxPer.unlimited')
-              : t('sharedListWizard.settings.maxPer.atMost', { count: option })
-          }}
-        </NativeSelectOption>
-      </NativeSelect>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="option in maxOptions"
+            :key="option ?? UNLIMITED"
+            :value="option === null ? UNLIMITED : String(option)"
+          >
+            {{
+              option === null
+                ? t('sharedListWizard.settings.maxPer.unlimited')
+                : t('sharedListWizard.settings.maxPer.atMost', { count: option })
+            }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <p id="wizard-max-per-hint" class="text-xs text-muted-foreground">
         {{ t('sharedListWizard.settings.maxPer.hint', { count: includedCount }, includedCount) }}
       </p>

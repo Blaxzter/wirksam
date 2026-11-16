@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import SharedListDetailDialog from '@/components/shared-lists/SharedListDetailDialog.vue'
 import SharedListsLinksTab from '@/components/shared-lists/SharedListsLinksTab.vue'
 import SharedListsPreviewTab from '@/components/shared-lists/SharedListsPreviewTab.vue'
@@ -40,6 +41,7 @@ import {
   TASKS_PREFIX,
 } from '@/components/shared-lists/pageQuery'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
+import ScrollRow from '@/components/utils/ScrollRow.vue'
 
 import { type NormalizedApiError, normalizeApiError } from '@/lib/api-errors'
 
@@ -230,30 +232,32 @@ const TRIGGER_CLASS =
     </div>
 
     <Tabs v-else :model-value="tab" class="gap-5" @update:model-value="setTab">
-      <!-- Scrolls sideways on a narrow phone rather than wrapping the tabs. -->
-      <div class="overflow-x-auto shadow-[inset_0_-1px_0_var(--border)] [scrollbar-width:none]">
-        <TabsList
-          class="h-auto w-max gap-6 rounded-none bg-transparent p-0"
-          :aria-label="t('sharedLists.tabs.label')"
-        >
-          <TabsTrigger value="links" :class="TRIGGER_CLASS" data-testid="tab-links">
-            {{ t('sharedLists.tabs.links') }}
-            <!-- From the overview, which every visit loads, whichever tab it opens on. -->
-            <span
-              class="rounded-full bg-muted px-1.5 text-xs font-semibold tabular-nums"
-              data-testid="tab-links-count"
-            >
-              {{ store.overview.summary.active_lists }}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="tasks" :class="TRIGGER_CLASS" data-testid="tab-tasks">
-            {{ t('sharedLists.tabs.tasks') }}
-          </TabsTrigger>
-          <TabsTrigger value="preview" :class="TRIGGER_CLASS" data-testid="tab-preview">
-            {{ t('sharedLists.tabs.preview') }}
-          </TabsTrigger>
-        </TabsList>
-      </div>
+      <!-- Stays under the top bar, and scrolls sideways on a narrow phone rather than wrapping. -->
+      <StickyPageBar class="mt-0 py-0 data-stuck:shadow-none">
+        <ScrollRow content-class="shadow-[inset_0_-1px_0_var(--border)]">
+          <TabsList
+            class="h-auto w-max gap-6 rounded-none bg-transparent p-0"
+            :aria-label="t('sharedLists.tabs.label')"
+          >
+            <TabsTrigger value="links" :class="TRIGGER_CLASS" data-testid="tab-links">
+              {{ t('sharedLists.tabs.links') }}
+              <!-- From the overview, which every visit loads, whichever tab it opens on. -->
+              <span
+                class="rounded-full bg-muted px-1.5 text-xs font-semibold tabular-nums"
+                data-testid="tab-links-count"
+              >
+                {{ store.overview.summary.active_lists }}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="tasks" :class="TRIGGER_CLASS" data-testid="tab-tasks">
+              {{ t('sharedLists.tabs.tasks') }}
+            </TabsTrigger>
+            <TabsTrigger value="preview" :class="TRIGGER_CLASS" data-testid="tab-preview">
+              {{ t('sharedLists.tabs.preview') }}
+            </TabsTrigger>
+          </TabsList>
+        </ScrollRow>
+      </StickyPageBar>
 
       <TabsContent value="links">
         <SharedListsLinksTab :key="eventId" @open="openList" @show-todo-tasks="showTodoTasks" />

@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSharedListWizardApi } from '@/composables/useSharedListWizardApi'
 
+import { Select } from '@/components/ui/select'
+
 import type {
   EventRead,
   SharedListCandidate,
@@ -208,6 +210,21 @@ async function open() {
 const byTestId = (wrapper: ReturnType<typeof mount>, id: string) =>
   wrapper.find(`[data-testid="${id}"]`)
 
+/** The limit per person: the app's Select, whose list is portalled away. */
+function maxPerSelect(wrapper: ReturnType<typeof mount>) {
+  const select = wrapper
+    .findAllComponents(Select)
+    .find((candidate) => candidate.find('[data-testid="wizard-max-per"]').exists())
+  if (!select) throw new Error('no limit per person on screen')
+  return select
+}
+
+/** Choose a limit per person, as picking it from the list would. */
+async function pickMaxPer(wrapper: ReturnType<typeof mount>, value: string) {
+  maxPerSelect(wrapper).vm.$emit('update:modelValue', value)
+  await flushPromises()
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   api.forget()
@@ -298,7 +315,7 @@ describe('creating a list', () => {
     await flushPromises()
     await byTestId(wrapper, 'btn-step-next').trigger('click')
     await flushPromises()
-    await byTestId(wrapper, 'wizard-max-per').setValue('1')
+    await pickMaxPer(wrapper, '1')
     await byTestId(wrapper, 'btn-step-back').trigger('click')
     await flushPromises()
 
@@ -309,7 +326,7 @@ describe('creating a list', () => {
     await byTestId(wrapper, 'btn-step-next').trigger('click')
     await flushPromises()
 
-    expect((byTestId(wrapper, 'wizard-max-per').element as HTMLSelectElement).value).toBe('1')
+    expect(maxPerSelect(wrapper).props('modelValue')).toBe('1')
   })
 
   it('says which days, without a doubled full stop after a German date', async () => {
@@ -333,9 +350,8 @@ describe('creating a list', () => {
     await byTestId(wrapper, 'btn-step-next').trigger('click')
     await flushPromises()
 
-    const maxPer = byTestId(wrapper, 'wizard-max-per')
-    expect((maxPer.element as HTMLSelectElement).value).toBe('')
-    expect(maxPer.find('option:checked').text()).toBe('as many as are free')
+    expect(maxPerSelect(wrapper).props('modelValue')).toBe('all')
+    expect(byTestId(wrapper, 'wizard-max-per').text()).toBe('as many as are free')
 
     await byTestId(wrapper, 'btn-submit').trigger('click')
     await flushPromises()
@@ -607,7 +623,7 @@ describe('editing a list', () => {
     expect(await fixtures.leaveGuard?.()).toBe(true)
     await byTestId(wrapper, 'btn-step-next').trigger('click')
     await flushPromises()
-    expect((byTestId(wrapper, 'wizard-max-per').element as HTMLSelectElement).value).toBe('2')
+    expect(maxPerSelect(wrapper).props('modelValue')).toBe('2')
 
     await byTestId(wrapper, 'wizard-title').setValue('Kitchen, typo fixed')
     await byTestId(wrapper, 'btn-submit').trigger('click')
