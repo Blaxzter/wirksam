@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 
 import { useI18n } from 'vue-i18n'
 
+import ScrollRow from '@/components/utils/ScrollRow.vue'
+
 const props = defineProps<{
   days: Date[]
   from: number
@@ -118,7 +120,7 @@ const ticks = [0, 3, 6, 9, 12, 15, 18, 21, 24]
 
     <!-- Day chips: click to toggle availability for that day. Horizontally
          scrollable on small screens; flex-grow on wide screens so they fill. -->
-    <div class="mt-4 flex gap-2 overflow-x-auto pb-1">
+    <ScrollRow class="mt-3" content-class="gap-2 py-1">
       <button
         v-for="(d, i) in days"
         :key="i"
@@ -141,6 +143,6 @@ const ticks = [0, 3, 6, 9, 12, 15, 18, 21, 24]
           {{ excludedDays.has(i) ? '—' : `${fmt(from)}–${fmt(to)}` }}
         </span>
       </button>
-    </div>
+    </ScrollRow>
   </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type Ref, computed, nextTick, onMounted, ref, watch } from 'vue'
+import { type Ref, computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import { Info, Map as MapIcon, MapPin, Pencil, Ticket, Users } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -14,12 +14,14 @@ import Button from '@/components/ui/button/Button.vue'
 import EventDetailsSummary from '@/components/events/EventDetailsSummary.vue'
 import EventEditForm from '@/components/events/EventEditForm.vue'
 import EventHours from '@/components/events/EventHours.vue'
-import EventVoucherSettings from '@/components/events/EventVoucherSettings.vue'
-import EventVouchers from '@/components/events/EventVouchers.vue'
 import EventInvitations from '@/components/events/EventInvitations.vue'
 import EventJoinRequests from '@/components/events/EventJoinRequests.vue'
 import EventMembers from '@/components/events/EventMembers.vue'
+import EventVoucherSettings from '@/components/events/EventVoucherSettings.vue'
+import EventVouchers from '@/components/events/EventVouchers.vue'
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import EventLocations from '@/components/locations/EventLocations.vue'
+import ScrollRow from '@/components/utils/ScrollRow.vue'
 import VenueMapEditor from '@/components/venue-map/VenueMapEditor.vue'
 
 import type {
@@ -126,12 +128,12 @@ const shownTab = computed<Tab>(() => {
 
 // On a phone the tab row scrolls sideways: keep the chosen tab in view, so a
 // `?tab=map` link does not open with its tab cut off at the edge.
-const tabRow = ref<HTMLElement | null>(null)
+const tabRow = useTemplateRef<InstanceType<typeof ScrollRow>>('tabRow')
 watch(
   shownTab,
   async (tab) => {
     await nextTick()
-    tabRow.value
+    tabRow.value?.scroller
       ?.querySelector<HTMLElement>(`[data-testid="tab-${tab}"]`)
       ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
   },
@@ -251,85 +253,91 @@ onMounted(loadEvent)
       <p v-if="event" class="text-muted-foreground">{{ event.name }}</p>
     </div>
 
-    <!-- Scrolls sideways on a phone rather than wrapping onto a second row.
-         The rule is an inset shadow, not a border: a scroll container would
-         clip tabs pulled over a border with a negative margin. -->
-    <div
-      ref="tabRow"
-      class="flex items-center gap-2 overflow-x-auto shadow-[inset_0_-1px_0_var(--border)]"
-    >
-      <Button
-        variant="ghost"
-        :class="[
-          'shrink-0 rounded-none border-b-2',
-          shownTab === 'details' ? 'border-primary text-primary' : 'border-transparent',
-        ]"
-        data-testid="tab-details"
-        @click="setTab('details')"
+    <!-- Pinned under the top bar, so switching tabs never means scrolling back
+         up a long member list. Scrolls sideways on a narrow screen rather than
+         wrapping onto a second row. The rule is an inset shadow on the row
+         itself, not a border: a scroll container would clip tabs pulled over a
+         border with a negative margin, and on the row it stays above the
+         scrollbar. That rule is already the line under a pinned bar, so the
+         bar's own hairline stays off. -->
+    <StickyPageBar class="mt-0 py-0 data-stuck:shadow-none">
+      <ScrollRow
+        ref="tabRow"
+        content-class="items-center gap-2 shadow-[inset_0_-1px_0_var(--border)]"
       >
-        <component :is="canManage ? Pencil : Info" class="mr-2 h-4 w-4" />
-        {{ t('duties.events.detail.nav.details') }}
-      </Button>
-      <Button
-        v-if="isMember"
-        variant="ghost"
-        :class="[
-          'shrink-0 rounded-none border-b-2',
-          shownTab === 'people' ? 'border-primary text-primary' : 'border-transparent',
-        ]"
-        data-testid="tab-people"
-        @click="setTab('people')"
-      >
-        <Users class="mr-2 h-4 w-4" />
-        {{ t('duties.events.detail.nav.people') }}
-        <span
-          v-if="joinRequests.length > 0"
-          class="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground"
-          data-testid="people-tab-badge"
-        >
-          {{ joinRequests.length }}
-        </span>
-      </Button>
-      <template v-if="canManage">
-        <Button
-          v-if="usesVouchers"
-          variant="ghost"
-          :class="[
-            'shrink-0 rounded-none border-b-2',
-            shownTab === 'vouchers' ? 'border-primary text-primary' : 'border-transparent',
-          ]"
-          data-testid="tab-vouchers"
-          @click="setTab('vouchers')"
-        >
-          <Ticket class="mr-2 h-4 w-4" />
-          {{ t('vouchers.eventSettings.tab') }}
-        </Button>
         <Button
           variant="ghost"
           :class="[
             'shrink-0 rounded-none border-b-2',
-            shownTab === 'locations' ? 'border-primary text-primary' : 'border-transparent',
+            shownTab === 'details' ? 'border-primary text-primary' : 'border-transparent',
           ]"
-          data-testid="tab-locations"
-          @click="setTab('locations')"
+          data-testid="tab-details"
+          @click="setTab('details')"
         >
-          <MapPin class="mr-2 h-4 w-4" />
-          {{ t('locations.settings.tab') }}
+          <component :is="canManage ? Pencil : Info" class="mr-2 h-4 w-4" />
+          {{ t('duties.events.detail.nav.details') }}
         </Button>
         <Button
+          v-if="isMember"
           variant="ghost"
           :class="[
             'shrink-0 rounded-none border-b-2',
-            shownTab === 'map' ? 'border-primary text-primary' : 'border-transparent',
+            shownTab === 'people' ? 'border-primary text-primary' : 'border-transparent',
           ]"
-          data-testid="tab-map"
-          @click="setTab('map')"
+          data-testid="tab-people"
+          @click="setTab('people')"
         >
-          <MapIcon class="mr-2 h-4 w-4" />
-          {{ t('mapEditor.settings.tab') }}
+          <Users class="mr-2 h-4 w-4" />
+          {{ t('duties.events.detail.nav.people') }}
+          <span
+            v-if="joinRequests.length > 0"
+            class="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground"
+            data-testid="people-tab-badge"
+          >
+            {{ joinRequests.length }}
+          </span>
         </Button>
-      </template>
-    </div>
+        <template v-if="canManage">
+          <Button
+            v-if="usesVouchers"
+            variant="ghost"
+            :class="[
+              'shrink-0 rounded-none border-b-2',
+              shownTab === 'vouchers' ? 'border-primary text-primary' : 'border-transparent',
+            ]"
+            data-testid="tab-vouchers"
+            @click="setTab('vouchers')"
+          >
+            <Ticket class="mr-2 h-4 w-4" />
+            {{ t('vouchers.eventSettings.tab') }}
+          </Button>
+          <Button
+            variant="ghost"
+            :class="[
+              'shrink-0 rounded-none border-b-2',
+              shownTab === 'locations' ? 'border-primary text-primary' : 'border-transparent',
+            ]"
+            data-testid="tab-locations"
+            @click="setTab('locations')"
+          >
+            <MapPin class="mr-2 h-4 w-4" />
+            {{ t('locations.settings.tab') }}
+          </Button>
+          <Button
+            variant="ghost"
+            :class="[
+              'shrink-0 rounded-none border-b-2',
+              shownTab === 'map' ? 'border-primary text-primary' : 'border-transparent',
+            ]"
+            data-testid="tab-map"
+            @click="setTab('map')"
+          >
+            <MapIcon class="mr-2 h-4 w-4" />
+            {{ t('mapEditor.settings.tab') }}
+          </Button>
+        </template>
+      </ScrollRow>
+    </StickyPageBar>
 
     <div v-if="loading" class="py-12 text-center text-muted-foreground">
       {{ t('common.states.loading') }}

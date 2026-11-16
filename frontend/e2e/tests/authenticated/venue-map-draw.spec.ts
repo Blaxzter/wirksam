@@ -27,6 +27,7 @@ import {
   setSelectedEvent,
   uniqueName,
 } from '../../helpers/api.js'
+import { pickOption } from '../../helpers/ui.js'
 
 let event: EventRead
 let location: LocationRead
@@ -114,7 +115,7 @@ test.describe('Drawing a venue map', () => {
     await editor.getByTestId('shape-label').press('Enter')
     await saved
     saved = nextBatch(page)
-    await editor.getByTestId('shape-link').selectOption(location.id)
+    await pickOption(editor.getByTestId('shape-link'), location.name)
     await saved
 
     let { shapes } = await getPlanShapes(page, id)

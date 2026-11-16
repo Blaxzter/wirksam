@@ -25,7 +25,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
-import { NativeSelect } from '@/components/ui/native-select'
 import {
   RESPONSIVE_DIALOG_MOBILE_QUERY,
   ResponsiveDialog,
@@ -35,6 +34,13 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from '@/components/ui/responsive-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import EventMemberPicker from '@/components/events/EventMemberPicker.vue'
@@ -469,20 +475,18 @@ watch(eventId, () => {
           <MapPin class="size-4 text-muted-foreground" aria-hidden="true" />
           {{ t('vouchers.redeem.place') }}
         </Label>
-        <!-- The wrapper, not the select, is the flex child: let it fill the line
-             and let a long name be cut off by the select instead of widening it. -->
-        <div class="min-w-0 flex-1 [&_[data-slot=native-select-wrapper]]:w-full">
-          <NativeSelect
-            id="voucher-point"
-            v-model="pointId"
-            class="w-full truncate"
-            data-testid="voucher-point"
-          >
-            <option v-for="p in redeemable" :key="p.task_id" :value="p.task_id">
+        <!-- min-w-0 lets a long name be cut off in the trigger instead of
+             widening the line. -->
+        <Select v-model="pointId">
+          <SelectTrigger id="voucher-point" class="min-w-0 flex-1" data-testid="voucher-point">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="p in redeemable" :key="p.task_id" :value="p.task_id">
               {{ p.location ? `${p.name} · ${p.location}` : p.name }}
-            </option>
-          </NativeSelect>
-        </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <!-- The camera: always mounted while it works, never hidden -->

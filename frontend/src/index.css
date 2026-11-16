@@ -73,6 +73,74 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/*
+ * The signed-in app's top bar is sticky (`PostAuthHeader.vue`), which sets
+ * `data-app-header` and `--app-header-height` on <html> while it is mounted.
+ * Anything scrolled into view (`scrollIntoView`, focus, a `#hash`) stops below
+ * the bar and the demo banner instead of underneath them. The public pages
+ * leave this off: their sections carry their own `scroll-mt-*`.
+ *
+ * Exactly the bar, no breathing room: a `StickyPageBar` pins at this same line,
+ * and `scrollIntoView({ block: 'nearest' })` on something inside a pinned bar
+ * (the settings tab row keeps its tab in view) would otherwise nudge the page.
+ */
+html[data-app-header] {
+  scroll-padding-top: calc(var(--demo-banner-height, 0px) + var(--app-header-height));
+}
+
+/* A scroll box with no scrollbar drawn. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Fades a sideways scroller's edge where more is hidden, and only there: the
+   idea of shadcn's `scroll-fade-x`, in plain CSS. Two scroll-driven animations
+   grow the fade at the start once the row has scrolled and shrink the one at
+   the end as the row reaches it. A row that fits has no scroll timeline, so
+   neither shows. Browsers without scroll-driven animations get no fade. */
+@property --scroll-fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --scroll-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes scroll-fade-start {
+  to {
+    --scroll-fade-start: 2rem;
+  }
+}
+@keyframes scroll-fade-end {
+  from {
+    --scroll-fade-end: 2rem;
+  }
+}
+@utility scroll-fade-x {
+  @supports (animation-timeline: scroll()) {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--scroll-fade-start),
+      #000 calc(100% - var(--scroll-fade-end)),
+      transparent
+    );
+    animation:
+      scroll-fade-start linear both,
+      scroll-fade-end linear both;
+    animation-timeline: scroll(self x);
+    animation-range:
+      0 2rem,
+      calc(100% - 2rem) 100%;
+  }
+}
+
 /* The warm dotted ground a venue plan lies on (map page and editor). */
 @utility map-ground {
   background-color: var(--map-canvas);

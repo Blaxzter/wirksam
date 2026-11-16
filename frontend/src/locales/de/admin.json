@@ -20,6 +20,8 @@
         "busiestTimes": {
             "bookings": "Buchungen",
             "description": "Bestätigte Buchungen gruppiert nach Startuhrzeit.",
+            "hourFrom": "Von",
+            "hourTo": "Bis",
             "time": "Uhrzeit",
             "title": "Buchungen nach Tageszeit"
         },

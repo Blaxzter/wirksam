@@ -54,7 +54,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -64,6 +63,13 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from '@/components/ui/responsive-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
@@ -842,10 +848,10 @@ function saveLabel() {
   })
 }
 
-function onKindChange(event: Event) {
+function onKindChange(value: unknown) {
   const marker = selectedMarker.value
   if (!marker || marker.kind === 'location') return
-  const kind = (event.target as HTMLSelectElement).value as MarkerKind
+  const kind = value as MarkerKind
   if (kind === marker.kind) return
   const previous = marker.kind
   marker.kind = kind
@@ -1618,17 +1624,16 @@ const planActionsButton = useTemplateRef<ComponentPublicInstance>('planActionsBu
           <template v-if="selectedMarker.kind !== 'location'">
             <div class="space-y-1.5">
               <Label for="map-editor-marker-kind">{{ t('mapEditor.marker.kind') }}</Label>
-              <NativeSelect
-                id="map-editor-marker-kind"
-                :model-value="selectedMarker.kind"
-                class="w-full"
-                data-testid="marker-kind"
-                @change="onKindChange"
-              >
-                <NativeSelectOption v-for="kind in GENERIC_MARKER_KINDS" :key="kind" :value="kind">
-                  {{ t(markerKindLabelKey(kind)) }}
-                </NativeSelectOption>
-              </NativeSelect>
+              <Select :model-value="selectedMarker.kind" @update:model-value="onKindChange">
+                <SelectTrigger id="map-editor-marker-kind" class="w-full" data-testid="marker-kind">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="kind in GENERIC_MARKER_KINDS" :key="kind" :value="kind">
+                    {{ t(markerKindLabelKey(kind)) }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-1.5">
               <Label for="map-editor-marker-label">{{ t('mapEditor.marker.label') }}</Label>

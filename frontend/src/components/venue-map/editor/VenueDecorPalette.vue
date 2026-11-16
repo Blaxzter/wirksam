@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import HintTooltip from '@/components/utils/HintTooltip.vue'
+import ScrollRow from '@/components/utils/ScrollRow.vue'
 import VenuePropGlyph from '@/components/venue-map/VenuePropGlyph.vue'
 
 import {
@@ -101,9 +102,7 @@ const itemSize = computed(() =>
     data-testid="decor-palette"
   >
     <!-- The padding keeps the chosen item's ring inside the scroll box, which clips. -->
-    <div
-      class="flex items-center gap-1.5 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:thin] max-lg:[scrollbar-width:none]"
-    >
+    <ScrollRow content-class="items-center gap-1.5 p-1">
       <div
         class="flex shrink-0 items-center gap-1.5"
         role="radiogroup"
@@ -192,7 +191,7 @@ const itemSize = computed(() =>
           {{ t('mapEditor.decor.areas.sand') }}
         </button>
       </div>
-    </div>
+    </ScrollRow>
   </div>
 
   <div

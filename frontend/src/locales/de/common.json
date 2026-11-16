@@ -124,6 +124,9 @@
         "pageOf": "Seite {page} von {count}",
         "previous": "Zurück"
     },
+    "select": {
+        "choose": "Bitte auswählen"
+    },
     "selection": {
         "actions": "Aktionen",
         "clear": "Abwählen",

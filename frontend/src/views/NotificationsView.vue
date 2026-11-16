@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { Bell, CheckCheck, Ellipsis, Loader2, Settings, Trash2 } from '@lucide/vue'
 import { useNow } from '@vueuse/core'
@@ -26,7 +26,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import NotificationRow from '@/components/notifications/NotificationRow.vue'
+import ScrollRow from '@/components/utils/ScrollRow.vue'
 
 import { groupByDay } from '@/lib/notifications'
 
@@ -143,21 +145,6 @@ async function loadMore() {
   await notificationStore.loadMoreNotifications()
 }
 
-// ── Pills horizontal-scroll fade gradients ────────────────────────
-const pillsContainer = ref<HTMLElement | null>(null)
-const showFadeLeft = ref(false)
-const showFadeRight = ref(false)
-const FADE_THRESHOLD = 2
-
-function updatePillsOverflow() {
-  const el = pillsContainer.value
-  if (!el) return
-  showFadeLeft.value = el.scrollLeft > FADE_THRESHOLD
-  showFadeRight.value = el.scrollWidth - el.scrollLeft - el.clientWidth > FADE_THRESHOLD
-}
-
-watch(filterPills, () => nextTick(updatePillsOverflow))
-
 // ── Swipe gestures ───────────────────────────────────────────────
 // Single active swipe at a time. Right-swipe → mark read; left-swipe → dismiss.
 const SWIPE_TRIGGER_PX = 80
@@ -252,7 +239,6 @@ function onRowClickCapture(e: MouseEvent) {
 
 onMounted(() => {
   notificationStore.fetchNotifications({ limit: 20 })
-  nextTick(updatePillsOverflow)
 })
 </script>
 
@@ -311,22 +297,9 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Classification pills (horizontal scroll, no wrap) -->
-    <div class="relative overflow-hidden">
-      <div
-        class="from-background pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r to-transparent transition-opacity duration-200"
-        :class="showFadeLeft ? 'opacity-100' : 'opacity-0'"
-      />
-      <div
-        class="from-background pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l to-transparent transition-opacity duration-200"
-        :class="showFadeRight ? 'opacity-100' : 'opacity-0'"
-      />
-      <div
-        ref="pillsContainer"
-        role="tablist"
-        class="no-scrollbar touch-pan-x flex gap-1.5 overflow-x-auto scroll-smooth"
-        @scroll="updatePillsOverflow"
-      >
+    <!-- Classification pills (horizontal scroll, no wrap), pinned under the top bar -->
+    <StickyPageBar>
+      <ScrollRow role="tablist" content-class="gap-1.5">
         <button
           v-for="pill in filterPills"
           :key="pill.key"
@@ -354,8 +327,8 @@ onMounted(() => {
             {{ pill.count }}
           </span>
         </button>
-      </div>
-    </div>
+      </ScrollRow>
+    </StickyPageBar>
 
     <!-- Initial load: skeleton cards mirroring real entries. -->
     <ul
@@ -454,13 +427,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-</style>

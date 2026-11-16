@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import DropdownMenuContent from '@/components/ui/dropdown-menu/DropdownMenuContent.vue'
+import { Select } from '@/components/ui/select'
 
 import VenueMapEditor from '@/components/venue-map/VenueMapEditor.vue'
 import VenueMarkerPalette from '@/components/venue-map/VenueMarkerPalette.vue'
@@ -662,7 +663,10 @@ describe('VenueMapEditor: drawing', () => {
     expect(wrapper.find('[data-testid="shape-inspector"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="handle-resize-se"]').exists()).toBe(true)
 
-    await wrapper.find('[data-testid="shape-link"]').setValue('loc-kitchen')
+    wrapper
+      .get('[data-testid="shape-inspector"]')
+      .findComponent(Select)
+      .vm.$emit('update:modelValue', 'loc-kitchen')
     await flushPromises()
     expect(batchCalls()[0]!.body).toEqual({
       ops: [{ op: 'update', id: 'shape-1', patch: { location_id: 'loc-kitchen' } }],

@@ -124,6 +124,9 @@
         "pageOf": "Page {page} of {count}",
         "previous": "Previous"
     },
+    "select": {
+        "choose": "Choose one"
+    },
     "selection": {
         "actions": "Actions",
         "clear": "Clear selection",

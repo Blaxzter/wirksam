@@ -15,7 +15,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { NativeSelect } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 import type { EventMemberRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -58,17 +64,6 @@ function initials(member: EventMemberRead): string {
 
 function avatarSrc(member: EventMemberRead): string | undefined {
   return avatarUrlFor({ id: member.user_id, avatar_etag: member.avatar_etag }) ?? undefined
-}
-
-/**
- * Read the new role off the native change event.
- *
- * NativeSelect's `update:modelValue` emit is typed without a payload, so the
- * underlying `<select>` event is what actually carries the value.
- */
-function onRoleSelect(member: EventMemberRead, event: Event) {
-  const value = (event.target as HTMLSelectElement).value as AssignableEventRole
-  void changeRole(member, value)
 }
 
 async function changeRole(member: EventMemberRead, role: AssignableEventRole) {
@@ -214,19 +209,27 @@ function roleIcon(role: EventRole) {
               {{ t(roleLabelKey('owner')) }}
             </Badge>
 
-            <NativeSelect
+            <Select
               v-else-if="canEdit"
               :model-value="member.role"
-              class="h-8 w-32 text-xs"
               :disabled="busyUserId === member.user_id"
-              :aria-label="
-                t('duties.events.members.changeRoleFor', { name: member.name ?? member.email })
-              "
-              @change="onRoleSelect(member, $event)"
+              @update:model-value="(role) => changeRole(member, role as AssignableEventRole)"
             >
-              <option value="admin">{{ t(roleLabelKey('admin')) }}</option>
-              <option value="member">{{ t(roleLabelKey('member')) }}</option>
-            </NativeSelect>
+              <SelectTrigger
+                size="sm"
+                class="w-32 text-xs"
+                data-testid="member-role"
+                :aria-label="
+                  t('duties.events.members.changeRoleFor', { name: member.name ?? member.email })
+                "
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">{{ t(roleLabelKey('admin')) }}</SelectItem>
+                <SelectItem value="member">{{ t(roleLabelKey('member')) }}</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Badge v-else variant="outline" class="gap-1">
               <component :is="roleIcon(member.role)" class="h-3 w-3" />
@@ -272,12 +275,20 @@ function roleIcon(role: EventRole) {
           {{ t('duties.events.members.transferHint') }}
         </p>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <NativeSelect v-model="transferTargetId" class="h-9 flex-1">
-            <option value="">{{ t('duties.events.members.transferPlaceholder') }}</option>
-            <option v-for="m in transferCandidates" :key="m.user_id" :value="m.user_id">
-              {{ m.name ?? m.email }}
-            </option>
-          </NativeSelect>
+          <Select v-model="transferTargetId">
+            <SelectTrigger
+              class="w-full min-w-0 sm:flex-1"
+              data-testid="transfer-target"
+              :aria-label="t('duties.events.members.transferTitle')"
+            >
+              <SelectValue :placeholder="t('duties.events.members.transferPlaceholder')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="m in transferCandidates" :key="m.user_id" :value="m.user_id">
+                {{ m.name ?? m.email }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             data-testid="btn-transfer-ownership"

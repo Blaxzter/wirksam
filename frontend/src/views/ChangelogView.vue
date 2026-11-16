@@ -13,6 +13,7 @@ import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carouse
 import type { UnwrapRefCarouselApi } from '@/components/ui/carousel/interface'
 import { Dialog, DialogScrollContent, DialogTitle } from '@/components/ui/dialog'
 
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import ChipNav from '@/components/utils/ChipNav.vue'
 
 import deChangelog from '../changelog/generated/de.json'
@@ -202,7 +203,11 @@ watch(activeIndex, (index) => {
 
     <!-- ==================== MOBILE / TABLET (<xl) ==================== -->
     <div v-if="!isDesktop">
-      <ChipNav v-model="mobileSlide" :items="chipItems" class="mb-4" />
+      <!-- Pinned under the top bar: a section can run long, and the pills are
+           the only way to the next one besides swiping. -->
+      <StickyPageBar class="mb-4">
+        <ChipNav v-model="mobileSlide" :items="chipItems" />
+      </StickyPageBar>
 
       <div class="mx-auto max-w-3xl">
         <Carousel class="w-full" @init-api="onCarouselInit" :opts="{ watchDrag: true }">
@@ -219,7 +224,10 @@ watch(activeIndex, (index) => {
     <template v-if="isDesktop">
       <!-- Nav in left gutter -->
       <div class="row-start-2 flex justify-end pr-8">
-        <nav class="w-44 sticky top-8 self-start" data-testid="changelog-nav">
+        <nav
+          class="w-44 sticky top-[calc(var(--demo-banner-height,0px)+var(--app-header-height,4rem)+2rem)] self-start"
+          data-testid="changelog-nav"
+        >
           <div class="rounded-lg border p-2 space-y-0.5">
             <button
               v-for="(entry, index) in entries"

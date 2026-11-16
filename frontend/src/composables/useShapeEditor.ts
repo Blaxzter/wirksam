@@ -162,11 +162,16 @@ function roundPt(p: Pt): Pt {
   return [Math.round(p[0] * 1e5) / 1e5, Math.round(p[1] * 1e5) / 1e5]
 }
 
+/**
+ * Focus is in a field that takes keys of its own. `role="combobox"` covers the
+ * shadcn Select trigger: a button, but letters pick an option and Backspace
+ * belongs to it, not to the selected shape.
+ */
 export function isEditableTarget(target: EventTarget | null): boolean {
   if (!target || typeof (target as Element).closest !== 'function') return false
   const el = target as HTMLElement
   if (el.isContentEditable) return true
-  return !!el.closest('input, textarea, select, [contenteditable="true"]')
+  return !!el.closest('input, textarea, select, [contenteditable="true"], [role="combobox"]')
 }
 
 /**

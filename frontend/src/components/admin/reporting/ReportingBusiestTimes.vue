@@ -65,7 +65,10 @@ function barSize(count: number): string {
         </div>
         <div class="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
           <Select v-model="hourFrom">
-            <SelectTrigger class="h-7 w-[80px] text-xs">
+            <SelectTrigger
+              class="h-7 w-[80px] text-xs"
+              :aria-label="t('admin.reporting.busiestTimes.hourFrom')"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -80,7 +83,10 @@ function barSize(count: number): string {
           </Select>
           <span>–</span>
           <Select v-model="hourTo">
-            <SelectTrigger class="h-7 w-[80px] text-xs">
+            <SelectTrigger
+              class="h-7 w-[80px] text-xs"
+              :aria-label="t('admin.reporting.busiestTimes.hourTo')"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

@@ -1686,7 +1686,9 @@ async function handleSubmit() {
                       <div class="space-y-2" :data-testid="`select-duration-${task.id}`">
                         <Label>{{ t('duties.tasks.createView.schedule.slotDuration') }}</Label>
                         <Select v-model="taskConfigs[task.id].durationMinutes">
-                          <SelectTrigger>
+                          <SelectTrigger
+                            :aria-label="t('duties.tasks.createView.schedule.slotDuration')"
+                          >
                             <SelectValue
                               :placeholder="t('duties.tasks.createView.schedule.slotDuration')"
                             />

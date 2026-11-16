@@ -80,3 +80,18 @@ focus back when any sheet closes (`useFocusReturn`), because reka's Drawer only
 does that for a `DrawerTrigger`. It leaves focus alone if focus has moved into
 another dialog or the sheet's `@close-auto-focus` called `preventDefault()`. That
 file is not stock shadcn, so re-adding it through the CLI loses this.
+
+## Not stock shadcn: Select on a phone
+
+Below 768 px (`RESPONSIVE_DIALOG_MOBILE_QUERY`) a Select opens as a centred dialog
+(1.5rem from the sides, at least 3rem from top and bottom), not reka's popup
+beside the trigger, and not a bottom sheet:
+scrolling a long list down in a sheet pulled the sheet shut. The phone half lives
+in `ui/select/SelectContent.vue` and `SelectItem.vue`, so re-adding Select through
+the CLI loses it (tests: `components/__tests__/select-phone.spec.ts`).
+
+- The dialog's title is the trigger's label (`<Label for>`, `aria-labelledby` or
+  `aria-label`), so give every `SelectTrigger` one; without it the title is a
+  generic "Choose one".
+- New pickers use `Select`, not `NativeSelect`, which is left only in the
+  calendar's month and year headers.

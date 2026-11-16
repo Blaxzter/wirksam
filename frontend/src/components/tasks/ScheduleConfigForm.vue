@@ -123,7 +123,7 @@ const outsideEventWindow = computed(() => {
     <div class="space-y-2" data-testid="input-shift-duration">
       <Label>{{ t('duties.tasks.createView.schedule.slotDuration') }}</Label>
       <Select v-model="shiftDurationMinutes">
-        <SelectTrigger>
+        <SelectTrigger :aria-label="t('duties.tasks.createView.schedule.slotDuration')">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -213,7 +213,7 @@ const outsideEventWindow = computed(() => {
         <div class="flex-1 space-y-2">
           <Label>{{ t('duties.shifts.fields.date') }}</Label>
           <Select v-model="override.date">
-            <SelectTrigger class="min-w-40">
+            <SelectTrigger class="min-w-40" :aria-label="t('duties.shifts.fields.date')">
               <SelectValue :placeholder="t('duties.shifts.pickDate')" />
             </SelectTrigger>
             <SelectContent>

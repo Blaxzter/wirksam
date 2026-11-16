@@ -11,7 +11,13 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Label from '@/components/ui/label/Label.vue'
-import { NativeSelect } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import Separator from '@/components/ui/separator/Separator.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
@@ -185,10 +191,15 @@ async function revoke(invitation: EventInvitationRead) {
       <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div class="space-y-2 sm:w-40">
           <Label for="invite-role">{{ t('duties.events.invitations.roleLabel') }}</Label>
-          <NativeSelect id="invite-role" v-model="role" class="h-9">
-            <option value="member">{{ t(roleLabelKey('member')) }}</option>
-            <option value="admin">{{ t(roleLabelKey('admin')) }}</option>
-          </NativeSelect>
+          <Select v-model="role">
+            <SelectTrigger id="invite-role" class="w-full" data-testid="invite-role">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="member">{{ t(roleLabelKey('member')) }}</SelectItem>
+              <SelectItem value="admin">{{ t(roleLabelKey('admin')) }}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div class="flex flex-1 flex-wrap gap-2">
           <Button

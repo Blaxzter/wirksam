@@ -29,6 +29,7 @@ import Separator from '@/components/ui/separator/Separator.vue'
 import { Switch } from '@/components/ui/switch'
 
 import MyHoursCard from '@/components/bookings/MyHoursCard.vue'
+import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 import MyVouchersCard from '@/components/vouchers/MyVouchersCard.vue'
 import VoucherCodeDialog from '@/components/vouchers/VoucherCodeDialog.vue'
@@ -372,9 +373,12 @@ onMounted(loadBookings)
       Search & Filter. Phones: the search and one filter button share a row,
       the date range, "cancelled" and the arrangement behind it. Wider: the
       search takes what the two controls leave, and they wrap below it once it
-      would drop under 20rem.
+      would drop under 20rem. Pinned under the top bar, like every list's.
     -->
-    <div class="flex flex-wrap items-center gap-2 sm:gap-4" data-testid="bookings-filter-row">
+    <StickyPageBar
+      class="flex flex-wrap items-center gap-2 sm:gap-4"
+      data-testid="bookings-filter-row"
+    >
       <div class="relative min-w-0 flex-1 sm:basis-80">
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -472,7 +476,7 @@ onMounted(loadBookings)
           {{ t('duties.bookings.filters.showCancelled') }}
         </Button>
       </div>
-    </div>
+    </StickyPageBar>
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-12 text-muted-foreground">

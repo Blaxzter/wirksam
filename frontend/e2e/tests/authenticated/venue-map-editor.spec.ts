@@ -122,7 +122,7 @@ test.describe('Venue map editor', () => {
     await expect(editor.getByTestId('placement-banner')).toBeVisible()
     await clickCanvasAt(canvas, 0.7, 0.6)
     await expect(editor.getByTestId('marker-panel')).toBeVisible()
-    await expect(editor.getByTestId('marker-kind')).toHaveValue('first_aid')
+    await expect(editor.getByTestId('marker-kind')).toHaveText('First aid')
 
     const markers = await readMarkers(page)
     expect(markers).toHaveLength(2)
