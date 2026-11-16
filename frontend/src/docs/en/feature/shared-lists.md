@@ -15,7 +15,9 @@ Organisers, and people in charge of a task, find "Shared lists" in the sidebar, 
 
 1. **Tasks:** pick one or more tasks, then the days. "Leave out single shifts" drops single shifts too. Shifts that are added to these tasks later show up on the list as well.
 2. **Settings:** the heading and a few words for whoever opens the link, what helpers have to give, what others see, how many shifts one person may take and how long the list stays open. "Where are you sharing the link?" is a note only you see. "Open the list" makes it live.
-3. **Share:** the link, a QR code for a notice board with "Print notice", and a text for your group with the shifts that are free right now, which you can change before copying.
+3. **Share:** the link [[link]], a QR code for a notice board [[qr]] with "Print notice" [[print]], and a text for your group [[text]] with the shifts that are free right now, which you can change before copying.
+
+![The last step of "Share a list", with the link, the text for a group chat and the QR code](shot:shared-list-share)
 
 The defaults:
 
@@ -28,7 +30,9 @@ Only published tasks of a published event can go on a list. Tasks reserved for a
 
 ## Printing a notice
 
-A notice puts a list on paper: its heading and your words, its QR code with "Scan to sign up, no account needed", and the shifts it offers, by task and day, with the free places and the vouchers a shift gives. Each free place gets a line, so people can write their name on the paper as well. "Lines to sign up on paper" leaves those out, and "Names of those signed up" fills in who is already down.
+A notice puts a list on paper: its heading and your words, its QR code with "Scan to sign up, no account needed", and the shifts it offers, by task and day, with the free places and the vouchers a shift gives. Each free place gets a line, so people can write their name on the paper as well. "Lines to sign up on paper" [[lines]] leaves those out, and "Names of those signed up" [[names]] fills in who is already down.
+
+![A list's notice with its heading, the QR code and the shifts by day, with a line for each free place](shot:shared-list-notice)
 
 "Print" on a task's page makes this notice for organisers and the people in charge of the task:
 
@@ -48,6 +52,9 @@ The link opens a page with the list's heading and your words, then the shifts by
 
 After picking a shift, a helper enters their name and, as far as the list asks, an email address and phone number. With an address they can ask for a reminder by email the day before. The form tells them who will see what.
 
+![A shared list as helpers see it, with the shifts by day and the free places](shot:shared-list-page)
+![The form after picking a shift, with name and email address](shot:shared-list-signup)
+
 With an email address they get a confirmation with a link to take their name off again. Without one, the page shows them that link to keep. On a shared device, such as a tablet at the stand, "Done – next person" empties the form, and after two minutes without a touch it empties itself.
 
 A paused list says so, and an ended one says it's closed. Shifts that have started disappear from the list.
@@ -57,6 +64,8 @@ A paused list says so, and an ended one says it's closed. Shifts that have start
 When a task gives [vouchers](/features/vouchers), its shifts on the list say how many. Whoever signs up through the list earns them just like a member, as soon as the shift is over.
 
 They're redeemed with a code: helpers open the link from their confirmation email (or the one the page showed them), tap "Show code" and show it at the stand. It works for two minutes and only once, as for members. They can't be picked from the list for redeeming without a code, because only members are on it.
+
+![The page behind the link from the confirmation email, with the vouchers, "Show code" and the shifts](shot:shared-list-manage)
 
 ## Confirming your address
 
@@ -79,6 +88,8 @@ The name, email address and phone number are deleted after the person's last shi
 ## Keeping an eye on your lists
 
 The "Links" tab shows every list with its status (Open, Paused, Expired or Ended), how many signed up and how many places are free, and you can sort and filter it. "Details" shows who signed up through one list, with "Copy link", "QR code", "Print notice", "Edit", "Pause", "Resume" and "End".
+
+![The "Links" tab with a list's details open, showing who signed up through it](shot:shared-list-detail)
 
 - **Pause** stops sign-ups until you resume. The link stays the same.
 - **New link** replaces the link. The old one stops working, and the sign-ups stay.

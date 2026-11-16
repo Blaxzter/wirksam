@@ -15,7 +15,9 @@ Organisator:innen und Verantwortliche einer Aufgabe finden „Geteilte Listen“
 
 1. **Aufgaben:** Wähle eine oder mehrere Aufgaben und dann die Tage. Über „Einzelne Schichten abwählen“ nimmst du auch einzelne Schichten heraus. Schichten, die später zu diesen Aufgaben dazukommen, stehen ebenfalls auf der Liste.
 2. **Einstellungen:** Überschrift und ein paar Sätze für alle, die den Link öffnen, was Helfende angeben müssen, was andere sehen, wie viele Schichten eine Person nehmen darf und wie lange die Liste offen bleibt. „Wo teilst du den Link?“ ist eine Notiz nur für euch. „Liste öffnen“ schaltet sie frei.
-3. **Teilen:** der Link, ein QR-Code für einen Aushang mit „Aushang drucken“ und ein Text für die Gruppe mit den Schichten, die gerade frei sind. Den Text kannst du vor dem Kopieren ändern.
+3. **Teilen:** der Link [[link]], ein QR-Code für einen Aushang [[qr]] mit „Aushang drucken“ [[print]] und ein Text für die Gruppe [[text]] mit den Schichten, die gerade frei sind. Den Text kannst du vor dem Kopieren ändern.
+
+![Der letzte Schritt von „Liste teilen“ mit dem Link, dem Text für den Gruppenchat und dem QR-Code](shot:shared-list-share)
 
 Voreingestellt ist:
 
@@ -28,7 +30,9 @@ Auf eine Liste kommen nur veröffentlichte Aufgaben einer veröffentlichten Vera
 
 ## Einen Aushang drucken
 
-Ein Aushang bringt eine Liste aufs Papier: ihre Überschrift und deine Sätze, ihren QR-Code mit „Scannen und eintragen, ganz ohne Konto“ und die Schichten, die sie anbietet, nach Aufgabe und Tag, mit den freien Plätzen und den Marken, die eine Schicht bringt. Jeder freie Platz bekommt eine Zeile, so kann man sich auch auf dem Papier eintragen. „Zeilen zum Eintragen auf Papier“ lässt sie weg, „Namen der Eingetragenen“ trägt ein, wer schon dabei ist.
+Ein Aushang bringt eine Liste aufs Papier: ihre Überschrift und deine Sätze, ihren QR-Code mit „Scannen und eintragen, ganz ohne Konto“ und die Schichten, die sie anbietet, nach Aufgabe und Tag, mit den freien Plätzen und den Marken, die eine Schicht bringt. Jeder freie Platz bekommt eine Zeile, so kann man sich auch auf dem Papier eintragen. „Zeilen zum Eintragen auf Papier“ [[lines]] lässt sie weg, „Namen der Eingetragenen“ [[names]] trägt ein, wer schon dabei ist.
+
+![Der Aushang einer Liste mit Überschrift, QR-Code und den Schichten nach Tagen, mit einer Zeile für jeden freien Platz](shot:shared-list-notice)
 
 „Drucken“ auf der Seite einer Aufgabe macht diesen Aushang für Organisator:innen und die Verantwortlichen der Aufgabe:
 
@@ -48,6 +52,9 @@ Der Link öffnet eine Seite mit der Überschrift der Liste und deinen Sätzen, d
 
 Nach der Wahl einer Schicht tragen Helfende ihren Namen ein und, soweit die Liste fragt, E-Mail-Adresse und Telefonnummer. Mit Adresse können sie sich am Tag vorher per Mail erinnern lassen. Das Formular sagt ihnen, wer was sieht.
 
+![Eine geteilte Liste, wie Helfende sie sehen, mit den Schichten nach Tagen und den freien Plätzen](shot:shared-list-page)
+![Das Formular nach der Wahl einer Schicht, mit Name und E-Mail-Adresse](shot:shared-list-signup)
+
 Mit E-Mail-Adresse kommt eine Bestätigung mit einem Link zum Austragen. Ohne Adresse zeigt die Seite diesen Link zum Aufheben. Auf einem geteilten Gerät, etwa einem Tablet am Stand, leert „Fertig – nächste Person“ das Formular, und nach zwei Minuten ohne Berührung leert es sich von selbst.
 
 Eine pausierte Liste sagt das, eine beendete sagt, dass sie geschlossen ist. Schichten, die begonnen haben, verschwinden von der Liste.
@@ -57,6 +64,8 @@ Eine pausierte Liste sagt das, eine beendete sagt, dass sie geschlossen ist. Sch
 Gibt eine Aufgabe [Marken](/features/vouchers), steht bei ihren Schichten auf der Liste, wie viele. Wer sich über die Liste einträgt, bekommt sie genauso wie ein Mitglied, sobald die Schicht vorbei ist.
 
 Eingelöst wird mit einem Code: Helfende öffnen den Link aus ihrer Bestätigungsmail (oder den, den die Seite ihnen gezeigt hat), tippen auf „Code zeigen“ und zeigen den Code am Stand. Er gilt zwei Minuten und nur einmal, wie bei Mitgliedern. Aus der Liste zum Einlösen ohne Code kann man sie nicht wählen, denn dort stehen nur Mitglieder.
+
+![Die Seite hinter dem Link aus der Bestätigungsmail, mit den Marken, „Code zeigen“ und den Schichten](shot:shared-list-manage)
 
 ## Die eigene Adresse bestätigen
 
@@ -79,6 +88,8 @@ Name, E-Mail-Adresse und Telefonnummer werden nach der letzten Schicht der Perso
 ## Den Überblick behalten
 
 Der Tab „Links“ zeigt jede Liste mit ihrem Status (Offen, Pausiert, Abgelaufen oder Beendet), wie viele sich eingetragen haben und wie viele Plätze frei sind, und lässt sich sortieren und filtern. „Details“ zeigt, wer sich über eine Liste eingetragen hat, mit „Link kopieren“, „QR-Code“, „Aushang drucken“, „Bearbeiten“, „Pausieren“, „Fortsetzen“ und „Beenden“.
+
+![Der Tab „Links“ mit den Details einer Liste und allen, die sich darüber eingetragen haben](shot:shared-list-detail)
 
 - **Pausieren** hält das Eintragen an, bis du fortsetzt. Der Link bleibt derselbe.
 - **Neuer Link** ersetzt den Link. Der alte funktioniert nicht mehr, die Eintragungen bleiben.
