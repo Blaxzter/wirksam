@@ -2,7 +2,7 @@ import datetime as dt
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import ColumnElement, case, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import col
@@ -11,10 +11,39 @@ from app.crud.base import CRUDBase
 from app.logic.work_hours import shift_ends_at
 from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
+from app.models.shared_list import SharedList
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.booking import BookingCreate, BookingUpdate
+
+# ── A booking's person ────────────────────────────────────────────
+#
+# A list guest's booking carries its own person (bookings.guest_name,
+# guest_phone): a guest account pools the sign-ups of everyone who confirmed
+# one address, a family say, so the guest user's own name and phone belong to
+# the wallet, never to a shift. Wherever a booking's person is shown, read it
+# through these. A member's booking reads the member's profile.
+
+
+def person_name(booking: Booking, user: User) -> str | None:
+    """The name ``booking`` is shown under; ``user`` is its booker."""
+    return booking.guest_name if user.is_list_guest else user.name
+
+
+def person_phone(booking: Booking, user: User) -> str | None:
+    """The phone number that goes with :func:`person_name`."""
+    return booking.guest_phone if user.is_list_guest else user.phone_number
+
+
+def person_name_sql(
+    booking: type[Booking] = Booking, user: type[User] = User
+) -> ColumnElement[str | None]:
+    """:func:`person_name` in SQL, over a query that joins the booker; pass
+    aliases of both to name another booking in a subquery."""
+    return case(
+        (col(user.is_list_guest), col(booking.guest_name)), else_=col(user.name)
+    )
 
 
 @dataclass(frozen=True)
@@ -343,9 +372,10 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         db: AsyncSession,
         *,
         slot_ids: list[uuid.UUID],
-    ) -> dict[uuid.UUID, list[tuple[uuid.UUID, str | None]]]:
-        """``{shift_id: [(user_id, name), ...]}`` of confirmed bookings,
-        earliest booking first, for a page of shifts in one query.
+    ) -> dict[uuid.UUID, list[tuple[uuid.UUID, str | None, bool]]]:
+        """``{shift_id: [(user_id, name, is_list_guest), ...]}`` of confirmed
+        bookings, earliest booking first, for a page of shifts in one query.
+        ``name`` is each booking's person (:func:`person_name`).
 
         Shifts nobody has booked are missing from the result. Who may read
         the names is the caller's business (see ``GET /shifts/``).
@@ -353,7 +383,12 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
         if not slot_ids:
             return {}
         result = await db.execute(
-            select(col(Booking.shift_id), col(User.id), col(User.name))
+            select(
+                col(Booking.shift_id),
+                col(User.id),
+                person_name_sql(),
+                col(User.is_list_guest),
+            )
             .join(User, col(User.id) == col(Booking.user_id))
             .where(
                 col(Booking.shift_id).in_(slot_ids),
@@ -361,11 +396,38 @@ class CRUDBooking(CRUDBase[Booking, BookingCreate, BookingUpdate]):
             )
             .order_by(col(Booking.created_at), col(Booking.id))
         )
-        out: dict[uuid.UUID, list[tuple[uuid.UUID, str | None]]] = {}
-        for shift_id, user_id, name in result.all():
+        out: dict[uuid.UUID, list[tuple[uuid.UUID, str | None, bool]]] = {}
+        for shift_id, user_id, name, is_guest in result.all():
             if shift_id is not None:  # matched by IN above; for the checker
-                out.setdefault(shift_id, []).append((user_id, name))
+                out.setdefault(shift_id, []).append((user_id, name, is_guest))
         return out
+
+    async def shared_list_titles(
+        self,
+        db: AsyncSession,
+        *,
+        booking_ids: list[uuid.UUID],
+        event_id: uuid.UUID | None,
+    ) -> dict[uuid.UUID, str]:
+        """``{booking_id: title}`` of the shared list each booking was signed
+        up through, for lists of ``event_id`` only.
+
+        A booking whose task moved here from another event still names a list
+        of that event, whose titles are not this event's business. Bookings
+        made in the app are missing from the result, and so is one whose list
+        is gone (``bookings.shared_list_id`` has no foreign key).
+        """
+        if not booking_ids or event_id is None:
+            return {}
+        result = await db.execute(
+            select(col(Booking.id), col(SharedList.title))
+            .join(SharedList, col(SharedList.id) == col(Booking.shared_list_id))
+            .where(
+                col(Booking.id).in_(booking_ids),
+                col(SharedList.event_id) == event_id,
+            )
+        )
+        return dict(result.all())
 
     async def count_confirmed_for_shifts(
         self,

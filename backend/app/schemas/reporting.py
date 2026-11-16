@@ -25,6 +25,9 @@ class BookingsTrendPoint(BaseModel):
 
 
 class TopVolunteer(BaseModel):
+    """A guest account gives one row per name its pooled sign-ups were made
+    under, all with its ``user_id``."""
+
     user_id: uuid.UUID
     name: str | None
     email: str | None

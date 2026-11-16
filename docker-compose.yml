@@ -234,6 +234,12 @@ services:
             - SEARCH_INDEXING=${SEARCH_INDEXING:-true}
             # 'false' drops the landing page: / leads to sign-in or the dashboard.
             - LANDING_ENABLED=${LANDING_ENABLED:-true}
+            # Like SANDBOX_ENABLED: the backend reads the same variable from
+            # .env and enforces it; this copy hides the navigation entry.
+            - SHARED_LISTS_ENABLED=${SHARED_LISTS_ENABLED:-true}
+            # The number of days the privacy policy names. The backend reads the
+            # same variable from .env and is what deletes the data.
+            - GUEST_DATA_RETENTION_DAYS=${GUEST_DATA_RETENTION_DAYS:-30}
         networks:
             - traefik-net
             - default

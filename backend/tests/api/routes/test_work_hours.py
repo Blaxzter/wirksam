@@ -12,10 +12,13 @@ from sqlmodel import col
 
 from app.models.booking import Booking
 from app.models.event import Event
+from app.models.shared_list import SharedList
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from app.models.work_log import WorkLog
+from tests.fixtures.guest_signups import add_shift, pooled_family
+from tests.fixtures.shared_lists import ListGuestFactory
 
 
 async def _book(
@@ -519,3 +522,93 @@ class TestWorkLogDeletionCascades:
             select(WorkLog).where(col(WorkLog.id) == entry_id)
         )
         assert result.scalar_one_or_none() is None
+
+
+@pytest.mark.asyncio
+class TestListGuestHours:
+    async def test_list_guests_are_listed_with_their_hours_and_tagged(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_task: Task,
+        test_user: User,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        """Never members, so listed like someone who left: the hours are real."""
+        booking = await _book(
+            db_session,
+            test_task,
+            test_user,
+            date=PAST,
+            start=dt.time(8),
+            end=dt.time(12),
+        )
+        shift = await db_session.get(Shift, booking.shift_id)
+        assert shift is not None
+        guest = await make_list_guest(test_shared_list, shifts=[shift])
+
+        r = await async_client.get(f"/api/v1/events/{test_event.id}/hours")
+
+        assert r.status_code == 200
+        row = _row_for(r.json(), guest.user)
+        assert (row["name"], row["is_guest"], row["role"]) == ("Gast Eins", True, None)
+        assert row["total_minutes"] == 4 * 60
+        assert _row_for(r.json(), test_user)["is_guest"] is False
+
+    async def test_a_guest_account_counts_each_person_on_their_own(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_task: Task,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        """Tom's sign-up confirmed into Maria's guest account: the list, the
+        CSV for certificates and the breakdown never credit Tom's shift to
+        Maria."""
+        maria, tom = await pooled_family(
+            db_session,
+            test_shared_list,
+            make_list_guest,
+            await add_shift(
+                db_session, test_task, day=PAST, start=dt.time(8), end=dt.time(12)
+            ),
+            await add_shift(
+                db_session,
+                test_task,
+                day=PAST + dt.timedelta(days=1),
+                start=dt.time(8),
+                end=dt.time(10),
+            ),
+        )
+        url = f"/api/v1/events/{test_event.id}/hours"
+
+        rows = (await async_client.get(url)).json()
+        export = (await async_client.get(f"{url}/export")).text.splitlines()
+        toms = (
+            await async_client.get(
+                f"{url}/{maria.user.id}", params={"name": "Tom Muster"}
+            )
+        ).json()
+        own = (await async_client.get(f"{url}/{maria.user.id}")).json()
+
+        assert sorted(
+            (row["name"], row["shift_count"], row["total_minutes"])
+            for row in rows
+            if row["user_id"] == str(maria.user.id)
+        ) == [("Maria Muster", 1, 240), ("Tom Muster", 1, 120)]
+        assert "Maria Muster,,,1,4.00,0.00,4.00,0,0.00" in export
+        assert "Tom Muster,,,1,2.00,0.00,2.00,0,0.00" in export
+        assert (
+            toms["summary"]["name"],
+            [shift["booking_id"] for shift in toms["shifts"]],
+        ) == ("Tom Muster", [str(tom.bookings[0].id)])
+        assert (own["summary"]["name"], own["summary"]["total_minutes"]) == (
+            "Maria Muster",
+            240,
+        )

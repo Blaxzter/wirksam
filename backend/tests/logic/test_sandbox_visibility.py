@@ -873,14 +873,19 @@ class TestUndeliverableAccounts:
     """
 
     def test_every_stand_in_prefix_is_undeliverable(self) -> None:
-        """Test that ``is_undeliverable`` covers all three prefixes, and only those.
+        """Test that ``is_undeliverable`` covers all four prefixes, and only those.
 
         The check used to be copied into the email, push and Telegram channels
         separately, and a fourth channel would have shipped without it. It
         lives in one place now — so one place is where the list has to be
         right.
         """
-        assert UNDELIVERABLE_SUBJECT_PREFIXES == ("demo|", "test|", "sandbox|")
+        assert UNDELIVERABLE_SUBJECT_PREFIXES == (
+            "demo|",
+            "test|",
+            "sandbox|",
+            "listguest|",
+        )
 
         for prefix in UNDELIVERABLE_SUBJECT_PREFIXES:
             account = User(subject=f"{prefix}whoever", name="Stand-in", roles=[])

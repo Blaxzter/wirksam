@@ -191,8 +191,71 @@ voucher_code_limiter = RateLimiter(
     limit=60, window_seconds=60, code="voucher.rate_limited"
 )
 
-# 20 per minute, keyed by user id: issuing a voucher code writes a row. A
-# volunteer's screen asks for a new one every two minutes.
+# 20 per minute, keyed by user id, or "guest:<user id>:<kind>" for a shared-list
+# guest: issuing a voucher code writes a row. A volunteer's screen asks for a new one
+# every two minutes.
 voucher_pass_limiter = RateLimiter(
     limit=20, window_seconds=60, code="voucher.rate_limited"
+)
+
+# Shared lists (app/api/routes/public_shared_lists.py) are anonymous. These are
+# speed bumps; the fence is Turnstile and the daily ceilings counted in the
+# database (app/logic/shared_lists/guest_quota.py), which no restart resets.
+
+# 120 per 10 minutes, keyed by IP: opening list pages. A venue behind one NAT
+# (club Wi-Fi, a tablet at the stand) must survive a crowd opening the link.
+shared_list_view_limiter = RateLimiter(
+    limit=120, window_seconds=10 * 60, code="shared_list.rate_limited"
+)
+
+# 20 per 10 minutes, keyed by IP, counted only for a code that does not exist:
+# a scan for live codes meets it long before the link-sharing crowd would.
+shared_list_miss_limiter = RateLimiter(
+    limit=20, window_seconds=10 * 60, code="shared_list.rate_limited"
+)
+
+# 120 per hour, keyed by "<ip>|<code>", and 240 per hour keyed by IP: signing up.
+# Sized for a tablet at the stand, or one venue NAT, signing up a queue of
+# people on one list, about two a minute.
+shared_list_signup_limiter = RateLimiter(
+    limit=120, window_seconds=60 * 60, code="shared_list.rate_limited"
+)
+shared_list_signup_ip_limiter = RateLimiter(
+    limit=240, window_seconds=60 * 60, code="shared_list.rate_limited"
+)
+
+# Shared-list guests (/public/guest-signups/*). The manage token is the real key:
+# an HMAC tag nobody guesses. A call whose token resolves is counted per guest, so
+# a queue of guests at a stand behind one venue NAT never shares a bucket; only
+# misses are counted per IP. The per-guest keys are "guest:<user id>:<kind>",
+# where the kind is "mail" for a mail link and "response" for the token the
+# sign-up answered with: whoever typed the address holds that one, and must not
+# use up the calls of whoever reads the mailbox.
+
+# 30 per 10 minutes, keyed per guest: reading and changing one's sign-ups
+# (/manage, /cancel, /reminders, /erase, /not-me, /confirm). The page loads once
+# and reloads after each redemption.
+guest_manage_limiter = RateLimiter(
+    limit=30, window_seconds=10 * 60, code="guest_signup.rate_limited"
+)
+
+# 120 per minute, keyed per guest: the status a guest's code screen asks for
+# every two seconds, for the code shown and any it replaced.
+guest_pass_status_limiter = RateLimiter(
+    limit=120, window_seconds=60, code="guest_signup.rate_limited"
+)
+
+# 30 per 10 minutes, keyed by IP, counted only for a token that does not resolve,
+# a response token a confirmation retired included. A scan for live tokens meets
+# it at once. A dead link opened again does not, and code screens stop asking on
+# a dead link.
+guest_link_miss_limiter = RateLimiter(
+    limit=30, window_seconds=10 * 60, code="guest_signup.rate_limited"
+)
+
+# 6000 per 10 minutes, keyed by IP, on every call before any database work: a flood
+# guard only. Ten code screens on one venue NAT ask about five times a second and
+# stay well below it.
+guest_ip_limiter = RateLimiter(
+    limit=6000, window_seconds=10 * 60, code="guest_signup.rate_limited"
 )

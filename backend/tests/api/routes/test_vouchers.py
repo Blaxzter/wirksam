@@ -48,6 +48,7 @@ from app.models.voucher import VoucherEntry, VoucherPass
 from tests.fixtures.client import act_as
 from tests.fixtures.clock import fixed_clock
 from tests.fixtures.sandbox import SandboxSetup
+from tests.fixtures.shared_lists import ListGuestFactory, SharedListFactory
 
 DAY = dt.date(2026, 6, 11)
 NOW = dt.datetime(2026, 6, 11, 15, 0)
@@ -778,6 +779,7 @@ class TestRedeemByCode:
             "user_id": str(cast.volunteer.id),
             "name": cast.volunteer.name,
             "avatar_etag": cast.volunteer.avatar_etag,
+            "is_guest": False,
             "available": 3,
         }
         assert await _entries(db_session, cast) == []
@@ -1266,6 +1268,74 @@ class TestCorrections:
         )
         r = await self._create(async_client, app, cast, user_id=str(cast.outsider.id))
         assert r.status_code == 201
+
+    async def test_an_admin_corrects_a_guest(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        make_shared_list: SharedListFactory,
+        make_list_guest: ListGuestFactory,
+    ) -> None:
+        """A guest of a shared list has a part in the event through a booking,
+        even on a task without vouchers, and is tagged in the overview."""
+        shift = await _shift_for(
+            db_session, cast.plain, None, start=dt.time(6), end=dt.time(7)
+        )
+        guest = await make_list_guest(
+            await make_shared_list(tasks=[cast.plain]),
+            email="gast@example.org",
+            shifts=[shift],
+        )
+
+        r = await self._create(
+            async_client, app, cast, user_id=str(guest.user.id), note="Kuchen"
+        )
+
+        assert r.status_code == 201
+        with act_as(app, cast.admin):
+            people = (await async_client.get(f"{_base(cast.event)}/people")).json()
+        row = next(p for p in people if p["user_id"] == str(guest.user.id))
+        assert (row["is_guest"], row["email"], row["available"]) == (
+            True,
+            "gast@example.org",
+            2,
+        )
+
+    async def test_appears_in_event_moved_to_logic(
+        self,
+        async_client: AsyncClient,
+        app: FastAPI,
+        db_session: AsyncSession,
+        cast: Cast,
+        make_shared_list: SharedListFactory,
+        make_list_guest: ListGuestFactory,
+    ) -> None:
+        """The routes ask ``vouchers.appears_in_event``, which redeeming by
+        code asks too: one rule for all three."""
+        guest = await make_list_guest(
+            await make_shared_list(tasks=[cast.plain]),
+            shifts=[
+                await _shift_for(
+                    db_session, cast.plain, None, start=dt.time(6), end=dt.time(7)
+                )
+            ],
+        )
+        for user, expected in (
+            (cast.volunteer, True),
+            (guest.user, True),
+            (cast.outsider, False),
+        ):
+            assert (
+                await vouchers.appears_in_event(
+                    db_session, event_id=cast.event.id, user_id=user.id
+                )
+                is expected
+            )
+            with act_as(app, cast.admin):
+                r = await async_client.get(f"{_base(cast.event)}/people/{user.id}")
+            assert r.status_code == (200 if expected else 404)
 
     async def test_a_former_member_with_entries_can_be_settled(
         self,

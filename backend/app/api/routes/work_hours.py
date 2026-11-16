@@ -3,7 +3,7 @@ import datetime as dt
 import io
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,6 +105,16 @@ async def get_volunteer_hours(
     user_id: uuid.UUID,
     session: DBDep,
     current_user: CurrentUser,
+    name: str | None = Query(
+        default=None,
+        max_length=200,
+        description=(
+            "A guest who signed up through a shared list: the name of the "
+            "sign-ups to count, as the hours list gives it (a guest account "
+            "pools several people's). Defaults to the guest's own name; "
+            "ignored for a member."
+        ),
+    ),
 ) -> VolunteerHoursDetail:
     """One volunteer's hours with the shifts and entries behind them.
 
@@ -120,7 +130,7 @@ async def get_volunteer_hours(
         if is_self
         else await crud_user.get(session, id=user_id, raise_404_error=True)
     )
-    return await volunteer_hours(session, event_id, user)
+    return await volunteer_hours(session, event_id, user, name=name)
 
 
 @router.post("/{event_id}/work-logs", response_model=WorkLogRead, status_code=201)

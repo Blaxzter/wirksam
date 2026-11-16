@@ -34,6 +34,17 @@ def test_wall_clock_to_utc_reads_the_zone_it_is_given(
     assert clock.wall_clock_to_utc(wall, "Asia/Tokyo") == dt.datetime(2026, 7, 1, 9, 0)
 
 
+def test_utc_to_wall_clock_crosses_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Europe/Berlin")
+    moment = dt.datetime(2026, 7, 12, 2, 0)
+    assert clock.utc_to_wall_clock(moment) == dt.datetime(2026, 7, 12, 4, 0)
+    # Still the evening before in New York.
+    assert clock.utc_to_wall_clock(moment, "America/New_York") == dt.datetime(
+        2026, 7, 11, 22, 0
+    )
+    assert clock.wall_clock_to_utc(clock.utc_to_wall_clock(moment)) == moment
+
+
 def test_wall_clock_now_honours_event_timezone(monkeypatch: pytest.MonkeyPatch) -> None:
     """Twelve hours apart on the two sides of the date line, whatever the date."""
     monkeypatch.setattr(settings, "EVENT_TIMEZONE", "Etc/GMT+12")

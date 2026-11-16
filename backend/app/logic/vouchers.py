@@ -37,6 +37,12 @@ book an ended shift, nor (unless they manage the task) a shift that earns
 vouchers once it has started, and members cannot book shifts of unpublished
 tasks.
 
+Guests who signed up through a shared list (``users.is_list_guest``) earn
+like everyone else. Their earnings belong to their guest user, which a
+confirmation may merge into the guest account of their address
+(``logic/shared_lists/guest_account.py``). They redeem by code only
+(:func:`_holder_or_404`).
+
 **Redeeming** (:func:`redeem`) is serialised per (event, volunteer) with a
 transaction-scoped advisory lock (``crud.voucher.lock_ledger``). It is a logic
 function rather than route code so the concurrency test can call it on two
@@ -66,8 +72,10 @@ from sqlalchemy.orm import aliased
 from sqlmodel import col
 
 from app.core.errors import raise_problem
+from app.crud.booking import booking as crud_booking
 from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.shared_list_guest import shared_list_guest as crud_shared_list_guest
 from app.crud.voucher import voucher as crud_voucher
 from app.logic import clock
 from app.logic.work_hours import counts_as_worked, shift_ends_at
@@ -82,6 +90,7 @@ from app.schemas.voucher import (
     VoucherBalance,
     VoucherCheckResult,
     VoucherEntryRead,
+    VoucherPassRead,
     VoucherPassStatus,
     VoucherRedeemResult,
     VoucherShift,
@@ -199,6 +208,7 @@ class _Tally:
             email=user.email,
             avatar_etag=user.avatar_etag,
             role=role,
+            is_guest=user.is_list_guest,
             earned=self.earned,
             upcoming=self.upcoming,
             redeemed=self.redeemed,
@@ -237,6 +247,10 @@ async def settle_earnings(
     Idempotent: ``ON CONFLICT (booking_id) DO NOTHING``, so settling a booking
     twice, or from two requests at once, writes one row. Takes no lock (see
     the module docstring). Never writes for a shift still running.
+
+    A guest of a shared list earns like everyone else; the row is theirs,
+    and moves with the booking when their chain is merged into a guest
+    account.
     """
     if task_ids is None and shift_ids is None:
         msg = "settle_earnings needs task_ids or shift_ids"
@@ -531,10 +545,13 @@ async def balances(
     *,
     now: dt.datetime,
 ) -> list[VoucherBalance]:
-    """Everyone in the event, plus former members whose numbers are not all zero.
+    """Everyone in the event, plus former members and guests of shared lists
+    whose numbers are not all zero.
 
-    Sorted by what they can redeem, most first, then by name: the top of the
-    list is where an organiser looks for anything unusual.
+    A guest's address is on their contact row, never in ``users.email``; the
+    event admins who read this see it as they see it on a roster. Sorted by
+    what they can redeem, most first, then by name: the top of the list is
+    where an organiser looks for anything unusual.
     """
     tallies = await _tally(session, event_id, now=now)
 
@@ -553,8 +570,15 @@ async def balances(
     ]
     if former_ids:
         result = await session.execute(select(User).where(col(User.id).in_(former_ids)))
-        for user in result.scalars().all():
-            out.append(tallies[user.id].summary(user, None))
+        former = list(result.scalars().all())
+        guest_emails = await crud_shared_list_guest.contact_emails(
+            session, user_ids=[u.id for u in former if u.is_list_guest]
+        )
+        for user in former:
+            summary = tallies[user.id].summary(user, None)
+            if user.is_list_guest:
+                summary.email = guest_emails.get(user.id)
+            out.append(summary)
 
     out.sort(key=lambda b: (-b.available, (b.name or b.email or "").lower()))
     return out
@@ -579,6 +603,18 @@ async def issue_pass(
         ttl=PASS_TTL,
         hold=PASS_HOLD,
         new_code=generate_code,
+    )
+
+
+def pass_read(p: VoucherPass, *, event_name: str) -> VoucherPassRead:
+    """A code as the volunteer's screen shows it, member or guest."""
+    return VoucherPassRead(
+        id=p.id,
+        code=p.code,
+        qr_payload=f"{QR_PREFIX}{p.code}",
+        expires_at=p.expires_at,
+        ttl_seconds=int(PASS_TTL.total_seconds()),
+        event_name=event_name,
     )
 
 
@@ -638,18 +674,69 @@ async def _pass_for_code(
     return p
 
 
-async def _member_or_404(
+async def appears_in_event(
     session: AsyncSession, *, event_id: uuid.UUID, user_id: uuid.UUID
-) -> User:
-    if await crud_membership.get(session, user_id=user_id, event_id=event_id) is None:
-        raise_problem(
-            404,
-            code="event.member_not_found",
-            detail="That person is not a member of this event",
+) -> bool:
+    """A current member, or someone with entries, settled earnings or confirmed
+    bookings here.
+
+    Covers everyone :func:`balances` lists as a former member or a guest, so
+    an organiser can open and correct every row of the overview, and a guest
+    can redeem by code where they have a part. Settled earnings count on their
+    own: deleting an ended shift or its task cancels the booking behind the
+    earning, and moving the task to another event takes the booking with it.
+    """
+    if await crud_membership.get(session, user_id=user_id, event_id=event_id):
+        return True
+    if await crud_voucher.has_entries(session, event_id=event_id, user_id=user_id):
+        return True
+    if await crud_voucher.has_earnings(session, event_id=event_id, user_id=user_id):
+        return True
+    return (
+        await crud_booking.count_by_user(
+            session, user_id=user_id, status="confirmed", event_id=event_id
         )
-    user = await session.get(User, user_id)
-    assert user is not None  # a membership row implies the user
-    return user
+        > 0
+    )
+
+
+async def _holder_or_404(
+    session: AsyncSession,
+    *,
+    event_id: uuid.UUID,
+    user_id: uuid.UUID,
+    allow_guest: bool,
+) -> User:
+    """Whose vouchers are being redeemed: a current member, or, with
+    ``allow_guest``, a guest of a shared list with a live manage link and a
+    part in the event.
+
+    Only a code passes ``allow_guest``: showing it is the guest's consent to
+    be named to the redeemer, and picking from a list would put guests' names
+    in front of everyone on shift at a point. The guest row is read without a
+    lock, so a redemption never waits for one. 404 ``event.member_not_found``
+    otherwise, so a former member's balance can be corrected but not redeemed.
+    """
+    if await crud_membership.get(session, user_id=user_id, event_id=event_id):
+        user = await session.get(User, user_id)
+        assert user is not None  # a membership row implies the user
+        return user
+    if allow_guest:
+        user = await session.get(User, user_id)
+        guest = await crud_shared_list_guest.get_by_user_id(session, user_id=user_id)
+        if (
+            user is not None
+            and user.is_list_guest
+            and guest is not None
+            and guest.manage_nonce is not None
+            and await appears_in_event(session, event_id=event_id, user_id=user_id)
+        ):
+            return user
+    raise_problem(
+        404,
+        code="event.member_not_found",
+        detail="That person is not a member of this event",
+    )
 
 
 async def _raise_if_unusable(
@@ -660,7 +747,11 @@ async def _raise_if_unusable(
         entry = await crud_voucher.entry_for_pass(session, pass_id=p.id)
         _raise_code_used(entry, used_at=p.used_at)
     if not pass_redeemable(p, utc_now):
-        raise_problem(409, code="voucher.code_expired", detail="This code has expired")
+        _raise_code_expired()
+
+
+def _raise_code_expired() -> NoReturn:
+    raise_problem(409, code="voucher.code_expired", detail="This code has expired")
 
 
 def _raise_code_used(
@@ -696,6 +787,11 @@ async def check(
     Only an unexpired code takes a new hold: checking an expired one inside
     its hold answers as before but does not extend it, so re-checking cannot
     keep a code alive.
+
+    The pass is read again after the hold. A guest's confirmation deletes the
+    chain's unused codes, and a check that read one just before waits in
+    ``hold_pass`` for that delete; it must not then name a guest user the
+    confirmation has deleted.
     """
     p: VoucherPass | None = None
     if code is not None:
@@ -704,14 +800,24 @@ async def check(
     else:
         assert user_id is not None  # the schema requires one of the two
         volunteer_id = user_id
-    volunteer = await _member_or_404(session, event_id=event_id, user_id=volunteer_id)
+    volunteer = await _holder_or_404(
+        session, event_id=event_id, user_id=volunteer_id, allow_guest=p is not None
+    )
     if p is not None:
         await _raise_if_unusable(session, p, utc_now=utc_now)
         await crud_voucher.hold_pass(session, pass_id=p.id, now=utc_now)
+        fresh = await crud_voucher.reload_pass(session, pass_id=p.id)
+        if fresh is None:
+            raise_problem(
+                404, code="voucher.code_invalid", detail="This code is not valid"
+            )
+        if fresh.user_id != volunteer.id:
+            _raise_code_expired()
     return VoucherCheckResult(
         user_id=volunteer.id,
         name=volunteer.name,
         avatar_etag=volunteer.avatar_etag,
+        is_guest=volunteer.is_list_guest,
         available=await available_for(session, event_id, volunteer.id, now=wall_now),
     )
 
@@ -779,7 +885,9 @@ async def redeem(
     else:
         assert user_id is not None  # the schema requires one of the two
         volunteer_id = user_id
-    volunteer = await _member_or_404(session, event_id=event_id, user_id=volunteer_id)
+    volunteer = await _holder_or_404(
+        session, event_id=event_id, user_id=volunteer_id, allow_guest=p is not None
+    )
 
     # From here until commit, nobody else changes this balance.
     await crud_voucher.lock_ledger(session, event_id=event_id, user_id=volunteer.id)
@@ -803,6 +911,10 @@ async def redeem(
             raise_problem(
                 404, code="voucher.code_invalid", detail="This code is not valid"
             )
+        # A guest's confirmation deletes the chain's unused codes rather than
+        # moving them, so this cannot happen; it stays as the check of record.
+        if fresh.user_id != volunteer.id:
+            _raise_code_expired()
         p = fresh
         await _raise_if_unusable(session, p, utc_now=utc_now)
 

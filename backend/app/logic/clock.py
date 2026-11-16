@@ -10,7 +10,8 @@
   venue's wall clock.
 
 :func:`wall_clock_to_utc` crosses from one to the other, for a moment the rota
-names that something has to fire at, such as a reminder.
+names that something has to fire at, such as a reminder;
+:func:`utc_to_wall_clock` crosses back, for a job handed the moment it runs.
 
 Both take the event's zone. ``None`` means ``settings.EVENT_TIMEZONE``, for a
 task without an event; that setting is also what a new event starts with. A
@@ -45,5 +46,15 @@ def wall_clock_to_utc(wall_clock: dt.datetime, zone: str | None = None) -> dt.da
     return (
         wall_clock.replace(tzinfo=ZoneInfo(zone or settings.EVENT_TIMEZONE))
         .astimezone(dt.UTC)
+        .replace(tzinfo=None)
+    )
+
+
+def utc_to_wall_clock(moment: dt.datetime, zone: str | None = None) -> dt.datetime:
+    """A naive UTC moment on ``zone``'s wall clock: what :func:`wall_clock_now`
+    said then."""
+    return (
+        moment.replace(tzinfo=dt.UTC)
+        .astimezone(ZoneInfo(zone or settings.EVENT_TIMEZONE))
         .replace(tzinfo=None)
     )

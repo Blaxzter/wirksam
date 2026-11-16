@@ -1,8 +1,10 @@
 import datetime as dt
 import uuid
+from typing import NoReturn
 
 from fastapi import APIRouter, BackgroundTasks, Query
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -15,6 +17,7 @@ from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
 from app.crud.task import task as crud_task
 from app.logic import clock
+from app.logic.booking_capacity import lock_shifts
 from app.logic.booking_conflicts import find_conflicting_booking
 from app.logic.event_scope import get_user_event_scope
 from app.logic.notifications.triggers import (
@@ -150,6 +153,11 @@ async def create_booking(
     ``booking.shift_started``), unless the caller can manage the task: the
     vouchers are a flat amount per shift, so booking a running shift a minute
     before it ends would pay the whole shift for that minute.
+
+    Bookings of one shift are serialised (``booking_capacity.lock_shifts``):
+    of two requests for its last place one gets 409 ``booking.slot_full``,
+    and a request sent twice gets 409 ``booking.already_exists`` the second
+    time. A shift deleted while the request runs is a 404 ``shift.not_found``.
     """
     shift = await crud_shift.get(
         session, str(booking_in.shift_id), raise_404_error=True
@@ -171,15 +179,14 @@ async def create_booking(
     if task.vouchers_per_shift > 0 and access is None:
         _refuse_if_shift_started(shift, zone)
 
+    # Two requests for the last place, or one sent twice, take turns from
+    # here, so the second reads what the first committed.
+    await lock_shifts(session, [shift.id])
     existing = await crud_booking.get_by_shift_and_user(
         session, shift_id=shift.id, user_id=current_user.id
     )
     if existing and existing.status == "confirmed":
-        raise_problem(
-            409,
-            code="booking.already_exists",
-            detail="You already have a confirmed booking for this shift",
-        )
+        _already_booked()
 
     conflict = await find_conflicting_booking(
         session, user_id=current_user.id, shift=shift, zone=zone
@@ -222,7 +229,19 @@ async def create_booking(
             user_id=current_user.id,
             notes=booking_in.notes,
         )
-        result = await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
+        try:
+            async with session.begin_nested():
+                result = await crud_booking.create(session, obj_in=full_booking)  # type: ignore[arg-type]
+        except IntegrityError as exc:
+            # The shift was deleted while this request waited: the foreign key
+            # check waits for the delete and fails once it has committed.
+            if "bookings_shift_id_fkey" in str(exc.orig):
+                raise_problem(404, code="shift.not_found", detail="Shift not found")
+            # uq_booking_shift_user: a row for this person and shift written
+            # without the shift lock above.
+            if "uq_booking_shift_user" in str(exc.orig):
+                _already_booked()
+            raise
 
     task_name = task.name
 
@@ -253,18 +272,17 @@ async def create_booking(
             existing_user_ids=existing_user_ids,
         )
 
-    # Create default reminders for this booking
-    if current_user.default_reminder_offsets:
-        slot_start = _shift_start_datetime(shift.date, shift.start_time)
-        await crud_reminder.create_from_defaults(
-            session,
-            booking_id=result.id,
-            user_id=current_user.id,
-            shift_id=shift.id,
-            slot_start=slot_start,
-            zone=zone,
-            defaults=current_user.default_reminder_offsets,
-        )
+    # The user's default reminders. Replaced rather than added: a reactivated
+    # booking still has the rows its cancel left, under the same offsets.
+    await crud_reminder.replace_for_booking(
+        session,
+        booking_id=result.id,
+        user_id=current_user.id,
+        shift_id=shift.id,
+        entries=current_user.default_reminder_offsets,
+        slot_start=_shift_start_datetime(shift.date, shift.start_time),
+        zone=zone,
+    )
 
     return result
 
@@ -307,9 +325,14 @@ async def update_booking(
             code="booking.rebook_required",
             detail="Book the shift again to reactivate a cancelled booking",
         )
-    if booking_in.status == "cancelled" and db_booking.status == "confirmed":
+    cancelling = booking_in.status == "cancelled" and db_booking.status == "confirmed"
+    if cancelling:
         await _refuse_if_booked_shift_over(session, db_booking)
-    return await crud_booking.update(session, db_obj=db_booking, obj_in=booking_in)
+    updated = await crud_booking.update(session, db_obj=db_booking, obj_in=booking_in)
+    if cancelling:
+        # As DELETE does: the reminders of a shift no longer booked must not fire.
+        await crud_reminder.cancel_by_booking(session, booking_id=updated.id)
+    return updated
 
 
 @router.delete("/{booking_id}", response_model=BookingRead)
@@ -376,6 +399,14 @@ async def dismiss_booking(
         )
     await session.delete(db_booking)
     await session.commit()
+
+
+def _already_booked() -> NoReturn:
+    raise_problem(
+        409,
+        code="booking.already_exists",
+        detail="You already have a confirmed booking for this shift",
+    )
 
 
 def _refuse_if_shift_over(shift: Shift, zone: str | None) -> None:

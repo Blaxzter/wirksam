@@ -1,6 +1,6 @@
 import datetime as dt
 import uuid
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,33 +71,57 @@ class CRUDBookingReminder(
         await db.refresh(reminder)
         return reminder
 
-    async def create_from_defaults(
+    async def replace_for_booking(
         self,
         db: AsyncSession,
         *,
         booking_id: uuid.UUID,
         user_id: uuid.UUID,
         shift_id: uuid.UUID,
+        entries: Sequence[ReminderOffsetEntry],
         slot_start: dt.datetime,
-        zone: str | None = None,
-        defaults: Sequence[ReminderOffsetEntry],
+        zone: str | None,
     ) -> list[BookingReminder]:
-        """Create reminders from structured defaults."""
-        reminders: list[BookingReminder] = []
-        for entry in defaults:
-            offset = entry.offset_minutes
-            channels = entry.channels
-            reminder = await self.create_reminder(
-                db,
-                booking_id=booking_id,
-                user_id=user_id,
-                shift_id=shift_id,
-                offset_minutes=offset,
-                slot_start=slot_start,
-                zone=zone,
-                channels=channels,
+        """Make ``entries`` the booking's reminders; returns the rows written.
+
+        For a booking that may have had reminders before: one booked again
+        after a cancel, a guest switching reminders off and on. Cancelling
+        leaves its rows behind (:meth:`cancel_by_booking`), and a new row for
+        the same offset would break ``uq_reminder_booking_offset``. So every
+        row not sent yet is deleted first. A sent one stays, and its offset is
+        skipped: a reminder that went out is never sent twice. ``entries=[]``
+        only deletes. ``slot_start`` and ``zone`` as for :meth:`create_reminder`.
+        """
+        sent = await db.execute(
+            select(col(BookingReminder.offset_minutes)).where(
+                col(BookingReminder.booking_id) == booking_id,
+                col(BookingReminder.status) == "sent",
             )
-            reminders.append(reminder)
+        )
+        written_offsets = set(sent.scalars().all())
+        await db.execute(
+            delete(BookingReminder).where(
+                col(BookingReminder.booking_id) == booking_id,
+                col(BookingReminder.status) != "sent",
+            )
+        )
+        reminders: list[BookingReminder] = []
+        for entry in entries:
+            if entry.offset_minutes in written_offsets:
+                continue
+            written_offsets.add(entry.offset_minutes)
+            reminders.append(
+                await self.create_reminder(
+                    db,
+                    booking_id=booking_id,
+                    user_id=user_id,
+                    shift_id=shift_id,
+                    offset_minutes=entry.offset_minutes,
+                    slot_start=slot_start,
+                    zone=zone,
+                    channels=entry.channels,
+                )
+            )
         return reminders
 
     async def reschedule(
@@ -179,10 +203,20 @@ class CRUDBookingReminder(
         booking_id: uuid.UUID,
     ) -> int:
         """Cancel all pending reminders for a booking. Returns count."""
+        return await self.cancel_by_bookings(db, booking_ids=[booking_id])
+
+    async def cancel_by_bookings(
+        self,
+        db: AsyncSession,
+        *,
+        booking_ids: Collection[uuid.UUID],
+    ) -> int:
+        """Cancel all pending reminders of these bookings, in one statement.
+        Returns count."""
         result = await db.execute(
             update(BookingReminder)
             .where(
-                col(BookingReminder.booking_id) == booking_id,
+                col(BookingReminder.booking_id).in_(booking_ids),
                 col(BookingReminder.status) == "pending",
             )
             .values(status="cancelled")
@@ -209,6 +243,25 @@ class CRUDBookingReminder(
         )
         result = await db.execute(query)
         return list(result.scalars().all())
+
+    async def get_pending(
+        self,
+        db: AsyncSession,
+        *,
+        reminder_id: uuid.UUID,
+    ) -> BookingReminder | None:
+        """The reminder as it stands now, if it is still pending; None once it
+        was sent, cancelled, expired or deleted. Read fresh, never from the
+        session's identity map, because the poller acts on what it reads."""
+        result = await db.execute(
+            select(BookingReminder)
+            .where(
+                col(BookingReminder.id) == reminder_id,
+                col(BookingReminder.status) == "pending",
+            )
+            .execution_options(populate_existing=True)
+        )
+        return result.scalar_one_or_none()
 
     async def mark_sent(
         self,
@@ -262,6 +315,17 @@ class CRUDBookingReminder(
             )
         )
         return result.rowcount  # type: ignore[return-value]
+
+    async def reassign_user(
+        self, db: AsyncSession, *, from_user: uuid.UUID, to_user: uuid.UUID
+    ) -> None:
+        """Hand one person's reminders to another, as their bookings moved.
+        Each booking keeps its own rows, offsets and status."""
+        await db.execute(
+            update(BookingReminder)
+            .where(col(BookingReminder.user_id) == from_user)
+            .values(user_id=to_user)
+        )
 
     async def count_by_booking(
         self,

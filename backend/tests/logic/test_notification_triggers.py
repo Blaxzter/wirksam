@@ -1008,6 +1008,7 @@ class TestDispatchBookingCancelledByAdmin:
         notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
         assert notif.data == {
             "booking_id": str(cancelled.booking_id),
+            "booking_ids": str(cancelled.booking_id),
             "task_id": str(task_id),
         }
 
@@ -1017,14 +1018,38 @@ class TestDispatchBookingCancelledByAdmin:
         seeded_types: None,
         test_user: User,
     ) -> None:
-        """With only a booking id, the notice opens My Bookings."""
+        """With only booking ids, the notice opens My Bookings."""
         cancelled = _cancelled(test_user.id)
 
         with _dispatch_env(db_session):
             await _admin_cancel([cancelled], task_is_open=False)
 
         notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
-        assert notif.data == {"booking_id": str(cancelled.booking_id)}
+        assert notif.data == {
+            "booking_id": str(cancelled.booking_id),
+            "booking_ids": str(cancelled.booking_id),
+        }
+
+    async def test_the_notice_names_each_booking_it_is_about(
+        self,
+        db_session: AsyncSession,
+        seeded_types: None,
+        test_user: User,
+    ) -> None:
+        """Every booking of this person that the action ended, and only the
+        shifts not over yet: a guest's mail lists exactly these."""
+        over = _cancelled(test_user.id, ends_at=dt.datetime(2026, 6, 11, 7, 0))
+        first = _cancelled(test_user.id)
+        second = _cancelled(test_user.id, on=dt.date(2026, 6, 12))
+
+        with _dispatch_env(db_session):
+            await _admin_cancel([over, first, second], task_is_open=False)
+
+        notif = await _single(db_session, "booking.cancelled_by_admin", test_user.id)
+        assert notif.data == {
+            "booking_id": str(first.booking_id),
+            "booking_ids": f"{first.booking_id},{second.booking_id}",
+        }
 
     async def test_opted_out_user_receives_nothing(
         self,

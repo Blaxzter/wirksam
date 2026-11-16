@@ -10,6 +10,7 @@ Fixtures are organized by domain for better maintainability:
 - locations.py: Locations, venue plans and markers
 - storage.py: The storage backend (Postgres, or moto S3)
 - clock.py: Pinning the event wall clock
+- shared_lists.py: Shared lists and the guests who signed up through them
 """
 
 # Import all fixtures so they are available to tests
@@ -53,6 +54,16 @@ from tests.fixtures.sandbox import (
     SandboxSetup,
     make_sandbox,
     test_sandbox,
+)
+from tests.fixtures.shared_lists import (
+    CountQueries,
+    ListGuest,
+    ListGuestFactory,
+    SharedListFactory,
+    count_queries,
+    make_list_guest,
+    make_shared_list,
+    test_shared_list,
 )
 from tests.fixtures.shifts import test_shift
 from tests.fixtures.storage import moto_storage, storage_backend, streamed

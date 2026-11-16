@@ -8,17 +8,19 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, select, union
+from sqlalchemy import and_, func, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
+from app.crud.booking import person_name_sql
 from app.logic.event_scope import get_manageable_event_ids
 from app.logic.work_hours import shift_minutes
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.shared_list import SharedList, SharedListGuest
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -81,7 +83,13 @@ async def reporting_export(
     date_from: dt.date | None = Query(None),
     date_to: dt.date | None = Query(None),
 ) -> StreamingResponse:
-    """Export booking data as CSV, scoped the same way as the overview."""
+    """Export booking data as CSV, scoped the same way as the overview.
+
+    A guest who signed up through a shared list is listed under the name of
+    that sign-up, with the address on their contact row, and "Booked Via"
+    names that list (if it belongs to the booking's event: a task moved here
+    keeps bookings made through another event's list).
+    """
     task_ids_filter = await _tasks_of_events(
         session, await _get_managed_event_ids(current_user, session)
     )
@@ -91,8 +99,10 @@ async def reporting_export(
             col(Booking.status),
             col(Booking.created_at),
             col(Booking.cancellation_reason),
-            col(User.name).label("volunteer_name"),
-            col(User.email).label("volunteer_email"),
+            person_name_sql().label("volunteer_name"),
+            func.coalesce(col(User.email), col(SharedListGuest.email)).label(
+                "volunteer_email"
+            ),
             col(Shift.title).label("slot_title"),
             col(Shift.date).label("slot_date"),
             col(Shift.start_time).label("slot_start_time"),
@@ -100,10 +110,19 @@ async def reporting_export(
             col(Shift.location).label("slot_location"),
             col(Shift.category).label("slot_category"),
             col(Task.name).label("task_name"),
+            col(SharedList.title).label("booked_via"),
         )
         .join(User, col(Booking.user_id) == col(User.id))
         .outerjoin(Shift, col(Booking.shift_id) == col(Shift.id))
         .outerjoin(Task, col(Shift.task_id) == col(Task.id))
+        .outerjoin(SharedListGuest, col(SharedListGuest.user_id) == col(User.id))
+        .outerjoin(
+            SharedList,
+            and_(
+                col(SharedList.id) == col(Booking.shared_list_id),
+                col(SharedList.event_id) == col(Task.event_id),
+            ),
+        )
         .order_by(col(Booking.created_at).desc())
     )
     if task_ids_filter is not None:
@@ -133,6 +152,7 @@ async def reporting_export(
             "Location",
             "Category",
             "Task Name",
+            "Booked Via",
         ]
     )
     for row in rows:
@@ -152,6 +172,7 @@ async def reporting_export(
                 row.slot_location or "",
                 row.slot_category or "",
                 row.task_name or "",
+                row.booked_via or "",
             ]
         )
 
@@ -429,10 +450,13 @@ async def _top_volunteers(  # noqa: ANN001
     date_to: dt.date | None,
     task_ids_filter: list[uuid.UUID] | None = None,
 ) -> list[TopVolunteer]:
+    """The ten people with the most confirmed bookings. A guest account pools
+    the sign-ups of several people, so its bookings count per name."""
+    name = person_name_sql()
     query = (
         select(
             col(User.id).label("user_id"),
-            col(User.name),
+            name.label("name"),
             col(User.email),
             func.count().label("booking_count"),
         )
@@ -440,7 +464,7 @@ async def _top_volunteers(  # noqa: ANN001
         .join(User, col(Booking.user_id) == col(User.id))
         .outerjoin(Shift, col(Booking.shift_id) == col(Shift.id))
         .where(col(Booking.status) == "confirmed")
-        .group_by(col(User.id), col(User.name), col(User.email))
+        .group_by(col(User.id), name, col(User.email))
         .order_by(func.count().desc())
         .limit(10)
     )

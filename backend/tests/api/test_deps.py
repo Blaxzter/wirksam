@@ -39,8 +39,10 @@ from app.api.deps import (
 )
 from app.core.config import settings
 from app.core.security import create_access_token
+from app.models.shared_list import SharedList
 from app.models.user import User
 from tests.fixtures.auth import AuthHeadersFactory, RawTokenFactory
+from tests.fixtures.shared_lists import ListGuestFactory
 
 # ── helpers ───────────────────────────────────────────────────────
 
@@ -1031,6 +1033,55 @@ class TestGetUserFromQueryToken:
         assert _problem_code(exc_info.value) == "auth.token_expired"
         # Rejected before any connection was taken from the pool.
         assert factory.begin_calls == 0
+
+    async def test_a_token_for_a_list_guest_raises_403(
+        self,
+        db_session: AsyncSession,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A guest of a shared list never holds a token; if one were minted,
+        the stream would not open for it either."""
+        monkeypatch.setattr(settings, "TESTING", False)
+        monkeypatch.setattr(
+            deps_module, "async_session", _FakeSessionFactory(db_session)
+        )
+        guest = await make_list_guest(test_shared_list)
+        request = _make_request(query_string="token=sse-token")
+
+        with pytest.raises(HTTPException) as exc_info:
+            await _get_user_from_query_token(request, token=_token_for(guest.user.id))
+
+        assert exc_info.value.status_code == 403
+        assert _problem_code(exc_info.value) == "auth.guest_account"
+
+    async def test_testing_email_of_a_list_guest_raises_403(
+        self,
+        db_session: AsyncSession,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A guest has no ``users.email`` to be found by; given one anyway, the
+        ``?test_email=`` path refuses it as the token path does."""
+        monkeypatch.setattr(settings, "TESTING", True)
+        monkeypatch.setattr(
+            deps_module, "async_session", _FakeSessionFactory(db_session)
+        )
+        guest = await make_list_guest(test_shared_list)
+        guest.user.email = "listguest@example.org"
+        db_session.add(guest.user)
+        await db_session.flush()
+        request = _make_request(
+            query_string="token=unused&test_email=listguest@example.org"
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await _get_user_from_query_token(request, token="unused")
+
+        assert exc_info.value.status_code == 403
+        assert _problem_code(exc_info.value) == "auth.guest_account"
 
     async def test_garbage_token_raises_401(
         self,

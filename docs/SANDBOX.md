@@ -124,7 +124,9 @@ duplication and neither is.
 **The prefix versus the column.** `sandbox|` joins `demo|` and `test|` as a
 behavioural prefix — it is what the notification channels test, through the
 shared `is_undeliverable()` predicate in
-`app/logic/notifications/channels/base.py`. The column is what every `WHERE`
+`app/logic/notifications/channels/base.py`. The fourth, `listguest|`, marks
+people who signed up through a shared list, with `users.is_list_guest` as its
+column (see [`SHARED_LISTS.md`](SHARED_LISTS.md)). The column is what every `WHERE`
 clause filters on, because a prefix match cannot use an index and the exclusion
 has to live in the query, not in a post-filter a future caller could forget.
 
@@ -252,6 +254,12 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `api/routes/auth.py` | change-password and resend-verification return 403 `sandbox.not_available` |
 | `api/routes/venue_map.py` | plan image upload returns 403 `sandbox.upload_disabled`. Locations, plans, markers and shapes need no guard of their own: every one of them belongs to one event and is only reachable through `require_event_visible` |
 | `api/routes/venue_templates.py` | venue templates belong to one account and answer 404 to everyone else, the superadmin included, so a guest's templates are invisible without a guard of their own |
+| `logic/permissions.py::shared_list_scope`, `shared_list_access`, `require_shared_list_tasks` | 404 for a sandbox the caller did not create, placed **before** the role check. Every shared-list route of an event, and every route of one list, passes one of them, so a demo's task names, people in charge and fill levels stay hidden from the superadmin too |
+| `api/routes/shared_lists.py::create_shared_list` | 403 `sandbox.shared_lists_disabled`, after the gate: the demo's own guest is `owner` and passes every gate, and a list is a public link that strangers sign up through and that mails whatever address they type. With no list, no list guest ever exists in a demo, so `purge_sandbox` needs no step for them |
+
+The two shared-list rows are covered in `backend/tests/logic/test_shared_list_access.py`
+and `backend/tests/api/routes/test_shared_lists.py`; the frontend hides the
+feature in a demo as well (`canUseSharedLists`).
 
 Note what is deliberately **not** blocked: member role changes and join-request
 decisions. The manager tour walks a visitor through both, and neither sends mail
@@ -273,7 +281,7 @@ the visitor stopped watching, with nothing in any log to explain it.
 Error codes: `sandbox.disabled` (404), `sandbox.capacity_reached` (503),
 `sandbox.forbidden` (403), `sandbox.not_available` (403),
 `sandbox.invitations_disabled` (403), `sandbox.upload_disabled` (403),
-`event.sandbox_not_featurable` (422). Each
+`sandbox.shared_lists_disabled` (403), `event.sandbox_not_featurable` (422). Each
 needs an entry in the frontend's `errorCodes` i18n namespace; a code without one
 renders as the raw backend string on screen.
 
@@ -293,5 +301,8 @@ renders as the raw backend string on screen.
   security surface than the feature is worth.
 - **No sharing.** A sandbox is private to one session. Two people cannot look at
   the same demo.
+- **No shared lists.** Creating one is refused (`sandbox.shared_lists_disabled`)
+  for the same reason: a list would open an anonymous visitor's throwaway event
+  to strangers, and mail the addresses they type.
 - **No background scheduler.** See above — the sweep rides on creation, which is
   sufficient precisely because sandboxes only accumulate when people create them.
