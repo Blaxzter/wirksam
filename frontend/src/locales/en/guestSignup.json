@@ -1,0 +1,205 @@
+{
+    "done": {
+        "another": "Sign up for another shift",
+        "idleHint": "On a shared device this page starts over by itself after two minutes, so the next person doesn't see your details.",
+        "keepLink": {
+            "copied": "Link copied",
+            "copy": "Copy link",
+            "label": "Your link to your sign-ups",
+            "text": "Save this link. It's the only way to take your name off later.",
+            "textVouchers": "Save this link. It's your only way to take your name off again and to redeem your vouchers."
+        },
+        "linkPrivate": "Anyone with this link can change your sign-ups. Don't pass it on.",
+        "linkPrivateVouchers": "Anyone with this link can change your sign-ups and redeem your vouchers. Don't pass it on.",
+        "mailSent": "We've sent an email to {email}. The link in it lets you take your name off again.",
+        "mailSentBefore": "The link in the email to {email} lets you take your name off this shift too.",
+        "nextPerson": "Done – next person",
+        "noMore": "You can't sign up for any more shifts through this list.",
+        "redeemLink": "To redeem them at a stand, open the link below and tap “Show code”.",
+        "redeemMail": "To redeem them at a stand, open the link in the email and tap “Show code”.",
+        "title": "You're signed up",
+        "undo": "Undo this sign-up",
+        "undone": "Your sign-up has been undone."
+    },
+    "form": {
+        "awaitingCheck": "Waiting for the security check…",
+        "back": "Back to the list",
+        "errors": {
+            "maxPerPerson": "Through this list, one person can sign up for one shift only. | Through this list, one person can sign up for at most {count} shifts.",
+            "slotFull": "This shift has just filled up. Please pick another one."
+        },
+        "fields": {
+            "email": {
+                "hint": "We'll send the confirmation there, with a link to take your name off again.",
+                "label": "Email"
+            },
+            "name": {
+                "label": "Your name",
+                "placeholder": "First and last name"
+            },
+            "phone": {
+                "hint": "Only for the people in charge, in case something comes up at short notice.",
+                "label": "Phone"
+            }
+        },
+        "optional": "optional",
+        "remind": "Remind me by email the day before",
+        "submit": "Sign up",
+        "submitting": "Signing up…",
+        "summary": "Your shift",
+        "vouchers": "This shift earns {n} voucher once it is over. | This shift earns {n} vouchers once it is over."
+    },
+    "list": {
+        "free": "{count} free",
+        "full": "full",
+        "lead": "Pick a shift. You don't need an account.",
+        "maxPerPerson": "You can sign up for one shift on this list. | You can sign up for up to {count} shifts on this list.",
+        "names": "Joining: {names}",
+        "namesAndOthers": "Joining: {names} and one more | Joining: {names} and {count} more",
+        "pick": "Sign up",
+        "pickLabel": "Sign up: {task}, {when}",
+        "vouchersBadge": "{n} voucher | {n} vouchers",
+        "vouchersHint": "Shifts with vouchers earn them once the shift is over, also without an account."
+    },
+    "manage": {
+        "bookings": {
+            "cancel": "Take my name off",
+            "cancelConfirm": {
+                "confirm": "Take my name off",
+                "text": "You will no longer be down for “{task}” on {date}. The place opens up for someone else.",
+                "title": "Take your name off this shift?"
+            },
+            "cancelled": "You're no longer down for this shift.",
+            "empty": "There are no shifts here any more.",
+            "firstNamePublic": "Your first name is shown for this shift on shared lists.",
+            "otherEvent": "Now part of {event}",
+            "statusCancelled": "Taken off",
+            "statusOver": "Over",
+            "title": "Your shifts"
+        },
+        "confirm": {
+            "confirmed": "Address confirmed",
+            "done": "Confirmed. This page now shows every sign-up you confirmed for “{event}”.",
+            "fromMailOnly": "If we sent you an email, you can confirm your address through the link in it.",
+            "text": "Confirm {email}. Every sign-up you confirm with this address for “{event}” is then shown on this page. Each sign-up keeps its own name.",
+            "textVouchers": "Confirm {email}. Every sign-up you confirm with this address for “{event}” is then shown on this page, and your vouchers are added up. Each sign-up keeps its own name.",
+            "title": "Is this your address?",
+            "yes": "Yes, that's me"
+        },
+        "erase": {
+            "button": "Delete my data",
+            "confirm": {
+                "confirm": "Delete",
+                "text": "We take your name off every shift still to come and delete your name, email address and phone number. Shifts that are already over stay counted, without your name. This link stops working.",
+                "title": "Delete your data?"
+            },
+            "done": {
+                "text": "Your name, email address and phone number are gone, and this link no longer works.",
+                "title": "Your data has been deleted"
+            },
+            "scopeAccount": "We delete the sign-ups on this page. Other sign-ups with this address that you didn't confirm can be deleted through their own link, or on request through the contact in the privacy policy.",
+            "text": "We take your name off every shift still to come and delete your name, email address and phone number. Shifts that are already over stay counted, without your name.",
+            "title": "Delete my data",
+            "vouchersLost": "Your {n} unredeemed voucher expires. | Your {n} unredeemed vouchers expire."
+        },
+        "error": {
+            "retry": "Try again",
+            "title": "Your sign-ups could not be loaded"
+        },
+        "eventLine": "{event} · {days}",
+        "notFound": {
+            "text": "Open the link from your email again. If that doesn't work either, ask the people who run the event.",
+            "title": "This link doesn't work (any more)"
+        },
+        "notMe": {
+            "button": "That wasn't me",
+            "confirm": {
+                "confirm": "Yes, delete it",
+                "text": "We delete the sign-up and never write to this address again.",
+                "title": "Someone else signed up with your address?"
+            },
+            "done": {
+                "text": "We've deleted the sign-up and won't write to this address any more.",
+                "textKeepsMail": "We've deleted the sign-up. You keep getting email about the sign-ups you confirmed.",
+                "title": "Done"
+            },
+            "keepsMail": "We delete this sign-up. You keep getting email about the sign-ups you confirmed.",
+            "text": "Somebody signed up with your email address? Then we delete the sign-up and never write to this address again.",
+            "textKeepsMail": "Somebody signed up with your email address? Then we delete the sign-up. You keep getting email about the sign-ups you confirmed.",
+            "title": "That wasn't me"
+        },
+        "reminders": {
+            "hint": "For every one of your shifts still to come.",
+            "label": "Reminder by email the day before"
+        },
+        "retention": {
+            "all": "On {date} we delete your name, email address and phone number, once a full day has passed since your last shift. | On {date} we delete your name, email address and phone number, once {days} full days have passed since your last shift.",
+            "name": "On {date} we delete your name, once a full day has passed since your last shift. | On {date} we delete your name, once {days} full days have passed since your last shift.",
+            "nameEmail": "On {date} we delete your name and email address, once a full day has passed since your last shift. | On {date} we delete your name and email address, once {days} full days have passed since your last shift.",
+            "namePhone": "On {date} we delete your name and phone number, once a full day has passed since your last shift. | On {date} we delete your name and phone number, once {days} full days have passed since your last shift.",
+            "vouchers": "Vouchers you have not redeemed by then expire."
+        },
+        "signedUpAs": "Signed up as {name}",
+        "title": "Your sign-ups",
+        "vouchers": {
+            "howTo": "Show the code at the stand. It works once, for two minutes.",
+            "linkGone": "This link no longer works. If you got an email from us, open the link in it.",
+            "nothingYet": "Once a shift with vouchers is over, you can redeem them here.",
+            "showCode": "Show code",
+            "title": "Your vouchers",
+            "titleEvent": "Your vouchers for “{event}”"
+        }
+    },
+    "page": {
+        "error": {
+            "retry": "Try again",
+            "title": "The list could not be loaded"
+        },
+        "eventLine": "{event} · {days}",
+        "signedIn": "Signed in as {name}. Here you sign up without your account, so the shift won't show up in it.",
+        "title": "Sign up for a shift"
+    },
+    "preview": {
+        "hint": "This is how helpers see the list. They sign up through the link.",
+        "label": "Preview of the page for helpers"
+    },
+    "privacyNote": {
+        "contact": {
+            "email": "Only the people in charge of this task and the organisers see your email address.",
+            "emailPhone": "Only the people in charge of this task and the organisers see your email address and phone number.",
+            "phone": "Only the people in charge of this task and the organisers see your phone number."
+        },
+        "firstName": "Your first name appears at this shift on shared lists that show first names.",
+        "link": "More about privacy",
+        "names": "The helpers of this event see your name at the shift."
+    },
+    "retention": {
+        "all": "We delete your name, email address and phone number one day after your last shift. | We delete your name, email address and phone number {days} days after your last shift.",
+        "name": "We delete your name one day after your last shift. | We delete your name {days} days after your last shift.",
+        "nameEmail": "We delete your name and email address one day after your last shift. | We delete your name and email address {days} days after your last shift.",
+        "namePhone": "We delete your name and phone number one day after your last shift. | We delete your name and phone number {days} days after your last shift.",
+        "vouchers": "Vouchers you have not redeemed by then expire."
+    },
+    "states": {
+        "closed": {
+            "text": "You can no longer sign up through this link. Anyone already signed up stays signed up.",
+            "title": "This list is closed"
+        },
+        "empty": "There are no shifts left on this list.",
+        "notFound": {
+            "text": "Ask the people who shared it with you.",
+            "title": "This link doesn't exist (any more)"
+        },
+        "paused": {
+            "text": "The people in charge have paused the list for a moment. Have another look later.",
+            "title": "You can't sign up here right now"
+        }
+    },
+    "validation": {
+        "emailInvalid": "That email address doesn't look complete.",
+        "emailRequired": "Please enter your email address so that we can send you the confirmation.",
+        "name": "Please enter your name.",
+        "phoneInvalid": "That phone number doesn't look right. Use only digits, spaces and + ( ) / - .",
+        "phoneRequired": "Please enter a phone number."
+    }
+}

@@ -16,6 +16,7 @@ For their task, people in charge can:
 - change its name, description, place and category
 - add shifts, change the schedule and delete shifts
 - see who booked, with their email address, phone number if they gave one, and any note on the booking
+- share the task on a [shared list](/features/shared-lists), unless the organisers have switched that off
 - see and edit the task while it's still a draft
 - redeem vouchers, if the task takes them
 

@@ -1,0 +1,205 @@
+{
+    "done": {
+        "another": "Noch eine Schicht eintragen",
+        "idleHint": "Auf einem geteilten Gerät fängt diese Seite nach zwei Minuten von selbst neu an, damit die nächste Person deine Angaben nicht sieht.",
+        "keepLink": {
+            "copied": "Link kopiert",
+            "copy": "Link kopieren",
+            "label": "Dein Link zu deinen Eintragungen",
+            "text": "Speichere diesen Link. Nur damit kannst du dich später wieder austragen.",
+            "textVouchers": "Speichere diesen Link. Nur damit kannst du dich wieder austragen und deine Marken einlösen."
+        },
+        "linkPrivate": "Wer diesen Link hat, kann deine Eintragungen ändern. Gib ihn nicht weiter.",
+        "linkPrivateVouchers": "Wer diesen Link hat, kann deine Eintragungen ändern und deine Marken einlösen. Gib ihn nicht weiter.",
+        "mailSent": "Wir haben dir eine Mail an {email} geschickt. Über den Link darin kannst du dich austragen.",
+        "mailSentBefore": "Über den Link in der Mail an {email} kannst du dich auch aus dieser Schicht austragen.",
+        "nextPerson": "Fertig – nächste Person",
+        "noMore": "Über diese Liste kannst du dich für keine weitere Schicht eintragen.",
+        "redeemLink": "Einlösen kannst du sie an den Ständen: Öffne den Link unten und tipp auf „Code zeigen“.",
+        "redeemMail": "Einlösen kannst du sie an den Ständen: Öffne den Link aus der Mail und tipp auf „Code zeigen“.",
+        "title": "Du bist eingetragen",
+        "undo": "Eintragung zurücknehmen",
+        "undone": "Deine Eintragung ist zurückgenommen."
+    },
+    "form": {
+        "awaitingCheck": "Warte auf die Sicherheitsprüfung …",
+        "back": "Zurück zur Liste",
+        "errors": {
+            "maxPerPerson": "Über diese Liste kann man sich nur für eine Schicht eintragen. | Über diese Liste kann man sich für höchstens {count} Schichten eintragen.",
+            "slotFull": "Diese Schicht ist gerade voll geworden. Such dir bitte eine andere aus."
+        },
+        "fields": {
+            "email": {
+                "hint": "Dorthin schicken wir die Bestätigung und einen Link zum Austragen.",
+                "label": "E-Mail"
+            },
+            "name": {
+                "label": "Dein Name",
+                "placeholder": "Vor- und Nachname"
+            },
+            "phone": {
+                "hint": "Nur für die Verantwortlichen, falls kurzfristig etwas ist.",
+                "label": "Telefon"
+            }
+        },
+        "optional": "freiwillig",
+        "remind": "Erinnere mich am Tag vorher per Mail",
+        "submit": "Eintragen",
+        "submitting": "Wird eingetragen …",
+        "summary": "Deine Schicht",
+        "vouchers": "Für diese Schicht bekommst du {n} Marke, sobald sie vorbei ist. | Für diese Schicht bekommst du {n} Marken, sobald sie vorbei ist."
+    },
+    "list": {
+        "free": "{count} frei",
+        "full": "voll",
+        "lead": "Such dir eine Schicht aus. Du brauchst kein Konto.",
+        "maxPerPerson": "Über diese Liste kannst du dich für eine Schicht eintragen. | Über diese Liste kannst du dich für bis zu {count} Schichten eintragen.",
+        "names": "Dabei: {names}",
+        "namesAndOthers": "Dabei: {names} und eine weitere Person | Dabei: {names} und {count} weitere",
+        "pick": "Eintragen",
+        "pickLabel": "Eintragen: {task}, {when}",
+        "vouchersBadge": "{n} Marke | {n} Marken",
+        "vouchersHint": "Für Schichten mit Marken bekommst du sie, sobald die Schicht vorbei ist, auch ohne Konto."
+    },
+    "manage": {
+        "bookings": {
+            "cancel": "Austragen",
+            "cancelConfirm": {
+                "confirm": "Austragen",
+                "text": "Du bist dann nicht mehr für „{task}“ am {date} eingetragen. Der Platz wird für andere frei.",
+                "title": "Aus dieser Schicht austragen?"
+            },
+            "cancelled": "Du bist aus dieser Schicht ausgetragen.",
+            "empty": "Hier steht keine Schicht mehr.",
+            "firstNamePublic": "Dein Vorname steht bei dieser Schicht auf geteilten Listen.",
+            "otherEvent": "Gehört jetzt zu {event}",
+            "statusCancelled": "Ausgetragen",
+            "statusOver": "Vorbei",
+            "title": "Deine Schichten"
+        },
+        "confirm": {
+            "confirmed": "Adresse bestätigt",
+            "done": "Bestätigt. Hier stehen jetzt alle Eintragungen, die du für „{event}“ bestätigt hast.",
+            "fromMailOnly": "Wenn wir dir eine Mail geschickt haben, kannst du deine Adresse über den Link darin bestätigen.",
+            "text": "Bestätige {email}. Dann stehen alle Eintragungen, die du mit dieser Adresse bei „{event}“ bestätigst, auf dieser Seite. Jede Eintragung behält ihren Namen.",
+            "textVouchers": "Bestätige {email}. Dann stehen alle Eintragungen, die du mit dieser Adresse bei „{event}“ bestätigst, auf dieser Seite, und deine Marken werden zusammengezählt. Jede Eintragung behält ihren Namen.",
+            "title": "Ist das deine Adresse?",
+            "yes": "Ja, das bin ich"
+        },
+        "erase": {
+            "button": "Meine Daten löschen",
+            "confirm": {
+                "confirm": "Löschen",
+                "text": "Wir tragen dich aus allen Schichten aus, die noch kommen, und löschen deinen Namen, deine E-Mail-Adresse und deine Telefonnummer. Schichten, die schon vorbei sind, bleiben ohne Namen gezählt. Dieser Link funktioniert danach nicht mehr.",
+                "title": "Deine Daten löschen?"
+            },
+            "done": {
+                "text": "Dein Name, deine E-Mail-Adresse und deine Telefonnummer sind gelöscht, und dieser Link funktioniert nicht mehr.",
+                "title": "Deine Daten sind gelöscht"
+            },
+            "scopeAccount": "Wir löschen die Eintragungen auf dieser Seite. Andere Eintragungen mit dieser Adresse, die du nicht bestätigt hast, löschst du über ihren eigenen Link oder auf Anfrage über die Kontaktadresse in der Datenschutzerklärung.",
+            "text": "Wir tragen dich aus allen Schichten aus, die noch kommen, und löschen deinen Namen, deine E-Mail-Adresse und deine Telefonnummer. Schichten, die schon vorbei sind, bleiben ohne Namen gezählt.",
+            "title": "Meine Daten löschen",
+            "vouchersLost": "Deine {n} nicht eingelöste Marke verfällt. | Deine {n} nicht eingelösten Marken verfallen."
+        },
+        "error": {
+            "retry": "Noch mal versuchen",
+            "title": "Deine Eintragungen konnten nicht geladen werden"
+        },
+        "eventLine": "{event} · {days}",
+        "notFound": {
+            "text": "Öffne den Link aus deiner Mail noch einmal. Wenn es dann nicht klappt, frag bei denen nach, die die Veranstaltung organisieren.",
+            "title": "Dieser Link funktioniert nicht (mehr)"
+        },
+        "notMe": {
+            "button": "Das war ich nicht",
+            "confirm": {
+                "confirm": "Ja, löschen",
+                "text": "Wir löschen die Eintragung und schreiben dieser Adresse nie wieder.",
+                "title": "Hat sich jemand anderes mit deiner Adresse eingetragen?"
+            },
+            "done": {
+                "text": "Wir haben die Eintragung gelöscht und schreiben dieser Adresse nicht mehr.",
+                "textKeepsMail": "Wir haben die Eintragung gelöscht. Mails zu deinen bestätigten Eintragungen bekommst du weiter.",
+                "title": "Erledigt"
+            },
+            "keepsMail": "Wir löschen diese Eintragung. Mails zu deinen bestätigten Eintragungen bekommst du weiter.",
+            "text": "Hat sich jemand mit deiner E-Mail-Adresse eingetragen? Dann löschen wir die Eintragung und schreiben dieser Adresse nie wieder.",
+            "textKeepsMail": "Hat sich jemand mit deiner E-Mail-Adresse eingetragen? Dann löschen wir die Eintragung. Mails zu deinen bestätigten Eintragungen bekommst du weiter.",
+            "title": "Das war ich nicht"
+        },
+        "reminders": {
+            "hint": "Gilt für alle deine Schichten, die noch kommen.",
+            "label": "Erinnerung am Tag vorher per Mail"
+        },
+        "retention": {
+            "all": "Am {date} löschen wir deinen Namen, deine E-Mail-Adresse und deine Telefonnummer, wenn ein voller Tag seit deiner letzten Schicht vergangen ist. | Am {date} löschen wir deinen Namen, deine E-Mail-Adresse und deine Telefonnummer, wenn {days} volle Tage seit deiner letzten Schicht vergangen sind.",
+            "name": "Am {date} löschen wir deinen Namen, wenn ein voller Tag seit deiner letzten Schicht vergangen ist. | Am {date} löschen wir deinen Namen, wenn {days} volle Tage seit deiner letzten Schicht vergangen sind.",
+            "nameEmail": "Am {date} löschen wir deinen Namen und deine E-Mail-Adresse, wenn ein voller Tag seit deiner letzten Schicht vergangen ist. | Am {date} löschen wir deinen Namen und deine E-Mail-Adresse, wenn {days} volle Tage seit deiner letzten Schicht vergangen sind.",
+            "namePhone": "Am {date} löschen wir deinen Namen und deine Telefonnummer, wenn ein voller Tag seit deiner letzten Schicht vergangen ist. | Am {date} löschen wir deinen Namen und deine Telefonnummer, wenn {days} volle Tage seit deiner letzten Schicht vergangen sind.",
+            "vouchers": "Marken, die du bis dahin nicht eingelöst hast, verfallen."
+        },
+        "signedUpAs": "Eingetragen als {name}",
+        "title": "Deine Eintragungen",
+        "vouchers": {
+            "howTo": "Zeig den Code am Stand. Er gilt zwei Minuten und nur einmal.",
+            "linkGone": "Dieser Link funktioniert nicht mehr. Hast du eine Mail von uns bekommen, öffne den Link darin.",
+            "nothingYet": "Sobald eine Schicht mit Marken vorbei ist, kannst du sie hier einlösen.",
+            "showCode": "Code zeigen",
+            "title": "Deine Marken",
+            "titleEvent": "Deine Marken bei „{event}“"
+        }
+    },
+    "page": {
+        "error": {
+            "retry": "Noch mal versuchen",
+            "title": "Die Liste konnte nicht geladen werden"
+        },
+        "eventLine": "{event} · {days}",
+        "signedIn": "Angemeldet als {name}. Du trägst dich hier ohne Konto ein, die Schicht erscheint also nicht in deinem Konto.",
+        "title": "Für eine Schicht eintragen"
+    },
+    "preview": {
+        "hint": "So sehen Helfende die Liste. Eintragen geht über den Link.",
+        "label": "Vorschau der Seite für Helfende"
+    },
+    "privacyNote": {
+        "contact": {
+            "email": "Deine E-Mail-Adresse sehen nur die Verantwortlichen dieser Aufgabe und die Organisator:innen.",
+            "emailPhone": "E-Mail-Adresse und Telefonnummer sehen nur die Verantwortlichen dieser Aufgabe und die Organisator:innen.",
+            "phone": "Deine Telefonnummer sehen nur die Verantwortlichen dieser Aufgabe und die Organisator:innen."
+        },
+        "firstName": "Dein Vorname steht bei dieser Schicht auf geteilten Listen, die Vornamen zeigen.",
+        "link": "Mehr zum Datenschutz",
+        "names": "Deinen Namen sehen die Helfenden dieser Veranstaltung bei der Schicht."
+    },
+    "retention": {
+        "all": "Wir löschen deinen Namen, deine E-Mail-Adresse und deine Telefonnummer einen Tag nach deiner letzten Schicht. | Wir löschen deinen Namen, deine E-Mail-Adresse und deine Telefonnummer {days} Tage nach deiner letzten Schicht.",
+        "name": "Wir löschen deinen Namen einen Tag nach deiner letzten Schicht. | Wir löschen deinen Namen {days} Tage nach deiner letzten Schicht.",
+        "nameEmail": "Wir löschen deinen Namen und deine E-Mail-Adresse einen Tag nach deiner letzten Schicht. | Wir löschen deinen Namen und deine E-Mail-Adresse {days} Tage nach deiner letzten Schicht.",
+        "namePhone": "Wir löschen deinen Namen und deine Telefonnummer einen Tag nach deiner letzten Schicht. | Wir löschen deinen Namen und deine Telefonnummer {days} Tage nach deiner letzten Schicht.",
+        "vouchers": "Marken, die du bis dahin nicht eingelöst hast, verfallen dann."
+    },
+    "states": {
+        "closed": {
+            "text": "Über diesen Link kann man sich nicht mehr eintragen. Wer schon eingetragen ist, bleibt es.",
+            "title": "Diese Liste ist geschlossen"
+        },
+        "empty": "In dieser Liste gibt es keine Schichten mehr.",
+        "notFound": {
+            "text": "Frag bei denen nach, die ihn geteilt haben.",
+            "title": "Diesen Link gibt es nicht (mehr)"
+        },
+        "paused": {
+            "text": "Die Verantwortlichen haben die Liste kurz angehalten. Schau später noch mal vorbei.",
+            "title": "Gerade kann man sich hier nicht eintragen"
+        }
+    },
+    "validation": {
+        "emailInvalid": "Die E-Mail-Adresse sieht nicht vollständig aus.",
+        "emailRequired": "Bitte gib deine E-Mail-Adresse an, damit wir dir die Bestätigung schicken können.",
+        "name": "Bitte gib deinen Namen an.",
+        "phoneInvalid": "Die Telefonnummer sieht nicht richtig aus. Erlaubt sind nur Ziffern, Leerzeichen und + ( ) / - .",
+        "phoneRequired": "Bitte gib eine Telefonnummer an."
+    }
+}

@@ -18,6 +18,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+import GuestTag from '@/components/shared-lists/GuestTag.vue'
+
 import type { ShiftBookingEntry } from '@/client/types.gen'
 import { parseServerDate } from '@/lib/server-time'
 
@@ -53,6 +55,10 @@ const initials = (name: string | null | undefined, email: string | null | undefi
   if (email) return email[0].toUpperCase()
   return '?'
 }
+
+/** A guest whose data was erased keeps the row but has no name left. */
+const nameOf = (entry: ShiftBookingEntry): string =>
+  entry.user_name ?? (entry.is_guest ? t('sharedLists.guest.erased') : '—')
 
 const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
   avatarUrlFor({ id: entry.user_id, avatar_etag: entry.user_avatar_etag ?? null })
@@ -90,7 +96,10 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
                   </AvatarFallback>
                 </Avatar>
                 <div class="min-w-0">
-                  <p class="font-medium truncate">{{ entry.user_name ?? '—' }}</p>
+                  <p class="flex min-w-0 items-center gap-2">
+                    <span class="font-medium truncate">{{ nameOf(entry) }}</span>
+                    <GuestTag v-if="entry.is_guest" />
+                  </p>
                   <p v-if="entry.user_email" class="text-xs text-muted-foreground truncate">
                     {{ entry.user_email }}
                   </p>
@@ -101,7 +110,9 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
               <span class="text-muted-foreground truncate block">{{ entry.notes ?? '—' }}</span>
             </TableCell>
             <TableCell class="text-right text-muted-foreground whitespace-nowrap">
-              {{ formatDateTime(parseServerDate(entry.created_at)?.toISOString() ?? entry.created_at) }}
+              {{
+                formatDateTime(parseServerDate(entry.created_at)?.toISOString() ?? entry.created_at)
+              }}
             </TableCell>
           </TableRow>
         </TableBody>

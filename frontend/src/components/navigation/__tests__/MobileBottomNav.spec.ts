@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type RouteRecordRaw, createMemoryHistory, createRouter } from 'vue-router'
 
 import MobileBottomNav from '@/components/navigation/MobileBottomNav.vue'
@@ -57,6 +57,8 @@ const routes: RouteRecordRaw[] = [
   ['reporting', '/app/reporting'],
   ['my-events', '/app/events'],
   ['admin-users', '/app/admin/users'],
+  ['shared-lists', '/app/shared-lists/:eventId?'],
+  ['shared-list-create', '/app/shared-lists/:eventId/new'],
 ].map(([name, path]) => ({ name, path, component: page }))
 
 async function mountAt(name: string, params: Record<string, string> = {}) {
@@ -72,6 +74,10 @@ beforeEach(() => {
   i18n.global.locale.value = 'en'
   auth.selectedEvent = null
   auth.canManageEvent = () => false
+})
+
+afterEach(() => {
+  delete globalThis.__APP_CONFIG__
 })
 
 describe('MobileBottomNav', () => {
@@ -160,5 +166,34 @@ describe('MobileBottomNav', () => {
     const link = w.find('[data-testid="mobile-more-availability"]')
     expect(link.classes()).toContain('focus-visible:bg-accent')
     expect(link.classes().filter((c) => c.startsWith('focus:'))).toEqual([])
+  })
+
+  describe('shared lists', () => {
+    const member = { id: 'e1', is_sandbox: false, can_manage: false, managed_task_count: 0 }
+
+    async function listed(event: Record<string, unknown> | null): Promise<boolean> {
+      auth.selectedEvent = event
+      const w = await mountAt('home')
+      await w.find('[data-testid="mobile-nav-more"]').trigger('click')
+      return w.find('[data-testid="mobile-more-shared-lists"]').exists()
+    }
+
+    it('are in the sheet for whoever runs the event or is in charge of a task', async () => {
+      expect(await listed({ ...member, can_manage: true })).toBe(true)
+      expect(await listed({ ...member, managed_task_count: 2 })).toBe(true)
+    })
+
+    it('are not in the sheet for a plain member, in a demo or when switched off', async () => {
+      expect(await listed(member)).toBe(false)
+      expect(await listed({ ...member, can_manage: true, is_sandbox: true })).toBe(false)
+      globalThis.__APP_CONFIG__ = { SHARED_LISTS_ENABLED: 'false' }
+      expect(await listed({ ...member, can_manage: true })).toBe(false)
+    })
+
+    it('light More while a list is being shared', async () => {
+      auth.selectedEvent = { ...member, can_manage: true }
+      const w = await mountAt('shared-list-create', { eventId: 'e1' })
+      expect(w.find('[data-testid="mobile-nav-more"]').classes()).toContain('text-primary')
+    })
   })
 })

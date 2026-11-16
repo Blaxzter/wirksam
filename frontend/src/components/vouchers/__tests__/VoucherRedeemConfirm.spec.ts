@@ -58,6 +58,7 @@ const VRONI: RedeemSubject = {
   name: 'Vroni Hartmann',
   avatarEtag: null,
   available: 2,
+  isGuest: false,
 }
 
 async function openSheet(subject: RedeemSubject = VRONI) {
@@ -110,6 +111,15 @@ describe('VoucherRedeemConfirm', () => {
     expect(byId(w, 'voucher-redeem-available').text()).toBe('2 available')
     expect(byId(w, 'voucher-redeem-available').classes()).toContain('bg-hero-chip')
     expect(byId(w, 'btn-voucher-redeem').text()).toBe('Redeem 1 voucher')
+  })
+
+  it('tags someone who signed up without an account, and nobody else', async () => {
+    const member = await openSheet()
+    expect(byId(member, 'guest-tag').exists()).toBe(false)
+
+    const guest = await openSheet({ ...VRONI, isGuest: true })
+    expect(byId(guest, 'voucher-redeem-person').text()).toContain('Vroni Hartmann')
+    expect(byId(guest, 'guest-tag').text()).toBe('no account')
   })
 
   it('redeems with the code, then says how many, for whom and what is left', async () => {

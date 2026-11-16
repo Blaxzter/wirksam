@@ -16,6 +16,18 @@ import {
 let created: TaskWithShifts
 
 test.beforeEach(async ({ adminPage: page }) => {
+  // The worker's admin is a platform admin, so the dashboard tells it about
+  // join requests in every event, other workers' included. On a phone that
+  // toast sits over the bottom nav: put it away whenever it turns up. The
+  // click is dispatched, because an open More sheet takes the pointer and a
+  // real click would wait behind it until the test times out.
+  await page.addLocatorHandler(
+    page
+      .getByRole('region', { name: /^Notifications/ })
+      .getByRole('button', { name: 'Later' })
+      .last(),
+    (later) => later.dispatchEvent('click'),
+  )
   // Six one-hour shifts nobody has taken, so the event has more open shifts
   // than a phone shows.
   created = await createTaskWithShifts(page, {

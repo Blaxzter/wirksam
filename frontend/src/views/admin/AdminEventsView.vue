@@ -16,19 +16,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import Input from '@/components/ui/input/Input.vue'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
 
 import AdminEventRow from '@/components/admin/AdminEventRow.vue'
 import AdminEventRowSkeleton from '@/components/admin/AdminEventRowSkeleton.vue'
+import ListPagination from '@/components/data-table/ListPagination.vue'
 
 import type { EventListResponse, EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -56,7 +47,6 @@ const activeItems = ref<EventRead[]>([])
 const activeTotal = ref(0)
 const activePage = ref(1)
 const loadingActive = ref(false)
-const activePages = computed(() => Math.max(1, Math.ceil(activeTotal.value / PAGE_SIZE)))
 
 // === Expired section state (lazy-loaded on first expand) ===
 const expiredItems = ref<EventRead[]>([])
@@ -65,7 +55,6 @@ const expiredPage = ref(1)
 const loadingExpired = ref(false)
 const expiredOpen = ref(false)
 const expiredLoaded = ref(false)
-const expiredPages = computed(() => Math.max(1, Math.ceil(expiredTotal.value / PAGE_SIZE)))
 
 async function handleVisibleMonth(range: { from: string; to: string }) {
   try {
@@ -343,41 +332,7 @@ onMounted(loadActive)
       </table>
     </div>
 
-    <div v-if="activePages > 1" class="flex justify-center">
-      <Pagination
-        v-model:page="activePage"
-        :total="activeTotal"
-        :items-per-page="PAGE_SIZE"
-        :sibling-count="1"
-      >
-        <PaginationContent>
-          <PaginationFirst />
-          <PaginationPrevious />
-          <template v-for="(item, index) in activePages" :key="index">
-            <PaginationItem
-              v-if="Math.abs(item - activePage) <= 1 || item === 1 || item === activePages"
-              :value="item"
-              :is-active="activePage === item"
-              as-child
-            >
-              <Button
-                variant="outline"
-                size="icon"
-                class="h-9 w-9"
-                :class="
-                  activePage === item ? '!bg-primary !text-primary-foreground !border-primary' : ''
-                "
-              >
-                {{ item }}
-              </Button>
-            </PaginationItem>
-            <PaginationEllipsis v-else-if="Math.abs(item - activePage) === 2" />
-          </template>
-          <PaginationNext />
-          <PaginationLast />
-        </PaginationContent>
-      </Pagination>
-    </div>
+    <ListPagination v-model:page="activePage" :total="activeTotal" :page-size="PAGE_SIZE" />
 
     <!-- Expired events (collapsible, lazy-loaded on first expand) -->
     <Collapsible v-model:open="expiredOpen">
@@ -451,43 +406,12 @@ onMounted(loadActive)
             </table>
           </div>
 
-          <div v-if="expiredPages > 1" class="mt-3 flex justify-center">
-            <Pagination
-              v-model:page="expiredPage"
-              :total="expiredTotal"
-              :items-per-page="PAGE_SIZE"
-              :sibling-count="1"
-            >
-              <PaginationContent>
-                <PaginationFirst />
-                <PaginationPrevious />
-                <template v-for="(item, index) in expiredPages" :key="index">
-                  <PaginationItem
-                    v-if="Math.abs(item - expiredPage) <= 1 || item === 1 || item === expiredPages"
-                    :value="item"
-                    :is-active="expiredPage === item"
-                    as-child
-                  >
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      class="h-9 w-9"
-                      :class="
-                        expiredPage === item
-                          ? '!bg-primary !text-primary-foreground !border-primary'
-                          : ''
-                      "
-                    >
-                      {{ item }}
-                    </Button>
-                  </PaginationItem>
-                  <PaginationEllipsis v-else-if="Math.abs(item - expiredPage) === 2" />
-                </template>
-                <PaginationNext />
-                <PaginationLast />
-              </PaginationContent>
-            </Pagination>
-          </div>
+          <ListPagination
+            v-model:page="expiredPage"
+            :total="expiredTotal"
+            :page-size="PAGE_SIZE"
+            class="mt-3"
+          />
         </template>
       </CollapsibleContent>
     </Collapsible>

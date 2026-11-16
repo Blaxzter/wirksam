@@ -55,6 +55,8 @@ Das machst du für jede Aufgabe einzeln.
 
 Unter „Beitreten als“ [[role]] ist „Mitglied“ vorgewählt, das reicht zum Buchen. Für Leute, die mitplanen sollen, stellst du „Organisator:in“ ein.
 
+Wer lieber kein Konto möchte, kann trotzdem helfen. Unter „Geteilte Listen“ teilst du Aufgaben, für die noch Leute fehlen, als Link, und man trägt sich mit Namen ein. Wie das geht, steht unter [Geteilte Listen](/features/shared-lists).
+
 Schick den Eingeladenen am besten gleich die Anleitung [Loslegen als Helfer:in](/guides/volunteer-start) mit.
 
 ![Die Karte „Einladungen“ mit dem Feld für E-Mail-Adressen, der Rolle und dem Knopf für den Link](shot:event-invitations)

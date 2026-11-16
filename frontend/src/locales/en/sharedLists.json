@@ -1,0 +1,344 @@
+{
+    "actions": {
+        "copy": "Copy",
+        "copyLink": "Copy link",
+        "details": "Details",
+        "edit": "Edit",
+        "end": "End",
+        "extend": "Extend",
+        "openLink": "Open link",
+        "pause": "Pause",
+        "preview": "Preview",
+        "qr": "QR code",
+        "remove": "Remove",
+        "removeSince": "Remove this and all newer ones",
+        "reopen": "Reopen",
+        "resume": "Resume",
+        "rotate": "New link",
+        "savePng": "Save PNG",
+        "share": "Share",
+        "shareAgain": "Share again",
+        "shareAsOne": "Share as one list",
+        "show": "Show"
+    },
+    "bulk": {
+        "confirmEnd": "Yes, end",
+        "endText": "Its link stops working. Everyone signed up stays signed up. | Their links stop working. Everyone signed up stays signed up.",
+        "endTitle": "End this list? | End {count} lists?",
+        "region": "Selected lists"
+    },
+    "confirm": {
+        "end": {
+            "text": "Anyone who opens the link then sees “This list is closed”. Everyone signed up stays signed up. Ending cannot be undone, but you can share the list again.",
+            "title": "End this list?"
+        },
+        "rotate": {
+            "confirm": "Create new link",
+            "text": "The old link stops working. That helps when the link ended up in the wrong group. Printed QR codes no longer lead here either. Content and settings stay the same.",
+            "title": "Create a new link?"
+        }
+    },
+    "detail": {
+        "created": "created on {date}",
+        "createdBy": "created by {name} on {date}",
+        "figures": {
+            "free": "places free",
+            "guests": "without an account",
+            "signups": "signed up",
+            "viewCount": "{count}×",
+            "views": "opened"
+        },
+        "laterShifts": "Shifts added to these tasks later appear on the list by themselves, even on days you left out.",
+        "lockNote": "This list also holds tasks other people are in charge of, so only the organisers can change it.",
+        "moreActions": "More actions",
+        "notOffered": {
+            "moved": "Now belongs to another event, so it is no longer on the list.",
+            "not_published": "Not published, so it is not on the list right now.",
+            "team_locked": "Team only, so it is not on the list."
+        },
+        "qrAlt": "QR code for {url}",
+        "qrHint": "To put up, at the stand or on a notice board, say. The code leads to the same link.",
+        "settingsTitle": "Settings",
+        "shareAgainHint": "With the same tasks and settings, under a new link.",
+        "signupsTitle": "Signed up through this link",
+        "tasksTitle": "What's on the list"
+    },
+    "empty": {
+        "endedHidden": "One ended list is hidden. | {count} ended lists are hidden.",
+        "endedMatching": "One ended list matches too. | {count} ended lists match too.",
+        "filter": "There are no lists in this view.",
+        "none": "No list shared yet. With “Share a list” you put together shifts that people without an account can sign up for.",
+        "search": "No list matches “{q}”.",
+        "todo": "Nothing to do. Every list is running as it should."
+    },
+    "filters": {
+        "active": "Active",
+        "ended": "Ended",
+        "label": "Filter lists",
+        "live": "Open",
+        "paused": "Paused",
+        "todo": "To do"
+    },
+    "guest": {
+        "erased": "Guest (deleted)",
+        "possibleDuplicate": "possibly a duplicate",
+        "tag": "no account",
+        "via": "via “{title}”"
+    },
+    "issues": {
+        "expiresSoon": "Closes {when} with {places} still free. After that, nobody can sign up through it.",
+        "placesLeft": "one place | {count} places",
+        "stranded": "One free place in {names} is on no other open list. | {count} free places in {names} are on no other open list."
+    },
+    "managersSwitch": {
+        "label": "People in charge may share lists for their tasks",
+        "off": "Only the organisers share lists. People in charge can still pause and end their lists, but not reopen them.",
+        "on": "Whoever is in charge of a task can share, pause and end it themselves."
+    },
+    "notice": {
+        "cta": "View task | View tasks",
+        "places": "one free place that is on no open list | {count} free places that are on no open list",
+        "text": "{names} has {places}. | {names} have {places}."
+    },
+    "page": {
+        "backHome": "Back to the start page",
+        "chooseEvent": "Choose an event",
+        "create": "Share a list",
+        "createDisabled": "There is no task you can share right now. It has to be published, have shifts ahead and not be for a team only.",
+        "forbidden": "Shared lists are run by the organisers and the people in charge of tasks. You are not in charge of any task in this event.",
+        "lede": "People without an account sign up for shifts through these links. Here you see which lists are open and who came through them, and you can pause or end each one.",
+        "managersOff": "The organisers have turned sharing off for people in charge. You can still pause and end your lists.",
+        "noEvent": "Choose an event first.",
+        "retry": "Try again",
+        "title": "Shared lists"
+    },
+    "pauseAll": {
+        "button": "Pause all",
+        "confirm": "Pause all",
+        "lockManagers": "People in charge cannot reopen the lists",
+        "lockManagersHint": "This also turns sharing off for people in charge. You can turn it back on at the bottom of this page.",
+        "text": "Then nobody can sign up through a link until you resume the lists. The links stay the same, and everyone signed up stays signed up.",
+        "title": "Pause the open list? | Pause all {count} open lists?"
+    },
+    "preview": {
+        "empty": "No open list to look at yet.",
+        "facts": {
+            "asked": "Only asks for: {fields}",
+            "confirmation": "A confirmation with a link to cancel comes by email",
+            "maxPer": "At most {count} shift per person | At most {count} shifts per person",
+            "names": "Others see the first names of those signed up",
+            "noAccount": "No account and no app needed",
+            "noConfirmation": "Without an email there is no confirmation",
+            "noNames": "Others only see how many places are free",
+            "unlimited": "As many shifts per person as are free"
+        },
+        "hint": "Pause or end the list under “Links” to see what helpers see instead.",
+        "intro": "This is the page that opens when someone taps the link.",
+        "label": "Preview of the helpers' page",
+        "newTab": "(opens in a new tab)",
+        "realSignups": "Signing up through the real link is a real sign-up. You can still try it: afterwards, remove the sign-up again in the list's details.",
+        "which": "Which list?"
+    },
+    "remove": {
+        "erase": "Also delete this person's data | Also delete these people's data",
+        "eraseHint": "Name, email and phone are deleted. Shifts that are already over keep counting without a name.",
+        "erasePooled": "{n} more sign-up is confirmed under the same email address, maybe someone else's. It is deleted too. | {n} more sign-ups are confirmed under the same email address, maybe other people's. They are deleted too.",
+        "eraseVouchers": "Unredeemed vouchers expire with it.",
+        "notify": "Let them know by email",
+        "notifyHint": "Only people who gave an email get a message. Leave this off for made-up sign-ups, or we would write to addresses that are not theirs.",
+        "sinceText": "Everything signed up through this link since {when} comes off. That helps when someone flooded the list with made-up sign-ups.",
+        "text": "The place becomes free again. What you remove here cannot be brought back. | The places become free again. What you remove here cannot be brought back.",
+        "textOne": "The place on {when} becomes free again. What you remove here cannot be brought back.",
+        "titleMany": "Remove {count} sign-up? | Remove {count} sign-ups?",
+        "titleOne": "Remove “{name}” from “{task}”?",
+        "titleSince": "Remove this sign-up and all newer ones?"
+    },
+    "rows": {
+        "by": "by {name}",
+        "closesAt": "{date}, {time}",
+        "closesEnded": "ended",
+        "closesManual": "no end date",
+        "closesNone": "no shifts left",
+        "expires": "closes {when}",
+        "full": "all taken",
+        "menu": "Actions for “{title}”",
+        "noShareNote": "Not noted where it was shared",
+        "onlyDays": "only {days}",
+        "openUntil": "Open until: {when}",
+        "signedUp": "signed up",
+        "tasksLabel": "Tasks on the list"
+    },
+    "search": {
+        "lists": "Search lists",
+        "listsPlaceholder": "Title, group, task…",
+        "signups": "Search sign-ups",
+        "signupsPlaceholder": "Name or email…",
+        "tasks": "Search tasks",
+        "tasksPlaceholder": "Task, place, person…"
+    },
+    "settings": {
+        "ask": {
+            "email": {
+                "optional": "email (optional)",
+                "required": "email"
+            },
+            "name": "name",
+            "phone": {
+                "optional": "phone (optional)",
+                "required": "phone"
+            }
+        },
+        "asked": "Asks for",
+        "ends": {
+            "date": "through {date}",
+            "lastShift": "until the last shift starts ({date}, {time})",
+            "lastShiftNone": "until the last shift starts",
+            "manual": "until someone ends it"
+        },
+        "maxPer": "at most {count} shift | at most {count} shifts",
+        "names": {
+            "first": "first names of those signed up",
+            "none": "only the free places"
+        },
+        "open": "Open",
+        "others": "Others see",
+        "perPerson": "Per person",
+        "unlimited": "as many shifts as are free"
+    },
+    "signups": {
+        "caption": "Sign-ups through this link",
+        "columns": {
+            "name": "Name",
+            "shift": "Shift",
+            "when": "Signed up"
+        },
+        "empty": "Nobody has signed up through this link yet.",
+        "emptySearch": "No sign-up matches “{q}”.",
+        "hidden": "{count} more sign-up on tasks other people are in charge of | {count} more sign-ups on tasks other people are in charge of",
+        "menu": "More actions for {name}",
+        "region": "Selected sign-ups",
+        "removeRow": "Remove {name}",
+        "rowLabel": "{name} ({task}, {when})",
+        "selectAll": "Select all sign-ups on this page",
+        "selectRow": "Select {name}",
+        "sort": {
+            "created_at": "Signed up",
+            "name": "Name",
+            "shift_start": "Shift"
+        },
+        "when": {
+            "daysAgo": "{count} day ago | {count} days ago",
+            "justNow": "just now",
+            "today": "today",
+            "yesterday": "yesterday"
+        }
+    },
+    "sort": {
+        "closes": "Open until",
+        "created_at": "Created",
+        "free": "Free places",
+        "signups": "Sign-ups",
+        "status": "Status",
+        "title": "Title"
+    },
+    "status": {
+        "ended": "Ended",
+        "expired": "Expired",
+        "live": "Open",
+        "paused": "Paused"
+    },
+    "summary": {
+        "freeInLive": "place free in open lists | places free in open lists",
+        "guests": "of them without an account",
+        "label": "Overview",
+        "liveLists": "list open | lists open",
+        "signups": "signed up through links"
+    },
+    "table": {
+        "caption": "This event's shared lists",
+        "columns": {
+            "actions": "Actions",
+            "closes": "Open until",
+            "list": "List",
+            "places": "Places",
+            "signups": "Signed up",
+            "status": "Status"
+        },
+        "selectAll": "Select all lists on this page",
+        "selectRow": "Select “{title}”"
+    },
+    "tabs": {
+        "label": "Sections",
+        "links": "Links",
+        "preview": "What helpers see",
+        "tasks": "Tasks"
+    },
+    "tasks": {
+        "caption": "Tasks and where they are shared",
+        "chipLabel": "“{title}”, {status}",
+        "columns": {
+            "places": "Places",
+            "sharedIn": "Shared in",
+            "task": "Task"
+        },
+        "empty": {
+            "none": "Published tasks with shifts still to come show up here. There are none right now.",
+            "search": "No task matches “{q}”.",
+            "todo": "Nothing to do. Every free place is on an open list."
+        },
+        "endedCount": "{count} ended",
+        "filters": {
+            "all": "All",
+            "label": "Filter tasks",
+            "todo": "To do"
+        },
+        "inNoList": "On no list",
+        "intro": "Pick several tasks and share them as one list. Then one link is enough for a whole group, even when the shifts are in different tasks.",
+        "managers": "In charge: {names}",
+        "region": "Selected tasks",
+        "scopeNote": "You see the tasks you are in charge of. You can share them yourself.",
+        "scopeNoteOff": "You see the tasks you are in charge of. Right now only the organisers can share them.",
+        "selectAll": "Select all tasks on this page",
+        "selectRow": "Select “{name}”",
+        "selected": "{count} task | {count} tasks",
+        "selectedFree": "{count} place free | {count} places free",
+        "shifts": "{count} shift | {count} shifts",
+        "sort": {
+            "free": "Free places",
+            "name": "Task",
+            "unlisted_free": "Places on no list"
+        },
+        "stranded": "{count} free place on no open list | {count} free places on no open list",
+        "teamLocked": "Only for the team “{team}”. Only people with an account who are in the team can sign up, so the task cannot be shared openly.",
+        "teamOnly": "Team only"
+    },
+    "text": {
+        "andMore": "{names} and one more | {names} and {count} more",
+        "daysWithin": "{span}, on {count} days",
+        "inDays": "today | tomorrow | in {count} days",
+        "quoted": "“{name}”"
+    },
+    "toasts": {
+        "bulk": {
+            "end": "{count} list ended. | {count} lists ended.",
+            "pause": "{count} list paused. | {count} lists paused.",
+            "resume": "{count} list is open again. | {count} lists are open again."
+        },
+        "bulkSkipped": "{count} list could not be changed. | {count} lists could not be changed.",
+        "copied": "Link copied.",
+        "ended": "“{title}” has ended. Everyone signed up stays signed up.",
+        "erased": "The data of {count} person is deleted. | The data of {count} people is deleted.",
+        "extended": "“{title}” stays open until its last shift starts.",
+        "managersOff": "Only the organisers can share lists now.",
+        "managersOn": "People in charge can now share lists for their tasks.",
+        "nothingChanged": "Those lists already were that way.",
+        "nothingRemoved": "There was nothing to remove.",
+        "paused": "“{title}” is paused. Anyone who opens the link cannot sign up for now.",
+        "pausedAll": "{count} open list is paused. | All {count} open lists are paused.",
+        "removeSkipped": "{count} sign-up could not be removed. | {count} sign-ups could not be removed.",
+        "removed": "{count} sign-up removed. | {count} sign-ups removed.",
+        "reopened": "“{title}” is open again until its last shift starts.",
+        "resumed": "“{title}” is open again.",
+        "rotated": "New link created. The old one no longer works."
+    }
+}

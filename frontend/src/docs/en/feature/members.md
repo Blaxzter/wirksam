@@ -45,6 +45,8 @@ Any number of people can use it, and you need no addresses. It works for 14 days
 
 You choose this when creating the event, under "Who can see this event". It's private by default, so only people you invite can find and join it. If it's public, anyone signed in can find it and ask to join.
 
+A [shared list](/features/shared-lists) works in a private event too. Anyone with its link can sign up for the shifts on it without an account, and sees nothing else of the event.
+
 Others only see a public event once its status on the Details tab is "Published". Publishing sends everyone in the event a message.
 
 From then on the event is listed on the "Select an event" page on the Discover tab. Anyone who wants to take part taps "Ask to join" there. This is how organisers find out:
@@ -84,7 +86,9 @@ Someone with an account gets the invitation as an ordinary message, according to
 
 They see the event, its dates, its description and the role. They decide with "Accept and join" or "Not now", and without a yes nothing happens. What volunteers do at this point is in [Getting started as a volunteer](/guides/volunteer-start).
 
-Everyone needs an account. Someone without one creates it when accepting, with a name, email address and password. It's free and works on a phone too.
+Everyone in the event needs an account. Someone without one creates it when accepting, with a name, email address and password. It's free and works on a phone too.
+
+Signing up for single shifts works without an account. A [shared list](/features/shared-lists) asks only for a name, and for an email address or phone number if the list wants one.
 
 ### How long does an invitation last?
 

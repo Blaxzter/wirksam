@@ -1,7 +1,9 @@
 {
     "breadcrumbs": {
         "home": "Home",
-        "settings": "Settings"
+        "settings": "Settings",
+        "sharedListCreate": "Share a list",
+        "sharedListEdit": "Edit list"
     },
     "eventSwitcher": {
         "description": "Tap an event to switch.",
@@ -46,6 +48,9 @@
                 "label": "My Bookings"
             },
             "settings": "Settings",
+            "sharedLists": {
+                "label": "Shared lists"
+            },
             "tasks": {
                 "description": "Browse tasks",
                 "label": "Tasks"

@@ -13,6 +13,7 @@ import {
   House,
   Lock,
   Map as MapIcon,
+  Share2,
   ShieldCheck,
   Ticket,
   Users,
@@ -50,6 +51,8 @@ import NavMain from '@/components/navigation/NavMain.vue'
 import type { NavItem, NavSubItem } from '@/components/navigation/NavMain.vue'
 import NavUser from '@/components/navigation/NavUser.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
+
+import { canUseSharedLists } from '@/lib/shared-lists'
 
 interface AppSidebarProps extends SidebarProps {
   open?: boolean
@@ -194,6 +197,12 @@ const showTeams = computed(() => {
 /** Team requests this user may decide in the selected event. */
 const teamRequestCount = computed(() => authStore.selectedEvent?.pending_team_request_count ?? 0)
 
+/**
+ * Not in `navManager`: `isManager` leaves out the people who are only in
+ * charge of a task, and they share their tasks on lists too.
+ */
+const showSharedLists = computed(() => canUseSharedLists(authStore.selectedEvent))
+
 /** Once a task earns vouchers (published or archived) or takes them; until then nothing to show. */
 const showVouchers = computed(() => {
   const event = authStore.selectedEvent
@@ -271,6 +280,16 @@ const navMain = computed(() => {
               { count: teamRequestCount.value },
               teamRequestCount.value,
             ),
+          },
+        ]
+      : []),
+    ...(showSharedLists.value
+      ? [
+          {
+            title: 'Shared lists',
+            titleKey: 'navigation.sidebar.items.sharedLists.label',
+            icon: Share2,
+            routeName: 'shared-lists',
           },
         ]
       : []),

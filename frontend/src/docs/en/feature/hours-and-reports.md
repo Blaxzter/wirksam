@@ -33,7 +33,7 @@ On a phone it's a small "Hours" tile on the Bookings tab.
 
 ## The organisers' overview
 
-Under "Manage Events", open the event and choose the "People" tab. The "Worked hours" card there lists everyone who has hours or booked shifts, most hours first.
+Under "Manage Events", open the event and choose the "People" tab. The "Worked hours" card there lists everyone who has hours or booked shifts, most hours first. People who signed up through a shared list are in it too, marked "no account".
 
 Each row shows shifts, shift hours, additional hours and the total. Click a row to see the shifts and entries behind it.
 
@@ -72,13 +72,13 @@ You choose the date range at the top. It goes by the shift's date, whenever it w
 
 On a task's page, the button with the printer opens the print view. Organisers find "Print" in the menu with the three dots. Anyone who can see the task can print it.
 
-The sheet has one line for each place on a shift. At the top are the task, its days and a QR code with the note "Scan to sign up online". By default the lines stay empty, for names written in by hand.
+The sheet has one line for each place on a shift, with the task and its days at the top. By default the lines stay empty, for names written in by hand. Organisers and the people in charge of the task get a [shared list's](/features/shared-lists) notice instead, whose QR code lets anyone sign up without an account.
 
-Beside the sheet, "Display options" decide what goes on it. "Show booked names", for example, fills in who booked.
+Beside the sheet, "Display options" decide what goes on it. "Show booked names", for example, fills in who booked. On a notice the option is called "Names of those signed up", and it fills in the shifts still to come.
 
 For the whole event, organisers find a printer icon at the top of the task list. "Print overview" puts every task on one sheet, with its days, place and category.
 
-"Print all tasks" prints each task's sheet one after the other, with the same display options. With "Show booked names", that's a roster for the whole event.
+"Print all tasks" prints a sheet for each task, one after the other, with the same display options. Every task that can go on a shared list shares one list, and its sheet is that list's notice, with the QR code and the shifts still to come. A task that can't go on the list gets its own sheet without a QR code. So this is no roster for the whole event: shifts that have started are left out. For a list of everyone who booked, use "Export CSV" on the Reports page.
 
 ## Frequently asked questions
 
@@ -124,6 +124,8 @@ It's usually the date range. By default it runs from the start of this month to 
 
 Each booking in the date range gets its own line, including cancelled ones with their reason. Each line also has the name and email, shift, date, times, hours, place, category and task.
 
+The last column names the shared list a booking came through, if any. For people who signed up through a list, the email is the one they gave there.
+
 ### Which display options are there for printing?
 
 - "Show booked names" fills in who booked. Phone numbers only appear if you're an organiser or in charge of the task.
@@ -131,6 +133,7 @@ Each booking in the date range gets its own line, including cancelled ones with 
 - "Repeat header on each page" is on by default.
 - "Show location map" appears when the task has one place with a pin on the venue map.
 - "Filter dates" appears when there are several days, and prints only the ones you choose.
+- On a shared list's notice, "Lines to sign up on paper" leaves out the lines for the free places, and "Names of those signed up" fills in who is down.
 
 ### Where does the QR code on the printed overview lead?
 

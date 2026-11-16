@@ -13,11 +13,13 @@ import {
   addMember,
   api,
   createEvent,
+  createSharedList,
   createTaskWithShifts,
   deleteEvent,
   deleteTask,
   uniqueName,
 } from '../../helpers/api.js'
+import { removeSharedListEvent, seedSharedListEvent } from '../../helpers/shared-list-seed.js'
 
 test.describe('a11y – admin routes', () => {
   test('dashboard', async ({ adminPage: page }) => {
@@ -159,6 +161,48 @@ test.describe('a11y – admin event vouchers', () => {
     } finally {
       for (const id of tasks) await deleteTask(page, id).catch(() => {})
       await deleteEvent(page, event.id).catch(() => {})
+    }
+  })
+})
+
+// Shared lists: the page with a list on it, and that list's details. Its own
+// event, so the worker event never gains a list.
+test.describe('a11y – admin shared lists', () => {
+  test('the lists table and a list’s details', async ({ adminPage: page, adminUser }) => {
+    const seeded = await seedSharedListEvent(page, 'E2E a11y Lists')
+    try {
+      const list = await createSharedList(adminUser.email, seeded.event.id, {
+        title: 'Kuchenbuffet',
+        task_ids: [seeded.tasks[0].task.id],
+      })
+
+      await page.goto(`/app/shared-lists/${seeded.event.id}`)
+      await expect(page.getByTestId('shared-lists-table')).toBeVisible()
+      await expectNoA11yViolations(page, { label: 'admin shared lists (/app/shared-lists/:id)' })
+
+      await page.getByTestId(`shared-list-row-${list.id}`).getByTestId('shared-list-title').click()
+      await expect(page.getByTestId('shared-list-signups')).toBeVisible()
+      await expectNoA11yViolations(page, { label: 'shared list details dialog' })
+    } finally {
+      await removeSharedListEvent(page, seeded)
+    }
+  })
+
+  test('a list’s notice to print', async ({ adminPage: page, adminUser }) => {
+    const seeded = await seedSharedListEvent(page, 'E2E a11y Notice', ['Kuchen', 'Kasse'])
+    try {
+      const list = await createSharedList(adminUser.email, seeded.event.id, {
+        title: 'Basar-Aushang',
+        intro: 'Trag dich ein! Danke.',
+        task_ids: seeded.tasks.map((t) => t.task.id),
+      })
+
+      await page.goto(`/print/lists/${list.id}`)
+      await expect(page.getByTestId('print-qr').getByRole('img')).toBeVisible()
+      await expect(page.getByTestId('print-shift-free').first()).toBeVisible()
+      await expectNoA11yViolations(page, { label: 'shared list notice (/print/lists/:id)' })
+    } finally {
+      await removeSharedListEvent(page, seeded)
     }
   })
 })

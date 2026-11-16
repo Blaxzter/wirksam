@@ -1,0 +1,344 @@
+{
+    "actions": {
+        "copy": "Kopieren",
+        "copyLink": "Link kopieren",
+        "details": "Details",
+        "edit": "Bearbeiten",
+        "end": "Beenden",
+        "extend": "Verlängern",
+        "openLink": "Link öffnen",
+        "pause": "Pausieren",
+        "preview": "Vorschau",
+        "qr": "QR-Code",
+        "remove": "Austragen",
+        "removeSince": "Diese und alle neueren austragen",
+        "reopen": "Wieder öffnen",
+        "resume": "Fortsetzen",
+        "rotate": "Neuer Link",
+        "savePng": "PNG speichern",
+        "share": "Teilen",
+        "shareAgain": "Neu teilen",
+        "shareAsOne": "Als eine Liste teilen",
+        "show": "Anzeigen"
+    },
+    "bulk": {
+        "confirmEnd": "Ja, beenden",
+        "endText": "Der Link funktioniert danach nicht mehr. Wer eingetragen ist, bleibt eingetragen. | Die Links funktionieren danach nicht mehr. Wer eingetragen ist, bleibt eingetragen.",
+        "endTitle": "Liste beenden? | {count} Listen beenden?",
+        "region": "Ausgewählte Listen"
+    },
+    "confirm": {
+        "end": {
+            "text": "Wer den Link öffnet, sieht dann „Diese Liste ist geschlossen“. Wer eingetragen ist, bleibt eingetragen. Beenden lässt sich nicht rückgängig machen, du kannst die Liste aber neu teilen.",
+            "title": "Liste beenden?"
+        },
+        "rotate": {
+            "confirm": "Neuen Link erzeugen",
+            "text": "Der alte Link funktioniert dann nicht mehr. Das hilft, wenn der Link in der falschen Gruppe gelandet ist. Gedruckte QR-Codes führen dann auch nicht mehr hierher. Inhalt und Einstellungen bleiben gleich.",
+            "title": "Neuen Link erzeugen?"
+        }
+    },
+    "detail": {
+        "created": "erstellt am {date}",
+        "createdBy": "erstellt von {name} am {date}",
+        "figures": {
+            "free": "Plätze frei",
+            "guests": "ohne Konto",
+            "signups": "eingetragen",
+            "viewCount": "{count}×",
+            "views": "geöffnet"
+        },
+        "laterShifts": "Schichten, die später zu diesen Aufgaben dazukommen, stehen von selbst auch in der Liste, auch an Tagen, die du abgewählt hast.",
+        "lockNote": "In dieser Liste stecken auch Aufgaben, für die andere verantwortlich sind. Ändern können sie deshalb nur die Organisator:innen.",
+        "moreActions": "Weitere Aktionen",
+        "notOffered": {
+            "moved": "Gehört jetzt zu einer anderen Veranstaltung, darum nicht mehr in der Liste.",
+            "not_published": "Nicht veröffentlicht, darum gerade nicht in der Liste.",
+            "team_locked": "Nur für ein Team, darum nicht in der Liste."
+        },
+        "qrAlt": "QR-Code für {url}",
+        "qrHint": "Zum Aushängen, zum Beispiel am Stand oder im Schaukasten. Der Code führt auf denselben Link.",
+        "settingsTitle": "Einstellungen",
+        "shareAgainHint": "Mit denselben Aufgaben und Einstellungen, unter einem neuen Link.",
+        "signupsTitle": "Über diesen Link eingetragen",
+        "tasksTitle": "Was in der Liste steht"
+    },
+    "empty": {
+        "endedHidden": "Eine beendete Liste ist ausgeblendet. | {count} beendete Listen sind ausgeblendet.",
+        "endedMatching": "Eine beendete Liste passt auch. | {count} beendete Listen passen auch.",
+        "filter": "In dieser Ansicht gibt es keine Listen.",
+        "none": "Noch keine Liste geteilt. Mit „Liste teilen“ stellst du Schichten zusammen, für die sich Leute ohne Konto eintragen können.",
+        "search": "Keine Liste passt zu „{q}“.",
+        "todo": "Nichts zu tun. Jede Liste läuft, wie sie soll."
+    },
+    "filters": {
+        "active": "Aktiv",
+        "ended": "Beendet",
+        "label": "Listen filtern",
+        "live": "Offen",
+        "paused": "Pausiert",
+        "todo": "Zu tun"
+    },
+    "guest": {
+        "erased": "Gast (gelöscht)",
+        "possibleDuplicate": "möglicherweise doppelt",
+        "tag": "ohne Konto",
+        "via": "über „{title}“"
+    },
+    "issues": {
+        "expiresSoon": "Läuft {when} ab, {places} noch frei. Danach kann sich darüber niemand mehr eintragen.",
+        "placesLeft": "ein Platz ist | {count} Plätze sind",
+        "stranded": "Ein freier Platz bei {names} steht sonst in keiner offenen Liste. | {count} freie Plätze bei {names} stehen sonst in keiner offenen Liste."
+    },
+    "managersSwitch": {
+        "label": "Verantwortliche dürfen Listen für ihre Aufgaben teilen",
+        "off": "Nur die Organisator:innen teilen Listen. Verantwortliche können ihre Listen noch pausieren und beenden, aber nicht wieder öffnen.",
+        "on": "Wer für eine Aufgabe verantwortlich ist, kann sie selbst teilen, pausieren und beenden."
+    },
+    "notice": {
+        "cta": "Aufgabe ansehen | Aufgaben ansehen",
+        "places": "einen freien Platz, der in keiner offenen Liste steht | {count} freie Plätze, die in keiner offenen Liste stehen",
+        "text": "{names} hat {places}. | {names} haben {places}."
+    },
+    "page": {
+        "backHome": "Zur Startseite",
+        "chooseEvent": "Veranstaltung wählen",
+        "create": "Liste teilen",
+        "createDisabled": "Gerade gibt es keine Aufgabe, die du teilen kannst. Sie muss veröffentlicht sein, noch Schichten haben und darf nicht nur für ein Team sein.",
+        "forbidden": "Geteilte Listen verwalten die Organisator:innen und die Verantwortlichen von Aufgaben. In dieser Veranstaltung bist du für keine Aufgabe verantwortlich.",
+        "lede": "Über diese Links tragen sich Leute ohne Konto in Schichten ein. Hier siehst du, welche Listen gerade offen sind und wer darüber kam, und kannst jede pausieren oder beenden.",
+        "managersOff": "Die Organisator:innen haben das Teilen für Verantwortliche ausgeschaltet. Deine Listen kannst du weiter pausieren und beenden.",
+        "noEvent": "Wähle zuerst eine Veranstaltung aus.",
+        "retry": "Noch mal versuchen",
+        "title": "Geteilte Listen"
+    },
+    "pauseAll": {
+        "button": "Alle pausieren",
+        "confirm": "Alle pausieren",
+        "lockManagers": "Verantwortliche können die Listen nicht wieder öffnen",
+        "lockManagersHint": "Das schaltet auch das Teilen für Verantwortliche aus. Wieder einschalten kannst du es unten auf dieser Seite.",
+        "text": "Dann kann sich niemand mehr über einen Link eintragen, bis du die Listen fortsetzt. Die Links bleiben dieselben, und wer eingetragen ist, bleibt eingetragen.",
+        "title": "Die offene Liste pausieren? | Alle {count} offenen Listen pausieren?"
+    },
+    "preview": {
+        "empty": "Noch keine offene Liste, die du ansehen kannst.",
+        "facts": {
+            "asked": "Gefragt wird nur: {fields}",
+            "confirmation": "Per Mail kommt eine Bestätigung mit einem Link zum Austragen",
+            "maxPer": "Höchstens {count} Schicht pro Person | Höchstens {count} Schichten pro Person",
+            "names": "Andere sehen die Vornamen der Eingetragenen",
+            "noAccount": "Kein Konto und keine App nötig",
+            "noConfirmation": "Ohne E-Mail gibt es keine Bestätigung",
+            "noNames": "Andere sehen nur, wie viele Plätze frei sind",
+            "unlimited": "So viele Schichten pro Person, wie frei sind"
+        },
+        "hint": "Pausiere oder beende die Liste unter „Links“, dann siehst du hier, was Helfende stattdessen sehen.",
+        "intro": "So sieht die Seite aus, die sich öffnet, wenn jemand den Link antippt.",
+        "label": "Vorschau der Seite für Helfende",
+        "newTab": "(öffnet in einem neuen Tab)",
+        "realSignups": "Wer sich über den echten Link einträgt, ist wirklich eingetragen. Zum Ausprobieren geht das trotzdem: In den Details der Liste kannst du die Eintragung danach wieder austragen.",
+        "which": "Welche Liste?"
+    },
+    "remove": {
+        "erase": "Auch die Daten dieser Person löschen | Auch die Daten dieser Personen löschen",
+        "eraseHint": "Name, E-Mail und Telefon werden gelöscht. Schichten, die schon vorbei sind, zählen ohne Namen weiter.",
+        "erasePooled": "Unter derselben E-Mail-Adresse ist noch {n} weitere Eintragung bestätigt, vielleicht von jemand anderem. Sie wird mit gelöscht. | Unter derselben E-Mail-Adresse sind noch {n} weitere Eintragungen bestätigt, vielleicht von anderen. Sie werden mit gelöscht.",
+        "eraseVouchers": "Nicht eingelöste Marken verfallen dann.",
+        "notify": "Per Mail Bescheid geben",
+        "notifyHint": "Nur wer eine E-Mail angegeben hat, bekommt eine Nachricht. Bei erfundenen Eintragungen lass das aus, sonst schreiben wir fremden Adressen.",
+        "sinceText": "Alles, was seit {when} über diesen Link eingetragen wurde, kommt raus. Das hilft, wenn jemand die Liste mit erfundenen Eintragungen geflutet hat.",
+        "text": "Der Platz wird wieder frei. Was du hier austrägst, lässt sich nicht zurückholen. | Die Plätze werden wieder frei. Was du hier austrägst, lässt sich nicht zurückholen.",
+        "textOne": "Der Platz am {when} wird wieder frei. Was du hier austrägst, lässt sich nicht zurückholen.",
+        "titleMany": "{count} Eintragung austragen? | {count} Eintragungen austragen?",
+        "titleOne": "„{name}“ aus „{task}“ austragen?",
+        "titleSince": "Diese und alle neueren Eintragungen austragen?"
+    },
+    "rows": {
+        "by": "von {name}",
+        "closesAt": "{date}, {time}",
+        "closesEnded": "beendet",
+        "closesManual": "unbegrenzt",
+        "closesNone": "keine Schicht mehr",
+        "expires": "läuft {when} ab",
+        "full": "alles besetzt",
+        "menu": "Aktionen für „{title}“",
+        "noShareNote": "Nicht angegeben, wo geteilt",
+        "onlyDays": "nur {days}",
+        "openUntil": "Offen bis: {when}",
+        "signedUp": "eingetragen",
+        "tasksLabel": "Aufgaben in der Liste"
+    },
+    "search": {
+        "lists": "Listen durchsuchen",
+        "listsPlaceholder": "Titel, Gruppe, Aufgabe…",
+        "signups": "Eintragungen durchsuchen",
+        "signupsPlaceholder": "Name oder E-Mail…",
+        "tasks": "Aufgaben durchsuchen",
+        "tasksPlaceholder": "Aufgabe, Ort, Person…"
+    },
+    "settings": {
+        "ask": {
+            "email": {
+                "optional": "E-Mail (freiwillig)",
+                "required": "E-Mail"
+            },
+            "name": "Name",
+            "phone": {
+                "optional": "Telefon (freiwillig)",
+                "required": "Telefon"
+            }
+        },
+        "asked": "Gefragt wird",
+        "ends": {
+            "date": "bis einschließlich {date}",
+            "lastShift": "bis die letzte Schicht beginnt ({date}, {time})",
+            "lastShiftNone": "bis die letzte Schicht beginnt",
+            "manual": "bis jemand sie beendet"
+        },
+        "maxPer": "höchstens {count} Schicht | höchstens {count} Schichten",
+        "names": {
+            "first": "Vornamen der Eingetragenen",
+            "none": "nur freie Plätze"
+        },
+        "open": "Offen",
+        "others": "Andere sehen",
+        "perPerson": "Pro Person",
+        "unlimited": "so viele Schichten, wie frei sind"
+    },
+    "signups": {
+        "caption": "Eintragungen über diesen Link",
+        "columns": {
+            "name": "Name",
+            "shift": "Schicht",
+            "when": "Eingetragen"
+        },
+        "empty": "Über diesen Link hat sich noch niemand eingetragen.",
+        "emptySearch": "Keine Eintragung passt zu „{q}“.",
+        "hidden": "{count} weitere Eintragung bei Aufgaben anderer Verantwortlicher | {count} weitere Eintragungen bei Aufgaben anderer Verantwortlicher",
+        "menu": "Weitere Aktionen für {name}",
+        "region": "Ausgewählte Eintragungen",
+        "removeRow": "{name} austragen",
+        "rowLabel": "{name} ({task}, {when})",
+        "selectAll": "Alle Eintragungen auf dieser Seite auswählen",
+        "selectRow": "{name} auswählen",
+        "sort": {
+            "created_at": "Eingetragen",
+            "name": "Name",
+            "shift_start": "Schicht"
+        },
+        "when": {
+            "daysAgo": "vor {count} Tag | vor {count} Tagen",
+            "justNow": "gerade eben",
+            "today": "heute",
+            "yesterday": "gestern"
+        }
+    },
+    "sort": {
+        "closes": "Offen bis",
+        "created_at": "Erstellt",
+        "free": "Freie Plätze",
+        "signups": "Eintragungen",
+        "status": "Status",
+        "title": "Titel"
+    },
+    "status": {
+        "ended": "Beendet",
+        "expired": "Abgelaufen",
+        "live": "Offen",
+        "paused": "Pausiert"
+    },
+    "summary": {
+        "freeInLive": "Platz frei in offenen Listen | Plätze frei in offenen Listen",
+        "guests": "davon ohne Konto",
+        "label": "Überblick",
+        "liveLists": "Liste offen | Listen offen",
+        "signups": "über Links eingetragen"
+    },
+    "table": {
+        "caption": "Geteilte Listen dieser Veranstaltung",
+        "columns": {
+            "actions": "Aktionen",
+            "closes": "Offen bis",
+            "list": "Liste",
+            "places": "Plätze",
+            "signups": "Eingetragen",
+            "status": "Status"
+        },
+        "selectAll": "Alle Listen auf dieser Seite auswählen",
+        "selectRow": "„{title}“ auswählen"
+    },
+    "tabs": {
+        "label": "Bereiche",
+        "links": "Links",
+        "preview": "So sehen es Helfende",
+        "tasks": "Aufgaben"
+    },
+    "tasks": {
+        "caption": "Aufgaben und wo sie geteilt sind",
+        "chipLabel": "„{title}“, {status}",
+        "columns": {
+            "places": "Plätze",
+            "sharedIn": "Geteilt in",
+            "task": "Aufgabe"
+        },
+        "empty": {
+            "none": "Hier stehen veröffentlichte Aufgaben mit Schichten, die noch kommen. Gerade gibt es keine.",
+            "search": "Keine Aufgabe passt zu „{q}“.",
+            "todo": "Nichts zu tun. Jeder freie Platz steht in einer offenen Liste."
+        },
+        "endedCount": "{count} beendet",
+        "filters": {
+            "all": "Alle",
+            "label": "Aufgaben filtern",
+            "todo": "Zu tun"
+        },
+        "inNoList": "In keiner Liste",
+        "intro": "Wähle mehrere Aufgaben aus und teile sie als eine Liste. Dann reicht ein Link für eine ganze Gruppe, auch wenn die Schichten in verschiedenen Aufgaben stecken.",
+        "managers": "Verantwortlich: {names}",
+        "region": "Ausgewählte Aufgaben",
+        "scopeNote": "Du siehst die Aufgaben, für die du verantwortlich bist. Die kannst du selbst teilen.",
+        "scopeNoteOff": "Du siehst die Aufgaben, für die du verantwortlich bist. Teilen können sie gerade nur die Organisator:innen.",
+        "selectAll": "Alle Aufgaben auf dieser Seite auswählen",
+        "selectRow": "„{name}“ auswählen",
+        "selected": "{count} Aufgabe | {count} Aufgaben",
+        "selectedFree": "{count} Platz frei | {count} Plätze frei",
+        "shifts": "{count} Schicht | {count} Schichten",
+        "sort": {
+            "free": "Freie Plätze",
+            "name": "Aufgabe",
+            "unlisted_free": "Plätze in keiner Liste"
+        },
+        "stranded": "{count} freier Platz in keiner offenen Liste | {count} freie Plätze in keiner offenen Liste",
+        "teamLocked": "Nur für das Team „{team}“. Eintragen können sich hier nur Leute mit Konto, die im Team sind. Darum lässt sich die Aufgabe nicht offen teilen.",
+        "teamOnly": "Nur übers Team"
+    },
+    "text": {
+        "andMore": "{names} und eine weitere | {names} und {count} weitere",
+        "daysWithin": "{span}, an {count} Tagen",
+        "inDays": "heute | morgen | in {count} Tagen",
+        "quoted": "„{name}“"
+    },
+    "toasts": {
+        "bulk": {
+            "end": "{count} Liste beendet. | {count} Listen beendet.",
+            "pause": "{count} Liste pausiert. | {count} Listen pausiert.",
+            "resume": "{count} Liste ist wieder offen. | {count} Listen sind wieder offen."
+        },
+        "bulkSkipped": "{count} Liste ließ sich nicht ändern. | {count} Listen ließen sich nicht ändern.",
+        "copied": "Link kopiert.",
+        "ended": "„{title}“ ist beendet. Wer eingetragen ist, bleibt eingetragen.",
+        "erased": "Die Daten von {count} Person sind gelöscht. | Die Daten von {count} Personen sind gelöscht.",
+        "extended": "„{title}“ bleibt offen, bis die letzte Schicht beginnt.",
+        "managersOff": "Nur noch die Organisator:innen können Listen teilen.",
+        "managersOn": "Verantwortliche können jetzt Listen für ihre Aufgaben teilen.",
+        "nothingChanged": "Die Listen waren schon so.",
+        "nothingRemoved": "Es gab nichts auszutragen.",
+        "paused": "„{title}“ ist pausiert. Wer den Link öffnet, kann sich gerade nicht eintragen.",
+        "pausedAll": "{count} offene Liste ist pausiert. | Alle {count} offenen Listen sind pausiert.",
+        "removeSkipped": "{count} Eintragung ließ sich nicht austragen. | {count} Eintragungen ließen sich nicht austragen.",
+        "removed": "{count} Eintragung ausgetragen. | {count} Eintragungen ausgetragen.",
+        "reopened": "„{title}“ ist wieder offen, bis die letzte Schicht beginnt.",
+        "resumed": "„{title}“ ist wieder offen.",
+        "rotated": "Neuer Link erzeugt. Der alte funktioniert nicht mehr."
+    }
+}

@@ -11,6 +11,10 @@ import type {
   EventRead,
   LocationCreate,
   LocationRead,
+  PublicSignupRequest,
+  PublicSignupResult,
+  SharedListCreate,
+  SharedListDetail,
   ShiftRead,
   TaskCreateWithShiftsResponse,
   TaskRead,
@@ -19,6 +23,7 @@ import type {
   VenuePlanRead,
   VenueShapeRead,
 } from '../../src/client/types.gen.js'
+import { type RawApiResponse, serverApi, serverApiRaw } from '../fixtures.js'
 
 export type {
   BookingRead,
@@ -29,6 +34,10 @@ export type {
   VenueMarkerRead,
   VenuePlanRead,
   VenueShapeRead,
+  PublicSignupRequest,
+  PublicSignupResult,
+  SharedListCreate,
+  SharedListDetail,
 }
 export type TaskWithShifts = TaskCreateWithShiftsResponse
 
@@ -434,4 +443,57 @@ export async function seedMappedEvent(
   })
   const [shift] = await listShifts(page, task.id)
   return { event, location, plan, marker, task, shift }
+}
+
+// ── Shared list helpers ─────────────────────────────────────────────────────
+//
+// Node-side, through `serverApi`, so they need no page: a list's people sign
+// up without an account, and seeding 25 lists through a browser is slow.
+
+/**
+ * Share tasks of an event on a new list, as `email`: an event admin, or the
+ * person in charge of every task in `body.task_ids`. The event and its tasks
+ * must be published.
+ */
+export async function createSharedList(
+  email: string,
+  eventId: string,
+  body: SharedListCreate,
+): Promise<SharedListDetail> {
+  return serverApi<SharedListDetail>('POST', `/events/${eventId}/shared-lists`, email, body)
+}
+
+/** A list as its management page reads it: code, counts, settings and tasks. */
+export async function getSharedList(email: string, id: string): Promise<SharedListDetail> {
+  return serverApi<SharedListDetail>('GET', `/shared-lists/${id}`, email)
+}
+
+/**
+ * Sign up through a list's public link, without an account. Resolves for any
+ * status, so a test can assert the refusal it expects: 404 for a rotated or
+ * unknown code, 409 for a full shift or a paused list. On 201 the body is a
+ * `PublicSignupResult`, whose `guest_token` opens `/guest-signup#<token>`.
+ * `show_names` is what the page showed the guest, as the form sends it.
+ */
+export async function publicSignup(
+  code: string,
+  body: PublicSignupRequest,
+): Promise<RawApiResponse> {
+  return serverApiRaw('POST', `/public/shared-lists/${encodeURIComponent(code)}/signups`, '', body)
+}
+
+/**
+ * The link a guest's confirmation mail carries, for the sign-up behind any of
+ * their working tokens (`POST /testing/guest-mail-link`, only under TESTING).
+ * E2E has no mailbox, and only a mail link can confirm an address. Ask before
+ * confirming: the sign-up's own token stops working at the confirmation.
+ */
+export async function guestMailLink(token: string): Promise<string> {
+  const { token: mailToken } = await serverApi<{ token: string }>(
+    'POST',
+    '/testing/guest-mail-link',
+    '',
+    { token },
+  )
+  return mailToken
 }

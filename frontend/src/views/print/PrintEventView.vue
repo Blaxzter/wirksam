@@ -1,289 +1,196 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+/**
+ * The whole event on paper. `?mode=overview` (the default) puts its tasks on
+ * one page with a QR code to the event in the app. `?mode=all` prints each
+ * task's sheet in turn.
+ *
+ * For someone who can share lists, the sheets of every task that can be
+ * offered carry one shared list's QR code (`?list=<id>`) and its shifts: the
+ * list that holds those tasks, or one created after asking. The other tasks
+ * print without a QR code, as do all of them for anyone else.
+ */
+import { computed, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
 
-import { CalendarDays, MapPin, Tag } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+
+import { useSharedListsStore } from '@/stores/sharedLists'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
-import { useFormatters } from '@/composables/useFormatters'
+import { usePrintSheet } from '@/composables/usePrintSheet'
+import { useSharedListPrint } from '@/composables/useSharedListPrint'
 
-import { Checkbox } from '@/components/ui/checkbox'
-
+import PrintEventOverview from '@/components/print/PrintEventOverview.vue'
+import PrintListStatus from '@/components/print/PrintListStatus.vue'
+import PrintSheet from '@/components/print/PrintSheet.vue'
+import PrintSheetOptions from '@/components/print/PrintSheetOptions.vue'
 import PrintToolbar from '@/components/print/PrintToolbar.vue'
-import QrCode from '@/components/print/QrCode.vue'
+import SharedListPrintDialog from '@/components/shared-lists/SharedListPrintDialog.vue'
 
 import type {
-  ShiftListResponse,
-  ShiftRead,
-  TaskBookingEntry,
   EventRead,
+  SharedListDetail,
+  ShiftBatchRead,
+  ShiftRead,
   TaskListResponse,
   TaskRead,
-  ShiftBatchRead,
 } from '@/client/types.gen'
+import { toastApiError } from '@/lib/api-errors'
 import { formatDate } from '@/lib/format'
+import { type SheetShift, fromShift } from '@/lib/print-sheet'
+import { eventListTitle } from '@/lib/shared-list-print'
+import { lockedForManager, sharedListUrl } from '@/lib/shared-lists'
 
 const { t } = useI18n()
-const { formatTime, formatDateLabel } = useFormatters()
 const route = useRoute()
+const router = useRouter()
 const { get } = useAuthenticatedClient()
+const store = useSharedListsStore()
+const notice = useSharedListPrint()
+const sheet = usePrintSheet()
 
-const eventId = computed(() => route.params.eventId as string)
-const mode = computed(() => (route.query.mode as string) ?? 'overview')
+const eventId = computed(() => String(route.params.eventId))
+const mode = computed(() => (route.query.mode === 'all' ? 'all' : 'overview'))
 
 const event = ref<EventRead | null>(null)
 const tasks = ref<TaskRead[]>([])
-const rawTaskShifts = ref<Map<string, ShiftRead[]>>(new Map())
-const eventBatches = ref<Map<string, ShiftBatchRead[]>>(new Map())
-const slotBookings = ref<Map<string, TaskBookingEntry[]>>(new Map())
+const shiftsByTask = shallowRef<ReadonlyMap<string, ShiftRead[]>>(new Map())
+const batchesByTask = shallowRef<ReadonlyMap<string, ShiftBatchRead[]>>(new Map())
 const loading = ref(true)
-const bookingsLoaded = ref(false)
-const bookingsLoading = ref(false)
 
-// Display options (toolbar toggles)
-const showTitle = ref(true)
-const showLocation = ref(true)
-const repeatHeader = ref(true)
-const includeNames = ref(false)
-const selectedDates = ref<Set<string>>(new Set())
+/** The list behind the QR codes, and the shifts it offers per task. */
+const list = ref<SharedListDetail | null>(null)
+const offeredByTask = shallowRef<ReadonlyMap<string, SheetShift[]>>(new Map())
 
-// All unique dates across all task shifts
-const allDates = computed(() => {
-  const dates = new Set<string>()
-  for (const shifts of rawTaskShifts.value.values()) {
-    for (const s of shifts) dates.add(s.date)
-  }
-  return [...dates].sort()
-})
+const overview = useTemplateRef<InstanceType<typeof PrintEventOverview>>('overview')
+const sheetEls = useTemplateRef<InstanceType<typeof PrintSheet>[]>('sheetEls')
+const toolbar = useTemplateRef<InstanceType<typeof PrintToolbar>>('toolbar')
 
-// Apply date filter to per-task shifts
-const eventShifts = computed(() => {
-  const filtered = new Map<string, ShiftRead[]>()
-  for (const [evId, shifts] of rawTaskShifts.value) {
-    filtered.set(
-      evId,
-      shifts.filter((s) => selectedDates.value.has(s.date)),
-    )
-  }
-  return filtered
-})
+const listLive = computed(() => list.value?.effective_status === 'live')
+const locked = computed(() => !!list.value && lockedForManager(list.value, event.value))
 
-const groupUrl = computed(() => {
-  return `${window.location.origin}/app/events/${eventId.value}`
-})
-
-const eventUrl = (eventId: string) => {
-  return `${window.location.origin}/app/tasks/${eventId}`
-}
-
-// Per-task column checks — user toggle controls visibility
-const eventShowTitleColumn = () => showTitle.value
-const eventHasLocationData = (eventId: string) => {
-  const shifts = eventShifts.value.get(eventId) ?? []
-  return shifts.some((s) => s.location)
-}
-const eventShowLocationColumn = (eventId: string) => {
-  return showLocation.value && eventHasLocationData(eventId)
-}
-
-/**
- * Phone numbers come only for organisers and the task's people in charge.
- * Anyone else printing the names would get a column of blank lines that looks
- * like it wants filling in, so it goes; a blank sign-up sheet keeps it.
- */
-const eventShowContactColumn = (task: TaskRead) =>
-  !includeNames.value ||
-  !!task.can_manage ||
-  (eventShifts.value.get(task.id) ?? []).some((s) =>
-    getBookingsForShift(s.id).some((b) => b.user_phone_number),
-  )
-
-interface BatchGroup {
-  batch: ShiftBatchRead | null
-  shifts: ShiftRead[]
-}
-
-const getShiftsByBatch = (eventId: string): BatchGroup[] => {
-  const shifts = eventShifts.value.get(eventId) ?? []
-  const batchList = eventBatches.value.get(eventId) ?? []
-
-  if (batchList.length <= 1) {
-    return [{ batch: null, shifts }]
-  }
-
-  const batchMap = new Map<string, ShiftRead[]>()
-  const unbatched: ShiftRead[] = []
-
-  for (const shift of shifts) {
-    if (shift.batch_id) {
-      if (!batchMap.has(shift.batch_id)) batchMap.set(shift.batch_id, [])
-      batchMap.get(shift.batch_id)!.push(shift)
-    } else {
-      unbatched.push(shift)
+/** One sheet per task: the list's shifts and QR code where it offers some of the task's. */
+const sheets = computed(() =>
+  tasks.value.map((task) => {
+    const offered = offeredByTask.value.get(task.id)
+    return {
+      task,
+      shifts: offered ?? (shiftsByTask.value.get(task.id) ?? []).map(fromShift),
+      qr:
+        offered && list.value
+          ? { url: sharedListUrl(list.value.code), caption: t('print.listQrCaption') }
+          : null,
     }
-  }
+  }),
+)
 
-  const events: BatchGroup[] = []
-  for (const batch of batchList) {
-    const batchShifts = batchMap.get(batch.id) ?? []
-    if (batchShifts.length > 0) events.push({ batch, shifts: batchShifts })
-  }
-  if (unbatched.length > 0) events.push({ batch: null, shifts: unbatched })
+const listed = computed(() => sheets.value.some((item) => item.qr))
 
-  return events
+const groups = () => sheets.value.map((item) => item.shifts)
+const taskIds = () => tasks.value.map((task) => task.id)
+
+/** Each task's batches; a task whose batches fail prints its shifts without their headings. */
+async function fetchBatches(): Promise<Map<string, ShiftBatchRead[]>> {
+  const batches = new Map<string, ShiftBatchRead[]>()
+  await Promise.all(
+    tasks.value.map((task) =>
+      get<{ data: ShiftBatchRead[] }>({ url: `/tasks/${task.id}/batches` }).then(
+        (res) => batches.set(task.id, res.data),
+        () => batches.set(task.id, []),
+      ),
+    ),
+  )
+  return batches
 }
 
-const groupByDate = (shifts: ShiftRead[]) => {
-  const events: Record<string, ShiftRead[]> = {}
-  for (const shift of shifts) {
-    if (!events[shift.date]) events[shift.date] = []
-    events[shift.date].push(shift)
-  }
-  for (const dateShifts of Object.values(events)) {
-    dateShifts.sort(
-      (a, b) =>
-        (a.start_time ?? '').localeCompare(b.start_time ?? '') ||
-        (a.end_time ?? '').localeCompare(b.end_time ?? ''),
-    )
-  }
-  return Object.entries(events).sort(([a], [b]) => a.localeCompare(b))
+async function loadShifts() {
+  const [shifts, batches] = await Promise.all([sheet.fetchShifts(taskIds()), fetchBatches()])
+  shiftsByTask.value = shifts
+  batchesByTask.value = batches
 }
 
-const batchLabel = (batch: ShiftBatchRead) => {
-  return batch.label || `${formatDate(batch.start_date)} – ${formatDate(batch.end_date)}`
-}
-
-const getBookingsForShift = (slotId: string): TaskBookingEntry[] => {
-  return slotBookings.value.get(slotId) ?? []
-}
-
-const getShiftLines = (shift: ShiftRead) => {
-  const max = shift.max_bookings ?? 1
-  // Blank again once "Show booked names" is unticked; the bookings stay loaded.
-  const bookings = includeNames.value ? getBookingsForShift(shift.id) : []
-  const lines: { name: string; contact: string }[] = []
-  for (let i = 0; i < max; i++) {
-    const b = bookings[i]
-    lines.push({
-      name: b?.user_name ?? '',
-      contact: b?.user_phone_number ?? '',
-    })
-  }
-  return lines
-}
-
-// Lazy-load all bookings for all tasks in one request per task
-const loadBookings = async () => {
-  if (bookingsLoaded.value || bookingsLoading.value) return
-  bookingsLoading.value = true
+/** The list in `?list=`: its state and the shifts it offers of each task. */
+async function loadList(listId: string) {
   try {
-    const promises = tasks.value.map(async (ev) => {
-      try {
-        const res = await get<{ data: TaskBookingEntry[] }>({
-          url: `/tasks/${ev.id}/bookings`,
-        })
-        for (const b of res.data) {
-          if (!slotBookings.value.has(b.shift_id)) slotBookings.value.set(b.shift_id, [])
-          slotBookings.value.get(b.shift_id)!.push(b)
-        }
-      } catch {
-        // Non-critical
-      }
-    })
-    await Promise.all(promises)
-  } finally {
-    bookingsLoaded.value = true
-    bookingsLoading.value = false
+    const known = new Map([...shiftsByTask.value.values()].flat().map((s) => [s.id, s]))
+    const { list: detail, offered } = await sheet.fetchListSheet(listId, known)
+    list.value = detail
+    offeredByTask.value = offered
+  } catch (error) {
+    toastApiError(error)
+    list.value = null
+    offeredByTask.value = new Map()
   }
 }
 
-const onToggleNames = async (val: boolean | 'indeterminate') => {
-  includeNames.value = val === true
-  if (val === true) await loadBookings()
+async function showList(listId: string) {
+  await router.replace({ query: { ...route.query, list: listId } })
+  await loadList(listId)
+  sheet.reset(groups(), taskIds())
 }
 
-// Track QR code readiness
-const expectedQrCount = ref(1)
-let qrReadyCount = 0
-let resolveAllQr: () => void
-const allQrReady = new Promise<void>((r) => {
-  resolveAllQr = r
-})
-const onQrReady = () => {
-  qrReadyCount++
-  if (qrReadyCount >= expectedQrCount.value) resolveAllQr()
+/** Look for the list to print with, or ask whether to create one. */
+async function chooseList(ev: EventRead) {
+  try {
+    const outcome = await notice.startEvent(
+      ev,
+      tasks.value,
+      (taskId) => shiftsByTask.value.get(taskId) ?? [],
+      eventListTitle(ev.name, t),
+    )
+    if (outcome.kind === 'list') await showList(outcome.listId)
+  } catch (error) {
+    toastApiError(error)
+  }
 }
 
-const handlePrint = async () => {
-  if (includeNames.value) await loadBookings()
-  expectedQrCount.value = mode.value === 'all' ? Math.max(tasks.value.length, 1) : 1
-  await allQrReady
-  await nextTick()
-  await new Promise((r) => setTimeout(r, 300))
-  window.print()
+async function createList() {
+  const listId = await notice.createList()
+  if (listId) await showList(listId)
 }
 
-// Date filter helpers
-const allDatesSelected = computed(() => selectedDates.value.size === allDates.value.length)
-const noneDatesSelected = computed(() => selectedDates.value.size === 0)
-
-const toggleAllDates = () => {
-  selectedDates.value = allDatesSelected.value ? new Set() : new Set(allDates.value)
+function customize() {
+  const to = notice.wizardRoute()
+  if (to) void router.push(to)
 }
-const toggleDate = (date: string, checked: boolean | 'indeterminate') => {
-  const next = new Set(selectedDates.value)
-  if (checked === true) next.add(date)
-  else next.delete(date)
-  selectedDates.value = next
+
+/** After a fix in the toolbar: the list as it is now, the viewer's choices kept, focus on printing. */
+async function refreshList() {
+  if (!list.value) return
+  await loadList(list.value.id)
+  sheet.refresh(groups(), taskIds())
+  void toolbar.value?.focusPrint()
+}
+
+/** The dialog opened with the page, so no button takes focus back: printing does. */
+function focusPrint() {
+  void toolbar.value?.focusPrint()
+}
+
+function print() {
+  if (mode.value === 'all') void sheet.print(sheetEls.value ?? [])
+  else if (overview.value) void sheet.print([overview.value])
 }
 
 onMounted(async () => {
   try {
-    const [groupRes, tasksRes] = await Promise.all([
+    const [eventRes, tasksRes] = await Promise.all([
       get<{ data: EventRead }>({ url: `/events/${eventId.value}` }),
       get<{ data: TaskListResponse }>({
         url: '/tasks/',
         query: { limit: 200, event_id: eventId.value },
       }),
     ])
-    event.value = groupRes.data
-    tasks.value = tasksRes.data.items.sort((a: TaskRead, b: TaskRead) =>
-      a.start_date.localeCompare(b.start_date),
-    )
-
-    if (mode.value === 'all') {
-      const slotPromises = tasks.value.map(async (ev) => {
-        try {
-          const res = await get<{ data: ShiftListResponse }>({
-            url: '/shifts/',
-            query: { task_id: ev.id, limit: 200 },
-          })
-          rawTaskShifts.value.set(ev.id, res.data.items)
-        } catch {
-          rawTaskShifts.value.set(ev.id, [])
-        }
-      })
-      const batchPromises = tasks.value.map(async (ev) => {
-        try {
-          const res = await get<{ data: ShiftBatchRead[] }>({
-            url: `/tasks/${ev.id}/batches`,
-          })
-          eventBatches.value.set(ev.id, res.data)
-        } catch {
-          eventBatches.value.set(ev.id, [])
-        }
-      })
-      await Promise.all([...slotPromises, ...batchPromises])
-
-      // Select all dates by default
-      const allShiftItems = tasks.value.flatMap((ev) => rawTaskShifts.value.get(ev.id) ?? [])
-      selectedDates.value = new Set(allShiftItems.map((s) => s.date))
-
-      // Set default visibility based on whether values vary
-      showTitle.value = new Set(allShiftItems.map((s) => s.title)).size > 1
-      showLocation.value = new Set(allShiftItems.map((s) => s.location).filter(Boolean)).size > 1
-    }
+    event.value = eventRes.data
+    tasks.value = [...tasksRes.data.items].sort((a, b) => a.start_date.localeCompare(b.start_date))
+    if (mode.value !== 'all') return
+    // The fixes in the toolbar go through the lists store, which reloads by event.
+    store.setEvent(eventRes.data.id)
+    await loadShifts()
+    const listId = typeof route.query.list === 'string' ? route.query.list : null
+    if (listId) await loadList(listId)
+    sheet.reset(groups(), taskIds())
+    if (!listId) await chooseList(eventRes.data)
   } finally {
     loading.value = false
   }
@@ -292,302 +199,76 @@ onMounted(async () => {
 
 <template>
   <div class="print-page mx-auto max-w-5xl w-full space-y-4 p-4 print:p-0">
-    <!-- Floating toolbar -->
     <PrintToolbar
+      ref="toolbar"
       data-testid="print-toolbar"
-      :disabled="loading || bookingsLoading"
-      @print="handlePrint"
+      :disabled="loading || sheet.bookingsLoading.value || (!!list && !listLive)"
+      @print="print"
     >
       <template v-if="mode === 'all'">
-        <!-- Column toggles -->
-        <label class="flex items-center gap-2 cursor-pointer">
-          <Checkbox v-model="showTitle" />
-          <span class="text-sm">{{ t('print.toolbar.showTitle') }}</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <Checkbox v-model="showLocation" />
-          <span class="text-sm">{{ t('print.toolbar.showLocation') }}</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <Checkbox v-model="repeatHeader" />
-          <span class="text-sm">{{ t('print.toolbar.repeatHeader') }}</span>
-        </label>
-
-        <!-- Include names -->
-        <div class="border-t pt-2 mt-1">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <Checkbox :model-value="includeNames" @update:model-value="onToggleNames" />
-            <span class="text-sm">{{ t('print.toolbar.includeNames') }}</span>
-          </label>
-          <p v-if="bookingsLoading" class="text-xs text-muted-foreground mt-1">
-            {{ t('common.states.loading') }}
-          </p>
-        </div>
-
-        <!-- Date filter -->
-        <div v-if="allDates.length > 1" class="border-t pt-2 mt-1 space-y-1">
-          <span class="text-xs font-medium text-muted-foreground">{{
-            t('print.toolbar.filterDates')
-          }}</span>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              :model-value="allDatesSelected ? true : noneDatesSelected ? false : 'indeterminate'"
-              @update:model-value="toggleAllDates"
-            />
-            <span class="text-xs">{{ t('print.optionsDialog.selectAll') }}</span>
-          </label>
-          <label
-            v-for="date in allDates"
-            :key="date"
-            class="flex items-center gap-2 cursor-pointer"
-          >
-            <Checkbox
-              :model-value="selectedDates.has(date)"
-              @update:model-value="(val: boolean | 'indeterminate') => toggleDate(date, val)"
-            />
-            <span class="text-xs">{{
-              formatDateLabel(date, { weekday: 'short', month: 'short', day: 'numeric' })
-            }}</span>
-          </label>
-        </div>
+        <PrintListStatus v-if="list" :list="list" :locked="locked" @changed="refreshList" />
+        <PrintSheetOptions
+          v-model:show-title="sheet.showTitle.value"
+          v-model:show-location="sheet.showLocation.value"
+          v-model:repeat-header="sheet.repeatHeader.value"
+          v-model:show-map="sheet.showMap.value"
+          v-model:paper-lines="sheet.paperLines.value"
+          v-model:selected-dates="sheet.selectedDates.value"
+          :include-names="sheet.includeNames.value"
+          :dates="sheet.dates.value"
+          :has-map="false"
+          :listed="listed"
+          :bookings-loading="sheet.bookingsLoading.value"
+          @update:include-names="sheet.setIncludeNames"
+        />
       </template>
     </PrintToolbar>
 
-    <div v-if="loading" class="py-12 text-center text-muted-foreground">
+    <p v-if="loading" class="py-12 text-center text-muted-foreground">
       {{ t('common.states.loading') }}
-    </div>
+    </p>
 
     <div v-else-if="event" data-testid="print-content">
-      <!-- ======================== OVERVIEW MODE ======================== -->
-      <template v-if="mode === 'overview'">
-        <div class="flex items-start justify-between gap-4">
-          <div class="space-y-2 flex-1">
-            <h1 class="text-3xl font-bold">{{ event.name }}</h1>
-            <p v-if="event.description" class="text-muted-foreground text-lg">
-              {{ event.description }}
-            </p>
-            <p class="text-sm text-muted-foreground flex items-center gap-1">
-              <CalendarDays class="h-4 w-4" />
-              {{ formatDate(event.start_date) }} – {{ formatDate(event.end_date) }}
-            </p>
-          </div>
-          <div class="shrink-0 text-center space-y-1">
-            <QrCode :value="groupUrl" :size="96" @ready="onQrReady" />
-            <p class="text-xs text-muted-foreground">{{ t('print.scanToSignUp') }}</p>
-          </div>
-        </div>
+      <PrintEventOverview v-if="mode === 'overview'" ref="overview" :event="event" :tasks="tasks" />
 
-        <hr class="border-foreground/20" />
-
-        <div class="space-y-4">
-          <h2 class="text-xl font-semibold">{{ t('duties.events.detail.tasks') }}</h2>
-
-          <div v-if="tasks.length === 0" class="text-muted-foreground text-sm">
-            {{ t('duties.events.detail.tasksEmpty') }}
-          </div>
-
-          <div v-else class="space-y-3">
-            <div
-              v-for="ev in tasks"
-              :key="ev.id"
-              class="rounded-lg border p-4 space-y-1 print-keep-together"
-            >
-              <h3 class="font-semibold text-lg">{{ ev.name }}</h3>
-              <p v-if="ev.description" class="text-sm text-muted-foreground">
-                {{ ev.description }}
-              </p>
-              <div
-                class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground"
-              >
-                <span class="flex items-center gap-1">
-                  <CalendarDays class="h-3.5 w-3.5" />
-                  {{ formatDate(ev.start_date) }} – {{ formatDate(ev.end_date) }}
-                </span>
-                <span v-if="ev.location" class="flex items-center gap-1">
-                  <MapPin class="h-3.5 w-3.5" />
-                  {{ ev.location }}
-                </span>
-                <span v-if="ev.category" class="flex items-center gap-1">
-                  <Tag class="h-3.5 w-3.5" />
-                  {{ ev.category }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <!-- ======================== ALL EVENTS MODE ======================== -->
       <template v-else>
-        <table
-          v-for="(ev, evIdx) in tasks"
-          :key="ev.id"
-          :class="{ 'print-page-break': evIdx > 0 }"
-          class="w-full border-collapse"
-        >
-          <thead :class="repeatHeader ? 'print-repeat-header' : ''">
-            <tr>
-              <th class="text-left font-normal p-0 pb-4">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="space-y-2 flex-1">
-                    <p class="text-sm text-muted-foreground">{{ event.name }}</p>
-                    <h1 class="text-3xl font-bold">{{ ev.name }}</h1>
-                    <p v-if="ev.description" class="text-muted-foreground text-lg">
-                      {{ ev.description }}
-                    </p>
-                    <div
-                      class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground"
-                    >
-                      <span class="flex items-center gap-1">
-                        <CalendarDays class="h-4 w-4" />
-                        {{ formatDate(ev.start_date) }} – {{ formatDate(ev.end_date) }}
-                      </span>
-                      <span v-if="ev.location" class="flex items-center gap-1">
-                        <MapPin class="h-4 w-4" />
-                        {{ ev.location }}
-                      </span>
-                      <span v-if="ev.category" class="flex items-center gap-1">
-                        <Tag class="h-4 w-4" />
-                        {{ ev.category }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="shrink-0 text-center space-y-1">
-                    <QrCode :value="eventUrl(ev.id)" :size="96" @ready="onQrReady" />
-                    <p class="text-xs text-muted-foreground">{{ t('print.scanToSignUp') }}</p>
-                  </div>
-                </div>
-                <hr class="border-foreground/20 mt-4" />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="p-0">
-                <div v-if="(eventShifts.get(ev.id) ?? []).length > 0" class="space-y-4">
-                  <div
-                    v-for="batchGroup in getShiftsByBatch(ev.id)"
-                    :key="batchGroup.batch?.id ?? 'all'"
-                    class="space-y-3"
-                  >
-                    <h3 v-if="batchGroup.batch" class="font-semibold text-lg">
-                      {{ batchLabel(batchGroup.batch) }}
-                      <span
-                        v-if="batchGroup.batch.location"
-                        class="text-sm font-normal text-muted-foreground ml-2"
-                      >
-                        {{ batchGroup.batch.location }}
-                      </span>
-                    </h3>
-
-                    <div
-                      v-for="[date, shifts] in groupByDate(batchGroup.shifts)"
-                      :key="date"
-                      class="space-y-1 print-keep-together"
-                    >
-                      <h4 class="font-medium text-sm bg-muted px-2 py-1 rounded print-bg">
-                        {{
-                          formatDateLabel(date, {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                          })
-                        }}
-                      </h4>
-                      <table class="w-full text-sm border-collapse">
-                        <thead>
-                          <tr class="border-b text-left">
-                            <th class="py-1 px-1 font-medium w-20">
-                              {{ t('duties.shifts.fields.startTime') }}
-                            </th>
-                            <th class="py-1 px-1 font-medium w-20">
-                              {{ t('duties.shifts.fields.endTime') }}
-                            </th>
-                            <th v-if="eventShowTitleColumn()" class="py-1 px-1 font-medium">
-                              {{ t('duties.shifts.fields.title') }}
-                            </th>
-                            <th v-if="eventShowLocationColumn(ev.id)" class="py-1 px-1 font-medium">
-                              {{ t('duties.shifts.fields.location') }}
-                            </th>
-                            <th class="py-1 px-1 font-medium w-[35%]">
-                              {{ t('print.nameColumn') }}
-                            </th>
-                            <th
-                              v-if="eventShowContactColumn(ev)"
-                              class="py-1 px-1 font-medium w-[25%]"
-                            >
-                              {{ t('print.contactColumn') }}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <template v-for="shift in shifts" :key="shift.id">
-                            <tr
-                              v-for="(line, lineIdx) in getShiftLines(shift)"
-                              :key="`${shift.id}-${lineIdx}`"
-                              class="border-b border-dashed align-top"
-                            >
-                              <td
-                                v-if="lineIdx === 0"
-                                :rowspan="getShiftLines(shift).length"
-                                class="py-1 px-1 font-mono border-r border-dashed"
-                              >
-                                {{ formatTime(shift.start_time) || '—' }}
-                              </td>
-                              <td
-                                v-if="lineIdx === 0"
-                                :rowspan="getShiftLines(shift).length"
-                                class="py-1 px-1 font-mono border-r border-dashed"
-                              >
-                                {{ formatTime(shift.end_time) || '—' }}
-                              </td>
-                              <td
-                                v-if="eventShowTitleColumn() && lineIdx === 0"
-                                :rowspan="getShiftLines(shift).length"
-                                class="py-1 px-1 border-r border-dashed"
-                              >
-                                {{ shift.title }}
-                              </td>
-                              <td
-                                v-if="eventShowLocationColumn(ev.id) && lineIdx === 0"
-                                :rowspan="getShiftLines(shift).length"
-                                class="py-1 px-1 border-r border-dashed"
-                              >
-                                {{ shift.location ?? '' }}
-                              </td>
-                              <td class="py-1 px-1">
-                                <template v-if="line.name">
-                                  <span class="font-medium">{{ line.name }}</span>
-                                </template>
-                                <template v-else>
-                                  <div
-                                    class="border-b border-dotted border-foreground/30 h-5"
-                                  ></div>
-                                </template>
-                              </td>
-                              <td v-if="eventShowContactColumn(ev)" class="py-1 px-1">
-                                <template v-if="line.contact">
-                                  <span>{{ line.contact }}</span>
-                                </template>
-                                <template v-else>
-                                  <div
-                                    class="border-b border-dotted border-foreground/30 h-5"
-                                  ></div>
-                                </template>
-                              </td>
-                            </tr>
-                          </template>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <PrintSheet
+          v-for="(item, index) in sheets"
+          :key="item.task.id"
+          ref="sheetEls"
+          :page-break="index > 0"
+          :heading="item.task.name"
+          :kicker="event.name"
+          :text="item.task.description"
+          :meta="{
+            days: `${formatDate(item.task.start_date)} – ${formatDate(item.task.end_date)}`,
+            location: item.task.location,
+            category: item.task.category,
+          }"
+          :qr="item.qr"
+          :sections="[
+            {
+              key: item.task.id,
+              heading: null,
+              shifts: sheet.visible(item.shifts),
+              batches: batchesByTask.get(item.task.id) ?? [],
+              canSeeContacts: !!item.task.can_manage,
+            },
+          ]"
+          :options="sheet.options.value"
+          :bookings="sheet.bookings.value"
+        />
       </template>
     </div>
+
+    <SharedListPrintDialog
+      :dialog="notice.dialog.value"
+      :busy="notice.creating.value"
+      :return-focus="focusPrint"
+      @create="createList"
+      @customize="customize"
+      @plain="notice.close"
+      @close="notice.close"
+    />
   </div>
 </template>

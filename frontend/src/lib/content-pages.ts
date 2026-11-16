@@ -161,6 +161,7 @@ export const DOC_PAGES = [
   { kind: 'feature', slug: 'members', key: 'featureMembers' },
   { kind: 'feature', slug: 'people-in-charge', key: 'featurePeopleInCharge' },
   { kind: 'feature', slug: 'teams', key: 'featureTeams' },
+  { kind: 'feature', slug: 'shared-lists', key: 'featureSharedLists' },
   { kind: 'feature', slug: 'booking', key: 'featureBooking' },
   { kind: 'feature', slug: 'notifications', key: 'featureNotifications' },
   { kind: 'feature', slug: 'vouchers', key: 'featureVouchers' },
@@ -192,7 +193,15 @@ export function docPageById(id: string): DocPage | undefined {
 export const DOC_GROUPS = {
   feature: [
     { key: 'plan', pages: ['feature/shift-planning', 'feature/venue-map'] },
-    { key: 'people', pages: ['feature/members', 'feature/people-in-charge', 'feature/teams'] },
+    {
+      key: 'people',
+      pages: [
+        'feature/members',
+        'feature/people-in-charge',
+        'feature/teams',
+        'feature/shared-lists',
+      ],
+    },
     { key: 'volunteers', pages: ['feature/booking', 'feature/notifications'] },
     { key: 'thanks', pages: ['feature/vouchers', 'feature/hours-and-reports'] },
     { key: 'run', pages: ['feature/self-hosting'] },
@@ -261,6 +270,7 @@ export const PAGE_ART: Readonly<Record<string, ArtKind>> = {
   'feature/members': 'members',
   'feature/people-in-charge': 'inCharge',
   'feature/teams': 'teams',
+  'feature/shared-lists': 'booking',
   'feature/booking': 'booking',
   'feature/notifications': 'notify',
   'feature/vouchers': 'vouchers',

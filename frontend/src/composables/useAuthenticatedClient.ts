@@ -9,10 +9,19 @@ type HttpVerb = 'get' | 'post' | 'put' | 'delete' | 'patch'
 // Mutations on these resource paths change what the sidebar shows
 // (tasks, my bookings, open-shift counts, event list).
 const SIDEBAR_AFFECTING_PATH = /\/(bookings|tasks|shifts|events)(\/|$|\?)/
-// ...except vouchers, which live under /events/ but change nothing the sidebar
-// shows. Without this, every new code (one every two minutes while it is on
-// screen) and every redemption at a stand would refetch it.
-const SIDEBAR_IGNORED_PATH = /\/vouchers(\/|$|\?)/
+// ...except vouchers and shared lists, which live under /events/ but change
+// nothing the sidebar shows. Without this, every new voucher code (one every two
+// minutes while it is on screen), every redemption at a stand and every pause of
+// a list would refetch it.
+const SIDEBAR_IGNORED_PATH = /\/(vouchers|shared-lists)(\/|$|\?)/
+// Taking people off a shared list is the one list change that does show there:
+// it frees their places, which the open-shift counts include.
+const SIDEBAR_FREES_PLACES_PATH = /\/shared-lists\/[^/]+\/signups\/remove$/
+
+function affectsSidebar(url: string): boolean {
+  if (SIDEBAR_FREES_PLACES_PATH.test(url)) return true
+  return SIDEBAR_AFFECTING_PATH.test(url) && !SIDEBAR_IGNORED_PATH.test(url)
+}
 
 /**
  * Composable for making authenticated API calls
@@ -72,7 +81,7 @@ export function useAuthenticatedClient() {
 
     if (method !== 'get') {
       const url = typeof options === 'string' ? options : (options as { url?: string }).url
-      if (url && SIDEBAR_AFFECTING_PATH.test(url) && !SIDEBAR_IGNORED_PATH.test(url)) {
+      if (url && affectsSidebar(url)) {
         useSidebarStore().refresh()
       }
     }

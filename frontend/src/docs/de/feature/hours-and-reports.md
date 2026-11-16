@@ -33,7 +33,7 @@ Auf dem Handy ist es eine kleine Kachel „Stunden“ im Tab „Buchungen“.
 
 ## Die Übersicht für Organisator:innen
 
-Unter „Veranstaltungen verwalten“ öffnest du die Veranstaltung und wählst den Tab „Personen“. Dort steht die Karte „Geleistete Stunden“. Sie listet alle, die schon Stunden oder gebuchte Schichten haben, die meisten Stunden zuerst.
+Unter „Veranstaltungen verwalten“ öffnest du die Veranstaltung und wählst den Tab „Personen“. Dort steht die Karte „Geleistete Stunden“. Sie listet alle, die schon Stunden oder gebuchte Schichten haben, die meisten Stunden zuerst. Wer sich über eine geteilte Liste eingetragen hat, steht auch darin, mit dem Hinweis „ohne Konto“.
 
 Pro Person siehst du Schichten, Schichtstunden, zusätzliche Stunden und die Summe. Ein Klick auf eine Zeile zeigt die Schichten und Einträge dahinter.
 
@@ -72,13 +72,13 @@ Oben auf der Seite wählst du den Zeitraum. Gezählt wird nach dem Datum der Sch
 
 Auf der Seite einer Aufgabe öffnet der Knopf mit dem Drucker die Druckansicht. Organisator:innen finden „Drucken“ im Menü mit den drei Punkten. Drucken kann jede Person, die die Aufgabe sehen kann.
 
-Das Blatt hat für jeden Platz einer Schicht eine Zeile. Oben stehen die Aufgabe, ihre Tage und ein QR-Code mit dem Hinweis „Scannen, um sich online anzumelden“. Standardmäßig bleiben die Zeilen leer, zum Eintragen von Hand.
+Das Blatt hat für jeden Platz einer Schicht eine Zeile, oben stehen die Aufgabe und ihre Tage. Standardmäßig bleiben die Zeilen leer, zum Eintragen von Hand. Organisator:innen und die Verantwortlichen der Aufgabe bekommen stattdessen den Aushang einer [geteilten Liste](/features/shared-lists), über dessen QR-Code sich jeder ohne Konto eintragen kann.
 
-Daneben stellst du unter „Anzeigeoptionen“ ein, was aufs Blatt kommt. „Gebuchte Namen anzeigen“ trägt zum Beispiel ein, wer gebucht hat.
+Daneben stellst du unter „Anzeigeoptionen“ ein, was aufs Blatt kommt. „Gebuchte Namen anzeigen“ trägt zum Beispiel ein, wer gebucht hat. Auf einem Aushang heißt die Option „Namen der Eingetragenen“ und gilt für die Schichten, die noch kommen.
 
 Für die ganze Veranstaltung finden Organisator:innen oben in der Aufgabenliste ein Druckersymbol. „Übersicht drucken“ bringt alle Aufgaben mit Tagen, Ort und Kategorie auf ein Blatt.
 
-„Alle Aufgaben drucken“ druckt die Blätter der Aufgaben nacheinander, mit denselben Anzeigeoptionen. Mit „Gebuchte Namen anzeigen“ wird daraus ein Dienstplan für die ganze Veranstaltung.
+„Alle Aufgaben drucken“ druckt für jede Aufgabe ein Blatt, eins nach dem anderen, mit denselben Anzeigeoptionen. Alle Aufgaben, die auf eine geteilte Liste können, kommen auf eine gemeinsame Liste, und ihr Blatt ist deren Aushang, mit dem QR-Code und den Schichten, die noch kommen. Eine Aufgabe, die nicht auf die Liste kann, bekommt ihr eigenes Blatt ohne QR-Code. Ein Dienstplan für die ganze Veranstaltung ist das also nicht: Schichten, die schon begonnen haben, fehlen. Eine Liste aller, die gebucht haben, bekommst du mit „CSV exportieren“ unter „Berichte“.
 
 ## Häufige Fragen
 
@@ -124,6 +124,8 @@ Meist liegt es am Zeitraum. Er reicht standardmäßig vom Anfang dieses Monats b
 
 Jede Buchung aus dem Zeitraum hat eine eigene Zeile, auch eine stornierte mit ihrem Grund. Dazu kommen Name und E-Mail, Schicht, Datum, Zeiten, Stunden, Ort, Kategorie und Aufgabe.
 
+Die letzte Spalte nennt die geteilte Liste, über die eine Buchung kam, falls es eine gab. Bei Leuten, die sich über eine Liste eingetragen haben, steht die E-Mail-Adresse, die sie dort angegeben haben.
+
 ### Welche Anzeigeoptionen gibt es beim Drucken?
 
 - „Gebuchte Namen anzeigen“ trägt ein, wer gebucht hat. Telefonnummern stehen nur dabei, wenn du Organisator:in oder für die Aufgabe verantwortlich bist.
@@ -131,6 +133,7 @@ Jede Buchung aus dem Zeitraum hat eine eigene Zeile, auch eine stornierte mit ih
 - „Kopfzeile auf jeder Seite“ ist standardmäßig aktiv.
 - „Lageplan zeigen“ erscheint, wenn die Aufgabe einen festen Ort mit Pin auf dem Lageplan hat.
 - „Tage filtern“ erscheint bei mehreren Tagen und druckt nur die gewählten.
+- Beim Aushang einer geteilten Liste lässt „Zeilen zum Eintragen auf Papier“ die Zeilen für die freien Plätze weg, und „Namen der Eingetragenen“ trägt ein, wer dabei ist.
 
 ### Wohin führt der QR-Code auf der gedruckten Übersicht?
 

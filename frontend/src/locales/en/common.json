@@ -100,6 +100,10 @@
             "title": "404"
         }
     },
+    "fill": {
+        "free": "{free} of {cap} free",
+        "label": "Places"
+    },
     "language": {
         "current": "Current language",
         "switch": "Switch language"
@@ -110,6 +114,27 @@
         "enterToPick": "Enter to pick",
         "noMatch": "Nobody matches.",
         "similar": "Similar in this event"
+    },
+    "pagination": {
+        "first": "First page",
+        "label": "Pages",
+        "last": "Last page",
+        "morePages": "More pages",
+        "next": "Next",
+        "pageOf": "Page {page} of {count}",
+        "previous": "Previous"
+    },
+    "selection": {
+        "actions": "Actions",
+        "clear": "Clear selection",
+        "count": "{count} selected",
+        "region": "Selection"
+    },
+    "sort": {
+        "ascending": "Ascending",
+        "descending": "Descending",
+        "label": "Sort",
+        "sortBy": "Sort by {column}"
     },
     "states": {
         "error": "Error",

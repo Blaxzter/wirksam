@@ -1,7 +1,9 @@
 {
     "breadcrumbs": {
         "home": "Startseite",
-        "settings": "Einstellungen"
+        "settings": "Einstellungen",
+        "sharedListCreate": "Liste teilen",
+        "sharedListEdit": "Liste bearbeiten"
     },
     "eventSwitcher": {
         "description": "Tippe auf eine Veranstaltung, um zu wechseln.",
@@ -46,6 +48,9 @@
                 "label": "Meine Buchungen"
             },
             "settings": "Einstellungen",
+            "sharedLists": {
+                "label": "Geteilte Listen"
+            },
             "tasks": {
                 "description": "Aufgaben durchsuchen",
                 "label": "Aufgaben"

@@ -28,7 +28,7 @@
             "title": "What WirkSam looks like"
         },
         "table": {
-            "asOf": "As of October 2026. No guarantee of accuracy: prices and features change, so check the providers' own pages before you decide. The sources are listed with each tool below.",
+            "asOf": "As of November 2026. No guarantee of accuracy: prices and features change, so check the providers' own pages before you decide. The sources are listed with each tool below.",
             "caption": "Volunteer scheduling tools compared by price, accounts, open source, self-hosting, languages and reminders",
             "eyebrow": "At a glance",
             "lede": "What each tool costs, whether helpers need an account, and whether you can run it yourself.",
@@ -108,17 +108,17 @@
             },
             "wirksam": {
                 "cells": {
-                    "account": "Yes, a free account",
+                    "account": "Not to sign up via a shared list; free account for more",
                     "languages": "German, English",
                     "openSource": "Yes (MIT)",
                     "price": "Free, no paid plan",
                     "reminders": "Before every shift, by email, browser push or Telegram",
                     "selfHost": "Yes, with Docker Compose, or use wirksam.app"
                 },
-                "goodFit": "You plan several events a year and don't want to pay per event, your helpers come back and keep one account, and you want the option of running the software yourself.",
-                "lessSuited": "Your helpers won't create an account, even a free one. You need check-in on site, messages by WhatsApp, or languages other than German and English. Or the event is so large that you coordinate thousands of helpers in teams: Engelsystem was built for that.",
+                "goodFit": "You plan several events a year and don't want to pay per event. Regular helpers keep one account, newcomers sign up through a shared list without one, and you want the option of running the software yourself.",
+                "lessSuited": "You need check-in on site, messages by WhatsApp, or languages other than German and English. Or the event is so large that you coordinate thousands of helpers in teams: Engelsystem was built for that.",
                 "name": "WirkSam",
-                "summary": "A free web app for planning volunteer shifts. Organisers describe each task once and the shifts are created from it. Helpers book the slots that suit them and get a reminder before each one."
+                "summary": "A free web app for planning volunteer shifts. Organisers describe each task once and the shifts are created from it. Helpers book the slots that suit them, with a free account or through a shared list without one, and account holders get a reminder before each shift."
             }
         }
     },
@@ -221,6 +221,10 @@
                 "name": "Run it yourself",
                 "tagline": "WirkSam is open source and runs with Docker Compose on your own server."
             },
+            "featureSharedLists": {
+                "name": "Shared lists",
+                "tagline": "Share some shifts as a link, and people sign up without an account."
+            },
             "featureShiftPlanning": {
                 "name": "Shift planning",
                 "tagline": "Describe a task once and its shifts are created from that."
@@ -306,7 +310,7 @@
         "about": {
             "cards": {
                 "data": {
-                    "description": "Your name, email address, profile picture, and the shifts you booked. There is no tracking or analytics, and the only cookies are the ones that keep you signed in.",
+                    "description": "Your name, email address, profile picture, and the shifts you booked. Signing up through a shared list takes only what the list asks for. There is no tracking or analytics, and the only cookies are the ones that keep you signed in.",
                     "title": "We store very little"
                 },
                 "free": {
@@ -314,11 +318,11 @@
                     "title": "Free, with no guarantees"
                 },
                 "gdpr": {
-                    "description": "WirkSam is run from Germany under German and EU law. You can request a copy of your data, have it corrected, or delete your account, which removes your personal data for good.",
+                    "description": "WirkSam is run from Germany under German and EU law. You can request a copy of your data, have it corrected, or delete your account, which removes your personal data for good. Anyone who signs up through a shared list gets a link that deletes their data at any time.",
                     "title": "Data protection under the GDPR"
                 },
                 "private": {
-                    "description": "A new event is visible only to the people you invite. You can make it public if you want, and even then your organisers decide who gets in.",
+                    "description": "A new event is visible only to the people you invite. You can make it public if you want, and even then your organisers decide who gets in. If you share a list, anyone with that link sees the shifts on it, and nothing else.",
                     "title": "Private by default"
                 }
             },
@@ -332,7 +336,7 @@
             "eyebrow": "Questions",
             "items": {
                 "account": {
-                    "answer": "Yes, a free one, so that each booking belongs to a person and the reminders reach them. Signing up takes an email address and a password. Somebody who was invited opens the link, signs in, and is part of the event.",
+                    "answer": "No. On a shared list, helpers sign up without one: a name, and an email address if the list asks for it. A free account is for people who help more often: all their shifts in one place, and reminders on their phone.",
                     "question": "Do volunteers need an account?"
                 },
                 "audience": {
@@ -348,7 +352,7 @@
                     "question": "What does it cost?"
                 },
                 "data": {
-                    "answer": "WirkSam stores your name, email address, profile picture, and the shifts you booked. There is no tracking and no analytics, and the only cookies are the ones that keep you signed in. It is run from Germany under the GDPR: you can request a copy of your data, have it corrected, or delete your account for good.",
+                    "answer": "WirkSam stores your name, email address, profile picture, and the shifts you booked. Someone who signs up through a shared list leaves only what the list asks for: a name, and an email address or phone number if wanted. There is no tracking and no analytics, and the only cookies are the ones that keep you signed in. It is run from Germany under the GDPR: you can request a copy of your data, have it corrected, or delete your account or your sign-up for good.",
                     "question": "What happens to my data?"
                 },
                 "demo": {
@@ -372,11 +376,11 @@
                     "question": "Can I run WirkSam myself?"
                 },
                 "visibility": {
-                    "answer": "Only the people you invite. A new event is private: you add people by email or with a share link. If you make it public, anyone signed in can ask to join, and your organisers still decide who gets in.",
+                    "answer": "Only the people you invite. A new event is private: you add people by email or with a share link. If you make it public, anyone signed in can ask to join, and your organisers still decide who gets in. If you share a list, anyone with that link sees the shifts on it, nothing else.",
                     "question": "Who can see my event?"
                 },
                 "what": {
-                    "answer": "WirkSam is a free web app for planning volunteer shifts. Organisers set up an event and describe the tasks, and the shifts are created from that. Volunteers book the slots that suit them and get a reminder before each one. It was built for church events and community service, but works for any event run by volunteers.",
+                    "answer": "WirkSam is a free web app for planning volunteer shifts. Organisers set up an event and describe the tasks, and the shifts are created from that. Volunteers book the slots that suit them, with an account or through a shared list without one, and everyone with an account gets a reminder before each shift. It was built for church events and community service, but works for any event run by volunteers.",
                     "question": "What is WirkSam?"
                 }
             },
@@ -419,6 +423,10 @@
                         "description": "See how the work is spread across your team, and print a roster per task or for the whole event.",
                         "title": "Reports and printing"
                     },
+                    "sharedLists": {
+                        "description": "Share a link to some of your shifts in a group chat or on a poster. People sign up with their name, without an account, and you see who came through which list.",
+                        "title": "Shared lists"
+                    },
                     "teams": {
                         "description": "Reserve tasks for a team and tick off checks such as a police certificate before someone joins, without keeping a copy.",
                         "title": "Teams and checks"
@@ -432,7 +440,7 @@
             },
             "rows": {
                 "bookings": {
-                    "description": "It has everything you signed up for, soonest first. Only you can cancel your booking. Organisers can't take you off a shift individually.",
+                    "description": "It has everything you signed up for, soonest first. Only you can cancel your booking. Organisers can take someone off a shift only where that person signed up through a shared list, without an account.",
                     "screenshotAlt": "The My Bookings page listing confirmed shifts with their dates, times, and locations.",
                     "title": "All your shifts in one list"
                 },
@@ -508,7 +516,7 @@
                 "noInstall": "Nothing to install",
                 "privacy": "No tracking, no ads"
             },
-            "subtitle": "Set up your event, invite your team, and describe the shifts once. Everyone books the slots that suit them and gets a reminder before each one.",
+            "subtitle": "Set up your event, invite your team or share a list, and describe the shifts once. Everyone books the slots that suit them, and everyone with an account gets a reminder before each one.",
             "title": "Plan the roster for your next event together."
         },
         "journey": {
@@ -527,7 +535,7 @@
                         "title": "Generate the shifts"
                     },
                     "invite": {
-                        "description": "Paste a list of addresses, or send a share link. You pick each person's role.",
+                        "description": "Paste a list of addresses, or send a share link. You pick each person's role. People without an account sign up through a shared list.",
                         "title": "Invite your people"
                     },
                     "publish": {
@@ -539,7 +547,7 @@
             },
             "title": "Four steps, whether you're organising or helping out",
             "volunteer": {
-                "footnote": "If your plans change, cancel from My Bookings and the place reopens for somebody else.",
+                "footnote": "If your plans change, cancel from My Bookings and the place reopens for somebody else. Got a link to a shared list instead? Then you sign up there, without an account.",
                 "intro": "Your shifts are in one list, so you don't have to dig through a spreadsheet or a reply-all thread.",
                 "steps": {
                     "accept": {
@@ -619,7 +627,7 @@
             "title": "Cookies"
         },
         "dataCollected": {
-            "intro": "When you create an account and use WirkSam, we process the following personal data:",
+            "intro": "When you create an account and use WirkSam, we process the following personal data. Signing up for a shift through a shared list, without an account, is covered in its own section below.",
             "items": {
                 "bookings": "Booking data (which duty shifts you signed up for)",
                 "credentials": "Your password, stored only as a salted hash and never in readable form, together with the sign-in sessions on your devices",
@@ -629,8 +637,38 @@
             },
             "title": "Data We Collect"
         },
+        "guests": {
+            "data": {
+                "intro": "We process:",
+                "items": {
+                    "email": "Your email address, if the list asks for it",
+                    "name": "Your name, as you type it into the form",
+                    "phone": "Your phone number, if the list asks for it",
+                    "shifts": "The shifts you signed up for, whether you want a reminder, and whether your first name may be shown on shared lists",
+                    "vouchers": "For shifts with vouchers: how many vouchers you earned and redeemed"
+                }
+            },
+            "device": "On your device: nothing, except your choice of language or appearance if you change it.",
+            "erasure": "You can take your name off a shift or delete your data at any time, through the link in your confirmation email or the link shown after signing up. If someone else signed up with your address, “That wasn't me” on the same page deletes the sign-up and stops all further mail to that address, unless you have confirmed sign-ups with it. You can also ask the organisers, or write to the email address listed above.",
+            "intro": "Organisers can share some of their shifts on a shared list: a link anyone can open to sign up for a shift without an account. If you sign up that way, this section applies to you.",
+            "legalBasis": "The sign-up and the reminder are based on Art. 6(1)(b) GDPR, because you ask for them. Protecting the platform against abuse is based on Art. 6(1)(f) GDPR: where it is switched on, Cloudflare Turnstile checks that a person fills in the form, and to limit how often one address is mailed, we keep a checksum of the email address for a few days, from which the address cannot be recovered.",
+            "purposes": {
+                "intro": "We use this data:",
+                "items": {
+                    "confirmation": "to send you a confirmation with a link to take your name off or delete your data",
+                    "contact": "so that the organisers and the people in charge of the task can reach you about your shift",
+                    "reminder": "to remind you by email the day before, if you ask for it",
+                    "signup": "to put you down for the shift you chose"
+                }
+            },
+            "responsible": "The controller is the operator named above. The organisers of the event decide which details a list asks for, and use the contact details for their event.",
+            "retention": "One day after your last shift we anonymise your details: your name, email address and phone number are deleted, and the shifts you worked stay counted, without a name. Vouchers you have not redeemed by then expire. | {days} days after your last shift we anonymise your details: your name, email address and phone number are deleted, and the shifts you worked stay counted, without a name. Vouchers you have not redeemed by then expire.",
+            "title": "Signing Up Without an Account",
+            "visibility": "Who sees what: the members of the event see your name at the shift. Only the organisers and the people in charge of the task see your email address and phone number. On the public list itself, your first name appears only if the list told you so when you signed up.",
+            "vouchers": "For shifts with vouchers we store how many you earned and redeemed. If you confirm your address through the link in our email, we show the sign-ups you confirm with that address for the same event on one page and add up their vouchers. Each sign-up keeps its own name."
+        },
         "intro": "We take the protection of your personal data seriously. This privacy policy explains what data we collect when you use WirkSam, how we use it, and what rights you have.",
-        "lastUpdated": "Last updated: October 2026",
+        "lastUpdated": "Last updated: November 2026",
         "legalBasis": {
             "description": "We process your data based on Art. 6(1)(b) GDPR (performance of a contract) for core account and booking functionality, and Art. 6(1)(f) GDPR (legitimate interest) for security and platform operation. Where we send optional notifications, we rely on your consent (Art. 6(1)(a) GDPR), which you can withdraw at any time in your notification settings.",
             "title": "Legal Basis"
@@ -666,7 +704,11 @@
                 "description": "We use Proton Mail to send transactional emails such as booking confirmations and notifications. Proton AG is based in Switzerland and subject to Swiss data protection law. Only your email address and the message content are processed.",
                 "title": "Proton Mail (Proton AG)"
             },
-            "title": "Third-Party Services"
+            "title": "Third-Party Services",
+            "turnstile": {
+                "description": "Where the operator has switched it on, Cloudflare Turnstile checks that a registration, or a sign-up on a shared list, comes from a person and not from a bot. For this, Cloudflare processes technical data about your browser and connection, such as your IP address. Cloudflare, Inc. is based in the USA.",
+                "title": "Cloudflare Turnstile (Cloudflare, Inc.)"
+            }
         },
         "title": "Privacy Policy"
     },
@@ -706,6 +748,10 @@
         "featureSelfHosting": {
             "description": "WirkSam is open source under the MIT licence. Run it on your own server with Docker Compose and decide who may sign up, where files live and which pages are public.",
             "title": "Self-host WirkSam with Docker Compose · WirkSam"
+        },
+        "featureSharedLists": {
+            "description": "Share some of your shifts as a link in a group chat or on a poster. Helpers sign up with their name, without an account, and you see who came through which list.",
+            "title": "Shift sign-up lists without an account · WirkSam"
         },
         "featureShiftPlanning": {
             "description": "Lay out an event as tasks and let WirkSam build the shifts from days, times, shift length and headcount, with exceptions, a preview, drafts and one plan for everyone.",
@@ -768,7 +814,7 @@
             "title": "Legal notice · WirkSam"
         },
         "landing": {
-            "description": "Plan volunteer shifts together: create an event, generate the shifts, invite your team, and let everyone book their own slots, with reminders by email, push, or Telegram. Free, no tracking, GDPR-compliant.",
+            "description": "Plan volunteer shifts together: create an event, generate the shifts, invite your team or share a list, and let everyone book their own slots, with reminders by email, push, or Telegram for everyone with an account. Free, no tracking, GDPR-compliant.",
             "title": "WirkSam: free shift planning for volunteers, clubs and events"
         },
         "privacy": {
@@ -844,11 +890,11 @@
                 "eyebrow": "Questions",
                 "items": {
                     "account": {
-                        "answer": "Yes, with a free account: an email address and a password. That way every booking belongs to a person and the reminder reaches them. Whoever opens an invitation link signs in and is part of the event. If your helpers won't create an account under any circumstances, a tool where people sign up through a plain link suits you better, and our comparison page lists some.",
+                        "answer": "No. Through a shared list, helpers sign up without an account, with their name and whatever else you ask for, which suits people who help once a year. Regulars can keep a free account, with all their shifts in one place and reminders by push or Telegram too. You decide per list what it asks for.",
                         "question": "Do helpers have to register?"
                     },
                     "cancellations": {
-                        "answer": "They cancel the shift in the app and the place is open again straight away. You see it as open in the overview and can ask someone directly. So that shifts aren't forgotten in the first place, everyone gets a reminder beforehand.",
+                        "answer": "They cancel the shift in the app, or through the link they got when signing up on a shared list, and the place is open again straight away. You see it as open in the overview and can ask someone directly. So that shifts aren't forgotten in the first place, everyone with an account gets a reminder beforehand, and anyone on a list can ask for one by email.",
                         "question": "What happens if someone cancels at short notice?"
                     },
                     "headcount": {
@@ -856,7 +902,7 @@
                         "question": "How many helpers do I need per stand, and how long should a shift be?"
                     },
                     "helperList": {
-                        "answer": "Create an event in WirkSam with the festival days, and a task for each stand with its hours, shift length and headcount. The shifts are created from that. Then invite your helpers by link or email, and they sign up themselves. It is free, and you need no template.",
+                        "answer": "Create an event in WirkSam with the festival days, and a task for each stand with its hours, shift length and headcount. The shifts are created from that. Then share a list in your club's group chat, where people sign up without an account, or invite your helpers by link or email. It is free, and you need no template.",
                         "question": "How do I make a helper list for our club festival?"
                     },
                     "setup": {
@@ -873,7 +919,7 @@
             },
             "hero": {
                 "eyebrow": "For club festivals",
-                "lede": "In WirkSam you set up each stand at your club festival as a task, generate the shifts from it, and send your helpers a link. They sign up for themselves, you can see at any time where someone is still missing, and everyone gets a reminder before their shift. It works the same way for a summer fête, a sports day or an anniversary, and it costs nothing.",
+                "lede": "In WirkSam you set up each stand at your club festival as a task, generate the shifts from it, and send your helpers a link. They sign up for themselves, with an account or without one through a shared list, you can see at any time where someone is still missing, and reminders go out before the shifts. It works the same way for a summer fête, a sports day or an anniversary, and it costs nothing.",
                 "title": "Plan your club festival's volunteer shifts online"
             },
             "pains": {
@@ -912,7 +958,7 @@
                         "title": "Watch the gaps close"
                     },
                     "invite": {
-                        "description": "Paste a list of email addresses, or share one invitation link in your club newsletter or group chat. Before the shifts are handed out, members can mark when they are free.",
+                        "description": "Paste a list of email addresses, or share one invitation link in your club newsletter or group chat. Before the shifts are handed out, members can mark when they are free. Helpers who'd rather not have an account sign up with their name through a shared list.",
                         "screenshotAlt": "The availability page, where a helper marks the hours they are free on each day of the event.",
                         "title": "Invite your members"
                     },
@@ -922,7 +968,7 @@
                         "title": "Next year, start from this year's plan"
                     },
                     "reminders": {
-                        "description": "Before each shift WirkSam sends a reminder by email, browser push or Telegram. Anyone who has to drop out cancels in the app, and the place is open again for someone else.",
+                        "description": "Before each shift WirkSam reminds everyone with an account by email, browser push or Telegram, and mails those on a list who asked for it the day before. Anyone who has to drop out cancels in the app or through their link, and the place is open again for someone else.",
                         "screenshotAlt": "Notification settings with a row per notification type and per-channel switches for email, push, and Telegram.",
                         "title": "Everyone is reminded before their shift"
                     },

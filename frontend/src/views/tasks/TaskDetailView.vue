@@ -32,6 +32,7 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 import { useDialog } from '@/composables/useDialog'
 import { useFormatters } from '@/composables/useFormatters'
 import { useMenuAction } from '@/composables/useMenuAction'
+import { useSharedListPrint } from '@/composables/useSharedListPrint'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import Badge from '@/components/ui/badge/Badge.vue'
@@ -63,6 +64,7 @@ import EventZoneHint from '@/components/events/EventZoneHint.vue'
 import { joinNames } from '@/components/events/teams/teamHelpers'
 import LocationFormDialog from '@/components/locations/LocationFormDialog.vue'
 import LocationPicker from '@/components/locations/LocationPicker.vue'
+import SharedListPrintDialog from '@/components/shared-lists/SharedListPrintDialog.vue'
 import DeleteConfirmationDialog from '@/components/tasks/DeleteConfirmationDialog.vue'
 import ShiftDetailDialog from '@/components/tasks/ShiftDetailDialog.vue'
 import StatusDropdown from '@/components/tasks/StatusDropdown.vue'
@@ -155,7 +157,54 @@ watch(showManagersDialog, (open) => {
   if (!open) void inChargeCard.value?.reloadInvitations()
 })
 
-const printRoute = computed(() => ({ name: 'print-task', params: { eventId: task.value?.id } }))
+// --- Printing ---
+const notice = useSharedListPrint()
+/** Deciding what "Drucken" prints; a second press meanwhile does nothing. */
+const printing = ref(false)
+/**
+ * The shifts' first load. The page shows before they arrive, and "Drucken"
+ * judges by them whether the task can go on a list, so it waits for them.
+ */
+let shiftsLoaded: Promise<void> = Promise.resolve()
+
+const printPlain = () => router.push({ name: 'print-task', params: { taskId: task.value?.id } })
+const printList = (listId: string) => router.push({ name: 'print-list', params: { listId } })
+
+/**
+ * "Drucken": for whoever may share the task, a notice with a shared list's QR
+ * code (its open list, or one created after asking); for anyone else the
+ * sheet without QR code.
+ */
+async function print() {
+  const current = task.value
+  if (!current || printing.value) return
+  printing.value = true
+  try {
+    await shiftsLoaded
+    const outcome = await notice.startTask(current, shifts.value)
+    if (outcome.kind === 'list') void printList(outcome.listId)
+    else if (outcome.kind === 'plain') void printPlain()
+  } catch (error) {
+    toastApiError(error)
+  } finally {
+    printing.value = false
+  }
+}
+
+async function createNoticeList() {
+  const listId = await notice.createList()
+  if (listId) void printList(listId)
+}
+
+function customizeNoticeList() {
+  const to = notice.wizardRoute()
+  if (to) void router.push(to)
+}
+
+function printWithoutList() {
+  notice.close()
+  void printPlain()
+}
 
 /** The days the task runs, as the header line shows them. */
 const daySpan = computed(() => formatDaySpan(task.value?.start_date, task.value?.end_date))
@@ -230,7 +279,7 @@ const menu = useMenuAction()
  */
 const onMoreAction = async (key: string) => {
   if (key === 'print') {
-    router.push(printRoute.value)
+    await print()
     return
   }
   await nextTick()
@@ -899,7 +948,8 @@ onMounted(async () => {
   // A refused task has already been reported; its shifts would only be
   // refused again, with a second identical toast.
   if (!(await loadTask())) return
-  await Promise.all([loadShifts(), loadMyBookings(), loadBatches()])
+  shiftsLoaded = loadShifts()
+  await Promise.all([shiftsLoaded, loadMyBookings(), loadBatches()])
 })
 </script>
 
@@ -959,7 +1009,7 @@ onMounted(async () => {
                 size="icon"
                 class="size-11 shrink-0 rounded-xl shadow-none"
                 :aria-label="t('print.printTask')"
-                @click="router.push(printRoute)"
+                @click="print"
               >
                 <Printer class="size-[18px]" />
               </Button>
@@ -1140,7 +1190,7 @@ onMounted(async () => {
                 <DropdownMenuItem
                   data-testid="btn-print"
                   class="min-h-[42px] gap-2.5 rounded-[10px] px-2.5"
-                  @select="onMoreAction('print')"
+                  @select="menu.after(() => onMoreAction('print'))"
                 >
                   <Printer />
                   {{ t('duties.tasks.detail.print') }}
@@ -1166,7 +1216,7 @@ onMounted(async () => {
                 size="icon"
                 class="size-11 rounded-xl shadow-none"
                 :aria-label="t('print.printTask')"
-                @click="router.push(printRoute)"
+                @click="print"
               >
                 <Printer class="size-[18px]" />
               </Button>
@@ -1681,6 +1731,15 @@ onMounted(async () => {
       v-model:open="showVoucherSettings"
       :task="task"
       @saved="onVoucherSettingsSaved"
+    />
+
+    <SharedListPrintDialog
+      :dialog="notice.dialog.value"
+      :busy="notice.creating.value"
+      @create="createNoticeList"
+      @customize="customizeNoticeList"
+      @plain="printWithoutList"
+      @close="notice.close"
     />
 
     <!-- Shift Detail Dialog -->

@@ -237,6 +237,7 @@ async function check(body: { code: string } | { user_id: string }) {
       name: res.data.name ?? null,
       avatarEtag: res.data.avatar_etag ?? null,
       available: res.data.available,
+      isGuest: res.data.is_guest ?? false,
     }
     confirmOpen.value = true
   } catch (error) {

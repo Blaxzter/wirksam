@@ -16,6 +16,7 @@ Bei ihrer Aufgabe können Verantwortliche:
 - Name, Beschreibung, Ort und Kategorie ändern
 - Schichten hinzufügen, den Zeitplan ändern und Schichten löschen
 - sehen, wer gebucht hat, mit E-Mail-Adresse, Telefonnummer, falls hinterlegt, und der Notiz zur Buchung
+- die Aufgabe über eine [geteilte Liste](/features/shared-lists) teilen, außer die Organisator:innen haben das ausgeschaltet
 - die Aufgabe schon sehen und bearbeiten, solange sie ein Entwurf ist
 - Marken einlösen, wenn die Aufgabe Marken annimmt
 

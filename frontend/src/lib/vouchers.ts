@@ -9,10 +9,39 @@
 import type {
   VoucherAccount,
   VoucherEntryRead,
+  VoucherPassRead,
+  VoucherPassStatus,
   VoucherPointRead,
   VoucherShift,
 } from '@/client/types.gen'
 import { parseServerDate } from '@/lib/server-time'
+
+/**
+ * Where a code screen gets its codes from, when they are not a member's own
+ * (`/events/{id}/vouchers/me/pass`): a shared list's guest asks through the
+ * link that opened their page. `status` rejects like any request once a code
+ * was replaced or is gone (`voucher.pass_not_found`), and the screen shows a
+ * new code.
+ */
+export interface VoucherPassSource {
+  issue(): Promise<VoucherPassRead>
+  status(passId: string): Promise<VoucherPassStatus>
+  /** What the screen says once the key behind the source has stopped working. */
+  goneMessage: string
+}
+
+/**
+ * The key behind a `VoucherPassSource` no longer works: a guest's link died
+ * when their address was confirmed from another link, or their data was
+ * deleted. Final: the code screen stops asking, since every further call would
+ * only be refused again.
+ */
+export class PassSourceGone extends Error {
+  constructor(message = 'The link behind these codes no longer works') {
+    super(message)
+    this.name = 'PassSourceGone'
+  }
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
