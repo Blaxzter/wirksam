@@ -56,6 +56,7 @@ from tests.fixtures.guest_signups import (
     freeze_clocks,
     signup_body,
 )
+from tests.fixtures.sandbox import SandboxSetup
 from tests.fixtures.shared_lists import ListGuest, ListGuestFactory, SharedListFactory
 
 API = "/api/v1/public"
@@ -171,6 +172,7 @@ class TestPublicPage:
             "start_date": "2026-06-10",
             "end_date": "2026-06-14",
             "timezone": test_event.timezone,
+            "is_sandbox": False,
         }
         [day] = body["days"]
         assert day["date"] == "2026-06-11"
@@ -1035,6 +1037,55 @@ class TestReminderAndMail:
             assert body["show_manage_link"] is True
         assert set(without_smtp) == set(opted_out)
         assert outbox == []
+
+    async def test_a_demo_mails_nobody_and_shows_the_link_instead(
+        self,
+        unauthenticated_client: AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+        db_session: AsyncSession,
+        make_shared_list: SharedListFactory,
+        test_sandbox: SandboxSetup,
+        outbox: list[GuestMail],
+    ) -> None:
+        """A demo's guest is anonymous, so its lists mail no typed address:
+        the page says it is a demo and keeps the manage link on screen."""
+        configure_smtp(monkeypatch)
+        task = Task(
+            name="Demo",
+            start_date=dt.date(2026, 6, 11),
+            end_date=dt.date(2026, 6, 11),
+            status="published",
+            created_by_id=test_sandbox.guest.id,
+            event_id=test_sandbox.event.id,
+            is_sandbox=True,
+        )
+        db_session.add(task)
+        await db_session.flush()
+        shared_list = await make_shared_list(
+            event=test_sandbox.event, tasks=[task], created_by=test_sandbox.guest
+        )
+        page = await unauthenticated_client.get(
+            f"{API}/shared-lists/{shared_list.code}"
+        )
+        assert page.json()["event"]["is_sandbox"] is True
+
+        body = await _signed_up(
+            unauthenticated_client,
+            shared_list,
+            await add_shift(db_session, task),
+            email="visitor@example.org",
+            remind=True,
+        )
+
+        assert body["mail_queued"] is False
+        assert body["show_manage_link"] is True
+        assert body["email"] == "visitor@example.org"
+        assert outbox == []
+        manage = await unauthenticated_client.post(
+            f"{API}/guest-signups/manage", json={"token": body["guest_token"]}
+        )
+        assert manage.status_code == 200, manage.text
+        assert manage.json()["event"]["is_sandbox"] is True
 
 
 @pytest.mark.asyncio

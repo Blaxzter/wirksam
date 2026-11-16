@@ -146,6 +146,7 @@
         "copyFailed": "Copying didn't work here. Select the text and copy it yourself.",
         "copyLink": "Copy link",
         "copyText": "Copy text",
+        "demo": "This is a demo: the link works until the demo ends. Whoever signs up gets no mail, and sees the link to their sign-ups right on the page instead.",
         "linkCopied": "Link copied.",
         "linkLabel": "Link to the list",
         "message": {

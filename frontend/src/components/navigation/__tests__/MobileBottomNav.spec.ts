@@ -178,14 +178,14 @@ describe('MobileBottomNav', () => {
       return w.find('[data-testid="mobile-more-shared-lists"]').exists()
     }
 
-    it('are in the sheet for whoever runs the event or is in charge of a task', async () => {
+    it('are in the sheet for whoever runs the event or is in charge of a task, demos too', async () => {
       expect(await listed({ ...member, can_manage: true })).toBe(true)
       expect(await listed({ ...member, managed_task_count: 2 })).toBe(true)
+      expect(await listed({ ...member, can_manage: true, is_sandbox: true })).toBe(true)
     })
 
-    it('are not in the sheet for a plain member, in a demo or when switched off', async () => {
+    it('are not in the sheet for a plain member or when switched off', async () => {
       expect(await listed(member)).toBe(false)
-      expect(await listed({ ...member, can_manage: true, is_sandbox: true })).toBe(false)
       globalThis.__APP_CONFIG__ = { SHARED_LISTS_ENABLED: 'false' }
       expect(await listed({ ...member, can_manage: true })).toBe(false)
     })

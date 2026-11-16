@@ -4,7 +4,7 @@
  * the group that can be edited before copying, and a QR code for a notice,
  * which "Aushang drucken" prints with the list's shifts.
  */
-import { Check, Copy, Printer } from '@lucide/vue'
+import { Check, Copy, FlaskConical, Printer } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -17,7 +17,11 @@ import { Textarea } from '@/components/ui/textarea'
 
 import QrCode from '@/components/print/QrCode.vue'
 
-const props = defineProps<{ url: string }>()
+const props = defineProps<{
+  url: string
+  /** The event is a demo: the link works, but its sign-ups are mailed nothing. */
+  demo?: boolean
+}>()
 
 const emit = defineEmits<{ print: [] }>()
 
@@ -62,6 +66,15 @@ function selectAll(event: FocusEvent) {
         <p class="text-sm">{{ t('sharedListWizard.share.success.text') }}</p>
       </div>
     </div>
+
+    <p
+      v-if="demo"
+      class="flex items-start gap-2 text-sm text-muted-foreground"
+      data-testid="wizard-share-demo"
+    >
+      <FlaskConical class="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+      {{ t('sharedListWizard.share.demo') }}
+    </p>
 
     <div class="grid gap-2">
       <Label for="wizard-share-link">{{ t('sharedListWizard.share.linkLabel') }}</Label>

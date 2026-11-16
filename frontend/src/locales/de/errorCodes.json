@@ -75,7 +75,6 @@
         "forbidden": "Das ist kein Demo-Konto, es gibt also keine Demo zu beenden.",
         "invitations_disabled": "Eine Demo-Veranstaltung kann niemanden einladen, weil alle darin erfunden sind.",
         "not_available": "Das geht in der Demo nicht. Lege dafür ein richtiges Konto an.",
-        "shared_lists_disabled": "Eine Demo-Veranstaltung kann keine Listen teilen, weil sich von außen niemand wirklich eintragen könnte.",
         "upload_disabled": "In der Demo kannst du keine Bilder hochladen. Lege dafür ein richtiges Konto an."
     },
     "shared_list": {

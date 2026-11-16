@@ -76,6 +76,9 @@ class PublicEventRef(BaseModel):
     start_date: dt.date
     end_date: dt.date
     timezone: str
+    #: A demo event ("Testevent"): the pages say that nothing is mailed and
+    #: that everything goes with the demo.
+    is_sandbox: bool = False
 
 
 class PublicSharedList(BaseModel):

@@ -54,6 +54,7 @@ from app.models.event_team import (
     EventTeamRequirement,
 )
 from app.models.location import Location
+from app.models.shared_list import GuestActivityLog, SharedList, SharedListGuest
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
@@ -126,6 +127,22 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
         ).scalar_one_or_none()
         if creator_id is not None:
             guest_ids.append(creator_id)
+    # And whoever signed up through the demo's shared lists: guest users with
+    # no membership, found by their contact rows, which the event's delete
+    # would take away. A chain never leaves its list, and nothing confirms a
+    # demo's address (nothing is mailed), so none of them books elsewhere.
+    list_guest_ids = list(
+        (
+            await db.execute(
+                select(col(User.id))
+                .join(SharedListGuest, col(SharedListGuest.user_id) == col(User.id))
+                .where(
+                    col(SharedListGuest.event_id) == event_id,
+                    col(User.is_list_guest).is_(True),
+                )
+            )
+        ).scalars()
+    )
 
     # 1. Bookings before shifts. ``bookings.shift_id`` is SET NULL, so removing
     #    a shift first would strand the booking instead of removing it — and a
@@ -222,6 +239,18 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
     )
     await db.execute(delete(VenuePlan).where(col(VenuePlan.event_id) == event_id))
     await db.execute(delete(Location).where(col(Location.event_id) == event_id))
+    #    The shared lists: the guests' contact rows, then the lists, whose
+    #    task and excluded-shift links went with the tasks and shifts above.
+    #    Both cascade from the event too. The activity log has no foreign key
+    #    and would outlive it; it only counts toward the daily ceilings, and
+    #    a demo leaves no row behind.
+    await db.execute(
+        delete(SharedListGuest).where(col(SharedListGuest.event_id) == event_id)
+    )
+    await db.execute(delete(SharedList).where(col(SharedList.event_id) == event_id))
+    await db.execute(
+        delete(GuestActivityLog).where(col(GuestActivityLog.event_id) == event_id)
+    )
 
     # 4. The event itself. Invitations and join requests cascade from here.
     await db.execute(delete(Event).where(col(Event.id) == event_id))
@@ -250,6 +279,14 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
             delete(AuthSession).where(col(AuthSession.user_id).in_(guest_ids))
         )
         await db.execute(delete(User).where(col(User.id).in_(guest_ids)))
+    #    The people who signed up through its lists: no session, no template,
+    #    and their bookings, vouchers and contact rows went above.
+    if list_guest_ids:
+        await db.execute(
+            delete(User).where(
+                col(User.id).in_(list_guest_ids), col(User.is_list_guest).is_(True)
+            )
+        )
 
     # The files of every row above are queued; delete them once this commits.
     drain_after_commit(db)
@@ -261,6 +298,7 @@ async def purge_sandbox(db: AsyncSession, *, event_id: uuid.UUID) -> None:
             "tasks": len(task_ids),
             "shifts": len(shift_ids),
             "guests": len(guest_ids),
+            "list_guests": len(list_guest_ids),
         },
     )
 

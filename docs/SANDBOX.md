@@ -37,10 +37,12 @@ voucher rules (whoever is on shift at either point may also redeem without a
 code, and the teammate in charge of the Café counter cannot change its
 shifts); and — for the manager role only — one pending invitation,
 one pending join request, the notification telling them about it, the lead of
-the Cash desk, and five team requests to review from four made-up people: Vera
+the Cash desk, five team requests to review from four made-up people (Vera
 for the Cash desk and the Shuttle drivers, Jordan for the Cash desk (no note),
 Carla for Childcare (police certificate, no file by design) and Sven for First
-aid with a sample certificate attached.
+aid with a sample certificate attached), and a shared list over the Closing
+tidy-up and the Grill stand that three people without an account signed up
+through, on places the rota left free (`_seed_shared_list`).
 
 The sample certificate is a PNG drawn at seed time by
 `logic/sample_document.py`, because a sandbox may not upload a file
@@ -168,6 +170,10 @@ leaves the orphans described above.
                                                 image visibly go, and the
                                                 locations go after the rows
                                                 pointing at them
+   shared_list_guests, shared_lists,
+   guest_activity_log                        — the first two cascade from the
+                                                event; the log has no foreign
+                                                key and would outlive it
 6. events                                    — invitations and join requests cascade
 7. venue_template_images, venue_templates
    (by guest), auth_sessions, then users     — last, always; notifications,
@@ -177,7 +183,10 @@ leaves the orphans described above.
                                                 steps 1-6 never reach them; their
                                                 FK cascades from the user too,
                                                 deleted explicitly so they
-                                                visibly go
+                                                visibly go. Then the list guests
+                                                (users.is_list_guest), found by
+                                                their contact rows before step 1:
+                                                they have no membership
 ```
 
 The stored files (the seeded team document, a plan picture, an avatar) need no
@@ -255,11 +264,11 @@ This is the checklist. Each row is one guard, individually testable, covered in
 | `api/routes/venue_map.py` | plan image upload returns 403 `sandbox.upload_disabled`. Locations, plans, markers and shapes need no guard of their own: every one of them belongs to one event and is only reachable through `require_event_visible` |
 | `api/routes/venue_templates.py` | venue templates belong to one account and answer 404 to everyone else, the superadmin included, so a guest's templates are invisible without a guard of their own |
 | `logic/permissions.py::shared_list_scope`, `shared_list_access`, `require_shared_list_tasks` | 404 for a sandbox the caller did not create, placed **before** the role check. Every shared-list route of an event, and every route of one list, passes one of them, so a demo's task names, people in charge and fill levels stay hidden from the superadmin too |
-| `api/routes/shared_lists.py::create_shared_list` | 403 `sandbox.shared_lists_disabled`, after the gate: the demo's own guest is `owner` and passes every gate, and a list is a public link that strangers sign up through and that mails whatever address they type. With no list, no list guest ever exists in a demo, so `purge_sandbox` needs no step for them |
+| `logic/shared_lists/guest_quota.py::reserve_mail` | refuses every guest mail about a demo event. The demo's own guest may share a list (it is `owner`), and a list is a public link that anyone signs up through with any address, so nothing about it is mailed: the sign-up shows the manage link instead (`show_manage_link`), and the public pages say it is a demo (`PublicEventRef.is_sandbox`) |
 
-The two shared-list rows are covered in `backend/tests/logic/test_shared_list_access.py`
-and `backend/tests/api/routes/test_shared_lists.py`; the frontend hides the
-feature in a demo as well (`canUseSharedLists`).
+The shared-list rows are covered in `backend/tests/logic/test_shared_list_access.py`,
+`backend/tests/logic/test_guest_quota.py` and
+`backend/tests/api/routes/test_public_shared_lists.py`.
 
 Note what is deliberately **not** blocked: member role changes and join-request
 decisions. The manager tour walks a visitor through both, and neither sends mail
@@ -281,7 +290,7 @@ the visitor stopped watching, with nothing in any log to explain it.
 Error codes: `sandbox.disabled` (404), `sandbox.capacity_reached` (503),
 `sandbox.forbidden` (403), `sandbox.not_available` (403),
 `sandbox.invitations_disabled` (403), `sandbox.upload_disabled` (403),
-`sandbox.shared_lists_disabled` (403), `event.sandbox_not_featurable` (422). Each
+`event.sandbox_not_featurable` (422). Each
 needs an entry in the frontend's `errorCodes` i18n namespace; a code without one
 renders as the raw backend string on screen.
 
@@ -301,8 +310,11 @@ renders as the raw backend string on screen.
   security surface than the feature is worth.
 - **No sharing.** A sandbox is private to one session. Two people cannot look at
   the same demo.
-- **No shared lists.** Creating one is refused (`sandbox.shared_lists_disabled`)
-  for the same reason: a list would open an anonymous visitor's throwaway event
-  to strangers, and mail the addresses they type.
+- **No mail from shared lists.** A demo may share a list, and anyone with its
+  link may sign up through it for as long as the demo lives, but no guest mail
+  goes out (`guest_quota.reserve_mail`): a list would otherwise let an
+  anonymous visitor have mail sent to any address. The public page and the
+  guest's page say it is a demo, the sign-up shows the guest their link, and
+  the purge takes the guests with the event.
 - **No background scheduler.** See above — the sweep rides on creation, which is
   sufficient precisely because sandboxes only accumulate when people create them.

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import EventZoneHint from '@/components/events/EventZoneHint.vue'
+import GuestDemoNotice from '@/components/guest/GuestDemoNotice.vue'
 import GuestSignupDone from '@/components/guest/GuestSignupDone.vue'
 import GuestSignupForm from '@/components/guest/GuestSignupForm.vue'
 import GuestStateMessage from '@/components/guest/GuestStateMessage.vue'
@@ -138,6 +139,7 @@ onBeforeUnmount(() => store.clear())
 
     <article v-else class="space-y-5" data-testid="shared-list-page">
       <PublicListHeader ref="header" :list="list" />
+      <GuestDemoNotice v-if="list.event.is_sandbox" />
       <EventZoneHint :zone="list.event.timezone" />
 
       <GuestStateMessage

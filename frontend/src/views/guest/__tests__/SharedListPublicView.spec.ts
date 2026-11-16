@@ -154,6 +154,18 @@ describe('SharedListPublicView: what the page shows', () => {
     expect(byTestId(wrapper, 'page-heading').element.tagName).toBe('H1')
     expect(byTestId(wrapper, 'page-heading').text()).toBe('Helpers wanted')
     expect(byTestId(wrapper, 'shared-list-event').text()).toContain('Summer fair')
+    expect(byTestId(wrapper, 'guest-demo-notice').exists()).toBe(false)
+  })
+
+  it('says under the heading that a demo’s list mails nobody and goes with the demo', async () => {
+    const demo = publicList()
+    demo.event.is_sandbox = true
+    const wrapper = await mountPage(demo)
+    const notice = byTestId(wrapper, 'guest-demo-notice')
+    expect(notice.attributes('role')).toBe('note')
+    expect(notice.text()).toBe(
+      'Just a demo. You can sign up here to try it out, but no mail is sent, not even to the address you give, and everything is deleted along with the demo.',
+    )
   })
 
   it('lists the shifts with their free places, a full one without a way in', async () => {

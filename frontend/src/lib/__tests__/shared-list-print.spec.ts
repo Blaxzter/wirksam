@@ -17,7 +17,6 @@ const NOW = new Date('2026-12-04T11:00:00Z')
 const admin = {
   status: 'published' as const,
   timezone: 'Europe/Berlin',
-  is_sandbox: false,
   can_manage: true,
   managed_task_count: 0,
   managers_share_lists: true,
@@ -57,8 +56,9 @@ describe('canShareTask', () => {
     )
   })
 
-  it('shares nothing in a demo or while the lists are switched off', () => {
-    expect(canShareTask({ ...admin, is_sandbox: true }, { can_manage: true })).toBe(false)
+  it('shares in a demo too, and nothing while the lists are switched off', () => {
+    const demo = { ...admin, is_sandbox: true }
+    expect(canShareTask(demo, { can_manage: true })).toBe(true)
     globalThis.__APP_CONFIG__ = { SHARED_LISTS_ENABLED: 'false' }
     expect(canShareTask(admin, { can_manage: true })).toBe(false)
   })

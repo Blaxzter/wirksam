@@ -18,7 +18,7 @@ afterEach(() => {
 })
 
 describe('canUseSharedLists', () => {
-  const event = { is_sandbox: false, can_manage: false, managed_task_count: 0 }
+  const event = { can_manage: false, managed_task_count: 0 }
 
   it('is offered to whoever runs the event', () => {
     expect(canUseSharedLists({ ...event, can_manage: true })).toBe(true)
@@ -35,8 +35,9 @@ describe('canUseSharedLists', () => {
     expect(canUseSharedLists(undefined)).toBe(false)
   })
 
-  it('is never offered in a demo event', () => {
-    expect(canUseSharedLists({ ...event, can_manage: true, is_sandbox: true })).toBe(false)
+  it('is offered in a demo event too, whose lists mail nobody', () => {
+    const demo = { ...event, can_manage: true, is_sandbox: true }
+    expect(canUseSharedLists(demo)).toBe(true)
   })
 
   it('follows the deployment switch', () => {

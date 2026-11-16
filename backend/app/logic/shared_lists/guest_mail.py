@@ -38,9 +38,10 @@ promises to delete the sign-up. The confirmation also says how to redeem, how to
 address, and how long the data is kept.
 
 Before it goes out, every mail is reserved in ``guest_quota.reserve_mail``,
-which refuses an address that opted out, one over a daily ceiling, and
-everything when SMTP is not configured: the transactional mail path would log
-the link instead, and a manage link must never reach a log.
+which refuses an address that opted out, one over a daily ceiling, every
+mail about a demo event, and everything when SMTP is not configured: the
+transactional mail path would log the link instead, and a manage link must
+never reach a log.
 """
 
 import datetime as dt

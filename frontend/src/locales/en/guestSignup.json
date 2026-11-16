@@ -1,6 +1,11 @@
 {
+    "demo": {
+        "text": "You can sign up here to try it out, but no mail is sent, not even to the address you give, and everything is deleted along with the demo.",
+        "title": "Just a demo."
+    },
     "done": {
         "another": "Sign up for another shift",
+        "demoNoMail": "A demo sends no mail, not even to the address you gave. Your sign-ups are behind this link instead.",
         "idleHint": "On a shared device this page starts over by itself after two minutes, so the next person doesn't see your details.",
         "keepLink": {
             "copied": "Link copied",

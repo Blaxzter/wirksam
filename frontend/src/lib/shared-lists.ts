@@ -19,15 +19,15 @@ export type AskMode = 'required' | 'optional' | 'off'
 
 /**
  * Whether the selected event offers the shared-lists page to this viewer: the
- * feature is switched on, the event is a real one (a demo cannot share), and
- * the viewer runs the event or is in charge of one of its tasks. The server
- * decides per request; this keeps the navigation from offering a page that
- * would answer 403.
+ * feature is switched on, and the viewer runs the event or is in charge of one
+ * of its tasks. A demo shares too; its lists mail nobody and go with it. The
+ * server decides per request; this keeps the navigation from offering a page
+ * that would answer 403.
  */
 export function canUseSharedLists(
-  event: Pick<EventRead, 'is_sandbox' | 'can_manage' | 'managed_task_count'> | null | undefined,
+  event: Pick<EventRead, 'can_manage' | 'managed_task_count'> | null | undefined,
 ): boolean {
-  if (!event || event.is_sandbox) return false
+  if (!event) return false
   if (!isSwitchOn(useAppConfig().SHARED_LISTS_ENABLED)) return false
   return event.can_manage || (event.managed_task_count ?? 0) > 0
 }

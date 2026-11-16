@@ -112,9 +112,9 @@ describe('AppSidebar: shared lists', () => {
     expect(await eventItems()).not.toContain('shared-lists')
   })
 
-  it('is not offered in a demo event', async () => {
+  it('is offered in a demo event too, whose lists mail nobody', async () => {
     auth.selectedEvent = { ...PLAIN_MEMBER, can_manage: true, is_sandbox: true }
-    expect(await eventItems()).not.toContain('shared-lists')
+    expect(await eventItems()).toContain('shared-lists')
   })
 
   it('is not offered while the deployment has switched it off', async () => {

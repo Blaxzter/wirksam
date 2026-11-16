@@ -75,7 +75,6 @@
         "forbidden": "This is not a demo account, so there is no demo to end.",
         "invitations_disabled": "A demo event cannot invite anyone, because everybody in it is made up.",
         "not_available": "That is not available in a demo. Create a real account to use it.",
-        "shared_lists_disabled": "A demo event cannot share lists, because nobody outside it could sign up for real.",
         "upload_disabled": "Pictures cannot be uploaded in a demo. Create a real account to add your own."
     },
     "shared_list": {

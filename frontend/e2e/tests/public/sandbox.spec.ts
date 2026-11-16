@@ -113,6 +113,48 @@ test.describe('demo session', () => {
     await exitDemo(page)
   })
 
+  test('an organiser finds a shared list to try, whose sign-ups mail nobody', async ({
+    page,
+    browser,
+  }) => {
+    await startDemo(page, 'manager')
+    await dismissTour(page)
+
+    await page.getByTestId('sidebar-link-shared-lists').click()
+    const title = page
+      .getByTestId('shared-list-title')
+      .filter({ hasText: 'Helping hands for the festival' })
+    await title.click()
+    await expect(page.getByText('Paula Neumann')).toBeVisible()
+    const url = (await page.getByTestId('shared-list-url').textContent())?.trim() ?? ''
+    expect(url).toMatch(/\/l\/\w+$/)
+
+    // A stranger opening the link from a group chat, with no session at all.
+    const stranger = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+    try {
+      const guest = await stranger.newPage()
+      await guest.goto(url)
+      await expect(guest.getByTestId('guest-demo-notice')).toBeVisible()
+      await guest.locator('[data-testid^="btn-pick-shift-"]:enabled').first().click()
+      await guest.getByTestId('guest-input-name').fill('Robin Gast')
+      await guest.getByTestId('guest-input-email').fill('robin@example.org')
+      await guest.getByTestId('btn-guest-submit').click()
+
+      // No mail, whether or not the backend has SMTP: the link instead.
+      await expect(guest.getByTestId('guest-signup-done')).toBeVisible()
+      await expect(guest.getByTestId('guest-done-demo')).toBeVisible()
+      await expect(guest.getByTestId('guest-done-mail')).toHaveCount(0)
+      await expect(guest.getByTestId('guest-manage-link')).toBeVisible()
+    } finally {
+      await stranger.close()
+    }
+
+    // The list's details cover the demo bar until they are closed.
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
+    await exitDemo(page)
+  })
+
   test('the seeded event has work in it on every screen the tour visits', async ({ page }) => {
     // An empty state is the failure mode this feature cannot afford; the seed
     // exists to prevent it, so assert the data actually arrived.

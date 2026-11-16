@@ -456,14 +456,15 @@ class TestCreate:
         body = _problem(r, 409, "shared_list.too_many")
         assert body["max"] == 2
 
-    async def test_a_demo_event_cannot_share(
+    async def test_a_demo_event_shares_too(
         self,
         app: FastAPI,
         async_client: AsyncClient,
         db_session: AsyncSession,
         test_sandbox: SandboxSetup,
     ) -> None:
-        """The demo's guest, even as its owner, never reaches strangers."""
+        """The demo's guest, as its owner, tries sharing like an organiser:
+        its lists mail nobody (``test_public_shared_lists.py``)."""
         await db_session.execute(
             update(EventMembership)
             .where(
@@ -478,7 +479,8 @@ class TestCreate:
         with act_as(app, test_sandbox.guest):
             r = await _create(async_client, test_sandbox.event, [task.id])
 
-        _problem(r, 403, "sandbox.shared_lists_disabled")
+        assert r.status_code == 201, r.text
+        assert r.json()["status"] == "live"
 
     async def test_the_superadmin_does_not_find_a_demo_event(
         self,

@@ -42,6 +42,7 @@ def event_ref(event: Event) -> PublicEventRef:
         start_date=event.start_date,
         end_date=event.end_date,
         timezone=event.timezone,
+        is_sandbox=event.is_sandbox,
     )
 
 

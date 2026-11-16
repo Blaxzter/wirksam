@@ -22,6 +22,7 @@ from app.logic.shared_lists.guest_tokens import address_hash
 from app.models.event import Event
 from app.models.shared_list import GuestActivityLog, GuestMailSuppression
 from tests.fixtures.guest_signups import configure_smtp
+from tests.fixtures.sandbox import SandboxSetup
 
 ADDRESS = "quota@example.org"
 
@@ -182,6 +183,28 @@ class TestReserveMail:
         assert row.address_hash == address_hash(ADDRESS)
         assert row.event_id == test_event.id
         assert row.organiser_id == test_event.created_by_id
+
+    @pytest.mark.usefixtures("smtp")
+    async def test_nothing_about_a_demo_event_is_mailed(
+        self,
+        db_session: AsyncSession,
+        caplog: pytest.LogCaptureFixture,
+        test_sandbox: SandboxSetup,
+    ) -> None:
+        """A demo's guest is anonymous: its lists mail no typed address."""
+        with caplog.at_level(logging.INFO):
+            reserved = await guest_quota.reserve_mail(
+                db_session,
+                address=ADDRESS,
+                kind="confirmation",
+                event_id=test_sandbox.event.id,
+                booking_id=uuid.uuid4(),
+            )
+
+        assert reserved is False
+        assert await _rows(db_session, "confirmation") == 0
+        assert "guest mail not sent: demo event (confirmation" in caplog.text
+        assert ADDRESS not in caplog.text
 
     @pytest.mark.usefixtures("smtp")
     async def test_an_address_that_opted_out_gets_nothing(

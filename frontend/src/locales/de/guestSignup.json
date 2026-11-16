@@ -1,6 +1,11 @@
 {
+    "demo": {
+        "text": "Du kannst dich hier zum Ausprobieren eintragen. Es geht aber keine Mail raus, auch nicht an die angegebene Adresse, und alles wird mit der Demo wieder gelöscht.",
+        "title": "Nur eine Demo."
+    },
     "done": {
         "another": "Noch eine Schicht eintragen",
+        "demoNoMail": "In einer Demo geht keine Mail raus, auch nicht an die angegebene Adresse. Deine Eintragungen findest du stattdessen über diesen Link.",
         "idleHint": "Auf einem geteilten Gerät fängt diese Seite nach zwei Minuten von selbst neu an, damit die nächste Person deine Angaben nicht sieht.",
         "keepLink": {
             "copied": "Link kopiert",

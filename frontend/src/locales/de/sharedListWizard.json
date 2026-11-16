@@ -146,6 +146,7 @@
         "copyFailed": "Kopieren ging hier nicht. Markiere den Text und kopiere ihn selbst.",
         "copyLink": "Link kopieren",
         "copyText": "Text kopieren",
+        "demo": "Das ist eine Demo: Der Link funktioniert, bis die Demo endet. Wer sich einträgt, bekommt keine Mail, sondern sieht den Link zu den eigenen Eintragungen gleich auf der Seite.",
         "linkCopied": "Link kopiert.",
         "linkLabel": "Link zur Liste",
         "message": {

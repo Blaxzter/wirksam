@@ -34,7 +34,6 @@ type PrintEvent = Pick<
   EventRead,
   | 'status'
   | 'timezone'
-  | 'is_sandbox'
   | 'can_manage'
   | 'managed_task_count'
   | 'managers_share_lists'
@@ -45,7 +44,7 @@ type PrintShift = Pick<ShiftRead, 'date' | 'start_time' | 'max_bookings' | 'curr
 /**
  * The viewer may put `task` on a list: event admins any task, a person in
  * charge their own while the event lets them (`managers_share_lists`), and
- * nobody in a demo or while shared lists are switched off.
+ * nobody while shared lists are switched off.
  */
 export function canShareTask(event: PrintEvent, task: Pick<TaskRead, 'can_manage'>): boolean {
   if (!canUseSharedLists(event)) return false

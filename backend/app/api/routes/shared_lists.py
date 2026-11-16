@@ -32,7 +32,6 @@ from app.logic.permissions import (
     require_shared_list_visible,
     shared_list_scope,
 )
-from app.logic.sandbox.guards import refuse_if_sandbox
 from app.logic.shared_lists import manage, overview
 from app.logic.shared_lists.manage import TransitionAction
 from app.models.event import Event
@@ -291,14 +290,8 @@ async def create_shared_list(
     access = await require_shared_list_tasks(
         current_user, session, event, body.task_ids
     )
-    # After the gate, which 404s someone else's demo: the demo's own guest
-    # owns it and passes every gate, and a demo must not reach strangers.
-    await refuse_if_sandbox(
-        session,
-        event.id,
-        code="sandbox.shared_lists_disabled",
-        detail="Shared lists cannot be published from a demo event",
-    )
+    # A demo's own guest may share too: nothing a demo's list does sends
+    # mail (``guest_quota.reserve_mail``), and it goes with the demo.
     now_wall = clock.wall_clock_now(event.timezone)
     shared_list = await manage.create(
         session, event=event, user=current_user, body=body, now_wall=now_wall

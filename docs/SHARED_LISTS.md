@@ -233,7 +233,8 @@ charge sees those on their own tasks, and how many others there are
 through `crud_task_manager.count_by_event_for_user`, tells the client whether
 the caller is in charge of anything. `canUseSharedLists` in
 `frontend/src/lib/shared-lists.ts` shows the pages to event admins and people
-in charge, never in a demo, and only while the switch is on.
+in charge, in a demo too ([In a demo](#in-a-demo)), and only while the switch
+is on.
 
 ## Signing up
 
@@ -441,7 +442,7 @@ place. The routes:
 | Route | View | Prints |
 |---|---|---|
 | `/print/lists/:listId` | `PrintListView` | A list's notice: title, intro, QR code, the offered shifts by task and day. Read through `GET /shared-lists/{id}` and its preview, so it has the read gate (`require_shared_list_visible`) |
-| `/print/tasks/:taskId` | `PrintTaskView` | A task's own sheet, without a QR code. What members, people in charge while `managers_share_lists` is off, and demo events print |
+| `/print/tasks/:taskId` | `PrintTaskView` | A task's own sheet, without a QR code. What members and people in charge while `managers_share_lists` is off print |
 | `/print/events/:eventId?mode=all&list=<id>` | `PrintEventView` | One sheet per task; the tasks the list offers carry its QR code and only its shifts |
 
 The overview (`?mode=overview`) keeps its QR code to `/app/events/<id>`, and old
@@ -450,7 +451,7 @@ sheets' codes to `/app/tasks/<id>` still open the task.
 **Which list.** `lib/shared-list-print.ts` mirrors the server's rules so the
 dialog can say why a sheet goes without a QR code: `canShareTask` is
 `require_shared_list_tasks` (event admins any task, a person in charge their
-own while the switch is on, never in a demo or with the kill switch off). One
+own while the switch is on, never with the kill switch off). One
 task goes on a list by `manage.validate_selection` for a list of only that
 task (`taskOfferProblem`: published, no team, a shift that has not started
 with a free place). A whole event's print (`planEventPrint`) takes every task
@@ -727,8 +728,8 @@ is escaped. The texts are their own, in English and German, in the guest's
   so the mail reads them from the booking's snapshot and names the event from
   the notice's scope: a task moved to another event took its bookings there.
 - **Every guest mail is reserved through `guest_quota.reserve_mail` first.** It
-  refuses when SMTP is not configured, for a suppressed address, and over a
-  daily ceiling, and otherwise writes the one log row the mail counts as,
+  refuses when SMTP is not configured, about a demo event ([In a demo](#in-a-demo)),
+  for a suppressed address, and over a daily ceiling, and otherwise writes the one log row the mail counts as,
   however many shifts it names.
 - Without SMTP nothing is reserved or sent, and only the kind is logged. The
   transactional mail path would log the link instead, which is fine for a
@@ -925,6 +926,7 @@ and `erase_on`), so no guest page writes it into its text.
 | What happens | Effect on lists and guests |
 |---|---|
 | Event deleted (by its owner, through `events.created_by_id` CASCADE, or a sandbox purge) | The lists, their task and exclusion rows, and the contact rows cascade, so the addresses and manage links go at once. The tasks survive with `event_id` NULL, and with them the bookings and the guest users. The sweep anonymises those guests by their own shift dates, and deletes them once no booking is left. `guest_activity_log` keeps its rows |
+| Demo purged (`sandbox/cleanup.py::purge_sandbox`) | Unlike an event's delete, everything goes: the bookings and tasks, the lists and contact rows, the demo's `guest_activity_log` rows, and the guest users, found by their contact rows first since they hold no membership |
 | Task deleted | Its link rows cascade. Guest bookings are cancelled through `cancel_bookings_for_shifts`, so the guests get the `cancelled` mail |
 | Task moved to another event | `crud_shared_list.detach_task_from_lists` takes it off every list and drops its shifts' exclusions. The guest bookings move with the task, keep `shared_list_id` and keep working (manage link, reminders, mail). They leave the old list's sign-ups and counts. Retention follows their shift dates. If the source event is deleted later, those guests lose their address and manage link with it, while their bookings in the target event stay until the sweep finds them over |
 | Task unpublished, archived, or given a `team_id` | It drops out at read time. The list's detail shows the task as not offered, with `not_offered_reason` |
@@ -977,6 +979,25 @@ person. An unknown id, or one that is not a guest, is `404
 guest_signup.not_found`, and so is an erase that waited for a confirmation
 merging that guest into its address's account: the sign-ups are the
 account's now, and the search finds them there by their names.
+
+## In a demo
+
+A demo event (`events.is_sandbox`) shares like any other, so a visitor trying
+the organiser's side finds "Shared lists" with a list already on it
+(`sandbox/seed.py::_seed_shared_list`, the manager variant only). Its guest is
+`owner`, so every gate passes; the sandbox test in the gates still answers 404
+to everyone else, the superadmin included.
+
+What a demo cannot do is mail. Its owner is anonymous, and a list is a public
+link that anyone signs up through with any address, so
+`guest_quota.reserve_mail` refuses every guest mail about a demo event. The
+sign-up then answers `mail_queued=false` and `show_manage_link=true`, as
+without SMTP, and the page shows the guest their link. `PublicEventRef.is_sandbox`
+lets the public page and the guest's page say it is a demo
+(`GuestDemoNotice.vue`), and the wizard's last step says the same. Nothing
+confirms an address there (confirming needs the mail's link), so a demo has no
+guest accounts. The purge takes the lists, the guests and their log rows with
+the demo ([When things are deleted or moved](#when-things-are-deleted-or-moved)).
 
 ## The kill switch
 
@@ -1064,7 +1085,7 @@ the raw backend string shows on screen.
 | `guest_signup.mail_link_required` | 403 | |
 | `guest_signup.no_email`, `guest_signup.reject_confirmed` | 409 | |
 | `guest_signup.rate_limited` | 429 | |
-| `auth.guest_account`, `sandbox.shared_lists_disabled` | 403 | |
+| `auth.guest_account` | 403 | |
 
 Reused: `booking.slot_full`, `booking.time_conflict`, `booking.shift_over`,
 `auth.captcha_failed` and `event.not_found`.

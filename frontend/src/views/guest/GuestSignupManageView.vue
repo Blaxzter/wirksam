@@ -47,6 +47,7 @@ import { Switch } from '@/components/ui/switch'
 import EventZoneHint from '@/components/events/EventZoneHint.vue'
 import GuestBookingCard from '@/components/guest/GuestBookingCard.vue'
 import GuestConfirmCard from '@/components/guest/GuestConfirmCard.vue'
+import GuestDemoNotice from '@/components/guest/GuestDemoNotice.vue'
 import GuestStateMessage from '@/components/guest/GuestStateMessage.vue'
 import GuestVouchersCard from '@/components/guest/GuestVouchersCard.vue'
 
@@ -352,6 +353,8 @@ onBeforeUnmount(() => store.clear())
           {{ t('guestSignup.manage.confirm.confirmed') }}
         </p>
       </header>
+
+      <GuestDemoNotice v-if="view.event.is_sandbox" />
 
       <GuestConfirmCard
         :view="view"

@@ -1251,6 +1251,7 @@ export const zPublicEventRef = z.object({
   start_date: z.iso.date(),
   end_date: z.iso.date(),
   timezone: z.string(),
+  is_sandbox: z.boolean().optional().default(false),
 })
 
 /**

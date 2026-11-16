@@ -3257,6 +3257,10 @@ export type PublicEventRef = {
    * Timezone
    */
   timezone: string
+  /**
+   * Is Sandbox
+   */
+  is_sandbox?: boolean
 }
 
 /**

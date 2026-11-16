@@ -1317,6 +1317,13 @@ today_utc`. Day granularity makes the event zone irrelevant for a 30-day rule.
 
 ### 4.16 Sandbox
 
+> **Changed after the plan:** a demo shares lists after all, so the sandbox can
+> show the feature. `guest_quota.reserve_mail` refuses every guest mail about a
+> demo event instead, the public pages say it is a demo, and `purge_sandbox`
+> deletes the lists, the guest users and their log rows. See
+> [`SHARED_LISTS.md`](../SHARED_LISTS.md#in-a-demo). The first two bullets
+> below describe the original design.
+
 - Creating a list on a sandbox event is refused with
   `refuse_if_sandbox(session, event_id, code="sandbox.shared_lists_disabled",
   detail="Shared lists cannot be published from a demo event")` (logic/sandbox/guards.py:15-40).

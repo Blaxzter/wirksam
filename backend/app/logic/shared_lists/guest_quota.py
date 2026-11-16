@@ -212,6 +212,14 @@ async def _organiser_of(session: AsyncSession, event_id: uuid.UUID) -> uuid.UUID
     )
 
 
+async def _is_sandbox(session: AsyncSession, event_id: uuid.UUID) -> bool:
+    return bool(
+        await session.scalar(
+            select(col(Event.is_sandbox)).where(col(Event.id) == event_id)
+        )
+    )
+
+
 async def reserve_mail(
     session: AsyncSession,
     *,
@@ -223,11 +231,13 @@ async def reserve_mail(
 ) -> bool:
     """Whether a guest mail may go out; if so, the log row it counts as.
 
-    False without SMTP, for a suppressed address, and over a ceiling; then
-    nothing is written. Without SMTP nothing is reserved at all: the
-    transactional mail path would log the link instead, and a manage link
-    reads, cancels and erases until retention. Log lines name the kind and
-    the event, never the address.
+    False without SMTP, about a demo event, for a suppressed address, and
+    over a ceiling; then nothing is written. Without SMTP nothing is reserved
+    at all: the transactional mail path would log the link instead, and a
+    manage link reads, cancels and erases until retention. A demo's guest is
+    anonymous, so its lists must not have mail sent to whatever address a
+    visitor types; its sign-ups show the manage link instead. Log lines name
+    the kind and the event, never the address.
 
     One row per mail, however many shifts it names: the ceilings count
     mails. ``event_id`` is the event the mail names, ``booking_id`` the
@@ -235,6 +245,9 @@ async def reserve_mail(
     """
     if not settings.emails_configured:
         logger.info(f"guest mail not sent: SMTP not configured ({kind})")
+        return False
+    if await _is_sandbox(session, event_id):
+        logger.info(f"guest mail not sent: demo event ({kind}, event {event_id})")
         return False
     hashed = address_hash(address)
     await lock_address(session, hashed)

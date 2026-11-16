@@ -106,11 +106,11 @@ describe('useSharedListPrint, one task', () => {
     expect(api.get).not.toHaveBeenCalled()
   })
 
-  it('prints the plain sheet in a demo, without looking for a list', async () => {
+  it('offers a list in a demo too, whose lists mail nobody', async () => {
     serve(event({ is_sandbox: true }), null)
     const notice = useSharedListPrint()
-    expect(await notice.startTask(task('t1'), [open])).toEqual({ kind: 'plain' })
-    expect(api.get).toHaveBeenCalledOnce()
+    expect(await notice.startTask(task('t1'), [open])).toEqual({ kind: 'asking' })
+    expect(notice.dialog.value).toMatchObject({ kind: 'create', taskIds: ['t1'] })
   })
 
   it('explains why a team-only task gets no QR code', async () => {

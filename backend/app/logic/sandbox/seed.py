@@ -31,7 +31,10 @@ first impression than no demo at all, so the seed has a minimum it must satisfy:
   vouchers" has a balance and a history on arrival. The event keeps the
   default voucher rules: whoever is on shift at either point may also redeem
   without a code there, and the teammate in charge of the café counter cannot
-  change its shifts, because it earns vouchers.
+  change its shifts, because it earns vouchers; and
+* the manager variant starts with a shared list over the tidy-up and the
+  grill, which three people without an account signed up through, so
+  "Shared lists" opens on a list with sign-ups rather than an empty table.
 
 Shifts are produced through ``logic.shift_generator`` and recorded as a real
 ``ShiftBatch`` with the generation config stored on the task, rather than being
@@ -60,11 +63,13 @@ import secrets
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
 from app.crud.event_team import event_team as crud_team
+from app.crud.shared_list import shared_list as crud_shared_list
+from app.crud.shared_list_guest import shared_list_guest as crud_guest
 from app.crud.user_availability import user_availability as crud_user_availability
 from app.logic.notifications.messages import format_time_until, get_message
 from app.logic.sample_document import CONTENT_TYPE as SAMPLE_CONTENT_TYPE
@@ -184,6 +189,8 @@ class _TaskSpec:
     vouchers_per_shift: int = 2
     #: Vouchers can be redeemed here (``tasks.is_voucher_point``).
     voucher_point: bool = False
+    #: On the shared list the manager variant starts with (``_seed_shared_list``).
+    on_list: bool = False
 
     def name(self, lang: str) -> str:
         return self.name_de if lang == "de" else self.name_en
@@ -327,6 +334,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         end_hour=21,
         duration_minutes=90,
         people_per_shift=4,
+        on_list=True,
     ),
     _TaskSpec(
         name_en="Grill stand",
@@ -359,6 +367,7 @@ _TASK_SPECS: tuple[_TaskSpec, ...] = (
         people_per_shift=3,
         today_fill=1.0,
         in_charge=True,
+        on_list=True,
     ),
     _TaskSpec(
         name_en="Wristband check",
@@ -525,6 +534,27 @@ _DEV_EVENT_DESCRIPTION = {
 SEEDED_EVENT_NAMES: frozenset[str] = frozenset(_EVENT_NAME.values())
 _GUEST_NAME = {"en": "Demo visitor", "de": "Demo-Gast"}
 
+_LIST_TITLE = {
+    "en": "Helping hands for the festival",
+    "de": "Helfende Hände fürs Sommerfest",
+}
+_LIST_INTRO = {
+    "en": (
+        "The grill and the tidy-up still need a few people. Pick a shift and "
+        "leave your name; you don't need an account."
+    ),
+    "de": (
+        "Am Grill und beim Aufräumen fehlen noch ein paar Leute. Such dir eine "
+        "Schicht aus und trag deinen Namen ein, ein Konto brauchst du nicht."
+    ),
+}
+#: Who signed up through the seeded list, and how many hours ago.
+_LIST_SIGNUPS: tuple[tuple[str, str, int], ...] = (
+    ("Paula Neumann", "paula.neumann@example.org", 30),
+    ("Jonas Becker", "jonas.becker@example.org", 9),
+    ("Lea Marquardt", "lea.marquardt@example.org", 2),
+)
+
 
 def guest_display_name(language: str) -> str:
     """What the guest is called on every shift they book.
@@ -670,6 +700,17 @@ async def _seed_event(
     _seed_vouchers(
         db, event=event, owner=owner, teammates=teammates, tasks=tasks, now=now
     )
+    if role == "manager":
+        await _seed_shared_list(
+            db,
+            event=event,
+            owner=owner,
+            tasks=tasks,
+            shifts=shifts,
+            lang=lang,
+            today=today,
+            now=now,
+        )
 
     _seed_notifications(
         db,
@@ -753,6 +794,96 @@ def _seed_vouchers(
             updated_at=when,
         )
     )
+
+
+async def _seed_shared_list(
+    db: AsyncSession,
+    *,
+    event: Event,
+    owner: User,
+    tasks: list[Task],
+    shifts: list[Shift],
+    lang: str,
+    today: dt.date,
+    now: dt.datetime,
+) -> None:
+    """A shared list over the ``on_list`` tasks, with a few sign-ups on it.
+
+    The manager variant only, since a helper cannot share. Without it "Shared
+    lists" opens on an empty table, and the list's details have nobody to
+    show. The sign-ups are what the public page leaves behind: a guest user
+    each, its contact row, and a booking that names the list, on a place the
+    rota left free. Nothing is mailed, as nothing about a demo ever is
+    (``guest_quota.reserve_mail``), and the purge takes them with the event.
+    The addresses are on example.org, so the dev event, which is no demo,
+    mails nobody either.
+    """
+    on_list = [
+        task for spec, task in zip(_TASK_SPECS, tasks, strict=True) if spec.on_list
+    ]
+    if not on_list:
+        return
+    shared_list = await crud_shared_list.create(
+        db,
+        event_id=event.id,
+        created_by=owner,
+        title=_LIST_TITLE[lang],
+        intro=_LIST_INTRO[lang],
+        share_note=None,
+        ask_email="required",
+        ask_phone="off",
+        show_names="first",
+        max_per_person=None,
+        ends_mode="last_shift",
+        ends_on=None,
+    )
+    await crud_shared_list.set_tasks(
+        db, shared_list_id=shared_list.id, task_ids=[task.id for task in on_list]
+    )
+
+    listed = {task.id for task in on_list}
+    ahead = sorted(
+        (shift for shift in shifts if shift.task_id in listed and shift.date > today),
+        key=lambda shift: (shift.date, shift.start_time or dt.time()),
+    )
+    await db.flush()
+    rows = await db.execute(
+        select(col(Booking.shift_id), func.count())
+        .where(
+            col(Booking.shift_id).in_([shift.id for shift in ahead]),
+            col(Booking.status) == "confirmed",
+        )
+        .group_by(col(Booking.shift_id))
+    )
+    taken: dict[uuid.UUID | None, int] = dict(rows.all())
+    free = [shift for shift in ahead if taken.get(shift.id, 0) < shift.max_bookings]
+    language = "de" if lang == "de" else "en"
+    for (name, email, hours_ago), shift in zip(
+        _LIST_SIGNUPS, _pick_spread(free, len(_LIST_SIGNUPS)), strict=False
+    ):
+        signed_up = now - dt.timedelta(hours=hours_ago)
+        guest = await crud_guest.create(
+            db,
+            shared_list=shared_list,
+            name=name,
+            email=email,
+            phone=None,
+            language=language,
+            now=signed_up,
+        )
+        db.add(
+            Booking(
+                shift_id=shift.id,
+                user_id=guest.user_id,
+                status="confirmed",
+                shared_list_id=shared_list.id,
+                show_first_name=True,
+                guest_name=name,
+                created_at=signed_up,
+                updated_at=signed_up,
+            )
+        )
+    await db.flush()
 
 
 async def _seed_tasks_and_shifts(

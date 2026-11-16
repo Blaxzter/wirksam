@@ -3,8 +3,9 @@
  * "Du bist eingetragen": the shift, how to get back to it, and what next.
  *
  * Getting back is the confirmation mail's link where one went out. Where none
- * did (no address, or the mail could not be sent) the page shows the manage
- * link itself, since it is then the guest's only way to take their name off.
+ * did (no address, the mail could not be sent, or the list is a demo's, which
+ * mails nobody) the page shows the manage link itself, since it is then the
+ * guest's only way to take their name off.
  *
  * The link is the guest's only key: whoever holds it can change their sign-ups
  * and, where the shift gives vouchers, spend them. So the page asks them not to
@@ -176,6 +177,13 @@ onMounted(() => heading.value?.focus({ preventScroll: true }))
       class="w-full space-y-2 rounded-xl border bg-card p-4 text-left"
       data-testid="guest-done-keep-link"
     >
+      <p
+        v-if="list.event.is_sandbox"
+        class="text-sm text-muted-foreground"
+        data-testid="guest-done-demo"
+      >
+        {{ t('guestSignup.done.demoNoMail') }}
+      </p>
       <p class="text-sm font-semibold">
         {{
           vouchers > 0

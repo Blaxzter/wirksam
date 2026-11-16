@@ -675,6 +675,7 @@ function openPreview() {
             v-else-if="created"
             v-model:message="message"
             :url="sharedListUrl(created.code)"
+            :demo="!!event?.is_sandbox"
             @print="printNotice"
           />
         </CardContent>

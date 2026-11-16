@@ -139,6 +139,23 @@ describe('GuestSignupDone', () => {
     expect(byTestId(wrapper, 'guest-done-mail').exists()).toBe(false)
     const link = byTestId(wrapper, 'guest-manage-link').element as HTMLInputElement
     expect(link.value).toBe(`${window.location.origin}/guest-signup#guest-token`)
+    expect(byTestId(wrapper, 'guest-done-demo').exists()).toBe(false)
+  })
+
+  it('says why a demo mailed nothing, above the link it shows instead', () => {
+    const demo = list()
+    demo.event.is_sandbox = true
+    const wrapper = mountDone({
+      list: demo,
+      result: result({ mail_queued: false, show_manage_link: true }),
+      mailedTo: null,
+      linkToKeep: 'guest-token',
+    })
+    expect(byTestId(wrapper, 'guest-done-mail').exists()).toBe(false)
+    expect(byTestId(wrapper, 'guest-done-demo').text()).toBe(
+      'A demo sends no mail, not even to the address you gave. Your sign-ups are behind this link instead.',
+    )
+    expect(byTestId(wrapper, 'guest-manage-link').exists()).toBe(true)
   })
 
   it('copies the link, and shows it to copy by hand where the clipboard is blocked', async () => {
