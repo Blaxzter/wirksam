@@ -1,24 +1,24 @@
 <script setup lang="ts">
 /**
- * What the people running a list can do with it, at the foot of its details.
+ * What the people running a list can do with it, under the heading of its page.
  *
  * An ended list can only be shared again, as a new list. Otherwise: pause, or
- * resume ("reopen" once expired), edit, give it a new link, end it. In the
- * dialog these are buttons; in the phone's sheet the first stays a button and
- * the rest go into a ⋯ menu, whose items run once it has closed and handed
- * focus back to its button (`useMenuAction`), because two of them ask first.
+ * resume ("reopen" once expired), edit, give it a new link, end it. On a wide
+ * screen these are buttons; on a phone the first stays a button and the rest
+ * go into a ⋯ menu, whose items run once it has closed and handed focus back
+ * to its button (`useMenuAction`), because two of them ask first.
  *
  * `locked` is a person in charge after the event admins turned sharing off:
  * they may still pause and end, nothing else.
  *
  * While a change runs, the buttons are `aria-disabled`, not disabled: the one
- * pressed keeps focus, which a disabled button would drop to <body> in the
- * middle of the dialog. Ending the list swaps the buttons for "Share again",
+ * pressed keeps focus, which a disabled button would drop to <body>. Ending the list swaps the buttons for "Share again",
  * which takes focus over.
  */
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
 import { CircleStop, Ellipsis, Pause, Pencil, Play, RefreshCw, Share2 } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import type { ListAction } from '@/stores/sharedLists'
@@ -32,7 +32,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ResponsiveDialogFooter, useResponsiveDialog } from '@/components/ui/responsive-dialog'
+import { RESPONSIVE_DIALOG_MOBILE_QUERY } from '@/components/ui/responsive-dialog'
 
 import { resumeLabelKey } from '@/components/shared-lists/useSharedListActions'
 
@@ -52,7 +52,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { isMobile } = useResponsiveDialog()
+const isMobile = useMediaQuery(RESPONSIVE_DIALOG_MOBILE_QUERY)
 const menu = useMenuAction()
 
 const ended = computed(() => props.list.effective_status === 'ended')
@@ -75,16 +75,16 @@ function act(action: ListAction, inert: boolean) {
   if (!inert) emit('act', action)
 }
 
-const footer = useTemplateRef<{ $el: HTMLElement }>('footer')
+const root = useTemplateRef<HTMLElement>('root')
 
 /** The first button: the toggle, or "Share again" once the list has ended. */
 function focusMain(): void {
-  footer.value?.$el.querySelector<HTMLElement>('button')?.focus()
+  root.value?.querySelector<HTMLElement>('button')?.focus()
 }
 
 // Ending removes the button that did it (and the ⋯ menu's).
 watch(ended, async (now) => {
-  if (!now || !footer.value?.$el.contains(document.activeElement)) return
+  if (!now || !root.value?.contains(document.activeElement)) return
   await nextTick()
   focusMain()
 })
@@ -93,11 +93,10 @@ defineExpose({ focusMain })
 </script>
 
 <template>
-  <ResponsiveDialogFooter
-    ref="footer"
-    layout="row"
-    class="flex-wrap"
-    data-testid="shared-list-detail-footer"
+  <div
+    ref="root"
+    class="flex flex-wrap items-center gap-2"
+    data-testid="shared-list-detail-actions"
   >
     <template v-if="ended">
       <Button
@@ -109,7 +108,7 @@ defineExpose({ focusMain })
         <Share2 aria-hidden="true" />
         {{ t('sharedLists.actions.shareAgain') }}
       </Button>
-      <p class="min-w-0 flex-1 basis-48 text-[13px] text-muted-foreground">
+      <p class="min-w-0 max-w-xs flex-1 basis-48 text-[13px] text-muted-foreground">
         {{ t('sharedLists.detail.shareAgainHint') }}
       </p>
     </template>
@@ -200,7 +199,7 @@ defineExpose({ focusMain })
       </Button>
       <Button
         variant="outline"
-        class="ml-auto border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive aria-disabled:opacity-50"
+        class="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive aria-disabled:opacity-50"
         :aria-disabled="props.busy || undefined"
         data-testid="shared-list-detail-end"
         @click="act('end', props.busy)"
@@ -209,5 +208,5 @@ defineExpose({ focusMain })
         {{ t('sharedLists.actions.end') }}
       </Button>
     </template>
-  </ResponsiveDialogFooter>
+  </div>
 </template>

@@ -40,7 +40,7 @@ import {
   StepperTrigger,
 } from '@/components/ui/stepper'
 
-import { LIST_KEY, PREVIEW_KEY, TAB_KEY } from '@/components/shared-lists/pageQuery'
+import { PREVIEW_KEY, TAB_KEY } from '@/components/shared-lists/pageQuery'
 import WizardSettingsStep from '@/components/shared-lists/wizard/WizardSettingsStep.vue'
 import WizardShareStep from '@/components/shared-lists/wizard/WizardShareStep.vue'
 import WizardTasksStep from '@/components/shared-lists/wizard/WizardTasksStep.vue'
@@ -374,6 +374,11 @@ function listsPage(query: Record<string, string> = {}): RouteLocationRaw {
   return { name: 'shared-lists', params: { eventId: eventId.value }, query }
 }
 
+/** A list's own page. */
+function listPage(id: string): RouteLocationRaw {
+  return { name: 'shared-list-detail', params: { eventId: eventId.value, listId: id } }
+}
+
 /** `?tasks=a,b`: the ids, each once, no more than a list takes. */
 function preselectedIds(): string[] {
   const raw = typeof route.query.tasks === 'string' ? route.query.tasks : ''
@@ -392,13 +397,10 @@ async function load() {
       const list = await api.fetchDetail(listId)
       eventId.value = list.event.id
       if (list.status === 'ended') {
-        return await refuse(t('sharedListWizard.toasts.ended'), listsPage({ [LIST_KEY]: list.id }))
+        return await refuse(t('sharedListWizard.toasts.ended'), listPage(list.id))
       }
       if (list.access === 'viewer') {
-        return await refuse(
-          t('sharedListWizard.toasts.readOnly'),
-          listsPage({ [LIST_KEY]: list.id }),
-        )
+        return await refuse(t('sharedListWizard.toasts.readOnly'), listPage(list.id))
       }
       saved.value = list
       draft.value = draftFromDetail(list)
@@ -479,7 +481,7 @@ async function submit() {
       const list = await api.update(saved.value.id, changes.value)
       savedSignature.value = draftSignature(draft.value)
       toast.success(t('sharedListWizard.toasts.saved'))
-      await router.push(listsPage({ [LIST_KEY]: list.id }))
+      await router.push(listPage(list.id))
     } else {
       const list = await api.create(event.value.id, payload.value)
       message.value = buildMessage(list)

@@ -24,6 +24,9 @@ import ErrorBoundary from '@/components/utils/ErrorBoundary.vue'
       <div class="mx-auto flex h-14 w-full max-w-2xl items-center gap-2 px-4">
         <img :src="logo" alt="" class="size-8 shrink-0 rounded-lg" />
         <span class="text-base font-bold">{{ $t('preauth.layout.appName') }}</span>
+        <!-- A page can put a note on the header's far side, as a demo's list
+             does, with <Teleport defer to="#guest-header-slot">. -->
+        <div id="guest-header-slot" class="ml-auto flex items-center" />
       </div>
     </header>
 

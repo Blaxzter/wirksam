@@ -75,6 +75,7 @@ const SELECTED_EVENT_EXEMPT_ROUTES = new Set<string>([
   // like the vouchers above; the page itself copes without an event.
   'shared-lists',
   'shared-list-create',
+  'shared-list-detail',
   'shared-list-edit',
   // The guest pages work without any event, or any account.
   ...GUEST_ROUTES,

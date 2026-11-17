@@ -199,8 +199,8 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
         // for task-edit: the people in charge of a task share it too. The view
         // sends everyone else away, and the server decides per request.
         // `:eventId?` falls back to the selected event. The page keeps its
-        // tab, filters, sort, page and open list in the query, so a fixed view
-        // key stops each of them from remounting it.
+        // tab, filters, sort and page in the query, so a fixed view key stops
+        // each of them from remounting it.
         {
           path: 'shared-lists/:eventId?',
           name: 'shared-lists',
@@ -226,6 +226,23 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
                 to: { name: 'shared-lists' },
               },
               { title: 'Share a list', titleKey: 'navigation.breadcrumbs.sharedListCreate' },
+            ],
+          },
+        },
+        // One list: its link, sign-ups, tasks and settings. Below `new`, which
+        // ranks above it as a static segment; a list id is never "new".
+        {
+          path: 'shared-lists/:eventId/:listId',
+          name: 'shared-list-detail',
+          component: () => import('@/views/shared-lists/SharedListDetailView.vue'),
+          meta: {
+            breadcrumbs: [
+              {
+                title: 'Shared lists',
+                titleKey: 'navigation.sidebar.items.sharedLists.label',
+                to: { name: 'shared-lists' },
+              },
+              { title: 'List', titleKey: 'navigation.breadcrumbs.sharedListDetail' },
             ],
           },
         },

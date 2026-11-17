@@ -1,5 +1,6 @@
 {
     "demo": {
+        "badge": "Demo",
         "text": "Du kannst dich hier zum Ausprobieren eintragen. Es geht aber keine Mail raus, auch nicht an die angegebene Adresse, und alles wird mit der Demo wieder gelöscht.",
         "title": "Nur eine Demo."
     },
@@ -55,6 +56,16 @@
         "vouchers": "Für diese Schicht bekommst du {n} Marke, sobald sie vorbei ist. | Für diese Schicht bekommst du {n} Marken, sobald sie vorbei ist."
     },
     "list": {
+        "filters": {
+            "allDays": "Alle Tage",
+            "allTasks": "Alle Aufgaben",
+            "day": "Tag",
+            "label": "Schichten eingrenzen",
+            "none": "Keine Schicht passt dazu.",
+            "onlyFree": "Nur mit freien Plätzen",
+            "reset": "Alle Schichten zeigen",
+            "task": "Aufgabe"
+        },
         "free": "{count} frei",
         "full": "voll",
         "lead": "Such dir eine Schicht aus. Du brauchst kein Konto.",

@@ -39,6 +39,7 @@
         }
     },
     "detail": {
+        "backToLists": "All lists",
         "created": "created on {date}",
         "createdBy": "created by {name} on {date}",
         "figures": {
@@ -49,6 +50,7 @@
             "views": "opened"
         },
         "laterShifts": "Shifts added to these tasks later appear on the list by themselves, even on days you left out.",
+        "linkTitle": "Link",
         "lockNote": "This list also holds tasks other people are in charge of, so only the organisers can change it.",
         "moreActions": "More actions",
         "notOffered": {

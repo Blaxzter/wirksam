@@ -125,6 +125,7 @@ test.describe('demo session', () => {
       .getByTestId('shared-list-title')
       .filter({ hasText: 'Helping hands for the festival' })
     await title.click()
+    await expect(page.getByTestId('shared-list-detail-title')).toBeVisible()
     await expect(page.getByText('Paula Neumann')).toBeVisible()
     const url = (await page.getByTestId('shared-list-url').textContent())?.trim() ?? ''
     expect(url).toMatch(/\/l\/\w+$/)
@@ -134,7 +135,8 @@ test.describe('demo session', () => {
     try {
       const guest = await stranger.newPage()
       await guest.goto(url)
-      await expect(guest.getByTestId('guest-demo-notice')).toBeVisible()
+      // Said in the header, out of the way of the shifts.
+      await expect(guest.getByRole('banner').getByTestId('guest-demo-notice')).toHaveText('Demo')
       await guest.locator('[data-testid^="btn-pick-shift-"]:enabled').first().click()
       await guest.getByTestId('guest-input-name').fill('Robin Gast')
       await guest.getByTestId('guest-input-email').fill('robin@example.org')
@@ -149,9 +151,6 @@ test.describe('demo session', () => {
       await stranger.close()
     }
 
-    // The list's details cover the demo bar until they are closed.
-    await page.keyboard.press('Escape')
-    await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCount(0)
     await exitDemo(page)
   })
 

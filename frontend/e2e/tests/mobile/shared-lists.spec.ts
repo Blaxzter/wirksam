@@ -63,20 +63,21 @@ test('lists are cards with a sort control, and nothing scrolls sideways', async 
   expect(await sidewaysOverflow(adminPage)).toBeLessThanOrEqual(0)
 })
 
-test('the ⋯ menu opens the details as a bottom sheet', async ({ adminPage }) => {
+test('the ⋯ menu opens the list’s own page', async ({ adminPage }) => {
   await openPage(adminPage)
   const card = adminPage.getByTestId(`shared-list-row-${lists[0].id}`)
 
   await card.getByTestId('shared-list-menu').click()
   await adminPage.getByRole('menuitem', { name: 'Details' }).click()
 
-  const sheet = adminPage.getByTestId('shared-list-detail')
-  await expect(sheet).toHaveAttribute('data-slot', 'drawer-content')
-  await expect(sheet.getByTestId('shared-list-detail-title')).toHaveText('Elternchat')
+  const page = adminPage.getByTestId('shared-list-detail')
+  await expect(adminPage).toHaveURL(new RegExp(`/app/shared-lists/[^/]+/${lists[0].id}$`))
+  await expect(page.getByTestId('shared-list-detail-title')).toHaveText('Elternchat')
   // One main action and a menu for the rest, not a block of buttons.
-  await expect(sheet.getByTestId('shared-list-detail-pause')).toBeVisible()
-  await expect(sheet.getByTestId('shared-list-detail-more')).toBeVisible()
-  await expect(sheet.getByTestId('shared-list-detail-edit')).toHaveCount(0)
+  await expect(page.getByTestId('shared-list-detail-pause')).toBeVisible()
+  await expect(page.getByTestId('shared-list-detail-more')).toBeVisible()
+  await expect(page.getByTestId('shared-list-detail-edit')).toHaveCount(0)
+  expect(await sidewaysOverflow(adminPage)).toBeLessThanOrEqual(0)
 })
 
 test('the selection bar stays clear of the bottom navigation', async ({ adminPage }) => {

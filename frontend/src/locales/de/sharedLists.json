@@ -39,6 +39,7 @@
         }
     },
     "detail": {
+        "backToLists": "Alle Listen",
         "created": "erstellt am {date}",
         "createdBy": "erstellt von {name} am {date}",
         "figures": {
@@ -49,6 +50,7 @@
             "views": "geöffnet"
         },
         "laterShifts": "Schichten, die später zu diesen Aufgaben dazukommen, stehen von selbst auch in der Liste, auch an Tagen, die du abgewählt hast.",
+        "linkTitle": "Link",
         "lockNote": "In dieser Liste stecken auch Aufgaben, für die andere verantwortlich sind. Ändern können sie deshalb nur die Organisator:innen.",
         "moreActions": "Weitere Aktionen",
         "notOffered": {

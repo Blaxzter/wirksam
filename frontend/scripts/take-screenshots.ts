@@ -1376,7 +1376,7 @@ async function captureHelpers(
   await atStand.context.close()
 }
 
-/** The organiser's side of shared lists: the wizard's last step, a notice, and a list's details. */
+/** The organiser's side of shared lists: the wizard's last step, a notice, and a list's page. */
 async function captureSharedLists(
   browser: Browser,
   seeded: SeededWorld,
@@ -1431,13 +1431,10 @@ async function captureSharedLists(
   await visible('print-qr').waitFor()
   await shot('shared-list-notice')
 
-  // The details open over the "Links" tab, scrolled down to who signed up.
-  await open(page, `/app/shared-lists/${seeded.eventId}?list=${openId}`)
+  // The list's own page: who signed up through it, beside its link.
+  await open(page, `/app/shared-lists/${seeded.eventId}/${openId}`)
   const details = visible('shared-list-detail')
   await details.getByTestId('shared-list-signup').first().waitFor()
-  await details
-    .getByTestId('shared-list-signups')
-    .evaluate((section) => section.scrollIntoView({ block: 'start' }))
   await shot('shared-list-detail')
 
   await context.close()

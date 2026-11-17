@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
+import type { PublicDay, PublicShift } from '@/client/types.gen'
 import {
+  ALL_SHIFTS,
   type GuestFields,
+  NO_SHIFT_FILTER,
   checkGuestFields,
   dayAndTime,
+  filterDays,
   guestManageUrl,
+  listTasks,
   rejectedField,
   retentionVariant,
 } from '@/lib/guest-signup'
@@ -124,5 +129,46 @@ describe('retentionVariant', () => {
     expect(retentionVariant(true, false)).toBe('nameEmail')
     expect(retentionVariant(false, true)).toBe('namePhone')
     expect(retentionVariant(true, true)).toBe('all')
+  })
+})
+
+describe('filterDays', () => {
+  const shift = (id: string, task: string, full = false): PublicShift => ({
+    id,
+    task_id: task,
+    task_name: task === 'bar' ? 'Bar' : 'Grill',
+    capacity: 2,
+    free: full ? 0 : 1,
+    full,
+    names: [],
+    others_count: 0,
+    vouchers: 0,
+  })
+  const days: PublicDay[] = [
+    { date: '2026-11-20', shifts: [shift('a', 'bar', true), shift('b', 'grill')] },
+    { date: '2026-11-21', shifts: [shift('c', 'bar')] },
+  ]
+  const ids = (picked: PublicDay[]) => picked.map((day) => day.shifts.map((s) => s.id))
+
+  it('keeps everything without a filter', () => {
+    expect(filterDays(days, NO_SHIFT_FILTER)).toEqual(days)
+  })
+
+  it('narrows to one task, dropping a day left empty', () => {
+    expect(ids(filterDays(days, { ...NO_SHIFT_FILTER, task: 'grill' }))).toEqual([['b']])
+  })
+
+  it('narrows to one day and to shifts with a place left', () => {
+    expect(ids(filterDays(days, { ...NO_SHIFT_FILTER, day: '2026-11-20' }))).toEqual([['a', 'b']])
+    expect(ids(filterDays(days, { ...NO_SHIFT_FILTER, onlyFree: true }))).toEqual([['b'], ['c']])
+    expect(filterDays(days, { task: 'bar', day: '2026-11-20', onlyFree: true })).toEqual([])
+  })
+
+  it('names each task once, in the order its first shift comes', () => {
+    expect(listTasks(days)).toEqual([
+      { id: 'bar', name: 'Bar' },
+      { id: 'grill', name: 'Grill' },
+    ])
+    expect(ALL_SHIFTS).toBe('all')
   })
 })

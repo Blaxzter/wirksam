@@ -236,6 +236,12 @@ the caller is in charge of anything. `canUseSharedLists` in
 in charge, in a demo too ([In a demo](#in-a-demo)), and only while the switch
 is on.
 
+**A list's page.** `/app/shared-lists/:eventId/:listId`
+(`SharedListDetailView.vue`) shows one list: its link and settings beside who
+signed up through it and what it offers, with its actions under the heading.
+The overview's `?list=<id>`, where the details used to open as a dialog,
+redirects there, keeping the sign-ups table's `signups_` keys.
+
 ## Signing up
 
 `POST /public/shared-lists/{code}/signups`. Before a row is read, the route
@@ -406,6 +412,11 @@ and is never counted as a view.
 The title and intro are organiser text shown to strangers. Render them as plain
 text, never as HTML or Markdown.
 
+The page narrows its shifts in the browser, to one task, one day or those with
+a place left (`filterDays` in `lib/guest-signup.ts`, `PublicShiftFilters.vue`).
+Each filter shows only when it can narrow anything, and nothing is kept: the
+next visit, or "Fertig – nächste Person", starts with every shift.
+
 `view_count` is approximate: `public_page.count_view` adds one atomically, only
 while the list is live, as the last statement of the request so its row lock
 lasts only until the commit.
@@ -482,7 +493,7 @@ A list that is not live prints nothing: the print toolbar (`PrintListStatus`)
 says why and offers the management page's fix (resume, reopen, extend, share
 again), without the button the server would refuse a viewer or a locked person
 in charge. After a fix the sheet keeps the viewer's display choices and names.
-"Aushang drucken" in a list's details and in the wizard's last step opens
+"Aushang drucken" on a list's page and in the wizard's last step opens
 `/print/lists/<id>`. Every way out of the wizard's last step replaces the
 wizard in the history, so Back returns to where the sharing began rather than
 to an empty wizard that would share the tasks twice.
@@ -993,8 +1004,9 @@ link that anyone signs up through with any address, so
 `guest_quota.reserve_mail` refuses every guest mail about a demo event. The
 sign-up then answers `mail_queued=false` and `show_manage_link=true`, as
 without SMTP, and the page shows the guest their link. `PublicEventRef.is_sandbox`
-lets the public page and the guest's page say it is a demo
-(`GuestDemoNotice.vue`), and the wizard's last step says the same. Nothing
+lets the public page and the guest's page say it is a demo, with a "Demo"
+pill in the header that opens the full note (`GuestDemoNotice.vue`), and the
+wizard's last step says the same. Nothing
 confirms an address there (confirming needs the mail's link), so a demo has no
 guest accounts. The purge takes the lists, the guests and their log rows with
 the demo ([When things are deleted or moved](#when-things-are-deleted-or-moved)).

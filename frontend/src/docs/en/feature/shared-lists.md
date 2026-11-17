@@ -42,13 +42,13 @@ A notice puts a list on paper: its heading and your words, its QR code with "Sca
 
 Members print the task's sheet without a QR code, and nothing is created.
 
-"Print notice" in a list's details opens its notice too. While a list is paused, expired or ended, the print options say so and offer to resume, reopen or share it again, so nobody hangs up a code that leads nowhere.
+"Print notice" on a list's page opens its notice too. While a list is paused, expired or ended, the print options say so and offer to resume, reopen or share it again, so nobody hangs up a code that leads nowhere.
 
 For the whole event, "Print all tasks" puts every task that can go on a list (published, open to everyone, with a shift still to come) onto one shared list, and each of their sheets shows its QR code. The dialog names the tasks that print without one. Printing again later uses the same list, even once some of its tasks are full or over.
 
 ## What helpers see
 
-The link opens a page with the list's heading and your words, then the shifts by day, each with its time, place and free places. A full shift stays visible but can't be picked.
+The link opens a page with the list's heading and your words, then the shifts by day, each with its time, place and free places. A full shift stays visible but can't be picked. On a longer list, helpers can narrow the shifts down to one task, one day or those with a place left.
 
 After picking a shift, a helper enters their name and, as far as the list asks, an email address and phone number. With an address they can ask for a reminder by email the day before. The form tells them who will see what.
 
@@ -87,9 +87,9 @@ The name, email address and phone number are deleted after the person's last shi
 
 ## Keeping an eye on your lists
 
-The "Links" tab shows every list with its status (Open, Paused, Expired or Ended), how many signed up and how many places are free, and you can sort and filter it. "Details" shows who signed up through one list, with "Copy link", "QR code", "Print notice", "Edit", "Pause", "Resume" and "End".
+The "Links" tab shows every list with its status (Open, Paused, Expired or Ended), how many signed up and how many places are free, and you can sort and filter it. A list's title, or "Details", opens its own page: who signed up through it, what it offers, its settings, and its link with "Copy", "QR code", "Print notice" and "Preview", with "Pause", "Resume", "Edit", "New link" and "End" under the title.
 
-![The "Links" tab with a list's details open, showing who signed up through it](shot:shared-list-detail)
+![A list's page, with who signed up through it and, beside that, its link and settings](shot:shared-list-detail)
 
 - **Pause** stops sign-ups until you resume. The link stays the same.
 - **New link** replaces the link. The old one stops working, and the sign-ups stay.
@@ -99,7 +99,7 @@ The "Links" tab shows every list with its status (Open, Paused, Expired or Ended
 
 ## Removing sign-ups
 
-In a list's details, organisers and people in charge can take people off a shift who signed up through that list: one at a time, several at once, or with "Remove this and all newer ones" after a wave of made-up sign-ups. "Let them know by email" is on by default. Leave it off for made-up sign-ups, so nobody is written to at an address that isn't theirs. Organisers can also delete the person's data at the same time, which helps when someone without an email address asks for it. Unredeemed vouchers then expire. If the person confirmed their address, every sign-up confirmed with it goes too, perhaps someone else's from the same family: the dialog says how many before you delete anything.
+On a list's page, organisers and people in charge can take people off a shift who signed up through that list: one at a time, several at once, or with "Remove this and all newer ones" after a wave of made-up sign-ups. "Let them know by email" is on by default. Leave it off for made-up sign-ups, so nobody is written to at an address that isn't theirs. Organisers can also delete the person's data at the same time, which helps when someone without an email address asks for it. Unredeemed vouchers then expire. If the person confirmed their address, every sign-up confirmed with it goes too, perhaps someone else's from the same family: the dialog says how many before you delete anything.
 
 Shifts that are already over can't be removed.
 

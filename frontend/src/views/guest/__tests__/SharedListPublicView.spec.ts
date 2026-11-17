@@ -154,17 +154,25 @@ describe('SharedListPublicView: what the page shows', () => {
     expect(byTestId(wrapper, 'page-heading').element.tagName).toBe('H1')
     expect(byTestId(wrapper, 'page-heading').text()).toBe('Helpers wanted')
     expect(byTestId(wrapper, 'shared-list-event').text()).toContain('Summer fair')
-    expect(byTestId(wrapper, 'guest-demo-notice').exists()).toBe(false)
+    expect(document.querySelector('[data-testid="guest-demo-notice"]')).toBeNull()
   })
 
-  it('says under the heading that a demo’s list mails nobody and goes with the demo', async () => {
+  it('says in the header that a demo’s list mails nobody and goes with the demo', async () => {
+    // The layout's header slot, which the note is teleported into.
+    document.body.insertAdjacentHTML('afterbegin', '<div id="guest-header-slot"></div>')
     const demo = publicList()
     demo.event.is_sandbox = true
     const wrapper = await mountPage(demo)
-    const notice = byTestId(wrapper, 'guest-demo-notice')
-    expect(notice.attributes('role')).toBe('note')
-    expect(notice.text()).toBe(
-      'Just a demo. You can sign up here to try it out, but no mail is sent, not even to the address you give, and everything is deleted along with the demo.',
+
+    expect(wrapper.find('[data-testid="guest-demo-notice"]').exists()).toBe(false)
+    const pill = document.querySelector<HTMLElement>(
+      '#guest-header-slot [data-testid="guest-demo-notice"]',
+    )
+    expect(pill?.textContent?.trim()).toBe('Demo')
+    pill!.click()
+    await flushPromises()
+    expect(document.querySelector('[data-testid="guest-demo-notice-text"]')?.textContent).toBe(
+      'Just a demo.You can sign up here to try it out, but no mail is sent, not even to the address you give, and everything is deleted along with the demo.',
     )
   })
 
@@ -240,6 +248,45 @@ describe('SharedListPublicView: what the page shows', () => {
     expect(byTestId(wrapper, 'public-shift-list').exists()).toBe(false)
   })
 
+  it('narrows the shifts to those with a place left, and offers them all back', async () => {
+    const wrapper = await mountPage()
+    // One task on one day: only "with a place left" can narrow anything.
+    expect(byTestId(wrapper, 'public-filter-task').exists()).toBe(false)
+    expect(byTestId(wrapper, 'public-filter-day').exists()).toBe(false)
+
+    await byTestId(wrapper, 'public-filter-free').trigger('click')
+    expect(
+      wrapper.findAll('[data-testid="public-shift"]').map((s) => s.attributes('data-shift-id')),
+    ).toEqual(['shift-1'])
+
+    const full = await mountPage(
+      publicList({
+        days: [{ date: '2026-11-20', shifts: [shift({ id: 'shift-2', free: 0, full: true })] }],
+      }),
+    )
+    await byTestId(full, 'public-filter-free').trigger('click')
+    expect(byTestId(full, 'shared-list-filtered-empty').text()).toContain('No shift matches.')
+    await byTestId(full, 'shared-list-filtered-empty').find('button').trigger('click')
+    expect(full.findAll('[data-testid="public-shift"]')).toHaveLength(1)
+  })
+
+  it('offers a task and a day filter once there is more than one of each', async () => {
+    const wrapper = await mountPage(
+      publicList({
+        days: [
+          {
+            date: '2026-11-20',
+            shifts: [shift(), shift({ id: 'shift-2', task_id: 'task-2', task_name: 'Grill' })],
+          },
+          { date: '2026-11-21', shifts: [shift({ id: 'shift-3' })] },
+        ],
+      }),
+    )
+    expect(byTestId(wrapper, 'public-filter-task').text()).toBe('All tasks')
+    expect(byTestId(wrapper, 'public-filter-day').text()).toBe('All days')
+    expect(byTestId(wrapper, 'public-filter-free').exists()).toBe(false)
+  })
+
   it('says when a live list has no shifts left', async () => {
     const wrapper = await mountPage(publicList({ days: [] }))
     expect(byTestId(wrapper, 'shared-list-empty').exists()).toBe(true)
@@ -301,6 +348,7 @@ describe('SharedListPublicView: signing up', () => {
 
   it('hands the next person an empty form and no way back to the last sign-up', async () => {
     const wrapper = await mountPage()
+    await byTestId(wrapper, 'public-filter-free').trigger('click')
     await signUp(wrapper)
     await byTestId(wrapper, 'btn-guest-next').trigger('click')
     await flushPromises()
@@ -310,6 +358,8 @@ describe('SharedListPublicView: signing up', () => {
     expect(store.linkToKeep).toBeNull()
     expect(store.last).toBeNull()
     expect(byTestId(wrapper, 'public-shift-list').exists()).toBe(true)
+    // Nor the filter the last person chose.
+    expect(wrapper.findAll('[data-testid="public-shift"]')).toHaveLength(2)
     expect(document.activeElement).toBe(byTestId(wrapper, 'page-heading').element)
   })
 

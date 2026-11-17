@@ -168,7 +168,7 @@ test.describe('a11y – admin event vouchers', () => {
 // Shared lists: the page with a list on it, and that list's details. Its own
 // event, so the worker event never gains a list.
 test.describe('a11y – admin shared lists', () => {
-  test('the lists table and a list’s details', async ({ adminPage: page, adminUser }) => {
+  test('the lists table and a list’s page', async ({ adminPage: page, adminUser }) => {
     const seeded = await seedSharedListEvent(page, 'E2E a11y Lists')
     try {
       const list = await createSharedList(adminUser.email, seeded.event.id, {
@@ -182,7 +182,7 @@ test.describe('a11y – admin shared lists', () => {
 
       await page.getByTestId(`shared-list-row-${list.id}`).getByTestId('shared-list-title').click()
       await expect(page.getByTestId('shared-list-signups')).toBeVisible()
-      await expectNoA11yViolations(page, { label: 'shared list details dialog' })
+      await expectNoA11yViolations(page, { label: 'a shared list’s page' })
     } finally {
       await removeSharedListEvent(page, seeded)
     }

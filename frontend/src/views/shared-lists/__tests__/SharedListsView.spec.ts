@@ -12,8 +12,8 @@ import SharedListsView from '@/views/shared-lists/SharedListsView.vue'
 
 /**
  * The shared-lists page around its tabs: which event it is about, what it
- * says when the server refuses, the tab and the open list kept in the
- * address, and who gets "Share a list".
+ * says when the server refuses, the tab kept in the address, the way to a
+ * list's own page, and who gets "Share a list".
  */
 
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn() }))
@@ -41,6 +41,11 @@ async function mountView(path = '/app/shared-lists') {
         name: 'shared-list-create',
         component: { template: '<div />' },
       },
+      {
+        path: '/app/shared-lists/:eventId/:listId',
+        name: 'shared-list-detail',
+        component: { template: '<div />' },
+      },
     ],
   })
   await router.push(path)
@@ -49,13 +54,12 @@ async function mountView(path = '/app/shared-lists') {
     global: {
       plugins: [i18n, router],
       stubs: {
-        SharedListsLinksTab: { template: '<div data-testid="links-tab" />' },
+        SharedListsLinksTab: {
+          emits: ['open'],
+          template: `<button data-testid="links-tab" @click="$emit('open', 'l7')" />`,
+        },
         SharedListsTasksTab: { template: '<div data-testid="tasks-tab" />' },
         SharedListsPreviewTab: { template: '<div data-testid="preview-tab" />' },
-        SharedListDetailDialog: {
-          props: ['listId'],
-          template: '<div data-testid="detail" :data-list="listId" />',
-        },
       },
     },
   })
@@ -134,10 +138,22 @@ describe('SharedListsView', () => {
     expect(byTestId(w, 'links-tab').exists()).toBe(true)
   })
 
-  it('opens the tab and the list the address names', async () => {
-    const { w } = await mountView('/app/shared-lists/e1?tab=tasks&list=l1')
+  it('opens the tab the address names', async () => {
+    const { w } = await mountView('/app/shared-lists/e1?tab=tasks')
     expect(byTestId(w, 'tasks-tab').exists()).toBe(true)
-    expect(byTestId(w, 'detail').attributes('data-list')).toBe('l1')
+  })
+
+  it('opens a list on its own page', async () => {
+    const { w, router } = await mountView('/app/shared-lists/e1')
+    await byTestId(w, 'links-tab').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/app/shared-lists/e1/l7')
+  })
+
+  it('takes an old link to a list’s details to its page, with its sign-ups’ view', async () => {
+    const { router } = await mountView('/app/shared-lists/e1?tab=tasks&list=l1&signups_page=2')
+    expect(router.currentRoute.value.name).toBe('shared-list-detail')
+    expect(router.currentRoute.value.fullPath).toBe('/app/shared-lists/e1/l1?signups_page=2')
   })
 
   it('counts the open lists on the Links tab whichever tab is shown', async () => {

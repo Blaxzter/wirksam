@@ -253,14 +253,17 @@ describe('GuestSignupManageView: the page', () => {
     expect(rows[2]!.text()).toContain('Over')
     expect(byTestId(wrapper, 'btn-guest-cancel-booking-3').exists()).toBe(false)
     expect(rows[3]!.text()).toContain('Now part of Winter fair')
-    expect(byTestId(wrapper, 'guest-demo-notice').exists()).toBe(false)
+    expect(document.querySelector('[data-testid="guest-demo-notice"]')).toBeNull()
   })
 
-  it('says that sign-ups through a demo’s list are a demo too', async () => {
+  it('says in the header that sign-ups through a demo’s list are a demo too', async () => {
+    document.body.insertAdjacentHTML('afterbegin', '<div id="guest-header-slot"></div>')
     const demo = manageView()
     demo.event.is_sandbox = true
-    const { wrapper } = await mountPage(demo)
-    expect(byTestId(wrapper, 'guest-demo-notice').text()).toContain('Just a demo.')
+    await mountPage(demo)
+    expect(
+      document.querySelector('#guest-header-slot [data-testid="guest-demo-notice"]')?.textContent,
+    ).toContain('Demo')
   })
 
   it('says so when no shift is left', async () => {

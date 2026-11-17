@@ -6,10 +6,14 @@
  * Three steps on one page (list, form, done), each taking focus as it appears,
  * so a screen reader hears where it is. A paused or closed list shows that
  * instead, whichever step was open: the server may say so at any submit.
+ *
+ * A long list can be narrowed to one task, one day or the shifts with a place
+ * left (`PublicShiftFilters`). A demo's list says so in the header, out of the
+ * way of the shifts (`GuestDemoNotice`).
  */
 import { computed, nextTick, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
-import { CircleAlertIcon, CirclePauseIcon, LinkIcon, LockIcon } from '@lucide/vue'
+import { CircleAlertIcon, CirclePauseIcon, InfoIcon, LinkIcon, LockIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -26,9 +30,17 @@ import GuestSignupDone from '@/components/guest/GuestSignupDone.vue'
 import GuestSignupForm from '@/components/guest/GuestSignupForm.vue'
 import GuestStateMessage from '@/components/guest/GuestStateMessage.vue'
 import PublicListHeader from '@/components/guest/PublicListHeader.vue'
+import PublicShiftFilters from '@/components/guest/PublicShiftFilters.vue'
 import PublicShiftList from '@/components/guest/PublicShiftList.vue'
 
 import type { PublicShift } from '@/client/types.gen'
+import {
+  ALL_SHIFTS,
+  NO_SHIFT_FILTER,
+  type ShiftFilter,
+  filterDays,
+  listTasks,
+} from '@/lib/guest-signup'
 
 type Step = { kind: 'list' } | { kind: 'form'; shift: PublicShift; date: string } | { kind: 'done' }
 
@@ -56,6 +68,29 @@ const earnsVouchers = computed(
 const signedInName = computed(() =>
   authStore.isAuthenticated ? (authStore.profile?.name ?? null) : null,
 )
+
+const filter = ref<ShiftFilter>({ ...NO_SHIFT_FILTER })
+const tasks = computed(() => listTasks(list.value?.days ?? []))
+const dates = computed(() => (list.value?.days ?? []).map((day) => day.date))
+const anyFull = computed(
+  () => list.value?.days.some((day) => day.shifts.some((shift) => shift.full)) ?? false,
+)
+const shownDays = computed(() => filterDays(list.value?.days ?? [], filter.value))
+
+// A reload may drop the task or day a filter names; the filter lets go of it.
+watch([tasks, dates], () => {
+  const { task, day } = filter.value
+  if (task !== ALL_SHIFTS && !tasks.value.some((option) => option.id === task)) {
+    filter.value = { ...filter.value, task: ALL_SHIFTS }
+  }
+  if (day !== ALL_SHIFTS && !dates.value.includes(day)) {
+    filter.value = { ...filter.value, day: ALL_SHIFTS }
+  }
+})
+
+function clearFilter(): void {
+  filter.value = { ...NO_SHIFT_FILTER }
+}
 
 /** Back to the top of the page, with focus on the list's title. */
 async function showList(): Promise<void> {
@@ -85,8 +120,10 @@ async function undo(): Promise<void> {
   await showList()
 }
 
+/** The next person at a shared device starts afresh, filters included. */
 async function nextPerson(): Promise<void> {
   store.reset()
+  clearFilter()
   await showList()
 }
 
@@ -206,18 +243,32 @@ onBeforeUnmount(() => store.clear())
 
         <p
           v-if="signedInName"
-          class="rounded-lg border bg-muted/40 p-3 text-sm"
+          class="flex items-start gap-1.5 text-sm text-muted-foreground"
           data-testid="guest-signed-in"
         >
+          <InfoIcon class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           {{ t('guestSignup.page.signedIn', { name: signedInName }) }}
         </p>
 
-        <PublicShiftList
-          v-if="list.days.length > 0"
-          :days="list.days"
-          :show-names="list.show_names === 'first'"
-          @pick="pick"
-        />
+        <template v-if="list.days.length > 0">
+          <PublicShiftFilters v-model="filter" :tasks="tasks" :dates="dates" :any-full="anyFull" />
+          <PublicShiftList
+            v-if="shownDays.length > 0"
+            :days="shownDays"
+            :show-names="list.show_names === 'first'"
+            @pick="pick"
+          />
+          <div
+            v-else
+            class="grid justify-items-center gap-3 rounded-xl border border-dashed px-4 py-8 text-center text-sm"
+            data-testid="shared-list-filtered-empty"
+          >
+            <p class="text-muted-foreground">{{ t('guestSignup.list.filters.none') }}</p>
+            <Button variant="outline" class="h-10" @click="clearFilter">
+              {{ t('guestSignup.list.filters.reset') }}
+            </Button>
+          </div>
+        </template>
         <p v-else class="text-sm text-muted-foreground" data-testid="shared-list-empty">
           {{ t('guestSignup.states.empty') }}
         </p>

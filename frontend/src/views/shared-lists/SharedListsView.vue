@@ -5,10 +5,11 @@
  * sign up for shifts.
  *
  * Three tabs: the lists themselves, the tasks and which of their places no
- * open list offers, and the page a list's link opens. A list's details open
- * over the page. The tab, each table's view and the open list live in the
- * address (`components/shared-lists/pageQuery.ts`), which is why the route
- * keeps this page mounted while the query changes.
+ * open list offers, and the page a list's link opens. A list's details are a
+ * page of their own (`SharedListDetailView`); the old `?list=<id>` leads
+ * there. The tab and each table's view live in the address
+ * (`components/shared-lists/pageQuery.ts`), which is why the route keeps this
+ * page mounted while the query changes.
  *
  * Event admins and the people in charge of tasks use it; the server decides
  * per request, and this page says so when it refuses.
@@ -27,13 +28,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import StickyPageBar from '@/components/layout/StickyPageBar.vue'
-import SharedListDetailDialog from '@/components/shared-lists/SharedListDetailDialog.vue'
 import SharedListsLinksTab from '@/components/shared-lists/SharedListsLinksTab.vue'
 import SharedListsPreviewTab from '@/components/shared-lists/SharedListsPreviewTab.vue'
 import SharedListsTasksTab from '@/components/shared-lists/SharedListsTasksTab.vue'
 import {
   LIST_KEY,
-  PREVIEW_KEY,
   SIGNUPS_PREFIX,
   type SharedListsTab,
   TABS,
@@ -102,15 +101,6 @@ function withQuery(patch: Record<string, string | undefined>): LocationQueryRaw 
   return query
 }
 
-/** The query without the open list and its sign-ups table. */
-function withoutDetail(): LocationQueryRaw {
-  return Object.fromEntries(
-    Object.entries(route.query).filter(
-      ([key]) => key !== LIST_KEY && !key.startsWith(`${SIGNUPS_PREFIX}_`),
-    ),
-  )
-}
-
 const tab = computed<SharedListsTab>(
   () => TABS.find((name) => name === route.query[TAB_KEY]) ?? 'links',
 )
@@ -120,22 +110,30 @@ function setTab(value: string | number) {
   if (next) replaceQuery(withQuery({ [TAB_KEY]: next === 'links' ? undefined : next }))
 }
 
-const openListId = computed(() => {
-  const id = route.query[LIST_KEY]
-  return typeof id === 'string' && id ? id : null
-})
-
 function openList(id: string) {
-  replaceQuery(withQuery({ [LIST_KEY]: id }))
+  if (eventId.value) {
+    void router.push({ name: 'shared-list-detail', params: { eventId: eventId.value, listId: id } })
+  }
 }
 
-function closeList() {
-  replaceQuery(withoutDetail())
-}
-
-function previewList(id: string) {
-  replaceQuery({ ...withoutDetail(), [TAB_KEY]: 'preview', [PREVIEW_KEY]: id })
-}
+// The details were a dialog over this page, open while `?list=<id>` named a
+// list; a link kept from then opens the list's own page.
+watch(
+  [() => route.query[LIST_KEY], eventId],
+  ([id, event]) => {
+    if (typeof id !== 'string' || !id || !event) return
+    // Its sign-ups table keeps its page, search and sort.
+    const signups = Object.entries(route.query).filter(([key]) =>
+      key.startsWith(`${SIGNUPS_PREFIX}_`),
+    )
+    void router.replace({
+      name: 'shared-list-detail',
+      params: { eventId: event, listId: id },
+      query: Object.fromEntries(signups),
+    })
+  },
+  { immediate: true },
+)
 
 /** The notice's way to the tasks whose free places no open list offers. */
 function showTodoTasks() {
@@ -269,12 +267,5 @@ const TRIGGER_CLASS =
         <SharedListsPreviewTab :key="eventId" />
       </TabsContent>
     </Tabs>
-
-    <SharedListDetailDialog
-      v-if="eventId && store.overview"
-      :list-id="openListId"
-      @close="closeList"
-      @preview="previewList"
-    />
   </div>
 </template>

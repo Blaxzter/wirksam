@@ -41,6 +41,16 @@ async function openPage(page: Page, query = '') {
   await expect(page.getByTestId('page-heading')).toHaveText('Shared lists')
 }
 
+/**
+ * Open one list's own page, by the address the details had when they were a
+ * dialog over the overview: it must still lead there.
+ */
+async function openList(page: Page, listId: string) {
+  await page.goto(`/app/shared-lists/${seeded!.event.id}?list=${listId}`)
+  await expect(page).toHaveURL(new RegExp(`/app/shared-lists/${seeded!.event.id}/${listId}$`))
+  await expect(page.getByTestId('shared-list-detail-title')).toBeVisible()
+}
+
 const row = (page: Page, id: string) => page.getByTestId(`shared-list-row-${id}`)
 
 async function tick(page: Page, id: string) {
@@ -48,7 +58,7 @@ async function tick(page: Page, id: string) {
 }
 
 /**
- * "Remove" on one sign-up in the open details, from the keyboard; resolves to
+ * "Remove" on one sign-up on the list's page, from the keyboard; resolves to
  * the request body. Email to the person is ticked by default and stays so
  * unless `untickNotify`. The row goes, and focus goes to the section's heading.
  */
@@ -236,7 +246,9 @@ test.describe('one event, a few lists', () => {
     await row(adminPage, list.id).getByTestId('shared-list-title').click()
     const detail = adminPage.getByTestId('shared-list-detail')
     await expect(detail).toBeVisible()
-    await expect(adminPage).toHaveURL(new RegExp(`list=${list.id}`))
+    await expect(adminPage).toHaveURL(
+      new RegExp(`/app/shared-lists/${seeded!.event.id}/${list.id}$`),
+    )
 
     await detail.getByTestId('shared-list-link-copy').click()
     await expect(adminPage.getByText('Link copied.')).toBeVisible()
@@ -267,12 +279,12 @@ test.describe('one event, a few lists', () => {
     const [list] = lists
     await signUp(list, 'Mia Quiet')
     await signUp(list, 'Ben Told')
-    await openPage(adminPage, `?list=${list.id}`)
+    await openList(adminPage, list.id)
 
     const detail = adminPage.getByTestId('shared-list-detail')
     const signups = detail.getByTestId('shared-list-signup')
     await expect(signups).toHaveCount(2)
-    // The figures keep their height in a details box tall enough to scroll.
+    // The figures keep their height on a page tall enough to scroll.
     await expect(detail.getByTestId('shared-list-figure-signups')).toHaveText('2')
     const figures = await detail.getByTestId('shared-list-figures').boundingBox()
     expect(figures!.height).toBeGreaterThan(40)
@@ -298,7 +310,7 @@ test.describe('one event, a few lists', () => {
     const email = guestEmail('pool family')
     await confirmFromMail(await signUp(list, 'Xaver Pool', { email }))
     await confirmFromMail(await signUp(list, 'Yvonne Pool', { email, shift: 1 }))
-    await openPage(adminPage, `?list=${list.id}`)
+    await openList(adminPage, list.id)
 
     const detail = adminPage.getByTestId('shared-list-detail')
     const signups = detail.getByTestId('shared-list-signup')
@@ -323,7 +335,7 @@ test.describe('one event, a few lists', () => {
     await signUp(list, 'Anna First')
     await signUp(list, 'Bert Second')
     await signUp(list, 'Cleo Third')
-    await openPage(adminPage, `?list=${list.id}`)
+    await openList(adminPage, list.id)
 
     const signups = adminPage.getByTestId('shared-list-detail').getByTestId('shared-list-signup')
     await expect(signups).toHaveCount(3)
@@ -358,7 +370,7 @@ test.describe('one event, a few lists', () => {
     await expect(adminPage.getByTestId('selection-bar')).toHaveCount(0)
     await expect(adminPage.getByTestId('shared-lists-select-all')).toBeFocused()
 
-    // In the details, too, and the dialog keeps it.
+    // On the list's page, too.
     await listRow.getByTestId('shared-list-title').click()
     const detail = adminPage.getByTestId('shared-list-detail')
     await detail.getByTestId('shared-list-detail-resume').focus()

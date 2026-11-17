@@ -3,6 +3,7 @@
         "home": "Startseite",
         "settings": "Einstellungen",
         "sharedListCreate": "Liste teilen",
+        "sharedListDetail": "Liste",
         "sharedListEdit": "Liste bearbeiten"
     },
     "eventSwitcher": {

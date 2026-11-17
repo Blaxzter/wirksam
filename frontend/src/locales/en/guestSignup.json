@@ -1,5 +1,6 @@
 {
     "demo": {
+        "badge": "Demo",
         "text": "You can sign up here to try it out, but no mail is sent, not even to the address you give, and everything is deleted along with the demo.",
         "title": "Just a demo."
     },
@@ -55,6 +56,16 @@
         "vouchers": "This shift earns {n} voucher once it is over. | This shift earns {n} vouchers once it is over."
     },
     "list": {
+        "filters": {
+            "allDays": "All days",
+            "allTasks": "All tasks",
+            "day": "Day",
+            "label": "Narrow down the shifts",
+            "none": "No shift matches.",
+            "onlyFree": "Only with free places",
+            "reset": "Show all shifts",
+            "task": "Task"
+        },
         "free": "{count} free",
         "full": "full",
         "lead": "Pick a shift. You don't need an account.",

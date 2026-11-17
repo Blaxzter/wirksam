@@ -506,9 +506,8 @@ describe('editing a list', () => {
     expect(api.update).toHaveBeenCalledWith('l1', { show_names: 'none' })
     expect(toasts.success).toHaveBeenCalledWith('Saved. The link stays the same.')
     expect(router.push).toHaveBeenCalledWith({
-      name: 'shared-lists',
-      params: { eventId: 'e1' },
-      query: { list: 'l1' },
+      name: 'shared-list-detail',
+      params: { eventId: 'e1', listId: 'l1' },
     })
     expect(await fixtures.leaveGuard?.()).toBe(true)
   })
@@ -638,9 +637,8 @@ describe('editing a list', () => {
       'This list has ended and cannot be changed any more. You can share it again.',
     )
     expect(router.replace).toHaveBeenCalledWith({
-      name: 'shared-lists',
-      params: { eventId: 'e1' },
-      query: { list: 'l1' },
+      name: 'shared-list-detail',
+      params: { eventId: 'e1', listId: 'l1' },
     })
     expect(api.fetchEvent).not.toHaveBeenCalled()
   })

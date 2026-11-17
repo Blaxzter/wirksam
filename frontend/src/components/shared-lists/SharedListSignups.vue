@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * "Signed up through this link", in a list's details: searchable, sortable
- * and paged on the server (its state kept in the address under `signups_`),
- * a table in the dialog and rows in the phone's sheet. Sign-ups can be taken
+ * "Signed up through this link", on a list's page: searchable, sortable and
+ * paged on the server (its state kept in the address under `signups_`), a
+ * table on a wide screen and rows below that. Sign-ups can be taken
  * off one at a time, ticked, or one and every newer one; a person in charge
  * sees those on their own tasks and how many others there are.
  *
@@ -13,14 +13,13 @@
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { UserMinus } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { type SignupSort, useSharedListsStore } from '@/stores/sharedLists'
 
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useTableQuery } from '@/composables/useTableQuery'
-
-import { useResponsiveDialog } from '@/components/ui/responsive-dialog'
 
 import ListPagination from '@/components/data-table/ListPagination.vue'
 import SearchField from '@/components/data-table/SearchField.vue'
@@ -33,6 +32,7 @@ import SharedListSignupsTable from '@/components/shared-lists/SharedListSignupsT
 import SortSelect from '@/components/shared-lists/SortSelect.vue'
 import { SIGNUPS_PREFIX } from '@/components/shared-lists/pageQuery'
 import { useSharedListText } from '@/components/shared-lists/sharedListText'
+import { WIDE_TABLE_QUERY } from '@/components/shared-lists/useSharedListActions'
 
 import type { SharedListSignup } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -41,13 +41,13 @@ import { pooledBeyond } from '@/lib/shared-lists'
 
 const props = defineProps<{ listId: string }>()
 
-/** Fewer than the page's tables: these sit in a dialog among other sections. */
-const SIGNUPS_PAGE_SIZE = 10
+/** Fewer than the overview's tables: the list's page has other sections too. */
+const SIGNUPS_PAGE_SIZE = 15
 const SIGNUP_SORTS = ['created_at', 'name', 'shift_start'] as const
 
 const { t } = useI18n()
 const store = useSharedListsStore()
-const { isMobile } = useResponsiveDialog()
+const wide = useMediaQuery(WIDE_TABLE_QUERY)
 const { personName, shiftText } = useSharedListText()
 
 const table = useTableQuery<SignupSort>({
@@ -71,8 +71,8 @@ const selection = useRowSelection({
 watch(
   [() => props.listId, table.params],
   async ([listId, params]) => {
-    // While the dialog plays its closing animation, the address has already
-    // dropped this table's keys; that is no reason to load again.
+    // Leaving the page drops this table's keys from the address before the
+    // page has gone; that is no reason to load again.
     if (store.detail?.id !== listId) return
     try {
       await store.fetchSignups(listId, params)
@@ -143,14 +143,14 @@ const selectionActions = computed<SelectionAction[]>(() => [
     aria-labelledby="shared-list-signups-title"
     data-testid="shared-list-signups"
   >
-    <h3
+    <h2
       id="shared-list-signups-title"
       ref="heading"
       tabindex="-1"
-      class="text-[15px] font-bold outline-none"
+      class="text-lg font-bold outline-none"
     >
       {{ t('sharedLists.detail.signupsTitle') }}
-    </h3>
+    </h2>
 
     <div v-if="result && (result.total > 0 || q)" class="grid gap-2">
       <SearchField
@@ -159,7 +159,7 @@ const selectionActions = computed<SelectionAction[]>(() => [
         :placeholder="t('sharedLists.search.signupsPlaceholder')"
       />
       <SortSelect
-        v-if="isMobile"
+        v-if="!wide"
         :options="sortOptions"
         :sort="sort"
         :dir="dir"
@@ -179,7 +179,7 @@ const selectionActions = computed<SelectionAction[]>(() => [
     </p>
     <template v-else>
       <SharedListSignupsCardList
-        v-if="isMobile"
+        v-if="!wide"
         ref="rowsView"
         :rows="rows"
         :selection="selection"
@@ -213,7 +213,6 @@ const selectionActions = computed<SelectionAction[]>(() => [
       :count="selection.count.value"
       :actions="selectionActions"
       :label="t('sharedLists.signups.region')"
-      placement="dialog"
       :focus-on-leave="focusRows"
       @action="removeSelected"
       @clear="selection.clear()"

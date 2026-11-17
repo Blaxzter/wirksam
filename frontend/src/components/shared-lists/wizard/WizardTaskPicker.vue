@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * "Which tasks?": the tasks the viewer may put on a list, searched and paged
- * by the server, with the chosen ones as removable chips above.
+ * by the server, with the chosen ones as removable chips below them, where
+ * they show what a search hides without pushing the list down as they appear.
  *
  * Tasks only a team may book never go on a list. Without a search the server
  * leaves them out and one line names them; while searching they show up,
@@ -113,33 +114,6 @@ const lockedHint = computed(() => {
       :placeholder="t('sharedListWizard.picker.searchPlaceholder')"
     />
 
-    <div
-      v-if="picked.length"
-      class="flex flex-wrap items-center gap-1.5"
-      data-testid="wizard-picked"
-    >
-      <span class="mr-0.5 text-xs text-muted-foreground">
-        {{ t('sharedListWizard.picker.picked', { count: picked.length }) }}
-      </span>
-      <button
-        v-for="task in picked"
-        :key="task.id"
-        type="button"
-        class="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border px-2.5 text-xs font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        :class="
-          task.unavailable
-            ? 'border-warning/50 bg-warning/10 text-warning'
-            : 'border-primary/40 bg-primary/10 text-primary hover:border-primary'
-        "
-        :aria-label="t('sharedListWizard.picker.unpick', { name: task.name })"
-        :data-testid="`wizard-picked-${task.id}`"
-        @click="emit('unpick', task.id)"
-      >
-        <span class="truncate">{{ task.name }}</span>
-        <X class="size-3 shrink-0" aria-hidden="true" />
-      </button>
-    </div>
-
     <p v-if="loadError" class="flex flex-wrap items-center gap-2 text-sm text-destructive">
       {{ getApiErrorMessage(loadError) }}
       <Button type="button" variant="outline" size="sm" @click="load()">
@@ -247,6 +221,34 @@ const lockedHint = computed(() => {
     >
       {{ t('sharedListWizard.picker.loadMore') }}
     </Button>
+
+    <!-- Under the list, not above it: ticking a task must not push the list down. -->
+    <div
+      v-if="picked.length"
+      class="flex flex-wrap items-center gap-1.5"
+      data-testid="wizard-picked"
+    >
+      <span class="mr-0.5 text-xs text-muted-foreground">
+        {{ t('sharedListWizard.picker.picked', { count: picked.length }) }}
+      </span>
+      <button
+        v-for="task in picked"
+        :key="task.id"
+        type="button"
+        class="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full border px-2.5 text-xs font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        :class="
+          task.unavailable
+            ? 'border-warning/50 bg-warning/10 text-warning'
+            : 'border-primary/40 bg-primary/10 text-primary hover:border-primary'
+        "
+        :aria-label="t('sharedListWizard.picker.unpick', { name: task.name })"
+        :data-testid="`wizard-picked-${task.id}`"
+        @click="emit('unpick', task.id)"
+      >
+        <span class="truncate">{{ task.name }}</span>
+        <X class="size-3 shrink-0" aria-hidden="true" />
+      </button>
+    </div>
 
     <p v-if="lockedHint" class="flex items-start gap-1.5 text-xs text-muted-foreground">
       <Lock class="mt-px size-3.5 shrink-0" aria-hidden="true" />

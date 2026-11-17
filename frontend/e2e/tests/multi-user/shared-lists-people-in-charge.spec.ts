@@ -81,7 +81,7 @@ test('a list with someone else’s task is read-only for them, and says why', as
   await expect(detail.getByTestId('shared-list-detail-readonly')).toContainText(
     'only the organisers can change it',
   )
-  await expect(detail.getByTestId('shared-list-detail-footer')).toHaveCount(0)
+  await expect(detail.getByTestId('shared-list-detail-actions')).toHaveCount(0)
   expect(await apiStatus(disposablePage, 'POST', `/shared-lists/${list.id}/pause`)).toBe(403)
 })
 

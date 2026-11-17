@@ -332,7 +332,7 @@ test.describe('a list’s details', () => {
       task_ids: [seeded.tasks[0]!.task.id],
     })
 
-    await page.goto(`/app/shared-lists/${seeded.event.id}?list=${list.id}`)
+    await page.goto(`/app/shared-lists/${seeded.event.id}/${list.id}`)
     await page.getByTestId('shared-list-detail').getByTestId('shared-list-link-print').click()
 
     await expect(page).toHaveURL(new RegExp(`/print/lists/${list.id}$`))

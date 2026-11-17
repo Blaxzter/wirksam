@@ -1,13 +1,13 @@
 /**
  * The public sign-up form of a shared list: what it checks before sending
- * anything, how it reads the server's own refusal of a field, and the link a
- * guest keeps to manage their sign-ups.
+ * anything, how it reads the server's own refusal of a field, the link a
+ * guest keeps to manage their sign-ups, and how the page narrows its shifts.
  *
  * Every check mirrors `backend/app/logic/shared_lists/normalize.py`, which has
  * the last word. Doing them here first only saves a round trip and lets the
  * form point at the field; the messages are i18n keys, so the view phrases them.
  */
-import type { PublicSharedList, ValidationErrorItem } from '@/client/types.gen'
+import type { PublicDay, PublicSharedList, ValidationErrorItem } from '@/client/types.gen'
 import { looksLikeEmail } from '@/lib/email'
 
 export type GuestField = 'name' | 'email' | 'phone'
@@ -132,4 +132,45 @@ export function retentionVariant(email: boolean, phone: boolean): RetentionVaria
  */
 export function guestManageUrl(token: string, origin: string = window.location.origin): string {
   return `${origin.replace(/\/+$/, '')}/guest-signup#${token}`
+}
+
+/** "Every task" and "every day" in the public page's filters. */
+export const ALL_SHIFTS = 'all'
+
+/** What the public page narrows its shifts to. */
+export interface ShiftFilter {
+  /** A task id, or `ALL_SHIFTS`. */
+  task: string
+  /** A date (`YYYY-MM-DD`), or `ALL_SHIFTS`. */
+  day: string
+  /** Leave out the shifts that are full. */
+  onlyFree: boolean
+}
+
+export const NO_SHIFT_FILTER: ShiftFilter = { task: ALL_SHIFTS, day: ALL_SHIFTS, onlyFree: false }
+
+/** The days and shifts that pass `filter`; a day left without any goes. */
+export function filterDays(days: readonly PublicDay[], filter: ShiftFilter): PublicDay[] {
+  return days
+    .filter((day) => filter.day === ALL_SHIFTS || day.date === filter.day)
+    .map((day) => ({
+      ...day,
+      shifts: day.shifts.filter(
+        (shift) =>
+          (filter.task === ALL_SHIFTS || shift.task_id === filter.task) &&
+          !(filter.onlyFree && shift.full),
+      ),
+    }))
+    .filter((day) => day.shifts.length > 0)
+}
+
+/** The list's tasks, in the order their first shift comes, for the task filter. */
+export function listTasks(days: readonly PublicDay[]): { id: string; name: string }[] {
+  const tasks = new Map<string, string>()
+  for (const day of days) {
+    for (const shift of day.shifts) {
+      if (!tasks.has(shift.task_id)) tasks.set(shift.task_id, shift.task_name)
+    }
+  }
+  return [...tasks].map(([id, name]) => ({ id, name }))
 }

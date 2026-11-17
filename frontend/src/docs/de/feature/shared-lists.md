@@ -42,13 +42,13 @@ Ein Aushang bringt eine Liste aufs Papier: ihre Überschrift und deine Sätze, i
 
 Mitglieder drucken das Blatt der Aufgabe ohne QR-Code, angelegt wird dabei nichts.
 
-„Aushang drucken“ in den Details einer Liste öffnet ihren Aushang ebenfalls. Ist eine Liste pausiert, abgelaufen oder beendet, sagen das die Druckoptionen und bieten an, sie fortzusetzen, wieder zu öffnen oder neu zu teilen. So hängt niemand einen QR-Code auf, der ins Leere führt.
+„Aushang drucken“ auf der Seite einer Liste öffnet ihren Aushang ebenfalls. Ist eine Liste pausiert, abgelaufen oder beendet, sagen das die Druckoptionen und bieten an, sie fortzusetzen, wieder zu öffnen oder neu zu teilen. So hängt niemand einen QR-Code auf, der ins Leere führt.
 
 Für die ganze Veranstaltung bringt „Alle Aufgaben drucken“ jede Aufgabe, die auf eine Liste kann (veröffentlicht, für alle offen, mit einer Schicht, die noch kommt), auf eine gemeinsame Liste, und jedes ihrer Blätter zeigt deren QR-Code. Welche Aufgaben ohne QR-Code gedruckt werden, nennt der Dialog. Druckst du später noch einmal, nimmt WirkSam dieselbe Liste, auch wenn manche ihrer Aufgaben inzwischen voll oder vorbei sind.
 
 ## Was Helfende sehen
 
-Der Link öffnet eine Seite mit der Überschrift der Liste und deinen Sätzen, darunter die Schichten nach Tagen, jede mit Zeit, Ort und freien Plätzen. Eine volle Schicht bleibt sichtbar, lässt sich aber nicht wählen.
+Der Link öffnet eine Seite mit der Überschrift der Liste und deinen Sätzen, darunter die Schichten nach Tagen, jede mit Zeit, Ort und freien Plätzen. Eine volle Schicht bleibt sichtbar, lässt sich aber nicht wählen. Bei einer längeren Liste können Helfende die Schichten auf eine Aufgabe, einen Tag oder die mit freien Plätzen eingrenzen.
 
 Nach der Wahl einer Schicht tragen Helfende ihren Namen ein und, soweit die Liste fragt, E-Mail-Adresse und Telefonnummer. Mit Adresse können sie sich am Tag vorher per Mail erinnern lassen. Das Formular sagt ihnen, wer was sieht.
 
@@ -87,9 +87,9 @@ Name, E-Mail-Adresse und Telefonnummer werden nach der letzten Schicht der Perso
 
 ## Den Überblick behalten
 
-Der Tab „Links“ zeigt jede Liste mit ihrem Status (Offen, Pausiert, Abgelaufen oder Beendet), wie viele sich eingetragen haben und wie viele Plätze frei sind, und lässt sich sortieren und filtern. „Details“ zeigt, wer sich über eine Liste eingetragen hat, mit „Link kopieren“, „QR-Code“, „Aushang drucken“, „Bearbeiten“, „Pausieren“, „Fortsetzen“ und „Beenden“.
+Der Tab „Links“ zeigt jede Liste mit ihrem Status (Offen, Pausiert, Abgelaufen oder Beendet), wie viele sich eingetragen haben und wie viele Plätze frei sind, und lässt sich sortieren und filtern. Der Titel einer Liste oder „Details“ öffnet ihre eigene Seite: wer sich darüber eingetragen hat, was in ihr steht, ihre Einstellungen und ihren Link mit „Kopieren“, „QR-Code“, „Aushang drucken“ und „Vorschau“, dazu unter dem Titel „Pausieren“, „Fortsetzen“, „Bearbeiten“, „Neuer Link“ und „Beenden“.
 
-![Der Tab „Links“ mit den Details einer Liste und allen, die sich darüber eingetragen haben](shot:shared-list-detail)
+![Die Seite einer Liste mit allen, die sich darüber eingetragen haben, und daneben Link und Einstellungen](shot:shared-list-detail)
 
 - **Pausieren** hält das Eintragen an, bis du fortsetzt. Der Link bleibt derselbe.
 - **Neuer Link** ersetzt den Link. Der alte funktioniert nicht mehr, die Eintragungen bleiben.
@@ -99,7 +99,7 @@ Der Tab „Links“ zeigt jede Liste mit ihrem Status (Offen, Pausiert, Abgelauf
 
 ## Eintragungen austragen
 
-In den Details einer Liste können Organisator:innen und Verantwortliche Leute austragen, die sich über diese Liste eingetragen haben: einzeln, mehrere auf einmal oder mit „Diese und alle neueren austragen“ nach einer Welle erfundener Eintragungen. „Per Mail Bescheid geben“ ist voreingestellt. Bei erfundenen Eintragungen lässt du es aus, damit niemand an einer fremden Adresse angeschrieben wird. Organisator:innen können dabei auch die Daten der Person löschen, etwa wenn jemand ohne E-Mail-Adresse darum bittet. Nicht eingelöste Marken verfallen dann. Hat die Person ihre Adresse bestätigt, gehen alle damit bestätigten Eintragungen mit, vielleicht auch die von jemand anderem aus derselben Familie: Der Dialog sagt dir vorher, wie viele es sind.
+Auf der Seite einer Liste können Organisator:innen und Verantwortliche Leute austragen, die sich über diese Liste eingetragen haben: einzeln, mehrere auf einmal oder mit „Diese und alle neueren austragen“ nach einer Welle erfundener Eintragungen. „Per Mail Bescheid geben“ ist voreingestellt. Bei erfundenen Eintragungen lässt du es aus, damit niemand an einer fremden Adresse angeschrieben wird. Organisator:innen können dabei auch die Daten der Person löschen, etwa wenn jemand ohne E-Mail-Adresse darum bittet. Nicht eingelöste Marken verfallen dann. Hat die Person ihre Adresse bestätigt, gehen alle damit bestätigten Eintragungen mit, vielleicht auch die von jemand anderem aus derselben Familie: Der Dialog sagt dir vorher, wie viele es sind.
 
 Schichten, die schon vorbei sind, lassen sich nicht austragen.
 

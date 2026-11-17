@@ -3,6 +3,7 @@
         "home": "Home",
         "settings": "Settings",
         "sharedListCreate": "Share a list",
+        "sharedListDetail": "List",
         "sharedListEdit": "Edit list"
     },
     "eventSwitcher": {

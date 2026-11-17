@@ -203,7 +203,12 @@ const INBOX_ROUTES = new Set(['notifications'])
 // The redeem page and the list wizard are not entries of their own in the
 // sheet, so `moreRoutes` alone would leave them with no tab lit.
 const VOUCHER_ROUTES = new Set(['my-vouchers', 'voucher-redeem'])
-const SHARED_LIST_ROUTES = new Set(['shared-lists', 'shared-list-create', 'shared-list-edit'])
+const SHARED_LIST_ROUTES = new Set([
+  'shared-lists',
+  'shared-list-create',
+  'shared-list-detail',
+  'shared-list-edit',
+])
 
 const activeTab = computed<Tab | null>(() => {
   const name = typeof route.name === 'string' ? route.name : ''
