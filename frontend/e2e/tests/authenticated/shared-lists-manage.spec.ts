@@ -48,7 +48,7 @@ async function openPage(page: Page, query = '') {
 async function openList(page: Page, listId: string) {
   await page.goto(`/app/shared-lists/${seeded!.event.id}?list=${listId}`)
   await expect(page).toHaveURL(new RegExp(`/app/shared-lists/${seeded!.event.id}/${listId}$`))
-  await expect(page.getByTestId('shared-list-detail-title')).toBeVisible()
+  await expect(page.getByTestId('page-heading')).toBeVisible()
 }
 
 const row = (page: Page, id: string) => page.getByTestId(`shared-list-row-${id}`)

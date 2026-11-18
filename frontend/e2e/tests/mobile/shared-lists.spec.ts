@@ -72,7 +72,7 @@ test('the ⋯ menu opens the list’s own page', async ({ adminPage }) => {
 
   const page = adminPage.getByTestId('shared-list-detail')
   await expect(adminPage).toHaveURL(new RegExp(`/app/shared-lists/[^/]+/${lists[0].id}$`))
-  await expect(page.getByTestId('shared-list-detail-title')).toHaveText('Elternchat')
+  await expect(page.getByTestId('page-heading')).toHaveText('Elternchat')
   // One main action and a menu for the rest, not a block of buttons.
   await expect(page.getByTestId('shared-list-detail-pause')).toBeVisible()
   await expect(page.getByTestId('shared-list-detail-more')).toBeVisible()

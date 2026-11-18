@@ -226,7 +226,7 @@ test.describe('Shared list wizard', () => {
 
     // On the list's own page, under its new title.
     await expect(page).toHaveURL(new RegExp(`/app/shared-lists/${event.id}/${list.id}$`))
-    await expect(page.getByTestId('shared-list-detail-title')).toHaveText(title)
+    await expect(page.getByTestId('page-heading')).toHaveText(title)
     const after = await getSharedList(adminUser.email, list.id)
     expect(after.title).toBe(title)
     expect(after.code).toBe(list.code)

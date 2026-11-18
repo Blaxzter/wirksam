@@ -125,7 +125,7 @@ test.describe('demo session', () => {
       .getByTestId('shared-list-title')
       .filter({ hasText: 'Helping hands for the festival' })
     await title.click()
-    await expect(page.getByTestId('shared-list-detail-title')).toBeVisible()
+    await expect(page.getByTestId('page-heading')).toBeVisible()
     await expect(page.getByText('Paula Neumann')).toBeVisible()
     const url = (await page.getByTestId('shared-list-url').textContent())?.trim() ?? ''
     expect(url).toMatch(/\/l\/\w+$/)

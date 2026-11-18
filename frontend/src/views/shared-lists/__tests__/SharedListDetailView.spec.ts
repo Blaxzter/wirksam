@@ -97,8 +97,8 @@ describe('SharedListDetailView', () => {
   it('shows an open list with its link, figures, tasks and settings', async () => {
     const w = await mountPage(listDetail('l1', { view_count: 23 }))
 
-    expect(byTestId(w, 'shared-list-detail-title').element.tagName).toBe('H1')
-    expect(byTestId(w, 'shared-list-detail-title').text()).toBe('List l1')
+    expect(byTestId(w, 'page-heading').element.tagName).toBe('H1')
+    expect(byTestId(w, 'page-heading').text()).toBe('List l1')
     expect(w.text()).toContain('Elternchat 3b · created by Anna on')
     expect(byTestId(w, 'shared-list-url').text()).toBe(`${window.location.origin}/l/codel1`)
     expect(byTestId(w, 'shared-list-figure-views').text()).toBe('23×')

@@ -214,7 +214,7 @@ function shareAgain() {
           <SharedListStatusBadge :status="list.effective_status" />
           <h1
             class="text-2xl font-bold break-words sm:text-3xl"
-            data-testid="shared-list-detail-title"
+            data-testid="page-heading"
           >
             {{ list.title }}
           </h1>
