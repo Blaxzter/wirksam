@@ -77,6 +77,39 @@ Deliberately no manager-role fixture. Seeding `role="manager"` currently raises
 raises is a setup *error* that no `xfail` marker can absorb — the tests that
 need that variant call the factory in their own body.
 
+### `shared_lists.py`
+
+Shared lists and their guests, written through `crud.shared_list` and
+`crud.shared_list_guest.create`, the calls the routes make:
+
+- `make_shared_list(*, event=None, tasks=None, excluded=(), created_by=None, status="live", ...)` -
+  factory; defaults to a live list on `test_event` with `test_task`, made by
+  `test_event_admin_user`. The other keywords are the list's settings
+  (`ends_mode`, `ends_on`, `ask_email`, `ask_phone`, `show_names`, `max_per_person`, `title`)
+- `test_shared_list` - that default list
+- `make_list_guest(shared_list, *, name="Gast Eins", email=None, phone=None, language="de", shifts=())` -
+  factory; a guest chain on the list, booked (confirmed, `shared_list_id` set) on each of `shifts`.
+  Each booking carries its sign-up's person as a sign-up writes it: `show_first_name` is the
+  list's `show_names == "first"`, `guest_name` and `guest_phone` the chain's name and phone
+- `ListGuest` - what comes back: `.user`, `.guest` (the `shared_list_guests` row), `.bookings`
+
+### `guest_signups.py`
+
+Plain helpers (not fixtures) for the shared-list guest tests:
+
+- `NOW_UTC` - 08:00 on 1 June 2026 in Berlin, after `test_shift` and before the
+  shifts added here
+- `freeze_clocks(monkeypatch, utc=NOW_UTC)` - both clocks at that instant
+- `configure_smtp` / `disable_smtp` - guest mail deliverable or not; tests
+  replace the sending itself
+- `add_shift(db, task, *, day, start, end, max_bookings, location)` - a June shift
+- `signup_body(shift, **fields)` - a public sign-up form
+- `confirm_address(db, guest)` - "Ja, das bin ich" on the chain's mail link, as the route
+  presses it (`guest_tokens.peek`, then `guest_account.confirm`); returns the account's key
+- `pooled_family(db, shared_list, make_list_guest, first, second)` - Maria Muster on
+  `first` and Tom Muster on `second`, one address and a phone each, Tom confirmed into
+  Maria's guest account: one guest user, two people
+
 ### `auth.py`
 
 Factories for the hand-rolled authentication stack. These mint **real** HS256

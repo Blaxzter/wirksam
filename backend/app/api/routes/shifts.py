@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking import person_name, person_phone
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.shared_list_guest import shared_list_guest as crud_shared_list_guest
 from app.crud.shift import shift as crud_shift
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
@@ -128,8 +130,8 @@ async def list_shifts(
         )
         for read in enriched:
             read.bookers = [
-                ShiftBooker(user_id=user_id, name=name)
-                for user_id, name in bookers.get(read.id, [])
+                ShiftBooker(user_id=user_id, name=name, is_guest=is_guest)
+                for user_id, name, is_guest in bookers.get(read.id, [])
             ]
     total = await crud_shift.get_count_filtered(
         session,
@@ -332,9 +334,10 @@ async def list_shift_bookings(
 ) -> list[ShiftBookingEntry]:
     """List confirmed bookings for a shift with basic user info.
 
-    Every member who can see the task sees the names. E-mail, phone and notes
-    only the event admins and the task's people in charge, and each booker on
-    their own row.
+    Every member who can see the task sees the names, and which of them
+    signed up through a shared list without an account. E-mail, phone and
+    notes only the event admins and the task's people in charge, and each
+    booker on their own row; those also see which list a guest came through.
     """
     shift = await crud_shift.get(session, slot_id, raise_404_error=True)
     db_task = await crud_task.get(session, shift.task_id, raise_404_error=True)
@@ -343,6 +346,19 @@ async def list_shift_bookings(
     bookings = await crud_booking.get_multi_by_shift(
         session, shift_id=shift.id, status="confirmed", with_user=True
     )
+    guest_emails: dict[uuid.UUID, str] = {}
+    list_titles: dict[uuid.UUID, str] = {}
+    if can_manage:
+        # A guest's address is on its contact row, never in users.email.
+        guest_emails = await crud_shared_list_guest.contact_emails(
+            session,
+            user_ids=[b.user_id for b in bookings if b.user and b.user.is_list_guest],
+        )
+        list_titles = await crud_booking.shared_list_titles(
+            session,
+            booking_ids=[b.id for b in bookings if b.shared_list_id is not None],
+            event_id=db_task.event_id,
+        )
     entries: list[ShiftBookingEntry] = []
     for b in bookings:
         show = can_manage or b.user_id == current_user.id
@@ -350,12 +366,18 @@ async def list_shift_bookings(
             ShiftBookingEntry(
                 id=b.id,
                 user_id=b.user_id,
-                user_name=b.user.name if b.user else None,
-                user_email=b.user.email if b.user and show else None,
+                user_name=person_name(b, b.user) if b.user else None,
+                user_email=(
+                    (guest_emails.get(b.user_id) or b.user.email)
+                    if b.user and show
+                    else None
+                ),
                 user_avatar_etag=b.user.avatar_etag if b.user else None,
-                user_phone_number=b.user.phone_number if b.user and show else None,
+                user_phone_number=person_phone(b, b.user) if b.user and show else None,
                 notes=b.notes if show else None,
                 created_at=b.created_at,
+                is_guest=b.user.is_list_guest if b.user else False,
+                via_list_title=list_titles.get(b.id),
             )
         )
     return entries

@@ -81,6 +81,9 @@ class VoucherBalance(BaseModel):
         default=None,
         description="Current role in the event; None once they have left it",
     )
+    #: Signed up through a shared list, without an account. Never a member, so
+    #: ``role`` is None; ``email`` is the address on their contact row.
+    is_guest: bool = False
     #: From shifts that have ended.
     earned: int
     #: From booked shifts still to come.
@@ -165,6 +168,8 @@ class VoucherCheckResult(BaseModel):
     user_id: uuid.UUID
     name: str | None = None
     avatar_etag: str | None = None
+    #: A guest of a shared list, who redeems by code only.
+    is_guest: bool = False
     available: int
 
 

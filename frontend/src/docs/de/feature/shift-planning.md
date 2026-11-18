@@ -13,7 +13,7 @@ Planen dürfen Organisator:innen und für ihre eigene Aufgabe die [Verantwortlic
 
 Ein Plan hat drei Ebenen:
 
-- Die **Veranstaltung** ist das Ganze, zum Beispiel das Sommerfest. Sie hat einen Namen und einen Zeitraum, und nur darin lassen sich Aufgaben planen. Standardmäßig ist sie privat, nur eingeladene Personen finden sie.
+- Die **Veranstaltung** ist das Ganze, zum Beispiel das Sommerfest. Sie hat einen Namen und einen Zeitraum, und nur darin lassen sich Aufgaben planen. Standardmäßig ist sie privat, nur eingeladene Personen finden sie. Eine [geteilte Liste](/features/shared-lists) öffnet ausgewählte Schichten für alle mit ihrem Link.
 - Eine **Aufgabe** muss über eine gewisse Zeit besetzt sein, etwa der Getränkestand oder der Abbau. Sie hat einen Namen, auf Wunsch auch eine Beschreibung, einen Ort und eine Kategorie.
 - Eine **Schicht** ist ein Zeitfenster dieser Aufgabe mit einer festen Zahl von Plätzen. Das buchen die Helfenden.
 
@@ -71,7 +71,7 @@ In Liste und Karten gibt es eine Suche, einen Zeitraum, der „Ab heute“ begin
 
 ![Die Aufgabenliste mit einem Wochenstreifen der Schichten](shot:tasks)
 
-Auf der Seite einer Aufgabe öffnet „Drucken“ eine Druckansicht. Standardmäßig ist das eine Liste zum Eintragen: pro Platz eine leere Zeile für Name und Kontakt, dazu ein QR-Code zur Online-Anmeldung.
+Auf der Seite einer Aufgabe öffnet „Drucken“ eine Druckansicht: eine Liste zum Eintragen mit einer leeren Zeile pro Platz für Name und Kontakt. Organisator:innen und die Verantwortlichen der Aufgabe bekommen den Aushang einer [geteilten Liste](/features/shared-lists), über dessen QR-Code sich jeder online eintragen kann, auch ohne Konto.
 
 ## Später ändern und wiederverwenden
 
@@ -161,4 +161,4 @@ Eine archivierte Aufgabe verschwindet für Helfende aus dem Plan. Wer dort gebuc
 - „Tage filtern“
 - „Lageplan zeigen“, wenn alle Schichten denselben Ort mit einem Pin haben
 
-Für die ganze Veranstaltung haben Organisator:innen oben in der Aufgabenliste ein Druckersymbol. „Übersicht drucken“ bringt alle Aufgaben mit Tagen, Ort und Kategorie auf ein Blatt. „Alle Aufgaben drucken“ druckt die Blätter der Aufgaben nacheinander.
+Für die ganze Veranstaltung haben Organisator:innen oben in der Aufgabenliste ein Druckersymbol. „Übersicht drucken“ bringt alle Aufgaben mit Tagen, Ort und Kategorie auf ein Blatt. „Alle Aufgaben drucken“ druckt die Blätter der Aufgaben nacheinander, mit dem QR-Code einer gemeinsamen geteilten Liste bei jeder Aufgabe, die auf eine Liste kann.

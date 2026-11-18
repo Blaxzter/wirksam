@@ -82,6 +82,11 @@ class ShiftBookingEntry(BaseModel):
     user_phone_number: str | None = None
     notes: str | None = None
     created_at: dt.datetime
+    #: Signed up through a shared list, without an account ("ohne Konto").
+    is_guest: bool = False
+    #: The shared list the booking was signed up through, for those who also
+    #: see the contact data: the event admins and the task's people in charge.
+    via_list_title: str | None = None
 
 
 class TaskBookingEntry(BaseModel):
@@ -91,6 +96,8 @@ class TaskBookingEntry(BaseModel):
     shift_id: uuid.UUID
     user_name: str | None = None
     user_phone_number: str | None = None
+    #: Signed up through a shared list, without an account ("ohne Konto").
+    is_guest: bool = False
 
 
 class ShiftConflict(BaseModel):

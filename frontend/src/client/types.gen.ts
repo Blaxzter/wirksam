@@ -1338,6 +1338,10 @@ export type EventRead = {
    */
   managers_edit_voucher_shifts?: boolean
   /**
+   * Managers Share Lists
+   */
+  managers_share_lists?: boolean
+  /**
    * My Role
    */
   my_role?: 'owner' | 'admin' | 'member' | null
@@ -1375,6 +1379,10 @@ export type EventRead = {
    * Voucher Point Count
    */
   voucher_point_count?: number
+  /**
+   * Managed Task Count
+   */
+  managed_task_count?: number
   /**
    * Can Manage
    */
@@ -1717,6 +1725,10 @@ export type EventUpdate = {
    * Managers Edit Voucher Shifts
    */
   managers_edit_voucher_shifts?: boolean | null
+  /**
+   * Managers Share Lists
+   */
+  managers_share_lists?: boolean | null
 }
 
 /**
@@ -2003,6 +2015,225 @@ export type GlobalChannelSettingsUpdate = {
 }
 
 /**
+ * GuestCancelRequest
+ */
+export type GuestCancelRequest = {
+  /**
+   * Token
+   */
+  token: string
+  /**
+   * Booking Id
+   */
+  booking_id: string
+}
+
+/**
+ * GuestConfirmResult
+ *
+ * ``POST /public/guest-signups/confirm``.
+ */
+export type GuestConfirmResult = {
+  /**
+   * Token
+   */
+  token: string
+  manage: GuestSignupManage
+}
+
+/**
+ * GuestPassRequest
+ *
+ * A voucher code for one event, asked for with a manage token.
+ */
+export type GuestPassRequest = {
+  /**
+   * Token
+   */
+  token: string
+  /**
+   * Event Id
+   */
+  event_id: string
+}
+
+/**
+ * GuestPassStatusRequest
+ */
+export type GuestPassStatusRequest = {
+  /**
+   * Token
+   */
+  token: string
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Pass Id
+   */
+  pass_id: string
+}
+
+/**
+ * GuestRemindersRequest
+ */
+export type GuestRemindersRequest = {
+  /**
+   * Token
+   */
+  token: string
+  /**
+   * Enabled
+   */
+  enabled: boolean
+}
+
+/**
+ * GuestSignupBooking
+ */
+export type GuestSignupBooking = {
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Status
+   */
+  status: 'confirmed' | 'cancelled'
+  /**
+   * Event Name
+   */
+  event_name?: string | null
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Location
+   */
+  location?: string | null
+  /**
+   * Can Cancel
+   */
+  can_cancel: boolean
+  /**
+   * Reminder On
+   */
+  reminder_on: boolean
+  /**
+   * Vouchers
+   */
+  vouchers?: number
+  /**
+   * Show First Name
+   */
+  show_first_name?: boolean
+  /**
+   * Name
+   */
+  name?: string | null
+}
+
+/**
+ * GuestSignupManage
+ *
+ * The guest's manage page: a sign-up chain, or a guest account.
+ */
+export type GuestSignupManage = {
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Email
+   */
+  email?: string | null
+  event: PublicEventRef
+  /**
+   * Bookings
+   */
+  bookings: Array<GuestSignupBooking>
+  /**
+   * Can Set Reminders
+   */
+  can_set_reminders: boolean
+  /**
+   * Confirmed
+   */
+  confirmed: boolean
+  /**
+   * Can Confirm
+   */
+  can_confirm: boolean
+  /**
+   * Can Reject
+   */
+  can_reject: boolean
+  /**
+   * Reject Suppresses
+   */
+  reject_suppresses: boolean
+  /**
+   * Has Phone
+   */
+  has_phone: boolean
+  /**
+   * Retention Days
+   */
+  retention_days: number
+  /**
+   * Erase On
+   */
+  erase_on: string
+  /**
+   * Vouchers
+   */
+  vouchers: Array<GuestVoucherAccount>
+}
+
+/**
+ * GuestTokenRequest
+ *
+ * A manage link's token, sent in the body so it never reaches a log.
+ */
+export type GuestTokenRequest = {
+  /**
+   * Token
+   */
+  token: string
+}
+
+/**
+ * GuestVoucherAccount
+ *
+ * A guest's vouchers in one event.
+ */
+export type GuestVoucherAccount = {
+  /**
+   * Event Id
+   */
+  event_id: string
+  /**
+   * Event Name
+   */
+  event_name: string
+  account: VoucherAccount
+}
+
+/**
  * InvitationTaskBrief
  *
  * A task an invitation asks its invitee to be in charge of.
@@ -2024,6 +2255,214 @@ export type InvitationTaskBrief = {
    * End Date
    */
   end_date: string
+}
+
+/**
+ * ListGuestAdminListResponse
+ */
+export type ListGuestAdminListResponse = {
+  /**
+   * Items
+   */
+  items: Array<ListGuestAdminRow>
+  /**
+   * Total
+   */
+  total: number
+  /**
+   * Skip
+   */
+  skip: number
+  /**
+   * Limit
+   */
+  limit: number
+}
+
+/**
+ * ListGuestAdminRow
+ *
+ * A guest, as the operator finds them for a data-subject request.
+ */
+export type ListGuestAdminRow = {
+  /**
+   * Guest User Id
+   */
+  guest_user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Phone
+   */
+  phone?: string | null
+  /**
+   * Event Id
+   */
+  event_id?: string | null
+  /**
+   * Event Name
+   */
+  event_name?: string | null
+  /**
+   * Booking Count
+   */
+  booking_count: number
+  /**
+   * Last Signup At
+   */
+  last_signup_at?: string | null
+  /**
+   * Erased
+   */
+  erased: boolean
+}
+
+/**
+ * ListGuestExport
+ *
+ * Everything stored about one guest, for a request under Art. 15 GDPR.
+ *
+ * The manage link's nonce and the aliases of merged chains are left out:
+ * they are credentials, not data about the person. ``name`` and ``phone``
+ * are the guest user's; each booking carries the name, phone and first-name
+ * consent of its own sign-up.
+ */
+export type ListGuestExport = {
+  /**
+   * Guest User Id
+   */
+  guest_user_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Phone
+   */
+  phone?: string | null
+  /**
+   * Event Id
+   */
+  event_id?: string | null
+  /**
+   * Event Name
+   */
+  event_name?: string | null
+  /**
+   * Booking Count
+   */
+  booking_count: number
+  /**
+   * Last Signup At
+   */
+  last_signup_at?: string | null
+  /**
+   * Erased
+   */
+  erased: boolean
+  /**
+   * Preferred Language
+   */
+  preferred_language: string
+  /**
+   * Shared List Id
+   */
+  shared_list_id?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Erased At
+   */
+  erased_at?: string | null
+  /**
+   * Confirmed At
+   */
+  confirmed_at?: string | null
+  /**
+   * Bookings
+   */
+  bookings: Array<ListGuestExportBooking>
+  /**
+   * Vouchers
+   */
+  vouchers: Array<GuestVoucherAccount>
+}
+
+/**
+ * ListGuestExportBooking
+ *
+ * One booking in the export: as the guest's page shows it, plus the
+ * phone number this sign-up was made with (``bookings.guest_phone``).
+ */
+export type ListGuestExportBooking = {
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Status
+   */
+  status: 'confirmed' | 'cancelled'
+  /**
+   * Event Name
+   */
+  event_name?: string | null
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Location
+   */
+  location?: string | null
+  /**
+   * Can Cancel
+   */
+  can_cancel: boolean
+  /**
+   * Reminder On
+   */
+  reminder_on: boolean
+  /**
+   * Vouchers
+   */
+  vouchers?: number
+  /**
+   * Show First Name
+   */
+  show_first_name?: boolean
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Phone
+   */
+  phone?: string | null
 }
 
 /**
@@ -2367,6 +2806,18 @@ export type LoginRequest = {
    * Password as typed; never stored or logged
    */
   password: string
+}
+
+/**
+ * MailSuppressionLift
+ *
+ * An address "Das war ich nicht" stopped all mail to, to mail again.
+ */
+export type MailSuppressionLift = {
+  /**
+   * Email
+   */
+  email: string
 }
 
 /**
@@ -2770,6 +3221,236 @@ export type PointRedemptionRead = {
    * User Name
    */
   user_name?: string | null
+}
+
+/**
+ * PublicDay
+ */
+export type PublicDay = {
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Shifts
+   */
+  shifts: Array<PublicShift>
+}
+
+/**
+ * PublicEventRef
+ */
+export type PublicEventRef = {
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Start Date
+   */
+  start_date: string
+  /**
+   * End Date
+   */
+  end_date: string
+  /**
+   * Timezone
+   */
+  timezone: string
+  /**
+   * Is Sandbox
+   */
+  is_sandbox?: boolean
+}
+
+/**
+ * PublicSharedList
+ *
+ * ``GET /public/shared-lists/{code}``, and the organisers' preview.
+ */
+export type PublicSharedList = {
+  /**
+   * Code
+   */
+  code: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Intro
+   */
+  intro?: string | null
+  /**
+   * Status
+   */
+  status: 'live' | 'paused' | 'closed'
+  event: PublicEventRef
+  /**
+   * Ask Email
+   */
+  ask_email: 'required' | 'optional' | 'off'
+  /**
+   * Ask Phone
+   */
+  ask_phone: 'required' | 'optional' | 'off'
+  /**
+   * Show Names
+   */
+  show_names: 'none' | 'first'
+  /**
+   * Max Per Person
+   */
+  max_per_person?: number | null
+  /**
+   * Days
+   */
+  days: Array<PublicDay>
+  /**
+   * Retention Days
+   */
+  retention_days: number
+}
+
+/**
+ * PublicShift
+ *
+ * One shift on the public page.
+ */
+export type PublicShift = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Location
+   */
+  location?: string | null
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+  /**
+   * Full
+   */
+  full: boolean
+  /**
+   * Names
+   */
+  names?: Array<string>
+  /**
+   * Others Count
+   */
+  others_count?: number
+  /**
+   * Vouchers
+   */
+  vouchers?: number
+}
+
+/**
+ * PublicSignupRequest
+ *
+ * Signing up for one shift without an account.
+ *
+ * ``name``, ``email`` and ``phone`` are normalised here
+ * (``logic/shared_lists/normalize.py``); a value that cannot be is a 422.
+ * Whether the list asks for an address or a number at all is the sign-up's
+ * check. With ``guest_token`` (from the first sign-up's answer) the sign-up
+ * continues that chain, and what the chain stored wins over these fields.
+ */
+export type PublicSignupRequest = {
+  /**
+   * Shift Id
+   */
+  shift_id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Phone
+   */
+  phone?: string | null
+  /**
+   * Remind
+   */
+  remind?: boolean
+  /**
+   * Language
+   */
+  language?: 'en' | 'de'
+  /**
+   * Show Names
+   */
+  show_names: 'none' | 'first'
+  /**
+   * Guest Token
+   */
+  guest_token?: string | null
+  /**
+   * Turnstile Token
+   */
+  turnstile_token?: string | null
+}
+
+/**
+ * PublicSignupResult
+ */
+export type PublicSignupResult = {
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Guest Token
+   */
+  guest_token: string
+  shift: PublicShift
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Mail Queued
+   */
+  mail_queued: boolean
+  /**
+   * Show Manage Link
+   */
+  show_manage_link: boolean
+  /**
+   * Remaining
+   */
+  remaining?: number | null
 }
 
 /**
@@ -3198,6 +3879,1016 @@ export type ShapeUpdateOp = {
 }
 
 /**
+ * SharedListBulkRequest
+ */
+export type SharedListBulkRequest = {
+  /**
+   * Action
+   */
+  action: 'pause' | 'resume' | 'end'
+  /**
+   * List Ids
+   */
+  list_ids: Array<string>
+}
+
+/**
+ * SharedListBulkResult
+ *
+ * What a bulk action did. A list that already was as asked is in
+ * neither list.
+ */
+export type SharedListBulkResult = {
+  /**
+   * Changed
+   */
+  changed: Array<string>
+  /**
+   * Skipped
+   */
+  skipped: Array<SharedListBulkSkip>
+}
+
+/**
+ * SharedListBulkSkip
+ */
+export type SharedListBulkSkip = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Code
+   */
+  code: string
+}
+
+/**
+ * SharedListCandidate
+ *
+ * A task the caller may put on a list, with its shifts that have not
+ * started.
+ */
+export type SharedListCandidate = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Location
+   */
+  location: string | null
+  /**
+   * Manager Names
+   */
+  manager_names: Array<string>
+  /**
+   * Shift Count
+   */
+  shift_count: number
+  /**
+   * Dates
+   */
+  dates: Array<string>
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+  team: TeamRef | null
+  /**
+   * Earns Vouchers
+   */
+  earns_vouchers: boolean
+}
+
+/**
+ * SharedListCandidateListResponse
+ */
+export type SharedListCandidateListResponse = {
+  /**
+   * Items
+   */
+  items: Array<SharedListCandidate>
+  /**
+   * Total
+   */
+  total: number
+  /**
+   * Skip
+   */
+  skip: number
+  /**
+   * Limit
+   */
+  limit: number
+  /**
+   * Locked Count
+   */
+  locked_count: number
+  /**
+   * Locked Names
+   */
+  locked_names: Array<string>
+}
+
+/**
+ * SharedListCandidateShift
+ */
+export type SharedListCandidateShift = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Date
+   */
+  date: string
+  /**
+   * Start Time
+   */
+  start_time: string | null
+  /**
+   * End Time
+   */
+  end_time: string | null
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+}
+
+/**
+ * SharedListChip
+ */
+export type SharedListChip = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Effective Status
+   */
+  effective_status: 'live' | 'paused' | 'expired' | 'ended'
+}
+
+/**
+ * SharedListCounts
+ *
+ * How many visible lists each filter chip holds, whatever ``q`` says.
+ */
+export type SharedListCounts = {
+  /**
+   * Active
+   */
+  active: number
+  /**
+   * Todo
+   */
+  todo: number
+  /**
+   * Live
+   */
+  live: number
+  /**
+   * Paused
+   */
+  paused: number
+  /**
+   * Ended
+   */
+  ended: number
+}
+
+/**
+ * SharedListCreate
+ */
+export type SharedListCreate = {
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Intro
+   */
+  intro?: string | null
+  /**
+   * Share Note
+   */
+  share_note?: string | null
+  /**
+   * Task Ids
+   */
+  task_ids: Array<string>
+  /**
+   * Excluded Shift Ids
+   */
+  excluded_shift_ids?: Array<string>
+  /**
+   * Ask Email
+   */
+  ask_email?: 'required' | 'optional' | 'off'
+  /**
+   * Ask Phone
+   */
+  ask_phone?: 'required' | 'optional' | 'off'
+  /**
+   * Show Names
+   */
+  show_names?: 'none' | 'first'
+  /**
+   * Max Per Person
+   */
+  max_per_person?: number | null
+  /**
+   * Ends Mode
+   */
+  ends_mode?: 'last_shift' | 'date' | 'manual'
+  /**
+   * Ends On
+   */
+  ends_on?: string | null
+}
+
+/**
+ * SharedListDetail
+ */
+export type SharedListDetail = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Code
+   */
+  code: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Share Note
+   */
+  share_note: string | null
+  /**
+   * Status
+   */
+  status: 'live' | 'paused' | 'ended'
+  /**
+   * Effective Status
+   */
+  effective_status: 'live' | 'paused' | 'expired' | 'ended'
+  /**
+   * Ends Mode
+   */
+  ends_mode: 'last_shift' | 'date' | 'manual'
+  /**
+   * Ends On
+   */
+  ends_on: string | null
+  /**
+   * Closes At
+   */
+  closes_at: string | null
+  /**
+   * Expires Soon
+   */
+  expires_soon: boolean
+  /**
+   * Is Full
+   */
+  is_full: boolean
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Created By Name
+   */
+  created_by_name: string | null
+  /**
+   * Tasks
+   */
+  tasks: Array<SharedListTaskRef>
+  /**
+   * Only Days
+   */
+  only_days: Array<string> | null
+  /**
+   * Excluded Shift Count
+   */
+  excluded_shift_count: number
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+  /**
+   * Signup Count
+   */
+  signup_count: number
+  /**
+   * Guest Count
+   */
+  guest_count: number
+  /**
+   * View Count
+   */
+  view_count: number
+  issue: SharedListIssue | null
+  /**
+   * Access
+   */
+  access: 'admin' | 'manager' | 'viewer'
+  /**
+   * Intro
+   */
+  intro: string | null
+  /**
+   * Ask Email
+   */
+  ask_email: 'required' | 'optional' | 'off'
+  /**
+   * Ask Phone
+   */
+  ask_phone: 'required' | 'optional' | 'off'
+  /**
+   * Show Names
+   */
+  show_names: 'none' | 'first'
+  /**
+   * Max Per Person
+   */
+  max_per_person: number | null
+  /**
+   * Rotated At
+   */
+  rotated_at: string | null
+  /**
+   * Paused At
+   */
+  paused_at: string | null
+  /**
+   * Ended At
+   */
+  ended_at: string | null
+  /**
+   * Task Ids
+   */
+  task_ids: Array<string>
+  /**
+   * Excluded Shift Ids
+   */
+  excluded_shift_ids: Array<string>
+  /**
+   * Detail Tasks
+   */
+  detail_tasks: Array<SharedListDetailTask>
+  event: SharedListEventRef
+}
+
+/**
+ * SharedListDetailTask
+ *
+ * A task linked to the list, and what the list offers of it.
+ */
+export type SharedListDetailTask = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Offered
+   */
+  offered: boolean
+  /**
+   * Not Offered Reason
+   */
+  not_offered_reason: 'team_locked' | 'not_published' | 'moved' | null
+  /**
+   * Shift Count
+   */
+  shift_count: number
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+  /**
+   * Only Days
+   */
+  only_days: Array<string> | null
+}
+
+/**
+ * SharedListEventRef
+ */
+export type SharedListEventRef = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Start Date
+   */
+  start_date: string
+  /**
+   * End Date
+   */
+  end_date: string
+  /**
+   * Timezone
+   */
+  timezone: string
+}
+
+/**
+ * SharedListIssue
+ *
+ * Something on a list an organiser should act on.
+ */
+export type SharedListIssue = {
+  /**
+   * Kind
+   */
+  kind: 'stranded' | 'expires_soon'
+  /**
+   * Free
+   */
+  free: number
+  /**
+   * Task Names
+   */
+  task_names: Array<string>
+  /**
+   * Days Left
+   */
+  days_left?: number | null
+}
+
+/**
+ * SharedListListResponse
+ */
+export type SharedListListResponse = {
+  /**
+   * Items
+   */
+  items: Array<SharedListRow>
+  /**
+   * Total
+   */
+  total: number
+  /**
+   * Skip
+   */
+  skip: number
+  /**
+   * Limit
+   */
+  limit: number
+  counts: SharedListCounts
+  /**
+   * Ended Matching
+   */
+  ended_matching: number
+}
+
+/**
+ * SharedListOverview
+ */
+export type SharedListOverview = {
+  summary: SharedListSummary
+  unshared: UnsharedNotice
+  /**
+   * Can Create
+   */
+  can_create: boolean
+  /**
+   * Can Pause All
+   */
+  can_pause_all: boolean
+  /**
+   * Is Admin
+   */
+  is_admin: boolean
+  /**
+   * Managers Share Lists
+   */
+  managers_share_lists: boolean
+  /**
+   * Event Timezone
+   */
+  event_timezone: string
+}
+
+/**
+ * SharedListPauseAllRequest
+ */
+export type SharedListPauseAllRequest = {
+  /**
+   * Lock Managers
+   */
+  lock_managers?: boolean
+}
+
+/**
+ * SharedListReusable
+ *
+ * The list a printed notice of some tasks reuses.
+ */
+export type SharedListReusable = {
+  list: SharedListRow | null
+}
+
+/**
+ * SharedListRow
+ */
+export type SharedListRow = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Code
+   */
+  code: string
+  /**
+   * Title
+   */
+  title: string
+  /**
+   * Share Note
+   */
+  share_note: string | null
+  /**
+   * Status
+   */
+  status: 'live' | 'paused' | 'ended'
+  /**
+   * Effective Status
+   */
+  effective_status: 'live' | 'paused' | 'expired' | 'ended'
+  /**
+   * Ends Mode
+   */
+  ends_mode: 'last_shift' | 'date' | 'manual'
+  /**
+   * Ends On
+   */
+  ends_on: string | null
+  /**
+   * Closes At
+   */
+  closes_at: string | null
+  /**
+   * Expires Soon
+   */
+  expires_soon: boolean
+  /**
+   * Is Full
+   */
+  is_full: boolean
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Created By Name
+   */
+  created_by_name: string | null
+  /**
+   * Tasks
+   */
+  tasks: Array<SharedListTaskRef>
+  /**
+   * Only Days
+   */
+  only_days: Array<string> | null
+  /**
+   * Excluded Shift Count
+   */
+  excluded_shift_count: number
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+  /**
+   * Signup Count
+   */
+  signup_count: number
+  /**
+   * Guest Count
+   */
+  guest_count: number
+  /**
+   * View Count
+   */
+  view_count: number
+  issue: SharedListIssue | null
+  /**
+   * Access
+   */
+  access: 'admin' | 'manager' | 'viewer'
+}
+
+/**
+ * SharedListSignup
+ *
+ * One confirmed sign-up through a list.
+ */
+export type SharedListSignup = {
+  /**
+   * Booking Id
+   */
+  booking_id: string
+  /**
+   * Name
+   */
+  name?: string | null
+  /**
+   * Erased
+   */
+  erased: boolean
+  /**
+   * Email
+   */
+  email?: string | null
+  /**
+   * Phone
+   */
+  phone?: string | null
+  /**
+   * Task Id
+   */
+  task_id: string
+  /**
+   * Task Name
+   */
+  task_name: string
+  /**
+   * Shift Id
+   */
+  shift_id: string
+  /**
+   * Shift Date
+   */
+  shift_date: string
+  /**
+   * Start Time
+   */
+  start_time?: string | null
+  /**
+   * End Time
+   */
+  end_time?: string | null
+  /**
+   * Created At
+   */
+  created_at: string
+  /**
+   * Possible Duplicate
+   */
+  possible_duplicate: boolean
+  /**
+   * Can Remove
+   */
+  can_remove: boolean
+  /**
+   * Pooled Signups
+   */
+  pooled_signups: number
+}
+
+/**
+ * SharedListSignupListResponse
+ */
+export type SharedListSignupListResponse = {
+  /**
+   * Items
+   */
+  items: Array<SharedListSignup>
+  /**
+   * Total
+   */
+  total: number
+  /**
+   * Skip
+   */
+  skip: number
+  /**
+   * Limit
+   */
+  limit: number
+  /**
+   * Hidden Count
+   */
+  hidden_count: number
+  /**
+   * Can Erase
+   */
+  can_erase: boolean
+}
+
+/**
+ * SharedListSignupRemoveRequest
+ *
+ * Which sign-ups to remove: exactly one of ``booking_ids`` and
+ * ``created_since`` (422 ``shared_list.remove_selector`` otherwise).
+ */
+export type SharedListSignupRemoveRequest = {
+  /**
+   * Booking Ids
+   */
+  booking_ids?: Array<string> | null
+  /**
+   * Created Since
+   */
+  created_since?: string | null
+  /**
+   * Notify
+   */
+  notify?: boolean
+  /**
+   * Erase
+   */
+  erase?: boolean
+}
+
+/**
+ * SharedListSignupRemoveResult
+ */
+export type SharedListSignupRemoveResult = {
+  /**
+   * Removed
+   */
+  removed: Array<string>
+  /**
+   * Erased Guests
+   */
+  erased_guests: number
+  /**
+   * Also Removed
+   */
+  also_removed: number
+  /**
+   * Skipped
+   */
+  skipped: Array<SharedListSignupSkip>
+}
+
+/**
+ * SharedListSignupSkip
+ *
+ * A sign-up the removal left alone, and why, as an error code.
+ */
+export type SharedListSignupSkip = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Code
+   */
+  code: string
+}
+
+/**
+ * SharedListSummary
+ */
+export type SharedListSummary = {
+  /**
+   * Live Lists
+   */
+  live_lists: number
+  /**
+   * Active Lists
+   */
+  active_lists: number
+  /**
+   * Signups
+   */
+  signups: number
+  /**
+   * Guests
+   */
+  guests: number
+  /**
+   * Free In Live
+   */
+  free_in_live: number
+}
+
+/**
+ * SharedListTaskCounts
+ */
+export type SharedListTaskCounts = {
+  /**
+   * All
+   */
+  all: number
+  /**
+   * Todo
+   */
+  todo: number
+}
+
+/**
+ * SharedListTaskListResponse
+ */
+export type SharedListTaskListResponse = {
+  /**
+   * Items
+   */
+  items: Array<SharedListTaskRow>
+  /**
+   * Total
+   */
+  total: number
+  /**
+   * Skip
+   */
+  skip: number
+  /**
+   * Limit
+   */
+  limit: number
+  counts: SharedListTaskCounts
+}
+
+/**
+ * SharedListTaskRef
+ */
+export type SharedListTaskRef = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+}
+
+/**
+ * SharedListTaskRow
+ *
+ * A published task with shifts ahead, and the lists it is on.
+ *
+ * The shift figures cover the shifts that have not started, whether a list
+ * offers them or not.
+ */
+export type SharedListTaskRow = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+  /**
+   * Location
+   */
+  location: string | null
+  /**
+   * Manager Names
+   */
+  manager_names: Array<string>
+  /**
+   * Shift Count
+   */
+  shift_count: number
+  /**
+   * Dates
+   */
+  dates: Array<string>
+  /**
+   * Capacity
+   */
+  capacity: number
+  /**
+   * Free
+   */
+  free: number
+  team: TeamRef | null
+  /**
+   * Lists
+   */
+  lists: Array<SharedListChip>
+  /**
+   * Ended List Count
+   */
+  ended_list_count: number
+  /**
+   * Stranded Free
+   */
+  stranded_free: number
+  /**
+   * Unlisted Free
+   */
+  unlisted_free: number
+  /**
+   * Can Share
+   */
+  can_share: boolean
+}
+
+/**
+ * SharedListUpdate
+ *
+ * Any field of :class:`SharedListCreate`; the code stays the same.
+ *
+ * A field left out keeps its value. So does an explicit null on a field that
+ * always has one (title, tasks, exclusions, the ask and show settings, the
+ * ends mode); on ``intro``, ``share_note``, ``max_per_person`` and ``ends_on``
+ * null is a value. A change of ``show_names`` applies to new sign-ups only:
+ * each guest keeps what they were told.
+ */
+export type SharedListUpdate = {
+  /**
+   * Title
+   */
+  title?: string | null
+  /**
+   * Intro
+   */
+  intro?: string | null
+  /**
+   * Share Note
+   */
+  share_note?: string | null
+  /**
+   * Task Ids
+   */
+  task_ids?: Array<string> | null
+  /**
+   * Excluded Shift Ids
+   */
+  excluded_shift_ids?: Array<string> | null
+  /**
+   * Ask Email
+   */
+  ask_email?: 'required' | 'optional' | 'off' | null
+  /**
+   * Ask Phone
+   */
+  ask_phone?: 'required' | 'optional' | 'off' | null
+  /**
+   * Show Names
+   */
+  show_names?: 'none' | 'first' | null
+  /**
+   * Max Per Person
+   */
+  max_per_person?: number | null
+  /**
+   * Ends Mode
+   */
+  ends_mode?: 'last_shift' | 'date' | 'manual' | null
+  /**
+   * Ends On
+   */
+  ends_on?: string | null
+}
+
+/**
  * ShiftBatchRead
  */
 export type ShiftBatchRead = {
@@ -3283,6 +4974,10 @@ export type ShiftBooker = {
    * Name
    */
   name?: string | null
+  /**
+   * Is Guest
+   */
+  is_guest?: boolean
 }
 
 /**
@@ -3323,6 +5018,14 @@ export type ShiftBookingEntry = {
    * Created At
    */
   created_at: string
+  /**
+   * Is Guest
+   */
+  is_guest?: boolean
+  /**
+   * Via List Title
+   */
+  via_list_title?: string | null
 }
 
 /**
@@ -3814,6 +5517,10 @@ export type TaskBookingEntry = {
    * User Phone Number
    */
   user_phone_number?: string | null
+  /**
+   * Is Guest
+   */
+  is_guest?: boolean
 }
 
 /**
@@ -4460,6 +6167,20 @@ export type TeamDocumentRead = {
 }
 
 /**
+ * TeamRef
+ */
+export type TeamRef = {
+  /**
+   * Id
+   */
+  id: string
+  /**
+   * Name
+   */
+  name: string
+}
+
+/**
  * TeamRequirementIn
  *
  * One thing a decider has to check before approving a request.
@@ -4756,6 +6477,9 @@ export type TokenResponse = {
 
 /**
  * TopVolunteer
+ *
+ * A guest account gives one row per name its pooled sign-ups were made
+ * under, all with its ``user_id``.
  */
 export type TopVolunteer = {
   /**
@@ -4784,6 +6508,26 @@ export type UnreadCountResponse = {
    * Unread Count
    */
   unread_count: number
+}
+
+/**
+ * UnsharedNotice
+ *
+ * Tasks the caller may share whose free places no live list offers.
+ */
+export type UnsharedNotice = {
+  /**
+   * Task Count
+   */
+  task_count: number
+  /**
+   * Free
+   */
+  free: number
+  /**
+   * Task Names
+   */
+  task_names: Array<string>
 }
 
 /**
@@ -6257,6 +8001,11 @@ export type VerifyEmailRequest = {
  * ``shift_minutes`` counts confirmed bookings on shifts that have already
  * ended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes
  * into ``total_minutes`` — hours are what someone *has* worked.
+ *
+ * A guest who signed up through a shared list is named by their sign-ups. A
+ * guest account pools the sign-ups of everyone who confirmed one address, so
+ * it gives one row per name, all with its ``user_id``; ``user_id`` and
+ * ``name`` together tell the rows apart.
  */
 export type VolunteerHours = {
   /**
@@ -6281,6 +8030,12 @@ export type VolunteerHours = {
    * Current role in the event; None once they have left it
    */
   role?: 'owner' | 'admin' | 'member' | null
+  /**
+   * Is Guest
+   *
+   * Signed up through a shared list, without an account; never a member, so role is None
+   */
+  is_guest?: boolean
   /**
    * Shift Count
    */
@@ -6406,6 +8161,10 @@ export type VoucherBalance = {
    */
   role?: 'owner' | 'admin' | 'member' | null
   /**
+   * Is Guest
+   */
+  is_guest?: boolean
+  /**
    * Earned
    */
   earned: number
@@ -6463,6 +8222,10 @@ export type VoucherCheckResult = {
    * Avatar Etag
    */
   avatar_etag?: string | null
+  /**
+   * Is Guest
+   */
+  is_guest?: boolean
   /**
    * Available
    */
@@ -6984,6 +8747,10 @@ export type EventReadWritable = {
    */
   managers_edit_voucher_shifts?: boolean
   /**
+   * Managers Share Lists
+   */
+  managers_share_lists?: boolean
+  /**
    * My Role
    */
   my_role?: 'owner' | 'admin' | 'member' | null
@@ -7021,6 +8788,10 @@ export type EventReadWritable = {
    * Voucher Point Count
    */
   voucher_point_count?: number
+  /**
+   * Managed Task Count
+   */
+  managed_task_count?: number
 }
 
 /**
@@ -14624,7 +16395,14 @@ export type WorkHoursGetVolunteerHoursData = {
      */
     user_id: string
   }
-  query?: never
+  query?: {
+    /**
+     * Name
+     *
+     * A guest who signed up through a shared list: the name of the sign-ups to count, as the hours list gives it (a guest account pools several people's). Defaults to the guest's own name; ignored for a member.
+     */
+    name?: string | null
+  }
   url: '/api/v1/events/{event_id}/hours/{user_id}'
 }
 
@@ -19100,6 +20878,1989 @@ export type ReportingReportingExportResponses = {
   200: unknown
 }
 
+export type SharedListsListSharedListsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: {
+    /**
+     * Status Filter
+     */
+    status_filter?: 'active' | 'todo' | 'live' | 'paused' | 'ended'
+    /**
+     * Q
+     */
+    q?: string | null
+    /**
+     * Sort By
+     */
+    sort_by?: 'status' | 'created_at' | 'title' | 'signups' | 'free' | 'closes'
+    /**
+     * Sort Dir
+     */
+    sort_dir?: 'asc' | 'desc' | null
+    /**
+     * Skip
+     */
+    skip?: number
+    /**
+     * Limit
+     */
+    limit?: number
+  }
+  url: '/api/v1/events/{event_id}/shared-lists'
+}
+
+export type SharedListsListSharedListsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsListSharedListsError =
+  SharedListsListSharedListsErrors[keyof SharedListsListSharedListsErrors]
+
+export type SharedListsListSharedListsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListListResponse
+}
+
+export type SharedListsListSharedListsResponse =
+  SharedListsListSharedListsResponses[keyof SharedListsListSharedListsResponses]
+
+export type SharedListsCreateSharedListData = {
+  body: SharedListCreate
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/shared-lists'
+}
+
+export type SharedListsCreateSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsCreateSharedListError =
+  SharedListsCreateSharedListErrors[keyof SharedListsCreateSharedListErrors]
+
+export type SharedListsCreateSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  201: SharedListDetail
+}
+
+export type SharedListsCreateSharedListResponse =
+  SharedListsCreateSharedListResponses[keyof SharedListsCreateSharedListResponses]
+
+export type SharedListsGetSharedListsOverviewData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/shared-lists/overview'
+}
+
+export type SharedListsGetSharedListsOverviewErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsGetSharedListsOverviewError =
+  SharedListsGetSharedListsOverviewErrors[keyof SharedListsGetSharedListsOverviewErrors]
+
+export type SharedListsGetSharedListsOverviewResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListOverview
+}
+
+export type SharedListsGetSharedListsOverviewResponse =
+  SharedListsGetSharedListsOverviewResponses[keyof SharedListsGetSharedListsOverviewResponses]
+
+export type SharedListsListSharedListTasksData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: {
+    /**
+     * Status Filter
+     */
+    status_filter?: 'all' | 'todo'
+    /**
+     * Q
+     */
+    q?: string | null
+    /**
+     * Sort By
+     */
+    sort_by?: 'name' | 'free' | 'unlisted_free'
+    /**
+     * Sort Dir
+     */
+    sort_dir?: 'asc' | 'desc' | null
+    /**
+     * Skip
+     */
+    skip?: number
+    /**
+     * Limit
+     */
+    limit?: number
+  }
+  url: '/api/v1/events/{event_id}/shared-lists/tasks'
+}
+
+export type SharedListsListSharedListTasksErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsListSharedListTasksError =
+  SharedListsListSharedListTasksErrors[keyof SharedListsListSharedListTasksErrors]
+
+export type SharedListsListSharedListTasksResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListTaskListResponse
+}
+
+export type SharedListsListSharedListTasksResponse =
+  SharedListsListSharedListTasksResponses[keyof SharedListsListSharedListTasksResponses]
+
+export type SharedListsListSharedListCandidatesData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: {
+    /**
+     * Q
+     */
+    q?: string | null
+    /**
+     * Skip
+     */
+    skip?: number
+    /**
+     * Limit
+     */
+    limit?: number
+  }
+  url: '/api/v1/events/{event_id}/shared-lists/candidates'
+}
+
+export type SharedListsListSharedListCandidatesErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsListSharedListCandidatesError =
+  SharedListsListSharedListCandidatesErrors[keyof SharedListsListSharedListCandidatesErrors]
+
+export type SharedListsListSharedListCandidatesResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListCandidateListResponse
+}
+
+export type SharedListsListSharedListCandidatesResponse =
+  SharedListsListSharedListCandidatesResponses[keyof SharedListsListSharedListCandidatesResponses]
+
+export type SharedListsListSharedListCandidateShiftsData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query: {
+    /**
+     * Task Id
+     */
+    task_id: Array<string>
+  }
+  url: '/api/v1/events/{event_id}/shared-lists/candidate-shifts'
+}
+
+export type SharedListsListSharedListCandidateShiftsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsListSharedListCandidateShiftsError =
+  SharedListsListSharedListCandidateShiftsErrors[keyof SharedListsListSharedListCandidateShiftsErrors]
+
+export type SharedListsListSharedListCandidateShiftsResponses = {
+  /**
+   * Response Shared-Lists-List Shared List Candidate Shifts
+   *
+   * Successful Response
+   */
+  200: Array<SharedListCandidateShift>
+}
+
+export type SharedListsListSharedListCandidateShiftsResponse =
+  SharedListsListSharedListCandidateShiftsResponses[keyof SharedListsListSharedListCandidateShiftsResponses]
+
+export type SharedListsFindReusableSharedListData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query: {
+    /**
+     * Task Id
+     */
+    task_id: Array<string>
+    /**
+     * Covering
+     */
+    covering?: boolean
+  }
+  url: '/api/v1/events/{event_id}/shared-lists/reusable'
+}
+
+export type SharedListsFindReusableSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsFindReusableSharedListError =
+  SharedListsFindReusableSharedListErrors[keyof SharedListsFindReusableSharedListErrors]
+
+export type SharedListsFindReusableSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListReusable
+}
+
+export type SharedListsFindReusableSharedListResponse =
+  SharedListsFindReusableSharedListResponses[keyof SharedListsFindReusableSharedListResponses]
+
+export type SharedListsBulkUpdateSharedListsData = {
+  body: SharedListBulkRequest
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/shared-lists/bulk'
+}
+
+export type SharedListsBulkUpdateSharedListsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsBulkUpdateSharedListsError =
+  SharedListsBulkUpdateSharedListsErrors[keyof SharedListsBulkUpdateSharedListsErrors]
+
+export type SharedListsBulkUpdateSharedListsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListBulkResult
+}
+
+export type SharedListsBulkUpdateSharedListsResponse =
+  SharedListsBulkUpdateSharedListsResponses[keyof SharedListsBulkUpdateSharedListsResponses]
+
+export type SharedListsPauseAllSharedListsData = {
+  body: SharedListPauseAllRequest
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/shared-lists/pause-all'
+}
+
+export type SharedListsPauseAllSharedListsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsPauseAllSharedListsError =
+  SharedListsPauseAllSharedListsErrors[keyof SharedListsPauseAllSharedListsErrors]
+
+export type SharedListsPauseAllSharedListsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListBulkResult
+}
+
+export type SharedListsPauseAllSharedListsResponse =
+  SharedListsPauseAllSharedListsResponses[keyof SharedListsPauseAllSharedListsResponses]
+
+export type SharedListsGetSharedListData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}'
+}
+
+export type SharedListsGetSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsGetSharedListError =
+  SharedListsGetSharedListErrors[keyof SharedListsGetSharedListErrors]
+
+export type SharedListsGetSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListDetail
+}
+
+export type SharedListsGetSharedListResponse =
+  SharedListsGetSharedListResponses[keyof SharedListsGetSharedListResponses]
+
+export type SharedListsUpdateSharedListData = {
+  body: SharedListUpdate
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}'
+}
+
+export type SharedListsUpdateSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsUpdateSharedListError =
+  SharedListsUpdateSharedListErrors[keyof SharedListsUpdateSharedListErrors]
+
+export type SharedListsUpdateSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListDetail
+}
+
+export type SharedListsUpdateSharedListResponse =
+  SharedListsUpdateSharedListResponses[keyof SharedListsUpdateSharedListResponses]
+
+export type SharedListsPauseSharedListData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}/pause'
+}
+
+export type SharedListsPauseSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsPauseSharedListError =
+  SharedListsPauseSharedListErrors[keyof SharedListsPauseSharedListErrors]
+
+export type SharedListsPauseSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListDetail
+}
+
+export type SharedListsPauseSharedListResponse =
+  SharedListsPauseSharedListResponses[keyof SharedListsPauseSharedListResponses]
+
+export type SharedListsResumeSharedListData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}/resume'
+}
+
+export type SharedListsResumeSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsResumeSharedListError =
+  SharedListsResumeSharedListErrors[keyof SharedListsResumeSharedListErrors]
+
+export type SharedListsResumeSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListDetail
+}
+
+export type SharedListsResumeSharedListResponse =
+  SharedListsResumeSharedListResponses[keyof SharedListsResumeSharedListResponses]
+
+export type SharedListsEndSharedListData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}/end'
+}
+
+export type SharedListsEndSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsEndSharedListError =
+  SharedListsEndSharedListErrors[keyof SharedListsEndSharedListErrors]
+
+export type SharedListsEndSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListDetail
+}
+
+export type SharedListsEndSharedListResponse =
+  SharedListsEndSharedListResponses[keyof SharedListsEndSharedListResponses]
+
+export type SharedListsRotateSharedListData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}/rotate'
+}
+
+export type SharedListsRotateSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListsRotateSharedListError =
+  SharedListsRotateSharedListErrors[keyof SharedListsRotateSharedListErrors]
+
+export type SharedListsRotateSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListDetail
+}
+
+export type SharedListsRotateSharedListResponse =
+  SharedListsRotateSharedListResponses[keyof SharedListsRotateSharedListResponses]
+
+export type SharedListGuestsListSharedListSignupsData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: {
+    /**
+     * Sort By
+     */
+    sort_by?: 'created_at' | 'name' | 'shift_start'
+    /**
+     * Sort Dir
+     */
+    sort_dir?: 'asc' | 'desc' | null
+    /**
+     * Q
+     */
+    q?: string | null
+    /**
+     * Skip
+     */
+    skip?: number
+    /**
+     * Limit
+     */
+    limit?: number
+  }
+  url: '/api/v1/shared-lists/{list_id}/signups'
+}
+
+export type SharedListGuestsListSharedListSignupsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsListSharedListSignupsError =
+  SharedListGuestsListSharedListSignupsErrors[keyof SharedListGuestsListSharedListSignupsErrors]
+
+export type SharedListGuestsListSharedListSignupsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListSignupListResponse
+}
+
+export type SharedListGuestsListSharedListSignupsResponse =
+  SharedListGuestsListSharedListSignupsResponses[keyof SharedListGuestsListSharedListSignupsResponses]
+
+export type SharedListGuestsRemoveSharedListSignupsData = {
+  body: SharedListSignupRemoveRequest
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}/signups/remove'
+}
+
+export type SharedListGuestsRemoveSharedListSignupsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsRemoveSharedListSignupsError =
+  SharedListGuestsRemoveSharedListSignupsErrors[keyof SharedListGuestsRemoveSharedListSignupsErrors]
+
+export type SharedListGuestsRemoveSharedListSignupsResponses = {
+  /**
+   * Successful Response
+   */
+  200: SharedListSignupRemoveResult
+}
+
+export type SharedListGuestsRemoveSharedListSignupsResponse =
+  SharedListGuestsRemoveSharedListSignupsResponses[keyof SharedListGuestsRemoveSharedListSignupsResponses]
+
+export type SharedListGuestsPreviewSharedListData = {
+  body?: never
+  path: {
+    /**
+     * List Id
+     */
+    list_id: string
+  }
+  query?: never
+  url: '/api/v1/shared-lists/{list_id}/preview'
+}
+
+export type SharedListGuestsPreviewSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsPreviewSharedListError =
+  SharedListGuestsPreviewSharedListErrors[keyof SharedListGuestsPreviewSharedListErrors]
+
+export type SharedListGuestsPreviewSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: PublicSharedList
+}
+
+export type SharedListGuestsPreviewSharedListResponse =
+  SharedListGuestsPreviewSharedListResponses[keyof SharedListGuestsPreviewSharedListResponses]
+
+export type SharedListGuestsSearchListGuestsData = {
+  body?: never
+  path?: never
+  query: {
+    /**
+     * Q
+     */
+    q: string
+    /**
+     * Skip
+     */
+    skip?: number
+    /**
+     * Limit
+     */
+    limit?: number
+  }
+  url: '/api/v1/list-guests'
+}
+
+export type SharedListGuestsSearchListGuestsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsSearchListGuestsError =
+  SharedListGuestsSearchListGuestsErrors[keyof SharedListGuestsSearchListGuestsErrors]
+
+export type SharedListGuestsSearchListGuestsResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListGuestAdminListResponse
+}
+
+export type SharedListGuestsSearchListGuestsResponse =
+  SharedListGuestsSearchListGuestsResponses[keyof SharedListGuestsSearchListGuestsResponses]
+
+export type SharedListGuestsExportListGuestData = {
+  body?: never
+  path: {
+    /**
+     * Guest User Id
+     */
+    guest_user_id: string
+  }
+  query?: never
+  url: '/api/v1/list-guests/{guest_user_id}'
+}
+
+export type SharedListGuestsExportListGuestErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsExportListGuestError =
+  SharedListGuestsExportListGuestErrors[keyof SharedListGuestsExportListGuestErrors]
+
+export type SharedListGuestsExportListGuestResponses = {
+  /**
+   * Successful Response
+   */
+  200: ListGuestExport
+}
+
+export type SharedListGuestsExportListGuestResponse =
+  SharedListGuestsExportListGuestResponses[keyof SharedListGuestsExportListGuestResponses]
+
+export type SharedListGuestsEraseListGuestData = {
+  body?: never
+  path: {
+    /**
+     * Guest User Id
+     */
+    guest_user_id: string
+  }
+  query?: never
+  url: '/api/v1/list-guests/{guest_user_id}/erase'
+}
+
+export type SharedListGuestsEraseListGuestErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsEraseListGuestError =
+  SharedListGuestsEraseListGuestErrors[keyof SharedListGuestsEraseListGuestErrors]
+
+export type SharedListGuestsEraseListGuestResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type SharedListGuestsEraseListGuestResponse =
+  SharedListGuestsEraseListGuestResponses[keyof SharedListGuestsEraseListGuestResponses]
+
+export type SharedListGuestsLiftMailSuppressionData = {
+  body: MailSuppressionLift
+  path?: never
+  query?: never
+  url: '/api/v1/list-guests/mail-suppressions/lift'
+}
+
+export type SharedListGuestsLiftMailSuppressionErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type SharedListGuestsLiftMailSuppressionError =
+  SharedListGuestsLiftMailSuppressionErrors[keyof SharedListGuestsLiftMailSuppressionErrors]
+
+export type SharedListGuestsLiftMailSuppressionResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type SharedListGuestsLiftMailSuppressionResponse =
+  SharedListGuestsLiftMailSuppressionResponses[keyof SharedListGuestsLiftMailSuppressionResponses]
+
+export type PublicSharedListsGetPublicSharedListData = {
+  body?: never
+  path: {
+    /**
+     * Code
+     */
+    code: string
+  }
+  query?: never
+  url: '/api/v1/public/shared-lists/{code}'
+}
+
+export type PublicSharedListsGetPublicSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsGetPublicSharedListError =
+  PublicSharedListsGetPublicSharedListErrors[keyof PublicSharedListsGetPublicSharedListErrors]
+
+export type PublicSharedListsGetPublicSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  200: PublicSharedList
+}
+
+export type PublicSharedListsGetPublicSharedListResponse =
+  PublicSharedListsGetPublicSharedListResponses[keyof PublicSharedListsGetPublicSharedListResponses]
+
+export type PublicSharedListsSignUpOnSharedListData = {
+  body: PublicSignupRequest
+  path: {
+    /**
+     * Code
+     */
+    code: string
+  }
+  query?: never
+  url: '/api/v1/public/shared-lists/{code}/signups'
+}
+
+export type PublicSharedListsSignUpOnSharedListErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsSignUpOnSharedListError =
+  PublicSharedListsSignUpOnSharedListErrors[keyof PublicSharedListsSignUpOnSharedListErrors]
+
+export type PublicSharedListsSignUpOnSharedListResponses = {
+  /**
+   * Successful Response
+   */
+  201: PublicSignupResult
+}
+
+export type PublicSharedListsSignUpOnSharedListResponse =
+  PublicSharedListsSignUpOnSharedListResponses[keyof PublicSharedListsSignUpOnSharedListResponses]
+
+export type PublicSharedListsReadGuestSignupsData = {
+  body: GuestTokenRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/manage'
+}
+
+export type PublicSharedListsReadGuestSignupsErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsReadGuestSignupsError =
+  PublicSharedListsReadGuestSignupsErrors[keyof PublicSharedListsReadGuestSignupsErrors]
+
+export type PublicSharedListsReadGuestSignupsResponses = {
+  /**
+   * Successful Response
+   */
+  200: GuestSignupManage
+}
+
+export type PublicSharedListsReadGuestSignupsResponse =
+  PublicSharedListsReadGuestSignupsResponses[keyof PublicSharedListsReadGuestSignupsResponses]
+
+export type PublicSharedListsCancelGuestSignupData = {
+  body: GuestCancelRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/cancel'
+}
+
+export type PublicSharedListsCancelGuestSignupErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsCancelGuestSignupError =
+  PublicSharedListsCancelGuestSignupErrors[keyof PublicSharedListsCancelGuestSignupErrors]
+
+export type PublicSharedListsCancelGuestSignupResponses = {
+  /**
+   * Successful Response
+   */
+  200: GuestSignupManage
+}
+
+export type PublicSharedListsCancelGuestSignupResponse =
+  PublicSharedListsCancelGuestSignupResponses[keyof PublicSharedListsCancelGuestSignupResponses]
+
+export type PublicSharedListsSetGuestRemindersData = {
+  body: GuestRemindersRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/reminders'
+}
+
+export type PublicSharedListsSetGuestRemindersErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsSetGuestRemindersError =
+  PublicSharedListsSetGuestRemindersErrors[keyof PublicSharedListsSetGuestRemindersErrors]
+
+export type PublicSharedListsSetGuestRemindersResponses = {
+  /**
+   * Successful Response
+   */
+  200: GuestSignupManage
+}
+
+export type PublicSharedListsSetGuestRemindersResponse =
+  PublicSharedListsSetGuestRemindersResponses[keyof PublicSharedListsSetGuestRemindersResponses]
+
+export type PublicSharedListsEraseGuestDataData = {
+  body: GuestTokenRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/erase'
+}
+
+export type PublicSharedListsEraseGuestDataErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsEraseGuestDataError =
+  PublicSharedListsEraseGuestDataErrors[keyof PublicSharedListsEraseGuestDataErrors]
+
+export type PublicSharedListsEraseGuestDataResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type PublicSharedListsEraseGuestDataResponse =
+  PublicSharedListsEraseGuestDataResponses[keyof PublicSharedListsEraseGuestDataResponses]
+
+export type PublicSharedListsRejectGuestSignupData = {
+  body: GuestTokenRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/not-me'
+}
+
+export type PublicSharedListsRejectGuestSignupErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsRejectGuestSignupError =
+  PublicSharedListsRejectGuestSignupErrors[keyof PublicSharedListsRejectGuestSignupErrors]
+
+export type PublicSharedListsRejectGuestSignupResponses = {
+  /**
+   * Successful Response
+   */
+  204: void
+}
+
+export type PublicSharedListsRejectGuestSignupResponse =
+  PublicSharedListsRejectGuestSignupResponses[keyof PublicSharedListsRejectGuestSignupResponses]
+
+export type PublicSharedListsConfirmGuestAddressData = {
+  body: GuestTokenRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/confirm'
+}
+
+export type PublicSharedListsConfirmGuestAddressErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsConfirmGuestAddressError =
+  PublicSharedListsConfirmGuestAddressErrors[keyof PublicSharedListsConfirmGuestAddressErrors]
+
+export type PublicSharedListsConfirmGuestAddressResponses = {
+  /**
+   * Successful Response
+   */
+  200: GuestConfirmResult
+}
+
+export type PublicSharedListsConfirmGuestAddressResponse =
+  PublicSharedListsConfirmGuestAddressResponses[keyof PublicSharedListsConfirmGuestAddressResponses]
+
+export type PublicSharedListsIssueGuestVoucherPassData = {
+  body: GuestPassRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/vouchers/pass'
+}
+
+export type PublicSharedListsIssueGuestVoucherPassErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsIssueGuestVoucherPassError =
+  PublicSharedListsIssueGuestVoucherPassErrors[keyof PublicSharedListsIssueGuestVoucherPassErrors]
+
+export type PublicSharedListsIssueGuestVoucherPassResponses = {
+  /**
+   * Successful Response
+   */
+  201: VoucherPassRead
+}
+
+export type PublicSharedListsIssueGuestVoucherPassResponse =
+  PublicSharedListsIssueGuestVoucherPassResponses[keyof PublicSharedListsIssueGuestVoucherPassResponses]
+
+export type PublicSharedListsReadGuestVoucherPassData = {
+  body: GuestPassStatusRequest
+  path?: never
+  query?: never
+  url: '/api/v1/public/guest-signups/vouchers/pass-status'
+}
+
+export type PublicSharedListsReadGuestVoucherPassErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type PublicSharedListsReadGuestVoucherPassError =
+  PublicSharedListsReadGuestVoucherPassErrors[keyof PublicSharedListsReadGuestVoucherPassErrors]
+
+export type PublicSharedListsReadGuestVoucherPassResponses = {
+  /**
+   * Successful Response
+   */
+  200: VoucherPassStatus
+}
+
+export type PublicSharedListsReadGuestVoucherPassResponse =
+  PublicSharedListsReadGuestVoucherPassResponses[keyof PublicSharedListsReadGuestVoucherPassResponses]
+
 export type DebugStartLogCaptureData = {
   body?: never
   path?: never
@@ -19327,3 +23088,57 @@ export type TestingResetTestDataResponses = {
 
 export type TestingResetTestDataResponse =
   TestingResetTestDataResponses[keyof TestingResetTestDataResponses]
+
+export type TestingGuestMailLinkData = {
+  body: GuestTokenRequest
+  path?: never
+  query?: never
+  url: '/api/v1/testing/guest-mail-link'
+}
+
+export type TestingGuestMailLinkErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type TestingGuestMailLinkError = TestingGuestMailLinkErrors[keyof TestingGuestMailLinkErrors]
+
+export type TestingGuestMailLinkResponses = {
+  /**
+   * Successful Response
+   */
+  200: GuestTokenRequest
+}
+
+export type TestingGuestMailLinkResponse =
+  TestingGuestMailLinkResponses[keyof TestingGuestMailLinkResponses]

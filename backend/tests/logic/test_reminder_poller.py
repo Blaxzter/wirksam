@@ -681,6 +681,87 @@ class TestProcessReminder:
         service_cls.assert_not_called()
         notify.assert_not_awaited()
 
+    async def test_a_reminder_handed_on_since_the_fetch_goes_to_its_new_holder(
+        self,
+        db_session: AsyncSession,
+        test_booking: Booking,
+        test_user: User,
+        test_outsider_user: User,
+        test_shift: Shift,
+    ) -> None:
+        """The poller's snapshot is older than the row: a guest merge may
+        have handed the reminder to the guest account and deleted the user
+        the snapshot names. The fresh row decides who is reminded."""
+        reminder = await _create_reminder(
+            db_session,
+            booking=test_booking,
+            user=test_user,
+            shift_id=test_shift.id,
+            remind_at=dt.datetime(2026, 5, 24, 7, 0),
+            offset_minutes=60,
+        )
+        snapshot = BookingReminder(
+            id=reminder.id,
+            booking_id=reminder.booking_id,
+            user_id=reminder.user_id,
+            shift_id=reminder.shift_id,
+            remind_at=reminder.remind_at,
+            offset_minutes=reminder.offset_minutes,
+            status=reminder.status,
+            channels=reminder.channels,
+        )
+        await crud_reminder.reassign_user(
+            db_session, from_user=test_user.id, to_user=test_outsider_user.id
+        )
+
+        _, notify = await _dispatch_reminder(db_session, snapshot)
+
+        call = notify.await_args
+        assert call is not None
+        assert call.kwargs["recipient_ids"] == [test_outsider_user.id]
+        await db_session.refresh(reminder)
+        assert (reminder.user_id, reminder.status) == (test_outsider_user.id, "sent")
+
+    @pytest.mark.parametrize("status", ["sent", "cancelled", "expired"])
+    async def test_a_reminder_no_longer_pending_is_left_alone(
+        self,
+        db_session: AsyncSession,
+        test_booking: Booking,
+        test_user: User,
+        test_shift: Shift,
+        status: str,
+    ) -> None:
+        """A booking cancelled after the fetch takes its reminder with it:
+        nothing goes out, and the row keeps the status it was given."""
+        reminder = await _create_reminder(
+            db_session,
+            booking=test_booking,
+            user=test_user,
+            shift_id=test_shift.id,
+            remind_at=dt.datetime(2026, 5, 24, 7, 0),
+            offset_minutes=60,
+        )
+        snapshot = BookingReminder(
+            id=reminder.id,
+            booking_id=reminder.booking_id,
+            user_id=reminder.user_id,
+            shift_id=reminder.shift_id,
+            remind_at=reminder.remind_at,
+            offset_minutes=reminder.offset_minutes,
+            status="pending",
+            channels=reminder.channels,
+        )
+        reminder.status = status
+        db_session.add(reminder)
+        await db_session.flush()
+
+        service_cls, notify = await _dispatch_reminder(db_session, snapshot)
+
+        service_cls.assert_not_called()
+        notify.assert_not_awaited()
+        await db_session.refresh(reminder)
+        assert reminder.status == status
+
     async def test_swallows_and_logs_dispatch_errors(
         self,
         db_session: AsyncSession,

@@ -173,3 +173,47 @@ class TestVerifyTurnstile:
         siteverify(timeout)
 
         assert await verify_turnstile("solved-token") is False
+
+    async def test_a_token_solved_on_another_form_is_refused(
+        self, siteverify: Callable[[Handler], list[httpx.Request]]
+    ) -> None:
+        """Test that ``expected_action`` binds a token to its form.
+
+        Without it, a token solved on the registration widget would also pass
+        the shared-list sign-up.
+        """
+        siteverify(_json({"success": True, "action": "register"}))
+
+        assert (
+            await verify_turnstile("solved-token", expected_action="shared-list-signup")
+            is False
+        )
+
+    async def test_a_token_solved_on_the_expected_form_passes(
+        self, siteverify: Callable[[Handler], list[httpx.Request]]
+    ) -> None:
+        """Test that the action the widget was rendered with is accepted."""
+        siteverify(_json({"success": True, "action": "shared-list-signup"}))
+
+        assert (
+            await verify_turnstile("solved-token", expected_action="shared-list-signup")
+            is True
+        )
+
+    async def test_without_an_expected_action_the_action_is_not_checked(
+        self, siteverify: Callable[[Handler], list[httpx.Request]]
+    ) -> None:
+        """Test that existing callers (registration) behave as before."""
+        siteverify(_json({"success": True, "action": "anything"}))
+
+        assert await verify_turnstile("solved-token") is True
+
+    async def test_a_rejected_token_stays_rejected_whatever_its_action(
+        self, siteverify: Callable[[Handler], list[httpx.Request]]
+    ) -> None:
+        siteverify(_json({"success": False, "action": "shared-list-signup"}))
+
+        assert (
+            await verify_turnstile("forged", expected_action="shared-list-signup")
+            is False
+        )

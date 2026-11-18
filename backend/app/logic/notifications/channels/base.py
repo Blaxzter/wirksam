@@ -6,10 +6,15 @@ from app.models.user import User
 from app.schemas.notification import NotificationData
 
 # Identity prefixes that must never be sent anything, whatever the channel.
-# All three mark accounts that stand in for a person without being one: the
-# made-up teammates ``just seed`` puts in the local dev event, the accounts the
-# E2E reset endpoint owns, and the guests behind the "try a test event" button.
-UNDELIVERABLE_SUBJECT_PREFIXES = ("demo|", "test|", "sandbox|")
+# The first three mark accounts that stand in for a person without being one:
+# the made-up teammates ``just seed`` puts in the local dev event, the accounts
+# the E2E reset endpoint owns, and the guests behind the "try a test event"
+# button. ``listguest|`` (``crud.shared_list_guest.GUEST_SUBJECT_PREFIX``) marks
+# people who signed up through a shared list. They are real, but their mail
+# goes only through ``logic/shared_lists/guest_mail.py``, which writes it from
+# database fields; ``NotificationService`` hands it their notices before any
+# channel runs, so this is the second line.
+UNDELIVERABLE_SUBJECT_PREFIXES = ("demo|", "test|", "sandbox|", "listguest|")
 
 
 def is_undeliverable(recipient: User) -> bool:

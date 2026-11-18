@@ -17,6 +17,7 @@ from app.logic.notifications.channels.base import NotificationChannel
 from app.logic.notifications.channels.email import EmailBody, EmailChannel
 from app.logic.notifications.channels.push import PushChannel
 from app.logic.notifications.channels.telegram import TelegramChannel
+from app.logic.shared_lists import guest_mail
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.notification import NotificationData
@@ -92,6 +93,21 @@ class NotificationService:
             # which is noise in a demo and rows to clean up afterwards.
             if recipient.is_sandbox:
                 logger.debug(f"Skipping notification for sandbox user {recipient_id}")
+                continue
+
+            # Someone who signed up through a shared list has no account to
+            # show a notice in. The few notices that concern them become mail
+            # written from database rows alone; the title and body are never
+            # resolved, because they can carry organiser free text (a
+            # cancellation reason) and point to pages a guest does not have.
+            if recipient.is_list_guest:
+                await guest_mail.deliver_notice(
+                    self.db,
+                    recipient=recipient,
+                    type_code=type_code,
+                    data=data,
+                    scope_chain=scope_chain,
+                )
                 continue
 
             # Resolve localized title/body

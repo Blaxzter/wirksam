@@ -87,6 +87,9 @@ class EventUpdate(BaseModel):
     #: with the defaults. An explicit ``null`` leaves the value (NOT NULL).
     voucher_manual_redeem: VoucherManualRedeem | None = None
     managers_edit_voucher_shifts: bool | None = None
+    #: Whether people in charge may share their tasks on shared lists. An
+    #: explicit ``null`` leaves the value (NOT NULL).
+    managers_share_lists: bool | None = None
 
 
 class EventRead(EventBase):
@@ -104,6 +107,9 @@ class EventRead(EventBase):
     voucher_manual_redeem: VoucherManualRedeem = "on_shift"
     #: People in charge of a task that earns vouchers may change its shifts.
     managers_edit_voucher_shifts: bool = False
+    #: People in charge may create, edit, resume and rotate shared lists of
+    #: their own tasks; pausing and ending stay theirs either way.
+    managers_share_lists: bool = True
 
     # Viewer-relative context. Populated by the route from the caller's
     # membership, not stored on the row — the same event reads differently
@@ -129,6 +135,10 @@ class EventRead(EventBase):
     #: offers the voucher pages only where either is above zero.
     voucher_task_count: int = 0
     voucher_point_count: int = 0
+    #: Tasks of the event the caller is in charge of; members only, like
+    #: ``team_count``. The navigation offers shared lists to people in charge
+    #: who are not event admins only where this is above zero.
+    managed_task_count: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
     @property

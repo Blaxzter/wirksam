@@ -501,6 +501,12 @@ for (const { dir, config } of variants()) {
 // Everything behind a sign-in, and the one-shot links mailed to people, is of
 // no use in a search result. Login and register stay open: people do search
 // for "<name> login".
+//
+// A shared list's page (`/l/<code>`) is deliberately not listed. A crawler that
+// may not fetch it never sees its `noindex` (the page's robots meta, and the
+// `X-Robots-Tag` nginx adds), and could still list the bare URL it found in a
+// group chat. The guest manage page carries its token in the fragment, which
+// no crawler sees, so it is simply kept out.
 const robots = `# Search engines and AI crawlers are welcome on the public pages.
 User-agent: *
 Allow: /
@@ -512,6 +518,7 @@ Disallow: /verify-email
 Disallow: /forgot-password
 Disallow: /account-suspended
 Disallow: /account-pending
+Disallow: /guest-signup
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `

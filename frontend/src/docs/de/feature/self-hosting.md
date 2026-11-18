@@ -78,6 +78,8 @@ Wer sich mit einer dieser Adressen registriert oder anmeldet, bekommt die Rolle 
 
 `REGISTRATION_ALLOWED_DOMAINS` beschränkt die Registrierung in jedem Modus auf bestimmte E-Mail-Domains. Du trennst sie mit Komma, zum Beispiel `gemeinde.de,example.org`. Leer heißt alle Domains.
 
+Für geteilte Listen gilt keine dieser Einstellungen, denn wer sich über eine Liste einträgt, legt kein Konto an. Abschalten lassen sich die Listen mit `SHARED_LISTS_ENABLED`, siehe die Fragen weiter unten.
+
 ## Wo Dateien liegen
 
 Hochgeladen werden Profilbilder, Bilder für Lagepläne und Dokumente zu Team-Anfragen. `STORAGE_BACKEND` hat zwei Werte:
@@ -115,6 +117,8 @@ Ja, mit `TURNSTILE_SITE_KEY` und `TURNSTILE_SECRET_KEY`. Die Domain muss dafür 
 
 Ist die Prüfung an und Cloudflare nicht erreichbar, wird die Registrierung abgelehnt.
 
+Dieselbe Prüfung schützt das Eintragen über geteilte Listen. Sind die Listen an, ist sie deshalb empfohlen, und ohne sie warnt das Backend beim Start.
+
 ### Kann ich statt Garage einen anderen S3-Speicher nehmen?
 
 Ja, zum Beispiel Cloudflare R2 oder einen anderen S3-kompatiblen Speicher. Dann entfernst du `COMPOSE_PROFILES` und setzt `S3_ENDPOINT_URL`, `S3_REGION`, `S3_BUCKET` und das Schlüsselpaar.
@@ -136,6 +140,7 @@ Schichtzeiten haben keine Zeitzone. Deshalb entscheidet die Zone der Veranstaltu
 ### Wie passe ich die Demo und die öffentlichen Seiten an?
 
 - `SANDBOX_ENABLED` (Standard `true`) steuert den Knopf „Demo-Veranstaltung ansehen“. Er legt ohne Anmeldung ein Wegwerf-Konto mit einer Beispielveranstaltung an. Mit `false` verschwindet der Knopf, und das Backend lehnt neue Demos ab. `SANDBOX_TTL_MINUTES` (60) und `SANDBOX_MAX_ACTIVE` (25) begrenzen Dauer und Anzahl.
+- `SHARED_LISTS_ENABLED` (Standard `true`) bietet geteilte Listen an. Mit `false` verschwindet die Seite dafür aus der Navigation, keine Liste nimmt neue Eintragungen an, und ihre Links sagen, dass es die Liste nicht gibt. Wer schon eingetragen ist, behält den Link zum Austragen und Löschen. `GUEST_DATA_RETENTION_DAYS` (Standard `30`) legt fest, wie lange nach der letzten Schicht die Angaben von Leuten aufbewahrt werden, die sich über eine Liste eingetragen haben. `.env.example` führt die Variable mit den anderen Grenzen für Listen. Der Frontend-Container liest sie auch, für die Zahl in der Datenschutzerklärung. Du setzt sie also einmal in der `.env` für beide.
 - `LANDING_ENABLED` (Standard `true`): Mit `false` führt `/` zur Anmeldung oder, wenn du angemeldet bist, in die App. Die Inhaltsseiten wie diese hier entfallen mit. Datenschutz, Nutzungsbedingungen, Impressum und Changelog bleiben.
 - `SEARCH_INDEXING` (Standard `true`): Mit `false` verbietet `robots.txt` allen Crawlern den Zugriff, und `sitemap.xml` und `llms.txt` entfallen.
 - `LEGAL_NAME`, `LEGAL_ADDRESS`, `LEGAL_CITY`, `LEGAL_EMAIL` und `LEGAL_PHONE` tragen deine Angaben in Impressum und Datenschutz ein.

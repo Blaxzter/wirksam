@@ -12,7 +12,10 @@ from app.api.routes import (
     invitations,
     locations,
     notifications,
+    public_shared_lists,
     reporting,
+    shared_list_guests,
+    shared_lists,
     shifts,
     tasks,
     teams,
@@ -49,6 +52,9 @@ api_router.include_router(venue_templates.router)
 api_router.include_router(notifications.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(reporting.router)
+api_router.include_router(shared_lists.router)
+api_router.include_router(shared_list_guests.router)
+api_router.include_router(public_shared_lists.router)
 
 if settings.ENVIRONMENT != "production":
     from app.api.routes import debug

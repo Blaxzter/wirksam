@@ -42,6 +42,11 @@ class VolunteerHours(BaseModel):
     ``shift_minutes`` counts confirmed bookings on shifts that have already
     ended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes
     into ``total_minutes`` — hours are what someone *has* worked.
+
+    A guest who signed up through a shared list is named by their sign-ups. A
+    guest account pools the sign-ups of everyone who confirmed one address, so
+    it gives one row per name, all with its ``user_id``; ``user_id`` and
+    ``name`` together tell the rows apart.
     """
 
     user_id: uuid.UUID
@@ -51,6 +56,13 @@ class VolunteerHours(BaseModel):
     role: EventRole | None = Field(
         default=None,
         description="Current role in the event; None once they have left it",
+    )
+    is_guest: bool = Field(
+        default=False,
+        description=(
+            "Signed up through a shared list, without an account; never a "
+            "member, so role is None"
+        ),
     )
     shift_count: int
     shift_minutes: int

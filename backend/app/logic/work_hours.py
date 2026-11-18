@@ -18,6 +18,12 @@ at the same moment. Unlike hours, earned vouchers are frozen before a change
 that would take them back (``vouchers.settle_earnings``): deleting a worked
 shift removes its hours but not its vouchers.
 
+Hours belong to a person. A guest who signed up through a shared list is
+counted under the name of their sign-ups (``bookings.guest_name``), not their
+guest user's: a guest account pools the sign-ups of everyone who confirmed one
+address, a family say, and Tom's shifts must never be certified as Maria's.
+So a guest account can give several rows, one per name, with one ``user_id``.
+
 This module must not import ``app.logic.permissions``, which imports it.
 """
 
@@ -25,7 +31,7 @@ import datetime as dt
 import uuid
 from dataclasses import dataclass, field
 
-from sqlalchemy import ColumnElement, select
+from sqlalchemy import ColumnElement, case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -45,6 +51,10 @@ from app.schemas.work_hours import (
     WorkedShift,
     WorkLogRead,
 )
+
+#: Whose hours a tally counts: the user, and for a list guest the name the
+#: bookings were made under; None for a member, whose profile names them.
+_Person = tuple[uuid.UUID, str | None]
 
 
 def counts_as_worked() -> ColumnElement[bool]:
@@ -113,13 +123,16 @@ class _Tally:
         if shift.start_time is None or shift.end_time is None:
             self.untimed_shift_count += 1
 
-    def summary(self, user: User, role: EventRole | None) -> VolunteerHours:
+    def summary(
+        self, user: User, role: EventRole | None, person: str | None
+    ) -> VolunteerHours:
         return VolunteerHours(
             user_id=user.id,
-            name=user.name,
+            name=person if user.is_list_guest else user.name,
             email=user.email,
             avatar_etag=user.avatar_etag,
             role=role,
+            is_guest=user.is_list_guest,
             shift_count=self.shift_count,
             shift_minutes=self.shift_minutes,
             upcoming_shift_count=self.upcoming_shift_count,
@@ -136,11 +149,12 @@ async def _booked_shifts(
     *,
     user_id: uuid.UUID | None,
     now: dt.datetime,
-) -> list[tuple[uuid.UUID, WorkedShift]]:
+) -> list[tuple[_Person, WorkedShift]]:
     query = (
         select(
             col(Booking.id),
             col(Booking.user_id),
+            case((col(User.is_list_guest), col(Booking.guest_name))),
             col(Shift.id),
             col(Task.name),
             col(Shift.title),
@@ -148,6 +162,7 @@ async def _booked_shifts(
             col(Shift.start_time),
             col(Shift.end_time),
         )
+        .join(User, col(User.id) == col(Booking.user_id))
         .join(Shift, col(Shift.id) == col(Booking.shift_id))
         .join(Task, col(Task.id) == col(Shift.task_id))
         .where(
@@ -160,10 +175,11 @@ async def _booked_shifts(
         query = query.where(col(Booking.user_id) == user_id)
     result = await session.execute(query)
 
-    rows: list[tuple[uuid.UUID, WorkedShift]] = []
+    rows: list[tuple[_Person, WorkedShift]] = []
     for (
         booking_id,
         booker_id,
+        person,
         shift_id,
         task_name,
         title,
@@ -173,7 +189,7 @@ async def _booked_shifts(
     ) in result.all():
         rows.append(
             (
-                booker_id,
+                (booker_id, person),
                 WorkedShift(
                     booking_id=booking_id,
                     shift_id=shift_id,
@@ -196,20 +212,21 @@ async def _tally(
     *,
     user_id: uuid.UUID | None = None,
     now: dt.datetime | None = None,
-) -> tuple[dict[uuid.UUID, _Tally], list[WorkLog]]:
-    tallies: dict[uuid.UUID, _Tally] = {}
+) -> tuple[dict[_Person, _Tally], list[WorkLog]]:
+    tallies: dict[_Person, _Tally] = {}
     if now is None:
         now = clock.wall_clock_now(await crud_event.zone_of(session, event_id))
-    for booker_id, shift in await _booked_shifts(
+    for whose, shift in await _booked_shifts(
         session, event_id, user_id=user_id, now=now
     ):
-        tallies.setdefault(booker_id, _Tally()).add_shift(shift)
+        tallies.setdefault(whose, _Tally()).add_shift(shift)
 
+    # Only members get entries by hand, so they are never a guest's.
     logs = await crud_work_log.list_for_event(
         session, event_id=event_id, user_id=user_id
     )
     for log in logs:
-        tallies.setdefault(log.user_id, _Tally()).manual_minutes += log.minutes
+        tallies.setdefault((log.user_id, None), _Tally()).manual_minutes += log.minutes
     return tallies, logs
 
 
@@ -223,7 +240,9 @@ async def event_hours(
 
     A volunteer who worked the weekend and was removed from the event on
     Monday still worked the weekend; dropping them here would make the
-    certificate list quietly wrong.
+    certificate list quietly wrong. Guests who signed up through a shared list
+    are listed the same way, never being members, and flagged ``is_guest``:
+    one row per name their sign-ups were made under.
     """
     tallies, _ = await _tally(session, event_id, now=now)
 
@@ -233,16 +252,17 @@ async def event_hours(
         session, event_id=event_id
     ):
         seen.add(user.id)
-        tally = tallies.get(user.id, _Tally())
-        out.append(tally.summary(user, membership.role))  # type: ignore[arg-type]
+        tally = tallies.get((user.id, None), _Tally())
+        out.append(tally.summary(user, membership.role, None))  # type: ignore[arg-type]
 
-    former_ids = [uid for uid in tallies if uid not in seen]
-    if former_ids:
+    former = [whose for whose in tallies if whose[0] not in seen]
+    if former:
         result = await session.execute(
-            select(User).where(col(User.id).in_(former_ids)).order_by(col(User.name))
+            select(User).where(col(User.id).in_({user_id for user_id, _ in former}))
         )
-        for user in result.scalars().all():
-            out.append(tallies[user.id].summary(user, None))
+        users = {user.id: user for user in result.scalars().all()}
+        for user_id, name in former:
+            out.append(tallies[(user_id, name)].summary(users[user_id], None, name))
 
     out.sort(key=lambda h: (-h.total_minutes, (h.name or h.email or "").lower()))
     return out
@@ -253,14 +273,21 @@ async def volunteer_hours(
     event_id: uuid.UUID,
     user: User,
     *,
+    name: str | None = None,
     now: dt.datetime | None = None,
 ) -> VolunteerHoursDetail:
-    """One person's hours in the event, with the shifts and entries behind them."""
+    """One person's hours in the event, with the shifts and entries behind them.
+
+    For a list guest, those of the sign-ups made under ``name``; without it,
+    under the guest user's own name, which for a guest account is the first
+    confirmed sign-up's. ``name`` means nothing for a member.
+    """
+    person = (name if name is not None else user.name) if user.is_list_guest else None
     tallies, logs = await _tally(session, event_id, user_id=user.id, now=now)
-    tally = tallies.get(user.id, _Tally())
+    tally = tallies.get((user.id, person), _Tally())
     role = await crud_membership.get_role(session, user_id=user.id, event_id=event_id)
     return VolunteerHoursDetail(
-        summary=tally.summary(user, role),
+        summary=tally.summary(user, role, person),
         shifts=tally.shifts,
         work_logs=[WorkLogRead.model_validate(log) for log in logs],
     )

@@ -5,7 +5,7 @@ points: Überschneidungen lehnt WirkSam ab | Angeben, wann du helfen kannst | Ge
 related: guide/volunteer-start, feature/notifications, feature/shift-planning, feature/teams
 ---
 
-Jede Person bucht für sich selbst. Organisator:innen legen fest, was es zu buchen gibt. Sie bestimmen Aufgaben und Schichten, wie viele Leute pro Schicht gebraucht werden und ob eine Aufgabe einem Team vorbehalten ist.
+Jede Person bucht für sich selbst. Organisator:innen legen fest, was es zu buchen gibt. Sie bestimmen Aufgaben und Schichten, wie viele Leute pro Schicht gebraucht werden und ob eine Aufgabe einem Team vorbehalten ist. Wer kein Konto hat, kann sich auch über eine [geteilte Liste](/features/shared-lists) eintragen, wenn die Organisator:innen eine teilen.
 
 Buchen kann, wer bei der Veranstaltung dabei ist. Wie man dazukommt, steht unter [Einladungen und Rollen](/features/members). Alles läuft im Browser, installieren ist freiwillig.
 
@@ -53,6 +53,8 @@ Unter „Meine Anmerkungen“ hinterlässt du eine Notiz für die Organisator:in
 
 Zum Absagen wählst du „Buchung stornieren“ oder tippst auf der Aufgabenseite deine gebuchte Kachel an. Nach einer Rückfrage ist der Platz wieder frei, und die Erinnerungen dazu fallen weg.
 
+Hast du dich ohne Konto über eine geteilte Liste eingetragen, sagst du über den Link ab, den du dabei bekommen hast.
+
 ![„Meine Buchungen“ mit den gebuchten Schichten als Karten](shot:helper-bookings)
 
 ## Angeben, wann du kannst
@@ -87,7 +89,7 @@ Neue Schichten kommen dazu und abgesagte verschwinden, sobald deine Kalender-App
 
 ### Kann ich für jemand anderen buchen?
 
-Nein. Jede Person bucht mit dem eigenen Konto. Auch Organisator:innen können niemanden in eine Schicht eintragen oder einzeln aus ihr austragen.
+Nein. Jede Person bucht mit dem eigenen Konto. Auch Organisator:innen können niemanden in eine Schicht eintragen. Einzeln austragen können sie und die Verantwortlichen der Aufgabe nur, wer sich ohne Konto über eine [geteilte Liste](/features/shared-lists) eingetragen hat.
 
 ### Warum lässt sich eine Schicht nicht buchen?
 
@@ -131,7 +133,7 @@ Du verlierst deine Buchungen für Schichten, die noch nicht vorbei sind.
 
 ### Wer sieht, was ich gebucht habe?
 
-Alle in der Veranstaltung, die die Aufgabe sehen können, sehen deinen Namen bei der Schicht. E-Mail-Adresse, Telefonnummer und Anmerkung sehen nur Organisator:innen und die Verantwortlichen der Aufgabe.
+Alle in der Veranstaltung, die die Aufgabe sehen können, sehen deinen Namen bei der Schicht. E-Mail-Adresse, Telefonnummer und Anmerkung sehen nur Organisator:innen und die Verantwortlichen der Aufgabe. Das gilt auch für alle, die sich über eine geteilte Liste eingetragen haben. Ihr Name ist mit „ohne Konto“ markiert.
 
 ### Was sehen die Organisator:innen von meiner Verfügbarkeit?
 

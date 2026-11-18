@@ -4,14 +4,27 @@ import uuid
 from datetime import date, time
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking
+from app.models.event import Event
+from app.models.shared_list import SharedList
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
+from app.models.task_manager import TaskManager
 from app.models.user import User
+from tests.fixtures.client import act_as
+from tests.fixtures.guest_signups import (
+    add_shift,
+    pooled_family,
+)
+from tests.fixtures.shared_lists import (
+    ListGuestFactory,
+    SharedListFactory,
+)
 
 
 @pytest.mark.asyncio
@@ -324,3 +337,161 @@ class TestShiftBatchesAndRegeneration:
         assert booking.status == "cancelled"
         assert booking.cancelled_task_name == test_task.name
         assert booking.cancelled_shift_title == "Old slot"
+
+
+@pytest.mark.asyncio
+class TestListGuestsOnTheRoster:
+    """Guests who signed up through a shared list, on a shift's roster: tagged
+    for everyone who sees the names; their address, phone and the list they
+    came through only for those who run the task."""
+
+    async def test_a_member_sees_the_tag_and_nothing_more(
+        self,
+        async_client: AsyncClient,
+        test_shift: Shift,
+        test_booking: Booking,
+        test_user: User,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+    ):
+        guest = await make_list_guest(
+            test_shared_list,
+            email="gast@example.org",
+            phone="0151 2345",
+            shifts=[test_shift],
+        )
+
+        r = await async_client.get(f"/api/v1/shifts/{test_shift.id}/bookings")
+
+        assert r.status_code == 200
+        rows = {row["user_id"]: row for row in r.json()}
+        row = rows[str(guest.user.id)]
+        assert (row["user_name"], row["is_guest"]) == ("Gast Eins", True)
+        assert (row["user_email"], row["user_phone_number"], row["via_list_title"]) == (
+            None,
+            None,
+            None,
+        )
+        assert rows[str(test_user.id)]["is_guest"] is False
+
+    @pytest.mark.parametrize("who", ["event admin", "person in charge"])
+    async def test_those_who_run_the_task_see_the_contact_and_the_list(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shift: Shift,
+        test_user: User,
+        test_event_admin_user: User,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        who: str,
+    ):
+        """The address comes from the guest's contact row: ``users.email`` of a
+        guest is always empty."""
+        guest = await make_list_guest(
+            test_shared_list,
+            email="gast@example.org",
+            phone="0151 2345",
+            shifts=[test_shift],
+        )
+        caller = test_event_admin_user
+        if who == "person in charge":
+            db_session.add(TaskManager(task_id=test_task.id, user_id=test_user.id))
+            await db_session.flush()
+            caller = test_user
+
+        with act_as(app, caller):
+            r = await async_client.get(f"/api/v1/shifts/{test_shift.id}/bookings")
+
+        (row,) = r.json()
+        assert row["user_id"] == str(guest.user.id)
+        assert row["is_guest"] is True
+        assert (row["user_email"], row["user_phone_number"], row["via_list_title"]) == (
+            "gast@example.org",
+            "0151 2345",
+            "Helfer gesucht",
+        )
+
+    async def test_a_list_of_another_event_is_not_named(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_shift: Shift,
+        test_private_event: Event,
+        make_shared_list: SharedListFactory,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        """A booking keeps the list it came through when its task moves to
+        another event; that event's admins are not told the old list's title."""
+        elsewhere = await make_shared_list(event=test_private_event, tasks=[])
+        guest = await make_list_guest(elsewhere, shifts=[test_shift])
+
+        r = await async_client.get(f"/api/v1/shifts/{test_shift.id}/bookings")
+
+        (row,) = r.json()
+        assert row["user_id"] == str(guest.user.id)
+        assert row["via_list_title"] is None
+
+    async def test_an_account_shows_each_sign_up_as_itself(
+        self,
+        app: FastAPI,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_event_admin_user: User,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+    ):
+        """One guest user holds both sign-ups; each shift still shows its
+        own person, with their own phone."""
+        maria_shift = await add_shift(db_session, test_task)
+        tom_shift = await add_shift(db_session, test_task, day=date(2026, 6, 12))
+        maria, _ = await pooled_family(
+            db_session, test_shared_list, make_list_guest, maria_shift, tom_shift
+        )
+
+        with act_as(app, test_event_admin_user):
+            tiles = await async_client.get(
+                "/api/v1/shifts/",
+                params={"task_id": str(test_task.id), "with_bookers": "true"},
+            )
+            roster = await async_client.get(f"/api/v1/shifts/{tom_shift.id}/bookings")
+
+        named = {
+            tile["id"]: [(b["user_id"], b["name"]) for b in tile["bookers"]]
+            for tile in tiles.json()["items"]
+        }
+        assert named[str(maria_shift.id)] == [(str(maria.user.id), "Maria Muster")]
+        assert named[str(tom_shift.id)] == [(str(maria.user.id), "Tom Muster")]
+        (row,) = roster.json()
+        assert (row["user_id"], row["user_name"], row["user_phone_number"]) == (
+            str(maria.user.id),
+            "Tom Muster",
+            "0170 2",
+        )
+
+    async def test_the_shift_tiles_tag_guests_too(
+        self,
+        async_client: AsyncClient,
+        test_task: Task,
+        test_shift: Shift,
+        test_booking: Booking,
+        test_user: User,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+    ):
+        guest = await make_list_guest(test_shared_list, shifts=[test_shift])
+
+        r = await async_client.get(
+            "/api/v1/shifts/",
+            params={"task_id": str(test_task.id), "with_bookers": "true"},
+        )
+
+        (tile,) = [s for s in r.json()["items"] if s["id"] == str(test_shift.id)]
+        assert {b["user_id"]: b["is_guest"] for b in tile["bookers"]} == {
+            str(test_user.id): False,
+            str(guest.user.id): True,
+        }

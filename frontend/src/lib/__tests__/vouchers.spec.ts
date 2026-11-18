@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { VoucherEntryRead, VoucherShift } from '@/client/types.gen'
 import {
+  PassSourceGone,
   SAME_CODE_IGNORE_MS,
   classifyCameraError,
   codeUsedDetails,
@@ -412,5 +413,19 @@ describe('noPhoneContact', () => {
     expect(noPhoneContact({ can_redeem_manually: false, managers: [] })).toEqual({
       kind: 'organisers',
     })
+  })
+})
+
+describe('PassSourceGone', () => {
+  it('is an error a code screen can tell apart from any other failure', () => {
+    const gone = new PassSourceGone()
+    expect(gone).toBeInstanceOf(Error)
+    expect(gone).toBeInstanceOf(PassSourceGone)
+    expect(gone.name).toBe('PassSourceGone')
+    expect(gone.message).toMatch(/no longer works/)
+  })
+
+  it('carries a message of its own when given one', () => {
+    expect(new PassSourceGone('deleted').message).toBe('deleted')
   })
 })

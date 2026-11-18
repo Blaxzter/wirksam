@@ -80,6 +80,17 @@ export default defineConfig({
       testMatch: '**/tests/auth/**/*.spec.ts',
     },
 
+    // A shared list's public page and a guest's manage page, as the anonymous
+    // visitor who opens a link from a group chat: no bypass cookie, no seeded
+    // session. Not part of `public`, because the lists, events and guests these
+    // specs seed belong to worker users that `test-reset` has to clear first.
+    {
+      name: 'guest',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['test-reset'],
+      testMatch: '**/tests/guest/**/*.spec.ts',
+    },
+
     // Authenticated tests (admin context)
     {
       name: 'chromium',

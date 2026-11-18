@@ -1,5 +1,7 @@
 ## Public Guest Booking — Feature Plan (Draft)
 
+> **Superseded** by [`2026-11-10-shared-lists.md`](2026-11-10-shared-lists.md), which is what was built; see [`docs/SHARED_LISTS.md`](../SHARED_LISTS.md).
+
 **Status:** Idea — not yet approved for implementation
 **Created:** 2026-04-18
 

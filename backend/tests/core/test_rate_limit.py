@@ -26,10 +26,18 @@ from app.core.rate_limit import (
     RateLimiter,
     client_ip,
     forgot_password_limiter,
+    guest_ip_limiter,
+    guest_link_miss_limiter,
+    guest_manage_limiter,
+    guest_pass_status_limiter,
     login_limiter,
     register_limiter,
     resend_verification_limiter,
     reset_password_limiter,
+    shared_list_miss_limiter,
+    shared_list_signup_ip_limiter,
+    shared_list_signup_limiter,
+    shared_list_view_limiter,
     voucher_code_limiter,
     voucher_pass_limiter,
 )
@@ -319,6 +327,62 @@ class TestConfiguredBuckets:
             resend_verification_limiter.window_seconds,
         ) == (3, 3600)
 
+    def test_shared_list_buckets(self) -> None:
+        """Test the shared-list buckets: generous for a crowd behind one NAT,
+        tight only for codes that do not exist."""
+        assert (
+            shared_list_view_limiter.limit,
+            shared_list_view_limiter.window_seconds,
+        ) == (120, 600)
+        assert (
+            shared_list_miss_limiter.limit,
+            shared_list_miss_limiter.window_seconds,
+        ) == (
+            20,
+            600,
+        )
+        assert (
+            shared_list_signup_limiter.limit,
+            shared_list_signup_limiter.window_seconds,
+        ) == (120, 3600)
+        assert (
+            shared_list_signup_ip_limiter.limit,
+            shared_list_signup_ip_limiter.window_seconds,
+        ) == (240, 3600)
+        for bucket in (
+            shared_list_view_limiter,
+            shared_list_miss_limiter,
+            shared_list_signup_limiter,
+            shared_list_signup_ip_limiter,
+        ):
+            assert bucket.code == "shared_list.rate_limited"
+
+    def test_guest_buckets(self) -> None:
+        """Test the guests' buckets: counted per guest once the token
+        resolves, per IP for misses, and a flood guard far above ten code
+        screens behind one venue NAT."""
+        assert [
+            (bucket.limit, bucket.window_seconds)
+            for bucket in (
+                guest_manage_limiter,
+                guest_pass_status_limiter,
+                guest_link_miss_limiter,
+                guest_ip_limiter,
+            )
+        ] == [(30, 600), (120, 60), (30, 600), (6000, 600)]
+        for bucket in (
+            guest_manage_limiter,
+            guest_pass_status_limiter,
+            guest_link_miss_limiter,
+            guest_ip_limiter,
+        ):
+            assert bucket.code == "guest_signup.rate_limited"
+        # A guest's code reuses the members' bucket for issuing one.
+        assert (voucher_pass_limiter.limit, voucher_pass_limiter.code) == (
+            20,
+            "voucher.rate_limited",
+        )
+
     def test_that_the_buckets_are_distinct_objects(self) -> None:
         """Test that no two routes accidentally share one counter."""
         buckets = [
@@ -327,5 +391,13 @@ class TestConfiguredBuckets:
             forgot_password_limiter,
             reset_password_limiter,
             resend_verification_limiter,
+            shared_list_view_limiter,
+            shared_list_miss_limiter,
+            shared_list_signup_limiter,
+            shared_list_signup_ip_limiter,
+            guest_manage_limiter,
+            guest_pass_status_limiter,
+            guest_link_miss_limiter,
+            guest_ip_limiter,
         ]
         assert len({id(bucket) for bucket in buckets}) == len(buckets)

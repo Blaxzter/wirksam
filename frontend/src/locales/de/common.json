@@ -100,6 +100,10 @@
             "title": "404"
         }
     },
+    "fill": {
+        "free": "{free} von {cap} frei",
+        "label": "Plätze"
+    },
     "language": {
         "current": "Aktuelle Sprache",
         "switch": "Sprache wechseln"
@@ -111,8 +115,29 @@
         "noMatch": "Niemand passt.",
         "similar": "Ähnlich in der Veranstaltung"
     },
+    "pagination": {
+        "first": "Erste Seite",
+        "label": "Seiten",
+        "last": "Letzte Seite",
+        "morePages": "Weitere Seiten",
+        "next": "Weiter",
+        "pageOf": "Seite {page} von {count}",
+        "previous": "Zurück"
+    },
     "select": {
         "choose": "Bitte auswählen"
+    },
+    "selection": {
+        "actions": "Aktionen",
+        "clear": "Abwählen",
+        "count": "{count} ausgewählt",
+        "region": "Auswahl"
+    },
+    "sort": {
+        "ascending": "Aufsteigend",
+        "descending": "Absteigend",
+        "label": "Sortieren",
+        "sortBy": "Sortieren nach {column}"
     },
     "states": {
         "error": "Fehler",

@@ -23,7 +23,8 @@ WirkSam is a web app for planning who works when at a volunteer event. An
 organiser sets up the event, describes each job once (the days, the hours, how
 long a shift lasts and how many people it needs), and WirkSam creates the
 shifts from that. Helpers join through an invitation link, book the shifts that
-suit them and get a reminder before each one.
+suit them and get a reminder before each one. People who only help now and then
+can sign up through a shared list instead, with their name and no account.
 
 It is free and non-commercial, has no tracking or ads, and runs in English and
 German. You can use the hosted version at [wirksam.app](https://wirksam.app) or
@@ -62,6 +63,7 @@ More screenshots, in English and German and in light and dark, are in
 
 - Shifts generated from a pattern: days, daily hours, shift length and people per shift. You can adjust single days or leave shifts out.
 - Helpers book their own shifts and see them in one list. WirkSam refuses a booking that overlaps one they already have.
+- Shared lists: a link to some of the shifts, for a group chat or a poster with a QR code. People sign up with their name and no account, and organisers see who came through which list.
 - Reminders before every shift by email, browser push or Telegram, whichever the helper reads.
 - Availability: collect who can be there when before you assign anything.
 - A venue map. Upload a floor plan or draw the venue in the app, pin each place where people work, and see how well each one is staffed.

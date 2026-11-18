@@ -21,9 +21,7 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.core.rate_limit import voucher_code_limiter, voucher_pass_limiter
-from app.crud.booking import booking as crud_booking
 from app.crud.event import event as crud_event
-from app.crud.event_membership import event_membership as crud_membership
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
 from app.crud.voucher import voucher as crud_voucher
@@ -129,14 +127,7 @@ async def issue_my_pass(
     p = await vouchers.issue_pass(
         session, event_id=event_id, user_id=current_user.id, now=clock.utc_now()
     )
-    return VoucherPassRead(
-        id=p.id,
-        code=p.code,
-        qr_payload=f"{vouchers.QR_PREFIX}{p.code}",
-        expires_at=p.expires_at,
-        ttl_seconds=int(vouchers.PASS_TTL.total_seconds()),
-        event_name=event.name,
-    )
+    return vouchers.pass_read(p, event_name=event.name)
 
 
 @router.get("/{event_id}/vouchers/me/pass/{pass_id}", response_model=VoucherPassStatus)
@@ -431,7 +422,9 @@ async def get_voucher_account(
     if is_self:
         user = current_user
     else:
-        if not await _appears_in_event(session, event_id=event_id, user_id=user_id):
+        if not await vouchers.appears_in_event(
+            session, event_id=event_id, user_id=user_id
+        ):
             _no_part_in_event()
         user = await crud_user.get(session, id=user_id, raise_404_error=True)
     return await vouchers.account(
@@ -452,19 +445,23 @@ async def create_voucher_adjustment(
 ) -> VoucherEntry:
     """Add or take away vouchers by hand, with a reason. Event admins only.
 
-    For a current member, or for someone who has left but still has entries,
-    settled earnings or bookings in the event, so an organiser can settle a
-    former member's balance.
+    For a current member, or for someone who has left, or a guest of a shared
+    list, with entries, settled earnings or bookings in the event
+    (``vouchers.appears_in_event``), so an organiser can settle their balance.
     Taking away more than the person can still redeem is refused with 409
     ``voucher.correction_exceeds_available``: a balance never goes below zero.
     """
     await _event_for(session, current_user, event_id)
     await require_event_role(current_user, session, event_id, minimum="admin")
-    if not await _appears_in_event(session, event_id=event_id, user_id=body.user_id):
-        _no_part_in_event()
     # The same lock as a redemption: a correction in the middle of one would
-    # otherwise change the balance it is checking against.
+    # otherwise change the balance it is checking against. The part in the
+    # event is asked under it: a guest's confirmation may merge the person
+    # into a guest account meanwhile, and then they have none here.
     await crud_voucher.lock_ledger(session, event_id=event_id, user_id=body.user_id)
+    if not await vouchers.appears_in_event(
+        session, event_id=event_id, user_id=body.user_id
+    ):
+        _no_part_in_event()
     await _refuse_below_zero(
         session, event_id=event_id, user_id=body.user_id, change=body.amount
     )
@@ -623,30 +620,4 @@ def _no_part_in_event() -> NoReturn:
         404,
         code="event.member_not_found",
         detail="That person has no part in this event",
-    )
-
-
-async def _appears_in_event(
-    session: AsyncSession, *, event_id: uuid.UUID, user_id: uuid.UUID
-) -> bool:
-    """A current member, or someone with entries, settled earnings or confirmed
-    bookings here.
-
-    Covers everyone ``vouchers.balances`` lists as a former member, so an
-    organiser can open and correct every row of the overview. Settled earnings
-    count on their own: deleting an ended shift or its task cancels the
-    booking behind the earning, and moving the task to another event takes
-    the booking with it.
-    """
-    if await crud_membership.get(session, user_id=user_id, event_id=event_id):
-        return True
-    if await crud_voucher.has_entries(session, event_id=event_id, user_id=user_id):
-        return True
-    if await crud_voucher.has_earnings(session, event_id=event_id, user_id=user_id):
-        return True
-    return (
-        await crud_booking.count_by_user(
-            session, user_id=user_id, status="confirmed", event_id=event_id
-        )
-        > 0
     )

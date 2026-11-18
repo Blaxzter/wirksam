@@ -61,5 +61,32 @@ class Booking(Base, table=True):
         default=None, sa_column=sa.Column(sa.String, nullable=True)
     )
 
+    # The shared list this booking was signed up through (None: booked in the
+    # app). No foreign key, like voucher_earnings.booking_id: SET NULL next to
+    # user_id CASCADE is the trap in app/models/CLAUDE.md (a user delete
+    # cascades to their events, their lists, and these rows at once), and a
+    # list only ever goes together with its event. A dangling id joins nothing.
+    shared_list_id: uuid.UUID | None = Field(
+        default=None, sa_column=sa.Column(sa.Uuid, nullable=True, index=True)
+    )
+    # List guests only: this sign-up's own person. Whether its form said the
+    # first name appears on shared lists that show first names, and the name
+    # and phone the chain stored when it signed up. A guest account pools
+    # sign-ups of several people (a family sharing an address), so these never
+    # come from the guest user. Member bookings: false, NULL, NULL; their
+    # person is the user. Cleared by logic/shared_lists/erase.anonymise.
+    show_first_name: bool = Field(
+        default=False,
+        sa_column=sa.Column(
+            sa.Boolean, nullable=False, server_default=sa.text("false")
+        ),
+    )
+    guest_name: str | None = Field(
+        default=None, sa_column=sa.Column(sa.String, nullable=True)
+    )
+    guest_phone: str | None = Field(
+        default=None, sa_column=sa.Column(sa.String, nullable=True)
+    )
+
     shift: Optional["Shift"] = Relationship(back_populates="bookings")
     user: Optional["User"] = Relationship()

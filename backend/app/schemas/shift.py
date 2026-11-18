@@ -42,6 +42,8 @@ class ShiftBooker(BaseModel):
     user_id: uuid.UUID
     #: Their display name; None for an account without one.
     name: str | None = None
+    #: Signed up through a shared list, without an account ("ohne Konto").
+    is_guest: bool = False
 
 
 class ShiftRead(ShiftBase):

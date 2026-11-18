@@ -8,7 +8,7 @@ passes them in: this module only knows the rows.
 
 import datetime as dt
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from typing import Any, NamedTuple, cast
 
 from sqlalchemy import CursorResult, and_, delete, func, or_, select, text, update
@@ -392,6 +392,36 @@ class CRUDVoucher:
             ),
         )
         return result.rowcount > 0
+
+    async def delete_unused_passes(
+        self, session: AsyncSession, *, user_ids: Collection[uuid.UUID]
+    ) -> int:
+        """Delete these people's unused codes in every event, held or not, so
+        none of them works at a stand any more. Used ones stay for the
+        history. Returns how many went."""
+        result = cast(
+            CursorResult[Any],
+            await session.execute(
+                delete(VoucherPass).where(
+                    col(VoucherPass.user_id).in_(user_ids),
+                    col(VoucherPass.used_at).is_(None),
+                )
+            ),
+        )
+        return result.rowcount
+
+    async def reassign_user(
+        self, session: AsyncSession, *, from_user: uuid.UUID, to_user: uuid.UUID
+    ) -> None:
+        """Move one person's earnings, ledger entries and codes to another,
+        in every event. The caller holds both people's ``lock_ledger`` in
+        every event the rows are in."""
+        for model in (VoucherEarning, VoucherEntry, VoucherPass):
+            await session.execute(
+                update(model)
+                .where(col(model.user_id) == from_user)
+                .values(user_id=to_user)
+            )
 
     async def consume_pass(
         self,

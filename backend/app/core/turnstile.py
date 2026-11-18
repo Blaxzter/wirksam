@@ -55,13 +55,19 @@ SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 TIMEOUT_SECONDS = 5.0
 
 
-async def verify_turnstile(token: str | None) -> bool:
+async def verify_turnstile(
+    token: str | None, *, expected_action: str | None = None
+) -> bool:
     """Ask Cloudflare whether ``token`` came from a solved challenge.
 
     Returns True only on an explicit ``success: true``. Every other outcome —
     no token, a rejection, a non-2xx reply, a body that is not JSON, a network
     error — is False, because this is the check that decides whether an
     anonymous caller gets an account.
+
+    ``expected_action`` is the ``action`` the widget was rendered with. When
+    given, a token solved on another form is refused too: otherwise a token
+    from the registration widget would pass the shared-list sign-up.
 
     Never raises: the caller is a route that has to answer either way, and an
     exception escaping here would be a 500 on a form submission that Cloudflare
@@ -98,7 +104,13 @@ async def verify_turnstile(token: str | None) -> bool:
 
     data = cast(dict[str, Any], body)
     if data.get("success") is True:
-        return True
+        if expected_action is None or data.get("action") == expected_action:
+            return True
+        logger.info(
+            f"Turnstile token was solved for action {data.get('action')!r}, "
+            f"not {expected_action!r}"
+        )
+        return False
 
     # The codes are Cloudflare's own ("invalid-input-response",
     # "timeout-or-duplicate", "invalid-input-secret", …) and are the only way to

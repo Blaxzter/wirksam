@@ -39,6 +39,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import type { Captures, MarkPlace } from '../src/lib/doc-types'
 import {
   type CastMember,
+  type ListSeed,
   type Locale,
   type TaskSeed,
   type TeamSeed,
@@ -47,6 +48,8 @@ import {
 
 const BASE_URL = 'http://localhost:5555'
 const API = process.env.VITE_API_URL ?? 'http://localhost:8787/api/v1'
+/** Where WirkSam is hosted: the links a capture shows lead there, not to the dev server. */
+const HOSTED_ORIGIN = 'https://wirksam.app'
 
 const LANG: Locale = process.env.LANG === 'de' ? 'de' : 'en'
 const SCREENSHOT_DIR = `public/screenshots/${LANG}`
@@ -129,6 +132,27 @@ interface SeededTask {
   id: string
 }
 
+/** A shift as `GET /shifts/` lists it, with its places. */
+interface ShiftRow {
+  id: string
+  date: string
+  start_time: string
+  end_time: string
+  current_bookings: number
+  max_bookings: number
+}
+
+const byStart = (a: ShiftRow, b: ShiftRow) =>
+  `${a.date}${a.start_time}`.localeCompare(`${b.date}${b.start_time}`)
+
+interface SeededLists {
+  /** The open list over the café and the set-up, which the captures show. */
+  openId: string
+  openCode: string
+  /** The link from a guest's confirmation mail, once she confirmed: her sign-ups and vouchers. */
+  guestLink: string
+}
+
 interface SeededWorld {
   organiserEmail: string
   eventId: string
@@ -137,6 +161,7 @@ interface SeededWorld {
   featuredTaskId: string
   /** A shift of the featured task, for the shift dialog. */
   featuredShiftId: string
+  lists: SeededLists
 }
 
 async function seedWorld(): Promise<SeededWorld> {
@@ -209,15 +234,16 @@ async function seedWorld(): Promise<SeededWorld> {
 
   const featured = tasks.find((t) => t.seed.key === 'kitchen') ?? tasks[0]
   await seedPeopleInCharge(featured.id, organiserEmail)
-  await seedVouchers(event.id, tasks, organiserEmail)
+  const prepGuestToken = await seedVouchers(event.id, tasks, organiserEmail)
   await seedTeams(event.id, tasks, organiserEmail)
+  const lists = await seedSharedLists(event.id, tasks, organiserEmail, prepGuestToken)
 
-  const { items: featuredShifts } = await apiAs<{
-    items: { id: string; date: string; start_time: string }[]
-  }>('GET', `/shifts/?task_id=${featured.id}&limit=200`, organiserEmail)
-  const [firstShift] = featuredShifts.sort((a, b) =>
-    `${a.date}${a.start_time}`.localeCompare(`${b.date}${b.start_time}`),
+  const { items: featuredShifts } = await apiAs<{ items: ShiftRow[] }>(
+    'GET',
+    `/shifts/?task_id=${featured.id}&limit=200`,
+    organiserEmail,
   )
+  const [firstShift] = featuredShifts.sort(byStart)
 
   return {
     organiserEmail,
@@ -225,6 +251,7 @@ async function seedWorld(): Promise<SeededWorld> {
     tasks,
     featuredTaskId: featured.id,
     featuredShiftId: firstShift.id,
+    lists,
   }
 }
 
@@ -257,12 +284,16 @@ async function seedPeopleInCharge(taskId: string, organiserEmail: string): Promi
  * balances, history and worked hours have something to show. The done job's
  * shifts are booked while still ahead and then moved back, which is the only way
  * into the past: booking a shift that is over is refused.
+ *
+ * Two people without an account take the last place of each of those shifts
+ * too, through a shared list of the evening's own (`sharePreparation`).
+ * Answers with the first one's token.
  */
 async function seedVouchers(
   eventId: string,
   tasks: SeededTask[],
   organiserEmail: string,
-): Promise<void> {
+): Promise<string> {
   const byKey = (key: string) => tasks.find((task) => task.seed.key === key)!
   await apiAs('PATCH', `/tasks/${byKey('welcome').id}`, organiserEmail, { vouchers_per_shift: 2 })
   await apiAs('PATCH', `/tasks/${byKey('stage').id}`, organiserEmail, { vouchers_per_shift: 3 })
@@ -313,6 +344,7 @@ async function seedVouchers(
       await apiAs('POST', '/bookings/', addressOf(volunteer(name).handle), { shift_id: shift.id })
     }
   }
+  const guestToken = await sharePreparation(eventId, task.id, shifts, organiserEmail)
   for (const [index, shift] of shifts.entries()) {
     await apiAs('PATCH', `/shifts/${shift.id}`, organiserEmail, {
       date: isoDate(-(shifts.length - index)),
@@ -338,6 +370,127 @@ async function seedVouchers(
     amount: 1,
     note: world.correctionNote,
   })
+  return guestToken
+}
+
+// ── Shared lists ─────────────────────────────────────────────────────────────
+//
+// Guests sign up through the public route, without the test header, as the
+// list's page does. Its rate limits and the daily ceilings per address and per
+// list are off under TESTING (`core/rate_limit.py`, `logic/shared_lists/
+// guest_quota.py`), which this script needs anyway. With them on, the per-IP
+// limits would hold (a run signs up eight times), but a second run on the same
+// day would find the first guest's address over its events for the day.
+
+/** A call to a public route, as somebody without an account makes it. */
+async function anonymous<T>(path: string, body: object): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`API POST ${path} failed: ${res.status} ${await res.text()}`)
+  return (await res.json()) as T
+}
+
+/** Open a shared list of these tasks, as the wizard's "Open the list" does. */
+function shareList(
+  eventId: string,
+  organiserEmail: string,
+  list: ListSeed,
+  taskIds: string[],
+): Promise<{ id: string; code: string }> {
+  return apiAs('POST', `/events/${eventId}/shared-lists`, organiserEmail, {
+    title: list.title,
+    intro: list.intro,
+    share_note: list.shareNote,
+    task_ids: taskIds,
+  })
+}
+
+/** Sign a guest up for a shift through a list's link; answers with the token their page opens with. */
+async function signUpGuest(code: string, guest: CastMember, shiftId: string): Promise<string> {
+  const { guest_token } = await anonymous<{ guest_token: string }>(
+    `/public/shared-lists/${encodeURIComponent(code)}/signups`,
+    {
+      shift_id: shiftId,
+      name: guest.name,
+      email: addressOf(guest.handle),
+      show_names: 'none',
+      language: LANG,
+    },
+  )
+  return guest_token
+}
+
+/**
+ * The preparation evening's own list, with a guest on the last place of each
+ * shift. Once the shifts are moved back, the list has expired and the guests
+ * have earned the evening's vouchers. Answers with the first guest's token.
+ */
+async function sharePreparation(
+  eventId: string,
+  taskId: string,
+  shifts: { id: string }[],
+  organiserEmail: string,
+): Promise<string> {
+  const list = await shareList(eventId, organiserEmail, world.lists.prep, [taskId])
+  const tokens: string[] = []
+  for (const [index, shift] of shifts.entries()) {
+    tokens.push(await signUpGuest(list.code, world.guests[index]!, shift.id))
+  }
+  return tokens[0]!
+}
+
+/**
+ * An open list over the café and the set-up, which the other guests signed up
+ * through, and a paused one for the welcome desk.
+ *
+ * The first guest, already on the preparation evening, takes a café shift
+ * through the open list too, with the same address, and confirms it from both
+ * mails: her page then holds both shifts and the vouchers the evening earned.
+ * Only the link from a mail confirms, and `/testing/guest-mail-link` hands it
+ * over. It is asked for before confirming, which retires the sign-up's own token.
+ */
+async function seedSharedLists(
+  eventId: string,
+  tasks: SeededTask[],
+  organiserEmail: string,
+  prepGuestToken: string,
+): Promise<SeededLists> {
+  const byKey = (key: string) => tasks.find((task) => task.seed.key === key)!
+  const [cafe, setup] = [byKey('kitchen'), byKey('setup')]
+  const open = await shareList(eventId, organiserEmail, world.lists.open, [cafe.id, setup.id])
+  const paused = await shareList(eventId, organiserEmail, world.lists.paused, [byKey('welcome').id])
+  await apiAs('POST', `/shared-lists/${paused.id}/pause`, organiserEmail)
+
+  const freeShifts = async (task: SeededTask) => {
+    const { items } = await apiAs<{ items: ShiftRow[] }>(
+      'GET',
+      `/shifts/?task_id=${task.id}&limit=200`,
+      organiserEmail,
+    )
+    return items.filter((shift) => shift.current_bookings < shift.max_bookings).sort(byStart)
+  }
+  const [first, , ...others] = world.guests
+  const [cafeShift, ...rest] = await freeShifts(cafe)
+  const firstToken = await signUpGuest(open.code, first!, cafeShift!.id)
+
+  // The others spread over the days, rather than all on the first free shifts.
+  const free = [...rest, ...(await freeShifts(setup))].sort(byStart)
+  const step = Math.max(1, Math.floor(free.length / others.length))
+  for (const [index, guest] of others.entries()) {
+    const shift = free[index * step]
+    if (shift) await signUpGuest(open.code, guest, shift.id)
+  }
+
+  const mailLinks: string[] = []
+  for (const token of [prepGuestToken, firstToken]) {
+    mailLinks.push((await anonymous<{ token: string }>('/testing/guest-mail-link', { token })).token)
+  }
+  for (const token of mailLinks) await anonymous('/public/guest-signups/confirm', { token })
+
+  return { openId: open.id, openCode: open.code, guestLink: mailLinks[1]! }
 }
 
 /** A team with checks and two requests waiting, and an open team people simply joined. */
@@ -446,15 +599,6 @@ async function fillRoster(tasks: SeededTask[], organiserEmail: string): Promise<
  * filled up is skipped instead of collecting 409s.
  */
 async function bookOrganiser(tasks: SeededTask[], organiserEmail: string): Promise<void> {
-  interface ShiftRow {
-    id: string
-    date: string
-    start_time: string
-    end_time: string
-    current_bookings: number
-    max_bookings: number
-  }
-
   const mine: { start: number; end: number }[] = []
   let booked = 0
 
@@ -466,9 +610,7 @@ async function bookOrganiser(tasks: SeededTask[], organiserEmail: string): Promi
       `/shifts/?task_id=${task.id}&limit=200`,
       organiserEmail,
     )
-    const open = items
-      .filter((shift) => shift.current_bookings < shift.max_bookings)
-      .sort((a, b) => `${a.date}${a.start_time}`.localeCompare(`${b.date}${b.start_time}`))
+    const open = items.filter((shift) => shift.current_bookings < shift.max_bookings).sort(byStart)
 
     for (const shift of open) {
       const start = Date.parse(`${shift.date}T${shift.start_time}`)
@@ -817,6 +959,7 @@ async function capture(
   await page.addStyleTag({
     content: '#__vue-devtools-container__, #vue-inspector-container { display: none !important; }',
   })
+  await page.evaluate(showHostedOrigin, { from: BASE_URL, to: HOSTED_ORIGIN })
   const path = `${SCREENSHOT_DIR}/${file}-${mode}.png`
   const image = await page.screenshot({ type: 'png' })
   // A blank page compresses to a few kilobytes, a screen of the app to many
@@ -830,6 +973,24 @@ async function capture(
   console.log(`  saved ${path}`)
   // Light and dark are laid out alike, so either measures the marks.
   captured[file] = { marks: await measure(page, file, MARKS[name] ?? {}, device) }
+}
+
+/**
+ * A link the app shows starts with the address it was opened from, here the
+ * dev server's. Write the hosted one over it, in the text and in fields, so a
+ * shared list's link reads as it would for an organiser. A QR code keeps what
+ * it encodes. Runs in the page.
+ */
+function showHostedOrigin({ from, to }: { from: string; to: string }): void {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.textContent?.includes(from)) node.textContent = node.textContent.replaceAll(from, to)
+  }
+  for (const field of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+    'input, textarea',
+  )) {
+    if (field.value.includes(from)) field.value = field.value.replaceAll(from, to)
+  }
 }
 
 /**
@@ -935,19 +1096,27 @@ const MARKS: Record<string, Marks> = {
   'helper-home': { next: byId('dashboard-next-shift') },
   'helper-bookings': { booking: byId('booking-card') },
   'venue-map': { pin: (page) => page.locator('[data-testid^="map-marker-"]') },
+  'shared-list-share': {
+    link: byId('wizard-share-link'),
+    qr: byId('wizard-share-qr'),
+    print: byId('wizard-print-notice'),
+    text: byId('wizard-share-message'),
+  },
+  'shared-list-notice': {
+    lines: byId('print-toggle-paper-lines'),
+    names: byId('print-toggle-names'),
+  },
 }
 
 /**
- * The venue map, taken from a demo session rather than the seeded festival.
- *
- * A plan worth showing is a drawing with rooms, paths and pins on it, and the
- * demo event already comes with two (`backend/app/logic/sandbox/
- * venue_plan_shapes.py`). Rebuilding them here through the shape API would be
- * a second copy of that drawing to keep in step. So this starts a demo the way
- * a visitor does, as the organiser, and opens the map. The demo's countdown
- * banner is hidden for the capture; it says nothing about the map.
+ * A browser with no session at all, as for a visitor, pinned to one locale and
+ * colour mode like `openContext`.
  */
-async function captureVenueMap(browser: Browser, mode: Mode, device: Device): Promise<void> {
+async function plainContext(
+  browser: Browser,
+  mode: Mode,
+  device: Device,
+): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext(
     device === 'phone'
       ? { viewport: PHONE_VIEWPORT, deviceScaleFactor: 2 }
@@ -965,6 +1134,21 @@ async function captureVenueMap(browser: Browser, mode: Mode, device: Device): Pr
   )
   const page = await context.newPage()
   page.setDefaultTimeout(25_000)
+  return { context, page }
+}
+
+/**
+ * The venue map, taken from a demo session rather than the seeded festival.
+ *
+ * A plan worth showing is a drawing with rooms, paths and pins on it, and the
+ * demo event already comes with two (`backend/app/logic/sandbox/
+ * venue_plan_shapes.py`). Rebuilding them here through the shape API would be
+ * a second copy of that drawing to keep in step. So this starts a demo the way
+ * a visitor does, as the organiser, and opens the map. The demo's countdown
+ * banner is hidden for the capture; it says nothing about the map.
+ */
+async function captureVenueMap(browser: Browser, mode: Mode, device: Device): Promise<void> {
+  const { context, page } = await plainContext(browser, mode, device)
 
   await page.goto(`${BASE_URL}${LANG === 'de' ? '/de' : '/'}`)
   await page.getByTestId('btn-cta-demo').filter({ visible: true }).first().click()
@@ -1192,6 +1376,105 @@ async function captureHelpers(
   await atStand.context.close()
 }
 
+/** The organiser's side of shared lists: the wizard's last step, a notice, and a list's page. */
+async function captureSharedLists(
+  browser: Browser,
+  seeded: SeededWorld,
+  mode: Mode,
+  device: Device,
+): Promise<void> {
+  const { context, page } = await openContext(browser, seeded.organiserEmail, mode, {
+    phone: device === 'phone',
+  })
+  // An open list's status dot pings. It holds still for anyone who asks for
+  // less motion, and so for a capture.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const shot = (name: string) => capture(page, name, mode, device)
+  const visible = (testId: string) => page.getByTestId(testId).filter({ visible: true }).first()
+  const { openId } = seeded.lists
+
+  // The wizard's last step comes once it has opened a list, and every capture
+  // would open another: four per language, all of them then on the lists
+  // page. So the wizard starts from the open list (`?from=`, its tasks and
+  // words), and its "Open the list" is answered with that list. The step shows
+  // what it showed when that one was opened.
+  const create = new RegExp(`/api/v1/events/${seeded.eventId}/shared-lists$`)
+  await page.route(create, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const list = await apiAs<object>('GET', `/shared-lists/${openId}`, seeded.organiserEmail)
+    await route.fulfill({
+      status: 201,
+      json: list,
+      headers: {
+        'Access-Control-Allow-Origin': BASE_URL,
+        'Access-Control-Allow-Credentials': 'true',
+      },
+    })
+  })
+  await open(page, `/app/shared-lists/${seeded.eventId}/new?from=${openId}`)
+  const next = visible('btn-step-next')
+  await expect(next).toHaveAttribute('aria-disabled', 'false')
+  await next.click()
+  await visible('wizard-title').waitFor()
+  await visible('btn-submit').click()
+  await visible('wizard-share-qr').waitFor()
+  // Focus moves to the new step, which scrolls a longer page down a little.
+  // A computer shows the whole page from its title; a phone, which has the
+  // title and the stepper above the step, the step.
+  await visible(device === 'phone' ? 'wizard-step-heading' : 'page-heading').evaluate((heading) =>
+    heading.scrollIntoView({ block: 'start' }),
+  )
+  await shot('shared-list-share')
+  await page.unroute(create)
+
+  await page.goto(`${BASE_URL}/print/lists/${openId}`)
+  await visible('print-qr').waitFor()
+  await shot('shared-list-notice')
+
+  // The list's own page: who signed up through it, beside its link.
+  await open(page, `/app/shared-lists/${seeded.eventId}/${openId}`)
+  const details = visible('shared-list-detail')
+  await details.getByTestId('shared-list-signup').first().waitFor()
+  await shot('shared-list-detail')
+
+  await context.close()
+}
+
+/**
+ * What somebody without an account sees: a list's page, its form once a shift
+ * is picked, and their own page behind the link from their mail. In a plain
+ * browser, like whoever opens the link from a group chat.
+ */
+async function captureGuestPages(
+  browser: Browser,
+  seeded: SeededWorld,
+  mode: Mode,
+  device: Device,
+): Promise<void> {
+  const { context, page } = await plainContext(browser, mode, device)
+
+  await page.goto(`${BASE_URL}/l/${seeded.lists.openCode}`)
+  await page.getByTestId('public-shift-list').waitFor()
+  await capture(page, 'shared-list-page', mode, device)
+
+  // A café shift, which gives vouchers, with the form filled in. It is never sent.
+  await page
+    .locator('[data-testid="public-shift"][data-full="false"]')
+    .filter({ has: page.getByTestId('public-shift-vouchers') })
+    .first()
+    .getByRole('button')
+    .click()
+  await page.getByTestId('guest-input-name').fill(world.newcomer.name)
+  await page.getByTestId('guest-input-email').fill(addressOf(world.newcomer.handle))
+  await capture(page, 'shared-list-signup', mode, device)
+
+  await page.goto(`${BASE_URL}/guest-signup#${seeded.lists.guestLink}`)
+  await page.getByTestId('guest-vouchers').waitFor()
+  await capture(page, 'shared-list-manage', mode, device)
+
+  await context.close()
+}
+
 // ── Captures ─────────────────────────────────────────────────────────────────
 
 test(`screenshots [${LANG}]`, async ({ browser }) => {
@@ -1202,7 +1485,9 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
     for (const device of DEVICES) {
       console.log(`\n${LANG} / ${mode} / ${device}`)
       await captureOrganiser(browser, seeded, mode, device)
+      await captureSharedLists(browser, seeded, mode, device)
       await captureHelpers(browser, seeded, mode, device)
+      await captureGuestPages(browser, seeded, mode, device)
       await captureVenueMap(browser, mode, device)
     }
   }

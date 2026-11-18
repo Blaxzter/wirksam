@@ -1,0 +1,204 @@
+{
+    "actions": {
+        "done": "Done",
+        "preview": "Preview",
+        "publish": "Open the list",
+        "retry": "Try again"
+    },
+    "autoTitle": {
+        "many": "Help out: {event}",
+        "one": "{name}: who can help?",
+        "two": "{first} and {second}"
+    },
+    "blockers": {
+        "endsOnAfterLast": "The last shift on the list is on {date}. Pick that day or an earlier one, or “Until the last shift starts”.",
+        "endsOnMissing": "Pick the day the list stays open until.",
+        "endsOnPast": "That day is already over.",
+        "loadFailed": "The shifts could not be loaded.",
+        "noFreePlace": "Every shift you chose is full. Nobody could sign up through the link.",
+        "noIncludedShift": "Choose at least one day or shift.",
+        "noTask": "Choose at least one task.",
+        "noTitle": "Give the list a heading.",
+        "taskNoIncluded": "Every shift of “{name}” is left out. Add a day or a shift, or take the task out.",
+        "taskUnavailable": {
+            "moved": "“{name}” now belongs to another event. Take the task out.",
+            "not_published": "“{name}” is no longer published. Take the task out.",
+            "team_locked": "“{name}” is only for a team and cannot be shared without an account. Take the task out."
+        },
+        "tooManyTasks": "A list can have at most {max} tasks."
+    },
+    "days": {
+        "free": "{count} free",
+        "full": "all full",
+        "hint": "Only days on which a chosen task has a shift show up here. When you add a task with more days, those days come in ticked.",
+        "laterShifts": "Shifts added later to one of these tasks are on the list as well, even on days you left out here.",
+        "legend": "On which days?",
+        "pickTaskFirst": "Choose a task first. Its days with shifts then show up here.",
+        "shifts": "{included} of {total} shift | {included} of {total} shifts"
+    },
+    "leaveGuard": {
+        "cancel": "Keep editing",
+        "confirm": "Discard",
+        "text": "What you set up here has not been saved yet.",
+        "title": "Discard your changes?"
+    },
+    "lede": {
+        "create": "Put together which shifts go on the list. At the end you get a link, a QR code and a text for your group.",
+        "edit": "The link stays the same. Everyone who has signed up stays signed up."
+    },
+    "notPublished": "This event is not published. Until it is, nobody can sign up through a list, and new lists cannot be shared.",
+    "picker": {
+        "empty": "No task matches “{q}”.",
+        "fill": "{free} of {capacity} places free",
+        "legend": "Which tasks?",
+        "loadMore": "Load more",
+        "lockedHint": "{names} is only for a team and cannot be shared without an account. | {names} are only for teams and cannot be shared without an account.",
+        "lockedMore": "{count} more",
+        "none": "There is no task with shifts ahead that you can share.",
+        "picked": "{count} chosen:",
+        "problem": {
+            "all_full": "Every shift chosen here is already full.",
+            "no_included": "Every shift is left out."
+        },
+        "searchLabel": "Search tasks",
+        "searchPlaceholder": "Task or place…",
+        "teamOnly": "Only for the team “{team}”, not possible without an account",
+        "unpick": "Remove {name}",
+        "vouchers": "Earns vouchers, also for people without an account."
+    },
+    "sections": {
+        "settings": {
+            "description": "What helpers see, what they have to give and how long the link stays open.",
+            "title": "What the list looks like"
+        },
+        "share": {
+            "description": "Send the link to your group or put up the QR code.",
+            "title": "Share"
+        },
+        "tasks": {
+            "description": "Choose the tasks and days. You can also leave out single shifts.",
+            "title": "What goes on the list"
+        }
+    },
+    "settings": {
+        "ask": {
+            "always": "always",
+            "email": "Email",
+            "emailOptionalWarning": "Anyone who leaves out their email gets no confirmation and no link to cancel. They can then only cancel through you.",
+            "legend": "What do helpers have to give?",
+            "name": "Name",
+            "off": "Don't ask",
+            "optional": "Optional",
+            "phone": "Phone",
+            "required": "Required"
+        },
+        "ends": {
+            "date": {
+                "hint": "After that nobody can sign up through it. It can go up to the day of the last shift ({date}).",
+                "label": "Until a set day",
+                "pick": "Open until"
+            },
+            "lastShift": {
+                "hint": "That is {date}, {time}.",
+                "label": "Until the last shift starts"
+            },
+            "legend": "How long does the list stay open?",
+            "manual": {
+                "hint": "Shifts that have started still disappear from the list.",
+                "label": "Until someone ends it"
+            }
+        },
+        "intro": {
+            "label": "A few words about it",
+            "placeholder": "For example: pick a shift that suits you. Thank you!"
+        },
+        "maxPer": {
+            "atMost": "at most {count}",
+            "hint": "Counted by email address. The list has no shift. | Counted by email address. The list has 1 shift. | Counted by email address. The list has {count} shifts.",
+            "label": "Shifts per person",
+            "unlimited": "as many as are free"
+        },
+        "optional": "optional",
+        "shareNote": {
+            "hint": "Only the people running the event see this. It tells you later which group the sign-ups came from.",
+            "label": "Where are you sharing the link?",
+            "placeholder": "e.g. WhatsApp group, parents of class 3b"
+        },
+        "showNames": {
+            "changed": "This applies to everyone who signs up from now on. Everyone already signed up stays as they were told when signing up.",
+            "first": {
+                "hint": "For example “Joining: Lena, Tobias”. Helps when people know each other and like to help together. Only the first names of people who saw, when signing up, that their first name would show here.",
+                "label": "First names as well"
+            },
+            "legend": "What do others see on the list?",
+            "none": {
+                "hint": "Nobody sees who has signed up.",
+                "label": "Only how many places are free"
+            }
+        },
+        "title": {
+            "hint": "Everyone who opens the link sees this.",
+            "label": "Heading"
+        }
+    },
+    "share": {
+        "copied": "Copied",
+        "copyFailed": "Copying didn't work here. Select the text and copy it yourself.",
+        "copyLink": "Copy link",
+        "copyText": "Copy text",
+        "demo": "This is a demo: the link works until the demo ends. Whoever signs up gets no mail, and sees the link to their sign-ups right on the page instead.",
+        "linkCopied": "Link copied.",
+        "linkLabel": "Link to the list",
+        "message": {
+            "hint": "With the shifts that are free right now. You can change it before copying.",
+            "label": "Text for your group"
+        },
+        "qr": {
+            "alt": "QR code for the link to the list",
+            "hint": "QR code for a notice board"
+        },
+        "success": {
+            "text": "From now on anyone with the link can sign up.",
+            "title": "The list is open."
+        },
+        "textCopied": "Text copied. Paste it into your group."
+    },
+    "shareMessage": {
+        "greeting": "Hi everyone! We're still looking for people for “{event}” ({days}).",
+        "shift": "• {day}, {time}: {free} free",
+        "shiftAllDay": "• {day}: {free} free",
+        "signUp": "Signing up needs no account and takes a minute:",
+        "task": "• {task}: {free} place free ({days}) | • {task}: {free} places free ({days})"
+    },
+    "shifts": {
+        "allDay": "all day",
+        "free": "{count} free",
+        "full": "full",
+        "group": "Shifts of {task}",
+        "hide": "Hide shifts",
+        "show": "Leave out single shifts"
+    },
+    "stepPosition": "Step {current} of {total}",
+    "steps": {
+        "settings": "Settings",
+        "share": "Share",
+        "tasks": "Tasks"
+    },
+    "summary": {
+        "onlyDays": "Only on these days: {days}",
+        "places": "no free place | 1 free place | {count} free places",
+        "shifts": "no shift | 1 shift | {count} shifts",
+        "text": "The list has {shifts} with {places}. Helpers see full shifts but cannot pick them."
+    },
+    "title": {
+        "create": "Share a list",
+        "edit": "Edit list"
+    },
+    "toasts": {
+        "ended": "This list has ended and cannot be changed any more. You can share it again.",
+        "managersDisabled": "The organisers have turned off sharing lists for people in charge.",
+        "noAccess": "You cannot share lists for this event.",
+        "readOnly": "You can only look at this list, not edit it.",
+        "saved": "Saved. The link stays the same."
+    }
+}

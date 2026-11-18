@@ -11,7 +11,7 @@ If no task is reserved, booking works as before. Volunteers don't see the Teams 
 
 ## Reserving a task for a team
 
-A team belongs to one event. A task can be reserved for one team, and a team can have many tasks.
+A team belongs to one event. A task can be reserved for one team, and a team can have many tasks. A reserved task can't go on a [shared list](/features/shared-lists), because only team members may book it.
 
 When creating or editing a task, organisers set who can book its shifts under "Who can book". The default is "Everyone in the event". With "Only one team" you pick a team from the list, or create one there with "New team…".
 

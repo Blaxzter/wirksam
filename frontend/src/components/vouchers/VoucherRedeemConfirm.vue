@@ -29,6 +29,8 @@ import {
   ResponsiveDialogTitle,
 } from '@/components/ui/responsive-dialog'
 
+import GuestTag from '@/components/shared-lists/GuestTag.vue'
+
 import type { VoucherRedeemResult } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 import { initials } from '@/lib/format'
@@ -42,6 +44,11 @@ export interface RedeemSubject {
   name: string | null
   avatarEtag: string | null
   available: number
+  /**
+   * Signed up through a shared list, without an account. Only ever by code: a
+   * guest is never picked by hand. Tagged like everywhere else they appear.
+   */
+  isGuest: boolean
 }
 
 /**
@@ -266,12 +273,15 @@ async function redeem() {
                 {{ initials(name) }}
               </AvatarFallback>
             </Avatar>
-            <!-- Two lines rather than "Vroni Hartm…": the name is what gets checked -->
-            <span
-              class="line-clamp-2 min-w-0 flex-1 leading-tight font-bold break-words"
-              :class="isPhone ? 'text-lg' : 'text-[17px]'"
-            >
-              {{ name }}
+            <span class="grid min-w-0 flex-1 justify-items-start gap-1">
+              <!-- Two lines rather than "Vroni Hartm…": the name is what gets checked -->
+              <span
+                class="line-clamp-2 min-w-0 leading-tight font-bold break-words"
+                :class="isPhone ? 'text-lg' : 'text-[17px]'"
+              >
+                {{ name }}
+              </span>
+              <GuestTag v-if="subject.isGuest" />
             </span>
             <span
               class="flex shrink-0 items-center gap-1.5 rounded-full font-bold tabular-nums"

@@ -28,7 +28,7 @@
             "title": "So sieht WirkSam aus"
         },
         "table": {
-            "asOf": "Stand: Oktober 2026, Angaben ohne Gewähr. Preise und Funktionen ändern sich, schau vor der Entscheidung auf die Seiten der Anbieter. Die Quellen stehen unten bei jedem Werkzeug.",
+            "asOf": "Stand: November 2026, Angaben ohne Gewähr. Preise und Funktionen ändern sich, schau vor der Entscheidung auf die Seiten der Anbieter. Die Quellen stehen unten bei jedem Werkzeug.",
             "caption": "Werkzeuge für die Helferplanung im Vergleich nach Preis, Konto, Open Source, Selbstbetrieb, Sprachen und Erinnerungen",
             "eyebrow": "Auf einen Blick",
             "lede": "Was jedes Werkzeug kostet, ob Helfende ein Konto brauchen und ob du es selbst betreiben kannst.",
@@ -108,17 +108,17 @@
             },
             "wirksam": {
                 "cells": {
-                    "account": "Ja, ein kostenloses Konto",
+                    "account": "Nicht zum Eintragen über eine geteilte Liste; kostenloses Konto für mehr",
                     "languages": "Deutsch, Englisch",
                     "openSource": "Ja (MIT)",
                     "price": "Kostenlos, keine Bezahlversion",
                     "reminders": "Vor jeder Schicht per E-Mail, Browser-Push oder Telegram",
                     "selfHost": "Ja, mit Docker Compose, oder du nutzt wirksam.app"
                 },
-                "goodFit": "Du planst mehrere Veranstaltungen im Jahr und willst nicht pro Veranstaltung zahlen, deine Helfenden kommen wieder und behalten ein Konto, und du willst die Software notfalls selbst betreiben können.",
-                "lessSuited": "Deine Helfenden wollen kein Konto anlegen, auch kein kostenloses. Du brauchst einen Check-in vor Ort, Nachrichten per WhatsApp oder andere Sprachen als Deutsch und Englisch. Oder die Veranstaltung ist so groß, dass du Tausende Helfende in Teams koordinierst: Dafür ist das Engelsystem gebaut.",
+                "goodFit": "Du planst mehrere Veranstaltungen im Jahr und willst nicht pro Veranstaltung zahlen. Wer regelmäßig hilft, behält ein Konto, wer neu dazukommt, trägt sich ohne Konto über eine geteilte Liste ein, und du willst die Software notfalls selbst betreiben können.",
+                "lessSuited": "Du brauchst einen Check-in vor Ort, Nachrichten per WhatsApp oder andere Sprachen als Deutsch und Englisch. Oder die Veranstaltung ist so groß, dass du Tausende Helfende in Teams koordinierst: Dafür ist das Engelsystem gebaut.",
                 "name": "WirkSam",
-                "summary": "Eine kostenlose Web-App für Schichtpläne mit Ehrenamtlichen. Wer organisiert, beschreibt jede Aufgabe einmal, und die Schichten entstehen daraus. Die Helfenden buchen, was ihnen passt, und werden vor jeder Schicht erinnert."
+                "summary": "Eine kostenlose Web-App für Schichtpläne mit Ehrenamtlichen. Wer organisiert, beschreibt jede Aufgabe einmal, und die Schichten entstehen daraus. Die Helfenden buchen, was ihnen passt, mit kostenlosem Konto oder ohne über eine geteilte Liste, und wer ein Konto hat, wird vor jeder Schicht erinnert."
             }
         }
     },
@@ -221,6 +221,10 @@
                 "name": "Selbst betreiben",
                 "tagline": "WirkSam ist Open Source und läuft mit Docker Compose auf deinem Server."
             },
+            "featureSharedLists": {
+                "name": "Geteilte Listen",
+                "tagline": "Teile einige Schichten als Link, eintragen geht ohne Konto."
+            },
             "featureShiftPlanning": {
                 "name": "Schichtplanung",
                 "tagline": "Beschreib eine Aufgabe einmal, die Schichten entstehen daraus."
@@ -306,7 +310,7 @@
         "about": {
             "cards": {
                 "data": {
-                    "description": "Deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Wir nutzen kein Tracking und keine Analyse-Dienste, und Cookies nur, damit du angemeldet bleibst.",
+                    "description": "Deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Wer sich über eine geteilte Liste einträgt, gibt nur an, was die Liste abfragt. Wir nutzen kein Tracking und keine Analyse-Dienste, und Cookies nur, damit du angemeldet bleibst.",
                     "title": "Wir speichern sehr wenig"
                 },
                 "free": {
@@ -314,11 +318,11 @@
                     "title": "Kostenlos, ohne Garantie"
                 },
                 "gdpr": {
-                    "description": "WirkSam wird aus Deutschland betrieben, nach deutschem und europäischem Recht. Du kannst eine Kopie deiner Daten anfordern, sie berichtigen lassen oder dein Konto löschen. Dann sind deine persönlichen Daten endgültig weg.",
+                    "description": "WirkSam wird aus Deutschland betrieben, nach deutschem und europäischem Recht. Du kannst eine Kopie deiner Daten anfordern, sie berichtigen lassen oder dein Konto löschen. Dann sind deine persönlichen Daten endgültig weg. Wer sich über eine geteilte Liste einträgt, bekommt einen Link, über den sich die Daten jederzeit löschen lassen.",
                     "title": "Datenschutz nach DSGVO"
                 },
                 "private": {
-                    "description": "Eine neue Veranstaltung sehen nur die Leute, die du einlädst. Du kannst sie öffentlich stellen, wenn du willst, und auch dann entscheiden die Organisator:innen, wer mitmachen darf.",
+                    "description": "Eine neue Veranstaltung sehen nur die Leute, die du einlädst. Du kannst sie öffentlich stellen, wenn du willst, und auch dann entscheiden die Organisator:innen, wer mitmachen darf. Teilst du eine Liste, sieht jede Person mit diesem Link die Schichten darauf, sonst nichts.",
                     "title": "Standardmäßig privat"
                 }
             },
@@ -332,7 +336,7 @@
             "eyebrow": "Fragen",
             "items": {
                 "account": {
-                    "answer": "Ja, ein kostenloses, damit jede Buchung zu einer Person gehört und die Erinnerung auch ankommt. Für die Anmeldung reichen E-Mail-Adresse und Passwort. Wer eingeladen wurde, öffnet den Link, meldet sich an und ist dabei.",
+                    "answer": "Nein. Über eine geteilte Liste tragen sich Helfende ohne Konto ein: mit Namen und, wenn die Liste danach fragt, einer E-Mail-Adresse. Ein kostenloses Konto lohnt sich für alle, die öfter helfen: alle Schichten an einem Ort und Erinnerungen aufs Handy.",
                     "question": "Brauchen Helfende ein Konto?"
                 },
                 "audience": {
@@ -348,7 +352,7 @@
                     "question": "Was kostet WirkSam?"
                 },
                 "data": {
-                    "answer": "WirkSam speichert deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Es gibt kein Tracking und keine Analyse-Dienste, und Cookies nur, damit du angemeldet bleibst. Betrieben wird WirkSam aus Deutschland nach der DSGVO: Du kannst eine Kopie deiner Daten anfordern, sie berichtigen lassen oder dein Konto endgültig löschen.",
+                    "answer": "WirkSam speichert deinen Namen, deine E-Mail-Adresse, dein Profilbild und die Schichten, die du gebucht hast. Wer sich über eine geteilte Liste einträgt, hinterlässt nur, was die Liste abfragt: einen Namen und, falls gewünscht, E-Mail-Adresse oder Telefonnummer. Es gibt kein Tracking und keine Analyse-Dienste, und Cookies nur, damit du angemeldet bleibst. Betrieben wird WirkSam aus Deutschland nach der DSGVO: Du kannst eine Kopie deiner Daten anfordern, sie berichtigen lassen oder dein Konto oder deine Eintragung endgültig löschen.",
                     "question": "Was passiert mit meinen Daten?"
                 },
                 "demo": {
@@ -372,11 +376,11 @@
                     "question": "Kann ich WirkSam selbst betreiben?"
                 },
                 "visibility": {
-                    "answer": "Nur die Leute, die du einlädst. Eine neue Veranstaltung ist privat: Du fügst Leute per E-Mail oder über einen Einladungslink hinzu. Stellst du sie öffentlich, können alle Angemeldeten anfragen, und die Organisator:innen entscheiden weiterhin, wer mitmachen darf.",
+                    "answer": "Nur die Leute, die du einlädst. Eine neue Veranstaltung ist privat: Du fügst Leute per E-Mail oder über einen Einladungslink hinzu. Stellst du sie öffentlich, können alle Angemeldeten anfragen, und die Organisator:innen entscheiden weiterhin, wer mitmachen darf. Teilst du eine Liste, sieht jede Person mit dem Link die Schichten darauf, sonst nichts.",
                     "question": "Wer kann meine Veranstaltung sehen?"
                 },
                 "what": {
-                    "answer": "WirkSam ist eine kostenlose Web-App, mit der du Schichten für Ehrenamtliche planst. Du legst eine Veranstaltung an und beschreibst die Aufgaben, und die Schichten werden daraus erzeugt. Die Helfenden buchen die Plätze, die ihnen passen, und bekommen vor jeder Schicht eine Erinnerung. Entstanden ist WirkSam für kirchliche Veranstaltungen und Gemeindearbeit, es passt aber zu jeder Veranstaltung, die von Ehrenamtlichen getragen wird.",
+                    "answer": "WirkSam ist eine kostenlose Web-App, mit der du Schichten für Ehrenamtliche planst. Du legst eine Veranstaltung an und beschreibst die Aufgaben, und die Schichten werden daraus erzeugt. Die Helfenden buchen die Plätze, die ihnen passen, mit Konto oder ohne über eine geteilte Liste, und wer ein Konto hat, bekommt vor jeder Schicht eine Erinnerung. Entstanden ist WirkSam für kirchliche Veranstaltungen und Gemeindearbeit, es passt aber zu jeder Veranstaltung, die von Ehrenamtlichen getragen wird.",
                     "question": "Was ist WirkSam?"
                 }
             },
@@ -419,6 +423,10 @@
                         "description": "Sieh, wie sich die Arbeit auf dein Team verteilt, und drucke einen Dienstplan pro Aufgabe oder für die ganze Veranstaltung.",
                         "title": "Auswertungen und Druck"
                     },
+                    "sharedLists": {
+                        "description": "Teile einen Link zu einigen Schichten im Gruppenchat oder auf einem Aushang. Wer mag, trägt sich mit Namen ein, ohne Konto, und du siehst, wer über welche Liste kam.",
+                        "title": "Geteilte Listen"
+                    },
                     "teams": {
                         "description": "Reserviere Aufgaben für ein Team und hake Nachweise wie ein Führungszeugnis ab, bevor jemand dazukommt, ohne eine Kopie aufzubewahren.",
                         "title": "Teams und Nachweise"
@@ -432,7 +440,7 @@
             },
             "rows": {
                 "bookings": {
-                    "description": "Hier steht alles, wofür du dich eingetragen hast, das Nächste zuerst. Absagen kannst nur du selbst, auch Organisator:innen können dich nicht einzeln austragen.",
+                    "description": "Hier steht alles, wofür du dich eingetragen hast, das Nächste zuerst. Absagen kannst nur du selbst. Einzeln austragen können Organisator:innen nur, wer sich ohne Konto über eine geteilte Liste eingetragen hat.",
                     "screenshotAlt": "Die Seite „Meine Buchungen“ mit den bestätigten Schichten samt Datum, Uhrzeit und Ort.",
                     "title": "Alle deine Schichten in einer Liste"
                 },
@@ -508,7 +516,7 @@
                 "noInstall": "Nichts zu installieren",
                 "privacy": "Kein Tracking, keine Werbung"
             },
-            "subtitle": "Leg deine Veranstaltung an, lade dein Team ein und beschreibe die Schichten einmal. Alle buchen, was ihnen passt, und werden vor jeder Schicht erinnert.",
+            "subtitle": "Leg deine Veranstaltung an, lade dein Team ein oder teile eine Liste, und beschreibe die Schichten einmal. Alle buchen, was ihnen passt, und wer ein Konto hat, wird vor jeder Schicht erinnert.",
             "title": "Plant den Dienstplan für eure nächste Veranstaltung gemeinsam."
         },
         "journey": {
@@ -527,7 +535,7 @@
                         "title": "Schichten erzeugen"
                     },
                     "invite": {
-                        "description": "Füg eine Liste von Adressen ein oder teile einen Link. Die Rolle bestimmst du.",
+                        "description": "Füg eine Liste von Adressen ein oder teile einen Link. Die Rolle bestimmst du. Wer kein Konto hat, trägt sich über eine geteilte Liste ein.",
                         "title": "Deine Leute einladen"
                     },
                     "publish": {
@@ -539,7 +547,7 @@
             },
             "title": "Vier Schritte, egal ob du organisierst oder mithilfst",
             "volunteer": {
-                "footnote": "Wenn dir etwas dazwischenkommt, sag unter „Meine Buchungen“ ab, dann wird der Platz wieder frei.",
+                "footnote": "Wenn dir etwas dazwischenkommt, sag unter „Meine Buchungen“ ab, dann wird der Platz wieder frei. Hast du stattdessen den Link zu einer geteilten Liste? Dann trägst du dich dort ohne Konto ein.",
                 "intro": "Deine Schichten stehen in einer Liste, und du musst keine Tabelle oder Mail an alle danach durchsuchen.",
                 "steps": {
                     "accept": {
@@ -619,7 +627,7 @@
             "title": "Cookies"
         },
         "dataCollected": {
-            "intro": "Wenn Sie ein Konto erstellen und WirkSam nutzen, verarbeiten wir folgende personenbezogene Daten:",
+            "intro": "Wenn Sie ein Konto erstellen und WirkSam nutzen, verarbeiten wir folgende personenbezogene Daten. Was wir verarbeiten, wenn Sie sich ohne Konto über eine geteilte Liste für eine Schicht eintragen, steht in einem eigenen Abschnitt weiter unten.",
             "items": {
                 "bookings": "Buchungsdaten (welche Dienstschichten Sie gebucht haben)",
                 "credentials": "Ihr Passwort, ausschließlich als gesalzener Hash und niemals im Klartext gespeichert, sowie die Anmeldesitzungen Ihrer Geräte",
@@ -629,8 +637,38 @@
             },
             "title": "Welche Daten wir erheben"
         },
+        "guests": {
+            "data": {
+                "intro": "Wir verarbeiten:",
+                "items": {
+                    "email": "Ihre E-Mail-Adresse, falls die Liste danach fragt",
+                    "name": "Ihren Namen, wie Sie ihn ins Formular eintragen",
+                    "phone": "Ihre Telefonnummer, falls die Liste danach fragt",
+                    "shifts": "die Schichten, für die Sie sich eingetragen haben, ob Sie eine Erinnerung möchten und ob Ihr Vorname auf geteilten Listen erscheinen darf",
+                    "vouchers": "bei Schichten mit Marken: wie viele Marken Sie verdient und eingelöst haben"
+                }
+            },
+            "device": "Auf Ihrem Gerät: nichts, außer Ihrer Wahl von Sprache oder Darstellung, wenn Sie sie ändern.",
+            "erasure": "Über den Link in Ihrer Bestätigungsmail oder den Link, der nach dem Eintragen angezeigt wird, können Sie sich jederzeit austragen oder Ihre Daten löschen. Hat sich jemand anderes mit Ihrer Adresse eingetragen, löscht „Das war ich nicht“ auf derselben Seite die Eintragung und beendet alle weiteren Mails an diese Adresse, solange Sie mit ihr keine Eintragung bestätigt haben. Sie können sich auch an die Organisator:innen wenden oder an die oben genannte E-Mail-Adresse schreiben.",
+            "intro": "Organisator:innen können einige ihrer Schichten über eine geteilte Liste teilen: einen Link, über den sich jede Person ohne Konto für eine Schicht eintragen kann. Wenn Sie sich so eintragen, gilt für Sie dieser Abschnitt.",
+            "legalBasis": "Eintragung und Erinnerung beruhen auf Art. 6 Abs. 1 lit. b DSGVO, weil Sie sie selbst anfordern. Der Schutz der Plattform vor Missbrauch beruht auf Art. 6 Abs. 1 lit. f DSGVO: Wo sie eingeschaltet ist, prüft Cloudflare Turnstile, ob ein Mensch das Formular ausfüllt, und damit eine Adresse nicht beliebig oft angeschrieben wird, speichern wir für einige Tage eine Prüfsumme der E-Mail-Adresse, aus der sich die Adresse nicht zurückgewinnen lässt.",
+            "purposes": {
+                "intro": "Wir verwenden diese Daten:",
+                "items": {
+                    "confirmation": "um Ihnen eine Bestätigung mit einem Link zu schicken, über den Sie sich austragen oder Ihre Daten löschen können",
+                    "contact": "damit die Organisator:innen und die Verantwortlichen der Aufgabe Sie wegen Ihrer Schicht erreichen können",
+                    "reminder": "um Sie am Tag vor der Schicht per E-Mail zu erinnern, wenn Sie das möchten",
+                    "signup": "um Sie für die gewählte Schicht einzutragen"
+                }
+            },
+            "responsible": "Verantwortlicher ist der oben genannte Betreiber. Welche Angaben eine Liste abfragt, legen die Organisator:innen der Veranstaltung fest; sie nutzen die Kontaktdaten für ihre Veranstaltung.",
+            "retention": "Einen Tag nach Ihrer letzten Schicht anonymisieren wir Ihre Angaben: Name, E-Mail-Adresse und Telefonnummer werden gelöscht, geleistete Schichten bleiben ohne Namen gezählt. Marken, die Sie bis dahin nicht eingelöst haben, verfallen. | {days} Tage nach Ihrer letzten Schicht anonymisieren wir Ihre Angaben: Name, E-Mail-Adresse und Telefonnummer werden gelöscht, geleistete Schichten bleiben ohne Namen gezählt. Marken, die Sie bis dahin nicht eingelöst haben, verfallen.",
+            "title": "Eintragen ohne Konto",
+            "visibility": "Wer was sieht: Die Mitglieder der Veranstaltung sehen Ihren Namen bei der Schicht. E-Mail-Adresse und Telefonnummer sehen nur die Organisator:innen und die Verantwortlichen der Aufgabe. Auf der öffentlichen Liste selbst erscheint Ihr Vorname nur, wenn die Liste Ihnen das beim Eintragen angezeigt hat.",
+            "vouchers": "Für Schichten mit Marken speichern wir, wie viele Marken Sie verdient und eingelöst haben. Bestätigen Sie Ihre Adresse über den Link in unserer Mail, zeigen wir die Eintragungen, die Sie mit dieser Adresse bei derselben Veranstaltung bestätigen, auf einer Seite und zählen ihre Marken zusammen. Jede Eintragung behält ihren Namen."
+        },
         "intro": "Wir nehmen den Schutz Ihrer persönlichen Daten ernst. Diese Datenschutzerklärung erläutert, welche Daten wir bei der Nutzung von WirkSam erheben, wie wir sie verwenden und welche Rechte Ihnen zustehen.",
-        "lastUpdated": "Letzte Aktualisierung: Oktober 2026",
+        "lastUpdated": "Letzte Aktualisierung: November 2026",
         "legalBasis": {
             "description": "Wir verarbeiten Ihre Daten auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung) für die Konto- und Buchungsfunktionen sowie Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse) für Sicherheit und Plattformbetrieb. Für optionale Benachrichtigungen stützen wir uns auf Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit in Ihren Benachrichtigungseinstellungen widerrufen können.",
             "title": "Rechtsgrundlage"
@@ -666,7 +704,11 @@
                 "description": "Wir verwenden Proton Mail zum Versand von Transaktions-E-Mails wie Buchungsbestätigungen und Benachrichtigungen. Die Proton AG hat ihren Sitz in der Schweiz und unterliegt dem Schweizer Datenschutzgesetz. Es werden nur Ihre E-Mail-Adresse und der Nachrichteninhalt verarbeitet.",
                 "title": "Proton Mail (Proton AG)"
             },
-            "title": "Drittanbieter"
+            "title": "Drittanbieter",
+            "turnstile": {
+                "description": "Wo der Betreiber sie eingeschaltet hat, prüft Cloudflare Turnstile, ob eine Registrierung oder eine Eintragung auf einer geteilten Liste von einem Menschen kommt und nicht von einem Bot. Dafür verarbeitet Cloudflare technische Daten Ihres Browsers und Ihrer Verbindung, etwa Ihre IP-Adresse. Die Cloudflare, Inc. hat ihren Sitz in den USA.",
+                "title": "Cloudflare Turnstile (Cloudflare, Inc.)"
+            }
         },
         "title": "Datenschutzerklärung"
     },
@@ -706,6 +748,10 @@
         "featureSelfHosting": {
             "description": "WirkSam ist Open Source unter MIT-Lizenz. Betreibe es mit Docker Compose auf deinem eigenen Server und bestimme, wer sich registrieren darf, wo Dateien liegen und welche Seiten öffentlich sind.",
             "title": "WirkSam selbst hosten mit Docker Compose · WirkSam"
+        },
+        "featureSharedLists": {
+            "description": "Teile Schichten als Link im Gruppenchat oder auf einem Aushang. Helfende tragen sich mit Namen ein, ohne Konto, und du siehst, wer über welche Liste kam.",
+            "title": "Schichtlisten zum Eintragen ohne Konto · WirkSam"
         },
         "featureShiftPlanning": {
             "description": "Leg eine Veranstaltung als Aufgaben an und lass die Schichten aus Tagen, Zeiten, Schichtlänge und Personenzahl entstehen, mit Ausnahmen, Vorschau, Entwürfen und einem Plan für alle.",
@@ -768,7 +814,7 @@
             "title": "Impressum · WirkSam"
         },
         "landing": {
-            "description": "Plant eure Schichten gemeinsam: Veranstaltung anlegen, Schichten erzeugen, Team einladen, und alle buchen ihre Plätze selbst, mit Erinnerung per E-Mail, Push oder Telegram. Kostenlos, ohne Tracking, nach DSGVO.",
+            "description": "Plant eure Schichten gemeinsam: Veranstaltung anlegen, Schichten erzeugen, Team einladen oder eine Liste teilen, und alle buchen ihre Plätze selbst, mit Erinnerung per E-Mail, Push oder Telegram für alle mit Konto. Kostenlos, ohne Tracking, nach DSGVO.",
             "title": "WirkSam: kostenlose Schichtplanung für Ehrenamtliche, Vereine und Veranstaltungen"
         },
         "privacy": {
@@ -844,11 +890,11 @@
                 "eyebrow": "Fragen",
                 "items": {
                     "account": {
-                        "answer": "Ja, mit einem kostenlosen Konto aus E-Mail-Adresse und Passwort. So gehört jede Buchung zu einer Person, und die Erinnerung kommt bei ihr an. Wer einen Einladungslink öffnet, meldet sich an und ist dabei. Wenn deine Helfenden auf keinen Fall ein Konto wollen, passt ein Werkzeug, bei dem man sich über einen einfachen Link einträgt, besser. Unsere Vergleichsseite nennt einige.",
+                        "answer": "Nein. Über eine geteilte Liste tragen sich Helfende ohne Konto ein, mit Namen und dem, was du sonst abfragst. Das passt für alle, die einmal im Jahr helfen. Wer regelmäßig dabei ist, kann ein kostenloses Konto behalten, mit allen Schichten an einem Ort und Erinnerungen auch per Push oder Telegram. Was eine Liste abfragt, entscheidest du pro Liste.",
                         "question": "Müssen sich Helfende registrieren?"
                     },
                     "cancellations": {
-                        "answer": "Die Person sagt ihre Schicht in der App ab, und der Platz ist sofort wieder frei. Du siehst ihn in der Übersicht als offen und kannst gezielt nachfragen. Damit Schichten gar nicht erst vergessen werden, bekommt jede Person vorher eine Erinnerung.",
+                        "answer": "Die Person sagt ihre Schicht in der App ab oder über den Link, den sie beim Eintragen auf einer geteilten Liste bekommen hat, und der Platz ist sofort wieder frei. Du siehst ihn in der Übersicht als offen und kannst gezielt nachfragen. Damit Schichten gar nicht erst vergessen werden, bekommt jede Person mit Konto vorher eine Erinnerung, und wer sich über eine Liste einträgt, kann sich eine per E-Mail schicken lassen.",
                         "question": "Was passiert, wenn jemand kurzfristig absagt?"
                     },
                     "headcount": {
@@ -856,7 +902,7 @@
                         "question": "Wie viele Helfende brauche ich pro Stand, und wie lang sollte eine Schicht sein?"
                     },
                     "helperList": {
-                        "answer": "Leg in WirkSam eine Veranstaltung mit den Festtagen an und für jeden Stand eine Aufgabe mit Zeiten, Schichtlänge und Personenzahl. Die Schichten entstehen daraus. Dann lädst du deine Helfenden per Link oder E-Mail ein, und sie tragen sich selbst ein. Das ist kostenlos, und eine Vorlage brauchst du nicht.",
+                        "answer": "Leg in WirkSam eine Veranstaltung mit den Festtagen an und für jeden Stand eine Aufgabe mit Zeiten, Schichtlänge und Personenzahl. Die Schichten entstehen daraus. Dann teilst du eine Liste im Gruppenchat des Vereins, über die sich alle ohne Konto eintragen, oder lädst deine Helfenden per Link oder E-Mail ein. Das ist kostenlos, und eine Vorlage brauchst du nicht.",
                         "question": "Wie erstelle ich eine Helferliste für unser Vereinsfest?"
                     },
                     "setup": {
@@ -873,7 +919,7 @@
             },
             "hero": {
                 "eyebrow": "Für Vereinsfeste",
-                "lede": "Mit WirkSam legst du jeden Stand deines Vereinsfests als Aufgabe an, lässt die Schichten daraus erzeugen und schickst deinen Helfenden einen Link. Sie tragen sich selbst ein, du siehst jederzeit, wo noch jemand fehlt, und vor jeder Schicht kommt eine Erinnerung. Das funktioniert genauso für Sommerfest, Sportfest oder Jubiläum und kostet nichts.",
+                "lede": "Mit WirkSam legst du jeden Stand deines Vereinsfests als Aufgabe an, lässt die Schichten daraus erzeugen und schickst deinen Helfenden einen Link. Sie tragen sich selbst ein, mit Konto oder ohne über eine geteilte Liste, du siehst jederzeit, wo noch jemand fehlt, und vor den Schichten kommen Erinnerungen. Das funktioniert genauso für Sommerfest, Sportfest oder Jubiläum und kostet nichts.",
                 "title": "Helferplan fürs Vereinsfest: Schichten online planen"
             },
             "pains": {
@@ -912,7 +958,7 @@
                         "title": "Zusehen, wie sich die Lücken schließen"
                     },
                     "invite": {
-                        "description": "Füg eine Liste von E-Mail-Adressen ein oder teile einen Einladungslink im Vereinsnewsletter oder im Gruppenchat. Bevor die Schichten verteilt werden, können die Mitglieder eintragen, wann sie können.",
+                        "description": "Füg eine Liste von E-Mail-Adressen ein oder teile einen Einladungslink im Vereinsnewsletter oder im Gruppenchat. Bevor die Schichten verteilt werden, können die Mitglieder eintragen, wann sie können. Wer lieber kein Konto will, trägt sich über eine geteilte Liste mit Namen ein.",
                         "screenshotAlt": "Die Seite „Meine Verfügbarkeit“, auf der Helfende für jeden Tag der Veranstaltung eintragen, wann sie können.",
                         "title": "Die Mitglieder einladen"
                     },
@@ -922,7 +968,7 @@
                         "title": "Nächstes Jahr mit dem Plan von diesem Jahr starten"
                     },
                     "reminders": {
-                        "description": "Vor jeder Schicht schickt WirkSam eine Erinnerung per E-Mail, Browser-Push oder Telegram. Wer absagen muss, tut das in der App, und der Platz ist wieder frei.",
+                        "description": "Vor jeder Schicht erinnert WirkSam alle mit Konto per E-Mail, Browser-Push oder Telegram, und wer sich über eine Liste eingetragen und es gewünscht hat, bekommt am Tag vorher eine Mail. Wer absagen muss, tut das in der App oder über den eigenen Link, und der Platz ist wieder frei.",
                         "screenshotAlt": "Die Benachrichtigungseinstellungen: pro Art eine Zeile, mit Schaltern für E-Mail, Push und Telegram.",
                         "title": "Alle werden vor ihrer Schicht erinnert"
                     },

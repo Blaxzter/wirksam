@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/table'
 
 import VoucherAdjustmentDialog from '@/components/events/VoucherAdjustmentDialog.vue'
+import GuestTag from '@/components/shared-lists/GuestTag.vue'
 import VoucherBalanceSummary from '@/components/vouchers/VoucherBalanceSummary.vue'
 import VoucherHistory from '@/components/vouchers/VoucherHistory.vue'
 
@@ -66,7 +67,15 @@ const { confirmDestructive } = useDialog()
 
 const balances = ref<VoucherBalance[]>([])
 
-const displayName = (b: Pick<VoucherBalance, 'name' | 'email'>) => b.name ?? b.email ?? '?'
+/**
+ * Someone who signed up through a shared list and whose data was deleted still
+ * has their row (what they earned and redeemed stays), without a name.
+ */
+const displayName = (b: Pick<VoucherBalance, 'name' | 'email' | 'is_guest'>) =>
+  b.name ?? b.email ?? (b.is_guest ? t('sharedLists.guest.erased') : '?')
+
+/** From the name itself, never from the "Gast (gelöscht)" that stands in for one. */
+const avatarInitials = (b: Pick<VoucherBalance, 'name' | 'email'>) => initials(b.name ?? b.email)
 
 /** Corrections with their sign, so `+5` and `−4` read as what they did. */
 const signed = signedVoucherAmount
@@ -277,12 +286,14 @@ async function afterChange() {
                     <Avatar class="size-8">
                       <AvatarImage v-if="avatarSrc(row)" :src="avatarSrc(row)!" />
                       <AvatarFallback class="text-xs font-semibold">
-                        {{ initials(displayName(row)) }}
+                        {{ avatarInitials(row) }}
                       </AvatarFallback>
                     </Avatar>
                     <div class="min-w-0">
                       <p class="truncate font-medium">{{ displayName(row) }}</p>
-                      <p v-if="!row.role" class="text-xs text-muted-foreground">
+                      <!-- Never a member, so "no longer here" would be wrong for them. -->
+                      <GuestTag v-if="row.is_guest" class="mt-0.5" />
+                      <p v-else-if="!row.role" class="text-xs text-muted-foreground">
                         {{ t('vouchers.admin.left') }}
                       </p>
                     </div>
@@ -337,12 +348,13 @@ async function afterChange() {
                 <Avatar class="size-9">
                   <AvatarImage v-if="avatarSrc(row)" :src="avatarSrc(row)!" />
                   <AvatarFallback class="text-xs font-semibold">
-                    {{ initials(displayName(row)) }}
+                    {{ avatarInitials(row) }}
                   </AvatarFallback>
                 </Avatar>
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-base font-semibold">{{ displayName(row) }}</p>
-                  <p v-if="!row.role" class="text-xs text-muted-foreground">
+                  <GuestTag v-if="row.is_guest" class="mt-0.5" />
+                  <p v-else-if="!row.role" class="text-xs text-muted-foreground">
                     {{ t('vouchers.admin.left') }}
                   </p>
                 </div>
@@ -426,7 +438,7 @@ async function afterChange() {
           <Avatar v-if="detail" class="size-10 shrink-0">
             <AvatarImage v-if="avatarSrc(detail.summary)" :src="avatarSrc(detail.summary)!" />
             <AvatarFallback class="bg-accent text-sm font-bold">
-              {{ initials(displayName(detail.summary)) }}
+              {{ avatarInitials(detail.summary) }}
             </AvatarFallback>
           </Avatar>
           <ResponsiveDialogTitle class="min-w-0 text-xl leading-tight font-bold">

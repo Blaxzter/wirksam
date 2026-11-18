@@ -55,6 +55,8 @@ Open "Manage Events", which is under "More" on a phone. Tap the pencil in your e
 
 Under "Join as" [[role]], "Member" is selected, which is all that booking needs. For people who should help plan, choose "Organiser".
 
+People who'd rather not have an account can still help. Under "Shared lists" you share the tasks that need people as a link, and they sign up with their name. How that works is under [Shared lists](/features/shared-lists).
+
 It helps to send the people you invite the guide [Getting started as a volunteer](/guides/volunteer-start) as well.
 
 ![The Invitations card with the field for email addresses, the role and the button for a link](shot:event-invitations)

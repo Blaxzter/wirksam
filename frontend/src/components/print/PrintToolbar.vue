@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
 
 import { Printer, Settings, X } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -18,6 +18,19 @@ const emit = defineEmits<{
 }>()
 
 const expanded = ref(true)
+
+const printButton = useTemplateRef<{ $el: HTMLElement }>('printButton')
+
+/**
+ * For a page whose control in the panel went away, as a list's fix in it does.
+ * A tick first: the page may enable the button in the same update.
+ */
+async function focusPrint() {
+  await nextTick()
+  printButton.value?.$el.focus()
+}
+
+defineExpose({ focusPrint })
 </script>
 
 <template>
@@ -58,7 +71,7 @@ const expanded = ref(true)
         <slot />
       </div>
 
-      <Button class="w-full shrink-0" :disabled="disabled" @click="emit('print')">
+      <Button ref="printButton" class="w-full shrink-0" :disabled="disabled" @click="emit('print')">
         <Printer class="mr-2 h-4 w-4" />
         {{ t('print.printButton') }}
       </Button>

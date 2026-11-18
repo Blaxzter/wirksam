@@ -1,4 +1,8 @@
-import type { NavigationGuard, RouteRecordRaw } from 'vue-router'
+import type {
+  NavigationGuard,
+  RouteLocationNormalizedLoadedGeneric,
+  RouteRecordRaw,
+} from 'vue-router'
 
 import type { BreadcrumbItem } from '@/stores/breadcrumb'
 
@@ -28,6 +32,16 @@ declare module 'vue-router' {
      * not scroll (the venue map). Its root should be `flex-1 min-h-0`.
      */
     fullHeight?: boolean
+    /**
+     * What `PostAuthLayout` keys its `RouterView` by. A fixed string keeps a
+     * page mounted while only its params or query change; without one, every
+     * change of the full path remounts it.
+     */
+    routerViewKey?: string | ((route: RouteLocationNormalizedLoadedGeneric) => string)
+    /** `lib/page-head.ts` asks search engines not to index the page or follow its links. */
+    noindex?: boolean
+    /** The page's `<title>`, as an i18n key; `lib/page-head.ts` keeps it in the current locale. */
+    titleKey?: string
   }
 }
 
@@ -179,6 +193,72 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           meta: {
             routerViewKey: 'teams',
             breadcrumbs: [{ title: 'Teams', titleKey: 'teams.page.title' }],
+          },
+        },
+        // Shared lists: public sign-up links. Not `requiresEventManager`, as
+        // for task-edit: the people in charge of a task share it too. The view
+        // sends everyone else away, and the server decides per request.
+        // `:eventId?` falls back to the selected event. The page keeps its
+        // tab, filters, sort and page in the query, so a fixed view key stops
+        // each of them from remounting it.
+        {
+          path: 'shared-lists/:eventId?',
+          name: 'shared-lists',
+          component: () => import('@/views/shared-lists/SharedListsView.vue'),
+          meta: {
+            routerViewKey: 'shared-lists',
+            breadcrumbs: [
+              { title: 'Shared lists', titleKey: 'navigation.sidebar.items.sharedLists.label' },
+            ],
+          },
+        },
+        // `?from=<listId>` starts a new list as a copy of another, `?tasks=<id,id>`
+        // with those tasks picked.
+        {
+          path: 'shared-lists/:eventId/new',
+          name: 'shared-list-create',
+          component: () => import('@/views/shared-lists/SharedListWizardView.vue'),
+          meta: {
+            breadcrumbs: [
+              {
+                title: 'Shared lists',
+                titleKey: 'navigation.sidebar.items.sharedLists.label',
+                to: { name: 'shared-lists' },
+              },
+              { title: 'Share a list', titleKey: 'navigation.breadcrumbs.sharedListCreate' },
+            ],
+          },
+        },
+        // One list: its link, sign-ups, tasks and settings. Below `new`, which
+        // ranks above it as a static segment; a list id is never "new".
+        {
+          path: 'shared-lists/:eventId/:listId',
+          name: 'shared-list-detail',
+          component: () => import('@/views/shared-lists/SharedListDetailView.vue'),
+          meta: {
+            breadcrumbs: [
+              {
+                title: 'Shared lists',
+                titleKey: 'navigation.sidebar.items.sharedLists.label',
+                to: { name: 'shared-lists' },
+              },
+              { title: 'List', titleKey: 'navigation.breadcrumbs.sharedListDetail' },
+            ],
+          },
+        },
+        {
+          path: 'shared-lists/:eventId/:listId/edit',
+          name: 'shared-list-edit',
+          component: () => import('@/views/shared-lists/SharedListWizardView.vue'),
+          meta: {
+            breadcrumbs: [
+              {
+                title: 'Shared lists',
+                titleKey: 'navigation.sidebar.items.sharedLists.label',
+                to: { name: 'shared-lists' },
+              },
+              { title: 'Edit list', titleKey: 'navigation.breadcrumbs.sharedListEdit' },
+            ],
           },
         },
         {
@@ -442,7 +522,7 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
       beforeEnter: authGuard,
       children: [
         {
-          path: 'tasks/:eventId',
+          path: 'tasks/:taskId',
           name: 'print-task',
           component: () => import('@/views/print/PrintTaskView.vue'),
         },
@@ -450,6 +530,12 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
           path: 'events/:eventId',
           name: 'print-event',
           component: () => import('@/views/print/PrintEventView.vue'),
+        },
+        {
+          // A shared list's notice; readable by whoever may read the list.
+          path: 'lists/:listId',
+          name: 'print-list',
+          component: () => import('@/views/print/PrintListView.vue'),
         },
       ],
     },
@@ -534,6 +620,40 @@ export function createRoutes(authGuard: NavigationGuard): RouteRecordRaw[] {
       name: 'select-event',
       component: () => import('@/views/events/SelectEventView.vue'),
       beforeEnter: authGuard,
+    },
+
+    // The guest pages: a shared list's public link, and the page a guest
+    // manages their sign-ups on. Not under `preauth-layout`, which would give
+    // them a `/de/…` twin, the sign-in header and a language switch that
+    // rewrites the URL; the language follows the visitor's choice instead.
+    // Parents left unnamed, as for the auth screens. No auth guard: whoever
+    // opens a link has no account, or one that does not matter here.
+    {
+      path: '/l',
+      component: () => import('@/layout/GuestLayout.vue'),
+      children: [
+        { path: '', redirect: { name: 'not-found' } },
+        {
+          path: ':code',
+          name: 'shared-list-public',
+          component: () => import('@/views/guest/SharedListPublicView.vue'),
+          meta: { noindex: true, titleKey: 'guestSignup.page.title' },
+        },
+      ],
+    },
+    // The manage token travels in the fragment (`/guest-signup#<token>`), which
+    // never reaches a server log or a referrer header.
+    {
+      path: '/guest-signup',
+      component: () => import('@/layout/GuestLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'guest-signup-manage',
+          component: () => import('@/views/guest/GuestSignupManageView.vue'),
+          meta: { noindex: true, titleKey: 'guestSignup.manage.title' },
+        },
+      ],
     },
 
     // Catch-all route - redirect to 404 in no layout

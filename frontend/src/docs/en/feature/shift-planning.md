@@ -13,7 +13,7 @@ Organisers can plan, and so can the [people in charge](/features/people-in-charg
 
 A plan has three levels:
 
-- The **event** is the whole thing, say the summer festival. It has a name and a date range, and tasks can only be scheduled inside it. It's private by default, so only people you invite can find it.
+- The **event** is the whole thing, say the summer festival. It has a name and a date range, and tasks can only be scheduled inside it. It's private by default, so only people you invite can find it. A [shared list](/features/shared-lists) opens chosen shifts to anyone with its link.
 - A **task** is something that needs covering over a stretch of time, such as the drinks stand or the clear-down. It has a name and, if you like, a description, a place and a category.
 - A **shift** is a block of time on that task with a set number of places. That's what volunteers book.
 
@@ -71,7 +71,7 @@ List and cards have a search, a date range that starts "From today", and a "Filt
 
 ![The task list with a week strip of shifts](shot:tasks)
 
-On a task's page, "Print" opens a printable view. By default it's a sign-up sheet, with an empty line per place for a name and contact, and a QR code for signing up online.
+On a task's page, "Print" opens a printable view: a sign-up sheet with an empty line per place for a name and contact. Organisers and the people in charge of the task get a [shared list's](/features/shared-lists) notice, whose QR code lets anyone sign up online without an account.
 
 ## Changing and reusing
 
@@ -161,4 +161,4 @@ Organisers find "Print" on the task's page in the "⋯" menu, everyone else as a
 - "Filter dates"
 - "Show location map", when all the shifts share one place with a pin
 
-For the whole event, organisers find a printer icon at the top of the task list. "Print overview" puts every task on one sheet with its days, place and category. "Print all tasks" prints each task's sheet, one after the other.
+For the whole event, organisers find a printer icon at the top of the task list. "Print overview" puts every task on one sheet with its days, place and category. "Print all tasks" prints each task's sheet, one after the other, with one shared list's QR code on every task that can go on it.

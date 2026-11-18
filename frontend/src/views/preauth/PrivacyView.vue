@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { ArrowLeftIcon } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 
-import { useAppConfig } from '@/composables/useAppConfig'
+import { guestRetentionDays, useAppConfig } from '@/composables/useAppConfig'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,6 +15,13 @@ const config = useAppConfig()
 const goBackToHome = () => {
   router.push({ name: 'landing' })
 }
+
+/**
+ * How many days a list guest's details are kept. The guest pages have it from
+ * the API with their list; this page belongs to no list, so it says what the
+ * deployment's runtime config says, which carries the backend's number.
+ */
+const guestRetention = computed(() => guestRetentionDays(config))
 
 const controllerBlock = computed(() => {
   const lines = [config.LEGAL_NAME, config.LEGAL_ADDRESS, config.LEGAL_CITY, 'Germany'].filter(
@@ -88,6 +95,36 @@ const controllerBlock = computed(() => {
         <p class="text-muted-foreground">{{ $t('preauth.privacy.legalBasis.description') }}</p>
       </section>
 
+      <!-- Signing up through a shared list, without an account -->
+      <section class="space-y-3" data-testid="privacy-guests">
+        <h2 class="text-2xl font-semibold">{{ $t('preauth.privacy.guests.title') }}</h2>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.intro') }}</p>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.data.intro') }}</p>
+        <ul class="list-disc pl-6 space-y-1 text-muted-foreground">
+          <li>{{ $t('preauth.privacy.guests.data.items.name') }}</li>
+          <li>{{ $t('preauth.privacy.guests.data.items.email') }}</li>
+          <li>{{ $t('preauth.privacy.guests.data.items.phone') }}</li>
+          <li>{{ $t('preauth.privacy.guests.data.items.shifts') }}</li>
+          <li>{{ $t('preauth.privacy.guests.data.items.vouchers') }}</li>
+        </ul>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.purposes.intro') }}</p>
+        <ul class="list-disc pl-6 space-y-1 text-muted-foreground">
+          <li>{{ $t('preauth.privacy.guests.purposes.items.signup') }}</li>
+          <li>{{ $t('preauth.privacy.guests.purposes.items.confirmation') }}</li>
+          <li>{{ $t('preauth.privacy.guests.purposes.items.reminder') }}</li>
+          <li>{{ $t('preauth.privacy.guests.purposes.items.contact') }}</li>
+        </ul>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.responsible') }}</p>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.legalBasis') }}</p>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.visibility') }}</p>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.vouchers') }}</p>
+        <p class="text-muted-foreground" data-testid="privacy-guests-retention">
+          {{ $t('preauth.privacy.guests.retention', { days: guestRetention }, guestRetention) }}
+        </p>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.erasure') }}</p>
+        <p class="text-muted-foreground">{{ $t('preauth.privacy.guests.device') }}</p>
+      </section>
+
       <!-- Third-party services -->
       <section class="space-y-3">
         <h2 class="text-2xl font-semibold">{{ $t('preauth.privacy.thirdParty.title') }}</h2>
@@ -99,6 +136,16 @@ const controllerBlock = computed(() => {
             <CardContent>
               <p class="text-sm text-muted-foreground">
                 {{ $t('preauth.privacy.thirdParty.email.description') }}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{{ $t('preauth.privacy.thirdParty.turnstile.title') }}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p class="text-sm text-muted-foreground">
+                {{ $t('preauth.privacy.thirdParty.turnstile.description') }}
               </p>
             </CardContent>
           </Card>

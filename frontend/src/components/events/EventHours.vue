@@ -30,6 +30,7 @@ import {
 
 import HoursBreakdown from '@/components/events/HoursBreakdown.vue'
 import WorkLogFormDialog from '@/components/events/WorkLogFormDialog.vue'
+import GuestTag from '@/components/shared-lists/GuestTag.vue'
 
 import type {
   EventMemberRead,
@@ -53,7 +54,9 @@ const { get, delete: del } = useAuthenticatedClient()
 const { confirmDestructive } = useDialog()
 
 const hoursLabel = (minutes: number) => t('duties.hours.unit', { value: formatHours(minutes) })
-const displayName = (h: VolunteerHours) => h.name ?? h.email ?? '?'
+/** A guest whose data was erased still counts, without a name. */
+const displayName = (h: VolunteerHours) =>
+  h.name ?? h.email ?? (h.is_guest ? t('sharedLists.guest.erased') : '?')
 
 /** Members with nothing yet stay listed in the members card; here they are noise. */
 const rows = computed(() =>
@@ -88,11 +91,21 @@ async function exportCsv() {
 
 const detailOpen = ref(false)
 const detail = ref<VolunteerHoursDetail | null>(null)
+/**
+ * The name the open row stands for. A shared list's guest account pools the
+ * sign-ups of everyone who confirmed one address, so it has a row per name,
+ * and the detail asks for that one person's (`?name=`).
+ */
+const detailName = ref<string | null>(null)
 
-async function loadDetail(userId: string) {
+/** One row per person: a guest account repeats its user id under each name. */
+const rowKey = (h: VolunteerHours) => `${h.user_id}:${h.is_guest ? (h.name ?? '') : ''}`
+
+async function loadDetail(userId: string, name: string | null) {
   try {
     const res = await get<{ data: VolunteerHoursDetail }>({
       url: `/events/${props.eventId}/hours/${userId}`,
+      ...(name !== null ? { query: { name } } : {}),
     })
     detail.value = res.data
   } catch (error) {
@@ -102,8 +115,9 @@ async function loadDetail(userId: string) {
 
 async function openDetail(row: VolunteerHours) {
   detail.value = null
+  detailName.value = row.is_guest ? (row.name ?? null) : null
   detailOpen.value = true
-  await loadDetail(row.user_id)
+  await loadDetail(row.user_id, detailName.value)
 }
 
 // --- Entry form ---
@@ -137,7 +151,9 @@ async function deleteEntry(entry: WorkLogRead) {
 
 async function afterChange() {
   emit('updated')
-  if (detailOpen.value && detail.value) await loadDetail(detail.value.summary.user_id)
+  if (detailOpen.value && detail.value) {
+    await loadDetail(detail.value.summary.user_id, detailName.value)
+  }
 }
 </script>
 
@@ -193,7 +209,7 @@ async function afterChange() {
         <TableBody>
           <TableRow
             v-for="row in rows"
-            :key="row.user_id"
+            :key="rowKey(row)"
             class="cursor-pointer"
             data-testid="event-hours-row"
             tabindex="0"
@@ -202,8 +218,12 @@ async function afterChange() {
             @keydown.enter="openDetail(row)"
           >
             <TableCell>
-              <p class="font-medium">{{ displayName(row) }}</p>
-              <p v-if="!row.role" class="text-xs text-muted-foreground">
+              <p class="flex flex-wrap items-center gap-2">
+                <span class="font-medium">{{ displayName(row) }}</span>
+                <!-- Never a member, so "former member" would be wrong for them. -->
+                <GuestTag v-if="row.is_guest" />
+              </p>
+              <p v-if="!row.role && !row.is_guest" class="text-xs text-muted-foreground">
                 {{ t('duties.hours.event.formerMember') }}
               </p>
             </TableCell>

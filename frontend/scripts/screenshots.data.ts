@@ -48,9 +48,24 @@ export interface TeamSeed {
   joinMessage: string
 }
 
+/** A shared list: its heading, the words under it, and the note only organisers see. */
+export interface ListSeed {
+  title: string
+  intro: string
+  shareNote: string
+}
+
 export interface WorldSeed {
   organiser: CastMember
   volunteers: CastMember[]
+  /**
+   * People who sign up through a shared list, without an account. The first
+   * takes a place on the preparation evening and one at the festival, and her
+   * own page is the one captured.
+   */
+  guests: CastMember[]
+  /** Who fills in the sign-up form in its capture. The form is never sent. */
+  newcomer: CastMember
   event: { name: string; description: string }
   tasks: TaskSeed[]
   /**
@@ -62,10 +77,16 @@ export interface WorldSeed {
   correctionNote: string
   /** The first needs approval and has checks, the second is open to everyone. */
   teams: [TeamSeed, TeamSeed]
+  /**
+   * The shared lists: an open one over the café and the set-up, a paused one
+   * for the welcome desk, and the preparation evening's, which has expired
+   * once its shifts are moved back.
+   */
+  lists: { open: ListSeed; paused: ListSeed; prep: ListSeed }
 }
 
 /** Shared across locales so both captures show the same faces and occupancy. */
-const CAST: { organiser: CastMember; volunteers: CastMember[] } = {
+const CAST: Pick<WorldSeed, 'organiser' | 'volunteers' | 'guests' | 'newcomer'> = {
   organiser: { handle: 'lena.hartmann', name: 'Lena Hartmann' },
   volunteers: [
     { handle: 'jonas.keller', name: 'Jonas Keller' },
@@ -77,6 +98,16 @@ const CAST: { organiser: CastMember; volunteers: CastMember[] } = {
     { handle: 'noah.fischer', name: 'Noah Fischer' },
     { handle: 'clara.jung', name: 'Clara Jung' },
   ],
+  // Short addresses: a list's details show them in a narrow column.
+  guests: [
+    { handle: 'p.neumann', name: 'Paula Neumann' },
+    { handle: 't.kraemer', name: 'Tobias Krämer' },
+    { handle: 'g.lindner', name: 'Greta Lindner' },
+    { handle: 'f.hoffmann', name: 'Felix Hoffmann' },
+    { handle: 'i.schuster', name: 'Ida Schuster' },
+    { handle: 'm.richter', name: 'Mats Richter' },
+  ],
+  newcomer: { handle: 'l.albrecht', name: 'Leonie Albrecht' },
 }
 
 export const WORLD: Record<Locale, WorldSeed> = {
@@ -186,6 +217,23 @@ export const WORLD: Record<Locale, WorldSeed> = {
         joinMessage: '',
       },
     ],
+    lists: {
+      open: {
+        title: 'Café and set-up: who can help?',
+        intro: 'Bake a cake, pour coffee or help put up the tables. Pick a shift that suits you.',
+        shareNote: 'Parents’ group chat',
+      },
+      paused: {
+        title: 'Welcome Desk: who can help?',
+        intro: 'Greet our visitors at the main entrance.',
+        shareNote: 'Confirmation class',
+      },
+      prep: {
+        title: 'Preparation Evening',
+        intro: 'Help us fold programmes and pack the welcome bags.',
+        shareNote: 'Parish newsletter',
+      },
+    },
   },
 
   de: {
@@ -294,5 +342,23 @@ export const WORLD: Record<Locale, WorldSeed> = {
         joinMessage: '',
       },
     ],
+    lists: {
+      open: {
+        title: 'Café und Aufbau: Wer kann helfen?',
+        intro:
+          'Kuchen backen, Kaffee ausschenken oder beim Aufbau mit anpacken. Such dir eine Schicht aus, die dir passt.',
+        shareNote: 'Eltern-Chat',
+      },
+      paused: {
+        title: 'Empfang: Wer kann helfen?',
+        intro: 'Begrüße unsere Gäste am Haupteingang.',
+        shareNote: 'Konfi-Gruppe',
+      },
+      prep: {
+        title: 'Vorbereitungsabend',
+        intro: 'Hilf uns, Programme zu falten und die Begrüßungstaschen zu packen.',
+        shareNote: 'Gemeindebrief',
+      },
+    },
   },
 }

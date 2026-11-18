@@ -13,6 +13,8 @@ Marken tauchen in einer Veranstaltung erst auf, wenn eine Aufgabe sie vergibt od
 
 Bei jeder Aufgabe legst du fest, wie viele Marken eine Schicht bringt. Ist eine gebuchte Schicht vorbei, sind die Marken da. Dafür muss niemand etwas tun.
 
+Das gilt auch für alle, die sich ohne Konto über eine [geteilte Liste](/features/shared-lists) eingetragen haben. Ihren Code zeigen sie auf der Seite hinter dem Link aus ihrer Bestätigungsmail.
+
 Was schon verdient ist, bleibt. Das gilt auch, wenn die Schicht später gelöscht oder verlegt wird oder du die Anzahl pro Schicht änderst.
 
 ## Was Helfende sehen
@@ -43,6 +45,8 @@ Einlösen dürfen:
 
 Hat jemand einen leeren Akku, kein Netz oder kein Smartphone, geht es auch ohne Code. Dann wählst du die Person aus einer Liste, in der ihre Marken stehen. Wer keine mehr hat, ist ausgegraut.
 
+Wer sich ohne Konto über eine geteilte Liste eingetragen hat, wird nur per Code eingelöst. Beim Einlösen steht dann „ohne Konto“ neben dem Namen. In der Liste zum Einlösen ohne Code stehen nur Mitglieder, damit die Namen von Leuten ohne Konto nicht bei allen auftauchen, die gerade an einem Stand Schicht haben.
+
 > Ohne Code einlösen dürfen standardmäßig auch alle, die gerade an einer Einlösestelle Schicht haben. Das gilt für jede Person, die dort eine Schicht bucht.
 
 ## Was Organisator:innen einstellen
@@ -56,7 +60,7 @@ Wenn du deinen Verantwortlichen vertraust, schaltest du die zweite Regel für di
 
 ![Der Tab „Marken“ mit den beiden Regeln und der Übersicht, wer wie viele Marken hat](shot:vouchers-settings)
 
-Unter den Regeln steht, wer wie viele Marken hat: verdient, eingelöst, verfügbar und was noch kommt. Dazu gibt es eine Suche und den Verlauf jeder Person.
+Unter den Regeln steht, wer wie viele Marken hat: verdient, eingelöst, verfügbar und was noch kommt. Dazu gibt es eine Suche und den Verlauf jeder Person. Wer sich über eine geteilte Liste eingetragen hat, ist mit „ohne Konto“ markiert.
 
 Dort trägst du auch Korrekturen ein, zum Beispiel für Hilfe beim Aufbau ohne Schicht. Eine Korrektur braucht immer einen Grund, damit andere sie später nachvollziehen können. Unter null drücken kann sie ein Guthaben nicht.
 
@@ -64,7 +68,7 @@ Dort trägst du auch Korrekturen ein, zum Beispiel für Hilfe beim Aufbau ohne S
 
 Weil Marken an Buchungen hängen, gelten in WirkSam für alle Aufgaben ein paar Regeln. Buchen geht nur:
 
-- als Mitglied der Veranstaltung
+- als Mitglied der Veranstaltung oder über eine [geteilte Liste](/features/shared-lists)
 - bei veröffentlichten Aufgaben
 - solange die Schicht nicht vorbei ist
 
@@ -109,6 +113,12 @@ Buchungen für Schichten, die noch nicht vorbei sind, fallen weg.
 ### Gilt die Regel für Verantwortliche auch bei Aufgaben ohne Marken?
 
 Nein. Bei Aufgaben ohne Marken ändert sich für Verantwortliche nichts.
+
+### Bekommen Leute ohne Konto auch Marken?
+
+Ja, wenn sie sich über eine [geteilte Liste](/features/shared-lists) für eine Schicht mit Marken eingetragen haben. Sie lösen sie mit dem Code ein, den die Seite hinter dem Link aus ihrer Mail zeigt. Ohne Code einlösen geht für sie nicht. Ist ihr Handy leer, trägt eine Organisator:in eine Korrektur ein, zum Beispiel „am Stand eingelöst“.
+
+Löschen sie ihre Daten, oder sind die Angaben nach ihrer letzten Schicht gelöscht worden, verfallen die Marken, die sie noch nicht eingelöst haben. Wie viele sie verdient und eingelöst haben, bleibt in der Übersicht ohne Namen stehen.
 
 ### Kostet das etwas extra?
 

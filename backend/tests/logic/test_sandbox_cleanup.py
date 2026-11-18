@@ -31,9 +31,11 @@ from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.crud.shared_list import shared_list as crud_shared_list
 from app.logic import clock, vouchers
 from app.logic.sandbox.cleanup import count_active, purge_sandbox, sweep_expired
 from app.logic.sandbox.service import utc_now
+from app.logic.shared_lists.signup import sign_up
 from app.models.auth_session import AuthSession
 from app.models.booking import Booking
 from app.models.booking_reminder import BookingReminder
@@ -51,6 +53,12 @@ from app.models.event_team import (
 )
 from app.models.location import Location
 from app.models.notification import Notification
+from app.models.shared_list import (
+    GuestActivityLog,
+    SharedList,
+    SharedListGuest,
+    SharedListTask,
+)
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
@@ -59,6 +67,7 @@ from app.models.user import User
 from app.models.user_availability import UserAvailability, UserAvailabilityDate
 from app.models.venue_plan import VenueMarker, VenuePlan, VenuePlanImage, VenueShape
 from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
+from app.schemas.public_shared_list import PublicSignupRequest
 from tests.fixtures.sandbox import SandboxFactory, SandboxSetup
 from tests.fixtures.storage import put_file
 
@@ -101,6 +110,8 @@ class _Inventory:
     voucher_entry_ids: list[uuid.UUID]
     voucher_pass_ids: list[uuid.UUID]
     voucher_earning_ids: list[uuid.UUID]
+    shared_list_ids: list[uuid.UUID]
+    list_guest_ids: list[uuid.UUID]
 
 
 async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
@@ -145,6 +156,12 @@ async def _inventory(db: AsyncSession, event_id: uuid.UUID) -> _Inventory:
         ),
         voucher_earning_ids=await _ids(
             db, col(VoucherEarning.id), col(VoucherEarning.event_id) == event_id
+        ),
+        shared_list_ids=await _ids(
+            db, col(SharedList.id), col(SharedList.event_id) == event_id
+        ),
+        list_guest_ids=await _ids(
+            db, col(SharedListGuest.user_id), col(SharedListGuest.event_id) == event_id
         ),
         booking_ids=await _ids(
             db, col(Booking.id), col(Booking.shift_id).in_(shift_ids)
@@ -264,6 +281,26 @@ async def _remaining(db: AsyncSession, inv: _Inventory) -> dict[str, int]:
             col(VenueMarker.plan_id).in_(inv.plan_ids)
             | col(VenueMarker.location_id).in_(inv.location_ids),
         ),
+        "shared_lists": await _count(
+            db, SharedList, col(SharedList.id).in_(inv.shared_list_ids)
+        ),
+        "shared_list_tasks": await _count(
+            db,
+            SharedListTask,
+            col(SharedListTask.shared_list_id).in_(inv.shared_list_ids),
+        ),
+        "shared_list_guests": await _count(
+            db, SharedListGuest, col(SharedListGuest.user_id).in_(inv.list_guest_ids)
+        ),
+        # The people who signed up through the demo's lists: no membership,
+        # so not among ``users`` above.
+        "list_guest_users": await _count(
+            db, User, col(User.id).in_(inv.list_guest_ids)
+        ),
+        # No foreign key: nothing cascades it, so only the purge takes it.
+        "guest_activity_log": await _count(
+            db, GuestActivityLog, col(GuestActivityLog.event_id) == inv.event_id
+        ),
     }
 
 
@@ -308,6 +345,64 @@ async def _add_plan_image(db: AsyncSession, *, plan_id: uuid.UUID) -> None:
         )
     )
     await db.flush()
+
+
+async def _add_shared_list_signup(db: AsyncSession, sandbox: SandboxSetup) -> None:
+    """Share a task of the demo and sign someone up through it, as its guest
+    trying "Shared lists" and opening the link on their phone would.
+
+    Through the real sign-up, so the guest user, its contact row, the booking
+    and the activity log's row are the shapes production writes. The helper
+    demo seeds no list, so without this the shared-list lines of the census
+    would be vacuously zero.
+    """
+    task = (
+        await db.execute(
+            select(Task)
+            .where(col(Task.event_id) == sandbox.event.id, col(Task.team_id).is_(None))
+            .order_by(col(Task.name))
+            .limit(1)
+        )
+    ).scalar_one()
+    shift = Shift(
+        task_id=task.id,
+        title="Through the list",
+        date=utc_now().date() + dt.timedelta(days=2),
+        start_time=dt.time(10),
+        end_time=dt.time(12),
+        max_bookings=2,
+    )
+    db.add(shift)
+    await db.flush()
+    shared_list = await crud_shared_list.create(
+        db,
+        event_id=sandbox.event.id,
+        created_by=sandbox.guest,
+        title="Demo list",
+        intro=None,
+        share_note=None,
+        ask_email="required",
+        ask_phone="off",
+        show_names="none",
+        max_per_person=None,
+        ends_mode="manual",
+        ends_on=None,
+    )
+    await crud_shared_list.set_tasks(
+        db, shared_list_id=shared_list.id, task_ids=[task.id]
+    )
+    outcome = await sign_up(
+        db,
+        code=shared_list.code,
+        form=PublicSignupRequest(
+            shift_id=shift.id,
+            name="Paula Neumann",
+            email="paula@example.org",
+            show_names="none",
+        ),
+        now=utc_now(),
+    )
+    assert outcome.confirmation is None, "a demo must mail nobody"
 
 
 async def _expire(db: AsyncSession, sandbox: SandboxSetup, *, minutes: int = 5) -> None:
@@ -499,16 +594,17 @@ class TestPurgeSandbox:
 
         The invitation (with a task link), the join request and the booking
         reminder are added on top of the seed, and a file on a team request, a voucher code and the
-        frozen voucher earnings, so that the census covers all twenty-nine
-        tables rather than the twenty-one a freshly seeded helper demo happens
-        to populate. Every line of it starts
-        non-zero and must end at zero — a count that was never anything but
-        zero proves nothing.
+        frozen voucher earnings, and a shared list someone signed up through,
+        so that the census covers all thirty-three tables rather than the
+        twenty-one a freshly seeded helper demo happens to populate. Every line
+        of it starts non-zero and must end at zero — a count that was never
+        anything but zero proves nothing.
         """
         await _add_pending_decisions(db_session, test_sandbox)
         await _add_team_document(db_session, test_sandbox)
         await _add_voucher_pass(db_session, test_sandbox)
         await _add_voucher_earnings(db_session, test_sandbox)
+        await _add_shared_list_signup(db_session, test_sandbox)
         inv = await _inventory(db_session, test_sandbox.event.id)
         await _add_booking_reminder(db_session, booking_id=inv.booking_ids[0])
         # Guard the guards: an assertion that "nothing remains" is worthless if
@@ -670,10 +766,12 @@ class TestPurgeSandbox:
         """
         first = await make_sandbox()
         second = await make_sandbox()
+        await _add_shared_list_signup(db_session, first)
         await _add_pending_decisions(db_session, second)
         await _add_team_document(db_session, second)
         await _add_voucher_pass(db_session, second)
         await _add_voucher_earnings(db_session, second)
+        await _add_shared_list_signup(db_session, second)
         keep = await _inventory(db_session, second.event.id)
         await _add_booking_reminder(db_session, booking_id=keep.booking_ids[0])
         await _add_plan_image(db_session, plan_id=keep.plan_ids[0])

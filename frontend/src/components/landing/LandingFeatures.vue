@@ -8,6 +8,7 @@ import {
   GlobeIcon,
   LanguagesIcon,
   RssIcon,
+  Share2Icon,
   ShieldCheckIcon,
   TicketIcon,
   UsersIcon,
@@ -75,6 +76,7 @@ const rows: readonly {
 
 /** The rest by name only, each a link to the page that covers it. */
 const extras: readonly { key: string; icon: Component; doc?: string }[] = [
+  { key: 'sharedLists', icon: Share2Icon, doc: 'feature/shared-lists' },
   { key: 'vouchers', icon: TicketIcon, doc: 'feature/vouchers' },
   { key: 'peopleInCharge', icon: ShieldCheckIcon, doc: 'feature/people-in-charge' },
   { key: 'teams', icon: UsersRoundIcon, doc: 'feature/teams' },

@@ -8,12 +8,14 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking import person_name, person_phone
 from app.crud.booking_reminder import booking_reminder as crud_reminder
 from app.crud.event import event as crud_event
 from app.crud.event_invitation_task import (
     event_invitation_task as crud_invitation_task,
 )
 from app.crud.event_membership import event_membership as crud_membership
+from app.crud.shared_list import shared_list as crud_shared_list
 from app.crud.shift_batch import shift_batch as crud_shift_batch
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
@@ -264,6 +266,9 @@ async def update_task(
         # and an invitation to run it was an invitation into the source event.
         await crud_task_manager.remove_all_for_task(session, task_id=db_task.id)
         await crud_invitation_task.detach_task(session, task_id=db_task.id)
+        # Shared lists belong to the source event as well. The bookings made
+        # through them move with the task and stay.
+        await crud_shared_list.detach_task_from_lists(session, task_id=db_task.id)
     await ensure_team_in_event(
         session,
         team_id=update_data.get("team_id", db_task.team_id),
@@ -337,6 +342,7 @@ async def list_task_bookings(
     """List all confirmed bookings for every shift in a task, with user info.
 
     Phone numbers only for the event admins and the task's people in charge.
+    Guests who signed up through a shared list are flagged ``is_guest``.
     """
     db_task = await crud_task.get(session, task_id, raise_404_error=True)
     await require_task_visible(current_user, session, db_task)
@@ -346,10 +352,11 @@ async def list_task_bookings(
         TaskBookingEntry(
             id=b.id,
             shift_id=b.shift_id,  # type: ignore[arg-type]
-            user_name=b.user.name if b.user else None,
+            user_name=person_name(b, b.user) if b.user else None,
             user_phone_number=(
-                b.user.phone_number if b.user and show_contact else None
+                person_phone(b, b.user) if b.user and show_contact else None
             ),
+            is_guest=b.user.is_list_guest if b.user else False,
         )
         for b in bookings
     ]

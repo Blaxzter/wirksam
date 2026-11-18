@@ -37,7 +37,8 @@ const { t } = useI18n()
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="vol in volunteers" :key="vol.user_id">
+          <!-- A shared list's guest account counts per name, so its id may repeat. -->
+          <TableRow v-for="vol in volunteers" :key="`${vol.user_id}:${vol.name ?? ''}`">
             <TableCell>
               <div>{{ vol.name || vol.email || '—' }}</div>
               <div v-if="vol.name && vol.email" class="text-xs text-muted-foreground">

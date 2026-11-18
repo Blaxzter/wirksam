@@ -33,7 +33,7 @@ import math
 import uuid
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -42,6 +42,7 @@ from app.crud.venue_map import venue_map as crud_venue_map
 from app.logic import clock, vouchers
 from app.logic.notifications.registry import classification_for_code
 from app.logic.sandbox.seed import guest_display_name
+from app.logic.sandbox.service import utc_now
 from app.logic.sandbox.venue_plan_shapes import (
     HEIGHT,
     PLAN_KEYS,
@@ -50,6 +51,7 @@ from app.logic.sandbox.venue_plan_shapes import (
     demo_shapes,
     label_text,
 )
+from app.logic.shared_lists.public_page import build_public_list
 from app.logic.team_documents import sniff
 from app.models.booking import Booking
 from app.models.event import Event
@@ -65,6 +67,7 @@ from app.models.event_team import (
 )
 from app.models.location import Location
 from app.models.notification import Notification
+from app.models.shared_list import SharedList, SharedListGuest, SharedListTask
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
@@ -1714,3 +1717,97 @@ class TestSeededVouchers:
         assert account.summary.redeemed == 1
         assert account.summary.earned >= 2
         assert account.summary.available >= 1
+
+
+# ── Shared lists ───────────────────────────────────────────────────
+
+
+async def _seeded_lists(db: AsyncSession, sandbox: SandboxSetup) -> list[SharedList]:
+    rows = await db.execute(
+        select(SharedList).where(col(SharedList.event_id) == sandbox.event.id)
+    )
+    return list(rows.scalars())
+
+
+@pytest.mark.asyncio
+class TestSeededSharedList:
+    """ "Shared lists" opens on a list people signed up through, not on an
+    empty table; and only for the organiser, since a helper cannot share."""
+
+    async def test_the_organiser_finds_a_live_list_with_sign_ups(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        sandbox = await make_sandbox(role="manager")
+        [shared_list] = await _seeded_lists(db_session, sandbox)
+        tasks = (
+            await db_session.execute(
+                select(col(Task.name))
+                .join(SharedListTask, col(SharedListTask.task_id) == col(Task.id))
+                .where(col(SharedListTask.shared_list_id) == shared_list.id)
+            )
+        ).scalars()
+        bookings = list(
+            (
+                await db_session.execute(
+                    select(Booking).where(col(Booking.shared_list_id) == shared_list.id)
+                )
+            ).scalars()
+        )
+
+        assert shared_list.status == "live"
+        assert shared_list.created_by_id == sandbox.guest.id
+        assert sorted(tasks) == ["Closing tidy-up", "Grill stand"]
+        assert len(bookings) == 3
+        today = utc_now().date()
+        for booking in bookings:
+            shift = await db_session.get(Shift, booking.shift_id)
+            assert shift is not None
+            assert booking.status == "confirmed"
+            assert booking.guest_name
+            assert shift.date > today, "a sign-up through a list is ahead"
+            confirmed = await db_session.scalar(
+                select(func.count()).where(
+                    col(Booking.shift_id) == shift.id,
+                    col(Booking.status) == "confirmed",
+                )
+            )
+            assert (confirmed or 0) <= shift.max_bookings
+
+    async def test_the_people_on_it_have_no_account_and_no_mailbox_of_ours(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        """Guest users, as the public page makes them: the address on the
+        contact row only, on example.org, and never in ``users.email``."""
+        sandbox = await make_sandbox(role="manager")
+        rows = (
+            await db_session.execute(
+                select(User, SharedListGuest)
+                .join(SharedListGuest, col(SharedListGuest.user_id) == col(User.id))
+                .where(col(SharedListGuest.event_id) == sandbox.event.id)
+            )
+        ).all()
+
+        assert len(rows) == 3
+        for user, guest in rows:
+            assert user.is_list_guest
+            assert user.email is None
+            assert guest.email is not None
+            assert guest.email.endswith("@example.org")
+
+    async def test_its_public_page_offers_shifts_and_says_it_is_a_demo(
+        self, db_session: AsyncSession, make_sandbox: SandboxFactory
+    ) -> None:
+        sandbox = await make_sandbox(role="manager", language="de")
+        [shared_list] = await _seeded_lists(db_session, sandbox)
+
+        page = await build_public_list(db_session, shared_list, event=sandbox.event)
+
+        assert page.title == "Helfende Hände fürs Sommerfest"
+        assert page.status == "live"
+        assert page.days
+        assert page.event.is_sandbox is True
+
+    async def test_a_helper_has_none(
+        self, db_session: AsyncSession, test_sandbox: SandboxSetup
+    ) -> None:
+        assert await _seeded_lists(db_session, test_sandbox) == []
