@@ -48,9 +48,9 @@ Not yet covered, and not currently tracked by an issue:
 | `member`     | 3          | 29      |
 | `mobile`     | 9          | 30      |
 | `multi-user` | 8          | 79      |
-| `public`     | 8          | 51      |
+| `public`     | 8          | 52      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **75**     | **553** |
+| **Total**    | **75**     | **554** |
 
 ## Inventory
 
@@ -75,7 +75,7 @@ Not yet covered, and not currently tracked by an issue:
 - **a11y – admin event vouchers** (1)
   - voucher rules and overview
 - **a11y – admin shared lists** (2)
-  - the lists table and a list’s details
+  - the lists table and a list’s page
   - a list’s notice to print
 - **a11y – admin task detail** (1)
   - task detail
@@ -774,7 +774,7 @@ Not yet covered, and not currently tracked by an issue:
 
 - the viewport really is a phone
 - lists are cards with a sort control, and nothing scrolls sideways
-- the ⋯ menu opens the details as a bottom sheet
+- the ⋯ menu opens the list’s own page
 - the selection bar stays clear of the bottom navigation
 
 #### `frontend/e2e/tests/mobile/task-detail.spec.ts` — 4 tests
@@ -921,7 +921,7 @@ Not yet covered, and not currently tracked by an issue:
 - the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 
-### Project `public` — 8 files, 51 tests
+### Project `public` — 8 files, 52 tests
 
 #### `frontend/e2e/tests/public/content-pages.spec.ts` — 18 tests
 
@@ -999,14 +999,15 @@ Not yet covered, and not currently tracked by an issue:
   - the demo banner stays usable while the tour is running
   - the banner can restart a tour that was closed
 
-#### `frontend/e2e/tests/public/sandbox.spec.ts` — 7 tests
+#### `frontend/e2e/tests/public/sandbox.spec.ts` — 8 tests
 
-- **demo session** (7)
+- **demo session** (8)
   - the landing page offers a demo to an anonymous visitor
   - opens the app directly, without ever showing the event picker
   - shows a banner with a live countdown and a way out
   - a helper sees the volunteer side and none of the management screens
   - an organiser sees the management screens
+  - an organiser finds a shared list to try, whose sign-ups mail nobody
   - the seeded event has work in it on every screen the tour visits
   - leaving the demo signs the visitor out and takes the app back
 
