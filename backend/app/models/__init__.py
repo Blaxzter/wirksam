@@ -31,6 +31,15 @@ from .notification import (
     PushSubscription,
     TelegramBinding,
 )
+from .shared_list import (
+    GuestActivityLog,
+    GuestMailSuppression,
+    SharedList,
+    SharedListExcludedShift,
+    SharedListGuest,
+    SharedListGuestAlias,
+    SharedListTask,
+)
 from .shift import Shift
 from .shift_batch import ShiftBatch
 from .stored_object import StorageDeletion, StoredObject
@@ -67,11 +76,18 @@ __all__ = [
     "EventTeamDocument",
     "EventTeamMember",
     "EventTeamRequirement",
+    "GuestActivityLog",
+    "GuestMailSuppression",
     "Location",
     "Notification",
     "NotificationSubscription",
     "NotificationType",
     "PushSubscription",
+    "SharedList",
+    "SharedListExcludedShift",
+    "SharedListGuest",
+    "SharedListGuestAlias",
+    "SharedListTask",
     "ShiftBatch",
     "TelegramBinding",
     "User",

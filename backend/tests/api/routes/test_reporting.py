@@ -1,5 +1,7 @@
 """Route tests for Reporting endpoints."""
 
+import csv
+import io
 from datetime import date, time
 
 import pytest
@@ -9,9 +11,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.shared_list import SharedList
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
+from tests.fixtures.guest_signups import (
+    add_shift,
+    pooled_family,
+)
+from tests.fixtures.shared_lists import ListGuestFactory
 
 
 @pytest.mark.asyncio
@@ -415,3 +423,95 @@ class TestVolunteerCounts:
         await db_session.flush()
 
         assert await self._counts(async_client) == (0, 3)
+
+
+@pytest.mark.asyncio
+class TestReportingExportOfListGuests:
+    async def test_the_csv_gives_a_guests_address_and_list(
+        self,
+        async_client: AsyncClient,
+        test_shift: Shift,
+        test_booking: Booking,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        """A guest's address is on its contact row, never in users.email."""
+        guest = await make_list_guest(
+            test_shared_list, email="gast@example.org", shifts=[test_shift]
+        )
+
+        r = await async_client.get("/api/v1/reporting/export")
+
+        assert r.status_code == 200
+        rows = {row["Booking ID"]: row for row in csv.DictReader(io.StringIO(r.text))}
+        signed_up = rows[str(guest.bookings[0].id)]
+        assert (
+            signed_up["Volunteer Name"],
+            signed_up["Volunteer Email"],
+            signed_up["Booked Via"],
+        ) == ("Gast Eins", "gast@example.org", "Helfer gesucht")
+        booked = rows[str(test_booking.id)]
+        assert (booked["Volunteer Email"], booked["Booked Via"]) == (
+            "test@example.com",
+            "",
+        )
+
+    async def test_a_pooled_account_lists_each_sign_up_as_itself(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        maria, tom = await pooled_family(
+            db_session,
+            test_shared_list,
+            make_list_guest,
+            await add_shift(db_session, test_task),
+            await add_shift(db_session, test_task, day=date(2026, 6, 12)),
+        )
+
+        r = await async_client.get("/api/v1/reporting/export")
+
+        rows = {row["Booking ID"]: row for row in csv.DictReader(io.StringIO(r.text))}
+        assert [
+            (
+                rows[str(signed.bookings[0].id)]["Volunteer Name"],
+                rows[str(signed.bookings[0].id)]["Volunteer Email"],
+            )
+            for signed in (maria, tom)
+        ] == [
+            ("Maria Muster", "fam@example.org"),
+            ("Tom Muster", "fam@example.org"),
+        ]
+
+    async def test_a_pooled_account_counts_each_person_among_the_top(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        """Tom's shift is never Maria's: one row per name, both with the
+        account's user id."""
+        maria, _ = await pooled_family(
+            db_session,
+            test_shared_list,
+            make_list_guest,
+            await add_shift(db_session, test_task),
+            await add_shift(db_session, test_task, day=date(2026, 6, 12)),
+        )
+
+        r = await async_client.get("/api/v1/reporting/overview")
+
+        guests = sorted(
+            (row["name"], row["booking_count"])
+            for row in r.json()["top_volunteers"]
+            if row["user_id"] == str(maria.user.id)
+        )
+        assert guests == [("Maria Muster", 1), ("Tom Muster", 1)]

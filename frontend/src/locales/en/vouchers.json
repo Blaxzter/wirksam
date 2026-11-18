@@ -54,6 +54,7 @@
     "bookingChip": "+{n} voucher | +{n} vouchers",
     "code": {
         "checking": "Being redeemed…",
+        "elsewhere": "Your code is being shown on another screen. If you show it here, the one there stops working.",
         "expiresIn": "New code in {s} s",
         "failed": "Your code could not be loaded. Try again.",
         "forEvent": "Your code for {event}",
@@ -62,6 +63,7 @@
         "redeemed": "{n} voucher used at {place} | {n} vouchers used at {place}",
         "renewFailed": "The next code didn't load. This one still works.",
         "retry": "Try again",
+        "showHere": "Show it here",
         "showNew": "Show a new code",
         "title": "Your code"
     },

@@ -1100,9 +1100,13 @@ class TestBookingLists:
         assert {b["user_id"] for b in bookers} == {
             row["user_id"] for row in roster.json()
         }
-        assert bookers[-1] == {"user_id": str(cast.manager.id), "name": "Manager"}
+        assert bookers[-1] == {
+            "user_id": str(cast.manager.id),
+            "name": "Manager",
+            "is_guest": False,
+        }
         assert {b["name"] for b in bookers[:2]} == {cast.member.name, "Sibling"}
-        assert all(set(b) == {"user_id", "name"} for b in bookers)
+        assert all(set(b) == {"user_id", "name", "is_guest"} for b in bookers)
         # A cancelled booking is no one on the shift.
         assert tiles[str(empty.id)]["bookers"] == []
 

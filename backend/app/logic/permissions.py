@@ -51,12 +51,32 @@ a code, by picking the person, is for admins and people in charge, and, when
 the event's ``voucher_manual_redeem`` is ``on_shift`` (the default), for
 whoever is on shift at that point too (:func:`may_redeem_manually`). Every
 manual redemption records who made it, so it can be traced.
+
+Shared lists (public sign-up links, ``app/logic/shared_lists/``) add four,
+each testing a sandbox event before the role, as :func:`require_event_visible`
+does. Event admins manage every list of their event; a person in charge
+manages a list whose current tasks are all theirs, and sees, read-only, one
+that holds some of them:
+
+- :func:`shared_list_scope` for the event-wide views: 404 for outsiders, 403
+  ``shared_list.forbidden`` for a member who is in charge of nothing.
+- :func:`require_shared_list_visible` for reading one list (404
+  ``shared_list.not_found``), built on :func:`shared_list_access`.
+- :func:`require_shared_list_manager` for changing one list: 403 for a
+  read-only viewer, and 403 ``shared_list.managers_disabled`` when a person in
+  charge would open it further (edit, resume, rotate) in an event whose
+  ``managers_share_lists`` is off. Pausing and ending stay allowed. Its rule
+  is :func:`shared_list_change_refusal`, which a batch asks list by list.
+- :func:`require_shared_list_tasks` for putting tasks on a list: an event
+  admin, or a person in charge of every one of them.
 """
 
 import datetime as dt
 import enum
 import uuid
-from typing import Literal, Protocol
+from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import Literal, NoReturn, Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,11 +84,13 @@ from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
+from app.crud.shared_list import shared_list as crud_shared_list
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.logic.vouchers import in_redeem_window, redeem_window_dates
 from app.logic.work_hours import shift_ends_at
 from app.models.event import Event
 from app.models.event_team import EventTeam
+from app.models.shared_list import SharedList
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
@@ -81,6 +103,24 @@ TaskAccess = Literal["admin", "manager"]
 #: Why a caller may redeem vouchers at a point: as an event admin, as one of
 #: its people in charge, or because they are on a running shift there.
 RedeemerKind = Literal["admin", "manager", "on_shift"]
+
+#: How a caller may handle one shared list: as an event admin (or the
+#: superadmin), as the person in charge of every task on it, or read-only, in
+#: charge of only some of them.
+SharedListAccess = Literal["admin", "manager", "viewer"]
+
+#: A change to one shared list, as :func:`require_shared_list_manager` judges it.
+ManageAction = Literal["edit", "pause", "resume", "end", "rotate"]
+
+#: The changes that open a list further to people without an account. A person
+#: in charge may make them only while the event's ``managers_share_lists`` is
+#: on; stopping a list is always allowed.
+_SHARING_ACTIONS: frozenset[ManageAction] = frozenset({"edit", "resume", "rotate"})
+
+#: Why :func:`shared_list_change_refusal` refuses a change to a list.
+ChangeRefusal = Literal[
+    "shared_list.not_found", "shared_list.forbidden", "shared_list.managers_disabled"
+]
 
 #: Shift fields whose change decides who earns how much: when a shift runs,
 #: and how many people it takes.
@@ -632,3 +672,229 @@ async def require_voucher_redeemer(
             ),
         )
     return kind
+
+
+# --- Shared lists ----------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class SharedListScope:
+    """What the caller may do with the shared lists of one event.
+
+    ``managed_task_ids`` holds the event's tasks the caller is in charge of.
+    Filter on it with an explicit branch on ``is_admin``, never on whether the
+    set is empty: for a person in charge an empty set means "nothing", and
+    reading it as "unrestricted" would hand them every list of the event.
+    """
+
+    is_admin: bool
+    managed_task_ids: frozenset[uuid.UUID]
+    #: The event's ``managers_share_lists``.
+    managers_share_lists: bool
+
+    def access_to(
+        self, current_task_ids: Iterable[uuid.UUID]
+    ) -> SharedListAccess | None:
+        """:func:`shared_list_access` for one list of this event, from its
+        current tasks, so a view of many lists needs no query per list."""
+        if self.is_admin:
+            return "admin"
+        return _member_access(self.managed_task_ids, current_task_ids)
+
+
+def _member_access(
+    managed_task_ids: frozenset[uuid.UUID], current_task_ids: Iterable[uuid.UUID]
+) -> SharedListAccess | None:
+    """A member's access to a list: in charge of all of its current tasks, a
+    manager; of some, a viewer; of none, or the list has none, nothing."""
+    current = frozenset(current_task_ids)
+    if not current or managed_task_ids.isdisjoint(current):
+        return None
+    return "manager" if managed_task_ids.issuperset(current) else "viewer"
+
+
+async def _shared_list_role(
+    user: User, session: AsyncSession, event: Event
+) -> EventRole:
+    """The caller's role in ``event``; 404 ``event.not_found`` without one.
+
+    A sandbox event the caller did not create is a 404 first, because
+    ``get_event_role`` reports the superadmin as owner of every event, and the
+    shared-list views read a demo's task names and fill levels.
+    """
+    if event.is_sandbox and event.created_by_id != user.id:
+        raise_problem(404, code="event.not_found", detail="Event not found")
+    role = await get_event_role(user, session, event.id)
+    if role is None:
+        raise_problem(404, code="event.not_found", detail="Event not found")
+    return role
+
+
+def _raise_managers_disabled() -> NoReturn:
+    raise_problem(
+        403,
+        code="shared_list.managers_disabled",
+        detail="In this event only the event admins can share tasks on a list",
+    )
+
+
+async def shared_list_scope(
+    user: User, session: AsyncSession, event: Event
+) -> SharedListScope:
+    """The gate of the event-wide shared-list views.
+
+    404 ``event.not_found`` for a sandbox the caller did not create and for
+    anyone without a role in the event; 403 ``shared_list.forbidden`` for a
+    member who is in charge of none of its tasks.
+    """
+    role = await _shared_list_role(user, session, event)
+    is_admin = role_at_least(role, "admin")
+    managed = await crud_task_manager.task_ids_in_event(
+        session, user_id=user.id, event_id=event.id
+    )
+    if not is_admin and not managed:
+        raise_problem(
+            403,
+            code="shared_list.forbidden",
+            detail=(
+                "Only the event admins and the people in charge of its tasks "
+                "can see its shared lists"
+            ),
+        )
+    return SharedListScope(
+        is_admin=is_admin,
+        managed_task_ids=managed,
+        managers_share_lists=event.managers_share_lists,
+    )
+
+
+async def shared_list_access(
+    user: User, session: AsyncSession, shared_list: SharedList
+) -> SharedListAccess | None:
+    """How the caller may handle this list; None when they may not see it.
+
+    ``"admin"`` for event admins, the owner and the superadmin. For a member it
+    depends on the list's current tasks (those still in its event), asked
+    afresh every time, since being in charge ends when someone leaves, is
+    removed, or a task moves: ``"manager"`` when they are in charge of all of
+    them, ``"viewer"`` of some, None of none. A list without tasks is the
+    admins' alone. Nobody but its guest sees a list of a sandbox event.
+    """
+    event = await session.get(Event, shared_list.event_id)
+    if event is None or (event.is_sandbox and event.created_by_id != user.id):
+        return None
+    role = await get_event_role(user, session, event.id)
+    if role is None:
+        return None
+    if role_at_least(role, "admin"):
+        return "admin"
+    current = await crud_shared_list.current_task_ids(session, shared_list=shared_list)
+    managed = await crud_task_manager.task_ids_in_event(
+        session, user_id=user.id, event_id=event.id
+    )
+    return _member_access(managed, current)
+
+
+async def require_shared_list_visible(
+    user: User, session: AsyncSession, shared_list: SharedList
+) -> SharedListAccess:
+    """The read gate for one list: 404 ``shared_list.not_found`` unless
+    :func:`shared_list_access` lets the caller see it."""
+    access = await shared_list_access(user, session, shared_list)
+    if access is None:
+        raise_problem(404, code="shared_list.not_found", detail="Shared list not found")
+    return access
+
+
+def shared_list_change_refusal(
+    access: SharedListAccess | None,
+    action: ManageAction,
+    *,
+    managers_share_lists: bool,
+) -> ChangeRefusal | None:
+    """Why a caller with ``access`` to a list may not make ``action``, as the
+    code :func:`require_shared_list_manager` answers with; None if they may.
+
+    The rule of that gate, for a batch, which reports a refusal per list
+    rather than raising, with ``access`` from :meth:`SharedListScope.access_to`.
+    """
+    if access is None:
+        return "shared_list.not_found"
+    if access == "viewer":
+        return "shared_list.forbidden"
+    if access == "manager" and action in _SHARING_ACTIONS and not managers_share_lists:
+        return "shared_list.managers_disabled"
+    return None
+
+
+async def require_shared_list_manager(
+    user: User,
+    session: AsyncSession,
+    shared_list: SharedList,
+    action: ManageAction,
+) -> SharedListAccess:
+    """The gate for changing one list; returns the caller's access.
+
+    :func:`require_shared_list_visible` first, then 403 ``shared_list.forbidden``
+    for a viewer, who is not in charge of every task on it, and 403
+    ``shared_list.managers_disabled`` for a person in charge who would edit,
+    resume or rotate it while the event's ``managers_share_lists`` is off.
+
+    The caller holds the event ``FOR SHARE`` (``manage.lock_for_change``),
+    so the switch read here is the committed one and an emergency stop that
+    turns it off waits for this change, or this change for it.
+    """
+    access = await require_shared_list_visible(user, session, shared_list)
+    # Loaded by the visibility check, and afresh by the caller's lock.
+    event = await session.get(Event, shared_list.event_id)
+    assert event is not None  # narrowed by require_shared_list_visible
+    refusal = shared_list_change_refusal(
+        access, action, managers_share_lists=event.managers_share_lists
+    )
+    if refusal == "shared_list.forbidden":
+        raise_problem(
+            403,
+            code=refusal,
+            detail=(
+                "This list also holds tasks other people are in charge of, so "
+                "only the event admins can change it"
+            ),
+        )
+    if refusal == "shared_list.managers_disabled":
+        _raise_managers_disabled()
+    return access
+
+
+async def require_shared_list_tasks(
+    user: User,
+    session: AsyncSession,
+    event: Event,
+    task_ids: list[uuid.UUID],
+) -> TaskAccess:
+    """The gate for putting ``task_ids`` of ``event`` on a list, or for reading
+    their shifts to choose from.
+
+    404 ``event.not_found`` as for :func:`shared_list_scope`. Event admins may
+    use any task. A person in charge may only while the event's
+    ``managers_share_lists`` is on (403 ``shared_list.managers_disabled``), and
+    only tasks they are in charge of: 403 ``shared_list.tasks_forbidden`` names
+    the others in ``task_ids``. Whether a task belongs to the event is the
+    caller's check.
+    """
+    role = await _shared_list_role(user, session, event)
+    if role_at_least(role, "admin"):
+        return "admin"
+    if not event.managers_share_lists:
+        _raise_managers_disabled()
+    managed = await crud_task_manager.task_ids_in_event(
+        session, user_id=user.id, event_id=event.id
+    )
+    refused = [task_id for task_id in dict.fromkeys(task_ids) if task_id not in managed]
+    if refused:
+        raise_problem(
+            403,
+            code="shared_list.tasks_forbidden",
+            detail="You can only share tasks you are in charge of",
+            extensions={"task_ids": [str(task_id) for task_id in refused]},
+        )
+    return "manager"

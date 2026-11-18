@@ -171,6 +171,25 @@ describe('ShiftRoster, either layout', () => {
   )
 
   it.each([true, false])(
+    'names a guest whose data was deleted, without initials made of that (compact %s)',
+    (compact) => {
+      const erased = entry({
+        id: 'b-erased',
+        user_id: 'u-erased',
+        user_name: null,
+        user_email: null,
+        user_phone_number: null,
+        notes: null,
+        is_guest: true,
+      })
+      const w = mountRoster({ compact, bookings: [erased] })
+      const row = rows(w)[0]!
+      expect(row.text()).toContain('Guest (deleted)')
+      expect(row.find('[data-slot="avatar-fallback"]').text()).toBe('?')
+    },
+  )
+
+  it.each([true, false])(
     'says nothing of free places once the shift is over (compact %s)',
     (compact) => {
       const w = mountRoster({ compact, hideFree: true })

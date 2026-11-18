@@ -1,6 +1,10 @@
 <template>
   <ResponsiveDialog v-model:open="dialogStore.dialog.isOpen">
-    <ResponsiveDialogContent dialog-class="sm:max-w-md" priority>
+    <ResponsiveDialogContent
+      dialog-class="sm:max-w-md"
+      priority
+      @close-auto-focus="onCloseAutoFocus"
+    >
       <ResponsiveDialogHeader>
         <ResponsiveDialogTitle class="flex items-center gap-2">
           <component :is="titleIcon" v-if="titleIcon" class="h-5 w-5" :class="titleIconClass" />
@@ -52,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import { AlertCircleIcon, AlertTriangleIcon, CheckIcon, InfoIcon, XIcon } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
@@ -156,6 +160,23 @@ const titleIconClass = computed(() => {
       return ''
   }
 })
+
+/** The control that had focus when the dialog opened: reka hands focus back to it. */
+let opener: Element | null = null
+
+watch(
+  () => dialogStore.dialog.isOpen,
+  (open) => {
+    if (open) opener = document.activeElement
+  },
+)
+
+function onCloseAutoFocus(event: Event) {
+  const instead = dialogStore.dialog.focusInstead
+  if (!instead || opener?.isConnected) return
+  event.preventDefault()
+  instead()
+}
 
 // Task handlers
 const handleConfirm = async () => {

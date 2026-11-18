@@ -204,10 +204,11 @@ carries no code at all.
   the ones every notification channel refuses to send mail to, `sandbox|`
   accounts are the throwaway guests behind the "try a test event" button and are
   refused the same way (see [`SANDBOX.md`](SANDBOX.md)), `test|` accounts
-  are the ones `POST /testing/reset` is allowed to delete, and password accounts
-  get `local|<uuid4hex>`.
+  are the ones `POST /testing/reset` is allowed to delete, `listguest|` rows
+  are the people who signed up through a shared list without an account (see
+  below), and password accounts get `local|<uuid4hex>`.
 - **`users.password_hash`** — bcrypt, nullable. Null means the account has no
-  password (demo, test, or provisioned before local auth existed).
+  password (demo, test, list guest, or provisioned before local auth existed).
 - **`users.email`** — unique case-insensitively via a partial index on
   `lower(email) WHERE email IS NOT NULL`. The column stays nullable because
   legacy rows have no address; registration requires one.
@@ -227,6 +228,26 @@ All stored datetimes are **naive UTC**: `datetime.now(timezone.utc).replace(tzin
 Comparing a naive `expires_at` against an aware `now()` raises `TypeError` — and
 it would do so in the refresh path, on a live session, rather than anywhere a
 test would notice.
+
+### Guests of shared lists
+
+Someone who signs up through a shared list becomes a `users` row with
+`is_list_guest = true`, `email` NULL and `password_hash` NULL; their address
+lives in `shared_list_guests`, never in `users.email`
+([`SHARED_LISTS.md`](SHARED_LISTS.md#a-guest-is-a-users-row)). So `authenticate`
+can never succeed for one, no `auth_sessions` row is ever created, and login,
+password reset, `auth.email_taken` and `sync_superadmin_role` never see one.
+
+`app/api/deps.py::_refuse_list_guest` is the second wall: every dependency that
+loads a user (`CurrentUser`, `CurrentSuperuser`, `AnyUser`, `QueryTokenUser`
+and the `X-Test-User-Email` path) answers **403 `auth.guest_account`** for a
+guest, unconditionally, unlike `_refuse_unusable`, which `AnyUser` skips.
+`AccessClaimsDep` loads no row and cannot check, which is acceptable because no
+token for a guest can exist.
+
+A guest manages their sign-ups through a manage link instead, an HMAC over the
+guest's id and a nonce, never stored and never a session. It is described in
+[`SHARED_LISTS.md`](SHARED_LISTS.md#guest-tokens).
 
 ## Rate limiting
 
@@ -249,6 +270,14 @@ would let one household's shared connection lock out everybody behind it, and
 keying on the address alone would let anyone lock a known user out of their own
 account by failing ten logins on their behalf.
 
+Shared lists add five buckets for callers who never sign in:
+`shared_list_view_limiter`, `shared_list_miss_limiter`,
+`shared_list_signup_limiter` (keyed `<ip>|<code>`),
+`shared_list_signup_ip_limiter` and `guest_manage_limiter`. Their numbers and
+keys are in [`SHARED_LISTS.md`](SHARED_LISTS.md#rate-limits). Because these
+counters are per worker, the real fence there is the daily ceilings counted in
+the database.
+
 The whole limiter is a **no-op under `settings.TESTING`**. Six parallel
 Playwright workers would otherwise trip any sane per-IP limit, and it would read
 as flakiness rather than as a limit doing its job.
@@ -266,9 +295,10 @@ server: see [deployment.md](deployment.md#behind-cloudflare).
 
 Rate limiting caps how *fast* accounts can be created; it cannot tell a person
 from a script. A bot that registers five accounts an hour and then waits is
-inside every ceiling above. So `POST /auth/register` — the only endpoint that
-turns an anonymous caller into a row in `users` and a message to an arbitrary
-address — sits behind a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/)
+inside every ceiling above. So `POST /auth/register` and the shared-list
+sign-up, `POST /public/shared-lists/{code}/signups` — the two endpoints that
+turn an anonymous caller into a row in `users` and a message to an arbitrary
+address — sit behind a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/)
 challenge as well.
 
 The browser solves the challenge, the form posts the resulting token as
@@ -295,6 +325,15 @@ Four properties are deliberate:
   second time it sees one, so `RegisterView.vue` resets its widget after *any*
   failed submission. Without that, the retry after a "this address is taken"
   error would be refused for a reason unrelated to what the person just fixed.
+
+**The action.** `verify_turnstile(token, *, expected_action=None)` also checks
+the `action` Cloudflare reports when a caller names one. The shared-list sign-up
+passes `expected_action="shared-list-signup"`, so its widget must be rendered
+with that action (`TurnstileWidget`'s `action` prop), and a token solved on the
+registration form does not pass it. Registration passes none and accepts any
+action. Without Cloudflare the lists still work: outside `ENVIRONMENT=local`
+the backend only warns at boot (`_recommend_turnstile_for_shared_lists`) when
+they are on and `TURNSTILE_SECRET_KEY` is not.
 
 The site key is public and reaches the browser as runtime config
 (`window.__APP_CONFIG__.TURNSTILE_SITE_KEY`, written by
@@ -342,7 +381,11 @@ verification — intermittently, in production only.
 
 Rotating `SECRET_KEY` invalidates every outstanding access token (at most 15
 minutes of disruption); refresh cookies survive it, because they are opaque and
-validated against the database rather than a signature.
+validated against the database rather than a signature. It also invalidates
+every shared-list guest's manage link, and changes the keyed hash that stands
+for a guest's address, so the "never mail me again" list and the day's mail
+counts stop matching any address (see
+[`SHARED_LISTS.md`](SHARED_LISTS.md#guest-tokens)).
 
 ## Who may register
 

@@ -27,8 +27,9 @@ _zone_task = aliased(Task, name="zone_task")
 _zone_event = aliased(Event, name="zone_event")
 
 
-async def wall_clocks(db: AsyncSession) -> WallClocks:
-    """The time on every clock a shift can be on, in one query.
+async def wall_clocks(db: AsyncSession, *, at: dt.datetime | None = None) -> WallClocks:
+    """The time on every clock a shift can be on, in one query: now, or at
+    the naive UTC moment ``at``.
 
     Every zone any event uses and the setting (for tasks without an event), not
     only those of the events in view: a zone left out would silently drop that
@@ -36,7 +37,9 @@ async def wall_clocks(db: AsyncSession) -> WallClocks:
     """
     result = await db.execute(select(col(Event.timezone)).distinct())
     zones = {settings.EVENT_TIMEZONE, *result.scalars()}
-    return {zone: clock.wall_clock_now(zone) for zone in zones}
+    if at is None:
+        return {zone: clock.wall_clock_now(zone) for zone in zones}
+    return {zone: clock.utc_to_wall_clock(at, zone) for zone in zones}
 
 
 def task_zone() -> ColumnElement[str]:

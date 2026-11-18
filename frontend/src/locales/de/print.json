@@ -1,24 +1,72 @@
 {
     "allTasks": "Alle Aufgaben drucken",
     "contactColumn": "Kontakt",
+    "freeColumn": "Frei",
+    "list": {
+        "closesSoon": "Über den QR-Code geht das Eintragen nur {ends}.",
+        "ended": "Die Liste ist beendet. Teile die Aufgaben neu, dann bekommt der Aushang einen Link, der funktioniert.",
+        "expired": "Die Liste ist abgelaufen. Über den QR-Code kann sich niemand mehr eintragen.",
+        "notFound": "Diese Liste gibt es nicht, oder du kannst sie nicht sehen.",
+        "notOpen": "Solange die Liste nicht offen ist, gibt es hier nichts zu drucken.",
+        "paused": "Die Liste ist pausiert. Über den QR-Code kann sich gerade niemand eintragen.",
+        "readOnly": "Ändern können das nur die Organisator:innen."
+    },
+    "listQrCaption": "Scannen und eintragen, ganz ohne Konto",
     "nameColumn": "Name",
+    "notice": {
+        "create": {
+            "confirm": "Anlegen und drucken",
+            "customize": "Erst anpassen",
+            "later": "Pausieren, ändern oder beenden kannst du die Liste jederzeit unter „Geteilte Listen“.",
+            "shifts": "alle, die noch kommen | alle, die noch kommen, aus {count} Aufgaben",
+            "shiftsLabel": "Schichten",
+            "text": "Der QR-Code auf dem Blatt führt zu dieser Liste. Darüber kann sich jeder eintragen, auch ohne Konto.",
+            "title": "Für den Aushang legen wir eine geteilte Liste an",
+            "titleLabel": "Titel"
+        },
+        "eventTitle": "{event} – alle Aufgaben",
+        "leftOut": {
+            "no_shift_ahead": "„{name}“ hat keine Schicht mehr, die noch kommt.",
+            "not_published": "„{name}“ ist nicht veröffentlicht.",
+            "not_yours": "Für „{name}“ sind andere verantwortlich.",
+            "team_locked": "„{name}“ ist nur für ein Team.",
+            "title": "Ohne QR-Code gedruckt:"
+        },
+        "problem": {
+            "event_not_published": "Die Veranstaltung ist noch nicht veröffentlicht. Erst dann können sich Leute über eine geteilte Liste eintragen.",
+            "no_free_place": "Keine Schicht, die noch kommt, hat einen freien Platz.",
+            "none_offered": "Keine Aufgabe lässt sich gerade über eine geteilte Liste anbieten.",
+            "not_published": "Die Aufgabe ist noch nicht veröffentlicht. Erst dann können sich Leute über eine geteilte Liste eintragen.",
+            "paper": "Drucken kannst du trotzdem, zum Eintragen auf Papier.",
+            "print": "Ohne QR-Code drucken",
+            "team_locked": "Die Aufgabe ist nur für ein Team. Eintragen können sich nur Leute mit Konto, die im Team sind.",
+            "title": "Dieses Blatt bekommt keinen QR-Code",
+            "titleEvent": "Die Blätter bekommen keinen QR-Code",
+            "too_many": "Eine geteilte Liste fasst höchstens {max} Aufgaben, hier wären es {count}."
+        }
+    },
     "optionsDialog": {
         "selectAll": "Alle auswählen"
     },
     "overview": "Übersicht drucken",
     "printButton": "Drucken",
     "printEvent": "Diese Veranstaltung drucken",
+    "printNotice": "Aushang drucken",
     "printTask": "Aufgabe drucken",
     "scanToSignUp": "Scannen, um sich online anzumelden",
+    "shiftsRegion": "Schichten",
     "toolbar": {
         "close": "Druckoptionen schließen",
         "filterDates": "Tage filtern",
         "includeNames": "Gebuchte Namen anzeigen",
         "open": "Druckoptionen öffnen",
+        "paperLines": "Zeilen zum Eintragen auf Papier",
         "repeatHeader": "Kopfzeile auf jeder Seite",
         "showLocation": "Ortsspalte anzeigen",
         "showMap": "Lageplan zeigen",
         "showTitle": "Titelspalte anzeigen",
+        "signedUpNames": "Namen der Eingetragenen",
         "title": "Anzeigeoptionen"
-    }
+    },
+    "vouchersColumn": "Marken"
 }

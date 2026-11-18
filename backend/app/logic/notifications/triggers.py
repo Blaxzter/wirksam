@@ -203,7 +203,12 @@ async def dispatch_booking_cancelled_by_admin(
         async with async_session() as db:
             svc = NotificationService(db)
             for user_id, bookings in by_person.items():
-                data: NotificationData = {"booking_id": str(bookings[0].booking_id)}
+                data: NotificationData = {
+                    "booking_id": str(bookings[0].booking_id),
+                    # Every booking the notice is about: a guest's mail names
+                    # exactly these (``guest_mail``), since the shifts are gone.
+                    "booking_ids": ",".join(str(b.booking_id) for b in bookings),
+                }
                 if task_is_open:
                     data["task_id"] = str(task_id)
                 await svc.notify(

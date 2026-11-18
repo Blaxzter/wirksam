@@ -10,6 +10,7 @@ from sqlmodel import col
 from app.api.deps import CurrentUser, DBDep
 from app.core.errors import raise_problem
 from app.crud.booking import booking as crud_booking
+from app.crud.booking import person_name
 from app.crud.event import event as crud_event
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.shift import shift as crud_shift
@@ -537,7 +538,9 @@ async def regenerate_task_shifts(
                     AffectedBookingInfo(
                         booking_id=booking.id,
                         user_id=booking.user_id,
-                        user_name=booking.user.name if booking.user else None,
+                        user_name=(
+                            person_name(booking, booking.user) if booking.user else None
+                        ),
                         slot_title=shift.title,
                         slot_date=shift.date,
                         slot_start_time=shift.start_time,

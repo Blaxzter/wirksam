@@ -228,32 +228,3 @@ class TestCRUDBookingReminder:
             db_session, booking_id=test_booking.id
         )
         assert reminders[0].status == "sent"
-
-    async def test_create_from_defaults(
-        self,
-        db_session: AsyncSession,
-        test_booking: Booking,
-        test_user: User,
-        test_shift: Shift,
-    ):
-        """Test creating reminders from default offsets."""
-        from app.schemas.booking_reminder import ReminderOffsetEntry
-
-        slot_start = dt.datetime(2030, 6, 1, 10, 0)
-        defaults = [
-            ReminderOffsetEntry(offset_minutes=15),
-            ReminderOffsetEntry(offset_minutes=60),
-        ]
-
-        reminders = await crud_reminder.create_from_defaults(
-            db_session,
-            booking_id=test_booking.id,
-            user_id=test_user.id,
-            shift_id=test_shift.id,
-            slot_start=slot_start,
-            defaults=defaults,
-        )
-
-        assert len(reminders) == 2
-        offsets = {r.offset_minutes for r in reminders}
-        assert offsets == {15, 60}

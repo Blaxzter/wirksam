@@ -45,12 +45,41 @@ security-relevant properties are:
 5. **Secure communication**: all traffic uses HTTPS in deployed environments, and
    the refresh cookie is marked `Secure` everywhere except local development.
 
+### Shared lists
+
+Shared lists (`docs/SHARED_LISTS.md`) let people sign up for shifts without an
+account, through a public link. They carry two secrets of their own, handled
+differently from the tokens above on purpose:
+
+-   **List codes are stored in plain text.** A code is twelve random
+    characters from a 55-symbol alphabet (about 69 bits), unique across the
+    installation. Organisers copy the link again later, which a hash would not
+    allow, and the link is public by design. Rotating a list replaces its code,
+    and the old link then answers the same 404 as a code that never existed.
+    A scan for codes meets a per-IP limit that counts only misses.
+-   **Guest manage tokens are never stored.** A token is an HMAC-SHA256 over
+    the guest's id and a 128-bit random nonce, under a key derived from
+    `SECRET_KEY`, so every mail can rebuild the link and a database dump
+    reveals none. Clearing the nonce revokes every link of that guest. The
+    token travels only in the URL fragment and in POST bodies, never in a path
+    or a query that a log would keep, and every token the manage routes refuse
+    gets the same 404. The link in a mail uses a second key: only it may stop
+    all mail to the address, so whoever typed someone else's address into a
+    form cannot.
+-   **Guests hold no credential.** A guest has no password and no session, and
+    every dependency that loads a user refuses one (`403 auth.guest_account`).
+-   **Addresses are kept as keyed hashes** in the abuse log and the opt-out
+    list, and the log is pruned after seven days. No guest's IP address is
+    written to the database.
+
 ### Operational notes
 
 -   `SECRET_KEY` signs the access tokens. Every environment other than local
     refuses to start while it still reads `changethis`. Rotating it invalidates
     outstanding access tokens (at most 15 minutes of disruption) and leaves
-    refresh cookies working.
+    refresh cookies working. It also invalidates every shared-list guest's
+    manage link and changes the keyed address hashes, so the opt-out list
+    ("Das war ich nicht") and the day's mail counts stop matching.
 -   The `X-Test-User-Email` impersonation header used by the E2E suite is
     reachable only while `TESTING` is true, and the configuration layer refuses
     to construct settings with `TESTING` on in production.

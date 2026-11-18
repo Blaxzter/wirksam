@@ -23,6 +23,21 @@ interface AppConfig {
    * `SANDBOX_ENABLED`, see `isSwitchOn`.
    */
   LANDING_ENABLED: string
+  /**
+   * Whether shared lists (public sign-up links) are offered. The backend's
+   * `SHARED_LISTS_ENABLED` is what enforces it, with a 404 on every list
+   * endpoint; this copy only keeps the navigation from offering a page that
+   * would fail. Read like `SANDBOX_ENABLED`, see `isSwitchOn`.
+   */
+  SHARED_LISTS_ENABLED: string
+  /**
+   * How many days after their last shift what a shared list's guest typed is
+   * deleted: the backend's `GUEST_DATA_RETENTION_DAYS`, which the guest pages
+   * read from the API. Only the privacy policy, which belongs to no list and
+   * so has no API answer that carries the number, reads this copy; see
+   * `guestRetentionDays`.
+   */
+  GUEST_DATA_RETENTION_DAYS: string
 }
 
 declare global {
@@ -52,6 +67,8 @@ declare global {
  * Turnstile key means "no bot check", while an absent `SANDBOX_ENABLED` means
  * "demo on". Each default is the value that leaves the deployment working.
  */
+const DEFAULT_GUEST_RETENTION_DAYS = 30
+
 const DEFAULTS: AppConfig = {
   LEGAL_NAME: '',
   LEGAL_ADDRESS: '',
@@ -61,6 +78,8 @@ const DEFAULTS: AppConfig = {
   TURNSTILE_SITE_KEY: '',
   SANDBOX_ENABLED: 'true',
   LANDING_ENABLED: 'true',
+  SHARED_LISTS_ENABLED: 'true',
+  GUEST_DATA_RETENTION_DAYS: String(DEFAULT_GUEST_RETENTION_DAYS),
 }
 
 export type { AppConfig }
@@ -79,6 +98,18 @@ export function isSwitchOn(value: unknown): boolean {
       .trim()
       .toLowerCase() !== 'false'
   )
+}
+
+/**
+ * `GUEST_DATA_RETENTION_DAYS` as a number of days. Like the switches it is
+ * written by a shell script, so anything that is not a whole number of at
+ * least one day (unset, empty, a typo) reads as the hosted default, 30, which
+ * is also what the prerendered page says before the deployed config arrives.
+ */
+export function guestRetentionDays(config: Pick<AppConfig, 'GUEST_DATA_RETENTION_DAYS'>): number {
+  const text = String(config.GUEST_DATA_RETENTION_DAYS ?? '').trim()
+  const days = /^\d+$/.test(text) ? Number(text) : Number.NaN
+  return Number.isSafeInteger(days) && days >= 1 ? days : DEFAULT_GUEST_RETENTION_DAYS
 }
 
 export function useAppConfig(): AppConfig {

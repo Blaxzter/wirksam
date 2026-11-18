@@ -533,6 +533,7 @@ export const zEventRead = z.object({
   timezone: z.string(),
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
   managers_edit_voucher_shifts: z.boolean().optional().default(false),
+  managers_share_lists: z.boolean().optional().default(true),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
@@ -548,6 +549,7 @@ export const zEventRead = z.object({
   pending_team_request_count: z.int().optional().default(0),
   voucher_task_count: z.int().optional().default(0),
   voucher_point_count: z.int().optional().default(0),
+  managed_task_count: z.int().optional().default(0),
   can_manage: z.boolean().readonly(),
   is_expired: z.boolean().readonly(),
 })
@@ -604,6 +606,7 @@ export const zEventUpdate = z.object({
   timezone: z.string().max(64).nullish(),
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).nullish(),
   managers_edit_voucher_shifts: z.boolean().nullish(),
+  managers_share_lists: z.boolean().nullish(),
 })
 
 /**
@@ -681,6 +684,77 @@ export const zGlobalChannelSettingsUpdate = z.object({
 })
 
 /**
+ * GuestCancelRequest
+ */
+export const zGuestCancelRequest = z.object({
+  token: z.string().max(128),
+  booking_id: z.uuid(),
+})
+
+/**
+ * GuestPassRequest
+ *
+ * A voucher code for one event, asked for with a manage token.
+ */
+export const zGuestPassRequest = z
+  .object({
+    token: z.string().max(128),
+    event_id: z.uuid(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A voucher code for one event, asked for with a manage token.',
+  })
+
+/**
+ * GuestPassStatusRequest
+ */
+export const zGuestPassStatusRequest = z.object({
+  token: z.string().max(128),
+  event_id: z.uuid(),
+  pass_id: z.uuid(),
+})
+
+/**
+ * GuestRemindersRequest
+ */
+export const zGuestRemindersRequest = z.object({
+  token: z.string().max(128),
+  enabled: z.boolean(),
+})
+
+/**
+ * GuestSignupBooking
+ */
+export const zGuestSignupBooking = z.object({
+  booking_id: z.uuid(),
+  status: z.enum(['confirmed', 'cancelled']),
+  event_name: z.string().nullish(),
+  task_name: z.string(),
+  date: z.iso.date(),
+  start_time: z.iso.time().nullish(),
+  end_time: z.iso.time().nullish(),
+  location: z.string().nullish(),
+  can_cancel: z.boolean(),
+  reminder_on: z.boolean(),
+  vouchers: z.int().optional().default(0),
+  show_first_name: z.boolean().optional().default(false),
+  name: z.string().nullish(),
+})
+
+/**
+ * GuestTokenRequest
+ *
+ * A manage link's token, sent in the body so it never reaches a log.
+ */
+export const zGuestTokenRequest = z
+  .object({
+    token: z.string().max(128),
+  })
+  .register(z.globalRegistry, {
+    description: "A manage link's token, sent in the body so it never reaches a log.",
+  })
+
+/**
  * InvitationTaskBrief
  *
  * A task an invitation asks its invitee to be in charge of.
@@ -751,6 +825,65 @@ export const zEventInvitationBulkResult = z.object({
   skipped_already_invited: z.array(z.string()).optional(),
   skipped_rate_limited: z.array(z.string()).optional(),
 })
+
+/**
+ * ListGuestAdminRow
+ *
+ * A guest, as the operator finds them for a data-subject request.
+ */
+export const zListGuestAdminRow = z
+  .object({
+    guest_user_id: z.uuid(),
+    name: z.string().nullish(),
+    email: z.string().nullish(),
+    phone: z.string().nullish(),
+    event_id: z.uuid().nullish(),
+    event_name: z.string().nullish(),
+    booking_count: z.int(),
+    last_signup_at: z.iso.datetime().nullish(),
+    erased: z.boolean(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A guest, as the operator finds them for a data-subject request.',
+  })
+
+/**
+ * ListGuestAdminListResponse
+ */
+export const zListGuestAdminListResponse = z.object({
+  items: z.array(zListGuestAdminRow),
+  total: z.int(),
+  skip: z.int(),
+  limit: z.int(),
+})
+
+/**
+ * ListGuestExportBooking
+ *
+ * One booking in the export: as the guest's page shows it, plus the
+ * phone number this sign-up was made with (``bookings.guest_phone``).
+ */
+export const zListGuestExportBooking = z
+  .object({
+    booking_id: z.uuid(),
+    status: z.enum(['confirmed', 'cancelled']),
+    event_name: z.string().nullish(),
+    task_name: z.string(),
+    date: z.iso.date(),
+    start_time: z.iso.time().nullish(),
+    end_time: z.iso.time().nullish(),
+    location: z.string().nullish(),
+    can_cancel: z.boolean(),
+    reminder_on: z.boolean(),
+    vouchers: z.int().optional().default(0),
+    show_first_name: z.boolean().optional().default(false),
+    name: z.string().nullish(),
+    phone: z.string().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "One booking in the export: as the guest's page shows it, plus the\nphone number this sign-up was made with (``bookings.guest_phone``).",
+  })
 
 /**
  * LocationCreate
@@ -911,6 +1044,19 @@ export const zLoginRequest = z
   })
   .register(z.globalRegistry, {
     description: 'Credentials for an existing account.',
+  })
+
+/**
+ * MailSuppressionLift
+ *
+ * An address "Das war ich nicht" stopped all mail to, to mail again.
+ */
+export const zMailSuppressionLift = z
+  .object({
+    email: z.string().max(254),
+  })
+  .register(z.globalRegistry, {
+    description: 'An address "Das war ich nicht" stopped all mail to, to mail again.',
   })
 
 /**
@@ -1095,6 +1241,114 @@ export const zPointRedemptionList = z.object({
   today_amount: z.int(),
   total_count: z.int(),
   total_amount: z.int(),
+})
+
+/**
+ * PublicEventRef
+ */
+export const zPublicEventRef = z.object({
+  name: z.string(),
+  start_date: z.iso.date(),
+  end_date: z.iso.date(),
+  timezone: z.string(),
+  is_sandbox: z.boolean().optional().default(false),
+})
+
+/**
+ * PublicShift
+ *
+ * One shift on the public page.
+ */
+export const zPublicShift = z
+  .object({
+    id: z.uuid(),
+    task_id: z.uuid(),
+    task_name: z.string(),
+    location: z.string().nullish(),
+    start_time: z.iso.time().nullish(),
+    end_time: z.iso.time().nullish(),
+    capacity: z.int(),
+    free: z.int(),
+    full: z.boolean(),
+    names: z.array(z.string()).optional(),
+    others_count: z.int().optional().default(0),
+    vouchers: z.int().optional().default(0),
+  })
+  .register(z.globalRegistry, {
+    description: 'One shift on the public page.',
+  })
+
+/**
+ * PublicDay
+ */
+export const zPublicDay = z.object({
+  date: z.iso.date(),
+  shifts: z.array(zPublicShift),
+})
+
+/**
+ * PublicSharedList
+ *
+ * ``GET /public/shared-lists/{code}``, and the organisers' preview.
+ */
+export const zPublicSharedList = z
+  .object({
+    code: z.string(),
+    title: z.string(),
+    intro: z.string().nullish(),
+    status: z.enum(['live', 'paused', 'closed']),
+    event: zPublicEventRef,
+    ask_email: z.enum(['required', 'optional', 'off']),
+    ask_phone: z.enum(['required', 'optional', 'off']),
+    show_names: z.enum(['none', 'first']),
+    max_per_person: z.int().nullish(),
+    days: z.array(zPublicDay),
+    retention_days: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description: "``GET /public/shared-lists/{code}``, and the organisers' preview.",
+  })
+
+/**
+ * PublicSignupRequest
+ *
+ * Signing up for one shift without an account.
+ *
+ * ``name``, ``email`` and ``phone`` are normalised here
+ * (``logic/shared_lists/normalize.py``); a value that cannot be is a 422.
+ * Whether the list asks for an address or a number at all is the sign-up's
+ * check. With ``guest_token`` (from the first sign-up's answer) the sign-up
+ * continues that chain, and what the chain stored wins over these fields.
+ */
+export const zPublicSignupRequest = z
+  .object({
+    shift_id: z.uuid(),
+    name: z.string().max(100),
+    email: z.string().max(254).nullish(),
+    phone: z.string().max(30).nullish(),
+    remind: z.boolean().optional().default(false),
+    language: z.enum(['en', 'de']).optional().default('de'),
+    show_names: z.enum(['none', 'first']),
+    guest_token: z.string().max(128).nullish(),
+    turnstile_token: z.string().max(2048).nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "Signing up for one shift without an account.\n\n``name``, ``email`` and ``phone`` are normalised here\n(``logic/shared_lists/normalize.py``); a value that cannot be is a 422.\nWhether the list asks for an address or a number at all is the sign-up's\ncheck. With ``guest_token`` (from the first sign-up's answer) the sign-up\ncontinues that chain, and what the chain stored wins over these fields.",
+  })
+
+/**
+ * PublicSignupResult
+ */
+export const zPublicSignupResult = z.object({
+  booking_id: z.uuid(),
+  guest_token: z.string(),
+  shift: zPublicShift,
+  date: z.iso.date(),
+  email: z.string().nullish(),
+  mail_queued: z.boolean(),
+  show_manage_link: z.boolean(),
+  remaining: z.int().nullish(),
 })
 
 /**
@@ -1360,6 +1614,380 @@ export const zShapeDeleteOp = z.object({
 })
 
 /**
+ * SharedListBulkRequest
+ */
+export const zSharedListBulkRequest = z.object({
+  action: z.enum(['pause', 'resume', 'end']),
+  list_ids: z.array(z.uuid()).min(1).max(100),
+})
+
+/**
+ * SharedListBulkSkip
+ */
+export const zSharedListBulkSkip = z.object({
+  id: z.uuid(),
+  code: z.string(),
+})
+
+/**
+ * SharedListBulkResult
+ *
+ * What a bulk action did. A list that already was as asked is in
+ * neither list.
+ */
+export const zSharedListBulkResult = z
+  .object({
+    changed: z.array(z.uuid()),
+    skipped: z.array(zSharedListBulkSkip),
+  })
+  .register(z.globalRegistry, {
+    description: 'What a bulk action did. A list that already was as asked is in\nneither list.',
+  })
+
+/**
+ * SharedListCandidateShift
+ */
+export const zSharedListCandidateShift = z.object({
+  id: z.uuid(),
+  task_id: z.uuid(),
+  date: z.iso.date(),
+  start_time: z.iso.time().nullable(),
+  end_time: z.iso.time().nullable(),
+  capacity: z.int(),
+  free: z.int(),
+})
+
+/**
+ * SharedListChip
+ */
+export const zSharedListChip = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  effective_status: z.enum(['live', 'paused', 'expired', 'ended']),
+})
+
+/**
+ * SharedListCounts
+ *
+ * How many visible lists each filter chip holds, whatever ``q`` says.
+ */
+export const zSharedListCounts = z
+  .object({
+    active: z.int(),
+    todo: z.int(),
+    live: z.int(),
+    paused: z.int(),
+    ended: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description: 'How many visible lists each filter chip holds, whatever ``q`` says.',
+  })
+
+/**
+ * SharedListCreate
+ */
+export const zSharedListCreate = z.object({
+  title: z.string().min(1).max(120),
+  intro: z.string().max(1000).nullish(),
+  share_note: z.string().max(120).nullish(),
+  task_ids: z.array(z.uuid()).min(1).max(50),
+  excluded_shift_ids: z.array(z.uuid()).max(2000).optional(),
+  ask_email: z.enum(['required', 'optional', 'off']).optional().default('required'),
+  ask_phone: z.enum(['required', 'optional', 'off']).optional().default('off'),
+  show_names: z.enum(['none', 'first']).optional().default('none'),
+  max_per_person: z.int().gte(1).lte(50).nullish(),
+  ends_mode: z.enum(['last_shift', 'date', 'manual']).optional().default('last_shift'),
+  ends_on: z.iso.date().nullish(),
+})
+
+/**
+ * SharedListDetailTask
+ *
+ * A task linked to the list, and what the list offers of it.
+ */
+export const zSharedListDetailTask = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    offered: z.boolean(),
+    not_offered_reason: z.enum(['team_locked', 'not_published', 'moved']).nullable(),
+    shift_count: z.int(),
+    capacity: z.int(),
+    free: z.int(),
+    only_days: z.array(z.iso.date()).nullable(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A task linked to the list, and what the list offers of it.',
+  })
+
+/**
+ * SharedListEventRef
+ */
+export const zSharedListEventRef = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  start_date: z.iso.date(),
+  end_date: z.iso.date(),
+  timezone: z.string(),
+})
+
+/**
+ * SharedListIssue
+ *
+ * Something on a list an organiser should act on.
+ */
+export const zSharedListIssue = z
+  .object({
+    kind: z.enum(['stranded', 'expires_soon']),
+    free: z.int(),
+    task_names: z.array(z.string()),
+    days_left: z.int().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description: 'Something on a list an organiser should act on.',
+  })
+
+/**
+ * SharedListPauseAllRequest
+ */
+export const zSharedListPauseAllRequest = z.object({
+  lock_managers: z.boolean().optional().default(false),
+})
+
+/**
+ * SharedListSignup
+ *
+ * One confirmed sign-up through a list.
+ */
+export const zSharedListSignup = z
+  .object({
+    booking_id: z.uuid(),
+    name: z.string().nullish(),
+    erased: z.boolean(),
+    email: z.string().nullish(),
+    phone: z.string().nullish(),
+    task_id: z.uuid(),
+    task_name: z.string(),
+    shift_id: z.uuid(),
+    shift_date: z.iso.date(),
+    start_time: z.iso.time().nullish(),
+    end_time: z.iso.time().nullish(),
+    created_at: z.iso.datetime(),
+    possible_duplicate: z.boolean(),
+    can_remove: z.boolean(),
+    pooled_signups: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description: 'One confirmed sign-up through a list.',
+  })
+
+/**
+ * SharedListSignupListResponse
+ */
+export const zSharedListSignupListResponse = z.object({
+  items: z.array(zSharedListSignup),
+  total: z.int(),
+  skip: z.int(),
+  limit: z.int(),
+  hidden_count: z.int(),
+  can_erase: z.boolean(),
+})
+
+/**
+ * SharedListSignupRemoveRequest
+ *
+ * Which sign-ups to remove: exactly one of ``booking_ids`` and
+ * ``created_since`` (422 ``shared_list.remove_selector`` otherwise).
+ */
+export const zSharedListSignupRemoveRequest = z
+  .object({
+    booking_ids: z.array(z.uuid()).min(1).max(100).nullish(),
+    created_since: z.iso.datetime().nullish(),
+    notify: z.boolean().optional().default(true),
+    erase: z.boolean().optional().default(false),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Which sign-ups to remove: exactly one of ``booking_ids`` and\n``created_since`` (422 ``shared_list.remove_selector`` otherwise).',
+  })
+
+/**
+ * SharedListSignupSkip
+ *
+ * A sign-up the removal left alone, and why, as an error code.
+ */
+export const zSharedListSignupSkip = z
+  .object({
+    id: z.uuid(),
+    code: z.string(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A sign-up the removal left alone, and why, as an error code.',
+  })
+
+/**
+ * SharedListSignupRemoveResult
+ */
+export const zSharedListSignupRemoveResult = z.object({
+  removed: z.array(z.uuid()),
+  erased_guests: z.int(),
+  also_removed: z.int(),
+  skipped: z.array(zSharedListSignupSkip),
+})
+
+/**
+ * SharedListSummary
+ */
+export const zSharedListSummary = z.object({
+  live_lists: z.int(),
+  active_lists: z.int(),
+  signups: z.int(),
+  guests: z.int(),
+  free_in_live: z.int(),
+})
+
+/**
+ * SharedListTaskCounts
+ */
+export const zSharedListTaskCounts = z.object({
+  all: z.int(),
+  todo: z.int(),
+})
+
+/**
+ * SharedListTaskRef
+ */
+export const zSharedListTaskRef = z.object({
+  id: z.uuid(),
+  name: z.string(),
+})
+
+/**
+ * SharedListDetail
+ */
+export const zSharedListDetail = z.object({
+  id: z.uuid(),
+  code: z.string(),
+  title: z.string(),
+  share_note: z.string().nullable(),
+  status: z.enum(['live', 'paused', 'ended']),
+  effective_status: z.enum(['live', 'paused', 'expired', 'ended']),
+  ends_mode: z.enum(['last_shift', 'date', 'manual']),
+  ends_on: z.iso.date().nullable(),
+  closes_at: z.iso.datetime().nullable(),
+  expires_soon: z.boolean(),
+  is_full: z.boolean(),
+  created_at: z.iso.datetime(),
+  created_by_name: z.string().nullable(),
+  tasks: z.array(zSharedListTaskRef),
+  only_days: z.array(z.iso.date()).nullable(),
+  excluded_shift_count: z.int(),
+  capacity: z.int(),
+  free: z.int(),
+  signup_count: z.int(),
+  guest_count: z.int(),
+  view_count: z.int(),
+  issue: zSharedListIssue.nullable(),
+  access: z.enum(['admin', 'manager', 'viewer']),
+  intro: z.string().nullable(),
+  ask_email: z.enum(['required', 'optional', 'off']),
+  ask_phone: z.enum(['required', 'optional', 'off']),
+  show_names: z.enum(['none', 'first']),
+  max_per_person: z.int().nullable(),
+  rotated_at: z.iso.datetime().nullable(),
+  paused_at: z.iso.datetime().nullable(),
+  ended_at: z.iso.datetime().nullable(),
+  task_ids: z.array(z.uuid()),
+  excluded_shift_ids: z.array(z.uuid()),
+  detail_tasks: z.array(zSharedListDetailTask),
+  event: zSharedListEventRef,
+})
+
+/**
+ * SharedListRow
+ */
+export const zSharedListRow = z.object({
+  id: z.uuid(),
+  code: z.string(),
+  title: z.string(),
+  share_note: z.string().nullable(),
+  status: z.enum(['live', 'paused', 'ended']),
+  effective_status: z.enum(['live', 'paused', 'expired', 'ended']),
+  ends_mode: z.enum(['last_shift', 'date', 'manual']),
+  ends_on: z.iso.date().nullable(),
+  closes_at: z.iso.datetime().nullable(),
+  expires_soon: z.boolean(),
+  is_full: z.boolean(),
+  created_at: z.iso.datetime(),
+  created_by_name: z.string().nullable(),
+  tasks: z.array(zSharedListTaskRef),
+  only_days: z.array(z.iso.date()).nullable(),
+  excluded_shift_count: z.int(),
+  capacity: z.int(),
+  free: z.int(),
+  signup_count: z.int(),
+  guest_count: z.int(),
+  view_count: z.int(),
+  issue: zSharedListIssue.nullable(),
+  access: z.enum(['admin', 'manager', 'viewer']),
+})
+
+/**
+ * SharedListListResponse
+ */
+export const zSharedListListResponse = z.object({
+  items: z.array(zSharedListRow),
+  total: z.int(),
+  skip: z.int(),
+  limit: z.int(),
+  counts: zSharedListCounts,
+  ended_matching: z.int(),
+})
+
+/**
+ * SharedListReusable
+ *
+ * The list a printed notice of some tasks reuses.
+ */
+export const zSharedListReusable = z
+  .object({
+    list: zSharedListRow.nullable(),
+  })
+  .register(z.globalRegistry, {
+    description: 'The list a printed notice of some tasks reuses.',
+  })
+
+/**
+ * SharedListUpdate
+ *
+ * Any field of :class:`SharedListCreate`; the code stays the same.
+ *
+ * A field left out keeps its value. So does an explicit null on a field that
+ * always has one (title, tasks, exclusions, the ask and show settings, the
+ * ends mode); on ``intro``, ``share_note``, ``max_per_person`` and ``ends_on``
+ * null is a value. A change of ``show_names`` applies to new sign-ups only:
+ * each guest keeps what they were told.
+ */
+export const zSharedListUpdate = z
+  .object({
+    title: z.string().min(1).max(120).nullish(),
+    intro: z.string().max(1000).nullish(),
+    share_note: z.string().max(120).nullish(),
+    task_ids: z.array(z.uuid()).min(1).max(50).nullish(),
+    excluded_shift_ids: z.array(z.uuid()).max(2000).nullish(),
+    ask_email: z.enum(['required', 'optional', 'off']).nullish(),
+    ask_phone: z.enum(['required', 'optional', 'off']).nullish(),
+    show_names: z.enum(['none', 'first']).nullish(),
+    max_per_person: z.int().gte(1).lte(50).nullish(),
+    ends_mode: z.enum(['last_shift', 'date', 'manual']).nullish(),
+    ends_on: z.iso.date().nullish(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'Any field of :class:`SharedListCreate`; the code stays the same.\n\nA field left out keeps its value. So does an explicit null on a field that\nalways has one (title, tasks, exclusions, the ask and show settings, the\nends mode); on ``intro``, ``share_note``, ``max_per_person`` and ``ends_on``\nnull is a value. A change of ``show_names`` applies to new sign-ups only:\neach guest keeps what they were told.',
+  })
+
+/**
  * ShiftBatchRead
  */
 export const zShiftBatchRead = z.object({
@@ -1390,6 +2018,7 @@ export const zShiftBooker = z
   .object({
     user_id: z.uuid(),
     name: z.string().nullish(),
+    is_guest: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
     description: 'Someone with a confirmed booking on a shift, as its tile names them.',
@@ -1410,6 +2039,8 @@ export const zShiftBookingEntry = z
     user_phone_number: z.string().nullish(),
     notes: z.string().nullish(),
     created_at: z.iso.datetime(),
+    is_guest: z.boolean().optional().default(false),
+    via_list_title: z.string().nullish(),
   })
   .register(z.globalRegistry, {
     description: 'A confirmed booking for a shift, with basic user info.',
@@ -1650,6 +2281,7 @@ export const zTaskBookingEntry = z
     shift_id: z.uuid(),
     user_name: z.string().nullish(),
     user_phone_number: z.string().nullish(),
+    is_guest: z.boolean().optional().default(false),
   })
   .register(z.globalRegistry, {
     description: 'A confirmed booking with slot_id, for the bulk task bookings endpoint.',
@@ -2078,6 +2710,90 @@ export const zEventTeamMemberRead = z.object({
 })
 
 /**
+ * TeamRef
+ */
+export const zTeamRef = z.object({
+  id: z.uuid(),
+  name: z.string(),
+})
+
+/**
+ * SharedListCandidate
+ *
+ * A task the caller may put on a list, with its shifts that have not
+ * started.
+ */
+export const zSharedListCandidate = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    location: z.string().nullable(),
+    manager_names: z.array(z.string()),
+    shift_count: z.int(),
+    dates: z.array(z.iso.date()),
+    capacity: z.int(),
+    free: z.int(),
+    team: zTeamRef.nullable(),
+    earns_vouchers: z.boolean(),
+  })
+  .register(z.globalRegistry, {
+    description: 'A task the caller may put on a list, with its shifts that have not\nstarted.',
+  })
+
+/**
+ * SharedListCandidateListResponse
+ */
+export const zSharedListCandidateListResponse = z.object({
+  items: z.array(zSharedListCandidate),
+  total: z.int(),
+  skip: z.int(),
+  limit: z.int(),
+  locked_count: z.int(),
+  locked_names: z.array(z.string()),
+})
+
+/**
+ * SharedListTaskRow
+ *
+ * A published task with shifts ahead, and the lists it is on.
+ *
+ * The shift figures cover the shifts that have not started, whether a list
+ * offers them or not.
+ */
+export const zSharedListTaskRow = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    location: z.string().nullable(),
+    manager_names: z.array(z.string()),
+    shift_count: z.int(),
+    dates: z.array(z.iso.date()),
+    capacity: z.int(),
+    free: z.int(),
+    team: zTeamRef.nullable(),
+    lists: z.array(zSharedListChip),
+    ended_list_count: z.int(),
+    stranded_free: z.int(),
+    unlisted_free: z.int(),
+    can_share: z.boolean(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'A published task with shifts ahead, and the lists it is on.\n\nThe shift figures cover the shifts that have not started, whether a list\noffers them or not.',
+  })
+
+/**
+ * SharedListTaskListResponse
+ */
+export const zSharedListTaskListResponse = z.object({
+  items: z.array(zSharedListTaskRow),
+  total: z.int(),
+  skip: z.int(),
+  limit: z.int(),
+  counts: zSharedListTaskCounts,
+})
+
+/**
  * TeamRequirementIn
  *
  * One thing a decider has to check before approving a request.
@@ -2289,13 +3005,21 @@ export const zTestUserSeed = z.object({
 
 /**
  * TopVolunteer
+ *
+ * A guest account gives one row per name its pooled sign-ups were made
+ * under, all with its ``user_id``.
  */
-export const zTopVolunteer = z.object({
-  user_id: z.uuid(),
-  name: z.string().nullable(),
-  email: z.string().nullable(),
-  booking_count: z.int(),
-})
+export const zTopVolunteer = z
+  .object({
+    user_id: z.uuid(),
+    name: z.string().nullable(),
+    email: z.string().nullable(),
+    booking_count: z.int(),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'A guest account gives one row per name its pooled sign-ups were made\nunder, all with its ``user_id``.',
+  })
 
 /**
  * ReportingResponse
@@ -2314,6 +3038,34 @@ export const zReportingResponse = z.object({
  */
 export const zUnreadCountResponse = z.object({
   unread_count: z.int(),
+})
+
+/**
+ * UnsharedNotice
+ *
+ * Tasks the caller may share whose free places no live list offers.
+ */
+export const zUnsharedNotice = z
+  .object({
+    task_count: z.int(),
+    free: z.int(),
+    task_names: z.array(z.string()),
+  })
+  .register(z.globalRegistry, {
+    description: 'Tasks the caller may share whose free places no live list offers.',
+  })
+
+/**
+ * SharedListOverview
+ */
+export const zSharedListOverview = z.object({
+  summary: zSharedListSummary,
+  unshared: zUnsharedNotice,
+  can_create: z.boolean(),
+  can_pause_all: z.boolean(),
+  is_admin: z.boolean(),
+  managers_share_lists: z.boolean(),
+  event_timezone: z.string(),
 })
 
 /**
@@ -3286,6 +4038,11 @@ export const zVerifyEmailRequest = z
  * ``shift_minutes`` counts confirmed bookings on shifts that have already
  * ended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes
  * into ``total_minutes`` — hours are what someone *has* worked.
+ *
+ * A guest who signed up through a shared list is named by their sign-ups. A
+ * guest account pools the sign-ups of everyone who confirmed one address, so
+ * it gives one row per name, all with its ``user_id``; ``user_id`` and
+ * ``name`` together tell the rows apart.
  */
 export const zVolunteerHours = z
   .object({
@@ -3294,6 +4051,14 @@ export const zVolunteerHours = z
     email: z.string().nullish(),
     avatar_etag: z.string().nullish(),
     role: z.enum(['owner', 'admin', 'member']).nullish(),
+    is_guest: z
+      .boolean()
+      .register(z.globalRegistry, {
+        description:
+          'Signed up through a shared list, without an account; never a member, so role is None',
+      })
+      .optional()
+      .default(false),
     shift_count: z.int(),
     shift_minutes: z.int(),
     upcoming_shift_count: z.int(),
@@ -3306,7 +4071,7 @@ export const zVolunteerHours = z
   })
   .register(z.globalRegistry, {
     description:
-      "One person's hours in one event.\n\n``shift_minutes`` counts confirmed bookings on shifts that have already\nended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes\ninto ``total_minutes`` — hours are what someone *has* worked.",
+      "One person's hours in one event.\n\n``shift_minutes`` counts confirmed bookings on shifts that have already\nended; ``upcoming_shift_minutes`` the ones still ahead. Only the former goes\ninto ``total_minutes`` — hours are what someone *has* worked.\n\nA guest who signed up through a shared list is named by their sign-ups. A\nguest account pools the sign-ups of everyone who confirmed one address, so\nit gives one row per name, all with its ``user_id``; ``user_id`` and\n``name`` together tell the rows apart.",
   })
 
 /**
@@ -3344,6 +4109,7 @@ export const zVoucherBalance = z
     email: z.string().nullish(),
     avatar_etag: z.string().nullish(),
     role: z.enum(['owner', 'admin', 'member']).nullish(),
+    is_guest: z.boolean().optional().default(false),
     earned: z.int(),
     upcoming: z.int(),
     redeemed: z.int(),
@@ -3376,6 +4142,7 @@ export const zVoucherCheckResult = z.object({
   user_id: z.uuid(),
   name: z.string().nullish(),
   avatar_etag: z.string().nullish(),
+  is_guest: z.boolean().optional().default(false),
   available: z.int(),
 })
 
@@ -3511,6 +4278,94 @@ export const zVoucherAccount = z.object({
 })
 
 /**
+ * GuestVoucherAccount
+ *
+ * A guest's vouchers in one event.
+ */
+export const zGuestVoucherAccount = z
+  .object({
+    event_id: z.uuid(),
+    event_name: z.string(),
+    account: zVoucherAccount,
+  })
+  .register(z.globalRegistry, {
+    description: "A guest's vouchers in one event.",
+  })
+
+/**
+ * GuestSignupManage
+ *
+ * The guest's manage page: a sign-up chain, or a guest account.
+ */
+export const zGuestSignupManage = z
+  .object({
+    name: z.string().nullish(),
+    email: z.string().nullish(),
+    event: zPublicEventRef,
+    bookings: z.array(zGuestSignupBooking),
+    can_set_reminders: z.boolean(),
+    confirmed: z.boolean(),
+    can_confirm: z.boolean(),
+    can_reject: z.boolean(),
+    reject_suppresses: z.boolean(),
+    has_phone: z.boolean(),
+    retention_days: z.int(),
+    erase_on: z.iso.date(),
+    vouchers: z.array(zGuestVoucherAccount),
+  })
+  .register(z.globalRegistry, {
+    description: "The guest's manage page: a sign-up chain, or a guest account.",
+  })
+
+/**
+ * GuestConfirmResult
+ *
+ * ``POST /public/guest-signups/confirm``.
+ */
+export const zGuestConfirmResult = z
+  .object({
+    token: z.string(),
+    manage: zGuestSignupManage,
+  })
+  .register(z.globalRegistry, {
+    description: '``POST /public/guest-signups/confirm``.',
+  })
+
+/**
+ * ListGuestExport
+ *
+ * Everything stored about one guest, for a request under Art. 15 GDPR.
+ *
+ * The manage link's nonce and the aliases of merged chains are left out:
+ * they are credentials, not data about the person. ``name`` and ``phone``
+ * are the guest user's; each booking carries the name, phone and first-name
+ * consent of its own sign-up.
+ */
+export const zListGuestExport = z
+  .object({
+    guest_user_id: z.uuid(),
+    name: z.string().nullish(),
+    email: z.string().nullish(),
+    phone: z.string().nullish(),
+    event_id: z.uuid().nullish(),
+    event_name: z.string().nullish(),
+    booking_count: z.int(),
+    last_signup_at: z.iso.datetime().nullish(),
+    erased: z.boolean(),
+    preferred_language: z.string(),
+    shared_list_id: z.uuid().nullish(),
+    created_at: z.iso.datetime(),
+    erased_at: z.iso.datetime().nullish(),
+    confirmed_at: z.iso.datetime().nullish(),
+    bookings: z.array(zListGuestExportBooking),
+    vouchers: z.array(zGuestVoucherAccount),
+  })
+  .register(z.globalRegistry, {
+    description:
+      "Everything stored about one guest, for a request under Art. 15 GDPR.\n\nThe manage link's nonce and the aliases of merged chains are left out:\nthey are credentials, not data about the person. ``name`` and ``phone``\nare the guest user's; each booking carries the name, phone and first-name\nconsent of its own sign-up.",
+  })
+
+/**
  * WorkLogCreate
  */
 export const zWorkLogCreate = z.object({
@@ -3606,6 +4461,7 @@ export const zEventReadWritable = z.object({
   timezone: z.string(),
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
   managers_edit_voucher_shifts: z.boolean().optional().default(false),
+  managers_share_lists: z.boolean().optional().default(true),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
@@ -3621,6 +4477,7 @@ export const zEventReadWritable = z.object({
   pending_team_request_count: z.int().optional().default(0),
   voucher_task_count: z.int().optional().default(0),
   voucher_point_count: z.int().optional().default(0),
+  managed_task_count: z.int().optional().default(0),
 })
 
 /**
@@ -5121,6 +5978,10 @@ export const zWorkHoursGetVolunteerHoursPath = z.object({
   user_id: z.uuid(),
 })
 
+export const zWorkHoursGetVolunteerHoursQuery = z.object({
+  name: z.string().max(200).nullish(),
+})
+
 /**
  * Successful Response
  */
@@ -5874,6 +6735,348 @@ export const zReportingReportingExportQuery = z.object({
   date_to: z.iso.date().nullish(),
 })
 
+export const zSharedListsListSharedListsPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zSharedListsListSharedListsQuery = z.object({
+  status_filter: z.enum(['active', 'todo', 'live', 'paused', 'ended']).optional().default('active'),
+  q: z.string().max(100).nullish(),
+  sort_by: z
+    .enum(['status', 'created_at', 'title', 'signups', 'free', 'closes'])
+    .optional()
+    .default('status'),
+  sort_dir: z.enum(['asc', 'desc']).nullish(),
+  skip: z.int().gte(0).optional().default(0),
+  limit: z.int().gte(1).lte(100).optional().default(20),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsListSharedListsResponse = zSharedListListResponse
+
+export const zSharedListsCreateSharedListBody = zSharedListCreate
+
+export const zSharedListsCreateSharedListPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsCreateSharedListResponse = zSharedListDetail
+
+export const zSharedListsGetSharedListsOverviewPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsGetSharedListsOverviewResponse = zSharedListOverview
+
+export const zSharedListsListSharedListTasksPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zSharedListsListSharedListTasksQuery = z.object({
+  status_filter: z.enum(['all', 'todo']).optional().default('all'),
+  q: z.string().max(100).nullish(),
+  sort_by: z.enum(['name', 'free', 'unlisted_free']).optional().default('name'),
+  sort_dir: z.enum(['asc', 'desc']).nullish(),
+  skip: z.int().gte(0).optional().default(0),
+  limit: z.int().gte(1).lte(100).optional().default(20),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsListSharedListTasksResponse = zSharedListTaskListResponse
+
+export const zSharedListsListSharedListCandidatesPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zSharedListsListSharedListCandidatesQuery = z.object({
+  q: z.string().max(100).nullish(),
+  skip: z.int().gte(0).optional().default(0),
+  limit: z.int().gte(1).lte(50).optional().default(50),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsListSharedListCandidatesResponse = zSharedListCandidateListResponse
+
+export const zSharedListsListSharedListCandidateShiftsPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zSharedListsListSharedListCandidateShiftsQuery = z.object({
+  task_id: z.array(z.uuid()).min(1).max(50),
+})
+
+/**
+ * Response Shared-Lists-List Shared List Candidate Shifts
+ *
+ * Successful Response
+ */
+export const zSharedListsListSharedListCandidateShiftsResponse = z
+  .array(zSharedListCandidateShift)
+  .register(z.globalRegistry, {
+    description: 'Successful Response',
+  })
+
+export const zSharedListsFindReusableSharedListPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zSharedListsFindReusableSharedListQuery = z.object({
+  task_id: z.array(z.uuid()).min(1).max(50),
+  covering: z.boolean().optional().default(false),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsFindReusableSharedListResponse = zSharedListReusable
+
+export const zSharedListsBulkUpdateSharedListsBody = zSharedListBulkRequest
+
+export const zSharedListsBulkUpdateSharedListsPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsBulkUpdateSharedListsResponse = zSharedListBulkResult
+
+export const zSharedListsPauseAllSharedListsBody = zSharedListPauseAllRequest
+
+export const zSharedListsPauseAllSharedListsPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsPauseAllSharedListsResponse = zSharedListBulkResult
+
+export const zSharedListsGetSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsGetSharedListResponse = zSharedListDetail
+
+export const zSharedListsUpdateSharedListBody = zSharedListUpdate
+
+export const zSharedListsUpdateSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsUpdateSharedListResponse = zSharedListDetail
+
+export const zSharedListsPauseSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsPauseSharedListResponse = zSharedListDetail
+
+export const zSharedListsResumeSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsResumeSharedListResponse = zSharedListDetail
+
+export const zSharedListsEndSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsEndSharedListResponse = zSharedListDetail
+
+export const zSharedListsRotateSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListsRotateSharedListResponse = zSharedListDetail
+
+export const zSharedListGuestsListSharedListSignupsPath = z.object({
+  list_id: z.uuid(),
+})
+
+export const zSharedListGuestsListSharedListSignupsQuery = z.object({
+  sort_by: z.enum(['created_at', 'name', 'shift_start']).optional().default('created_at'),
+  sort_dir: z.enum(['asc', 'desc']).nullish(),
+  q: z.string().max(100).nullish(),
+  skip: z.int().gte(0).optional().default(0),
+  limit: z.int().gte(1).lte(100).optional().default(20),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsListSharedListSignupsResponse = zSharedListSignupListResponse
+
+export const zSharedListGuestsRemoveSharedListSignupsBody = zSharedListSignupRemoveRequest
+
+export const zSharedListGuestsRemoveSharedListSignupsPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsRemoveSharedListSignupsResponse = zSharedListSignupRemoveResult
+
+export const zSharedListGuestsPreviewSharedListPath = z.object({
+  list_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsPreviewSharedListResponse = zPublicSharedList
+
+export const zSharedListGuestsSearchListGuestsQuery = z.object({
+  q: z.string().min(3).max(100),
+  skip: z.int().gte(0).optional().default(0),
+  limit: z.int().gte(1).lte(100).optional().default(20),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsSearchListGuestsResponse = zListGuestAdminListResponse
+
+export const zSharedListGuestsExportListGuestPath = z.object({
+  guest_user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsExportListGuestResponse = zListGuestExport
+
+export const zSharedListGuestsEraseListGuestPath = z.object({
+  guest_user_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsEraseListGuestResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zSharedListGuestsLiftMailSuppressionBody = zMailSuppressionLift
+
+/**
+ * Successful Response
+ */
+export const zSharedListGuestsLiftMailSuppressionResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zPublicSharedListsGetPublicSharedListPath = z.object({
+  code: z.string(),
+})
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsGetPublicSharedListResponse = zPublicSharedList
+
+export const zPublicSharedListsSignUpOnSharedListBody = zPublicSignupRequest
+
+export const zPublicSharedListsSignUpOnSharedListPath = z.object({
+  code: z.string(),
+})
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsSignUpOnSharedListResponse = zPublicSignupResult
+
+export const zPublicSharedListsReadGuestSignupsBody = zGuestTokenRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsReadGuestSignupsResponse = zGuestSignupManage
+
+export const zPublicSharedListsCancelGuestSignupBody = zGuestCancelRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsCancelGuestSignupResponse = zGuestSignupManage
+
+export const zPublicSharedListsSetGuestRemindersBody = zGuestRemindersRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsSetGuestRemindersResponse = zGuestSignupManage
+
+export const zPublicSharedListsEraseGuestDataBody = zGuestTokenRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsEraseGuestDataResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zPublicSharedListsRejectGuestSignupBody = zGuestTokenRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsRejectGuestSignupResponse = z.void().register(z.globalRegistry, {
+  description: 'Successful Response',
+})
+
+export const zPublicSharedListsConfirmGuestAddressBody = zGuestTokenRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsConfirmGuestAddressResponse = zGuestConfirmResult
+
+export const zPublicSharedListsIssueGuestVoucherPassBody = zGuestPassRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsIssueGuestVoucherPassResponse = zVoucherPassRead
+
+export const zPublicSharedListsReadGuestVoucherPassBody = zGuestPassStatusRequest
+
+/**
+ * Successful Response
+ */
+export const zPublicSharedListsReadGuestVoucherPassResponse = zVoucherPassStatus
+
 /**
  * Response Debug-Start Log Capture
  *
@@ -5913,3 +7116,10 @@ export const zTestingResetTestDataResponse = z
   .register(z.globalRegistry, {
     description: 'Successful Response',
   })
+
+export const zTestingGuestMailLinkBody = zGuestTokenRequest
+
+/**
+ * Successful Response
+ */
+export const zTestingGuestMailLinkResponse = zGuestTokenRequest

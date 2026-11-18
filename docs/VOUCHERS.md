@@ -65,6 +65,18 @@ check. The per-task volunteer desk in the original plan
 The client reads the same answers from `VoucherPointRead.can_redeem`,
 `can_redeem_manually` and `TaskRead.can_redeem`.
 
+**Guests of shared lists are redeemed by code only.** The gate is about the
+redeemer, always a member or an organiser. Whose vouchers are taken is decided
+in `vouchers._holder_or_404`: a current member either way, and with a code
+also a guest (`users.is_list_guest`) whose manage link is alive and who has a
+part in the event (`vouchers.appears_in_event`). Showing the code is the
+guest's consent to be named at the stand, as it is a member's. Picking from a
+list stays members-only (`available_for_members`, the picker's
+`/points/{task_id}/people`), so guests' names never reach the screen of
+everyone on shift at a point. For a guest whose phone died, an event admin
+books a negative correction instead. `VoucherCheckResult.is_guest` tags the
+confirm sheet.
+
 ### What a redeemer can see
 
 - **Counts in the redeem picker.** `GET
@@ -98,6 +110,17 @@ ones.
 Neither figure filters on membership or task status. Someone who worked and left
 still worked, and an archived task's shifts still count. The [booking
 rules](#booking-rules-that-exist-because-of-earnings) are what keep that honest.
+
+Guests who signed up through a shared list earn exactly like members: the
+derivation and `settle_earnings` do not ask who booked. A balance is one user's,
+so a guest's is their guest user's: a sign-up chain's, or a guest account's
+once the address was confirmed ([below](#guests-of-shared-lists)).
+
+`vouchers.appears_in_event` is who has a part in an event: a current member, or
+someone with entries, settled earnings worth something or confirmed bookings
+there. The overview lists exactly these, corrections and `GET
+/vouchers/people/{user_id}` admit them, and redeeming by code admits the guests
+among them.
 
 ### Earned: derived until something would change it
 
@@ -187,13 +210,16 @@ signed amount with a required reason, and may be edited or deleted.
 on two sessions. The route has already run the gate. The order matters:
 
 1. Find the volunteer: the code's owner, or the person picked. They must be a
-   current member (`404 event.member_not_found`), so a former member's balance
-   can be corrected but not redeemed.
+   current member, or, by code only, a live guest with a part in the event
+   (`404 event.member_not_found`), so a former member's balance can be
+   corrected but not redeemed.
 2. `crud_voucher.lock_ledger`.
 3. Look for an earlier result with this `request_id`.
 4. Read the pass again under the lock (`reload_pass`). The first read is in the
-   identity map from before the lock, and the code may since have been used or
-   replaced.
+   identity map from before the lock, and the code may since have been used,
+   replaced, or deleted by a guest's confirmation. A pass that no longer belongs
+   to the volunteer is `409 voucher.code_expired`, a check of record a
+   confirmation cannot reach, since it deletes codes rather than moving them.
 5. Check `available` (`409 voucher.insufficient`, extension `available`).
    Nothing has been written yet, so a refusal does not rely on a rollback, which
    the test client would not perform. The code stays valid for a smaller amount.
@@ -228,10 +254,12 @@ vouchers are already spent. Adding is always allowed.
 the lock (`_locked_adjustment`). Another organiser may have changed it while
 this request waited, and checking against the stale amount could go below zero.
 
-A correction can target a current member, or anyone with entries, settled
-earnings or confirmed bookings in the event (`_appears_in_event`), which covers
-every row of the overview. Settled earnings count on their own: deleting an
-ended shift cancels the booking behind the earning.
+A correction can target anyone `vouchers.appears_in_event` admits, which covers
+every row of the overview, guests included. Settled earnings count on their
+own: deleting an ended shift cancels the booking behind the earning. The route
+asks it under the ledger lock, so a correction racing a guest's merge lands
+first and moves with it, or answers `404 event.member_not_found` once the chain
+is gone.
 
 ## Codes
 
@@ -257,10 +285,40 @@ lives two minutes and works once. The QR code holds `WV1:` plus the code, and
   so the status poll can still say "redeemed".
 - **The countdown** runs from `ttl_seconds` on receipt, never from `expires_at`
   against the device clock.
+- **The check reads its pass again after the hold.** `check` takes no ledger
+  lock, and `hold_pass` has no user filter. A check that read a guest chain's
+  code just before a confirmation deleted it waits in `hold_pass` for that
+  delete, then finds nothing: `404 voucher.code_invalid`, never the deleted
+  chain's name.
 - **Rate limits.** `voucher_code_limiter`, 60 a minute per redeemer on check and
   redeem with a code (a busy stand does about 25 people a minute, and 60 still
   makes guessing pointless). `voucher_pass_limiter`, 20 a minute for issuing.
   These are the in-process `RateLimiter`, so they do not count across workers.
+
+**A guest's code.** A guest has no session, so their manage page asks through
+public routes that the manage token opens (`app/api/routes/public_shared_lists.py`,
+`logic/shared_lists/guest_vouchers.py`), under the members' rules:
+
+| Route | Does | Limit |
+|---|---|---|
+| `POST /public/guest-signups/vouchers/pass` | `{token, event_id}` → 201 `VoucherPassRead`. `404 guest_signup.not_found` for an event in which the guest has no vouchers (`guest_vouchers.voucher_event_ids`) | `voucher_pass_limiter`, keyed `guest:<user id>:<kind>` (`mail` or `response`, [SHARED_LISTS.md](SHARED_LISTS.md#rate-limits)) |
+| `POST /public/guest-signups/vouchers/pass-status` | `{token, event_id, pass_id}` → `VoucherPassStatus`; `404 voucher.pass_not_found` once replaced or deleted | `guest_pass_status_limiter`, 120 a minute per guest |
+
+Both count per guest once the token resolves, and per IP only when it does not
+(see [`SHARED_LISTS.md`](SHARED_LISTS.md#rate-limits)): the screen asks for the
+status every two seconds, and a queue of guests behind one venue NAT must not
+share a bucket. Any live token of a chain may ask; a guest account's codes are
+only reached through mail tokens. A confirmation deletes the chain's unused
+codes, promoted or merged: whoever only typed the address may hold one, and it
+must never spend what the confirmation pools.
+
+A code screen whose code vanished before its time (`voucher.pass_not_found` for
+the code on screen: deleted by a confirmation, or replaced from another screen)
+shows a new code at once, through whatever link it holds by then
+(`VoucherCodeDialog.vue`). It does that once per opening; a second time it
+offers "Try again" instead, so two screens of one person never take turns
+deleting each other's codes. A dead link ends the screen for good
+(`PassSourceGone`).
 
 ## Booking rules that exist because of earnings
 
@@ -289,6 +347,40 @@ Bookings on shifts already over stay, because that work happened.
 The limits on people in charge (the shift history rule, voucher shifts) are in
 [`PEOPLE_IN_CHARGE.md`](PEOPLE_IN_CHARGE.md#what-a-person-in-charge-may-do).
 
+## Guests of shared lists
+
+Someone who signs up through a shared list ([`SHARED_LISTS.md`](SHARED_LISTS.md))
+is a guest user (`users.is_list_guest`), never a member, and earns like
+everyone else. Nothing about guests needs settling first: a guest never takes a
+shift that has started, their own cancel refuses a shift that is over (`409
+booking.shift_over`), an organiser's removal skips one with that code, and
+erasing keeps their confirmed bookings of ended shifts, without a name.
+
+**Whose balance.** Earnings, entries and codes are keyed by user, so a guest's
+balance is their guest user's:
+
+- a **sign-up chain** (one visit to one list) holds its own vouchers. Any token
+  of the chain shows a code for them, which covers guests without an address;
+- a **guest account** is a chain whose address was confirmed through a mail
+  link (`shared_list_guests.confirmed_at`), at most one per event and address.
+  The first confirmation promotes its chain in place; every later one merges
+  its chain into the account (`logic/shared_lists/guest_account.py`): bookings,
+  reminders, earnings, entries and used codes move to the account's user, the
+  unused codes are deleted, and the chain's user goes. One page then shows the
+  pooled balance.
+
+Moving a booking changes no amount, because ownership does not enter the
+derivation, so a merge needs no settling, except in the defensive case of both
+users confirmed on one shift, where it settles before it drops one booking.
+
+**No-shows** earn, as no-show members do until attendance (#177) exists. The
+organisers' tool is a negative correction.
+
+**Expiry.** Unredeemed vouchers expire when a guest's data is anonymised (their
+own erase, "Das war ich nicht", or `GUEST_DATA_RETENTION_DAYS` after their last
+shift): the manage link goes, so no code can be shown. The organisers still see
+the amount on the anonymous row and can correct it to 0.
+
 ## Settings
 
 | Column | Default | Meaning |
@@ -309,7 +401,20 @@ in the event runs in.
 ## Gotchas
 
 - **`logic/vouchers.py` does no gating.** It must not import
-  `logic/permissions.py`, which imports it. The routes run the gate.
+  `logic/permissions.py`, which imports it. The routes run the gate. It may
+  import `crud.shared_list_guest`, plain CRUD, for the guest checks.
+- **A guest user with ledger entries, or with earnings worth something, is
+  never deleted**, by an erase or the retention sweep: the CASCADE would take a
+  stand's redemptions, and `point_totals`, with it. It is anonymised instead,
+  and the notes of its corrections are cleared (a note is free text, and the
+  natural one names the person); the amounts stay.
+- **A merge takes both users' ledger locks, then the chain's `users` row.**
+  `settle_earnings` takes no lock, and `voucher_earnings.booking_id` has no
+  foreign key, so the `users` row is the only thing that orders a settle
+  against the merge: an earning inserted first moves with the rest, one that
+  comes later fails its foreign key and the organiser retries. Taken before the
+  ledger locks, it would deadlock with a redemption that inserts its entry
+  under that row's key-share lock.
 - **Two clocks.** Shift comparisons use `clock.wall_clock_now(event.timezone)`, stored
   timestamps `clock.utc_now()`, and `redeem` and `check` take both. Comparing a
   shift with UTC would make a shift that ends at 18:00 end at 20:00 in a German

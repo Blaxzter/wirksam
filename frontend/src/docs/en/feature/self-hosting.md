@@ -78,6 +78,8 @@ Anyone who registers or signs in with one of these addresses gets the platform a
 
 `REGISTRATION_ALLOWED_DOMAINS` limits signup in any mode to certain email domains. Separate them with commas, such as `gemeinde.de,example.org`. Empty means any domain.
 
+None of these settings apply to shared lists, because signing up on a list creates no account. To switch the lists off, see `SHARED_LISTS_ENABLED` in the questions below.
+
 ## Where files live
 
 People upload profile pictures, venue plan pictures and documents for team requests. `STORAGE_BACKEND` has two values:
@@ -115,6 +117,8 @@ Yes, with `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`. The domain doesn't ha
 
 If the check is on and Cloudflare can't be reached, registration is refused.
 
+The same check protects sign-ups on shared lists. While the lists are on, it's recommended, and without it the backend warns at startup.
+
 ### Can I use another S3 store instead of Garage?
 
 Yes, for example Cloudflare R2 or another S3-compatible store. Remove `COMPOSE_PROFILES` and set `S3_ENDPOINT_URL`, `S3_REGION`, `S3_BUCKET` and the key pair.
@@ -136,6 +140,7 @@ Changing `EVENT_TIMEZONE` later doesn't move existing events. With an unknown na
 ### How do I adjust the demo and the public pages?
 
 - `SANDBOX_ENABLED` (default `true`) controls the "Try a demo event" button. It creates a throwaway account with an example event, without signing up. With `false`, the button goes away and the backend refuses new demos. `SANDBOX_TTL_MINUTES` (60) and `SANDBOX_MAX_ACTIVE` (25) limit how long they last and how many run at once.
+- `SHARED_LISTS_ENABLED` (default `true`) offers shared lists. With `false`, the page for them leaves the navigation, no list takes new sign-ups, and their links say the list doesn't exist. People already signed up keep their link to take their name off or delete their data. `GUEST_DATA_RETENTION_DAYS` (default `30`) sets how long after their last shift the details of people who signed up through a list are kept. `.env.example` lists it with the other limits for lists. The frontend container reads it too, for the number in the privacy policy, so set it once in `.env` for both.
 - `LANDING_ENABLED` (default `true`): with `false`, `/` leads to sign-in or, if you're signed in, into the app. The content pages like this one go too. Privacy, terms, impressum and the changelog stay.
 - `SEARCH_INDEXING` (default `true`): with `false`, `robots.txt` tells every crawler to stay away, and `sitemap.xml` and `llms.txt` are removed.
 - `LEGAL_NAME`, `LEGAL_ADDRESS`, `LEGAL_CITY`, `LEGAL_EMAIL` and `LEGAL_PHONE` put your details on the impressum and privacy pages.

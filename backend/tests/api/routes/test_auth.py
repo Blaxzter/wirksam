@@ -51,8 +51,10 @@ from app.crud.auth_session import auth_session as crud_auth_session
 from app.crud.user import user as crud_user
 from app.crud.user_token import user_token as crud_user_token
 from app.logic.auth.tokens import issue_user_token
+from app.models.shared_list import SharedList
 from app.models.user import User
 from tests.fixtures.auth import AuthHeadersFactory
+from tests.fixtures.shared_lists import ListGuestFactory
 from tests.fixtures.users import TEST_USER_PASSWORD
 
 AUTH = f"{settings.API_V1_STR}/auth"
@@ -2126,3 +2128,66 @@ class TestUnderTheE2EImpersonationHeader:
         assert response.status_code == 204
         assert (await unauthenticated_client.post(f"{AUTH}/refresh")).status_code == 401
         assert (await other_client.post(f"{AUTH}/refresh")).status_code == 401
+
+
+# ── Guests of shared lists ────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+class TestListGuestsHoldNoCredential:
+    """A guest who signed up through a shared list has no password and no
+    session, so it never holds a token. Should one be minted anyway, every
+    dependency that loads a ``User`` refuses it with 403 ``auth.guest_account``,
+    ``AnyUser`` included, which skips the other account checks."""
+
+    @pytest.mark.parametrize(
+        ("method", "path"),
+        [
+            ("GET", "/users/me"),  # AnyUser
+            ("DELETE", "/users/me"),  # AnyUser
+            ("GET", "/bookings/me"),  # CurrentUser
+        ],
+    )
+    async def test_a_token_minted_for_a_guest_is_refused(
+        self,
+        unauthenticated_client: AsyncClient,
+        db_session: AsyncSession,
+        auth_headers: AuthHeadersFactory,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        method: str,
+        path: str,
+    ) -> None:
+        guest = await make_list_guest(test_shared_list)
+
+        response = await unauthenticated_client.request(
+            method, f"{settings.API_V1_STR}{path}", headers=auth_headers(guest.user)
+        )
+
+        assert response.status_code == 403
+        assert response.json()["code"] == "auth.guest_account"
+        assert await crud_user.get(db_session, guest.user.id) is not None
+
+    async def test_the_impersonation_header_refuses_a_guest_too(
+        self,
+        unauthenticated_client: AsyncClient,
+        db_session: AsyncSession,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The header finds an account by ``users.email``, which a guest never
+        has; given one anyway, the guest is still refused."""
+        monkeypatch.setattr(settings, "TESTING", True)
+        guest = await make_list_guest(test_shared_list)
+        guest.user.email = "listguest@example.org"
+        db_session.add(guest.user)
+        await db_session.flush()
+
+        response = await unauthenticated_client.get(
+            f"{settings.API_V1_STR}/users/me",
+            headers={"X-Test-User-Email": "listguest@example.org"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["code"] == "auth.guest_account"

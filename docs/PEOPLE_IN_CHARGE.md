@@ -55,7 +55,8 @@ They may edit the task's name, description, dates, location and category; within
 the two rules below add, edit, delete and regenerate its shifts and batches; see
 the contact details of the people booked on it; see it while it is a draft;
 redeem at it with or without a code if it is a point; book one of its shifts
-that has started (never one that has ended); and step down.
+that has started (never one that has ended); put it on a shared list while the
+event allows it ([below](#shared-lists)); and step down.
 
 These stay with event admins:
 
@@ -67,6 +68,7 @@ These stay with event admins:
 | `vouchers_per_shift`, `is_voucher_point` | Vouchers are currency, so the rate and the places that take them are the organisers' call |
 | Deleting the task | It removes the task for everyone |
 | Naming, inviting or removing others | A person in charge may only remove themselves |
+| Stopping every shared list, the `managers_share_lists` switch, erasing a guest's data | The stop must hold against people in charge, and erasing reaches the guest's sign-ups on every task |
 
 The fields are `ADMIN_ONLY_TASK_FIELDS` in `api/routes/tasks/crud.py`. A changed
 value is refused (`403 task.admin_only_field`, naming the fields), and one sent
@@ -137,6 +139,15 @@ to event admins, the task's people in charge and each booker on their own row.
 Phone numbers in `GET /tasks/{id}/bookings` go to the first two. The redaction
 is partial, because `GET /events/{id}/members` shows every member's e-mail
 address to every member.
+
+**Guests.** People who signed up through a shared list appear on all three
+routes, flagged `is_guest` (`ShiftBookingEntry`, `ShiftBooker`,
+`TaskBookingEntry`), so the client can tag them. They are never members, so
+the member list does not show them. Their e-mail address is read from
+`shared_list_guests` (`crud_shared_list_guest.contact_emails`) and goes to the
+same people as a member's, and their phone number follows the member rule.
+Those people also get `via_list_title`, the list the guest came through, and
+only for a list of the task's own event.
 
 **Finding their own task.** The task lists widen their status filter to the
 drafts of tasks the caller is in charge of (`also_include_task_ids`).
@@ -266,6 +277,38 @@ touch the key and are not held up. Booking takes the same lock.
 `uq_task_manager_task_user` is a `409 task.manager_already` and leaves the
 transaction usable.
 
+## Shared lists
+
+A person in charge may put their own tasks on a shared list
+([`SHARED_LISTS.md`](SHARED_LISTS.md)), a public link through which people sign
+up without an account. That opens the task to strangers, which nothing else a
+person in charge does reaches, so the event decides:
+`events.managers_share_lists`, on by default, set by event admins and copied by
+a clone.
+
+| Gate | What a person in charge gets |
+|---|---|
+| `shared_list_scope` | The event's list pages, while they are in charge of at least one of its tasks. Otherwise `403 shared_list.forbidden` |
+| `require_shared_list_tasks` | Creating a list, and changing its tasks, with tasks they are in charge of only (`403 shared_list.tasks_forbidden`, naming the others), and only while the setting is on |
+| `shared_list_access`, `require_shared_list_visible` | `manager` on a list whose current tasks are all theirs; `viewer`, read-only, on one that holds some of them; nothing otherwise |
+| `require_shared_list_manager` | Editing, pausing, resuming, ending and rotating a list they are `manager` of. While the setting is off, only pausing and ending (`403 shared_list.managers_disabled`) |
+
+The gates ask for the event role first, so the membership rule holds here too,
+and they judge a list by its tasks at the time of each call: someone who leaves
+or steps down, or whose task moves, loses the list with it. A list whose
+creator lost access stays with the event admins.
+
+On a list, a person in charge sees the sign-ups on their own tasks, with
+contact details, and how many others there are (`hidden_count`). They can take
+guests off their own tasks; a sign-up on someone else's task comes back in
+`skipped` as `shared_list.forbidden`. The emergency stop, `POST
+/events/{id}/shared-lists/pause-all`, is for event admins, and with
+`lock_managers` it also switches `managers_share_lists` off, so nobody in charge
+can reopen a list behind it.
+
+A task with a `team_id` is never on a list: a guest can never be an approved
+team member.
+
 ## Stepping down, leaving, moving
 
 - **Stepping down** (`DELETE /tasks/{id}/managers/{own id}`) needs no role and
@@ -279,7 +322,9 @@ transaction usable.
   clean-up, because the source account leaves those events.
 - **Moving the task** to another event drops everyone in charge
   (`remove_all_for_task`), since they are members of the source event, and calls
-  `detach_task`.
+  `detach_task`. It also takes the task off every shared list
+  (`crud_shared_list.detach_task_from_lists`); the bookings guests made through
+  those lists move with the task.
 - **Deleting the event** leaves the task with `event_id` NULL and its rows
   inert: `task_access` answers `None` to anyone but the superadmin.
 

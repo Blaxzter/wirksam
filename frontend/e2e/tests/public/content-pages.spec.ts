@@ -14,7 +14,7 @@ test.describe('comparison page', () => {
     await expect(table).toBeVisible()
     // WirkSam and the five tools it is compared with.
     await expect(table.locator('tbody tr')).toHaveCount(6)
-    await expect(page.getByTestId('comparison-as-of')).toContainText('October 2026')
+    await expect(page.getByTestId('comparison-as-of')).toContainText('November 2026')
     await expect(page.locator('#tool-engelsystem a[href^="https://"]').first()).toBeVisible()
   })
 
@@ -23,7 +23,7 @@ test.describe('comparison page', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'de')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('WirkSam und die Alternativen')
     await expect(page.getByTestId('comparison-as-of')).toContainText(
-      'Stand: Oktober 2026, Angaben ohne Gewähr',
+      'Stand: November 2026, Angaben ohne Gewähr',
     )
   })
 
@@ -86,7 +86,7 @@ test.describe('feature pages and guides', () => {
     await page.goto('/features')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('What WirkSam can do')
     await expect(page).toHaveTitle(/All features/)
-    await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(10)
+    await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(11)
     await expect(page.getByTestId('page-art')).toHaveAttribute('data-art', 'roster')
     // Each card names its group.
     const vouchers = page.getByTestId('doc-card-featureVouchers')

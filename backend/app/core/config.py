@@ -279,6 +279,34 @@ class Settings(BaseSettings):
     SANDBOX_TTL_MINUTES: int = 60
     SANDBOX_MAX_ACTIVE: int = 25
 
+    # Shared lists — public links through which people without an account sign
+    # up for shifts (app/logic/shared_lists/). REGISTRATION_MODE does not gate
+    # them: nobody who signs up through a list gets an account.
+    #
+    # * SHARED_LISTS_ENABLED switches every shared-list endpoint off (404) but
+    #   the guests' own pages and the operator's /list-guests, since guests
+    #   signed up already still get mail about their shifts. The frontend reads
+    #   the same value through window.__APP_CONFIG__.
+    # * GUEST_DATA_RETENTION_DAYS: a guest is anonymised this many days after
+    #   their own last shift. The privacy policy promises the same number.
+    # * The daily ceilings are counted in the database over the last 24 hours
+    #   (guest_activity_log), so neither erasing a guest nor deleting an event
+    #   resets them; the per-worker rate limiters are no fence here. An address
+    #   is whatever someone typed into a list's form, and the organiser is the
+    #   account that created the event, which also chose what the mails name.
+    #   Skipped under TESTING, like the invitation limits.
+    # * SHARED_LISTS_PER_EVENT bounds the lists of one event, which the
+    #   management views compute over in full.
+    SHARED_LISTS_ENABLED: bool = True
+    GUEST_DATA_RETENTION_DAYS: int = 30
+    GUEST_SIGNUPS_PER_ADDRESS_PER_DAY: int = 20
+    GUEST_SIGNUP_EVENTS_PER_ADDRESS_PER_DAY: int = 3
+    GUEST_MAILS_PER_ADDRESS_PER_DAY: int = 10
+    GUEST_MAILS_PER_EVENT_PER_DAY: int = 1000
+    GUEST_MAILS_PER_ORGANISER_PER_DAY: int = 2000
+    SHARED_LIST_SIGNUPS_PER_LIST_PER_DAY: int = 500
+    SHARED_LISTS_PER_EVENT: int = 200
+
     # The zone the events' wall clock runs in (an IANA name). Shift dates and
     # times are stored without a zone; app/logic/clock.py::wall_clock_now reads
     # "now" in this zone so that "has this shift started / ended" agrees with
@@ -399,6 +427,24 @@ class Settings(BaseSettings):
                 warnings.warn(message, stacklevel=1)
             else:
                 raise ValueError(message)
+        return self
+
+    @model_validator(mode="after")
+    def _recommend_turnstile_for_shared_lists(self) -> Self:
+        # A warning, not a refusal: a self-hosted deployment without Cloudflare
+        # keeps the lists, and the daily ceilings above do not depend on the
+        # bot check. Without it, though, scripted sign-ups meet only those.
+        if (
+            self.ENVIRONMENT != "local"
+            and self.SHARED_LISTS_ENABLED
+            and not self.turnstile_enabled
+        ):
+            warnings.warn(
+                "SHARED_LISTS_ENABLED without TURNSTILE_SECRET_KEY: anyone can "
+                "script sign-ups on a shared list. Set up Turnstile "
+                "(docs/deployment.md) or switch the lists off.",
+                stacklevel=1,
+            )
         return self
 
 

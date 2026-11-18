@@ -41,21 +41,22 @@ Not yet covered, and not currently tracked by an issue:
 
 | Project      | Spec files | Tests   |
 | ------------ | ---------- | ------- |
-| `a11y`       | 5          | 38      |
+| `a11y`       | 6          | 45      |
 | `auth`       | 5          | 20      |
-| `chromium`   | 29         | 247     |
+| `chromium`   | 32         | 276     |
+| `guest`      | 3          | 22      |
 | `member`     | 3          | 29      |
-| `mobile`     | 6          | 22      |
-| `multi-user` | 7          | 75      |
-| `public`     | 8          | 51      |
+| `mobile`     | 9          | 30      |
+| `multi-user` | 8          | 79      |
+| `public`     | 8          | 52      |
 | `test-reset` | 1          | 1       |
-| **Total**    | **64**     | **483** |
+| **Total**    | **75**     | **554** |
 
 ## Inventory
 
-### Project `a11y` — 5 files, 38 tests
+### Project `a11y` — 6 files, 45 tests
 
-#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 14 tests
+#### `frontend/e2e/tests/a11y/admin-routes.spec.ts` — 16 tests
 
 - **a11y – admin routes** (11)
   - dashboard
@@ -73,8 +74,20 @@ Not yet covered, and not currently tracked by an issue:
   - teams page and the review dialog
 - **a11y – admin event vouchers** (1)
   - voucher rules and overview
+- **a11y – admin shared lists** (2)
+  - the lists table and a list’s page
+  - a list’s notice to print
 - **a11y – admin task detail** (1)
   - task detail
+
+#### `frontend/e2e/tests/a11y/guest-pages.spec.ts` — 5 tests
+
+- **a11y – guest pages** (5)
+  - the list, the form and the done step have no serious or critical violations
+  - a link that leads nowhere has no serious or critical violations
+  - the manage page has no serious or critical violations
+  - the manage page with vouchers and the open code screen has no serious or critical violations
+  - the address to confirm has no serious or critical violations
 
 #### `frontend/e2e/tests/a11y/keyboard.spec.ts` — 4 tests
 
@@ -164,7 +177,7 @@ Not yet covered, and not currently tracked by an issue:
 - **Registration modes – allowed domains** (1)
   - the form names the domains and refuses any other address
 
-### Project `chromium` — 29 files, 247 tests
+### Project `chromium` — 32 files, 276 tests
 
 #### `frontend/e2e/tests/authenticated/admin-events.spec.ts` — 13 tests
 
@@ -423,17 +436,19 @@ Not yet covered, and not currently tracked by an issue:
   - shows default reminders section
   - can toggle a global channel switch
 
-#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 15 tests
+#### `frontend/e2e/tests/authenticated/print-views.spec.ts` — 17 tests
 
-- **Print Task – smoke** (4)
+- **Print Task – smoke** (5)
   - print task page loads
   - shows print toolbar
   - shows print content
   - shows task name in print content
-- **Print Task Event – smoke** (3)
+  - a task’s own sheet has a line per place and no QR code
+- **Print Task Event – smoke** (4)
   - print event page loads
   - shows print toolbar for event
   - shows event name in print content
+  - the overview keeps its QR code to the event in the app
 - **Print – booked names** (2)
   - unticking "Show booked names" on a task blanks the lines again
   - unticking "Show booked names" on the whole event blanks the lines again
@@ -490,6 +505,50 @@ Not yet covered, and not currently tracked by an issue:
 - **Settings – notification preferences** (2)
   - can navigate to notification preferences
   - notification preferences page loads
+
+#### `frontend/e2e/tests/authenticated/shared-list-print.spec.ts` — 11 tests
+
+- **a task’s notice** (4)
+  - reuses the open list of exactly that task
+  - asks once, creates a list with the defaults and prints its sheet
+  - opens its paused list’s notice rather than making a second list
+  - "Adjust first" opens the wizard with the task picked
+- **a member’s print** (1)
+  - is the task’s sheet without a QR code, and makes no list
+- **the whole event’s sheets** (3)
+  - share one list, and a team-only task prints without its QR code
+  - keep their list once a task is full
+  - hand focus to printing when the question is closed
+- **a notice on A4** (1)
+  - keeps each task’s heading with its shifts and the times on one line
+- **a list’s details** (2)
+  - "Print notice" opens the list’s sheet
+  - a paused list offers to resume instead of printing
+
+#### `frontend/e2e/tests/authenticated/shared-list-wizard.spec.ts` — 5 tests
+
+- **Shared list wizard** (5)
+  - a shift taken back in on a left-out day makes the day mixed, and only it goes on the list
+  - sets no limit per person by default, then opens the list with link, text and QR code
+  - Back from the new list’s notice returns to the lists, not to the wizard
+  - editing keeps the link
+  - an ended list can be shared again as a new one
+
+#### `frontend/e2e/tests/authenticated/shared-lists-manage.spec.ts` — 11 tests
+
+- **a page of 25 lists** (4)
+  - the sidebar leads to the page, and the chips count the lists
+  - counts the lists on the Links tab when the page opens on another tab
+  - sorts by title both ways, on the server
+  - the second page has the rest, and turning the page clears the selection
+- **one event, a few lists** (7)
+  - pauses, resumes and ends ticked lists together
+  - copies the link, renews it, and ends the list from its details
+  - takes a sign-up off, with and without telling them by email
+  - deleting the data of a confirmed address names the sign-ups that go along
+  - "this and all newer ones" takes the later sign-ups off
+  - keeps keyboard focus on the control that was used
+  - the tasks tab names the task whose places no open list offers
 
 #### `frontend/e2e/tests/authenticated/shift-detail.spec.ts` — 4 tests
 
@@ -588,6 +647,44 @@ Not yet covered, and not currently tracked by an issue:
 - **Venue plan templates** (1)
   - save a plan as a template, start a new plan from it, rename and delete it
 
+### Project `guest` — 3 files, 22 tests
+
+#### `frontend/e2e/tests/guest/guest-manage.spec.ts` — 6 tests
+
+- **Guest – managing a sign-up** (6)
+  - reads the link, takes the token out of the address bar and lists the shifts
+  - a link that does not work says so, also after a reload
+  - takes the guest off a shift once they confirm
+  - switches the reminder mail off
+  - deletes the data, after which the link stops working
+  - "That wasn't me" from a mail link ends the sign-up
+
+#### `frontend/e2e/tests/guest/guest-vouchers.spec.ts` — 3 tests
+
+- **Guest – vouchers** (3)
+  - a guest earns vouchers, shows a code and an organiser redeems it
+  - two sign-ups with one address end on one page once both are confirmed
+  - at phone width the vouchers card and the code screen scroll no page sideways
+
+#### `frontend/e2e/tests/guest/shared-list-signup.spec.ts` — 13 tests
+
+- **Guest – signing up on a shared list** (10)
+  - signs up with an email address and ends on "You're signed up"
+  - signs up for another shift through the same chain
+  - goes on with a new chain once the first was confirmed from its mail
+  - takes a sign-up back, and the place opens again
+  - "Done – next person" leaves nothing of the last guest in the form
+  - shows the manage link to keep when there is no address to mail
+  - says a shift has just filled up when someone else took the last place
+  - checks the fields before sending, in the order they are laid out
+  - says first names show where the list shows them, how long details are kept, then links to privacy
+  - asks search engines to stay away
+- **Guest – a list that is not open** (2)
+  - a link that leads nowhere says so
+  - a paused list and an ended one say so under their title
+- **Guest – in German** (1)
+  - follows the language the visitor chose
+
 ### Project `member` — 3 files, 29 tests
 
 #### `frontend/e2e/tests/member/events-member.spec.ts` — 15 tests
@@ -636,7 +733,7 @@ Not yet covered, and not currently tracked by an issue:
   - a room drawn for a place gets a pill and opens the place
   - the drawing and the pills follow the dark theme
 
-### Project `mobile` — 6 files, 22 tests
+### Project `mobile` — 9 files, 30 tests
 
 #### `frontend/e2e/tests/mobile/dashboard.spec.ts` — 4 tests
 
@@ -663,6 +760,23 @@ Not yet covered, and not currently tracked by an issue:
 - **Confirm prompts – as an action sheet** (1)
   - a destructive confirm opens over the drawer and can be dismissed
 
+#### `frontend/e2e/tests/mobile/shared-list-print.spec.ts` — 2 tests
+
+- the ⋯ sheet asks in a bottom sheet, and the notice fits a phone
+- closing the whole event’s bottom sheet hands focus to printing
+
+#### `frontend/e2e/tests/mobile/shared-list-public.spec.ts` — 2 tests
+
+- the page runs at a phone width
+- a list fits the screen and signs a guest up with thumb-sized buttons
+
+#### `frontend/e2e/tests/mobile/shared-lists.spec.ts` — 4 tests
+
+- the viewport really is a phone
+- lists are cards with a sort control, and nothing scrolls sideways
+- the ⋯ menu opens the list’s own page
+- the selection bar stays clear of the bottom navigation
+
 #### `frontend/e2e/tests/mobile/task-detail.spec.ts` — 4 tests
 
 - **Task page – on a phone** (4)
@@ -684,7 +798,7 @@ Not yet covered, and not currently tracked by an issue:
   - an organiser draws a shape by tapping, finished with "Close shape"
   - an organiser starts a plan from a template and manages it in the sheet
 
-### Project `multi-user` — 7 files, 75 tests
+### Project `multi-user` — 8 files, 79 tests
 
 #### `frontend/e2e/tests/multi-user/event-manager-access.spec.ts` — 24 tests
 
@@ -779,6 +893,13 @@ Not yet covered, and not currently tracked by an issue:
   - member books shift, admin sees updated count
   - admin-created task visible to member in tasks list
 
+#### `frontend/e2e/tests/multi-user/shared-lists-people-in-charge.spec.ts` — 4 tests
+
+- a person in charge shares their task and manages that list
+- a list with someone else’s task is read-only for them, and says why
+- a plain member has no page and no access
+- with sharing off, a person in charge can pause but not reopen or create
+
 #### `frontend/e2e/tests/multi-user/task-managers.spec.ts` — 9 tests
 
 - an organiser puts a member in charge from the task page
@@ -800,7 +921,7 @@ Not yet covered, and not currently tracked by an issue:
 - the dashboard shows a code at the stand, without going to the vouchers page
 - a refused camera says so, and a bad code is explained next to the field
 
-### Project `public` — 8 files, 51 tests
+### Project `public` — 8 files, 52 tests
 
 #### `frontend/e2e/tests/public/content-pages.spec.ts` — 18 tests
 
@@ -878,14 +999,15 @@ Not yet covered, and not currently tracked by an issue:
   - the demo banner stays usable while the tour is running
   - the banner can restart a tour that was closed
 
-#### `frontend/e2e/tests/public/sandbox.spec.ts` — 7 tests
+#### `frontend/e2e/tests/public/sandbox.spec.ts` — 8 tests
 
-- **demo session** (7)
+- **demo session** (8)
   - the landing page offers a demo to an anonymous visitor
   - opens the app directly, without ever showing the event picker
   - shows a banner with a live countdown and a way out
   - a helper sees the volunteer side and none of the management screens
   - an organiser sees the management screens
+  - an organiser finds a shared list to try, whose sign-ups mail nobody
   - the seeded event has work in it on every screen the tour visits
   - leaving the demo signs the visitor out and takes the app back
 

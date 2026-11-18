@@ -81,8 +81,14 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         # Guest accounts are an implementation detail of the demo, not people.
         # They would otherwise crowd this list out on a busy day, and every
         # action it offers - suspend, promote, reject - means nothing for a row
-        # that deletes itself within the hour.
-        q_clauses = [*q_clauses, col(User.is_sandbox).is_(False)]
+        # that deletes itself within the hour. Guests of shared lists are no
+        # accounts either: nobody signs in as one, and the operator finds their
+        # data through the guest lookup instead.
+        q_clauses = [
+            *q_clauses,
+            col(User.is_sandbox).is_(False),
+            col(User.is_list_guest).is_(False),
+        ]
 
         items_query = (
             select(User)

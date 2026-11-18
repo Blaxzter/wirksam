@@ -1,0 +1,204 @@
+{
+    "actions": {
+        "done": "Fertig",
+        "preview": "Vorschau",
+        "publish": "Liste öffnen",
+        "retry": "Nochmal versuchen"
+    },
+    "autoTitle": {
+        "many": "Hilf mit: {event}",
+        "one": "{name}: Wer hilft mit?",
+        "two": "{first} und {second}"
+    },
+    "blockers": {
+        "endsOnAfterLast": "Die letzte Schicht in der Liste ist am {date}. Wähle diesen Tag oder einen früheren, oder „Bis die letzte Schicht beginnt“.",
+        "endsOnMissing": "Wähle den Tag, bis zu dem die Liste offen bleibt.",
+        "endsOnPast": "Dieser Tag ist schon vorbei.",
+        "loadFailed": "Die Schichten konnten nicht geladen werden.",
+        "noFreePlace": "In dieser Auswahl ist kein Platz mehr frei. Über den Link könnte sich niemand eintragen.",
+        "noIncludedShift": "Wähle mindestens einen Tag oder eine Schicht.",
+        "noTask": "Wähle mindestens eine Aufgabe.",
+        "noTitle": "Gib der Liste eine Überschrift.",
+        "taskNoIncluded": "Bei „{name}“ sind alle Schichten abgewählt. Wähle einen Tag oder eine Schicht dazu, oder nimm die Aufgabe heraus.",
+        "taskUnavailable": {
+            "moved": "„{name}“ gehört inzwischen zu einer anderen Veranstaltung. Nimm die Aufgabe heraus.",
+            "not_published": "„{name}“ ist nicht mehr veröffentlicht. Nimm die Aufgabe heraus.",
+            "team_locked": "„{name}“ ist nur für ein Team da und lässt sich nicht ohne Konto teilen. Nimm die Aufgabe heraus."
+        },
+        "tooManyTasks": "Eine Liste kann höchstens {max} Aufgaben haben."
+    },
+    "days": {
+        "free": "{count} frei",
+        "full": "alles voll",
+        "hint": "Hier stehen nur Tage, an denen eine der gewählten Aufgaben eine Schicht hat. Kommt eine Aufgabe mit weiteren Tagen dazu, sind die gleich mit ausgewählt.",
+        "laterShifts": "Schichten, die später zu einer dieser Aufgaben dazukommen, stehen auch in der Liste, auch an Tagen, die du hier abgewählt hast.",
+        "legend": "An welchen Tagen?",
+        "pickTaskFirst": "Wähle zuerst eine Aufgabe. Dann stehen hier die Tage, an denen sie Schichten hat.",
+        "shifts": "{included} von {total} Schicht | {included} von {total} Schichten"
+    },
+    "leaveGuard": {
+        "cancel": "Weiter bearbeiten",
+        "confirm": "Verwerfen",
+        "text": "Was du hier eingestellt hast, ist noch nicht gespeichert.",
+        "title": "Änderungen verwerfen?"
+    },
+    "lede": {
+        "create": "Stell zusammen, welche Schichten in die Liste kommen. Am Ende bekommst du einen Link, einen QR-Code und einen Text für die Gruppe.",
+        "edit": "Der Link bleibt derselbe. Wer schon eingetragen ist, bleibt eingetragen."
+    },
+    "notPublished": "Die Veranstaltung ist nicht veröffentlicht. Solange sie das nicht ist, kann sich niemand über eine Liste eintragen, und neue Listen lassen sich nicht teilen.",
+    "picker": {
+        "empty": "Keine Aufgabe passt zu „{q}“.",
+        "fill": "{free} von {capacity} Plätzen frei",
+        "legend": "Welche Aufgaben?",
+        "loadMore": "Mehr laden",
+        "lockedHint": "{names} ist nur für ein Team da und lässt sich nicht ohne Konto teilen. | {names} sind nur für Teams da und lassen sich nicht ohne Konto teilen.",
+        "lockedMore": "{count} weitere",
+        "none": "Es gibt keine Aufgabe mit kommenden Schichten, die du teilen kannst.",
+        "picked": "{count} ausgewählt:",
+        "problem": {
+            "all_full": "In der Auswahl ist hier schon alles besetzt.",
+            "no_included": "Alle Schichten sind abgewählt."
+        },
+        "searchLabel": "Aufgaben durchsuchen",
+        "searchPlaceholder": "Aufgabe oder Ort…",
+        "teamOnly": "Nur für das Team „{team}“, geht nicht ohne Konto",
+        "unpick": "{name} abwählen",
+        "vouchers": "Gibt Marken, auch für alle ohne Konto."
+    },
+    "sections": {
+        "settings": {
+            "description": "Was Helfende sehen, was sie angeben müssen und wie lange der Link offen bleibt.",
+            "title": "Wie die Liste aussieht"
+        },
+        "share": {
+            "description": "Schick den Link in die Gruppe oder häng den QR-Code aus.",
+            "title": "Teilen"
+        },
+        "tasks": {
+            "description": "Wähle die Aufgaben und Tage. Einzelne Schichten kannst du auch abwählen.",
+            "title": "Was in die Liste kommt"
+        }
+    },
+    "settings": {
+        "ask": {
+            "always": "immer",
+            "email": "E-Mail",
+            "emailOptionalWarning": "Wer keine E-Mail angibt, bekommt keine Bestätigung und keinen Link zum Austragen. Absagen geht dann nur über euch.",
+            "legend": "Was müssen Helfende angeben?",
+            "name": "Name",
+            "off": "Nicht fragen",
+            "optional": "Freiwillig",
+            "phone": "Telefon",
+            "required": "Pflicht"
+        },
+        "ends": {
+            "date": {
+                "hint": "Danach kann sich niemand mehr darüber eintragen. Geht bis zum Tag der letzten Schicht ({date}).",
+                "label": "Bis zu einem Tag",
+                "pick": "Offen bis"
+            },
+            "lastShift": {
+                "hint": "Das ist {date}, {time}.",
+                "label": "Bis die letzte Schicht beginnt"
+            },
+            "legend": "Wie lange bleibt die Liste offen?",
+            "manual": {
+                "hint": "Schichten, die schon angefangen haben, verschwinden trotzdem von der Liste.",
+                "label": "Bis jemand sie beendet"
+            }
+        },
+        "intro": {
+            "label": "Ein paar Sätze dazu",
+            "placeholder": "Zum Beispiel: Such dir eine Schicht aus, die dir passt. Danke!"
+        },
+        "maxPer": {
+            "atMost": "höchstens {count}",
+            "hint": "Gezählt über die E-Mail-Adresse. Die Liste hat keine Schicht. | Gezählt über die E-Mail-Adresse. Die Liste hat 1 Schicht. | Gezählt über die E-Mail-Adresse. Die Liste hat {count} Schichten.",
+            "label": "Schichten pro Person",
+            "unlimited": "so viele, wie frei sind"
+        },
+        "optional": "freiwillig",
+        "shareNote": {
+            "hint": "Sehen nur ihr. So weißt du später, aus welcher Gruppe die Eintragungen kamen.",
+            "label": "Wo teilst du den Link?",
+            "placeholder": "z. B. WhatsApp-Gruppe Eltern 3b"
+        },
+        "showNames": {
+            "changed": "Gilt für alle, die sich ab jetzt eintragen. Wer schon eingetragen ist, bleibt, wie es beim Eintragen hieß.",
+            "first": {
+                "hint": "Zum Beispiel „Dabei: Lena, Tobias“. Hilft, wenn man sich kennt und lieber zusammen hilft. Nur Vornamen von Leuten, die beim Eintragen gesehen haben, dass ihr Vorname hier steht.",
+                "label": "Auch die Vornamen"
+            },
+            "legend": "Was sehen andere auf der Liste?",
+            "none": {
+                "hint": "Niemand sieht, wer sich eingetragen hat.",
+                "label": "Nur, wie viele Plätze frei sind"
+            }
+        },
+        "title": {
+            "hint": "Das sehen alle, die den Link öffnen.",
+            "label": "Überschrift"
+        }
+    },
+    "share": {
+        "copied": "Kopiert",
+        "copyFailed": "Kopieren ging hier nicht. Markiere den Text und kopiere ihn selbst.",
+        "copyLink": "Link kopieren",
+        "copyText": "Text kopieren",
+        "demo": "Das ist eine Demo: Der Link funktioniert, bis die Demo endet. Wer sich einträgt, bekommt keine Mail, sondern sieht den Link zu den eigenen Eintragungen gleich auf der Seite.",
+        "linkCopied": "Link kopiert.",
+        "linkLabel": "Link zur Liste",
+        "message": {
+            "hint": "Mit den freien Schichten von jetzt. Du kannst ihn vorher ändern.",
+            "label": "Text für die Gruppe"
+        },
+        "qr": {
+            "alt": "QR-Code für den Link zur Liste",
+            "hint": "QR-Code für einen Aushang"
+        },
+        "success": {
+            "text": "Ab jetzt kann sich jede:r mit dem Link eintragen.",
+            "title": "Die Liste ist offen."
+        },
+        "textCopied": "Text kopiert. Füg ihn in der Gruppe ein."
+    },
+    "shareMessage": {
+        "greeting": "Hallo zusammen! Für „{event}“ ({days}) suchen wir noch Leute.",
+        "shift": "• {day}, {time}: {free} frei",
+        "shiftAllDay": "• {day}: {free} frei",
+        "signUp": "Eintragen geht ohne Konto und dauert eine Minute:",
+        "task": "• {task}: {free} Platz frei ({days}) | • {task}: {free} Plätze frei ({days})"
+    },
+    "shifts": {
+        "allDay": "ganztägig",
+        "free": "{count} frei",
+        "full": "voll",
+        "group": "Schichten von {task}",
+        "hide": "Schichten ausblenden",
+        "show": "Einzelne Schichten abwählen"
+    },
+    "stepPosition": "Schritt {current} von {total}",
+    "steps": {
+        "settings": "Einstellungen",
+        "share": "Teilen",
+        "tasks": "Aufgaben"
+    },
+    "summary": {
+        "onlyDays": "Nur an diesen Tagen: {days}",
+        "places": "keinem freien Platz | einem freien Platz | {count} freien Plätzen",
+        "shifts": "keine Schicht | 1 Schicht | {count} Schichten",
+        "text": "Die Liste hat {shifts} mit {places}. Volle Schichten sehen Helfende, können sie aber nicht wählen."
+    },
+    "title": {
+        "create": "Liste teilen",
+        "edit": "Liste bearbeiten"
+    },
+    "toasts": {
+        "ended": "Diese Liste ist beendet und lässt sich nicht mehr ändern. Du kannst sie neu teilen.",
+        "managersDisabled": "Die Organisator:innen haben das Teilen von Listen für Verantwortliche ausgeschaltet.",
+        "noAccess": "Für diese Veranstaltung kannst du keine Listen teilen.",
+        "readOnly": "Diese Liste kannst du nur ansehen, nicht bearbeiten.",
+        "saved": "Gespeichert. Der Link bleibt derselbe."
+    }
+}

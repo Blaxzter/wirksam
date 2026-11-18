@@ -45,6 +45,8 @@ Beliebig viele Leute können den Link nutzen, und du brauchst keine Adressen. Er
 
 Beim Anlegen wählst du das unter „Wer die Veranstaltung sehen kann“. Voreingestellt ist eine Veranstaltung privat: Nur eingeladene Personen finden sie und können mitmachen. Ist sie öffentlich, finden sie alle Angemeldeten und können anfragen.
 
+Eine [geteilte Liste](/features/shared-lists) geht auch bei einer privaten Veranstaltung. Alle mit ihrem Link können sich ohne Konto für ihre Schichten eintragen und sehen sonst nichts von der Veranstaltung.
+
 Andere sehen eine öffentliche Veranstaltung erst, wenn ihr Status im Tab „Details“ auf „Veröffentlicht“ steht. Beim Veröffentlichen bekommen alle in der Veranstaltung eine Nachricht.
 
 Ab dann steht die Veranstaltung auf der Seite „Veranstaltung auswählen“ im Tab „Entdecken“. Wer mitmachen will, tippt dort auf „Mitmachen anfragen“. So erfahren Organisator:innen davon:
@@ -84,7 +86,9 @@ Wer schon ein Konto hat, bekommt die Einladung als normale Nachricht, nach den e
 
 Die Person sieht Veranstaltung, Termine, Beschreibung und Rolle. Sie entscheidet mit „Annehmen und mitmachen“ oder „Jetzt nicht“, und ohne Zusage passiert nichts. Was Helfende dabei genau tun, steht in [Loslegen als Helfer:in](/guides/volunteer-start).
 
-Ein Konto brauchen alle. Wer noch keines hat, legt es beim Annehmen an, mit Name, E-Mail-Adresse und Passwort. Das kostet nichts und geht auch auf dem Handy.
+Ein Konto brauchen alle, die bei der Veranstaltung dabei sind. Wer noch keines hat, legt es beim Annehmen an, mit Name, E-Mail-Adresse und Passwort. Das kostet nichts und geht auch auf dem Handy.
+
+Für einzelne Schichten geht es auch ohne Konto. Bei einer [geteilten Liste](/features/shared-lists) reicht ein Name, dazu E-Mail-Adresse oder Telefonnummer, wenn die Liste danach fragt.
 
 ### Wie lange gilt eine Einladung?
 

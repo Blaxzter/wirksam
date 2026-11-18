@@ -13,6 +13,8 @@ It now arrives as an HS256 JWT this application minted itself (see
 Everything downstream — roles, ``EventMembership``, ``logic.permissions`` —
 was already pure database logic and is untouched. This module is the only
 place that knows how a credential becomes a ``User``.
+
+It also holds the shared lists' kill switch, which three routers share.
 """
 
 from collections.abc import AsyncGenerator, Callable, Coroutine, Iterable
@@ -151,6 +153,21 @@ def _normalize_required_roles(
     return list(required_roles)
 
 
+def _refuse_list_guest(user: User) -> None:
+    """Turn away a guest of a shared list, whichever dependency loaded it.
+
+    A guest has no password and no session, so it never holds a token; this is
+    the second wall, should one ever be minted. Unconditional, unlike
+    :func:`_refuse_unusable`, which ``AnyUser`` skips.
+    """
+    if user.is_list_guest:
+        raise_problem(
+            status.HTTP_403_FORBIDDEN,
+            code="auth.guest_account",
+            detail="Guests who signed up through a shared list cannot sign in.",
+        )
+
+
 def _refuse_unusable(user: User) -> None:
     """Turn away an account that may sign in but not use the app.
 
@@ -230,6 +247,7 @@ def current_user(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail=f"Test user not found: {test_email}",
                     )
+                _refuse_list_guest(user)
                 if require_active:
                     _refuse_unusable(user)
                 await _check_roles(session, user)
@@ -251,6 +269,7 @@ def current_user(
                 headers=_WWW_AUTHENTICATE,
             )
 
+        _refuse_list_guest(user)
         if require_active:
             _refuse_unusable(user)
 
@@ -294,6 +313,7 @@ async def _get_user_from_query_token(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail=f"Test user not found: {test_email}",
                     )
+                _refuse_list_guest(user)
                 return user
 
     claims = _decode_bearer_token(token)
@@ -307,7 +327,22 @@ async def _get_user_from_query_token(
                 detail="This account no longer exists. Please sign in again.",
                 headers=_WWW_AUTHENTICATE,
             )
+        _refuse_list_guest(user)
         return user
 
 
 QueryTokenUser = Annotated[User, Depends(_get_user_from_query_token)]
+
+
+def require_shared_lists_enabled() -> None:
+    """404 ``shared_list.disabled`` while ``SHARED_LISTS_ENABLED`` is off.
+
+    A router or route dependency, so it answers before the route's own
+    parameters are validated, a rate limit is counted or a row is read.
+    """
+    if not settings.SHARED_LISTS_ENABLED:
+        raise_problem(
+            status.HTTP_404_NOT_FOUND,
+            code="shared_list.disabled",
+            detail="Shared lists are switched off on this server",
+        )

@@ -101,7 +101,7 @@ pnpm exec playwright test -g "approval password section is visible"
 # Run with visible browser
 HEADED=true pnpm test:e2e
 
-# Run a specific project (chromium, member, multi-user, public, auth, a11y)
+# Run a specific project (chromium, member, multi-user, public, auth, guest, a11y, mobile)
 pnpm exec playwright test --project=chromium
 
 # The sign-in / registration flows, which use no bypass
@@ -208,14 +208,18 @@ e2e/
 ├── helpers/
 │   ├── api.ts               # API helpers (createEvent, bookSlot, etc.)
 │   ├── a11y.ts              # axe-core scans, keyboard/focus helpers
-│   └── auth.ts              # helpers for the specs that sign in for real
+│   ├── auth.ts              # helpers for the specs that sign in for real
+│   ├── guest.ts             # a shared list in an event of its own, signed up to anonymously
+│   └── shared-list-seed.ts  # an event with tasks to share, for the management specs
 ├── setup/
 │   └── test-reset.setup.ts  # Reset test data before the test projects run
 ├── tests/
 │   ├── a11y/                # Accessibility scans
 │   ├── auth/                # Sign-in, registration, password recovery (no bypass)
 │   ├── authenticated/       # Admin user tests
+│   ├── guest/               # Shared-list public page and guest manage page (anonymous, no bypass)
 │   ├── member/              # Member (non-admin) tests
+│   ├── mobile/              # Phone viewport (Pixel 7): bottom drawers, card lists
 │   ├── multi-user/          # Cross-user interaction tests
 │   └── public/              # Pre-auth public page tests
 ├── COVERAGE.md              # Test coverage summary

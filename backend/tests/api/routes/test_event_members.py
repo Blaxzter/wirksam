@@ -18,11 +18,19 @@ from app.crud.event_invitation import event_invitation as crud_invitation
 from app.crud.event_membership import event_membership as crud_membership
 from app.logic.permissions import task_access
 from app.logic.vouchers import generate_code
+from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_invitation import EventInvitation
 from app.models.event_invitation_task import EventInvitationTask
 from app.models.event_join_request import EventJoinRequest
 from app.models.location import Location
+from app.models.shared_list import (
+    GuestActivityLog,
+    SharedList,
+    SharedListExcludedShift,
+    SharedListGuest,
+    SharedListTask,
+)
 from app.models.shift import Shift
 from app.models.shift_batch import ShiftBatch
 from app.models.task import Task
@@ -30,6 +38,7 @@ from app.models.task_manager import TaskManager
 from app.models.user import User
 from app.models.venue_plan import VenueMarker, VenuePlan, VenueShape
 from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
+from tests.fixtures.shared_lists import ListGuestFactory, SharedListFactory
 
 
 @pytest.mark.asyncio
@@ -1110,6 +1119,83 @@ class TestUserDeletionCascades:
         assert await _count(db_session, VoucherEntry) == 0
         assert await _count(db_session, VoucherPass) == 0
         assert await _count(db_session, VoucherEarning) == 0
+
+    async def test_deleting_the_owner_who_shared_a_list(
+        self,
+        db_session: AsyncSession,
+        test_event: Event,
+        test_admin_user: User,
+        test_task: Task,
+        test_shift: Shift,
+        make_shared_list: SharedListFactory,
+        make_list_guest: ListGuestFactory,
+    ) -> None:
+        """The owner made the list and one of its tasks. Their delete cascades
+        to that task (and its shifts, which SET NULL the guest's booking on
+        them) and to the event (and its lists and guest contact rows) in one
+        statement; no new table has a SET NULL to trip over that. The guests,
+        their bookings and the activity log outlive it all."""
+        own_task = Task(
+            name="Aufbau",
+            start_date=datetime.date(2026, 6, 11),
+            end_date=datetime.date(2026, 6, 11),
+            status="published",
+            created_by_id=test_admin_user.id,
+            event_id=test_event.id,
+        )
+        db_session.add(own_task)
+        await db_session.flush()
+        own_shift = Shift(
+            task_id=own_task.id,
+            title="Aufbau",
+            date=datetime.date(2026, 6, 11),
+            max_bookings=2,
+        )
+        excluded = Shift(
+            task_id=own_task.id,
+            title="Aufbau",
+            date=datetime.date(2026, 6, 12),
+            max_bookings=2,
+        )
+        db_session.add_all([own_shift, excluded])
+        await db_session.flush()
+        shared_list = await make_shared_list(
+            tasks=[own_task, test_task], excluded=[excluded], created_by=test_admin_user
+        )
+        guest = await make_list_guest(
+            shared_list, email="gast@example.org", shifts=[own_shift, test_shift]
+        )
+        db_session.add(
+            GuestActivityLog(
+                kind="signup", event_id=test_event.id, shared_list_id=shared_list.id
+            )
+        )
+        await db_session.flush()
+
+        await db_session.delete(test_admin_user)
+        await db_session.flush()
+        await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+
+        for model in (
+            SharedList,
+            SharedListTask,
+            SharedListExcludedShift,
+            SharedListGuest,
+        ):
+            remaining = await db_session.execute(
+                select(func.count()).select_from(model)
+            )
+            assert remaining.scalar_one() == 0, model
+        survivors = await db_session.execute(
+            select(col(Booking.shift_id)).where(col(Booking.user_id) == guest.user.id)
+        )
+        assert sorted(survivors.scalars().all(), key=str) == sorted(
+            [None, test_shift.id], key=str
+        )
+        logged = await db_session.execute(
+            select(func.count()).select_from(GuestActivityLog)
+        )
+        assert logged.scalar_one() == 1
 
 
 def _voucher_rows(

@@ -63,6 +63,13 @@ test.describe('Print Task – smoke', () => {
     // Dynamic task name from fixture
     await expect(page.getByText(created.task.name).first()).toBeVisible()
   })
+
+  test('a task’s own sheet has a line per place and no QR code', async ({ adminPage: page }) => {
+    await page.goto(`/print/tasks/${created.task.id}`)
+    // Three hourly shifts of two places each.
+    await expect(page.getByTestId('print-shift-line')).toHaveCount(6)
+    await expect(page.getByTestId('print-qr')).toHaveCount(0)
+  })
 })
 
 test.describe('Print Task Event – smoke', () => {
@@ -80,6 +87,13 @@ test.describe('Print Task Event – smoke', () => {
     await page.goto(`/print/events/${event.id}`)
     // Dynamic event name from fixture
     await expect(page.getByText(event.name)).toBeVisible()
+  })
+
+  test('the overview keeps its QR code to the event in the app', async ({ adminPage: page }) => {
+    await page.goto(`/print/events/${event.id}`)
+    await expect(page.getByText('Scan to sign up online')).toBeVisible()
+    await expect(page.getByRole('img', { name: 'QR Code' })).toBeVisible()
+    await expect(page.getByTestId('shared-list-print-dialog')).toHaveCount(0)
   })
 })
 
@@ -110,9 +124,15 @@ test.describe('Print – booked names', () => {
     adminUser,
   }) => {
     await page.goto(`/print/events/${event.id}?mode=all`)
+    // An organiser is asked about a shared list first; without one the sheets
+    // print without a QR code.
+    const dialog = page.getByTestId('shared-list-print-dialog')
+    await dialog.getByRole('button', { name: 'Close' }).click()
+    await expect(dialog).toHaveCount(0)
     const content = page.getByTestId('print-content')
     const toggle = page.getByRole('checkbox', { name: /booked names|gebuchte namen/i })
     await expect(content).toBeVisible()
+    await expect(content.getByTestId('print-qr')).toHaveCount(0)
 
     await toggle.click()
     await expect(content.getByText(adminUser.name)).toBeVisible()
@@ -149,10 +169,7 @@ test.describe('Print – the whole event', () => {
   }) => {
     await member.goto(`/app/events/${event.id}`)
     await expect(member).toHaveURL(/\/app\/select-event.*tab=discover/)
-    await expect(member.getByTestId('tab-discover')).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
+    await expect(member.getByTestId('tab-discover')).toHaveAttribute('aria-selected', 'true')
   })
 })
 

@@ -53,7 +53,14 @@ const BALANCES: VoucherBalance[] = [
     upcoming: 48,
     available: 52,
   }),
-  balance({ user_id: 'u3', name: 'Vroni Hartmann', earned: 2, redeemed: 2, adjusted: 2, available: 2 }),
+  balance({
+    user_id: 'u3',
+    name: 'Vroni Hartmann',
+    earned: 2,
+    redeemed: 2,
+    adjusted: 2,
+    available: 2,
+  }),
   // Nothing to their name: not a row, and not counted.
   balance({ user_id: 'u4', name: 'Nobody Yet' }),
 ]
@@ -150,5 +157,42 @@ describe('EventVouchers', () => {
     expect(summary.text()).toContain('No more shifts booked.')
     expect(detail.text()).toContain('History')
     expect(detail.find('[data-testid="btn-person-add-correction"]').text()).toBe('Add correction')
+  })
+
+  it('tags people who signed up through a shared list, and names a deleted one', async () => {
+    const w = await mountOverview([
+      balance({ user_id: 'u1', name: 'Mira Lindqvist', earned: 2, available: 2 }),
+      balance({ user_id: 'u5', name: 'Pia Pfeffer', role: null, earned: 2, available: 2 }),
+      balance({
+        user_id: 'u6',
+        name: 'Grace Guest',
+        email: 'grace@example.org',
+        role: null,
+        is_guest: true,
+        earned: 2,
+        available: 2,
+      }),
+      balance({ user_id: 'u7', role: null, is_guest: true, earned: 2, redeemed: 1, available: 1 }),
+    ])
+    const rows = w.findAll('[data-testid="event-vouchers-row"]')
+    expect(rowNames(w)).toEqual(['Mira Lindqvist', 'Pia Pfeffer', 'Grace Guest', 'Guest (deleted)'])
+    // A member, a former member, then two guests: never "no longer here".
+    expect(rows[0].find('[data-testid="guest-tag"]').exists()).toBe(false)
+    expect(rows[0].text()).not.toContain('No longer here')
+    expect(rows[1].text()).toContain(i18n.global.t('vouchers.admin.left'))
+    expect(rows[1].find('[data-testid="guest-tag"]').exists()).toBe(false)
+    for (const row of [rows[2], rows[3]]) {
+      expect(row.find('[data-testid="guest-tag"]').text()).toBe('no account')
+      expect(row.text()).not.toContain(i18n.global.t('vouchers.admin.left'))
+    }
+    // The phone's cards say the same.
+    const cards = w.findAll('[data-testid="event-vouchers-card"]')
+    expect(cards[2].find('[data-testid="guest-tag"]').exists()).toBe(true)
+    expect(cards[3].text()).toContain('Guest (deleted)')
+    // Initials come from a name, never from the words that stand in for one.
+    const avatar = (el: (typeof rows)[number]) => el.find('[data-slot="avatar-fallback"]').text()
+    expect(avatar(rows[2])).toBe('GG')
+    expect(avatar(rows[3])).toBe('?')
+    expect(avatar(cards[3])).toBe('?')
   })
 })

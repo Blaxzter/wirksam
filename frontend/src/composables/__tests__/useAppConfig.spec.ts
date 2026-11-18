@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
+import { guestRetentionDays, isSwitchOn, useAppConfig } from '@/composables/useAppConfig'
 
 /**
  * `window.__APP_CONFIG__` is injected at deploy time, so it is absent in dev and
@@ -20,6 +20,8 @@ const DEFAULTS = {
   TURNSTILE_SITE_KEY: '',
   SANDBOX_ENABLED: 'true',
   LANDING_ENABLED: 'true',
+  SHARED_LISTS_ENABLED: 'true',
+  GUEST_DATA_RETENTION_DAYS: '30',
 }
 
 afterEach(() => {
@@ -41,6 +43,8 @@ describe('useAppConfig', () => {
       TURNSTILE_SITE_KEY: '0x4AAAAAAA',
       SANDBOX_ENABLED: 'false',
       LANDING_ENABLED: 'false',
+      SHARED_LISTS_ENABLED: 'false',
+      GUEST_DATA_RETENTION_DAYS: '14',
     }
     window.__APP_CONFIG__ = injected
 
@@ -85,5 +89,23 @@ describe('isSwitchOn', () => {
     expect(isSwitchOn('yes')).toBe(true)
     expect(isSwitchOn('')).toBe(true)
     expect(isSwitchOn(undefined)).toBe(true)
+  })
+})
+
+describe('guestRetentionDays', () => {
+  it('reads the deployed number of days', () => {
+    expect(guestRetentionDays({ GUEST_DATA_RETENTION_DAYS: '14' })).toBe(14)
+    expect(guestRetentionDays({ GUEST_DATA_RETENTION_DAYS: ' 90 ' })).toBe(90)
+  })
+
+  it('is the hosted 30 days for anything that is not a whole number of days', () => {
+    for (const value of ['', 'thirty', '0', '-5', '1.5', '1e3']) {
+      expect(guestRetentionDays({ GUEST_DATA_RETENTION_DAYS: value })).toBe(30)
+    }
+    expect(guestRetentionDays({} as { GUEST_DATA_RETENTION_DAYS: string })).toBe(30)
+  })
+
+  it('is 30 for a config that never mentions it', () => {
+    expect(guestRetentionDays(useAppConfig())).toBe(30)
   })
 })

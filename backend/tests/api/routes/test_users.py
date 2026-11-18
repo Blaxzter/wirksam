@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.users import get_current_user_profile, update_user_profile
 from app.crud.user import user as crud_user
+from app.models.shared_list import SharedList
 from app.models.user import User
 from app.schemas.users import UserProfileUpdate
+from tests.fixtures.shared_lists import ListGuestFactory
 
 
 @pytest.mark.asyncio
@@ -233,3 +235,24 @@ class TestUserRouteHelpers:
         await db_session.refresh(test_user)
         assert test_user.name == "Updated Name"
         assert test_user.nickname == "updated"
+
+
+@pytest.mark.asyncio
+class TestUserListLeavesOutListGuests:
+    async def test_a_guest_of_a_shared_list_is_no_account_to_list(
+        self,
+        async_client: AsyncClient,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_admin: None,
+    ):
+        """Nobody signs in as one, so suspending or promoting one means nothing."""
+        guest = await make_list_guest(test_shared_list, name="Listengast Suche")
+
+        searched = await async_client.get("/api/v1/users/?q=Listengast")
+        everyone = await async_client.get("/api/v1/users/?limit=100")
+
+        assert searched.status_code == 200
+        assert searched.json()["items"] == []
+        assert searched.json()["counts"]["all"] == 0
+        assert str(guest.user.id) not in {i["id"] for i in everyone.json()["items"]}

@@ -13,6 +13,7 @@ import {
   House,
   Map as MapIcon,
   Menu,
+  Share2,
   Sparkles,
   Ticket,
   Users,
@@ -33,6 +34,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
+
+import { canUseSharedLists } from '@/lib/shared-lists'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -97,6 +100,15 @@ const moreGroups = computed<MoreItem[][]>(() => {
       labelKey: 'teams.nav.label',
       icon: UsersRound,
       badge: teamRequestCount.value,
+    })
+  }
+  // Same rule as the sidebar: for whoever runs the event or is in charge of
+  // one of its tasks.
+  if (canUseSharedLists(selected)) {
+    event.push({
+      routeName: 'shared-lists',
+      labelKey: 'navigation.sidebar.items.sharedLists.label',
+      icon: Share2,
     })
   }
   // Same rule as the sidebar: only once the event has a plan with a picture.
@@ -188,9 +200,15 @@ const linkTabs: {
 const TASK_ROUTES = new Set(['tasks', 'task-create', 'task-edit', 'task-detail', 'task-add-shifts'])
 const BOOKING_ROUTES = new Set(['my-bookings', 'booking-detail'])
 const INBOX_ROUTES = new Set(['notifications'])
-// The redeem page is not an entry of its own in the sheet, so `moreRoutes`
-// alone would leave it with no tab lit.
+// The redeem page and the list wizard are not entries of their own in the
+// sheet, so `moreRoutes` alone would leave them with no tab lit.
 const VOUCHER_ROUTES = new Set(['my-vouchers', 'voucher-redeem'])
+const SHARED_LIST_ROUTES = new Set([
+  'shared-lists',
+  'shared-list-create',
+  'shared-list-detail',
+  'shared-list-edit',
+])
 
 const activeTab = computed<Tab | null>(() => {
   const name = typeof route.name === 'string' ? route.name : ''
@@ -199,6 +217,7 @@ const activeTab = computed<Tab | null>(() => {
   if (BOOKING_ROUTES.has(name)) return 'bookings'
   if (INBOX_ROUTES.has(name)) return 'inbox'
   if (VOUCHER_ROUTES.has(name)) return 'more'
+  if (SHARED_LIST_ROUTES.has(name)) return 'more'
   if (moreRoutes.value.has(name)) return 'more'
   return null
 })

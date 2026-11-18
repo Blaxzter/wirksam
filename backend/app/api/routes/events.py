@@ -22,6 +22,7 @@ from app.crud.event_invitation_task import (
 from app.crud.event_join_request import event_join_request as crud_join_request
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
+from app.crud.shared_list import shared_list as crud_shared_list
 from app.crud.task import task as crud_task
 from app.crud.task_manager import task_manager as crud_task_manager
 from app.crud.user import user as crud_user
@@ -99,9 +100,9 @@ async def decorate_events(
 
     Member counts, the caller's own role, any pending join request, the
     number of venue plans with an image, the number of teams, the team
-    requests the caller may decide and the voucher task counts are all
-    fetched in one query each rather than per row, so a long Discover list costs a constant number of round
-    trips.
+    requests the caller may decide, the voucher task counts and the tasks the
+    caller is in charge of are all fetched in one query each rather than per
+    row, so a long Discover list costs a constant number of round trips.
     """
     event_ids = [e.id for e in events]
     if not event_ids:
@@ -138,6 +139,9 @@ async def decorate_events(
         admin_event_ids=manageable,
         member_event_ids=[e for e in member_of if e not in set(manageable)],
     )
+    managed_counts = await crud_task_manager.count_by_event_for_user(
+        session, user_id=user.id, event_ids=member_of
+    )
 
     out: list[EventRead] = []
     for e in events:
@@ -152,6 +156,7 @@ async def decorate_events(
         read.voucher_task_count, read.voucher_point_count = voucher_counts.get(
             e.id, (0, 0)
         )
+        read.managed_task_count = managed_counts.get(e.id, 0)
         out.append(read)
     return out
 
@@ -255,6 +260,7 @@ _NOT_NULL_SETTINGS = (
     "timezone",
     "voucher_manual_redeem",
     "managers_edit_voucher_shifts",
+    "managers_share_lists",
 )
 
 
@@ -440,7 +446,8 @@ async def shift_event_dates(
     session: DBDep,
     current_user: CurrentUser,
 ) -> EventRead:
-    """Shift the entire event and all its tasks/shifts/availabilities by a date offset.
+    """Shift the entire event and all its tasks/shifts/availabilities, and the
+    closing days of its shared lists, by a date offset.
 
     The offset is calculated from the difference between the current event
     start_date and the provided new_start_date.
@@ -535,7 +542,10 @@ async def shift_event_dates(
                 )
                 session.add(batch)
 
-    # 6. Shift user availability dates for this event
+    # 6. Lists that close on a day close on the same day of the moved event
+    await crud_shared_list.shift_ends_on(session, event_id=event_id, delta=delta)
+
+    # 7. Shift user availability dates for this event
     from app.models.user_availability import UserAvailability
 
     avail_ids_result = await session.execute(
@@ -826,7 +836,9 @@ async def clone_event(
     empty — and neither are ``is_featured``, ``is_sandbox`` or
     ``sandbox_expires_at``, all of which mean something about the *source*.
     The voucher rules (``voucher_manual_redeem``,
-    ``managers_edit_voucher_shifts``) and the time zone are copied.
+    ``managers_edit_voucher_shifts``), whether people in charge may share
+    lists (``managers_share_lists``) and the time zone are copied; the shared
+    lists themselves are not.
 
     The clone always starts as a draft: publishing is a separate, deliberate
     act, and it is what fans a notification out to the roster.
@@ -881,10 +893,11 @@ async def clone_event(
     new_event.is_featured = False
     new_event.is_sandbox = False
     new_event.sandbox_expires_at = None
-    # The voucher rules are part of "the same event again", like the tasks'
-    # own voucher settings.
+    # The voucher rules and who may share lists are part of "the same event
+    # again", like the tasks' own voucher settings.
     new_event.voucher_manual_redeem = source.voucher_manual_redeem
     new_event.managers_edit_voucher_shifts = source.managers_edit_voucher_shifts
+    new_event.managers_share_lists = source.managers_share_lists
     session.add(new_event)
 
     # The owner grant is the membership row, not created_by_id — and it has to

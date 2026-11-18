@@ -11,7 +11,7 @@ Ist keine Aufgabe reserviert, ändert sich am Buchen nichts. Den Menüpunkt „T
 
 ## Aufgaben einem Team vorbehalten
 
-Ein Team gehört zu einer Veranstaltung. Eine Aufgabe kann einem Team vorbehalten sein, ein Team kann viele Aufgaben haben.
+Ein Team gehört zu einer Veranstaltung. Eine Aufgabe kann einem Team vorbehalten sein, ein Team kann viele Aufgaben haben. Eine vorbehaltene Aufgabe kann nicht auf eine [geteilte Liste](/features/shared-lists), weil nur Team-Mitglieder sie buchen dürfen.
 
 Organisator:innen legen beim Anlegen oder Bearbeiten einer Aufgabe unter „Wer kann buchen“ fest, wer ihre Schichten buchen darf. Standard ist „Alle in der Veranstaltung“. Mit „Nur ein Team“ wählst du ein Team aus der Liste oder legst mit „Neues Team…“ gleich eines an.
 

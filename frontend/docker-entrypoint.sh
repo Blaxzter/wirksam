@@ -14,6 +14,12 @@ window.__APP_CONFIG__ = {
   // Whether / shows the landing page or leads straight to sign-in. Read like
   // SANDBOX_ENABLED: only the literal 'false' switches it off.
   LANDING_ENABLED: '${LANDING_ENABLED:-true}',
+  // Whether the navigation offers shared lists. The backend's copy of the same
+  // variable is what enforces it; read like SANDBOX_ENABLED.
+  SHARED_LISTS_ENABLED: '${SHARED_LISTS_ENABLED:-true}',
+  // The days after their last shift that a list guest's details are kept. The
+  // backend's copy is what deletes them; the privacy policy states this one.
+  GUEST_DATA_RETENTION_DAYS: '${GUEST_DATA_RETENTION_DAYS:-30}',
 };
 EOF
 

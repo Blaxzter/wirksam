@@ -8,6 +8,8 @@ import { avatarUrlFor } from '@/composables/useAvatarUrl'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
+import GuestTag from '@/components/shared-lists/GuestTag.vue'
+
 import type { ShiftBookingEntry } from '@/client/types.gen'
 import { initials, telHref } from '@/lib/format'
 import { parseServerDate } from '@/lib/server-time'
@@ -24,6 +26,9 @@ import { parseServerDate } from '@/lib/server-time'
  * `compact` is the phone sheet: a list with a call and an e-mail button per
  * person, at thumb size. Otherwise a table with the contact details written
  * out, since a desktop has no dialler to hand them to.
+ *
+ * Someone who signed up through a shared list carries a "no account" tag, and
+ * those running the task also see which list they came through.
  */
 const props = defineProps<{
   bookings: ShiftBookingEntry[]
@@ -73,7 +78,15 @@ const countText = computed(() =>
 
 const isMe = (entry: ShiftBookingEntry) => !!props.myId && entry.user_id === props.myId
 
-const nameOf = (entry: ShiftBookingEntry) => entry.user_name || entry.user_email || '?'
+/** A guest whose data was erased has no name left: say so rather than "?". */
+const nameOf = (entry: ShiftBookingEntry) =>
+  entry.user_name || entry.user_email || (entry.is_guest ? t('sharedLists.guest.erased') : '?')
+
+/** From the name itself, never from the "Gast (gelöscht)" that stands in for one. */
+const avatarInitials = (entry: ShiftBookingEntry) => initials(entry.user_name || entry.user_email)
+
+const viaList = (entry: ShiftBookingEntry) =>
+  entry.via_list_title ? t('sharedLists.guest.via', { title: entry.via_list_title }) : null
 
 /** "2 July", the year only when it isn't this one. The server sends naive UTC. */
 function sinceDate(entry: ShiftBookingEntry): string {
@@ -91,6 +104,8 @@ const mailto = (entry: ShiftBookingEntry) =>
 /** The phone line under a name: when they signed up, and what's missing to reach them. */
 function subline(entry: ShiftBookingEntry): string {
   const parts = [t('duties.shifts.roster.since', { date: sinceDate(entry) })]
+  const via = viaList(entry)
+  if (via) parts.push(via)
   if (!isMe(entry)) {
     // A number the dialler can't use is still worth reading out.
     if (entry.user_phone_number && !telHref(entry.user_phone_number)) {
@@ -180,7 +195,7 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
                 isMe(entry) ? 'bg-primary/15 text-primary' : 'bg-accent text-accent-foreground'
               "
             >
-              {{ initials(nameOf(entry)) }}
+              {{ avatarInitials(entry) }}
             </AvatarFallback>
           </Avatar>
           <div class="min-w-0 flex-1">
@@ -192,6 +207,7 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
               >
                 {{ t('duties.shifts.roster.you') }}
               </span>
+              <GuestTag v-if="entry.is_guest" />
             </p>
             <p class="truncate text-[13px] text-muted-foreground">{{ subline(entry) }}</p>
           </div>
@@ -277,7 +293,7 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
                 isMe(entry) ? 'bg-primary/15 text-primary' : 'bg-accent text-accent-foreground'
               "
             >
-              {{ initials(nameOf(entry)) }}
+              {{ avatarInitials(entry) }}
             </AvatarFallback>
           </Avatar>
           <div class="min-w-0">
@@ -289,6 +305,14 @@ const entryAvatarUrl = (entry: ShiftBookingEntry): string | null =>
               >
                 {{ t('duties.shifts.roster.you') }}
               </span>
+              <GuestTag v-if="entry.is_guest" />
+            </p>
+            <p
+              v-if="viaList(entry)"
+              class="truncate text-xs text-muted-foreground"
+              data-testid="shift-roster-via"
+            >
+              {{ viaList(entry) }}
             </p>
             <p
               v-if="entry.notes"

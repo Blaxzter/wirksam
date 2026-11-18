@@ -15,6 +15,8 @@ You then see the event. Tap "Accept and join".
 
 > If the invitation came by email, it only works for that address, so use the same one for your account. An invitation lasts 14 days. If it has expired, ask the organisers for a new one.
 
+> Got a link to a shared list instead of an invitation? Then you need no account: pick a shift, enter your name and you're signed up. The link in your confirmation email, or the one the page shows you, takes your name off again. The rest of this guide is for people with an account.
+
 ## Say when you can help
 
 Open "Availability", under "More" on a phone. Choose "Fully available", "Daily window" or "Specific times" ("Full", "Daily" or "Specific" on a phone) [[modes]] and save at the top right [[save]], with the tick on a phone.

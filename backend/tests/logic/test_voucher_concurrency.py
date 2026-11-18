@@ -1,4 +1,5 @@
-"""Two stands redeeming against the same balance at the same moment.
+"""Two stands redeeming against the same balance at the same moment, and a
+guest's confirmation merging the chain whose code is being redeemed.
 
 The balance is derived, so there is no row to lock; ``logic.vouchers.redeem``
 serialises on a transaction-scoped advisory lock per (event, volunteer)
@@ -31,16 +32,22 @@ from app.api.routes.vouchers import (
     delete_voucher_adjustment,
     update_voucher_adjustment,
 )
+from app.crud.shared_list import shared_list as crud_shared_list
+from app.crud.shared_list_guest import shared_list_guest as crud_guest
 from app.logic import vouchers
+from app.logic.clock import utc_now
+from app.logic.shared_lists.guest_tokens import GuestKey
 from app.models.booking import Booking
 from app.models.event import Event
 from app.models.event_membership import EventMembership
+from app.models.shared_list import SharedListGuest
 from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
 from app.models.voucher import VoucherEarning, VoucherEntry, VoucherPass
 from app.schemas.voucher import VoucherAdjustmentUpdate, VoucherRedeemResult
 from tests.fixtures.clock import fixed_clock
+from tests.fixtures.guest_signups import confirm_address
 
 #: After the shift below has ended (event wall clock).
 WALL_NOW = dt.datetime(2026, 6, 11, 20, 0)
@@ -479,3 +486,207 @@ async def test_two_settlements_at_once_write_one_row(committed: Committed) -> No
     rows = await _earning_rows(committed)
     assert [amount for amount, _ in rows] == [3]
     assert await _available(committed) == 3
+
+
+# ── Guests of shared lists: a confirmation merging the chain ──────
+
+#: How long the first of two transactions holds its locks.
+HOLD = 0.3
+
+
+@dataclass
+class Guests:
+    """A guest account and a second chain of its address, each with a worked
+    shift worth 3 in the committed event; the chain is not confirmed yet."""
+
+    account: SharedListGuest
+    chain: SharedListGuest
+
+
+@pytest_asyncio.fixture
+async def guests(
+    committed: Committed, test_engine: AsyncEngine
+) -> AsyncGenerator[Guests]:
+    made: list[SharedListGuest] = []
+    async with committed.sessions() as setup:
+        redeemer = await setup.get(User, committed.redeemer.id)
+        assert redeemer is not None
+        shared_list = await crud_shared_list.create(
+            setup,
+            event_id=committed.event_id,
+            created_by=redeemer,
+            title="Helfer gesucht",
+            intro=None,
+            share_note=None,
+            ask_email="optional",
+            ask_phone="off",
+            show_names="none",
+            max_per_person=None,
+            ends_mode="manual",
+            ends_on=None,
+        )
+        for name, start in (("Maria", 13), ("Tom", 15)):
+            shift = Shift(
+                task_id=committed.work.id,
+                title=f"Aufbau {name}",
+                date=dt.date(2026, 6, 11),
+                start_time=dt.time(start),
+                end_time=dt.time(start + 2),
+                max_bookings=1,
+            )
+            setup.add(shift)
+            await setup.flush()
+            guest = await crud_guest.create(
+                setup,
+                shared_list=shared_list,
+                name=name,
+                email="fam@example.org",
+                phone=None,
+                language="de",
+                now=utc_now(),
+            )
+            setup.add(
+                Booking(
+                    shift_id=shift.id,
+                    user_id=guest.user_id,
+                    status="confirmed",
+                    shared_list_id=shared_list.id,
+                    guest_name=name,
+                )
+            )
+            made.append(guest)
+        await setup.commit()
+    account, chain = made
+    async with committed.sessions() as session, session.begin():
+        await confirm_address(session, account)
+    try:
+        yield Guests(account=account, chain=chain)
+    finally:
+        async with test_engine.begin() as conn:
+            # Their bookings, aliases and voucher rows go with them.
+            await conn.execute(
+                delete(User).where(col(User.id).in_([account.user_id, chain.user_id]))
+            )
+
+
+async def _guest_code(c: Committed, user_id: uuid.UUID) -> str:
+    async with c.sessions() as session, session.begin():
+        p = await vouchers.issue_pass(
+            session, event_id=c.event_id, user_id=user_id, now=utc_now()
+        )
+        return p.code
+
+
+async def _merge(
+    c: Committed,
+    chain: SharedListGuest,
+    *,
+    after: asyncio.Event | None = None,
+    done: asyncio.Event | None = None,
+    hold: float = 0.0,
+) -> GuestKey:
+    """Press "Ja, das bin ich" on the chain's mail link, in a request of its
+    own."""
+    if after is not None:
+        await after.wait()
+    async with c.sessions() as session, session.begin():
+        key = await confirm_address(session, chain)
+        if done is not None:
+            done.set()
+        await asyncio.sleep(hold)
+        return key
+
+
+@pytest.mark.asyncio
+async def test_a_merge_waits_for_a_redemption_in_flight(
+    committed: Committed, guests: Guests
+) -> None:
+    """The redemption holds the chain's ledger lock until it commits; the
+    merge waits for it, so the new entry moves with the rest and nothing is
+    refunded."""
+    code = await _guest_code(committed, guests.chain.user_id)
+    redeemed = asyncio.Event()
+
+    async def redeem() -> VoucherRedeemResult:
+        async with committed.sessions() as session, session.begin():
+            redeemer = await session.get(User, committed.redeemer.id)
+            point = await session.get(Task, committed.point.id)
+            assert redeemer is not None and point is not None
+            result = await vouchers.redeem(
+                session,
+                event_id=committed.event_id,
+                task=point,
+                redeemer=redeemer,
+                code=code,
+                user_id=None,
+                amount=1,
+                request_id=uuid.uuid4(),
+                wall_now=WALL_NOW,
+                utc_now=utc_now(),
+            )
+            redeemed.set()
+            await asyncio.sleep(HOLD)
+            return result
+
+    result, key = await asyncio.wait_for(
+        asyncio.gather(
+            redeem(),
+            _merge(committed, guests.chain, after=redeemed),
+            return_exceptions=True,
+        ),
+        timeout=30,
+    )
+
+    assert isinstance(result, VoucherRedeemResult), result
+    assert isinstance(key, GuestKey), key
+    account = guests.account.user_id
+    async with committed.sessions() as session:
+        owners = await session.execute(
+            select(col(VoucherEntry.user_id)).where(
+                col(VoucherEntry.event_id) == committed.event_id
+            )
+        )
+        assert list(owners.scalars()) == [account]
+        assert (
+            await vouchers.available_for(
+                session, committed.event_id, account, now=WALL_NOW
+            )
+            == 5
+        )
+
+
+@pytest.mark.asyncio
+async def test_a_check_beside_a_merge_answers_code_invalid(
+    committed: Committed, guests: Guests
+) -> None:
+    """The check read the chain's code before the merge committed and waits
+    on its delete in ``hold_pass``. It must not then name the chain, whose
+    user the merge deleted."""
+    code = await _guest_code(committed, guests.chain.user_id)
+    merged = asyncio.Event()
+
+    async def check() -> object:
+        await merged.wait()
+        async with committed.sessions() as session, session.begin():
+            return await vouchers.check(
+                session,
+                event_id=committed.event_id,
+                code=code,
+                user_id=None,
+                wall_now=WALL_NOW,
+                utc_now=utc_now(),
+            )
+
+    key, answer = await asyncio.wait_for(
+        asyncio.gather(
+            _merge(committed, guests.chain, done=merged, hold=HOLD),
+            check(),
+            return_exceptions=True,
+        ),
+        timeout=30,
+    )
+
+    assert isinstance(key, GuestKey), key
+    assert isinstance(answer, HTTPException), answer
+    assert answer.status_code == 404
+    assert _code(answer) == "voucher.code_invalid"

@@ -130,7 +130,9 @@ Identity, from `backend/app/api/deps.py`:
 
 `CurrentUser` **is** the full `User` row. There is no separate claims object and
 no remote profile: the access token carries the user id (`sub`) and the session
-id (`jti`) and nothing else, so identity is one primary-key lookup.
+id (`jti`) and nothing else, so identity is one primary-key lookup. A guest of a
+shared list (`users.is_list_guest`) has no password and no session, and every
+dependency that loads a user refuses one anyway (`403 auth.guest_account`).
 
 Per-event permission, from `backend/app/logic/permissions.py` — these are
 the *only* gates, so grepping for them finds every check:
@@ -197,6 +199,32 @@ to join a **public** event and an event admin decides
 are invitation-only. A targeted invitation can also name tasks to run; see
 [`docs/PEOPLE_IN_CHARGE.md`](docs/PEOPLE_IN_CHARGE.md#invitations-that-carry-tasks). `is_featured` (superadmin-only) curates the home screen.
 
+**Shared lists** ("Geteilte Listen"; `app/api/routes/shared_lists.py`,
+`shared_list_guests.py` and `public_shared_lists.py` → `app/logic/shared_lists/`)
+are public links, `/l/<code>`, through which people sign up for shifts of one
+event without an account. They add `shared_list_scope`,
+`require_shared_list_visible`, `require_shared_list_manager` and
+`require_shared_list_tasks` to `permissions.py`; grepping for them finds every
+check. Event admins manage every list of their event, a person in charge only a
+list whose current tasks are all theirs, and `events.managers_share_lists`
+decides whether people in charge may share at all. Everyone who signs up becomes a
+password-less guest `users` row (`is_list_guest`, subject `listguest|…`, no
+email) with the address in `shared_list_guests`, so **exclude or tag list guests
+wherever users are listed**, as with `is_sandbox`. Guests earn vouchers like
+members and redeem them by code only. A guest who confirms their address from a
+mail link gets one guest account per event and address, into which later
+sign-ups with that address are merged; `guest_account.confirm` is the only code
+that promotes or merges guest users, under the lock order in
+docs/SHARED_LISTS.md. A guest booking's person is `bookings.guest_name` /
+`guest_phone`, its consent `bookings.show_first_name`: never show a list guest's
+`users.name` for a booking, nor count a guest account's hours under it; use
+`app.crud.booking.person_name`. Every guest
+mail goes through `guest_quota.reserve_mail` and is written from database
+fields only. Every path that adds a confirmed booking takes
+`booking_capacity.lock_shifts` before it counts, and reminders for a booking
+that may have had some are written with `crud_reminder.replace_for_booking`,
+never a plain insert. See [`docs/SHARED_LISTS.md`](docs/SHARED_LISTS.md).
+
 ### Frontend Structure
 
 ```
@@ -245,13 +273,25 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
 - `SUPERADMIN_EMAILS` in root `.env` decides who gets the platform `admin` role on register or sign-in — set it before you expect to reach the admin screens
 - `REGISTRATION_MODE` (`open`, `approval`, `invite`), `REGISTRATION_ALLOWED_DOMAINS` and `REGISTRATION_INVITE_BYPASS` in root `.env` decide who may sign up. `SUPERADMIN_EMAILS` always get in, so set those first before closing signup
 - `TURNSTILE_SECRET_KEY` in root `.env` turns on the Cloudflare Turnstile bot check in front of
-  registration; unset (the default) disables it, which is what local dev and the E2E suite run with.
+  registration and the shared-list sign-up; unset (the default) disables it, which is what local dev
+  and the E2E suite run with.
   The matching public site key is `TURNSTILE_SITE_KEY`, served to the browser as runtime config —
   see [`docs/AUTH.md`](docs/AUTH.md) for the test keys that let you exercise it locally
 - `SANDBOX_ENABLED` (default on), `SANDBOX_TTL_MINUTES` (60) and
   `SANDBOX_MAX_ACTIVE` (25) tune the "check out a test event" demo. The first is
   also served to the browser as runtime config, so the landing page never shows
   a button the backend would refuse — see [`docs/SANDBOX.md`](docs/SANDBOX.md)
+- `SHARED_LISTS_ENABLED` (default on) is the shared lists' kill switch: off, every list endpoint
+  answers `404 shared_list.disabled`, while the guests' own manage link and the operator's
+  `/list-guests` stay up. It is also served to the browser as runtime config.
+  `GUEST_DATA_RETENTION_DAYS` (30) anonymises a guest that many days after their own last shift; any
+  text that tells guests how long their data is kept must match it. The guest pages read it from the
+  API (`retention_days`, `erase_on`); only the privacy policy, which belongs to no list, reads the
+  frontend container's copy (`guestRetentionDays()` in `useAppConfig.ts`). The daily ceilings on guest sign-ups and guest mail
+  (`GUEST_SIGNUPS_PER_ADDRESS_PER_DAY`, `GUEST_SIGNUP_EVENTS_PER_ADDRESS_PER_DAY`,
+  `GUEST_MAILS_PER_ADDRESS_PER_DAY`, `GUEST_MAILS_PER_EVENT_PER_DAY`,
+  `GUEST_MAILS_PER_ORGANISER_PER_DAY`, `SHARED_LIST_SIGNUPS_PER_LIST_PER_DAY`) and
+  `SHARED_LISTS_PER_EVENT` have working defaults — see [`docs/SHARED_LISTS.md`](docs/SHARED_LISTS.md#settings)
 - `EVENT_TIMEZONE` (IANA name, default `Europe/Berlin`) is the zone a new event starts with,
   and what a task without an event is read in. Each event has its own (`events.timezone`).
   Shift dates and times carry no zone; "has this shift started / ended" compares them with
@@ -271,5 +311,5 @@ public pages and FAQ keys. Anything those pages render must survive Node: no
   or on moto with `TEST_STORAGE_BACKEND=s3`
 - `LANDING_ENABLED=false` in root `.env` drops the landing page for an app-only deployment: `/` redirects to sign-in or the dashboard (guard in `router/index.ts`), the prerender writes the empty shell there instead, and the legal pages and changelog stay. Runtime switches are read with `isSwitchOn()` from `composables/useAppConfig.ts`; one that changes a prerendered page also goes into `TOGGLES` in `scripts/prerender.mjs` and the matching `is_off` line in `frontend/docker-entrypoint.sh`
 - `SEARCH_INDEXING=false` in root `.env` makes the frontend container serve a `robots.txt` that disallows everything (for private deployments). `FRONTEND_HOST` also sets the absolute URLs in the prerendered pages and sitemap
-- Local mail (verification, password reset) goes to the mailcatcher container on port 1025; its inbox is at `http://localhost:1080`. With no SMTP configured at all, the link is written to the backend log instead
+- Local mail (verification, password reset) goes to the mailcatcher container on port 1025; its inbox is at `http://localhost:1080`. With no SMTP configured at all, the link is written to the backend log instead. Guest mail of shared lists is the exception: without SMTP it is not sent, and its manage link never reaches a log
 - E2E tests authenticate through the `X-Test-User-Email` bypass, enabled by `VITE_E2E_AUTH_BYPASS` in `frontend/.env` and gated server-side on `TESTING`

@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, cast
 
-from sqlalchemy import CursorResult, delete, select
+from sqlalchemy import CursorResult, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
@@ -50,6 +50,51 @@ class CRUDTaskManager:
             select(col(TaskManager.task_id)).where(col(TaskManager.user_id) == user_id)
         )
         return list(rows.scalars().all())
+
+    async def task_ids_in_event(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: uuid.UUID,
+        event_id: uuid.UUID,
+    ) -> frozenset[uuid.UUID]:
+        """The tasks of one event the user is in charge of.
+
+        Says nothing about membership either; the gates check the role first.
+        """
+        rows = await session.execute(
+            select(col(TaskManager.task_id))
+            .join(Task, col(Task.id) == col(TaskManager.task_id))
+            .where(
+                col(TaskManager.user_id) == user_id,
+                col(Task.event_id) == event_id,
+            )
+        )
+        return frozenset(rows.scalars().all())
+
+    async def count_by_event_for_user(
+        self,
+        session: AsyncSession,
+        *,
+        user_id: uuid.UUID,
+        event_ids: Iterable[uuid.UUID],
+    ) -> dict[uuid.UUID, int]:
+        """``{event_id: n}``: how many tasks of each event the user is in
+        charge of. Events with none are left out.
+
+        Says nothing about membership; callers pass the events the user is in.
+        """
+        ids = set(event_ids)
+        if not ids:
+            return {}
+        rows = await session.execute(
+            select(col(Task.event_id), func.count())
+            .select_from(TaskManager)
+            .join(Task, col(Task.id) == col(TaskManager.task_id))
+            .where(col(TaskManager.user_id) == user_id, col(Task.event_id).in_(ids))
+            .group_by(col(Task.event_id))
+        )
+        return {event_id: n for event_id, n in rows.all() if event_id is not None}
 
     async def managers_for_tasks(
         self,

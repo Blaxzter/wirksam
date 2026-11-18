@@ -1,24 +1,72 @@
 {
     "allTasks": "Print all tasks",
     "contactColumn": "Contact",
+    "freeColumn": "Free",
+    "list": {
+        "closesSoon": "The QR code only takes sign-ups {ends}.",
+        "ended": "The list has ended. Share the tasks again to give the notice a link that works.",
+        "expired": "The list has expired. Nobody can sign up through the QR code any more.",
+        "notFound": "This list doesn't exist, or you can't see it.",
+        "notOpen": "While the list isn't open, there's nothing to print here.",
+        "paused": "The list is paused. Nobody can sign up through the QR code right now.",
+        "readOnly": "Only the organisers can change that."
+    },
+    "listQrCaption": "Scan to sign up, no account needed",
     "nameColumn": "Name",
+    "notice": {
+        "create": {
+            "confirm": "Create and print",
+            "customize": "Adjust first",
+            "later": "You can pause, change or end the list at any time under “Shared lists”.",
+            "shifts": "all that are still to come | all that are still to come, from {count} tasks",
+            "shiftsLabel": "Shifts",
+            "text": "The QR code on the sheet leads to this list, where anyone can sign up, with or without an account.",
+            "title": "We'll make a shared list for the notice",
+            "titleLabel": "Title"
+        },
+        "eventTitle": "{event} – all tasks",
+        "leftOut": {
+            "no_shift_ahead": "“{name}” has no shift still to come.",
+            "not_published": "“{name}” isn't published.",
+            "not_yours": "Someone else is in charge of “{name}”.",
+            "team_locked": "“{name}” is for one team only.",
+            "title": "Printed without a QR code:"
+        },
+        "problem": {
+            "event_not_published": "The event isn't published yet. Only then can people sign up through a shared list.",
+            "no_free_place": "No shift still to come has a free place.",
+            "none_offered": "No task can go on a shared list right now.",
+            "not_published": "The task isn't published yet. Only then can people sign up through a shared list.",
+            "paper": "You can still print, for signing up on paper.",
+            "print": "Print without QR code",
+            "team_locked": "The task is for one team only. Only people with an account who are in the team can sign up.",
+            "title": "This sheet gets no QR code",
+            "titleEvent": "The sheets get no QR code",
+            "too_many": "A shared list holds at most {max} tasks; this would be {count}."
+        }
+    },
     "optionsDialog": {
         "selectAll": "Select all"
     },
     "overview": "Print overview",
     "printButton": "Print",
     "printEvent": "Print this event",
+    "printNotice": "Print notice",
     "printTask": "Print task",
     "scanToSignUp": "Scan to sign up online",
+    "shiftsRegion": "Shifts",
     "toolbar": {
         "close": "Close print options",
         "filterDates": "Filter dates",
         "includeNames": "Show booked names",
         "open": "Open print options",
+        "paperLines": "Lines to sign up on paper",
         "repeatHeader": "Repeat header on each page",
         "showLocation": "Show location column",
         "showMap": "Show location map",
         "showTitle": "Show title column",
+        "signedUpNames": "Names of those signed up",
         "title": "Display options"
-    }
+    },
+    "vouchersColumn": "Vouchers"
 }

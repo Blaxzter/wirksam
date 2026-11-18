@@ -13,6 +13,8 @@ Vouchers only appear in an event once a task gives or takes them. Until then, ev
 
 For each task, you set how many vouchers a shift brings. As soon as a booked shift is over, the vouchers are there. Nobody has to do anything for that.
 
+That also holds for everyone who signed up without an account through a [shared list](/features/shared-lists). They show their code on the page behind the link in their confirmation email.
+
 What's already earned stays. That holds even if the shift is later deleted or moved, or you change the number per shift.
 
 ## What volunteers see
@@ -43,6 +45,8 @@ These people can redeem:
 
 If someone has a flat battery, no signal or no smartphone, it works without a code too. You pick them from a list that shows how many vouchers they have. People with none left are greyed out.
 
+People who signed up without an account through a shared list are redeemed by code only. When you redeem theirs, "no account" shows next to the name. The list for redeeming without a code holds members only, so the names of people without an account don't show up for everyone on shift at a stand.
+
 > By default, everyone on shift at a place that takes vouchers can also redeem without a code. That applies to anyone who books a shift there.
 
 ## What organisers can set
@@ -56,7 +60,7 @@ If you trust your people in charge, turn the second rule on for the whole event.
 
 ![The Vouchers tab with the two rules and the overview of who has how many vouchers](shot:vouchers-settings)
 
-Below the rules is who has how many vouchers: earned, redeemed, available and still to come. There's a search and each person's history.
+Below the rules is who has how many vouchers: earned, redeemed, available and still to come. There's a search and each person's history. People who signed up through a shared list are marked "no account".
 
 That's also where you enter corrections, for example for help with the set-up that no shift covers. A correction always needs a reason, so others can follow it later. It can't push a balance below zero.
 
@@ -64,7 +68,7 @@ That's also where you enter corrections, for example for help with the set-up th
 
 Because vouchers depend on bookings, a few rules apply to all tasks in WirkSam. You can only book:
 
-- as a member of the event
+- as a member of the event, or through a [shared list](/features/shared-lists)
 - on published tasks
 - until the shift is over
 
@@ -109,6 +113,12 @@ Your bookings for shifts that aren't over yet are cancelled.
 ### Does the rule for people in charge affect tasks without vouchers?
 
 No. On tasks without vouchers, nothing changes for people in charge.
+
+### Do people without an account get vouchers too?
+
+Yes, when they signed up for a shift with vouchers through a [shared list](/features/shared-lists). They redeem them with the code the page behind the link in their email shows. Redeeming without a code isn't possible for them. If their phone is flat, an organiser adds a correction, for example "redeemed at the stand".
+
+When they delete their data, or their details were deleted after their last shift, the vouchers they haven't redeemed yet expire. How many they earned and redeemed stays in the overview, without a name.
 
 ### Does this cost extra?
 

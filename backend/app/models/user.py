@@ -20,11 +20,14 @@ class User(Base, table=True):
     to send to, ``test|`` marks the accounts
     ``POST /testing/reset`` is allowed to delete, and ``sandbox|`` marks the
     guest accounts minted by the "try a test event" button, which are purged
-    together with their event when its TTL runs out.
+    together with their event when its TTL runs out. ``listguest|`` marks
+    sign-up-list guests, which no channel contacts. Their mail goes through
+    ``logic/shared_lists/guest_mail.py``.
 
     The ``sandbox|`` prefix and the ``is_sandbox`` column are not redundant: the
     prefix is what the notification channels grep for, the column is what every
-    ``WHERE`` clause filters on — a prefix cannot be indexed usefully.
+    ``WHERE`` clause filters on — a prefix cannot be indexed usefully. The same
+    goes for ``listguest|`` and ``is_list_guest``.
     """
 
     __tablename__ = "users"  # type: ignore[assignment]
@@ -52,8 +55,8 @@ class User(Base, table=True):
         sa_column=sa.Column(sa.String, unique=True, index=True),
         description=(
             "Opaque local identity, e.g. 'local|<uuid4hex>'; the 'demo|', "
-            "'test|' and 'sandbox|' prefixes are behavioural — see the class "
-            "docstring"
+            "'test|', 'sandbox|' and 'listguest|' prefixes are behavioural — "
+            "see the class docstring"
         ),
     )
     is_sandbox: bool = Field(
@@ -65,6 +68,17 @@ class User(Base, table=True):
             "Throwaway guest behind the 'try a test event' button. Never "
             "listed in user search, never sent a notification, and deleted "
             "with its sandbox event."
+        ),
+    )
+    is_list_guest: bool = Field(
+        default=False,
+        sa_column=sa.Column(
+            sa.Boolean, nullable=False, server_default=sa.text("false"), index=True
+        ),
+        description=(
+            "Signed up through a shared list without an account. No email and "
+            "no password, so it can never sign in; the contact address lives in "
+            "shared_list_guests. Never an event member."
         ),
     )
     password_hash: str | None = Field(

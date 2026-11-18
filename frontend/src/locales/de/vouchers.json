@@ -54,6 +54,7 @@
     "bookingChip": "+{n} Marke | +{n} Marken",
     "code": {
         "checking": "Wird gerade eingelöst …",
+        "elsewhere": "Dein Code wird gerade auf einem anderen Bildschirm gezeigt. Zeigst du ihn hier, gilt der dort nicht mehr.",
         "expiresIn": "Neuer Code in {s} s",
         "failed": "Dein Code konnte nicht geladen werden. Versuch es noch einmal.",
         "forEvent": "Dein Code für {event}",
@@ -62,6 +63,7 @@
         "redeemed": "{n} Marke eingelöst bei {place} | {n} Marken eingelöst bei {place}",
         "renewFailed": "Der nächste Code kam nicht an. Dieser gilt noch.",
         "retry": "Noch einmal versuchen",
+        "showHere": "Hier zeigen",
         "showNew": "Neuen Code zeigen",
         "title": "Dein Code"
     },

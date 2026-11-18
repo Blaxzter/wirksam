@@ -5,7 +5,7 @@ points: WirkSam refuses overlapping shifts | Say when you can help | Booked shif
 related: guide/volunteer-start, feature/notifications, feature/shift-planning, feature/teams
 ---
 
-Everyone books for themselves. Organisers decide what there is to book. They set the tasks and shifts, how many people each shift needs and whether a task is reserved for a team.
+Everyone books for themselves. Organisers decide what there is to book. They set the tasks and shifts, how many people each shift needs and whether a task is reserved for a team. People without an account can also sign up through a [shared list](/features/shared-lists) if the organisers share one.
 
 You can book once you're part of the event. How to get there is under [Invitations and roles](/features/members). It all runs in the browser, and installing the app is up to you.
 
@@ -53,6 +53,8 @@ Under "My Notes" you can leave a note for the organisers, for example that you'l
 
 To cancel, choose "Cancel Booking" or tap your booked tile on the task's page. After a confirmation the place is free again and its reminders are dropped.
 
+If you signed up through a shared list without an account, you cancel through the link you got when you signed up.
+
 !["My Bookings" with the booked shifts as cards](shot:helper-bookings)
 
 ## Saying when you can help
@@ -87,7 +89,7 @@ New shifts appear and cancelled ones disappear the next time your calendar app c
 
 ### Can I book for someone else?
 
-No. Everyone books with their own account. Organisers can't put anyone on a shift or take a single person off one either.
+No. Everyone books with their own account. Organisers can't put anyone on a shift either. They and the task's people in charge can take someone off a shift only if that person signed up through a [shared list](/features/shared-lists), without an account.
 
 ### Why can't I book a shift?
 
@@ -131,7 +133,7 @@ Leaving cancels your bookings for shifts that aren't over yet.
 
 ### Who can see what I've booked?
 
-Everyone in the event who can see the task sees your name on the shift. Only organisers and the task's people in charge see your email address, phone number and note.
+Everyone in the event who can see the task sees your name on the shift. Only organisers and the task's people in charge see your email address, phone number and note. The same goes for people who signed up through a shared list, whose name is marked "no account".
 
 ### What do organisers see of my availability?
 

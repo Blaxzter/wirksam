@@ -105,6 +105,16 @@ class Event(Base, table=True):
             "since every extra shift earns vouchers."
         ),
     )
+    managers_share_lists: bool = Field(
+        default=True,
+        sa_column=sa.Column(sa.Boolean, nullable=False, server_default=sa.text("true")),
+        description=(
+            "People in charge may create, edit, resume and rotate shared lists "
+            "of their own tasks, which opens those tasks to people without an "
+            "account. Off: only the event admins may; people in charge can "
+            "still pause and end their lists."
+        ),
+    )
     created_by_id: uuid.UUID | None = Field(
         default=None,
         sa_column=sa.Column(

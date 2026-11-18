@@ -5,6 +5,7 @@
         "captcha_failed": "Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuch es noch einmal und lade die Seite neu, falls es weiter nicht klappt.",
         "email_domain_not_allowed": "Mit dieser E-Mail-Adresse kannst du dich hier nicht registrieren.",
         "email_taken": "Für diese E-Mail-Adresse gibt es bereits ein Konto.",
+        "guest_account": "Wer sich über eine geteilte Liste eingetragen hat, kann sich nicht anmelden.",
         "invalid_credentials": "E-Mail-Adresse und Passwort passen nicht zusammen.",
         "invalid_token": "Dieser Link ist nicht mehr gültig. Bitte einen neuen anfordern.",
         "invitation_required": "Hier kannst du dich nur mit einer Einladung registrieren. Nutze den Link aus deiner Einladung oder die Adresse, an die sie geschickt wurde.",
@@ -39,6 +40,14 @@
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."
     },
+    "guest_signup": {
+        "mail_link_required": "Dass du das nicht warst, kannst du uns nur über den Link in der E-Mail sagen.",
+        "no_email": "Erinnerungen kommen per E-Mail, und bei dieser Eintragung steht keine E-Mail-Adresse.",
+        "not_found": "Dieser Link funktioniert nicht (mehr).",
+        "not_suppressed": "Mails an diese Adresse sind nicht gesperrt.",
+        "rate_limited": "Zu viele Versuche in kurzer Zeit. Warte bitte ein paar Minuten und versuch es dann noch einmal.",
+        "reject_confirmed": "Diese Eintragungen hast du selbst bestätigt. Du kannst dich austragen oder deine Daten löschen."
+    },
     "invitation": {
         "address_limited": "An diese Adresse gingen heute schon mehrere Einladungen. Versuch es morgen noch einmal.",
         "already_used": "Diese Einladung wurde schon benutzt.",
@@ -67,6 +76,39 @@
         "invitations_disabled": "Eine Demo-Veranstaltung kann niemanden einladen, weil alle darin erfunden sind.",
         "not_available": "Das geht in der Demo nicht. Lege dafür ein richtiges Konto an.",
         "upload_disabled": "In der Demo kannst du keine Bilder hochladen. Lege dafür ein richtiges Konto an."
+    },
+    "shared_list": {
+        "already_signed_up": "Du bist für diese Schicht schon eingetragen.",
+        "closed": "Diese Liste ist geschlossen. Darüber kann sich niemand mehr eintragen.",
+        "daily_limit": "Diese Liste hat heute schon so viele Eintragungen angenommen, wie sie kann. Versuch es bitte morgen wieder.",
+        "disabled": "Geteilte Listen sind auf dieser Seite abgeschaltet.",
+        "email_required": "Bitte gib deine E-Mail-Adresse an.",
+        "ended": "Diese Liste ist beendet und lässt sich nicht mehr ändern.",
+        "ends_on_invalid": "Der letzte Tag muss zwischen heute und dem Tag der letzten Schicht liegen.",
+        "event_not_published": "Listen kannst du nur für eine veröffentlichte Veranstaltung teilen.",
+        "forbidden": "Das geht hier nicht. Listen verwalten die Organisator:innen und die Verantwortlichen der Aufgaben darin.",
+        "guest_token_invalid": "Diese Eintragung lässt sich hier nicht fortsetzen. Fang bitte noch einmal bei der Liste an.",
+        "managers_disabled": "In dieser Veranstaltung können nur die Organisator:innen Aufgaben in Listen teilen.",
+        "max_per_person": "Du hast dich schon für so viele Schichten eingetragen, wie eine Person über diese Liste kann.",
+        "no_free_places": "Alle Schichten in der Liste sind voll, also könnte sich niemand darüber eintragen.",
+        "no_shifts": "In der Liste wäre keine Schicht, die noch nicht begonnen hat.",
+        "not_found": "Diese Liste gibt es nicht (mehr).",
+        "not_live": "Diese Liste ist nicht offen, also gibt es nichts zu pausieren.",
+        "nothing_to_offer": "Alle Schichten dieser Liste haben schon begonnen, also kann sie nicht wieder öffnen.",
+        "paused": "Diese Liste ist gerade pausiert. Versuch es bitte später noch einmal.",
+        "phone_required": "Bitte gib deine Telefonnummer an.",
+        "rate_limited": "Zu viele Versuche in kurzer Zeit. Warte bitte ein paar Minuten und versuch es dann noch einmal.",
+        "remove_selector": "Wähle die Eintragungen aus, die raus sollen, oder einen Zeitpunkt, ab dem alle raus sollen.",
+        "shift_not_offered": "Diese Schicht gibt es in der Liste nicht (mehr).",
+        "shift_started": "Diese Schicht hat schon begonnen. Such dir bitte eine andere aus.",
+        "signup_not_found": "Diese Eintragung gibt es nicht mehr.",
+        "signup_not_guest": "Diese Eintragung kommt von jemandem mit Konto und lässt sich hier nicht austragen.",
+        "task_not_in_event": "In die Listen einer Veranstaltung kommen nur ihre eigenen Aufgaben.",
+        "task_not_published": "Nur veröffentlichte Aufgaben können in eine Liste.",
+        "task_team_locked": "Aufgaben, die nur ein Team buchen kann, können nicht in eine Liste, weil sich dort Leute ohne Konto eintragen.",
+        "tasks_forbidden": "Du kannst nur Aufgaben teilen, für die du verantwortlich bist.",
+        "too_many": "Diese Veranstaltung hat schon so viele Listen, wie sie haben kann.",
+        "too_many_for_address": "Mit dieser E-Mail-Adresse gab es heute schon genug Eintragungen. Versuch es bitte morgen wieder."
     },
     "shift": {
         "not_found": "Diese Schicht wurde nicht gefunden."

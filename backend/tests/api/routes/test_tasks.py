@@ -1,12 +1,26 @@
 """Route tests for Task endpoints."""
 
+from datetime import date, time
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.shared_list import shared_list as crud_shared_list
+from app.models.booking import Booking
 from app.models.event import Event
+from app.models.shared_list import SharedList
+from app.models.shift import Shift
 from app.models.task import Task
 from app.models.user import User
+from tests.fixtures.guest_signups import (
+    add_shift,
+    pooled_family,
+)
+from tests.fixtures.shared_lists import (
+    ListGuestFactory,
+    SharedListFactory,
+)
 
 
 @pytest.mark.asyncio
@@ -385,3 +399,100 @@ class TestTasksEventAdminRole:
         )
 
         assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestTasksAndSharedLists:
+    """What a task's routes do for the shared lists it is on."""
+
+    async def test_the_print_view_tags_list_guests(
+        self,
+        async_client: AsyncClient,
+        test_task: Task,
+        test_shift: Shift,
+        test_booking: Booking,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+    ):
+        await make_list_guest(test_shared_list, shifts=[test_shift])
+
+        r = await async_client.get(f"/api/v1/tasks/{test_task.id}/bookings")
+
+        assert r.status_code == 200
+        assert {row["user_name"]: row["is_guest"] for row in r.json()} == {
+            "Test User": False,
+            "Gast Eins": True,
+        }
+
+    async def test_the_print_view_shows_each_pooled_sign_up_as_itself(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shared_list: SharedList,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        await pooled_family(
+            db_session,
+            test_shared_list,
+            make_list_guest,
+            await add_shift(db_session, test_task),
+            await add_shift(db_session, test_task, day=date(2026, 6, 12)),
+        )
+
+        r = await async_client.get(f"/api/v1/tasks/{test_task.id}/bookings")
+
+        assert sorted(
+            (row["user_name"], row["user_phone_number"], row["is_guest"])
+            for row in r.json()
+        ) == [("Maria Muster", "0170 1", True), ("Tom Muster", "0170 2", True)]
+
+    async def test_a_moved_task_leaves_the_lists_of_its_old_event(
+        self,
+        async_client: AsyncClient,
+        db_session: AsyncSession,
+        test_task: Task,
+        test_shift: Shift,
+        test_private_event: Event,
+        make_shared_list: SharedListFactory,
+        make_list_guest: ListGuestFactory,
+        as_event_admin: None,
+    ):
+        """A list belongs to one event. The guest's booking moves with the
+        task and stays confirmed: they signed up for that shift."""
+        left_out = Shift(
+            task_id=test_task.id,
+            title="Abbau",
+            date=date(2026, 6, 13),
+            start_time=time(18, 0),
+            end_time=time(20, 0),
+        )
+        db_session.add(left_out)
+        await db_session.flush()
+        shared_list = await make_shared_list(excluded=[left_out])
+        guest = await make_list_guest(shared_list, shifts=[test_shift])
+
+        r = await async_client.patch(
+            f"/api/v1/tasks/{test_task.id}",
+            json={"event_id": str(test_private_event.id)},
+        )
+
+        assert r.status_code == 200, r.text
+        assert (
+            await crud_shared_list.task_ids(db_session, shared_list_id=shared_list.id)
+            == []
+        )
+        assert (
+            await crud_shared_list.excluded_ids(
+                db_session, shared_list_id=shared_list.id
+            )
+            == []
+        )
+        (booking,) = guest.bookings
+        await db_session.refresh(booking)
+        assert (booking.status, booking.shift_id, booking.shared_list_id) == (
+            "confirmed",
+            test_shift.id,
+            shared_list.id,
+        )

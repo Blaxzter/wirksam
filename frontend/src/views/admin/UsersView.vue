@@ -14,19 +14,10 @@ import RejectUserDialog from '@/components/admin/users/RejectUserDialog.vue'
 import UsersGroupedList from '@/components/admin/users/UsersGroupedList.vue'
 import UserStatsCards from '@/components/admin/users/UserStatsCards.vue'
 import UsersTable from '@/components/admin/users/UsersTable.vue'
+import ListPagination from '@/components/data-table/ListPagination.vue'
 import StickyPageBar from '@/components/layout/StickyPageBar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationFirst,
-  PaginationItem,
-  PaginationLast,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
 
 import type { UserCounts, UserListResponse, UserRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -74,8 +65,6 @@ const deletingUser = ref<UserRead | null>(null)
 const isDeleting = ref(false)
 
 const currentTotal = computed(() => counts.value[statusFilter.value])
-
-const totalPages = computed(() => Math.max(1, Math.ceil(currentTotal.value / PAGE_SIZE)))
 
 const currentSectionLabel = computed(() => {
   const keys: Record<StatusFilter, string> = {
@@ -399,43 +388,7 @@ onMounted(loadUsers)
       />
     </template>
 
-    <div v-if="totalPages > 1" class="flex justify-center">
-      <Pagination
-        v-model:page="currentPage"
-        :total="currentTotal"
-        :items-per-page="PAGE_SIZE"
-        :sibling-count="1"
-      >
-        <PaginationContent>
-          <PaginationFirst />
-          <PaginationPrevious />
-          <template v-for="(item, index) in totalPages" :key="index">
-            <PaginationItem
-              v-if="Math.abs(item - currentPage) <= 1 || item === 1 || item === totalPages"
-              :value="item"
-              :is-active="currentPage === item"
-              as-child
-            >
-              <Button
-                variant="outline"
-                size="icon"
-                class="h-9 w-9"
-                :class="
-                  currentPage === item
-                    ? '!bg-primary !text-primary-foreground !border-primary'
-                    : ''
-                "
-              >
-                {{ item }}
-              </Button>
-            </PaginationItem>
-            <PaginationEllipsis v-else-if="Math.abs(item - currentPage) === 2" />
-          </template>
-          <PaginationNext />
-          <PaginationLast />
-        </PaginationContent>
-      </Pagination>
-    </div>
+    <ListPagination v-model:page="currentPage" :total="currentTotal" :page-size="PAGE_SIZE" />
 
     <RejectUserDialog
       v-model:open="showRejectDialog"

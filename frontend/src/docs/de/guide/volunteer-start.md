@@ -15,6 +15,8 @@ Danach siehst du die Veranstaltung. Tippe auf „Annehmen und mitmachen“.
 
 > Kam die Einladung per E-Mail, gilt sie nur für diese Adresse, also nimm dieselbe fürs Konto. Eine Einladung gilt 14 Tage. Ist sie abgelaufen, frag die Organisator:innen nach einer neuen.
 
+> Hast du statt einer Einladung den Link zu einer geteilten Liste bekommen? Dann brauchst du kein Konto: Such dir eine Schicht aus, trag deinen Namen ein, fertig. Über den Link in der Bestätigungsmail oder den Link, den die Seite dir zeigt, trägst du dich wieder aus. Der Rest dieser Anleitung ist für alle mit Konto.
+
 ## Sagen, wann du kannst
 
 Öffne „Verfügbarkeit“, am Handy unter „Mehr“. Wähle „Voll verfügbar“, „Tägliches Fenster“ oder „Bestimmte Zeiten“ (am Handy „Voll“, „Täglich“ oder „Termine“) [[modes]] und speichere oben rechts [[save]], am Handy mit dem Haken.

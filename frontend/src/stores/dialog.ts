@@ -11,6 +11,12 @@ export interface DialogConfig {
   cancelIcon?: string
   type?: 'confirm' | 'alert' | 'info'
   variant?: 'default' | 'destructive' | 'secondary'
+  /**
+   * Where focus goes once the dialog has closed, if the control that opened it
+   * is gone by then: the confirmed action removed it. Otherwise focus goes back
+   * to that control, as it always does.
+   */
+  focusInstead?: () => void
 }
 
 export interface DialogState extends DialogConfig {

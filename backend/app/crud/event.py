@@ -25,8 +25,41 @@ EventScope = Literal["mine", "discover", "featured", "all"]
 ``all`` — everything; only honoured for the platform superadmin.
 """
 
+#: Row locks :meth:`CRUDEvent.lock` takes on an event, weakest first.
+EventLock = Literal["key_share", "share", "no_key_update"]
+
 
 class CRUDEvent(CRUDBase[Event, EventCreate, EventUpdate]):
+    async def lock(
+        self, db: AsyncSession, event_id: uuid.UUID, *, mode: EventLock
+    ) -> Event | None:
+        """The event, locked until commit and read afresh into the session.
+
+        Taken before any lock on the event's shared lists, just as deleting
+        the event takes its row before its lists' (CASCADE), so the two never
+        wait for each other in a circle:
+
+        - ``key_share``: a sign-up, which needs only that the event stays. It
+          waits for a delete and for nothing else.
+        - ``share``: a change to one of its lists, which reads
+          ``managers_share_lists`` and so waits for an emergency stop that may
+          switch it off.
+        - ``no_key_update``: that emergency stop (``pause-all``).
+        """
+        query = (
+            select(Event)
+            .where(col(Event.id) == event_id)
+            .execution_options(populate_existing=True)
+        )
+        if mode == "key_share":
+            query = query.with_for_update(read=True, key_share=True)
+        elif mode == "share":
+            query = query.with_for_update(read=True)
+        else:
+            query = query.with_for_update(key_share=True)
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+
     async def zone_of(self, db: AsyncSession, event_id: uuid.UUID | None) -> str | None:
         """The event's zone for ``clock``. ``None`` for a task without an event,
         which the clock reads as ``settings.EVENT_TIMEZONE``.

@@ -22,6 +22,15 @@ const isE2eBypass =
 
 const authGuard = isE2eBypass ? () => true : sessionAuthGuard
 
+/**
+ * The pages a shared list's guests open from a link: the list itself and the
+ * page that manages their sign-ups. Whoever opens them may be signed in to an
+ * account in any state, or to none, and the page works the same either way.
+ */
+const GUEST_ROUTES = new Set<string>(['shared-list-public', 'guest-signup-manage'])
+
+const isGuestRoute = (name: unknown) => typeof name === 'string' && GUEST_ROUTES.has(name)
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: createRoutes(authGuard),
@@ -30,11 +39,12 @@ const router = createRouter({
    * The landing page is one long document with linkable sections, so a hash
    * has to actually scroll somewhere. `scroll-mt-*` on each section handles
    * the sticky header offset, and `savedPosition` keeps the back button
-   * returning to where the visitor was.
+   * returning to where the visitor was. A guest page's hash is the guest's
+   * token, not a section.
    */
   scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) return savedPosition
-    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    if (to.hash && !isGuestRoute(to.name)) return { el: to.hash, behavior: 'smooth' }
     return { top: 0 }
   },
 })
@@ -61,6 +71,14 @@ const SELECTED_EVENT_EXEMPT_ROUTES = new Set<string>([
   // "Did I get my vouchers?" the morning after: the page only reads once the
   // event is over, and without any event it points at the picker.
   'my-vouchers',
+  // Who signed up through a list stays worth reading once the event is over,
+  // like the vouchers above; the page itself copes without an event.
+  'shared-lists',
+  'shared-list-create',
+  'shared-list-detail',
+  'shared-list-edit',
+  // The guest pages work without any event, or any account.
+  ...GUEST_ROUTES,
   'admin-users',
   'settings',
   'notification-preferences',
@@ -134,13 +152,15 @@ router.beforeEach(async (to) => {
 
     // An account that may sign in but not use the app gets told why rather
     // than left on a page where every request comes back 403: suspended by a
-    // moderator, or waiting in (or rejected from) the approval queue.
+    // moderator, or waiting in (or rejected from) the approval queue. A guest
+    // page opened from a group chat is the exception: it never uses the
+    // account, so it opens whatever state the account is in.
     const blockedRoute = !authStore.isActive
       ? 'account-suspended'
       : !authStore.isApproved
         ? 'account-pending'
         : null
-    if (blockedRoute && routeName !== blockedRoute) {
+    if (blockedRoute && routeName !== blockedRoute && !isGuestRoute(routeName)) {
       return { name: blockedRoute }
     }
     if (!blockedRoute && (routeName === 'account-suspended' || routeName === 'account-pending')) {
