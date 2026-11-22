@@ -4,16 +4,17 @@ import { computed } from 'vue'
 import { ExternalLink, MapPin, User } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
+import MarkdownBody from '@/components/content/MarkdownBody.vue'
+
 import type { LocationDetailRead, LocationRead } from '@/client/types.gen'
-import { renderMarkdown } from '@/lib/markdown'
 
 /**
  * What a location looks like to someone heading there: the admin's markdown
  * description, the address, a link to an outside map and who to ask.
  *
- * This is the only place `renderMarkdown` output reaches `v-html` — see
- * `lib/markdown.ts` for why that is safe. `compact` clamps the description to
- * three lines and leaves out the contact, for list cards and previews.
+ * The description goes through `MarkdownBody`, the one place markdown reaches
+ * `v-html`. `compact` clamps it to three lines and leaves out the contact, for
+ * list cards and previews.
  */
 const props = withDefaults(
   defineProps<{
@@ -25,8 +26,6 @@ const props = withDefaults(
 
 const { t } = useI18n()
 
-const html = computed(() => renderMarkdown(props.location.description))
-
 // The API only accepts http(s) here; checking again costs nothing and keeps a
 // stray `javascript:` from ever becoming an href.
 const mapUrl = computed(() => {
@@ -37,12 +36,11 @@ const mapUrl = computed(() => {
 
 <template>
   <div class="space-y-2 text-sm" data-testid="location-description">
-    <div
-      v-if="html"
-      class="location-markdown text-muted-foreground"
-      :class="{ 'line-clamp-3': compact }"
+    <MarkdownBody
+      :source="location.description"
+      :clamp="compact ? 3 : undefined"
+      class="text-muted-foreground"
       data-testid="location-description-body"
-      v-html="html"
     />
 
     <dl v-if="location.address || mapUrl || (!compact && location.contact)" class="space-y-1.5">
@@ -78,53 +76,3 @@ const mapUrl = computed(() => {
     </dl>
   </div>
 </template>
-
-<style scoped>
-/* No typography plugin in this app, so the few elements markdown produces are
-   styled here, in the same spirit as the changelog. */
-.location-markdown :deep(p),
-.location-markdown :deep(ul),
-.location-markdown :deep(ol) {
-  margin-bottom: 0.5rem;
-  line-height: 1.6;
-}
-.location-markdown :deep(> :last-child) {
-  margin-bottom: 0;
-}
-.location-markdown :deep(ul) {
-  list-style-type: disc;
-  padding-left: 1.25rem;
-}
-.location-markdown :deep(ol) {
-  list-style-type: decimal;
-  padding-left: 1.25rem;
-}
-.location-markdown :deep(strong) {
-  color: var(--foreground);
-  font-weight: 600;
-}
-.location-markdown :deep(h1),
-.location-markdown :deep(h2),
-.location-markdown :deep(h3),
-.location-markdown :deep(h4) {
-  color: var(--foreground);
-  font-weight: 600;
-  margin: 0.75rem 0 0.25rem;
-}
-.location-markdown :deep(a) {
-  color: var(--primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  overflow-wrap: anywhere;
-}
-.location-markdown :deep(code) {
-  font-size: 0.8125rem;
-  background: var(--muted);
-  padding: 0.0625rem 0.25rem;
-  border-radius: calc(var(--radius) - 4px);
-}
-.location-markdown :deep(blockquote) {
-  border-left: 3px solid var(--border);
-  padding-left: 0.75rem;
-}
-</style>

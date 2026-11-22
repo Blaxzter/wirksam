@@ -1,16 +1,16 @@
 import MarkdownIt from 'markdown-it'
 
 /**
- * Markdown for text that event admins write and members read — today only
- * location descriptions.
+ * Markdown for text that event admins write and members read: location and
+ * event descriptions.
  *
  * `html: false` is the safety story: raw HTML in the source is escaped, not
  * passed through, and markdown-it's own `validateLink` refuses `javascript:`,
  * `vbscript:`, `file:` and non-image `data:` URLs. That is why there is no
  * DOMPurify step — keep it that way rather than switching `html` on.
  *
- * The output is meant for `v-html`, and only through `LocationDescription.vue`,
- * so there is exactly one place where user-authored HTML reaches the DOM.
+ * The output is meant for `v-html`, and only through `MarkdownBody.vue`, so
+ * there is exactly one place where user-authored HTML reaches the DOM.
  */
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
 

@@ -206,7 +206,15 @@ onMounted(() => {
         </div>
         <div class="space-y-2">
           <Label for="event-description">{{ t('duties.events.fields.description') }}</Label>
-          <Textarea id="event-description" v-model="description" rows="2" />
+          <Textarea
+            id="event-description"
+            v-model="description"
+            rows="3"
+            aria-describedby="event-description-hint"
+          />
+          <p id="event-description-hint" class="text-xs text-muted-foreground">
+            {{ t('duties.events.fields.descriptionFormatting') }}
+          </p>
         </div>
         <div class="space-y-2">
           <Label>{{ t('duties.events.fields.status') }}</Label>

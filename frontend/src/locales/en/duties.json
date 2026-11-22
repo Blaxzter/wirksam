@@ -127,6 +127,74 @@
         "reasonPlaceholder": "e.g. Task rescheduled, no longer needed..."
     },
     "events": {
+        "appearance": {
+            "colour": {
+                "base": {
+                    "followPrimary": "Like main colour",
+                    "hint": "The background, cards and menu. Text on them stays as easy to read as on WirkSam's own.",
+                    "title": "Base tone"
+                },
+                "custom": {
+                    "asPicked": "as picked, contrast {ratio}:1",
+                    "baseHint": "Only its hue is used, as a pale tint, so text stays as easy to read as on WirkSam's own.",
+                    "code": "Colour code",
+                    "dark": "Dark mode",
+                    "darkened": "made darker so text stays readable: {ratio}:1 instead of {before}:1",
+                    "invalid": "Enter a colour code like #1e6bb8.",
+                    "light": "Light mode",
+                    "lightened": "made lighter so text stays readable: {ratio}:1 instead of {before}:1",
+                    "own": "Own",
+                    "pick": "Colour"
+                },
+                "hint": "Warnings and how well a shift is staffed keep their usual colours, so they mean the same in every event. An own colour is made as much lighter or darker as text on it needs, and no more.",
+                "names": {
+                    "blue": "Blue",
+                    "green": "Green",
+                    "neutral": "Neutral",
+                    "orange": "Orange",
+                    "pink": "Pink",
+                    "red": "Red",
+                    "rose": "Rose",
+                    "slate": "Grey",
+                    "teal": "Teal",
+                    "violet": "Violet",
+                    "yellow": "Yellow"
+                },
+                "none": "Default",
+                "primary": {
+                    "hint": "Buttons, links, the selected menu item and the large panels, such as your next shift.",
+                    "title": "Main colour"
+                },
+                "secondary": {
+                    "hint": "Secondary buttons, selected rows and small labels such as the countdown to your next shift.",
+                    "title": "Second colour"
+                }
+            },
+            "description": "Make the event easy to recognise. While it is open, everyone sees its colours throughout the app and its logo at the top of the menu.",
+            "logo": {
+                "dark": {
+                    "hint": "Optional: a version for dark backgrounds, such as your logo with white lettering. Without one, dark mode shows the logo above.",
+                    "preview": "In dark mode",
+                    "remove": "Remove dark version",
+                    "removed": "Dark version removed",
+                    "replace": "Replace dark version",
+                    "tile": "White background in dark mode",
+                    "tileHint": "Keeps a dark logo readable on a dark page. Switch it off when the logo, or its dark version, already reads well on dark.",
+                    "title": "For dark mode",
+                    "upload": "Upload dark version",
+                    "uploaded": "Dark version saved"
+                },
+                "hint": "PNG, JPG, WebP or GIF, best on a see-through background. A wide logo with the name in it takes the place of WirkSam at the top of the menu; a square one sits beside the event's name.",
+                "remove": "Remove logo",
+                "removed": "Logo removed",
+                "replace": "Replace logo",
+                "sandbox": "Logos cannot be uploaded in a demo.",
+                "title": "Logo",
+                "upload": "Upload logo",
+                "uploaded": "Logo saved"
+            },
+            "title": "Colour and logo"
+        },
         "clone": {
             "action": "Copy this event",
             "adjust": {
@@ -271,7 +339,7 @@
         },
         "create": "Create Event",
         "createView": {
-            "descriptionHint": "Optional. A sentence or two helps people know what they are signing up for.",
+            "descriptionHint": "Optional. A sentence or two helps people know what they are signing up for. You can use **bold**, lists and links.",
             "duration": "{days} day | {days} days",
             "namePlaceholder": "e.g. Summer Festival 2026",
             "optional": "Optional",
@@ -342,6 +410,7 @@
             "defaultTimesHint": "Optional. The availability grid shows only these hours by default. Tasks can still be scheduled outside them. For events that run into the next morning, leave both fields empty, and add the shifts that cross midnight one at a time with \"Add single shift\".",
             "defaultTimesInvalid": "The end time must be after the start time. Time windows past midnight aren't supported yet, so leave both fields empty for events that run overnight.",
             "description": "Description",
+            "descriptionFormatting": "You can use **bold**, lists and links.",
             "endDate": "End Date",
             "endTime": "End time",
             "name": "Name",

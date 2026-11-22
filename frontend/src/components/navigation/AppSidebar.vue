@@ -19,13 +19,8 @@ import {
   Users,
   UsersRound,
 } from '@lucide/vue'
-import { useColorMode } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-
-import logoIcon from '@/assets/logo/logo.svg'
-import wirksamDarkLogo from '@/assets/logo/wirksam-dark.svg'
-import wirksamLightLogo from '@/assets/logo/wirksam-light.svg'
 
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
@@ -46,10 +41,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 
+import EventLogo from '@/components/events/EventLogo.vue'
 import EventSwitcherMenu from '@/components/navigation/EventSwitcherMenu.vue'
 import NavMain from '@/components/navigation/NavMain.vue'
 import type { NavItem, NavSubItem } from '@/components/navigation/NavMain.vue'
 import NavUser from '@/components/navigation/NavUser.vue'
+import SidebarBrand from '@/components/navigation/SidebarBrand.vue'
 import HintTooltip from '@/components/utils/HintTooltip.vue'
 
 import { canUseSharedLists } from '@/lib/shared-lists'
@@ -81,8 +78,6 @@ const switcherLabel = computed(
 const { isMobile, setOpenMobile, state } = useSidebar()
 const router = useRouter()
 const route = useRoute()
-const mode = useColorMode()
-const currentLogo = computed(() => (mode.value === 'light' ? wirksamDarkLogo : wirksamLightLogo))
 const appVersion = __APP_VERSION__
 const { hasNewVersions } = useChangelogStatus()
 
@@ -400,14 +395,7 @@ const navAdmin = computed(() => {
     :class="props.class"
   >
     <SidebarHeader>
-      <RouterLink
-        :to="{ name: 'home' }"
-        class="flex items-center gap-2 px-2 py-3 hover:opacity-80 transition-opacity"
-        :class="{ 'px-0!': state === 'collapsed' }"
-      >
-        <img v-if="state === 'collapsed'" :src="logoIcon" alt="WirkSam" class="size-8" />
-        <img v-else :src="currentLogo" alt="WirkSam" class="w-auto" />
-      </RouterLink>
+      <SidebarBrand :collapsed="state === 'collapsed'" :event="authStore.selectedEvent" />
       <EventSwitcherMenu v-if="showEventSwitcher">
         <template #default="{ open }">
           <button
@@ -424,9 +412,19 @@ const navAdmin = computed(() => {
                  the icon, which is all the collapsed button shows. -->
             <HintTooltip v-if="state === 'collapsed'" :label="switcherLabel" side="right">
               <span class="flex w-full justify-center">
-                <CalendarRange class="size-4 shrink-0 text-muted-foreground" />
+                <EventLogo
+                  v-if="authStore.selectedEvent"
+                  :event="authStore.selectedEvent"
+                  size="xs"
+                />
+                <CalendarRange v-else class="size-4 shrink-0 text-muted-foreground" />
               </span>
             </HintTooltip>
+            <EventLogo
+              v-else-if="authStore.selectedEvent"
+              :event="authStore.selectedEvent"
+              size="xs"
+            />
             <CalendarRange v-else class="size-4 shrink-0 text-muted-foreground" />
             <div v-if="state !== 'collapsed'" class="min-w-0 flex-1">
               <p class="truncate font-medium leading-tight">

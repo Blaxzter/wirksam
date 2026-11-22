@@ -107,3 +107,41 @@ describe('InviteAcceptView: the tasks asked of the invitee', () => {
     expect(has(w, 'btn-open-event')).toBe(true)
   })
 })
+
+describe("InviteAcceptView: the event's look", () => {
+  it("wears the event's colours while it is open", async () => {
+    const w = await mountWith(
+      preview({
+        event_primary_color: 'violet',
+        event_secondary_color: 'yellow',
+        event_base_color: 'rose',
+      }),
+    )
+    expect(document.documentElement.dataset.eventPrimary).toBe('violet')
+    expect(document.documentElement.dataset.eventSecondary).toBe('yellow')
+    expect(document.documentElement.dataset.eventBase).toBe('rose')
+    w.unmount()
+    expect(document.documentElement.dataset.eventPrimary).toBeUndefined()
+    expect(document.documentElement.dataset.eventSecondary).toBeUndefined()
+    expect(document.documentElement.dataset.eventBase).toBeUndefined()
+  })
+
+  it("shows the event's logo in place of the check mark", async () => {
+    const w = await mountWith(preview({ event_logo_etag: 'v1' }))
+    expect(w.get('[data-testid="event-logo"] img').attributes('src')).toContain(
+      '/events/e1/logo?v=v1',
+    )
+  })
+
+  it('keeps the cross on an invitation that cannot be used, logo or not', async () => {
+    const w = await mountWith(
+      preview({ event_logo_etag: 'v1', is_valid: false, invalid_reason: 'expired' }),
+    )
+    expect(w.find('[data-testid="event-logo"]').exists()).toBe(false)
+  })
+
+  it('formats the description', async () => {
+    const w = await mountWith(preview({ event_description: 'Bring **water**' }))
+    expect(w.find('.markdown-body strong').text()).toBe('water')
+  })
+})

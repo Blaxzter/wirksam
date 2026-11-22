@@ -14,6 +14,7 @@ import { nextTick, useTemplateRef } from 'vue'
 import { CalendarDays, MapPin, Tag } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
+import EventLogo from '@/components/events/EventLogo.vue'
 import PrintShiftDays from '@/components/print/PrintShiftDays.vue'
 import QrCode from '@/components/print/QrCode.vue'
 import VenueMiniMap from '@/components/venue-map/VenueMiniMap.vue'
@@ -31,6 +32,15 @@ const props = defineProps<{
   heading: string
   /** A small line over the heading: the event. */
   kicker?: string | null
+  /** The event whose logo goes beside the kicker, where it has one. */
+  logo?: {
+    id: string
+    name: string
+    logo_etag?: string | null
+    logo_width?: number | null
+    logo_height?: number | null
+    logo_dark_etag?: string | null
+  } | null
   /** The task's description or the list's intro, as plain text. */
   text?: string | null
   meta?: SheetMeta | null
@@ -73,7 +83,10 @@ defineExpose({ ready })
         <th class="text-left font-normal p-0 pb-4">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-2 flex-1 min-w-0">
-              <p v-if="kicker" class="text-sm text-muted-foreground">{{ kicker }}</p>
+              <p v-if="kicker" class="flex items-center gap-2 text-sm text-muted-foreground">
+                <EventLogo v-if="logo" :event="logo" :fallback="false" size="xs" />
+                {{ kicker }}
+              </p>
               <h1 class="text-3xl font-bold break-words">{{ heading }}</h1>
               <p v-if="text" class="text-muted-foreground text-lg whitespace-pre-line break-words">
                 {{ text }}

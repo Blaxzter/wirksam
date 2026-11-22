@@ -7,6 +7,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    StringConstraints,
     computed_field,
     field_validator,
 )
@@ -21,6 +22,27 @@ EventVisibility = Literal["public", "private"]
 #: also whoever is on a running shift at that point, ``in_charge`` only the
 #: event admins and the point's people in charge.
 VoucherManualRedeem = Literal["on_shift", "in_charge"]
+#: The colours an event wears while it is open; ``None`` keeps the app's own.
+#: A preset, tuned for contrast in ``frontend/src/index.css``, or an own colour
+#: (``HexColour``). The presets must list the same names as
+#: ``EVENT_PRIMARY_COLORS`` / ``EVENT_SECONDARY_COLORS`` / ``EVENT_BASE_COLORS``
+#: in ``app.models.event``.
+EventPrimaryColor = Literal["red", "orange", "teal", "blue", "violet", "pink", "slate"]
+EventSecondaryColor = Literal[
+    "red", "orange", "yellow", "green", "teal", "blue", "violet", "pink", "slate"
+]
+#: The tone of the background, cards and menu. ``primary`` follows the main
+#: colour, ``neutral`` is grey without a tint.
+EventBaseColor = Literal[
+    "neutral", "primary", "blue", "teal", "green", "rose", "violet"
+]
+#: An own colour, ``#1e6bb8``; stored lower-case. The frontend keeps its hue and
+#: moves its lightness as far as WCAG AA needs, so any colour is accepted.
+HexColour = Annotated[
+    str,
+    StringConstraints(pattern=r"^#[0-9a-fA-F]{6}$", to_lower=True),
+    Field(examples=["#1e6bb8"]),
+]
 #: An IANA zone name; an unknown one is a 422. ``max_length`` is the column's:
 #: no real name comes close.
 EventTimezone = Annotated[
@@ -39,6 +61,9 @@ class EventBase(BaseModel):
     default_end_time: dt.time | None = None
     status: EventStatus = "draft"
     visibility: EventVisibility = "private"
+    primary_color: EventPrimaryColor | HexColour | None = None
+    secondary_color: EventSecondaryColor | HexColour | None = None
+    base_color: EventBaseColor | HexColour | None = None
 
     @field_validator("end_date")
     @classmethod
@@ -90,6 +115,13 @@ class EventUpdate(BaseModel):
     #: Whether people in charge may share their tasks on shared lists. An
     #: explicit ``null`` leaves the value (NOT NULL).
     managers_share_lists: bool | None = None
+    #: An explicit ``null`` goes back to the app's own colour.
+    primary_color: EventPrimaryColor | HexColour | None = None
+    secondary_color: EventSecondaryColor | HexColour | None = None
+    base_color: EventBaseColor | HexColour | None = None
+    #: Whether dark mode puts the logo on a white tile. An explicit ``null``
+    #: leaves the value (NOT NULL).
+    logo_dark_tile: bool | None = None
 
 
 class EventRead(EventBase):
@@ -110,6 +142,20 @@ class EventRead(EventBase):
     #: People in charge may create, edit, resume and rotate shared lists of
     #: their own tasks; pausing and ending stay theirs either way.
     managers_share_lists: bool = True
+    #: Version of the event's logo, ``None`` without one. The image is at
+    #: ``GET /events/{id}/logo``; append ``?v=<etag>`` so a new one busts caches.
+    logo_etag: str | None = None
+    #: The stored logo's size in pixels, so a wordmark can be told from a mark
+    #: before the image loads.
+    logo_width: int | None = None
+    logo_height: int | None = None
+    #: The same for the optional logo for dark mode, at
+    #: ``GET /events/{id}/logo/dark``. Without one, dark mode shows the logo.
+    logo_dark_etag: str | None = None
+    logo_dark_width: int | None = None
+    logo_dark_height: int | None = None
+    #: Whether dark mode puts the logo on a white tile.
+    logo_dark_tile: bool = True
 
     # Viewer-relative context. Populated by the route from the caller's
     # membership, not stored on the row — the same event reads differently

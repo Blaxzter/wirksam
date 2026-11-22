@@ -239,6 +239,7 @@ onMounted(async () => {
           :page-break="index > 0"
           :heading="item.task.name"
           :kicker="event.name"
+          :logo="event"
           :text="item.task.description"
           :meta="{
             days: `${formatDate(item.task.start_date)} – ${formatDate(item.task.end_date)}`,

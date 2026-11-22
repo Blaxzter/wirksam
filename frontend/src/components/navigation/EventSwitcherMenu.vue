@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/drawer'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
+import EventLogo from '@/components/events/EventLogo.vue'
+
 import type { EventListResponse, EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
 
@@ -112,23 +114,24 @@ function formatRange(event: EventRead): string {
         <li v-for="event in events" :key="event.id">
           <button
             type="button"
-            class="flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
+            class="flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
             :class="event.id === selectedEventId ? 'bg-accent/50' : ''"
             :disabled="switchingId !== null"
             :data-testid="`event-switcher-option-${event.id}`"
             @click="selectEvent(event)"
           >
             <Check
-              class="mt-0.5 size-4 shrink-0"
+              class="size-4 shrink-0"
               :class="event.id === selectedEventId ? 'opacity-100' : 'opacity-0'"
             />
+            <EventLogo :event="event" size="sm" />
             <div class="min-w-0 flex-1">
               <p class="truncate font-medium">{{ event.name }}</p>
               <p class="text-xs text-muted-foreground">{{ formatRange(event) }}</p>
             </div>
             <Loader2
               v-if="switchingId === event.id"
-              class="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground"
+              class="size-4 shrink-0 animate-spin text-muted-foreground"
             />
           </button>
         </li>
@@ -165,23 +168,24 @@ function formatRange(event: EventRead): string {
           <li v-for="event in events" :key="event.id">
             <button
               type="button"
-              class="flex w-full items-start gap-2 rounded-md px-3 py-3 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
+              class="flex w-full items-center gap-2 rounded-md px-3 py-3 text-left text-sm transition-colors hover:bg-accent focus:bg-accent focus:outline-none"
               :class="event.id === selectedEventId ? 'bg-accent/50' : ''"
               :disabled="switchingId !== null"
               :data-testid="`event-switcher-option-${event.id}`"
               @click="selectEvent(event)"
             >
               <Check
-                class="mt-0.5 size-4 shrink-0"
+                class="size-4 shrink-0"
                 :class="event.id === selectedEventId ? 'opacity-100' : 'opacity-0'"
               />
+              <EventLogo :event="event" size="sm" />
               <div class="min-w-0 flex-1">
                 <p class="truncate font-medium">{{ event.name }}</p>
                 <p class="text-xs text-muted-foreground">{{ formatRange(event) }}</p>
               </div>
               <Loader2
                 v-if="switchingId === event.id"
-                class="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground"
+                class="size-4 shrink-0 animate-spin text-muted-foreground"
               />
             </button>
           </li>

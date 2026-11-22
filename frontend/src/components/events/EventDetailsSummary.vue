@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+import MarkdownBody from '@/components/content/MarkdownBody.vue'
+
 import type { EventRead } from '@/client/types.gen'
 import { formatDate } from '@/lib/format'
 import { timeZoneLabel } from '@/lib/timezones'
@@ -28,7 +30,9 @@ const { t } = useI18n()
       <dl class="space-y-4 text-sm">
         <div v-if="event.description">
           <dt class="font-medium">{{ t('duties.events.fields.description') }}</dt>
-          <dd class="mt-1 whitespace-pre-line text-muted-foreground">{{ event.description }}</dd>
+          <dd class="mt-1 text-muted-foreground">
+            <MarkdownBody :source="event.description" data-testid="event-description" />
+          </dd>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>

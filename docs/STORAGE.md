@@ -1,7 +1,8 @@
 # Uploaded files
 
-wirksam keeps three kinds of uploaded files: avatars (WebP, up to 256×256),
-venue plan and template pictures (WebP, the largest), and documents a requester
+wirksam keeps four kinds of uploaded files: avatars (WebP, up to 256×256),
+event logos (WebP, fitting 512×512), venue plan and template pictures (WebP,
+the largest), and documents a requester
 attaches to a pending team request (PDF or WebP, up to 5 MB, deleted when the
 request is decided). Image processing (Pillow, WebP re-encoding, EXIF
 stripping) happens before any of them is stored and is the same for every
@@ -22,7 +23,7 @@ without those lines, from before this existed, stays on `postgres`, which is
 also the backend's own default; [switching](#switching-an-existing-install-to-s3)
 is a separate step.
 
-The rows that own a file (`user_avatars`, `venue_plan_images`,
+The rows that own a file (`user_avatars`, `event_logos`, `venue_plan_images`,
 `venue_template_images`, `event_team_documents`) hold only a `storage_key`
 such as `team-documents/3f2a…`, never the bytes. Every read and write goes
 through `get_storage()`; nothing else touches `stored_objects` or the bucket.
@@ -32,13 +33,13 @@ Keys are never reused: a replaced file gets a new key.
 
 The bucket is never public. Every file is asked for at the same API endpoint
 as before, behind the same access check (avatars public by unguessable user
-id, plan and template pictures to event members and the owner, team documents
-to the team's managers and the requester only). What happens after the check
-(`backend/app/api/files.py`):
+id, event logos likewise by unguessable event id, plan and template pictures
+to event members and the owner, team documents to the team's managers and the
+requester only). What happens after the check (`backend/app/api/files.py`):
 
 | | `postgres` | `s3` |
 | --- | --- | --- |
-| Avatars, plan and template pictures | streamed by the API | `302` to a signed link into the bucket; the bytes never pass the API |
+| Avatars, event logos, plan and template pictures | streamed by the API | `302` to a signed link into the bucket; the bytes never pass the API |
 | Team documents | streamed by the API | streamed by the API, never a link |
 
 A signed link works for two hours, for whoever holds it, and nothing else in
@@ -71,8 +72,9 @@ the bucket's *Settings → CORS policy*):
 
 ## How files are deleted
 
-No code deletes a file directly. Each of the four tables has an
-`AFTER DELETE OR UPDATE OF storage_key` trigger (migration `20261027_0001`)
+No code deletes a file directly. Each of the file tables has an
+`AFTER DELETE OR UPDATE OF storage_key` trigger (migration `20261027_0001`;
+`event_logos` got its own in `20261121_0001`)
 that, in the deleting transaction,
 
 1. deletes the `stored_objects` row of the old key, so with the Postgres
