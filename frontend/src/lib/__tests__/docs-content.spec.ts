@@ -88,6 +88,21 @@ describe('parseDoc', () => {
     expect(doc.sections.map((section) => section.id)).toEqual(['same', 'same-2'])
   })
 
+  it('takes a widget out of the text, by name, in its place', () => {
+    const doc = parseDoc(
+      source('## S\n\nBefore\n\n![Try it](widget:event-look)\n\nAfter'),
+      'en',
+      'a.md',
+      {},
+    )
+    expect(doc.sections[0]!.blocks).toEqual([
+      { type: 'html', html: '<p>Before</p>\n' },
+      { type: 'widget', name: 'event-look', alt: 'Try it' },
+      { type: 'html', html: '<p>After</p>\n' },
+    ])
+    expect(doc.sections[0]!.text).toBe('Before After')
+  })
+
   it('takes screenshots out of the text and puts adjacent ones in one row', () => {
     const captures: Captures = {
       'one-shot': { marks: {} },

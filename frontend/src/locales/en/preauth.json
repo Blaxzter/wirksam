@@ -201,6 +201,10 @@
                 "name": "Booking shifts",
                 "tagline": "Volunteers pick their own shifts."
             },
+            "featureEventLook": {
+                "name": "Logo and colours",
+                "tagline": "Your club's logo and colours, all through the app."
+            },
             "featureHoursAndReports": {
                 "name": "Hours and reports",
                 "tagline": "Count each person's hours and see how full the shifts are."
@@ -273,6 +277,38 @@
                 "name": "Set up vouchers",
                 "tagline": "Set how many vouchers a shift earns and where they can be redeemed."
             }
+        },
+        "playground": {
+            "lede": "Pick colours, presets or your own, and see a page of the app in them. Nothing is saved.",
+            "mode": {
+                "dark": "Dark",
+                "label": "Light or dark",
+                "light": "Light"
+            },
+            "preview": {
+                "all": "All shifts",
+                "book": "Book",
+                "date": "Saturday, 21 November",
+                "details": "Details",
+                "free": "2 free",
+                "greeting": "Good evening, Lena",
+                "logo": "Your logo",
+                "nav": {
+                    "bookings": "My bookings",
+                    "home": "Home",
+                    "tasks": "Tasks",
+                    "vouchers": "Vouchers"
+                },
+                "next": "Your next shift",
+                "open": "Open shifts",
+                "row1": "Kitchen & café · 16:00 – 19:00",
+                "row2": "Set-up · Friday",
+                "short": "short of people",
+                "time": "12:00 – 13:30",
+                "tomorrow": "tomorrow",
+                "where": "Welcome desk · Main entrance"
+            },
+            "title": "Try it out"
         },
         "readOn": "Read on"
     },
@@ -363,6 +399,10 @@
                     "answer": "German and English. The whole app is available in both, in a light and a dark theme, and works on a phone as well as on a computer.",
                     "question": "Which languages does WirkSam support?"
                 },
+                "look": {
+                    "answer": "Yes. An organiser can upload your logo, with a version for dark mode if you like, and pick a main colour, a second colour and a base tone for the background, from the presets or your club's own. While the event is open, everyone in it sees them throughout the app, and a wide logo takes WirkSam's place at the top of the menu. An own colour is made only as much lighter or darker as readable text needs, in light and in dark mode.",
+                    "question": "Can our event look like our club?"
+                },
                 "reminders": {
                     "answer": "WirkSam sends a reminder before every shift by email, browser push notification, or Telegram. Each person picks the channel for each kind of notification and can turn any of them off. Everything also lands in an inbox inside the app.",
                     "question": "How do reminders work?"
@@ -410,6 +450,10 @@
                     "languages": {
                         "description": "The whole app is available in both languages, with a light and a dark theme, and works on a phone as well as on a laptop.",
                         "title": "German and English, light and dark"
+                    },
+                    "look": {
+                        "description": "Give an event your club's logo, two colours and a base tone. Everyone in it sees them throughout the app, and the logo takes WirkSam's place at the top of the menu.",
+                        "title": "Your logo and colours"
                     },
                     "people": {
                         "description": "Each event has an owner, organisers, and members. You can promote someone, hand the event over, or step back. As the owner, you can only leave once you've handed it over.",
@@ -728,6 +772,10 @@
         "featureBooking": {
             "description": "Volunteers pick their own shifts on a phone or computer, never double-book, say when they can help and get their shifts in their own calendar.",
             "title": "How volunteers book shifts · WirkSam"
+        },
+        "featureEventLook": {
+            "description": "Give your event your club's logo, two colours and a base tone of its own. Everyone in it sees them throughout the app, readable in light and dark mode whatever you pick.",
+            "title": "Your logo and colours for the volunteer plan · WirkSam"
         },
         "featureHoursAndReports": {
             "description": "Count the hours each volunteer worked, add work no shift describes, export the list as CSV, and see fill rates and busy times in the reports.",

@@ -67,6 +67,8 @@ export interface WorldSeed {
   /** Who fills in the sign-up form in its capture. The form is never sent. */
   newcomer: CastMember
   event: { name: string; description: string }
+  /** The two lines of the event's wordmark, for the page about an event's own look. */
+  logo: { name: string; tagline: string }
   tasks: TaskSeed[]
   /**
    * A job done before the festival. Its shifts end up in the past, which is what
@@ -198,6 +200,7 @@ export const WORLD: Record<Locale, WorldSeed> = {
       fillPattern: [0.8],
     },
     correctionNote: 'Helped set up on Thursday',
+    logo: { name: 'St. Michael’s', tagline: 'Summer Festival' },
     teams: [
       {
         name: 'Childcare',
@@ -323,6 +326,7 @@ export const WORLD: Record<Locale, WorldSeed> = {
       fillPattern: [0.8],
     },
     correctionNote: 'Hat am Donnerstag beim Aufbau geholfen',
+    logo: { name: 'St. Michael', tagline: 'Gemeindefest' },
     teams: [
       {
         name: 'Kinderbetreuung',

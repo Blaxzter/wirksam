@@ -7,6 +7,7 @@ import {
   ChartNoAxesColumnIcon,
   GlobeIcon,
   LanguagesIcon,
+  PaletteIcon,
   RssIcon,
   Share2Icon,
   ShieldCheckIcon,
@@ -85,6 +86,7 @@ const extras: readonly { key: string; icon: Component; doc?: string }[] = [
   { key: 'calendarFeed', icon: RssIcon, doc: 'feature/booking' },
   { key: 'reports', icon: ChartNoAxesColumnIcon, doc: 'feature/hours-and-reports' },
   { key: 'discover', icon: GlobeIcon, doc: 'feature/members' },
+  { key: 'look', icon: PaletteIcon, doc: 'feature/event-look' },
   { key: 'languages', icon: LanguagesIcon },
 ]
 

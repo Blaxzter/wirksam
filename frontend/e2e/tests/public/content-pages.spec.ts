@@ -86,7 +86,7 @@ test.describe('feature pages and guides', () => {
     await page.goto('/features')
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('What WirkSam can do')
     await expect(page).toHaveTitle(/All features/)
-    await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(11)
+    await expect(page.locator('[data-testid^="doc-card-"]')).toHaveCount(12)
     await expect(page.getByTestId('page-art')).toHaveAttribute('data-art', 'roster')
     // Each card names its group.
     const vouchers = page.getByTestId('doc-card-featureVouchers')

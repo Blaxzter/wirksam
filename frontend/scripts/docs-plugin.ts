@@ -13,6 +13,9 @@
  * - `![alt](shot:name)` on a line of its own is a product screenshot, taken on
  *   a computer and on a phone (`src/docs/captures.json` says which). Adjacent
  *   ones share a row.
+ * - `![alt](widget:name)` on a line of its own is something to try out in
+ *   place, such as the colour picker on the page about an event's look
+ *   (`components/content/DocBlocks.vue` knows the names).
  * - `[[key]]` in the text points at the part of a screenshot in the same
  *   section that the capture marked as `key`. Both show the same number,
  *   counted per section and per device, since a phone may not show everything.
@@ -39,6 +42,7 @@ import type {
 const DEFAULT_LOCALE = 'en'
 const FAQ_HEADINGS = new Set(['frequently asked questions', 'häufige fragen'])
 const SHOT_LINE = /^!\[([^\]]*)\]\(shot:([a-z0-9-]+)\)\s*$/
+const WIDGET_LINE = /^!\[([^\]]*)\]\(widget:([a-z0-9-]+)\)\s*$/
 const MARK = /\[\[([a-z0-9-]+)\]\]/g
 // The space before a mark goes into it, so a mark a device hides leaves none behind.
 const MARK_IN_HTML = /\s?\[\[([a-z0-9-]+)\]\]/g
@@ -167,7 +171,11 @@ function toBlocks(lines: string[], md: MarkdownIt, captures: Captures): DocBlock
 
   for (const [index, line] of lines.entries()) {
     const shot = shotLines[index]
-    if (shot) {
+    const widget = line.match(WIDGET_LINE)
+    if (widget) {
+      flushText()
+      blocks.push({ type: 'widget', name: widget[2]!, alt: widget[1]! })
+    } else if (shot) {
       flushText()
       const item = shotOf(shot[1]!, shot[2]!)
       const last = blocks.at(-1)
