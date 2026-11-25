@@ -57,6 +57,20 @@ export const zAvatarUploadResponse = z.object({
 })
 
 /**
+ * Body_events-upload_event_logo
+ */
+export const zBodyEventsUploadEventLogo = z.object({
+  file: z.string(),
+})
+
+/**
+ * Body_events-upload_event_logo_dark
+ */
+export const zBodyEventsUploadEventLogoDark = z.object({
+  file: z.string(),
+})
+
+/**
  * Body_teams-upload_team_document
  */
 export const zBodyTeamsUploadTeamDocument = z.object({
@@ -404,6 +418,24 @@ export const zEventCreate = z.object({
   default_end_time: z.iso.time().nullish(),
   status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
   visibility: z.enum(['public', 'private']).optional().default('private'),
+  primary_color: z
+    .union([
+      z.enum(['red', 'orange', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  secondary_color: z
+    .union([
+      z.enum(['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  base_color: z
+    .union([
+      z.enum(['neutral', 'primary', 'blue', 'teal', 'green', 'rose', 'violet']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
   created_by_id: z.uuid().nullish(),
   timezone: z.string().max(64).optional(),
 })
@@ -523,6 +555,24 @@ export const zEventRead = z.object({
   default_end_time: z.iso.time().nullish(),
   status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
   visibility: z.enum(['public', 'private']).optional().default('private'),
+  primary_color: z
+    .union([
+      z.enum(['red', 'orange', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  secondary_color: z
+    .union([
+      z.enum(['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  base_color: z
+    .union([
+      z.enum(['neutral', 'primary', 'blue', 'teal', 'green', 'rose', 'violet']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
   id: z.uuid(),
   created_by_id: z.uuid().nullish(),
   is_featured: z.boolean().optional().default(false),
@@ -534,6 +584,13 @@ export const zEventRead = z.object({
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
   managers_edit_voucher_shifts: z.boolean().optional().default(false),
   managers_share_lists: z.boolean().optional().default(true),
+  logo_etag: z.string().nullish(),
+  logo_width: z.int().nullish(),
+  logo_height: z.int().nullish(),
+  logo_dark_etag: z.string().nullish(),
+  logo_dark_width: z.int().nullish(),
+  logo_dark_height: z.int().nullish(),
+  logo_dark_tile: z.boolean().optional().default(true),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
@@ -607,6 +664,25 @@ export const zEventUpdate = z.object({
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).nullish(),
   managers_edit_voucher_shifts: z.boolean().nullish(),
   managers_share_lists: z.boolean().nullish(),
+  primary_color: z
+    .union([
+      z.enum(['red', 'orange', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  secondary_color: z
+    .union([
+      z.enum(['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  base_color: z
+    .union([
+      z.enum(['neutral', 'primary', 'blue', 'teal', 'green', 'rose', 'violet']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  logo_dark_tile: z.boolean().nullish(),
 })
 
 /**
@@ -783,6 +859,31 @@ export const zEventInvitationPreview = z
     event_id: z.uuid(),
     event_name: z.string(),
     event_description: z.string().nullish(),
+    event_primary_color: z
+      .union([
+        z.enum(['red', 'orange', 'teal', 'blue', 'violet', 'pink', 'slate']),
+        z.string().regex(/^#[0-9a-fA-F]{6}$/),
+      ])
+      .nullish(),
+    event_secondary_color: z
+      .union([
+        z.enum(['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'violet', 'pink', 'slate']),
+        z.string().regex(/^#[0-9a-fA-F]{6}$/),
+      ])
+      .nullish(),
+    event_base_color: z
+      .union([
+        z.enum(['neutral', 'primary', 'blue', 'teal', 'green', 'rose', 'violet']),
+        z.string().regex(/^#[0-9a-fA-F]{6}$/),
+      ])
+      .nullish(),
+    event_logo_etag: z.string().nullish(),
+    event_logo_width: z.int().nullish(),
+    event_logo_height: z.int().nullish(),
+    event_logo_dark_etag: z.string().nullish(),
+    event_logo_dark_width: z.int().nullish(),
+    event_logo_dark_height: z.int().nullish(),
+    event_logo_dark_tile: z.boolean().optional().default(true),
     start_date: z.iso.date(),
     end_date: z.iso.date(),
     role: z.enum(['admin', 'member']),
@@ -4451,6 +4552,24 @@ export const zEventReadWritable = z.object({
   default_end_time: z.iso.time().nullish(),
   status: z.enum(['draft', 'published', 'archived']).optional().default('draft'),
   visibility: z.enum(['public', 'private']).optional().default('private'),
+  primary_color: z
+    .union([
+      z.enum(['red', 'orange', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  secondary_color: z
+    .union([
+      z.enum(['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'violet', 'pink', 'slate']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
+  base_color: z
+    .union([
+      z.enum(['neutral', 'primary', 'blue', 'teal', 'green', 'rose', 'violet']),
+      z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    ])
+    .nullish(),
   id: z.uuid(),
   created_by_id: z.uuid().nullish(),
   is_featured: z.boolean().optional().default(false),
@@ -4462,6 +4581,13 @@ export const zEventReadWritable = z.object({
   voucher_manual_redeem: z.enum(['on_shift', 'in_charge']).optional().default('on_shift'),
   managers_edit_voucher_shifts: z.boolean().optional().default(false),
   managers_share_lists: z.boolean().optional().default(true),
+  logo_etag: z.string().nullish(),
+  logo_width: z.int().nullish(),
+  logo_height: z.int().nullish(),
+  logo_dark_etag: z.string().nullish(),
+  logo_dark_width: z.int().nullish(),
+  logo_dark_height: z.int().nullish(),
+  logo_dark_tile: z.boolean().optional().default(true),
   my_role: z.enum(['owner', 'admin', 'member']).nullish(),
   member_count: z.int().optional().default(0),
   join_request_status: z.string().nullish(),
@@ -5727,6 +5853,54 @@ export const zEventsDecideJoinRequestPath = z.object({
  * Successful Response
  */
 export const zEventsDecideJoinRequestResponse = zEventJoinRequestRead
+
+export const zEventsDeleteEventLogoPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zEventsDeleteEventLogoResponse = zEventRead
+
+export const zEventsGetEventLogoPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zEventsUploadEventLogoBody = zBodyEventsUploadEventLogo
+
+export const zEventsUploadEventLogoPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zEventsUploadEventLogoResponse = zEventRead
+
+export const zEventsDeleteEventLogoDarkPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zEventsDeleteEventLogoDarkResponse = zEventRead
+
+export const zEventsGetEventLogoDarkPath = z.object({
+  event_id: z.uuid(),
+})
+
+export const zEventsUploadEventLogoDarkBody = zBodyEventsUploadEventLogoDark
+
+export const zEventsUploadEventLogoDarkPath = z.object({
+  event_id: z.uuid(),
+})
+
+/**
+ * Successful Response
+ */
+export const zEventsUploadEventLogoDarkResponse = zEventRead
 
 export const zTeamsListTeamsPath = z.object({
   event_id: z.uuid(),

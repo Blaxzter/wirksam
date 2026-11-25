@@ -51,6 +51,17 @@ describe('DashboardHeader', () => {
     expect(w.find('[data-testid="dashboard-event-day"]').text()).toBe('Tag 2 von 3')
   })
 
+  it("shows the event's logo beside the greeting, and nothing without one", () => {
+    const event = { id: 'e1', name: 'Summer fair', logo_etag: 'v1' }
+    const img = mountHeader({ event }).get('[data-testid="event-logo"] img')
+    expect(img.attributes('alt')).toBe('Summer fair')
+    expect(img.attributes('src')).toContain('/events/e1/logo?v=v1')
+
+    const bare = mountHeader({ event: { ...event, logo_etag: null } })
+    expect(bare.find('[data-testid="event-logo"]').exists()).toBe(false)
+    expect(bare.find('[data-testid="event-logo-fallback"]').exists()).toBe(false)
+  })
+
   it('shows the day of the event only during it', () => {
     expect(mountHeader().find('[data-testid="dashboard-event-day"]').text()).toBe('Day 2 of 3')
     expect(

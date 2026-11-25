@@ -127,6 +127,74 @@
         "reasonPlaceholder": "z.B. Aufgabe verschoben, nicht mehr benötigt..."
     },
     "events": {
+        "appearance": {
+            "colour": {
+                "base": {
+                    "followPrimary": "Wie Hauptfarbe",
+                    "hint": "Hintergrund, Karten und Menü. Schrift darauf bleibt so gut lesbar wie bei WirkSam selbst.",
+                    "title": "Grundton"
+                },
+                "custom": {
+                    "asPicked": "wie gewählt, Kontrast {ratio}:1",
+                    "baseHint": "Nur ihr Farbton wird genommen, als zarte Tönung. Schrift bleibt so gut lesbar wie bei WirkSam selbst.",
+                    "code": "Farbcode",
+                    "dark": "Dunkel",
+                    "darkened": "dunkler gemacht, damit Schrift lesbar bleibt: {ratio}:1 statt {before}:1",
+                    "invalid": "Gib einen Farbcode wie #1e6bb8 ein.",
+                    "light": "Hell",
+                    "lightened": "heller gemacht, damit Schrift lesbar bleibt: {ratio}:1 statt {before}:1",
+                    "own": "Eigene",
+                    "pick": "Farbe"
+                },
+                "hint": "Warnungen und wie gut eine Schicht besetzt ist, behalten ihre gewohnten Farben, damit sie in jeder Veranstaltung dasselbe bedeuten. Eine eigene Farbe wird so weit heller oder dunkler gemacht, wie Schrift darauf es braucht, und nicht weiter.",
+                "names": {
+                    "blue": "Blau",
+                    "green": "Grün",
+                    "neutral": "Neutral",
+                    "orange": "Orange",
+                    "pink": "Pink",
+                    "red": "Rot",
+                    "rose": "Rosé",
+                    "slate": "Grau",
+                    "teal": "Petrol",
+                    "violet": "Violett",
+                    "yellow": "Gelb"
+                },
+                "none": "Standard",
+                "primary": {
+                    "hint": "Knöpfe, Links, der ausgewählte Menüpunkt und die großen Flächen, etwa deine nächste Schicht.",
+                    "title": "Hauptfarbe"
+                },
+                "secondary": {
+                    "hint": "Zweitrangige Knöpfe, ausgewählte Zeilen und kleine Hinweise wie der Countdown bis zu deiner nächsten Schicht.",
+                    "title": "Zweitfarbe"
+                }
+            },
+            "description": "Mach die Veranstaltung leicht wiedererkennbar. Solange sie geöffnet ist, sehen alle ihre Farben überall in der App und ihr Logo oben im Menü.",
+            "logo": {
+                "dark": {
+                    "hint": "Optional: eine Fassung für dunklen Hintergrund, etwa euer Logo mit weißer Schrift. Ohne sie zeigt der dunkle Modus das Logo oben.",
+                    "preview": "Im dunklen Modus",
+                    "remove": "Dunkle Fassung entfernen",
+                    "removed": "Dunkle Fassung entfernt",
+                    "replace": "Dunkle Fassung ersetzen",
+                    "tile": "Weißer Hintergrund im dunklen Modus",
+                    "tileHint": "Hält ein dunkles Logo auf dunkler Seite lesbar. Schalte ihn aus, wenn das Logo oder seine dunkle Fassung auf Dunkel schon gut zu sehen ist.",
+                    "title": "Für den dunklen Modus",
+                    "upload": "Dunkle Fassung hochladen",
+                    "uploaded": "Dunkle Fassung gespeichert"
+                },
+                "hint": "PNG, JPG, WebP oder GIF, am besten mit durchsichtigem Hintergrund. Ein breites Logo mit dem Namen darin ersetzt oben im Menü den Schriftzug WirkSam; ein quadratisches steht neben dem Namen der Veranstaltung.",
+                "remove": "Logo entfernen",
+                "removed": "Logo entfernt",
+                "replace": "Logo ersetzen",
+                "sandbox": "In einer Demo lassen sich keine Logos hochladen.",
+                "title": "Logo",
+                "upload": "Logo hochladen",
+                "uploaded": "Logo gespeichert"
+            },
+            "title": "Farbe und Logo"
+        },
         "clone": {
             "action": "Veranstaltung kopieren",
             "adjust": {
@@ -271,7 +339,7 @@
         },
         "create": "Veranstaltung erstellen",
         "createView": {
-            "descriptionHint": "Optional. Ein, zwei Sätze helfen anderen zu verstehen, worum es geht.",
+            "descriptionHint": "Optional. Ein, zwei Sätze helfen anderen zu verstehen, worum es geht. Du kannst **fett**, Listen und Links verwenden.",
             "duration": "{days} Tag | {days} Tage",
             "namePlaceholder": "z. B. Sommerfest 2026",
             "optional": "Optional",
@@ -342,6 +410,7 @@
             "defaultTimesHint": "Optional. Das Verfügbarkeitsraster zeigt standardmäßig nur diese Stunden. Aufgaben lassen sich trotzdem auch außerhalb planen. Geht die Veranstaltung bis in den nächsten Morgen, lass beide Felder leer und lege Schichten über Mitternacht einzeln mit „Einzelne Schicht hinzufügen“ an.",
             "defaultTimesInvalid": "Die Endzeit muss nach der Startzeit liegen. Zeitfenster über Mitternacht sind noch nicht möglich. Lass für Veranstaltungen über Nacht beide Felder leer.",
             "description": "Beschreibung",
+            "descriptionFormatting": "Du kannst **fett**, Listen und Links verwenden.",
             "endDate": "Enddatum",
             "endTime": "Endzeit",
             "name": "Name",

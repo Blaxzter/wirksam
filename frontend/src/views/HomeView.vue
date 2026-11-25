@@ -216,6 +216,7 @@ watch([voucherShiftsDue, now], ([due]) => {
       :name="greetName"
       :event-day="dayOfEvent"
       :show-find-shift="showHeaderFindShift"
+      :event="authStore.selectedEvent"
     />
 
     <DashboardSkeleton v-if="!ready" />

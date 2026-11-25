@@ -158,6 +158,7 @@ export interface DocPage {
 export const DOC_PAGES = [
   { kind: 'feature', slug: 'shift-planning', key: 'featureShiftPlanning' },
   { kind: 'feature', slug: 'venue-map', key: 'featureVenueMap' },
+  { kind: 'feature', slug: 'event-look', key: 'featureEventLook' },
   { kind: 'feature', slug: 'members', key: 'featureMembers' },
   { kind: 'feature', slug: 'people-in-charge', key: 'featurePeopleInCharge' },
   { kind: 'feature', slug: 'teams', key: 'featureTeams' },
@@ -192,7 +193,7 @@ export function docPageById(id: string): DocPage | undefined {
 /** The overview pages, in display order. Keys under `preauth.docs.groups`. */
 export const DOC_GROUPS = {
   feature: [
-    { key: 'plan', pages: ['feature/shift-planning', 'feature/venue-map'] },
+    { key: 'plan', pages: ['feature/shift-planning', 'feature/venue-map', 'feature/event-look'] },
     {
       key: 'people',
       pages: [
@@ -246,6 +247,7 @@ export type ArtKind =
   | 'roster'
   | 'shifts'
   | 'venue'
+  | 'look'
   | 'members'
   | 'inCharge'
   | 'teams'
@@ -267,6 +269,7 @@ export const PAGE_ART: Readonly<Record<string, ArtKind>> = {
   clubFestival: 'festival',
   'feature/shift-planning': 'shifts',
   'feature/venue-map': 'venue',
+  'feature/event-look': 'look',
   'feature/members': 'members',
   'feature/people-in-charge': 'inCharge',
   'feature/teams': 'teams',

@@ -45,7 +45,14 @@ export interface DocShot {
   devices: Partial<Record<DocDevice, DocMark[]>>
 }
 
-export type DocBlock = { type: 'html'; html: string } | { type: 'shots'; shots: DocShot[] }
+/**
+ * Text, a row of screenshots, or a widget: something to try out in place,
+ * written `![alt](widget:name)` and drawn by `components/content/DocBlocks.vue`.
+ */
+export type DocBlock =
+  | { type: 'html'; html: string }
+  | { type: 'shots'; shots: DocShot[] }
+  | { type: 'widget'; name: string; alt: string }
 
 export interface DocSection {
   /** The anchor, made from the heading. */

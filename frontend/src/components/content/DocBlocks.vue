@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { type Component, computed, defineAsyncComponent, ref, useTemplateRef, watch } from 'vue'
 
 import ScreenshotFrame from '@/components/landing/ScreenshotFrame.vue'
 
@@ -25,6 +25,14 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ zoom: [shot: DocShot] }>()
+
+/**
+ * What a page can put in place to try out, by the name its Markdown gives
+ * (`![alt](widget:name)`). Each is its own chunk, loaded by the page that has it.
+ */
+const WIDGETS: Record<string, Component> = {
+  'event-look': defineAsyncComponent(() => import('@/components/content/EventLookPlayground.vue')),
+}
 
 const root = useTemplateRef<HTMLElement>('root')
 const active = ref<string | null>(null)
@@ -64,6 +72,15 @@ function onText(event: MouseEvent) {
         @mouseleave="active = null"
         v-html="block.html"
       />
+      <div
+        v-else-if="block.type === 'widget'"
+        class="my-6"
+        role="group"
+        :aria-label="block.alt"
+        :data-widget="block.name"
+      >
+        <component :is="WIDGETS[block.name]" v-if="WIDGETS[block.name]" />
+      </div>
       <div v-else class="my-6 flex flex-wrap justify-center gap-4">
         <ScreenshotFrame
           v-for="{ shot, device } in framesOf(block.shots)"

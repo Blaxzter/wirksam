@@ -12,8 +12,8 @@ class StoredObject(SQLModel, table=True):
     """The bytes of one uploaded file, for ``STORAGE_BACKEND=postgres``.
 
     Addressed by the same key an S3 object would have, so the rows that own a
-    file (``user_avatars``, ``venue_plan_images``, ``venue_template_images``,
-    ``event_team_documents``) only ever hold a ``storage_key`` and do not care
+    file (``user_avatars``, ``event_logos``, ``venue_plan_images``,
+    ``venue_template_images``, ``event_team_documents``) only ever hold a ``storage_key`` and do not care
     where the bytes are. With the S3 backend this table is empty, except for
     files the copy script has not moved yet.
     """
@@ -31,7 +31,7 @@ class StoredObject(SQLModel, table=True):
 class StorageDeletion(SQLModel, table=True):
     """A storage key whose owner row is gone; the object is still to be deleted.
 
-    Filled by database triggers on the four file tables (on DELETE, and on
+    Filled by database triggers on the file tables (on DELETE, and on
     UPDATE when the key changes), so a file is queued however its row goes:
     an ORM delete, a bulk ``DELETE``, or an ``ON DELETE CASCADE`` from a user
     or an event. ``app/logic/storage_gc.py`` deletes the objects and the rows.

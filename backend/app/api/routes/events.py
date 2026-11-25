@@ -20,6 +20,7 @@ from app.crud.event_invitation_task import (
     event_invitation_task as crud_invitation_task,
 )
 from app.crud.event_join_request import event_join_request as crud_join_request
+from app.crud.event_logo import event_logo as crud_event_logo
 from app.crud.event_membership import event_membership as crud_membership
 from app.crud.event_team import event_team as crud_team
 from app.crud.shared_list import shared_list as crud_shared_list
@@ -261,6 +262,7 @@ _NOT_NULL_SETTINGS = (
     "voucher_manual_redeem",
     "managers_edit_voucher_shifts",
     "managers_share_lists",
+    "logo_dark_tile",
 )
 
 
@@ -898,7 +900,13 @@ async def clone_event(
     new_event.voucher_manual_redeem = source.voucher_manual_redeem
     new_event.managers_edit_voucher_shifts = source.managers_edit_voucher_shifts
     new_event.managers_share_lists = source.managers_share_lists
+    # So is the look: next year's festival wears this year's colours and logos.
+    new_event.primary_color = source.primary_color
+    new_event.secondary_color = source.secondary_color
+    new_event.base_color = source.base_color
+    new_event.logo_dark_tile = source.logo_dark_tile
     session.add(new_event)
+    await crud_event_logo.copy_for_clone(session, source=source, target=new_event)
 
     # The owner grant is the membership row, not created_by_id — and it has to
     # land before the roster copy, which skips whoever is already here.

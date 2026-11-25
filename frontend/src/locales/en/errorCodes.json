@@ -35,7 +35,10 @@
         "already_member": "That person is already taking part in this event.",
         "duplicate_task": "The same task was picked twice. Each task can only be copied once.",
         "forbidden": "You do not have permission to do this in this event.",
+        "invalid_logo": "That file cannot be used as a logo. Use a PNG, JPG, WebP or GIF image under 20 MB.",
         "invitation_not_found": "That invitation could not be found.",
+        "logo_not_found": "This event has no logo.",
+        "logo_required": "Upload the logo first, then a version of it for dark mode.",
         "member_not_found": "That person is not a member of this event.",
         "not_found": "That event could not be found.",
         "sandbox_not_featurable": "A demo event cannot be featured on the home screen."

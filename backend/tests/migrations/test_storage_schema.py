@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 FILE_TABLES = {
     "user_avatars",
+    "event_logos",
     "venue_plan_images",
     "venue_template_images",
     "event_team_documents",

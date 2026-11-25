@@ -173,6 +173,7 @@ export const FAQ_KEYS = [
   'reminders',
   'calendar',
   'reuse',
+  'look',
   'data',
   'demo',
   'languages',

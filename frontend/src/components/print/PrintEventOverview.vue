@@ -9,6 +9,8 @@ import { computed } from 'vue'
 import { CalendarDays, MapPin, Tag } from '@lucide/vue'
 import { useI18n } from 'vue-i18n'
 
+import MarkdownBody from '@/components/content/MarkdownBody.vue'
+import EventLogo from '@/components/events/EventLogo.vue'
 import QrCode from '@/components/print/QrCode.vue'
 
 import type { EventRead, TaskRead } from '@/client/types.gen'
@@ -36,10 +38,11 @@ defineExpose({ ready })
 <template>
   <div class="flex items-start justify-between gap-4">
     <div class="space-y-2 flex-1">
-      <h1 class="text-3xl font-bold">{{ event.name }}</h1>
-      <p v-if="event.description" class="text-muted-foreground text-lg">
-        {{ event.description }}
-      </p>
+      <div class="flex items-center gap-4">
+        <EventLogo :event="event" :fallback="false" size="xl" />
+        <h1 class="text-3xl font-bold">{{ event.name }}</h1>
+      </div>
+      <MarkdownBody :source="event.description" class="text-muted-foreground text-lg" />
       <p class="text-sm text-muted-foreground flex items-center gap-1">
         <CalendarDays class="h-4 w-4" />
         {{ formatDate(event.start_date) }} – {{ formatDate(event.end_date) }}

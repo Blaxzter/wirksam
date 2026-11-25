@@ -9,10 +9,14 @@ import { toast } from 'vue-sonner'
 import { useAuthStore } from '@/stores/auth'
 
 import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
+import { useEventColors } from '@/composables/useEventColors'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+import MarkdownBody from '@/components/content/MarkdownBody.vue'
+import EventLogo from '@/components/events/EventLogo.vue'
 
 import type { EventInvitationPreview, EventRead } from '@/client/types.gen'
 import { toastApiError } from '@/lib/api-errors'
@@ -28,6 +32,25 @@ const { get, post } = useAuthenticatedClient()
 const token = computed(() => String(route.params.token ?? ''))
 
 const preview = ref<EventInvitationPreview | null>(null)
+
+// The invitation already looks like the event it leads to.
+const inviteEvent = computed(() =>
+  preview.value
+    ? {
+        id: preview.value.event_id,
+        name: preview.value.event_name,
+        logo_etag: preview.value.event_logo_etag,
+        logo_width: preview.value.event_logo_width,
+        logo_height: preview.value.event_logo_height,
+        logo_dark_etag: preview.value.event_logo_dark_etag,
+        logo_dark_tile: preview.value.event_logo_dark_tile,
+        primary_color: preview.value.event_primary_color,
+        secondary_color: preview.value.event_secondary_color,
+        base_color: preview.value.event_base_color,
+      }
+    : null,
+)
+useEventColors(inviteEvent)
 const loading = ref(true)
 const accepting = ref(false)
 const notFound = ref(false)
@@ -209,8 +232,16 @@ onMounted(loadPreview)
 
       <template v-else>
         <CardHeader class="space-y-3 text-center">
+          <!-- A usable invitation shows the event's logo where it has one, the
+               check mark otherwise; a dead one always the cross. -->
+          <EventLogo
+            v-if="inviteEvent?.logo_etag && (preview.is_valid || preview.already_member)"
+            :event="inviteEvent"
+            size="xl"
+            class="mx-auto h-20"
+          />
           <CheckCircle2
-            v-if="preview.is_valid || preview.already_member"
+            v-else-if="preview.is_valid || preview.already_member"
             class="mx-auto h-10 w-10 text-primary"
           />
           <XCircle v-else class="mx-auto h-10 w-10 text-destructive" />
@@ -230,9 +261,7 @@ onMounted(loadPreview)
               <CalendarDays class="h-4 w-4 shrink-0" />
               {{ formatDate(preview.start_date) }} – {{ formatDate(preview.end_date) }}
             </p>
-            <p v-if="preview.event_description" class="text-muted-foreground">
-              {{ preview.event_description }}
-            </p>
+            <MarkdownBody :source="preview.event_description" class="text-muted-foreground" />
             <p class="flex items-center gap-2">
               <span class="text-muted-foreground">
                 {{ t('duties.events.invite.asRole') }}
