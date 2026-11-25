@@ -175,6 +175,16 @@ async def preview_invitation(
         event_id=db_event.id,
         event_name=db_event.name,
         event_description=db_event.description,
+        event_primary_color=db_event.primary_color,  # type: ignore[arg-type]
+        event_secondary_color=db_event.secondary_color,  # type: ignore[arg-type]
+        event_base_color=db_event.base_color,  # type: ignore[arg-type]
+        event_logo_etag=db_event.logo_etag,
+        event_logo_width=db_event.logo_width,
+        event_logo_height=db_event.logo_height,
+        event_logo_dark_etag=db_event.logo_dark_etag,
+        event_logo_dark_width=db_event.logo_dark_width,
+        event_logo_dark_height=db_event.logo_dark_height,
+        event_logo_dark_tile=db_event.logo_dark_tile,
         start_date=db_event.start_date,
         end_date=db_event.end_date,
         role=invitation.role,  # type: ignore[arg-type]

@@ -45,7 +45,9 @@ if TYPE_CHECKING:
     from mypy_boto3_s3 import S3Client
     from mypy_boto3_s3.type_defs import GetObjectOutputTypeDef
 
-FileKind = Literal["avatars", "venue-plans", "venue-templates", "team-documents"]
+FileKind = Literal[
+    "avatars", "event-logos", "venue-plans", "venue-templates", "team-documents"
+]
 
 # DeleteObjects takes at most this many keys per call.
 _S3_DELETE_BATCH = 1000

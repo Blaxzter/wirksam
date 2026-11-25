@@ -35,7 +35,10 @@
         "already_member": "Diese Person ist schon bei dieser Veranstaltung dabei.",
         "duplicate_task": "Dieselbe Aufgabe wurde zweimal ausgewählt. Jede Aufgabe kann nur einmal kopiert werden.",
         "forbidden": "Dafür hast du in dieser Veranstaltung keine Berechtigung.",
+        "invalid_logo": "Diese Datei lässt sich nicht als Logo verwenden. Nimm ein PNG-, JPG-, WebP- oder GIF-Bild unter 20 MB.",
         "invitation_not_found": "Diese Einladung wurde nicht gefunden.",
+        "logo_not_found": "Diese Veranstaltung hat kein Logo.",
+        "logo_required": "Lade zuerst das Logo hoch, dann eine Fassung davon für den dunklen Modus.",
         "member_not_found": "Diese Person ist kein Mitglied dieser Veranstaltung.",
         "not_found": "Diese Veranstaltung wurde nicht gefunden.",
         "sandbox_not_featurable": "Eine Demo-Veranstaltung kann nicht auf der Startseite hervorgehoben werden."

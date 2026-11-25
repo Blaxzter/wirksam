@@ -9,6 +9,10 @@
  * wants. It needs no feed, so it renders at once, before the cards below it
  * have loaded.
  *
+ * The event's logo, when its organisers have set one, sits beside the
+ * greeting: the dashboard is where everyone lands, so it is where the event
+ * should look like itself. Without a logo nothing changes.
+ *
  * "Find a shift" sits here on desktop only: on a phone the empty next-shift
  * card and the open-shifts list already end in that same offer, and a fourth
  * button in a 390 px header would push the greeting onto two lines.
@@ -22,6 +26,9 @@ import { useFormatters } from '@/composables/useFormatters'
 
 import { Button } from '@/components/ui/button'
 
+import EventLogo from '@/components/events/EventLogo.vue'
+
+import type { EventRead } from '@/client/types.gen'
 import { OPEN_SHIFTS_ROUTE, greetingBucket, localIsoDate } from '@/lib/dashboard'
 
 const props = defineProps<{
@@ -31,6 +38,8 @@ const props = defineProps<{
   eventDay: { day: number; total: number } | null
   /** False in an event that is over, where there is nothing left to find. */
   showFindShift: boolean
+  /** The selected event, for its logo. */
+  event?: EventRead | null
 }>()
 
 const { t } = useI18n()
@@ -50,23 +59,33 @@ const greeting = computed(() => {
 
 <template>
   <header data-testid="dashboard-header" class="flex flex-wrap items-end justify-between gap-4">
-    <div class="min-w-0">
-      <p class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-        <span>{{ longDate }}</span>
-        <span
-          v-if="eventDay"
-          data-testid="dashboard-event-day"
-          class="rounded-full bg-secondary px-2 py-px text-xs font-semibold text-secondary-foreground"
+    <div class="flex min-w-0 items-center gap-3 @4xl:gap-4">
+      <EventLogo
+        v-if="event"
+        :event="event"
+        :fallback="false"
+        :alt="event.name"
+        size="lg"
+        class="@4xl:h-16 @4xl:rounded-xl"
+      />
+      <div class="min-w-0">
+        <p class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <span>{{ longDate }}</span>
+          <span
+            v-if="eventDay"
+            data-testid="dashboard-event-day"
+            class="rounded-full bg-secondary px-2 py-px text-xs font-semibold text-secondary-foreground"
+          >
+            {{ t('dashboard.home.dayOfEvent', { day: eventDay.day, total: eventDay.total }) }}
+          </span>
+        </p>
+        <h1
+          data-testid="page-heading"
+          class="mt-0.5 text-[1.625rem] leading-tight font-bold tracking-[-0.01em] @4xl:mt-1 @4xl:text-[2rem] @4xl:tracking-[-0.015em]"
         >
-          {{ t('dashboard.home.dayOfEvent', { day: eventDay.day, total: eventDay.total }) }}
-        </span>
-      </p>
-      <h1
-        data-testid="page-heading"
-        class="mt-0.5 text-[1.625rem] leading-tight font-bold tracking-[-0.01em] @4xl:mt-1 @4xl:text-[2rem] @4xl:tracking-[-0.015em]"
-      >
-        {{ greeting }}
-      </h1>
+          {{ greeting }}
+        </h1>
+      </div>
     </div>
     <Button
       v-if="showFindShift"

@@ -950,6 +950,439 @@ html[data-app-header] {
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Event colours
+   An event can wear two colours of its own, picked by its admins:
+   `events.primary_color` instead of the palette's green (or black, in the
+   classic palette) and `events.secondary_color` instead of its amber.
+   `useEventColors` puts `data-event-primary` / `data-event-secondary` on
+   <html> while that event is open, and the rules at the end of this block
+   hand them to the app's tokens:
+
+   - primary: buttons, links, focus rings, the active sidebar item and the
+     hero panels. In the default palette's dark mode the neutrals follow its
+     hue too, as they follow the green's (see "Default palette — dark").
+   - secondary: secondary buttons and badges, hover and selected surfaces
+     (`--accent`, `--sidebar-accent`), the countdown chip and the specks.
+   - base (`events.base_color`, `data-event-base`): the tone of the
+     background, cards, menu and borders, in light and in dark. The default
+     palette only: the classic one is someone's choice of black and white.
+
+   The presets below are tuned by hand so that text on it, the primary as
+   text on every surface of both palettes (also over its own `/15` tint and
+   over the secondary's surfaces), and text on the secondary keep >= 4.5:1,
+   in light and in dark, for every pairing. An own colour (`#rrggbb`) is tuned
+   the same way at runtime (`src/lib/custom-colour.ts`): its hue stays, its
+   lightness moves as far as that needs. `src/lib/__tests__/event-colour-
+   contrast.spec.ts` recomputes all of it from this file, own colours from
+   all round the wheel included. The primary presets have no yellow: one
+   light enough for dark ink fails as text on the light background, and one
+   dark enough to pass is brown. The secondary is only ever a fill under dark
+   text, so it can have yellow.
+
+   Status colours (staffing, warning, destructive) and the venue map are left
+   alone, so "short of people" looks the same in every event. Print forces
+   its own monochrome set with !important, so a printed plan is unaffected.
+
+   Any element can carry the attributes too: a logo tile or a swatch then
+   reads `var(--event-primary)` / `var(--event-secondary)` for its own event,
+   whatever event is open. An element with `event-scope` as well takes the
+   whole hand-over below, for its own contents: the example view on the
+   feature page dresses itself without dressing the page.
+
+   An own colour (`#rrggbb`) gets the same variables as a preset, worked out
+   at runtime in `src/lib/custom-colour.ts` and put in a `<style>` of its own.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Primary: `--event-primary-hue` tints the dark neutrals. */
+[data-event-primary='red'] {
+  --event-primary: oklch(0.48 0.16 25);
+  --event-primary-foreground: oklch(0.985 0.005 25);
+  --event-primary-hero: oklch(0.44 0.15 25);
+  --event-primary-hero-foreground: oklch(0.97 0.01 25);
+  --event-primary-hue: 25;
+}
+.dark [data-event-primary='red'],
+.dark[data-event-primary='red'] {
+  --event-primary: oklch(0.72 0.14 22);
+  --event-primary-foreground: oklch(0.17 0.01 25);
+  --event-primary-hero: oklch(0.32 0.07 25);
+  --event-primary-hero-foreground: oklch(0.95 0.01 25);
+}
+[data-event-primary='orange'] {
+  --event-primary: oklch(0.48 0.13 50);
+  --event-primary-foreground: oklch(0.985 0.005 50);
+  --event-primary-hero: oklch(0.46 0.12 50);
+  --event-primary-hero-foreground: oklch(0.97 0.01 50);
+  --event-primary-hue: 50;
+}
+.dark [data-event-primary='orange'],
+.dark[data-event-primary='orange'] {
+  --event-primary: oklch(0.76 0.13 55);
+  --event-primary-foreground: oklch(0.17 0.01 50);
+  --event-primary-hero: oklch(0.33 0.06 50);
+  --event-primary-hero-foreground: oklch(0.95 0.01 50);
+}
+[data-event-primary='teal'] {
+  --event-primary: oklch(0.46 0.08 195);
+  --event-primary-foreground: oklch(0.985 0.005 195);
+  --event-primary-hero: oklch(0.42 0.07 195);
+  --event-primary-hero-foreground: oklch(0.97 0.01 195);
+  --event-primary-hue: 195;
+}
+.dark [data-event-primary='teal'],
+.dark[data-event-primary='teal'] {
+  --event-primary: oklch(0.74 0.1 190);
+  --event-primary-foreground: oklch(0.17 0.01 195);
+  --event-primary-hero: oklch(0.32 0.05 195);
+  --event-primary-hero-foreground: oklch(0.95 0.01 195);
+}
+[data-event-primary='blue'] {
+  --event-primary: oklch(0.47 0.14 258);
+  --event-primary-foreground: oklch(0.985 0.005 258);
+  --event-primary-hero: oklch(0.42 0.13 258);
+  --event-primary-hero-foreground: oklch(0.97 0.01 258);
+  --event-primary-hue: 258;
+}
+.dark [data-event-primary='blue'],
+.dark[data-event-primary='blue'] {
+  --event-primary: oklch(0.72 0.12 255);
+  --event-primary-foreground: oklch(0.17 0.01 258);
+  --event-primary-hero: oklch(0.32 0.07 258);
+  --event-primary-hero-foreground: oklch(0.95 0.01 258);
+}
+[data-event-primary='violet'] {
+  --event-primary: oklch(0.48 0.16 295);
+  --event-primary-foreground: oklch(0.985 0.005 295);
+  --event-primary-hero: oklch(0.42 0.15 295);
+  --event-primary-hero-foreground: oklch(0.97 0.01 295);
+  --event-primary-hue: 295;
+}
+.dark [data-event-primary='violet'],
+.dark[data-event-primary='violet'] {
+  --event-primary: oklch(0.74 0.12 295);
+  --event-primary-foreground: oklch(0.17 0.01 295);
+  --event-primary-hero: oklch(0.32 0.08 295);
+  --event-primary-hero-foreground: oklch(0.95 0.01 295);
+}
+[data-event-primary='pink'] {
+  --event-primary: oklch(0.485 0.17 350);
+  --event-primary-foreground: oklch(0.985 0.005 350);
+  --event-primary-hero: oklch(0.44 0.15 350);
+  --event-primary-hero-foreground: oklch(0.97 0.01 350);
+  --event-primary-hue: 350;
+}
+.dark [data-event-primary='pink'],
+.dark[data-event-primary='pink'] {
+  --event-primary: oklch(0.74 0.13 350);
+  --event-primary-foreground: oklch(0.17 0.01 350);
+  --event-primary-hero: oklch(0.32 0.07 350);
+  --event-primary-hero-foreground: oklch(0.95 0.01 350);
+}
+[data-event-primary='slate'] {
+  --event-primary: oklch(0.4 0.03 255);
+  --event-primary-foreground: oklch(0.985 0.005 255);
+  --event-primary-hero: oklch(0.33 0.03 255);
+  --event-primary-hero-foreground: oklch(0.97 0.01 255);
+  --event-primary-hue: 255;
+}
+.dark [data-event-primary='slate'],
+.dark[data-event-primary='slate'] {
+  --event-primary: oklch(0.8 0.025 255);
+  --event-primary-foreground: oklch(0.17 0.01 255);
+  --event-primary-hero: oklch(0.3 0.02 255);
+  --event-primary-hero-foreground: oklch(0.95 0.01 255);
+}
+
+/* Secondary: the colour itself is a fill under dark ink (the chip), the
+   soft one a surface under the palette's text (hover, secondary buttons),
+   the pale one that surface in the classic palette's light mode. */
+[data-event-secondary='red'] {
+  --event-secondary: oklch(0.76 0.13 25);
+  --event-secondary-foreground: oklch(0.25 0.03 25);
+  --event-secondary-soft: oklch(0.905 0.04 25);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 25);
+  --event-secondary-pale: oklch(0.975 0.015 25);
+}
+.dark [data-event-secondary='red'],
+.dark[data-event-secondary='red'] {
+  --event-secondary: oklch(0.8 0.11 25);
+  --event-secondary-foreground: oklch(0.17 0.01 25);
+  --event-secondary-soft: oklch(0.31 0.05 25);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 25);
+}
+[data-event-secondary='orange'] {
+  --event-secondary: oklch(0.79 0.13 60);
+  --event-secondary-foreground: oklch(0.25 0.03 60);
+  --event-secondary-soft: oklch(0.905 0.045 60);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 60);
+  --event-secondary-pale: oklch(0.975 0.02 60);
+}
+.dark [data-event-secondary='orange'],
+.dark[data-event-secondary='orange'] {
+  --event-secondary: oklch(0.82 0.12 65);
+  --event-secondary-foreground: oklch(0.17 0.01 60);
+  --event-secondary-soft: oklch(0.31 0.045 60);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 60);
+}
+[data-event-secondary='yellow'] {
+  --event-secondary: oklch(0.88 0.15 95);
+  --event-secondary-foreground: oklch(0.25 0.03 95);
+  --event-secondary-soft: oklch(0.925 0.06 95);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 95);
+  --event-secondary-pale: oklch(0.98 0.03 95);
+}
+.dark [data-event-secondary='yellow'],
+.dark[data-event-secondary='yellow'] {
+  --event-secondary: oklch(0.88 0.14 95);
+  --event-secondary-foreground: oklch(0.17 0.01 95);
+  --event-secondary-soft: oklch(0.32 0.045 95);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 95);
+}
+[data-event-secondary='green'] {
+  --event-secondary: oklch(0.8 0.14 145);
+  --event-secondary-foreground: oklch(0.25 0.03 145);
+  --event-secondary-soft: oklch(0.91 0.045 145);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 145);
+  --event-secondary-pale: oklch(0.975 0.02 145);
+}
+.dark [data-event-secondary='green'],
+.dark[data-event-secondary='green'] {
+  --event-secondary: oklch(0.82 0.13 145);
+  --event-secondary-foreground: oklch(0.17 0.01 145);
+  --event-secondary-soft: oklch(0.31 0.05 145);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 145);
+}
+[data-event-secondary='teal'] {
+  --event-secondary: oklch(0.8 0.1 190);
+  --event-secondary-foreground: oklch(0.25 0.03 190);
+  --event-secondary-soft: oklch(0.91 0.035 190);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 190);
+  --event-secondary-pale: oklch(0.975 0.015 190);
+}
+.dark [data-event-secondary='teal'],
+.dark[data-event-secondary='teal'] {
+  --event-secondary: oklch(0.82 0.1 190);
+  --event-secondary-foreground: oklch(0.17 0.01 190);
+  --event-secondary-soft: oklch(0.31 0.045 190);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 190);
+}
+[data-event-secondary='blue'] {
+  --event-secondary: oklch(0.77 0.1 250);
+  --event-secondary-foreground: oklch(0.25 0.03 250);
+  --event-secondary-soft: oklch(0.905 0.035 250);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 250);
+  --event-secondary-pale: oklch(0.975 0.015 250);
+}
+.dark [data-event-secondary='blue'],
+.dark[data-event-secondary='blue'] {
+  --event-secondary: oklch(0.8 0.1 250);
+  --event-secondary-foreground: oklch(0.17 0.01 250);
+  --event-secondary-soft: oklch(0.31 0.05 250);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 250);
+}
+[data-event-secondary='violet'] {
+  --event-secondary: oklch(0.76 0.11 300);
+  --event-secondary-foreground: oklch(0.25 0.03 300);
+  --event-secondary-soft: oklch(0.905 0.04 300);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 300);
+  --event-secondary-pale: oklch(0.975 0.015 300);
+}
+.dark [data-event-secondary='violet'],
+.dark[data-event-secondary='violet'] {
+  --event-secondary: oklch(0.8 0.1 300);
+  --event-secondary-foreground: oklch(0.17 0.01 300);
+  --event-secondary-soft: oklch(0.31 0.055 300);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 300);
+}
+[data-event-secondary='pink'] {
+  --event-secondary: oklch(0.77 0.12 350);
+  --event-secondary-foreground: oklch(0.25 0.03 350);
+  --event-secondary-soft: oklch(0.905 0.04 350);
+  --event-secondary-soft-foreground: oklch(0.27 0.02 350);
+  --event-secondary-pale: oklch(0.975 0.015 350);
+}
+.dark [data-event-secondary='pink'],
+.dark[data-event-secondary='pink'] {
+  --event-secondary: oklch(0.8 0.11 350);
+  --event-secondary-foreground: oklch(0.17 0.01 350);
+  --event-secondary-soft: oklch(0.31 0.05 350);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 350);
+}
+[data-event-secondary='slate'] {
+  --event-secondary: oklch(0.78 0.025 255);
+  --event-secondary-foreground: oklch(0.25 0.02 255);
+  --event-secondary-soft: oklch(0.905 0.012 255);
+  --event-secondary-soft-foreground: oklch(0.27 0.015 255);
+  --event-secondary-pale: oklch(0.975 0.006 255);
+}
+.dark [data-event-secondary='slate'],
+.dark[data-event-secondary='slate'] {
+  --event-secondary: oklch(0.82 0.025 255);
+  --event-secondary-foreground: oklch(0.17 0.01 255);
+  --event-secondary-soft: oklch(0.31 0.015 255);
+  --event-secondary-soft-foreground: oklch(0.93 0.01 255);
+}
+
+/* Base: the tone of the background, cards and menu. `--event-base-hue`
+   replaces the palette's own hue and `--event-base-chroma` scales its tint:
+   0 is plain grey, 1 the cream's own strength. `primary` follows the main
+   colour, so `useEventColors` leaves it off when there is none. */
+[data-event-base='neutral'] {
+  --event-base-hue: 0;
+  --event-base-chroma: 0;
+}
+[data-event-base='primary'] {
+  --event-base-hue: var(--event-primary-hue, 80);
+  --event-base-chroma: 1.5;
+}
+[data-event-base='rose'] {
+  --event-base-hue: 10;
+  --event-base-chroma: 1.3;
+}
+[data-event-base='green'] {
+  --event-base-hue: 150;
+  --event-base-chroma: 1.5;
+}
+[data-event-base='teal'] {
+  --event-base-hue: 195;
+  --event-base-chroma: 1.5;
+}
+[data-event-base='blue'] {
+  --event-base-hue: 250;
+  --event-base-chroma: 1.5;
+}
+[data-event-base='violet'] {
+  --event-base-hue: 295;
+  --event-base-chroma: 1.5;
+}
+/* A swatch in the picker: the tone a little stronger than the page gets it,
+   so the choices can be told apart at that size. */
+.event-base-swatch {
+  background: oklch(0.9 calc(0.035 * var(--event-base-chroma)) var(--event-base-hue));
+}
+.dark .event-base-swatch {
+  background: oklch(0.3 calc(0.03 * var(--event-base-chroma)) var(--event-base-hue));
+}
+
+/* The hand-over. After both palettes and with at least two selectors'
+   weight, so these win over `.palette-classic.dark` too. */
+:root[data-event-primary],
+.event-scope[data-event-primary] {
+  --primary: var(--event-primary);
+  --primary-foreground: var(--event-primary-foreground);
+  --ring: var(--event-primary);
+  --sidebar-primary: var(--event-primary);
+  --sidebar-primary-foreground: var(--event-primary-foreground);
+  --sidebar-ring: var(--event-primary);
+  --hero: var(--event-primary-hero);
+  --hero-foreground: var(--event-primary-hero-foreground);
+}
+:root[data-event-secondary],
+.event-scope[data-event-secondary] {
+  --secondary: var(--event-secondary-soft);
+  --secondary-foreground: var(--event-secondary-soft-foreground);
+  --accent: var(--event-secondary-soft);
+  --accent-foreground: var(--event-secondary-soft-foreground);
+  --sidebar-accent: var(--event-secondary-soft);
+  --sidebar-accent-foreground: var(--event-secondary-soft-foreground);
+  --hero-chip: var(--event-secondary);
+  --hero-chip-foreground: var(--event-secondary-foreground);
+  --hero-speck: var(--event-secondary);
+}
+/* The classic palette is near-white with grey text that sits just under
+   4.5:1 on its own grey; a full-strength tint would push that text further
+   down, so there the surfaces take a paler one. */
+:root.palette-classic:not(.dark)[data-event-secondary],
+:root.palette-classic:not(.dark) .event-scope[data-event-secondary] {
+  --secondary: var(--event-secondary-pale);
+  --accent: var(--event-secondary-pale);
+  --sidebar-accent: var(--event-secondary-pale);
+}
+/* The default dark palette casts its neutrals in the primary's hue; with an
+   event's primary they take that one's instead of the green's. Same
+   lightness and chroma as `.dark`, so every contrast there still holds. */
+:root.dark[data-event-primary]:not(.palette-classic),
+:root.dark:not(.palette-classic) .event-scope[data-event-primary] {
+  --background: oklch(0.17 0.01 var(--event-primary-hue));
+  --foreground: oklch(0.93 0.01 var(--event-primary-hue));
+  --card: oklch(0.21 0.012 var(--event-primary-hue));
+  --card-foreground: oklch(0.93 0.01 var(--event-primary-hue));
+  --popover: oklch(0.21 0.012 var(--event-primary-hue));
+  --popover-foreground: oklch(0.93 0.01 var(--event-primary-hue));
+  --muted: oklch(0.25 0.012 var(--event-primary-hue));
+  --muted-foreground: oklch(0.71 0.014 var(--event-primary-hue));
+  --border: oklch(0.29 0.014 var(--event-primary-hue));
+  --input: oklch(0.29 0.014 var(--event-primary-hue));
+  --sidebar: oklch(0.21 0.012 var(--event-primary-hue));
+  --sidebar-foreground: oklch(0.93 0.01 var(--event-primary-hue));
+  --sidebar-border: oklch(0.29 0.014 var(--event-primary-hue));
+}
+/* …and so do the surfaces a secondary colour would otherwise take. */
+:root.dark[data-event-primary]:not(.palette-classic):not([data-event-secondary]),
+:root.dark:not(.palette-classic) .event-scope[data-event-primary]:not([data-event-secondary]) {
+  --secondary: oklch(0.25 0.012 var(--event-primary-hue));
+  --secondary-foreground: oklch(0.93 0.01 var(--event-primary-hue));
+  --accent: oklch(0.3 0.035 var(--event-primary-hue));
+  --accent-foreground: oklch(0.93 0.01 var(--event-primary-hue));
+  --sidebar-accent: oklch(0.25 0.012 var(--event-primary-hue));
+  --sidebar-accent-foreground: oklch(0.93 0.01 var(--event-primary-hue));
+}
+
+/* The base tone. Same lightness as the palette, so every contrast there
+   still holds; the hue is the base's, and the chroma the palette's scaled by
+   it. After the primary's dark neutrals, so a base tone wins over them. */
+:root[data-event-base]:not(.dark):not(.palette-classic),
+:root:not(.dark):not(.palette-classic) .event-scope[data-event-base] {
+  --background: oklch(0.945 calc(0.018 * var(--event-base-chroma)) var(--event-base-hue));
+  --foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --card: oklch(0.965 calc(0.014 * var(--event-base-chroma)) var(--event-base-hue));
+  --card-foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --popover: oklch(0.965 calc(0.014 * var(--event-base-chroma)) var(--event-base-hue));
+  --popover-foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --muted: oklch(0.91 calc(0.022 * var(--event-base-chroma)) var(--event-base-hue));
+  --muted-foreground: oklch(0.43 calc(0.013 * var(--event-base-chroma)) var(--event-base-hue));
+  --border: oklch(0.87 calc(0.025 * var(--event-base-chroma)) var(--event-base-hue));
+  --input: oklch(0.87 calc(0.025 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar: oklch(0.91 calc(0.022 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-border: oklch(0.87 calc(0.025 * var(--event-base-chroma)) var(--event-base-hue));
+}
+:root[data-event-base]:not(.dark):not(.palette-classic):not([data-event-secondary]),
+:root:not(.dark):not(.palette-classic) .event-scope[data-event-base]:not([data-event-secondary]) {
+  --secondary: oklch(0.91 calc(0.022 * var(--event-base-chroma)) var(--event-base-hue));
+  --secondary-foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --accent: oklch(0.9 calc(0.038 * var(--event-base-chroma)) var(--event-base-hue));
+  --accent-foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-accent: oklch(0.93 calc(0.02 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-accent-foreground: oklch(0.27 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+}
+:root.dark[data-event-base]:not(.palette-classic),
+:root.dark:not(.palette-classic) .event-scope[data-event-base] {
+  --background: oklch(0.17 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --card: oklch(0.21 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --card-foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --popover: oklch(0.21 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --popover-foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --muted: oklch(0.25 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --muted-foreground: oklch(0.71 calc(0.014 * var(--event-base-chroma)) var(--event-base-hue));
+  --border: oklch(0.29 calc(0.014 * var(--event-base-chroma)) var(--event-base-hue));
+  --input: oklch(0.29 calc(0.014 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar: oklch(0.21 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-border: oklch(0.29 calc(0.014 * var(--event-base-chroma)) var(--event-base-hue));
+}
+:root.dark[data-event-base]:not(.palette-classic):not([data-event-secondary]),
+:root.dark:not(.palette-classic) .event-scope[data-event-base]:not([data-event-secondary]) {
+  --secondary: oklch(0.25 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --secondary-foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --accent: oklch(0.3 calc(0.035 * var(--event-base-chroma)) var(--event-base-hue));
+  --accent-foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-accent: oklch(0.25 calc(0.012 * var(--event-base-chroma)) var(--event-base-hue));
+  --sidebar-accent-foreground: oklch(0.93 calc(0.01 * var(--event-base-chroma)) var(--event-base-hue));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -1124,6 +1557,15 @@ html[data-app-header] {
     --map-decor-glow: oklch(0.97 0.04 90) !important;
     --map-decor-water-hi: oklch(0.93 0.03 225) !important;
     --map-decor-shadow: rgb(40 50 30 / 0.18) !important;
+  }
+
+  /* Paper is white in every theme: an event logo prints in its light
+     version, never the one made for a dark page. */
+  .event-logo-dark {
+    display: none !important;
+  }
+  .event-logo-light {
+    display: block !important;
   }
 
   @page {

@@ -10,7 +10,10 @@ import {
   useRouter,
 } from 'vue-router'
 
+import { useAuthStore } from '@/stores/auth'
+
 import { useChangelogStatus } from '@/composables/useChangelogStatus'
+import { useEventColors } from '@/composables/useEventColors'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +35,11 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const open = ref(true)
+const authStore = useAuthStore()
+
+// The open event's own colours, if its admins picked them. Only in here: the
+// event picker and the public pages keep the app's colours.
+useEventColors(() => authStore.selectedEvent)
 
 /**
  * `meta.fullHeight` routes (the venue map) fill exactly the viewport below the

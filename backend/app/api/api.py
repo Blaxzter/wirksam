@@ -7,6 +7,7 @@ from app.api.routes import (
     bookings,
     calendar_feed,
     dashboard,
+    event_logos,
     events,
     health,
     invitations,
@@ -42,6 +43,7 @@ api_router.include_router(bookings.router)
 api_router.include_router(booking_reminders.router)
 api_router.include_router(calendar_feed.router)
 api_router.include_router(events.router)
+api_router.include_router(event_logos.router)
 api_router.include_router(teams.router)
 api_router.include_router(work_hours.router)
 api_router.include_router(vouchers.router)

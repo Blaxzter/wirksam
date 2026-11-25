@@ -8,7 +8,11 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { Card, CardContent } from '@/components/ui/card'
 
+import MarkdownBody from '@/components/content/MarkdownBody.vue'
+import EventLogo from '@/components/events/EventLogo.vue'
+
 import type { EventRead } from '@/client/types.gen'
+import { isWordmark } from '@/lib/event-appearance'
 import { roleLabelKey } from '@/lib/event-roles'
 import { formatDate } from '@/lib/format'
 
@@ -26,6 +30,8 @@ const props = defineProps<{
   variant?: 'pick' | 'discover'
   requesting?: boolean
 }>()
+
+const wide = computed(() => isWordmark(props.event))
 
 const emit = defineEmits<{
   select: [event: EventRead]
@@ -63,8 +69,14 @@ function handleActivate() {
     @keydown.enter.prevent="handleActivate"
     @keydown.space.prevent="handleActivate"
   >
-    <CardContent class="flex items-center gap-4 p-5">
-      <div class="min-w-0 flex-1 space-y-1.5">
+    <!-- A wordmark is wide: it gets a row of its own above the details, with
+         the action beside it, rather than squeezing the details into a strip. -->
+    <CardContent
+      class="gap-4 p-5"
+      :class="wide ? 'grid grid-cols-[minmax(0,1fr)_auto] items-start' : 'flex items-center'"
+    >
+      <EventLogo :event="props.event" size="lg" class="self-start" />
+      <div class="min-w-0 flex-1 space-y-1.5" :class="{ 'col-span-2 row-start-2': wide }">
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="truncate text-lg font-semibold">{{ props.event.name }}</h3>
           <Badge v-if="props.isCurrent" variant="secondary">
@@ -118,13 +130,16 @@ function handleActivate() {
             )
           }}
         </p>
-        <p v-else-if="props.event.description" class="line-clamp-2 text-sm text-muted-foreground">
-          {{ props.event.description }}
-        </p>
+        <MarkdownBody
+          v-else-if="props.event.description"
+          :source="props.event.description"
+          :clamp="2"
+          class="text-sm text-muted-foreground"
+        />
       </div>
 
       <!-- Discover: an explicit request-to-join action -->
-      <div v-if="isDiscover" class="shrink-0">
+      <div v-if="isDiscover" class="shrink-0" :class="{ 'col-start-2 row-start-1': wide }">
         <Badge v-if="hasRequested" variant="secondary" data-testid="join-requested-badge">
           {{ t('duties.events.join.requested') }}
         </Badge>
@@ -144,6 +159,7 @@ function handleActivate() {
         v-else
         :class="[
           'flex size-11 shrink-0 items-center justify-center rounded-full transition-colors',
+          wide ? 'col-start-2 row-start-1' : '',
           props.isPending
             ? 'bg-primary text-primary-foreground'
             : 'border-2 border-muted-foreground/30',

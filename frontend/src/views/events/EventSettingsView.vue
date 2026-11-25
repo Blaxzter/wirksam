@@ -11,11 +11,13 @@ import { useAuthenticatedClient } from '@/composables/useAuthenticatedClient'
 
 import Button from '@/components/ui/button/Button.vue'
 
+import EventAppearanceSettings from '@/components/events/EventAppearanceSettings.vue'
 import EventDetailsSummary from '@/components/events/EventDetailsSummary.vue'
 import EventEditForm from '@/components/events/EventEditForm.vue'
 import EventHours from '@/components/events/EventHours.vue'
 import EventInvitations from '@/components/events/EventInvitations.vue'
 import EventJoinRequests from '@/components/events/EventJoinRequests.vue'
+import EventLogo from '@/components/events/EventLogo.vue'
 import EventMembers from '@/components/events/EventMembers.vue'
 import EventVoucherSettings from '@/components/events/EventVoucherSettings.vue'
 import EventVouchers from '@/components/events/EventVouchers.vue'
@@ -250,7 +252,10 @@ onMounted(loadEvent)
       <h1 data-testid="page-heading" class="text-2xl sm:text-3xl font-bold">
         {{ t('duties.events.detail.title') }}
       </h1>
-      <p v-if="event" class="text-muted-foreground">{{ event.name }}</p>
+      <p v-if="event" class="flex items-center gap-2 text-muted-foreground">
+        <EventLogo :event="event" size="xs" />
+        <span class="min-w-0 truncate">{{ event.name }}</span>
+      </p>
     </div>
 
     <!-- Pinned under the top bar, so switching tabs never means scrolling back
@@ -350,17 +355,19 @@ onMounted(loadEvent)
     />
 
     <div v-else-if="event && targetEventId" class="max-w-4xl">
-      <template v-if="shownTab === 'details'">
-        <EventEditForm
-          v-if="canManage"
-          :event="event"
-          :event-id="targetEventId"
-          :tasks="tasks"
-          @updated="handleUpdated"
-          @cancel="router.back()"
-        />
+      <div v-if="shownTab === 'details'" class="space-y-6">
+        <template v-if="canManage">
+          <EventEditForm
+            :event="event"
+            :event-id="targetEventId"
+            :tasks="tasks"
+            @updated="handleUpdated"
+            @cancel="router.back()"
+          />
+          <EventAppearanceSettings :event="event" @updated="handleUpdated" />
+        </template>
         <EventDetailsSummary v-else :event="event" />
-      </template>
+      </div>
       <div v-else-if="shownTab === 'people'" class="space-y-6">
         <EventJoinRequests
           v-if="canManage"

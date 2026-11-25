@@ -3,6 +3,12 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
+from app.schemas.event import (
+    EventBaseColor,
+    EventPrimaryColor,
+    EventSecondaryColor,
+    HexColour,
+)
 from app.schemas.event_membership import AssignableEventRole
 
 
@@ -76,6 +82,17 @@ class EventInvitationPreview(BaseModel):
     event_id: uuid.UUID
     event_name: str
     event_description: str | None = None
+    #: The event's look, so the invitation already feels like the event.
+    event_primary_color: EventPrimaryColor | HexColour | None = None
+    event_secondary_color: EventSecondaryColor | HexColour | None = None
+    event_base_color: EventBaseColor | HexColour | None = None
+    event_logo_etag: str | None = None
+    event_logo_width: int | None = None
+    event_logo_height: int | None = None
+    event_logo_dark_etag: str | None = None
+    event_logo_dark_width: int | None = None
+    event_logo_dark_height: int | None = None
+    event_logo_dark_tile: bool = True
     start_date: dt.date
     end_date: dt.date
     role: AssignableEventRole

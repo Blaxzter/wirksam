@@ -201,6 +201,10 @@
                 "name": "Schichten buchen",
                 "tagline": "Helfende suchen sich ihre Schichten selbst aus."
             },
+            "featureEventLook": {
+                "name": "Logo und Farben",
+                "tagline": "Das Logo und die Farben deines Vereins, überall in der App."
+            },
             "featureHoursAndReports": {
                 "name": "Stunden und Auswertungen",
                 "tagline": "Zähl die Stunden jeder Person und sieh, wie voll die Schichten sind."
@@ -273,6 +277,38 @@
                 "name": "Marken einrichten",
                 "tagline": "Leg fest, wie viele Marken eine Schicht bringt und wo man sie einlöst."
             }
+        },
+        "playground": {
+            "lede": "Wähle Farben, aus der Auswahl oder eure eigenen, und sieh eine Seite der App darin. Gespeichert wird nichts.",
+            "mode": {
+                "dark": "Dunkel",
+                "label": "Hell oder dunkel",
+                "light": "Hell"
+            },
+            "preview": {
+                "all": "Alle Schichten",
+                "book": "Buchen",
+                "date": "Samstag, 21. November",
+                "details": "Details",
+                "free": "2 frei",
+                "greeting": "Guten Abend, Lena",
+                "logo": "Euer Logo",
+                "nav": {
+                    "bookings": "Meine Buchungen",
+                    "home": "Startseite",
+                    "tasks": "Aufgaben",
+                    "vouchers": "Marken"
+                },
+                "next": "Deine nächste Schicht",
+                "open": "Offene Schichten",
+                "row1": "Küche & Café · 16:00 – 19:00",
+                "row2": "Auf- und Abbau · Freitag",
+                "short": "Leute fehlen",
+                "time": "12:00 – 13:30",
+                "tomorrow": "morgen",
+                "where": "Empfang · Haupteingang"
+            },
+            "title": "Probier es aus"
         },
         "readOn": "Weiterlesen"
     },
@@ -363,6 +399,10 @@
                     "answer": "Auf Deutsch und Englisch. Die ganze App gibt es in beiden Sprachen, hell und dunkel, und sie funktioniert auf dem Handy genauso wie am Rechner.",
                     "question": "In welchen Sprachen gibt es WirkSam?"
                 },
+                "look": {
+                    "answer": "Ja. Organisator:innen laden euer Logo hoch, auf Wunsch mit einer Fassung für den dunklen Modus, und wählen eine Hauptfarbe, eine Zweitfarbe und einen Grundton für den Hintergrund, aus der Auswahl oder eure eigenen. Solange die Veranstaltung geöffnet ist, sehen alle darin sie überall in der App, und ein breites Logo steht oben im Menü an der Stelle von WirkSam. Eine eigene Farbe wird nur so weit heller oder dunkler gemacht, wie lesbare Schrift es braucht, hell wie dunkel.",
+                    "question": "Kann unsere Veranstaltung aussehen wie unser Verein?"
+                },
                 "reminders": {
                     "answer": "WirkSam erinnert vor jeder Schicht per E-Mail, Push-Benachrichtigung im Browser oder Telegram. Jede Person wählt den Kanal für jede Art von Benachrichtigung selbst und kann alles abschalten. Zusätzlich landet alles im Posteingang in der App.",
                     "question": "Wie funktionieren die Erinnerungen?"
@@ -410,6 +450,10 @@
                     "languages": {
                         "description": "Die ganze App gibt es in beiden Sprachen, hell und dunkel, und sie funktioniert auf dem Handy genauso wie am Rechner.",
                         "title": "Deutsch und Englisch, hell und dunkel"
+                    },
+                    "look": {
+                        "description": "Gib einer Veranstaltung das Logo deines Vereins, zwei Farben und einen Grundton. Alle darin sehen sie überall in der App, und das Logo steht oben im Menü an der Stelle von WirkSam.",
+                        "title": "Euer Logo, eure Farben"
                     },
                     "people": {
                         "description": "Jede Veranstaltung hat eine:n Eigentümer:in, Organisator:innen und Mitglieder. Du kannst jemanden befördern, die Veranstaltung weitergeben oder kürzertreten. Als Eigentümer:in gehst du erst, wenn du sie übergeben hast.",
@@ -728,6 +772,10 @@
         "featureBooking": {
             "description": "Helfende wählen ihre Schichten selbst, am Handy oder Rechner, buchen nichts doppelt, geben an, wann sie können, und haben ihre Schichten im eigenen Kalender.",
             "title": "So buchen Helfende ihre Schichten · WirkSam"
+        },
+        "featureEventLook": {
+            "description": "Gib deiner Veranstaltung das Logo deines Vereins, zwei eigene Farben und einen Grundton. Alle darin sehen sie überall in der App, hell wie dunkel gut lesbar, egal was du wählst.",
+            "title": "Euer Logo und eure Farben im Helferplan · WirkSam"
         },
         "featureHoursAndReports": {
             "description": "Zähle die Stunden jeder Person, trage Arbeit nach, die in keiner Schicht steht, exportiere die Liste als CSV und sieh in den Auswertungen Belegung und Stoßzeiten.",

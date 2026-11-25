@@ -1475,11 +1475,112 @@ async function captureGuestPages(
   await context.close()
 }
 
+/** The ink of each version of the festival's logo: dark lettering, and light for dark mode. */
+const LOGO_INK = {
+  light: { name: '#1e3a8a', tagline: '#b45309' },
+  dark: { name: '#e0e7ff', tagline: '#fbbf24' },
+} as const
+
+/**
+ * The festival's logo: a wide wordmark, drawn here instead of kept as a file,
+ * on a see-through background as the page about an event's look recommends.
+ */
+async function drawLogo(browser: Browser, version: keyof typeof LOGO_INK): Promise<Buffer> {
+  const ink = LOGO_INK[version]
+  const page = await browser.newPage({ deviceScaleFactor: 2 })
+  const ray = (angle: number) =>
+    `<line x1="60" y1="18" x2="60" y2="8" transform="rotate(${angle} 60 60)" />`
+  await page.setContent(`
+    <svg id="logo" xmlns="http://www.w3.org/2000/svg" width="440" height="120" viewBox="0 0 440 120"
+      font-family="Georgia, 'Times New Roman', serif">
+      <g stroke="#d97706" stroke-width="6" stroke-linecap="round">
+        ${[0, 45, 90, 135, 180, 225, 270, 315].map(ray).join('')}
+      </g>
+      <circle cx="60" cy="60" r="30" fill="#f59e0b" />
+      <path d="M60 38v44M44 54h32" stroke="#fff" stroke-width="7" stroke-linecap="round" />
+      <text x="126" y="62" font-size="44" font-weight="700" fill="${ink.name}">${world.logo.name}</text>
+      <text x="128" y="96" font-size="21" letter-spacing="3" fill="${ink.tagline}">
+        ${world.logo.tagline.toUpperCase()}
+      </text>
+    </svg>`)
+  const image = await page.locator('#logo').screenshot({ omitBackground: true })
+  await page.close()
+  return image
+}
+
+/** Upload one version of the festival's logo, as its organiser. */
+async function uploadLogo(seeded: SeededWorld, path: string, image: Buffer): Promise<void> {
+  const form = new FormData()
+  form.append('file', new Blob([new Uint8Array(image)], { type: 'image/png' }), 'logo.png')
+  const upload = await fetch(`${API}/events/${seeded.eventId}/${path}`, {
+    method: 'PUT',
+    headers: { 'X-Test-User-Email': seeded.organiserEmail },
+    body: form,
+  })
+  if (!upload.ok) throw new Error(`Logo upload failed: ${upload.status} ${await upload.text()}`)
+}
+
+/**
+ * The festival in a logo and colours of its own, for the page about that:
+ * a version of the logo with light lettering for dark mode, so it needs no
+ * white background there, and a base tone that follows the main colour. The
+ * look is put on just for these captures and taken off again, so no other
+ * capture shows it.
+ */
+async function captureLook(
+  browser: Browser,
+  seeded: SeededWorld,
+  logos: Record<keyof typeof LOGO_INK, Buffer>,
+  mode: Mode,
+  device: Device,
+): Promise<void> {
+  const email = seeded.organiserEmail
+  const eventPath = `/events/${seeded.eventId}`
+  await uploadLogo(seeded, 'logo', logos.light)
+  await uploadLogo(seeded, 'logo/dark', logos.dark)
+  await apiAs('PATCH', eventPath, email, {
+    primary_color: 'blue',
+    secondary_color: 'yellow',
+    base_color: 'primary',
+    logo_dark_tile: false,
+  })
+
+  try {
+    const { context, page } = await openContext(browser, email, mode, {
+      phone: device === 'phone',
+    })
+    const logosLoaded = () =>
+      page.waitForFunction(() => [...document.images].every((image) => image.complete))
+
+    await open(page, '/app/home')
+    await logosLoaded()
+    await capture(page, 'event-look', mode, device)
+
+    await page.goto(`${BASE_URL}/app/event-settings/${seeded.eventId}`)
+    await page.getByTestId('event-appearance').filter({ visible: true }).first().waitFor()
+    // The logo, its version for dark mode and the first colours around it.
+    await bringIntoView(page, 'event-logo-dark-section')
+    await logosLoaded()
+    await capture(page, 'event-appearance', mode, device)
+    await context.close()
+  } finally {
+    await apiAs('PATCH', eventPath, email, {
+      primary_color: null,
+      secondary_color: null,
+      base_color: null,
+      logo_dark_tile: true,
+    })
+    // Takes the version for dark mode with it.
+    await apiAs('DELETE', `${eventPath}/logo`, email)
+  }
+}
+
 // ── Captures ─────────────────────────────────────────────────────────────────
 
 test(`screenshots [${LANG}]`, async ({ browser }) => {
   const seeded = await seedWorld()
   console.log(`Seeded "${world.event.name}" with ${seeded.tasks.length} tasks.`)
+  const logos = { light: await drawLogo(browser, 'light'), dark: await drawLogo(browser, 'dark') }
 
   for (const mode of MODES) {
     for (const device of DEVICES) {
@@ -1488,6 +1589,7 @@ test(`screenshots [${LANG}]`, async ({ browser }) => {
       await captureSharedLists(browser, seeded, mode, device)
       await captureHelpers(browser, seeded, mode, device)
       await captureGuestPages(browser, seeded, mode, device)
+      await captureLook(browser, seeded, logos, mode, device)
       await captureVenueMap(browser, mode, device)
     }
   }

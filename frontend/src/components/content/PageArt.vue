@@ -10,6 +10,7 @@ import ArtClone from './art/ArtClone.vue'
 import ArtCompare from './art/ArtCompare.vue'
 import ArtFestival from './art/ArtFestival.vue'
 import ArtInCharge from './art/ArtInCharge.vue'
+import ArtLook from './art/ArtLook.vue'
 import ArtMembers from './art/ArtMembers.vue'
 import ArtNotify from './art/ArtNotify.vue'
 import ArtReports from './art/ArtReports.vue'
@@ -38,6 +39,7 @@ defineProps<{ kind: ArtKind }>()
 const ARTS: Record<Exclude<ArtKind, 'roster'>, Component> = {
   shifts: ArtShifts,
   venue: ArtVenue,
+  look: ArtLook,
   members: ArtMembers,
   inCharge: ArtInCharge,
   teams: ArtTeams,

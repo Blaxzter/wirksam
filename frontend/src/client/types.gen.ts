@@ -143,6 +143,26 @@ export type AvatarUploadResponse = {
 }
 
 /**
+ * Body_events-upload_event_logo
+ */
+export type BodyEventsUploadEventLogo = {
+  /**
+   * File
+   */
+  file: Blob | File
+}
+
+/**
+ * Body_events-upload_event_logo_dark
+ */
+export type BodyEventsUploadEventLogoDark = {
+  /**
+   * File
+   */
+  file: Blob | File
+}
+
+/**
  * Body_teams-upload_team_document
  */
 export type BodyTeamsUploadTeamDocument = {
@@ -921,6 +941,29 @@ export type EventCreate = {
    */
   visibility?: 'public' | 'private'
   /**
+   * Primary Color
+   */
+  primary_color?: 'red' | 'orange' | 'teal' | 'blue' | 'violet' | 'pink' | 'slate' | string | null
+  /**
+   * Secondary Color
+   */
+  secondary_color?:
+    | 'red'
+    | 'orange'
+    | 'yellow'
+    | 'green'
+    | 'teal'
+    | 'blue'
+    | 'violet'
+    | 'pink'
+    | 'slate'
+    | string
+    | null
+  /**
+   * Base Color
+   */
+  base_color?: 'neutral' | 'primary' | 'blue' | 'teal' | 'green' | 'rose' | 'violet' | string | null
+  /**
    * Created By Id
    */
   created_by_id?: string | null
@@ -1015,6 +1058,59 @@ export type EventInvitationPreview = {
    * Event Description
    */
   event_description?: string | null
+  /**
+   * Event Primary Color
+   */
+  event_primary_color?:
+    'red' | 'orange' | 'teal' | 'blue' | 'violet' | 'pink' | 'slate' | string | null
+  /**
+   * Event Secondary Color
+   */
+  event_secondary_color?:
+    | 'red'
+    | 'orange'
+    | 'yellow'
+    | 'green'
+    | 'teal'
+    | 'blue'
+    | 'violet'
+    | 'pink'
+    | 'slate'
+    | string
+    | null
+  /**
+   * Event Base Color
+   */
+  event_base_color?:
+    'neutral' | 'primary' | 'blue' | 'teal' | 'green' | 'rose' | 'violet' | string | null
+  /**
+   * Event Logo Etag
+   */
+  event_logo_etag?: string | null
+  /**
+   * Event Logo Width
+   */
+  event_logo_width?: number | null
+  /**
+   * Event Logo Height
+   */
+  event_logo_height?: number | null
+  /**
+   * Event Logo Dark Etag
+   */
+  event_logo_dark_etag?: string | null
+  /**
+   * Event Logo Dark Width
+   */
+  event_logo_dark_width?: number | null
+  /**
+   * Event Logo Dark Height
+   */
+  event_logo_dark_height?: number | null
+  /**
+   * Event Logo Dark Tile
+   */
+  event_logo_dark_tile?: boolean
   /**
    * Start Date
    */
@@ -1298,6 +1394,29 @@ export type EventRead = {
    */
   visibility?: 'public' | 'private'
   /**
+   * Primary Color
+   */
+  primary_color?: 'red' | 'orange' | 'teal' | 'blue' | 'violet' | 'pink' | 'slate' | string | null
+  /**
+   * Secondary Color
+   */
+  secondary_color?:
+    | 'red'
+    | 'orange'
+    | 'yellow'
+    | 'green'
+    | 'teal'
+    | 'blue'
+    | 'violet'
+    | 'pink'
+    | 'slate'
+    | string
+    | null
+  /**
+   * Base Color
+   */
+  base_color?: 'neutral' | 'primary' | 'blue' | 'teal' | 'green' | 'rose' | 'violet' | string | null
+  /**
    * Id
    */
   id: string
@@ -1341,6 +1460,34 @@ export type EventRead = {
    * Managers Share Lists
    */
   managers_share_lists?: boolean
+  /**
+   * Logo Etag
+   */
+  logo_etag?: string | null
+  /**
+   * Logo Width
+   */
+  logo_width?: number | null
+  /**
+   * Logo Height
+   */
+  logo_height?: number | null
+  /**
+   * Logo Dark Etag
+   */
+  logo_dark_etag?: string | null
+  /**
+   * Logo Dark Width
+   */
+  logo_dark_width?: number | null
+  /**
+   * Logo Dark Height
+   */
+  logo_dark_height?: number | null
+  /**
+   * Logo Dark Tile
+   */
+  logo_dark_tile?: boolean
   /**
    * My Role
    */
@@ -1729,6 +1876,33 @@ export type EventUpdate = {
    * Managers Share Lists
    */
   managers_share_lists?: boolean | null
+  /**
+   * Primary Color
+   */
+  primary_color?: 'red' | 'orange' | 'teal' | 'blue' | 'violet' | 'pink' | 'slate' | string | null
+  /**
+   * Secondary Color
+   */
+  secondary_color?:
+    | 'red'
+    | 'orange'
+    | 'yellow'
+    | 'green'
+    | 'teal'
+    | 'blue'
+    | 'violet'
+    | 'pink'
+    | 'slate'
+    | string
+    | null
+  /**
+   * Base Color
+   */
+  base_color?: 'neutral' | 'primary' | 'blue' | 'teal' | 'green' | 'rose' | 'violet' | string | null
+  /**
+   * Logo Dark Tile
+   */
+  logo_dark_tile?: boolean | null
 }
 
 /**
@@ -8707,6 +8881,29 @@ export type EventReadWritable = {
    */
   visibility?: 'public' | 'private'
   /**
+   * Primary Color
+   */
+  primary_color?: 'red' | 'orange' | 'teal' | 'blue' | 'violet' | 'pink' | 'slate' | string | null
+  /**
+   * Secondary Color
+   */
+  secondary_color?:
+    | 'red'
+    | 'orange'
+    | 'yellow'
+    | 'green'
+    | 'teal'
+    | 'blue'
+    | 'violet'
+    | 'pink'
+    | 'slate'
+    | string
+    | null
+  /**
+   * Base Color
+   */
+  base_color?: 'neutral' | 'primary' | 'blue' | 'teal' | 'green' | 'rose' | 'violet' | string | null
+  /**
    * Id
    */
   id: string
@@ -8750,6 +8947,34 @@ export type EventReadWritable = {
    * Managers Share Lists
    */
   managers_share_lists?: boolean
+  /**
+   * Logo Etag
+   */
+  logo_etag?: string | null
+  /**
+   * Logo Width
+   */
+  logo_width?: number | null
+  /**
+   * Logo Height
+   */
+  logo_height?: number | null
+  /**
+   * Logo Dark Etag
+   */
+  logo_dark_etag?: string | null
+  /**
+   * Logo Dark Width
+   */
+  logo_dark_width?: number | null
+  /**
+   * Logo Dark Height
+   */
+  logo_dark_height?: number | null
+  /**
+   * Logo Dark Tile
+   */
+  logo_dark_tile?: boolean
   /**
    * My Role
    */
@@ -15153,6 +15378,359 @@ export type EventsDecideJoinRequestResponses = {
 
 export type EventsDecideJoinRequestResponse =
   EventsDecideJoinRequestResponses[keyof EventsDecideJoinRequestResponses]
+
+export type EventsDeleteEventLogoData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/logo'
+}
+
+export type EventsDeleteEventLogoErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsDeleteEventLogoError =
+  EventsDeleteEventLogoErrors[keyof EventsDeleteEventLogoErrors]
+
+export type EventsDeleteEventLogoResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventRead
+}
+
+export type EventsDeleteEventLogoResponse =
+  EventsDeleteEventLogoResponses[keyof EventsDeleteEventLogoResponses]
+
+export type EventsGetEventLogoData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/logo'
+}
+
+export type EventsGetEventLogoErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsGetEventLogoError = EventsGetEventLogoErrors[keyof EventsGetEventLogoErrors]
+
+export type EventsGetEventLogoResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
+export type EventsUploadEventLogoData = {
+  body: BodyEventsUploadEventLogo
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/logo'
+}
+
+export type EventsUploadEventLogoErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsUploadEventLogoError =
+  EventsUploadEventLogoErrors[keyof EventsUploadEventLogoErrors]
+
+export type EventsUploadEventLogoResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventRead
+}
+
+export type EventsUploadEventLogoResponse =
+  EventsUploadEventLogoResponses[keyof EventsUploadEventLogoResponses]
+
+export type EventsDeleteEventLogoDarkData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/logo/dark'
+}
+
+export type EventsDeleteEventLogoDarkErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsDeleteEventLogoDarkError =
+  EventsDeleteEventLogoDarkErrors[keyof EventsDeleteEventLogoDarkErrors]
+
+export type EventsDeleteEventLogoDarkResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventRead
+}
+
+export type EventsDeleteEventLogoDarkResponse =
+  EventsDeleteEventLogoDarkResponses[keyof EventsDeleteEventLogoDarkResponses]
+
+export type EventsGetEventLogoDarkData = {
+  body?: never
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/logo/dark'
+}
+
+export type EventsGetEventLogoDarkErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsGetEventLogoDarkError =
+  EventsGetEventLogoDarkErrors[keyof EventsGetEventLogoDarkErrors]
+
+export type EventsGetEventLogoDarkResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown
+}
+
+export type EventsUploadEventLogoDarkData = {
+  body: BodyEventsUploadEventLogoDark
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: string
+  }
+  query?: never
+  url: '/api/v1/events/{event_id}/logo/dark'
+}
+
+export type EventsUploadEventLogoDarkErrors = {
+  /**
+   * Bad Request
+   */
+  400: ProblemDetails
+  /**
+   * Unauthorized
+   */
+  401: ProblemDetails
+  /**
+   * Forbidden
+   */
+  403: ProblemDetails
+  /**
+   * Not Found
+   */
+  404: ProblemDetails
+  /**
+   * Conflict
+   */
+  409: ProblemDetails
+  /**
+   * Validation Error
+   */
+  422: ProblemDetails
+  /**
+   * Too Many Requests
+   */
+  429: ProblemDetails
+  /**
+   * Internal Server Error
+   */
+  500: ProblemDetails
+}
+
+export type EventsUploadEventLogoDarkError =
+  EventsUploadEventLogoDarkErrors[keyof EventsUploadEventLogoDarkErrors]
+
+export type EventsUploadEventLogoDarkResponses = {
+  /**
+   * Successful Response
+   */
+  200: EventRead
+}
+
+export type EventsUploadEventLogoDarkResponse =
+  EventsUploadEventLogoDarkResponses[keyof EventsUploadEventLogoDarkResponses]
 
 export type TeamsListTeamsData = {
   body?: never

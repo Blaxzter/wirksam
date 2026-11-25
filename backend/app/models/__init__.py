@@ -15,6 +15,7 @@ from .event import Event
 from .event_invitation import EventInvitation
 from .event_invitation_task import EventInvitationTask
 from .event_join_request import EventJoinRequest
+from .event_logo import EventLogo
 from .event_membership import EventMembership
 from .event_team import (
     EventTeam,
@@ -70,6 +71,7 @@ __all__ = [
     "EventInvitation",
     "EventInvitationTask",
     "EventJoinRequest",
+    "EventLogo",
     "EventMembership",
     "EventTeam",
     "EventTeamCheck",
